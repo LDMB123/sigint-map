@@ -121,7 +121,24 @@
       "Bash(then echo \"⚠️ ANTHROPIC_API_KEY is set \\(billing risk\\)\")",
       "Bash(else echo \"✓ No ANTHROPIC_API_KEY detected - using subscription auth\")",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
+      "Bash(xargs -I {} git mv {} app/docs/analysis/indexeddb/)",
+      "Bash(xargs -I {} git mv {} app/docs/analysis/voice/)",
+      "Bash(xargs -I {} git mv {} app/docs/analysis/service-worker/)",
+      "Bash(xargs -I {} git mv {} app/docs/analysis/database/)",
+      "Bash(xargs -I {} git mv {} app/docs/analysis/misc/)",
+      "Bash(for dir in app/docs/analysis/*/)",
+      "Bash(for dir in rust sveltekit wasm)",
+      "Bash(do if [ -d \".claude/agents/$dir\" ])",
+      "Bash(then git rm -r \".claude/agents/$dir\")",
+      "Bash(git rev-list:*)",
+      "Bash(npm run test:*)",
+      "Bash(for dir in docs/analysis/*/)",
+      "Bash(.claude/scripts/validate-structure.sh:*)"
     ],
     "deny": []
   }
