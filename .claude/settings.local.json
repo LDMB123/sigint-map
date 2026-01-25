@@ -136,7 +136,8 @@
       "Bash(do if [ -d \".claude/agents/$dir\" ])",
       "Bash(then git rm -r \".claude/agents/$dir\")",
       "Bash(git rev-list:*)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(for dir in docs/analysis/*/)"
     ],
     "deny": []
   }
