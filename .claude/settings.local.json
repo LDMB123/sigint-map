@@ -145,7 +145,24 @@
       "Bash(npm run lint)",
       "Bash(tree:*)",
       "Bash(git -C /Users/louisherman/ClaudeCodeProjects log --oneline -20)",
-      "Bash(git -C /Users/louisherman/ClaudeCodeProjects status)"
+      "Bash(git -C /Users/louisherman/ClaudeCodeProjects status)",
+      "Bash(git -C /Users/louisherman/ClaudeCodeProjects ls-files:*)",
+      "Bash(git -C /Users/louisherman/ClaudeCodeProjects log --oneline --all -- \"*.log\")",
+      "Bash(for file in INDEX.txt README.md)",
+      "Bash(do echo \"=== Comparing $file in css skills ===\" if [ -f \"/Users/louisherman/ClaudeCodeProjects/.claude/skills/css/$file\" ])",
+      "Bash([ -f \"/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/skills/css/$file\" ])",
+      "Bash(then diff /Users/louisherman/ClaudeCodeProjects/.claude/skills/css/$file /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/skills/css/$file)",
+      "Bash(else)",
+      "Bash(md5:*)",
+      "Bash(git -C /Users/louisherman/ClaudeCodeProjects log --oneline --all -- \".claude/scripts/\")",
+      "Bash(git -C /Users/louisherman/ClaudeCodeProjects status --porcelain -- \"projects/dmb-almanac/app/*.log\" \"projects/dmb-almanac/app/scraper/*.log\" \"projects/dmb-almanac/app/scraper/debug-*.html\" \"projects/dmb-almanac/app/scraper/output/debug-*.html\" \".DS_Store\")",
+      "Skill(chromium-audit)",
+      "Skill(chromium-audit:*)",
+      "Skill(perf-audit)",
+      "Skill(perf-audit:*)",
+      "Skill(debug)",
+      "Skill(debug:*)",
+      "Bash(npm ls:*)"
     ],
     "deny": []
   }
