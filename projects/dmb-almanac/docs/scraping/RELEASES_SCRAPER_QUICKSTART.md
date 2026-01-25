@@ -4,7 +4,7 @@
 
 ```bash
 # 1. Enter scraper directory
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper
 
 # 2. Test the scraper (fast, 5-10 seconds)
 npm run test:releases
@@ -52,10 +52,10 @@ The scraper extracts from: **https://www.dmbalmanac.com/DiscographyList.aspx**
 
 | File | Path |
 |------|------|
-| Output (after scrape) | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/output/releases.json` |
-| Instructions | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/RELEASES_SCRAPER_INSTRUCTIONS.md` |
-| Test script | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/test-releases-scraper.ts` |
-| Main scraper | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/releases.ts` |
+| Output (after scrape) | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/output/releases.json` |
+| Instructions | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/RELEASES_SCRAPER_INSTRUCTIONS.md` |
+| Test script | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/test-releases-scraper.ts` |
+| Main scraper | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/releases.ts` |
 
 ---
 
@@ -148,7 +148,7 @@ The scraper creates `output/releases.json`:
 ### "Command not found: npm"
 Make sure you're in the scraper directory:
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper
 npm --version  # Should show npm version
 ```
 
@@ -202,20 +202,20 @@ cat scraper/output/releases.json | jq '[.releases[].tracks | length] | add'
 
 See the full analysis:
 - Full technical analysis: `/Users/louisherman/ClaudeCodeProjects/RELEASES_SCRAPER_ANALYSIS.md`
-- Detailed instructions: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/RELEASES_SCRAPER_INSTRUCTIONS.md`
+- Detailed instructions: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/RELEASES_SCRAPER_INSTRUCTIONS.md`
 
 ---
 
 ## One-Liner for Full Workflow
 
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper && npm run test:releases && npm run scrape:releases && echo "✓ Done! Results in output/releases.json"
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper && npm run test:releases && npm run scrape:releases && echo "✓ Done! Results in output/releases.json"
 ```
 
 Or with import:
 
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper && npm run scrape:releases && cd .. && npm run import && echo "✓ Imported to database!"
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper && npm run scrape:releases && cd .. && npm run import && echo "✓ Imported to database!"
 ```
 
 ---

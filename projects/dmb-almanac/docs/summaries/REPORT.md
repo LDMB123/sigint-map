@@ -45,7 +45,7 @@ The DMBAlmanac releases scraper is a **fully implemented, production-ready** Pla
 
 ### Step 1: Test First (5-10 seconds)
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper
 npm run test:releases
 ```
 
@@ -113,7 +113,7 @@ npm run import
 
 ## Expected Output
 
-**File**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/output/releases.json`
+**File**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/output/releases.json`
 
 **Format**: JSON with metadata
 
@@ -181,8 +181,8 @@ const queue = new PQueue({
 ## Key Files
 
 ### Scraper Code
-- **Main**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/releases.ts` (418 lines)
-- **Test**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/test-releases-scraper.ts` (198 lines)
+- **Main**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/releases.ts` (418 lines)
+- **Test**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/test-releases-scraper.ts` (198 lines)
 
 ### Utilities
 - `src/utils/cache.ts` - HTML caching
@@ -199,7 +199,7 @@ const queue = new PQueue({
 
 ```bash
 # Navigate to scraper
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper
 
 # Test the scraper
 npm run test:releases

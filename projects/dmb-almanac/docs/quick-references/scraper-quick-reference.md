@@ -395,7 +395,7 @@ scraper/
 
 ## References
 
-- **Main File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/`
+- **Main File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/`
 - **Analysis:** `/Users/louisherman/ClaudeCodeProjects/scraper-coverage-analysis.md`
 - **Missing Specs:** `/Users/louisherman/ClaudeCodeProjects/missing-scrapers-specification.md`
 - **DMB Almanac:** https://www.dmbalmanac.com/

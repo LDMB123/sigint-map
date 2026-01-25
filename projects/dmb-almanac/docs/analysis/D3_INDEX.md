@@ -226,7 +226,7 @@ All analysis documents are in:
 
 Project files to modify:
 ```
-/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
   ├── package.json                            (edit lines ~38, ~67)
   ├── src/lib/utils/
   │   ├── d3-loader.ts                        (remove 2 functions)

@@ -10252,10 +10252,10 @@
       "model": "sonnet",
       "description": "Route structure, load functions, SSR/CSR boundaries, form actions",
       "format": "markdown",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/01-sveltekit-engineer.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/01-sveltekit-engineer.md",
       "file_size": 3836,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "modern-css-architect",
@@ -10265,40 +10265,40 @@
       "type": "specialist",
       "program": "ui-platform-optimization",
       "format": "yaml",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/12-modern-css-architect.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/12-modern-css-architect.md",
       "file_size": 4418,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "caching-specialist",
       "model": "sonnet",
       "description": "Correct caching strategy, ISR debugging, route handler caching",
       "format": "markdown",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/04-caching-specialist.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/04-caching-specialist.md",
       "file_size": 6379,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "pwa-engineer",
       "model": "sonnet",
       "description": "Manifest + Service Worker + offline navigation + update UX",
       "format": "markdown",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/05-pwa-engineer.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/05-pwa-engineer.md",
       "file_size": 8002,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "vite-build-engineer",
       "model": "sonnet",
       "description": "Vite configuration, build optimization, bundle analysis, dev server",
       "format": "markdown",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/03-vite-build-engineer.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/03-vite-build-engineer.md",
       "file_size": 5222,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "lint-regression-debugger",
@@ -10308,60 +10308,60 @@
       "type": "debugger",
       "program": "ui-platform-optimization",
       "format": "yaml",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/14-lint-regression-debugger.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/14-lint-regression-debugger.md",
       "file_size": 4733,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "local-first-steward",
       "model": "sonnet",
       "description": "Schema/index review, batching, migrations, integrity tests",
       "format": "markdown",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/06-local-first-steward.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/06-local-first-steward.md",
       "file_size": 8989,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "lead-orchestrator",
       "model": "opus",
       "description": "Gates + sequencing; rejects unsafe changes",
       "format": "markdown",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/00-lead-orchestrator.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/00-lead-orchestrator.md",
       "file_size": 3430,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "dmb-performance-optimizer",
       "model": "sonnet",
       "description": "Profiling, bundle analysis, main-thread jank reduction for DMB Almanac PWA",
       "format": "markdown",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/07-performance-optimizer.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/07-performance-optimizer.md",
       "file_size": 8016,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "parallel-coordinator",
       "model": "haiku",
       "description": "Splits audits/workstreams; ensures safe merges/handoffs",
       "format": "markdown",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/10-parallel-coordinator.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/10-parallel-coordinator.md",
       "file_size": 8516,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "dmb-qa-engineer",
       "model": "sonnet",
       "description": "Offline tests, SW update tests, migration tests, regression harness for DMB Almanac PWA",
       "format": "markdown",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/08-qa-engineer.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/08-qa-engineer.md",
       "file_size": 9225,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "ui-regression-debugger",
@@ -10371,20 +10371,20 @@
       "type": "debugger",
       "program": "ui-platform-optimization",
       "format": "yaml",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/13-ui-regression-debugger.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/13-ui-regression-debugger.md",
       "file_size": 3980,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "eslint-typescript-steward",
       "model": "haiku",
       "description": "TS strict posture, lint strategy, regression prevention",
       "format": "markdown",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/09-eslint-typescript-steward.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/09-eslint-typescript-steward.md",
       "file_size": 6651,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "semantic-html-engineer",
@@ -10394,20 +10394,20 @@
       "type": "specialist",
       "program": "ui-platform-optimization",
       "format": "yaml",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/11-semantic-html-engineer.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/11-semantic-html-engineer.md",
       "file_size": 5208,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     },
     {
       "name": "svelte-component-engineer",
       "model": "sonnet",
       "description": "Svelte 5 runes, reactivity patterns, component architecture",
       "format": "markdown",
-      "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/02-svelte-component-engineer.md",
+      "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/02-svelte-component-engineer.md",
       "file_size": 4404,
       "scope": "project",
-      "project_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte"
+      "project_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app"
     }
   ],
   "errors": [],

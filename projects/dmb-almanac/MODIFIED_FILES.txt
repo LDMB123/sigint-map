@@ -3,26 +3,26 @@ ACCESSIBILITY FIXES - MODIFIED FILES
 
 All fixes have been implemented. Below are the files that were modified:
 
-1. /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/app.css
+1. /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/app.css
    - Lines 847-852: Removed outline: none from :focus rule
    - WCAG 2.4.7 Focus Visible fix
    - Change Type: 1 line removed
 
-2. /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Table.svelte
+2. /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/components/ui/Table.svelte
    - Lines 74-96: Added handleHeaderKeydown() and handleRowKeydown() functions
    - Line 117: Added onkeydown handler to table headers
    - Line 148: Added onkeydown handler to table rows
    - WCAG 2.1.1 Keyboard fix (Enter/Space on interactive elements)
    - Change Type: 2 functions added, 2 handlers added
 
-3. /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/visualizations/+page.svelte
+3. /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/routes/visualizations/+page.svelte
    - Lines 58-87: Added tabOptions and handleTabKeydown() function
    - Lines 260-331: Updated all 6 tab buttons with id, aria-controls, onkeydown, tabindex
    - Lines 345, 360, 374, 388, 402, 416: Updated all 6 tab panels with id, role, aria-labelledby
    - WAI-ARIA tab pattern and WCAG 1.3.1/4.1.2 fixes
    - Change Type: 1 function added, 12 tab elements updated, 12 panel elements updated
 
-4. /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/my-shows/+page.svelte
+4. /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/routes/my-shows/+page.svelte
    - Lines 124-152: Added tabOptions and handleTabKeydown() function
    - Lines 277-311: Updated all 3 tab buttons with id, onkeydown, tabindex
    - Tab panels already have proper associations (no changes needed)
@@ -33,28 +33,28 @@ All fixes have been implemented. Below are the files that were modified:
 DOCUMENTATION FILES CREATED
 ============================
 
-1. /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/ACCESSIBILITY_FIXES.md
+1. /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/ACCESSIBILITY_FIXES.md
    - Comprehensive accessibility audit report
    - Detailed explanation of each fix
    - WCAG 2.1 Level AA compliance mapping
    - Testing checklist
    - Before/after comparisons
 
-2. /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/ACCESSIBILITY_QUICK_REFERENCE.md
+2. /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/ACCESSIBILITY_QUICK_REFERENCE.md
    - Quick reference guide
    - Summary of 4 critical issues fixed
    - Keyboard shortcuts now available
    - Files changed summary
    - Testing commands
 
-3. /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/ACCESSIBILITY_CODE_CHANGES.md
+3. /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/ACCESSIBILITY_CODE_CHANGES.md
    - Complete implementation guide
    - Line-by-line code changes for each file
    - Before/after code snippets
    - Why each change works
    - Backwards compatibility notes
 
-4. /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/MODIFIED_FILES.txt
+4. /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/MODIFIED_FILES.txt
    - This file
    - List of all modified files
    - List of all documentation created
@@ -90,16 +90,16 @@ ABSOLUTE FILE PATHS
 ====================
 
 Source Files (Modified):
-- /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/app.css
-- /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Table.svelte
-- /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/visualizations/+page.svelte
-- /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/my-shows/+page.svelte
+- /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/app.css
+- /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/components/ui/Table.svelte
+- /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/routes/visualizations/+page.svelte
+- /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/routes/my-shows/+page.svelte
 
 Documentation Files (Created):
-- /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/ACCESSIBILITY_FIXES.md
-- /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/ACCESSIBILITY_QUICK_REFERENCE.md
-- /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/ACCESSIBILITY_CODE_CHANGES.md
-- /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/MODIFIED_FILES.txt
+- /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/ACCESSIBILITY_FIXES.md
+- /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/ACCESSIBILITY_QUICK_REFERENCE.md
+- /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/ACCESSIBILITY_CODE_CHANGES.md
+- /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/MODIFIED_FILES.txt
 
 
 VERIFICATION CHECKLIST

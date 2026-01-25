@@ -243,6 +243,6 @@ FILES DELIVERED
 3. AUDIT_SUMMARY.txt (this file)
 
 All files located in:
-/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
 
 ================================================================================

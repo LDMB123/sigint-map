@@ -55,7 +55,7 @@
 ## SCRAPER MANIFEST
 
 ### Location
-`/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/`
+`/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/`
 
 ### Active Scrapers
 

@@ -150,16 +150,16 @@ FILE LOCATIONS (ABSOLUTE PATHS)
 ================================================================================
 
 Documentation:
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/MEMORY_ANALYSIS_QUICK_START.md
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/MEMORY_LEAK_ANALYSIS.md
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/MEMORY_FIXES_READY_TO_APPLY.md
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/MEMORY_ANALYSIS_README.txt
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/MEMORY_ANALYSIS_QUICK_START.md
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/MEMORY_LEAK_ANALYSIS.md
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/MEMORY_FIXES_READY_TO_APPLY.md
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/MEMORY_ANALYSIS_README.txt
 
 Source Code:
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/stores/dexie.ts
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/bridge.ts
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Dropdown.svelte
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/VirtualList.svelte
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/stores/dexie.ts
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/wasm/bridge.ts
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/components/ui/Dropdown.svelte
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/components/ui/VirtualList.svelte
 
 ================================================================================
 RECOMMENDED READING ORDER

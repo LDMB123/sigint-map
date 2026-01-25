@@ -41,8 +41,8 @@
           "count": 3,
           "user_path": ".claude/agents/predictive/workload-predictor.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/predictive/workload-predictor.md",
-            "DMBAlmanacProjectFolder/.claude/agents/coordination/workload-predictor.md"
+            "projects/dmb-almanac/app/.claude/agents/predictive/workload-predictor.md",
+            "projects/dmb-almanac/app/.claude/agents/coordination/workload-predictor.md"
           ]
         },
         {
@@ -50,8 +50,8 @@
           "count": 3,
           "user_path": ".claude/agents/predictive/adaptive-tier-selector.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/predictive/adaptive-tier-selector.md",
-            "DMBAlmanacProjectFolder/.claude/agents/coordination/adaptive-tier-selector.md"
+            "projects/dmb-almanac/app/.claude/agents/predictive/adaptive-tier-selector.md",
+            "projects/dmb-almanac/app/.claude/agents/coordination/adaptive-tier-selector.md"
           ]
         },
         {
@@ -59,8 +59,8 @@
           "count": 3,
           "user_path": ".claude/agents/predictive/smart-agent-router.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/predictive/smart-agent-router.md",
-            "DMBAlmanacProjectFolder/.claude/agents/coordination/smart-agent-router.md"
+            "projects/dmb-almanac/app/.claude/agents/predictive/smart-agent-router.md",
+            "projects/dmb-almanac/app/.claude/agents/coordination/smart-agent-router.md"
           ]
         },
         {
@@ -68,8 +68,8 @@
           "count": 3,
           "user_path": ".claude/agents/analyzers/dependency-analyzer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/analyzers/dependency-analyzer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/analysis/dependency-analyzer.md"
+            "projects/dmb-almanac/app/.claude/agents/analyzers/dependency-analyzer.md",
+            "projects/dmb-almanac/app/.claude/agents/analysis/dependency-analyzer.md"
           ]
         },
         {
@@ -77,8 +77,8 @@
           "count": 3,
           "user_path": ".claude/agents/analyzers/complexity-analyzer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/analyzers/complexity-analyzer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/analysis/complexity-analyzer.md"
+            "projects/dmb-almanac/app/.claude/agents/analyzers/complexity-analyzer.md",
+            "projects/dmb-almanac/app/.claude/agents/analysis/complexity-analyzer.md"
           ]
         },
         {
@@ -86,8 +86,8 @@
           "count": 3,
           "user_path": ".claude/agents/analyzers/performance-analyzer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/analyzers/performance-analyzer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/analysis/performance-analyzer.md"
+            "projects/dmb-almanac/app/.claude/agents/analyzers/performance-analyzer.md",
+            "projects/dmb-almanac/app/.claude/agents/analysis/performance-analyzer.md"
           ]
         },
         {
@@ -95,8 +95,8 @@
           "count": 3,
           "user_path": ".claude/agents/analyzers/architecture-analyzer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/analyzers/architecture-analyzer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/analysis/architecture-analyzer.md"
+            "projects/dmb-almanac/app/.claude/agents/analyzers/architecture-analyzer.md",
+            "projects/dmb-almanac/app/.claude/agents/analysis/architecture-analyzer.md"
           ]
         },
         {
@@ -104,8 +104,8 @@
           "count": 3,
           "user_path": ".claude/agents/analyzers/coverage-analyzer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/analyzers/coverage-analyzer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/analysis/coverage-analyzer.md"
+            "projects/dmb-almanac/app/.claude/agents/analyzers/coverage-analyzer.md",
+            "projects/dmb-almanac/app/.claude/agents/analysis/coverage-analyzer.md"
           ]
         },
         {
@@ -113,8 +113,8 @@
           "count": 3,
           "user_path": ".claude/agents/documentation/technical-writer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/documentation/technical-writer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/generation/technical-writer.md"
+            "projects/dmb-almanac/app/.claude/agents/documentation/technical-writer.md",
+            "projects/dmb-almanac/app/.claude/agents/generation/technical-writer.md"
           ]
         },
         {
@@ -122,8 +122,8 @@
           "count": 3,
           "user_path": ".claude/agents/documentation/onboarding-guide-creator.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/documentation/onboarding-guide-creator.md",
-            "DMBAlmanacProjectFolder/.claude/agents/generation/onboarding-guide-creator.md"
+            "projects/dmb-almanac/app/.claude/agents/documentation/onboarding-guide-creator.md",
+            "projects/dmb-almanac/app/.claude/agents/generation/onboarding-guide-creator.md"
           ]
         }
       ]
@@ -179,8 +179,8 @@
             {
               "name": "workload-predictor",
               "filename": "workload-predictor.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/predictive/workload-predictor.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/predictive/workload-predictor.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/predictive/workload-predictor.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/predictive/workload-predictor.md",
               "scope": "project",
               "category": "predictive",
               "model": "default",
@@ -193,8 +193,8 @@
             {
               "name": "workload-predictor",
               "filename": "workload-predictor.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/coordination/workload-predictor.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/coordination/workload-predictor.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/coordination/workload-predictor.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/coordination/workload-predictor.md",
               "scope": "project",
               "category": "coordination",
               "model": "default",
@@ -227,8 +227,8 @@
             {
               "name": "adaptive-tier-selector",
               "filename": "adaptive-tier-selector.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/predictive/adaptive-tier-selector.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/predictive/adaptive-tier-selector.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/predictive/adaptive-tier-selector.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/predictive/adaptive-tier-selector.md",
               "scope": "project",
               "category": "predictive",
               "model": "default",
@@ -241,8 +241,8 @@
             {
               "name": "adaptive-tier-selector",
               "filename": "adaptive-tier-selector.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/coordination/adaptive-tier-selector.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/coordination/adaptive-tier-selector.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/coordination/adaptive-tier-selector.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/coordination/adaptive-tier-selector.md",
               "scope": "project",
               "category": "coordination",
               "model": "default",
@@ -275,8 +275,8 @@
             {
               "name": "smart-agent-router",
               "filename": "smart-agent-router.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/predictive/smart-agent-router.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/predictive/smart-agent-router.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/predictive/smart-agent-router.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/predictive/smart-agent-router.md",
               "scope": "project",
               "category": "predictive",
               "model": "default",
@@ -289,8 +289,8 @@
             {
               "name": "smart-agent-router",
               "filename": "smart-agent-router.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/coordination/smart-agent-router.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/coordination/smart-agent-router.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/coordination/smart-agent-router.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/coordination/smart-agent-router.md",
               "scope": "project",
               "category": "coordination",
               "model": "default",
@@ -323,8 +323,8 @@
             {
               "name": "dependency-analyzer",
               "filename": "dependency-analyzer.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/analyzers/dependency-analyzer.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/analyzers/dependency-analyzer.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/analyzers/dependency-analyzer.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/analyzers/dependency-analyzer.md",
               "scope": "project",
               "category": "analyzers",
               "model": "default",
@@ -337,8 +337,8 @@
             {
               "name": "dependency-analyzer",
               "filename": "dependency-analyzer.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/analysis/dependency-analyzer.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/analysis/dependency-analyzer.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/analysis/dependency-analyzer.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/analysis/dependency-analyzer.md",
               "scope": "project",
               "category": "analysis",
               "model": "default",
@@ -371,8 +371,8 @@
             {
               "name": "complexity-analyzer",
               "filename": "complexity-analyzer.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/analyzers/complexity-analyzer.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/analyzers/complexity-analyzer.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/analyzers/complexity-analyzer.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/analyzers/complexity-analyzer.md",
               "scope": "project",
               "category": "analyzers",
               "model": "default",
@@ -385,8 +385,8 @@
             {
               "name": "complexity-analyzer",
               "filename": "complexity-analyzer.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/analysis/complexity-analyzer.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/analysis/complexity-analyzer.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/analysis/complexity-analyzer.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/analysis/complexity-analyzer.md",
               "scope": "project",
               "category": "analysis",
               "model": "default",
@@ -826,8 +826,8 @@
           "count": 3,
           "user_path": ".claude/agents/predictive/workload-predictor.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/predictive/workload-predictor.md",
-            "DMBAlmanacProjectFolder/.claude/agents/coordination/workload-predictor.md"
+            "projects/dmb-almanac/app/.claude/agents/predictive/workload-predictor.md",
+            "projects/dmb-almanac/app/.claude/agents/coordination/workload-predictor.md"
           ]
         },
         {
@@ -835,8 +835,8 @@
           "count": 3,
           "user_path": ".claude/agents/predictive/adaptive-tier-selector.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/predictive/adaptive-tier-selector.md",
-            "DMBAlmanacProjectFolder/.claude/agents/coordination/adaptive-tier-selector.md"
+            "projects/dmb-almanac/app/.claude/agents/predictive/adaptive-tier-selector.md",
+            "projects/dmb-almanac/app/.claude/agents/coordination/adaptive-tier-selector.md"
           ]
         },
         {
@@ -844,8 +844,8 @@
           "count": 3,
           "user_path": ".claude/agents/predictive/smart-agent-router.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/predictive/smart-agent-router.md",
-            "DMBAlmanacProjectFolder/.claude/agents/coordination/smart-agent-router.md"
+            "projects/dmb-almanac/app/.claude/agents/predictive/smart-agent-router.md",
+            "projects/dmb-almanac/app/.claude/agents/coordination/smart-agent-router.md"
           ]
         },
         {
@@ -853,8 +853,8 @@
           "count": 3,
           "user_path": ".claude/agents/analyzers/dependency-analyzer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/analyzers/dependency-analyzer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/analysis/dependency-analyzer.md"
+            "projects/dmb-almanac/app/.claude/agents/analyzers/dependency-analyzer.md",
+            "projects/dmb-almanac/app/.claude/agents/analysis/dependency-analyzer.md"
           ]
         },
         {
@@ -862,8 +862,8 @@
           "count": 3,
           "user_path": ".claude/agents/analyzers/complexity-analyzer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/analyzers/complexity-analyzer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/analysis/complexity-analyzer.md"
+            "projects/dmb-almanac/app/.claude/agents/analyzers/complexity-analyzer.md",
+            "projects/dmb-almanac/app/.claude/agents/analysis/complexity-analyzer.md"
           ]
         },
         {
@@ -871,8 +871,8 @@
           "count": 3,
           "user_path": ".claude/agents/analyzers/performance-analyzer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/analyzers/performance-analyzer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/analysis/performance-analyzer.md"
+            "projects/dmb-almanac/app/.claude/agents/analyzers/performance-analyzer.md",
+            "projects/dmb-almanac/app/.claude/agents/analysis/performance-analyzer.md"
           ]
         },
         {
@@ -880,8 +880,8 @@
           "count": 3,
           "user_path": ".claude/agents/analyzers/architecture-analyzer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/analyzers/architecture-analyzer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/analysis/architecture-analyzer.md"
+            "projects/dmb-almanac/app/.claude/agents/analyzers/architecture-analyzer.md",
+            "projects/dmb-almanac/app/.claude/agents/analysis/architecture-analyzer.md"
           ]
         },
         {
@@ -889,8 +889,8 @@
           "count": 3,
           "user_path": ".claude/agents/analyzers/coverage-analyzer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/analyzers/coverage-analyzer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/analysis/coverage-analyzer.md"
+            "projects/dmb-almanac/app/.claude/agents/analyzers/coverage-analyzer.md",
+            "projects/dmb-almanac/app/.claude/agents/analysis/coverage-analyzer.md"
           ]
         },
         {
@@ -898,8 +898,8 @@
           "count": 3,
           "user_path": ".claude/agents/documentation/technical-writer.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/documentation/technical-writer.md",
-            "DMBAlmanacProjectFolder/.claude/agents/generation/technical-writer.md"
+            "projects/dmb-almanac/app/.claude/agents/documentation/technical-writer.md",
+            "projects/dmb-almanac/app/.claude/agents/generation/technical-writer.md"
           ]
         },
         {
@@ -907,8 +907,8 @@
           "count": 3,
           "user_path": ".claude/agents/documentation/onboarding-guide-creator.md",
           "project_paths": [
-            "DMBAlmanacProjectFolder/.claude/agents/documentation/onboarding-guide-creator.md",
-            "DMBAlmanacProjectFolder/.claude/agents/generation/onboarding-guide-creator.md"
+            "projects/dmb-almanac/app/.claude/agents/documentation/onboarding-guide-creator.md",
+            "projects/dmb-almanac/app/.claude/agents/generation/onboarding-guide-creator.md"
           ]
         }
       ]
@@ -979,8 +979,8 @@
             {
               "name": "workload-predictor",
               "filename": "workload-predictor.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/predictive/workload-predictor.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/predictive/workload-predictor.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/predictive/workload-predictor.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/predictive/workload-predictor.md",
               "scope": "project",
               "category": "predictive",
               "model": "default",
@@ -993,8 +993,8 @@
             {
               "name": "workload-predictor",
               "filename": "workload-predictor.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/coordination/workload-predictor.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/coordination/workload-predictor.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/coordination/workload-predictor.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/coordination/workload-predictor.md",
               "scope": "project",
               "category": "coordination",
               "model": "default",
@@ -1027,8 +1027,8 @@
             {
               "name": "adaptive-tier-selector",
               "filename": "adaptive-tier-selector.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/predictive/adaptive-tier-selector.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/predictive/adaptive-tier-selector.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/predictive/adaptive-tier-selector.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/predictive/adaptive-tier-selector.md",
               "scope": "project",
               "category": "predictive",
               "model": "default",
@@ -1041,8 +1041,8 @@
             {
               "name": "adaptive-tier-selector",
               "filename": "adaptive-tier-selector.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/coordination/adaptive-tier-selector.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/coordination/adaptive-tier-selector.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/coordination/adaptive-tier-selector.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/coordination/adaptive-tier-selector.md",
               "scope": "project",
               "category": "coordination",
               "model": "default",
@@ -1075,8 +1075,8 @@
             {
               "name": "smart-agent-router",
               "filename": "smart-agent-router.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/predictive/smart-agent-router.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/predictive/smart-agent-router.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/predictive/smart-agent-router.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/predictive/smart-agent-router.md",
               "scope": "project",
               "category": "predictive",
               "model": "default",
@@ -1089,8 +1089,8 @@
             {
               "name": "smart-agent-router",
               "filename": "smart-agent-router.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/coordination/smart-agent-router.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/coordination/smart-agent-router.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/coordination/smart-agent-router.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/coordination/smart-agent-router.md",
               "scope": "project",
               "category": "coordination",
               "model": "default",
@@ -1123,8 +1123,8 @@
             {
               "name": "dependency-analyzer",
               "filename": "dependency-analyzer.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/analyzers/dependency-analyzer.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/analyzers/dependency-analyzer.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/analyzers/dependency-analyzer.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/analyzers/dependency-analyzer.md",
               "scope": "project",
               "category": "analyzers",
               "model": "default",
@@ -1137,8 +1137,8 @@
             {
               "name": "dependency-analyzer",
               "filename": "dependency-analyzer.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/analysis/dependency-analyzer.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/analysis/dependency-analyzer.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/analysis/dependency-analyzer.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/analysis/dependency-analyzer.md",
               "scope": "project",
               "category": "analysis",
               "model": "default",
@@ -1171,8 +1171,8 @@
             {
               "name": "complexity-analyzer",
               "filename": "complexity-analyzer.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/analyzers/complexity-analyzer.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/analyzers/complexity-analyzer.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/analyzers/complexity-analyzer.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/analyzers/complexity-analyzer.md",
               "scope": "project",
               "category": "analyzers",
               "model": "default",
@@ -1185,8 +1185,8 @@
             {
               "name": "complexity-analyzer",
               "filename": "complexity-analyzer.md",
-              "filepath": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/.claude/agents/analysis/complexity-analyzer.md",
-              "relative_path": "DMBAlmanacProjectFolder/.claude/agents/analysis/complexity-analyzer.md",
+              "filepath": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/analysis/complexity-analyzer.md",
+              "relative_path": "projects/dmb-almanac/app/.claude/agents/analysis/complexity-analyzer.md",
               "scope": "project",
               "category": "analysis",
               "model": "default",

@@ -70,7 +70,7 @@ HOW TO RUN
 ================================================================================
 
 STEP 1: Enter Scraper Directory
-   cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+   cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper
 
 STEP 2: Test First (Recommended)
    npm run test:releases
@@ -163,16 +163,16 @@ FILE LOCATIONS
 ================================================================================
 
 Scraper Code:
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/releases.ts
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/releases.ts
 
 Test Script:
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/test-releases-scraper.ts
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/test-releases-scraper.ts
 
 Output (when created):
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/output/releases.json
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/output/releases.json
 
 Checkpoint (when created):
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/cache/checkpoint_releases.json
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/cache/checkpoint_releases.json
 
 Helper Utilities:
   src/utils/cache.ts - HTML caching

@@ -1,7 +1,7 @@
 # Releases Scraper - Code Reference Guide
 
 ## Source File
-**Path**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/releases.ts`
+**Path**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/releases.ts`
 **Lines**: 418
 **Language**: TypeScript
 

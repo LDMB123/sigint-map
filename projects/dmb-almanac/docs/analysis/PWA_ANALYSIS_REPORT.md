@@ -24,7 +24,7 @@ The DMB Almanac PWA has strong foundational PWA support with manifest configurat
 ## 1. FILE HANDLING API ANALYSIS
 
 ### Current Implementation
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/static/manifest.json:206-233`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/static/manifest.json:206-233`
 
 ```json
 "file_handlers": [
@@ -42,13 +42,13 @@ The DMB Almanac PWA has strong foundational PWA support with manifest configurat
 ```
 
 ### JS Implementation
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/utils/fileHandler.ts:1-85`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/utils/fileHandler.ts:1-85`
 
 - `isFileHandlingSupported()` - Checks for `launchQueue` in window
 - `getFilesFromLaunchQueue()` - Sets consumer callback for file launch
 - Full file validation with security checks (10MB limit, extension validation)
 
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/open-file/+page.svelte`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/routes/open-file/+page.svelte`
 - Handles file launch via launchQueue
 - Full JSON schema validation for shows, songs, batches
 
@@ -94,7 +94,7 @@ export const fileHandlingManager = {
 ## 2. PROTOCOL HANDLERS ANALYSIS
 
 ### Current Implementation
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/static/manifest.json:235-240`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/static/manifest.json:235-240`
 
 ```json
 "protocol_handlers": [
@@ -106,7 +106,7 @@ export const fileHandlingManager = {
 ```
 
 ### JS Implementation
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/protocol/+page.svelte`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/routes/protocol/+page.svelte`
 
 - Route exists at `/protocol?uri=%s`
 - Checks for direct protocol handler invocation
@@ -184,7 +184,7 @@ export async function registerProtocolHandler() {
 ## 3. BACKGROUND SYNC API ANALYSIS
 
 ### Current Implementation
-**Service Worker:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/static/sw.js:1331-1472`
+**Service Worker:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/static/sw.js:1331-1472`
 
 ```javascript
 // Sync event listener (line 1331)
@@ -205,10 +205,10 @@ self.addEventListener('periodicsync', (event) => {
 async function processSyncQueue() { ... }
 ```
 
-**Types:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/background-sync.d.ts`
+**Types:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/types/background-sync.d.ts`
 
 ### App-Level Integration
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/+layout.svelte:50-54`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/routes/+layout.svelte:50-54`
 
 ```typescript
 // Background Sync registration
@@ -217,7 +217,7 @@ registerBackgroundSync().catch((err) => {
 });
 ```
 
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/services/offlineMutationQueue.ts`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/services/offlineMutationQueue.ts`
 
 - Offline mutation queue management
 - Service worker message handling for queue sync
@@ -285,7 +285,7 @@ await periodicSyncManager.initialize();
 ## 4. PUSH NOTIFICATIONS ANALYSIS
 
 ### Current Implementation
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/pwa/push-manager.ts:38-274`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/pwa/push-manager.ts:38-274`
 
 Full Web Push API implementation:
 - `requestPermission()` - Notification permission
@@ -295,14 +295,14 @@ Full Web Push API implementation:
 - `saveSubscriptionToServer()` - Server integration
 - Base64/Uint8Array conversion utilities
 
-**Service Worker:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/static/sw.js:1273-1326`
+**Service Worker:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/static/sw.js:1273-1326`
 
 ```javascript
 self.addEventListener('push', (event) => { ... });
 self.addEventListener('notificationclick', (event) => { ... });
 ```
 
-**Component:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/pwa/PushNotifications.svelte`
+**Component:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/components/pwa/PushNotifications.svelte`
 
 Comprehensive UI with:
 - Permission state display
@@ -362,7 +362,7 @@ self.addEventListener('notificationclick', (event) => {
 ## 5. BADGING API ANALYSIS
 
 ### Current Implementation
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/utils/appBadge.ts:1-64`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/utils/appBadge.ts:1-64`
 
 ```typescript
 export async function setAppBadge(count: number): Promise<boolean>
@@ -425,7 +425,7 @@ $effect(() => {
 ## 6. LAUNCH HANDLER API ANALYSIS
 
 ### Current Implementation
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/static/manifest.json:242-244`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/static/manifest.json:242-244`
 
 ```json
 "launch_handler": {
@@ -497,7 +497,7 @@ await launchHandlerManager.initialize();
 ## 7. WINDOW CONTROLS OVERLAY ANALYSIS
 
 ### Current Implementation
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/static/manifest.json:9-9`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/static/manifest.json:9-9`
 
 ```json
 "display_override": ["window-controls-overlay", "standalone", "minimal-ui"]
@@ -548,7 +548,7 @@ await launchHandlerManager.initialize();
 ## 8. SHARE TARGET ANALYSIS
 
 ### Current Implementation
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/static/manifest.json:199-205`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/static/manifest.json:199-205`
 
 ```json
 "share_target": {
@@ -604,7 +604,7 @@ await launchHandlerManager.initialize();
 ## 9. SCOPE EXTENSIONS ANALYSIS
 
 ### Current Implementation
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/static/manifest.json:250-254`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/static/manifest.json:250-254`
 
 ```json
 "scope_extensions": [
@@ -641,7 +641,7 @@ await launchHandlerManager.initialize();
 ## 10. SERVICE WORKER ANALYSIS
 
 ### Current Strengths
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/static/sw.js`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/static/sw.js`
 
 - Comprehensive caching strategies (CacheFirst, NetworkFirst, StaleWhileRevalidate)
 - Cache versioning and cleanup
@@ -669,7 +669,7 @@ await launchHandlerManager.initialize();
 ## 11. SVELTE 5 REACTIVE INTEGRATION OPPORTUNITIES
 
 ### Current Store-Based Architecture
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/stores/pwa.ts:1-186`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/stores/pwa.ts:1-186`
 
 Svelte 5 stores for:
 - `isSupported` - Service worker support
@@ -712,7 +712,7 @@ export const isPwaReady = derived(
 
 ### Current Implementation
 
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/pwa/install-manager.ts:52-332`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/pwa/install-manager.ts:52-332`
 
 Comprehensive install prompt management:
 - `beforeinstallprompt` capture
@@ -722,7 +722,7 @@ Comprehensive install prompt management:
 - Time-on-site requirements
 - iOS Safari detection
 
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/pwa/InstallPrompt.svelte`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/components/pwa/InstallPrompt.svelte`
 
 - Beautiful install banner UI
 - Responsive design

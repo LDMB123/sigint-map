@@ -13,7 +13,7 @@
 Service worker has `periodicsync` event listener but it's never registered, so data never auto-refreshes.
 
 ### Location
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/+layout.svelte`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/routes/+layout.svelte`
 
 **Current Code (lines 50-54):**
 ```typescript
@@ -75,9 +75,9 @@ if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototyp
 Offline mutation queue exists but users have no visual indicator of pending changes.
 
 ### Location
-**File 1:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/+layout.svelte`
+**File 1:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/routes/+layout.svelte`
 
-**File 2:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/services/offlineMutationQueue.ts`
+**File 2:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/services/offlineMutationQueue.ts`
 
 ### Solution
 
@@ -170,9 +170,9 @@ navigator.clearAppBadge() # Should remove badge
 Users can open files via file handler, but can't save edits back to original file.
 
 ### Location
-**File 1:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/utils/fileHandler.ts`
+**File 1:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/utils/fileHandler.ts`
 
-**File 2:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/open-file/+page.svelte`
+**File 2:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/routes/open-file/+page.svelte`
 
 ### Solution
 
@@ -388,7 +388,7 @@ Example in any show/song editing component:
 PWA configured for window controls overlay but no CSS styling exists.
 
 ### Location
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/app.css`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/app.css`
 
 ### Solution
 

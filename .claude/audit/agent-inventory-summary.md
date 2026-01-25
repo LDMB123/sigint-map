@@ -135,11 +135,11 @@ These agents have the same `name` across different scopes (user/project). Claude
 
 ### `qa-engineer`
 - **user**: `/Users/louisherman/.claude/agents/testing/QA Engineer.md`
-- **project**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/08-qa-engineer.md`
+- **project**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/08-qa-engineer.md`
 
 ### `performance-optimizer`
 - **user**: `/Users/louisherman/.claude/agents/engineering/Performance Optimizer.md`
-- **project**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/07-performance-optimizer.md`
+- **project**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/07-performance-optimizer.md`
 
 ---
 

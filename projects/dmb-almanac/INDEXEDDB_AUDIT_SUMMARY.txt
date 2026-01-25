@@ -434,6 +434,6 @@ Success Criteria
 Report Generated: 2026-01-23
 Analyzer: IndexedDB Error Handling Specialist
 Status: Ready for implementation
-Files Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+Files Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
 
 Next: Schedule implementation sprint kickoff

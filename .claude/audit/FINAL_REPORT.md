@@ -268,7 +268,7 @@ Every agent/skill returns:
 - Web Platform APIs, Chromium features
 - General-purpose analyzers/validators
 
-**Project-Level** (`DMBAlmanacProjectFolder/.claude/`):
+**Project-Level** (`projects/dmb-almanac/app/.claude/`):
 - Project-specific agents (DMB domain experts)
 - Project-specific skills
 - Domain team structures

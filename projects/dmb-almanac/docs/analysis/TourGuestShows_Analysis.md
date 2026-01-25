@@ -18,7 +18,7 @@ This creates incomplete guest collaboration history data.
 
 ### What IS Being Scraped
 
-**From `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/shows.ts`** (Lines 220-230, 298-315)
+**From `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/shows.ts`** (Lines 220-230, 298-315)
 
 ```typescript
 // In individual show pages, guest links are found:
@@ -305,7 +305,7 @@ The schema DOES support per-appearance instruments via the `instruments` TEXT fi
 ### Implementation Requirements
 
 **Scraper Location:**
-`/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/guest-shows.ts`
+`/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/guest-shows.ts`
 
 **Key Steps:**
 ```typescript
@@ -361,7 +361,7 @@ interface GuestShowDetails {
 
 ### HTML Cache Status
 
-**Location:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/cache/`
+**Location:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/cache/`
 
 **Current Cached Pages:**
 - 6,427 total cached HTML files
@@ -413,7 +413,7 @@ scraper/src/scripts/import-guest-shows.ts
 ## Recommendations
 
 ### Priority 1: Create Guest Shows Scraper
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/guest-shows.ts`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/guest-shows.ts`
 
 - Scrape TourGuestShows.aspx for each guest
 - Extract full appearance history with per-song instruments
@@ -425,7 +425,7 @@ scraper/src/scripts/import-guest-shows.ts
 **Complexity:** Moderate (HTML parsing of table structure)
 
 ### Priority 2: Enhance Guest Data Type
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/types.ts`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/types.ts`
 
 Update `ScrapedGuestAppearance`:
 ```typescript
@@ -447,7 +447,7 @@ interface ScrapedGuestAppearance {
 ```
 
 ### Priority 3: Update Import Logic
-**File:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scripts/import-data.ts`
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scripts/import-data.ts`
 
 Populate:
 - `guest_appearances.instruments` (per-appearance)
@@ -503,7 +503,7 @@ Add database views for:
 ## Next Steps
 
 1. **Review** this analysis with the team
-2. **Create** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/guest-shows.ts`
+2. **Create** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/guest-shows.ts`
 3. **Fetch** sample TourGuestShows.aspx pages manually to understand HTML structure
 4. **Parse** appearance history table (likely HTML table)
 5. **Extract** per-song instrument data
@@ -536,5 +536,5 @@ BAND_MEMBER_GIDS = ["1", "2", "94", "75", "104", "3", "ds"]
 ---
 
 **Report Generated:** 2026-01-23
-**Repository:** /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte
+**Repository:** /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app
 **Analysis Scope:** TourGuestShows.aspx page and guest data collection

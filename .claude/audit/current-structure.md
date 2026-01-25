@@ -14,7 +14,7 @@
 ├── .claude/ (6.6MB - ACTIVE)
 ├── .claude_backup_20260125_015458/ (6.9MB)
 ├── .claude_backup_skills_20260125_015831/ (284KB)
-├── DMBAlmanacProjectFolder/ (2.0GB)
+├── projects/dmb-almanac/app/ (2.0GB)
 ├── gemini-mcp-server/ (116KB)
 ├── AGENT_VALIDATION_REPORT.md (12K)
 ├── AUDIT_COMPLETION_REPORT.md (16K)
@@ -173,12 +173,12 @@
 
 ---
 
-## DMBAlmanacProjectFolder/ (2.0GB)
+## projects/dmb-almanac/app/ (2.0GB)
 
 ### Top-Level Structure
 
 ```
-DMBAlmanacProjectFolder/
+projects/dmb-almanac/app/
 ├── [107 MARKDOWN FILES AT ROOT] ⚠️
 ├── dmb-almanac-svelte/ (1.9GB - main app)
 ├── docs/ (reference documentation)
@@ -338,7 +338,7 @@ gemini-mcp-server/
 
 | Directory | Size | % of Total |
 |-----------|------|------------|
-| DMBAlmanacProjectFolder/ | 2.0GB | 95.2% |
+| projects/dmb-almanac/app/ | 2.0GB | 95.2% |
 | - node_modules/ | 226MB | 10.8% |
 | - build/ | 48MB | 2.3% |
 | - .svelte-kit/ | 51MB | 2.4% |
@@ -393,7 +393,7 @@ gemini-mcp-server/
 1. **File Organization**: Too many files at wrong levels (root, DMB root)
 2. **Backup Strategy**: No clear archival process (accumulating at root)
 3. **Documentation**: No single source of truth (fragmented across 5+ locations)
-4. **Naming Consistency**: "DMBAlmanacProjectFolder" vs "gemini-mcp-server"
+4. **Naming Consistency**: "projects/dmb-almanac/app" vs "gemini-mcp-server"
 5. **Gitignore**: Missing .gitignore (build artifacts present)
 
 ### Reorganization Readiness

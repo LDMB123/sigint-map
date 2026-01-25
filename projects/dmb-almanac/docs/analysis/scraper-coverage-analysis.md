@@ -1,7 +1,7 @@
 # DMBAlmanac.com Scraper Coverage Analysis
 
 **Analysis Date:** January 23, 2026
-**Scraper Location:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/`
+**Scraper Location:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/`
 
 ---
 

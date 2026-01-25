@@ -2,7 +2,7 @@
 
 **Date**: January 23, 2026
 **Status**: Complete audit of existing scraper implementations
-**Location**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/`
+**Location**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/`
 
 ---
 

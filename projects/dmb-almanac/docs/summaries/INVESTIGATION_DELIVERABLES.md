@@ -335,8 +335,8 @@ Specific files:
 - `QUICK_REFERENCE.md` - Developer reference
 
 Related source code:
-- `DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/tours.ts` - Current scraper
-- `DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/types.ts` - Type definitions
+- `projects/dmb-almanac/app/scraper/src/scrapers/tours.ts` - Current scraper
+- `projects/dmb-almanac/app/scraper/src/types.ts` - Type definitions
 
 ---
 

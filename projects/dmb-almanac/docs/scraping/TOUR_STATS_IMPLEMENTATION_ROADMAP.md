@@ -642,5 +642,5 @@ assert(tour.citiesVisited > 0);
 
 - **Investigation Report:** `/Users/louisherman/ClaudeCodeProjects/TOUR_STATISTICS_INVESTIGATION.md`
 - **Extraction Guide:** `/Users/louisherman/ClaudeCodeProjects/TOUR_STATS_EXTRACTION_GUIDE.md`
-- **Current Scraper:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/tours.ts`
-- **Type Definitions:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/types.ts`
+- **Current Scraper:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/tours.ts`
+- **Type Definitions:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/types.ts`

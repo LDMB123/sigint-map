@@ -410,7 +410,7 @@ This audit comprehensively surveyed **dmbalmanac.com** to identify all data sour
 
 ### Scraper Files Located
 
-**Path**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/`
+**Path**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/`
 
 ```
 shows.ts              - Individual show setlists (TourShowSet.aspx)

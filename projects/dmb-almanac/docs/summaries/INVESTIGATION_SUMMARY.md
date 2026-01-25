@@ -335,7 +335,7 @@ The investigation reveals **significant untapped data** available on dmbalmanac.
 ├── TOUR_STATISTICS_INVESTIGATION.md (detailed analysis)
 ├── TOUR_STATS_EXTRACTION_GUIDE.md (implementation reference)
 ├── TOUR_STATS_IMPLEMENTATION_ROADMAP.md (project plan)
-└── DMBAlmanacProjectFolder/
+└── projects/dmb-almanac/app/
     └── dmb-almanac-svelte/
         └── scraper/src/
             ├── scrapers/tours.ts (current scraper)
