@@ -131,7 +131,10 @@
       "Bash(xargs -I {} git mv {} app/docs/analysis/service-worker/)",
       "Bash(xargs -I {} git mv {} app/docs/analysis/database/)",
       "Bash(xargs -I {} git mv {} app/docs/analysis/misc/)",
-      "Bash(for dir in app/docs/analysis/*/)"
+      "Bash(for dir in app/docs/analysis/*/)",
+      "Bash(for dir in rust sveltekit wasm)",
+      "Bash(do if [ -d \".claude/agents/$dir\" ])",
+      "Bash(then git rm -r \".claude/agents/$dir\")"
     ],
     "deny": []
   }
