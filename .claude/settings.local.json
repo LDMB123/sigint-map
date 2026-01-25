@@ -125,7 +125,13 @@
       "Bash(git commit:*)",
       "Bash(git checkout:*)",
       "Bash(git mv:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(xargs -I {} git mv {} app/docs/analysis/indexeddb/)",
+      "Bash(xargs -I {} git mv {} app/docs/analysis/voice/)",
+      "Bash(xargs -I {} git mv {} app/docs/analysis/service-worker/)",
+      "Bash(xargs -I {} git mv {} app/docs/analysis/database/)",
+      "Bash(xargs -I {} git mv {} app/docs/analysis/misc/)",
+      "Bash(for dir in app/docs/analysis/*/)"
     ],
     "deny": []
   }
