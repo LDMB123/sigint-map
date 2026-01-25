@@ -137,7 +137,8 @@
       "Bash(then git rm -r \".claude/agents/$dir\")",
       "Bash(git rev-list:*)",
       "Bash(npm run test:*)",
-      "Bash(for dir in docs/analysis/*/)"
+      "Bash(for dir in docs/analysis/*/)",
+      "Bash(.claude/scripts/validate-structure.sh:*)"
     ],
     "deny": []
   }

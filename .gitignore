@@ -102,5 +102,13 @@ Desktop.ini
 # Vite
 .vite/
 
+# Security - Never commit these
+**/secrets.*
+**/credentials.*
+**/.env.production
+*.key
+*.pem
+*.crt
+
 # Misc
 .DS_Store
