@@ -18,13 +18,13 @@
 
 ## Projects
 
-- **[DMB Almanac](./DMBAlmanacProjectFolder/)** - Dave Matthews Band concert database PWA
+- **[DMB Almanac](./projects/dmb-almanac/)** - Dave Matthews Band concert database PWA
   - SvelteKit 2 + Svelte 5
   - 6 Rust WASM modules
   - SQLite + Dexie.js/IndexedDB
   - 2,800+ documented shows
 
-- **[Gemini MCP Server](./gemini-mcp-server/)** - Google Gemini API integration via MCP
+- **[Gemini MCP Server](./projects/gemini-mcp-server/)** - Google Gemini API integration via MCP
 
 ---
 
@@ -32,7 +32,7 @@
 
 **Date:** January 23, 2026
 **Status:** ✅ Complete audit with 4 implementation specifications
-**Location:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/`
+**Location:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/`
 
 ---
 
@@ -246,7 +246,7 @@ Before deployment:
 
 ### TypeScript Interface Layer
 ```
-/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/
   dmb-almanac-svelte/src/lib/wasm/
   ├── advanced-modules.ts (976 lines) ← PRIMARY DEFINITIONS
   ├── types.ts (413 lines)
