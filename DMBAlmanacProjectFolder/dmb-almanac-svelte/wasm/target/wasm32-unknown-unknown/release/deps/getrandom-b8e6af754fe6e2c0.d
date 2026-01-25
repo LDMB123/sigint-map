@@ -1,0 +1,10 @@
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/target/wasm32-unknown-unknown/release/deps/getrandom-b8e6af754fe6e2c0.d: /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/lib.rs /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/error.rs /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/util.rs /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/js.rs
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/target/wasm32-unknown-unknown/release/deps/libgetrandom-b8e6af754fe6e2c0.rlib: /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/lib.rs /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/error.rs /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/util.rs /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/js.rs
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/target/wasm32-unknown-unknown/release/deps/libgetrandom-b8e6af754fe6e2c0.rmeta: /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/lib.rs /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/error.rs /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/util.rs /Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/js.rs
+
+/Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/lib.rs:
+/Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/error.rs:
+/Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/util.rs:
+/Users/louisherman/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/getrandom-0.2.17/src/js.rs:

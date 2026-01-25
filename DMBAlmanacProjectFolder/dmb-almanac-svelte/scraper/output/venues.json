@@ -1,0 +1,28 @@
+{
+  "scrapedAt": "2026-01-10T12:00:00.000Z",
+  "source": "https://www.dmbalmanac.com",
+  "totalItems": 21,
+  "venues": [
+    {"originalId": "1018", "name": "Cellairis Amphitheatre at Lakewood", "city": "Atlanta", "state": "GA", "country": "USA", "venueType": "amphitheatre", "totalShows": 45},
+    {"originalId": "31", "name": "The Gorge Amphitheatre", "city": "George", "state": "WA", "country": "USA", "venueType": "amphitheatre", "totalShows": 72},
+    {"originalId": "1585", "name": "Majesty of the Seas", "city": "Miami", "state": "FL", "country": "USA", "venueType": "cruise", "totalShows": 2},
+    {"originalId": "1586", "name": "Sovereign of the Seas", "city": "Miami", "state": "FL", "country": "USA", "venueType": "cruise", "totalShows": 1},
+    {"originalId": "5908", "name": "Etihad Park (Yas Island)", "city": "Abu Dhabi", "state": "", "country": "UAE", "venueType": "outdoor", "totalShows": 1},
+    {"originalId": "1654", "name": "Festival Theatre (Adelaide Festival Centre)", "city": "Adelaide", "state": "", "country": "AUS", "venueType": "theatre", "totalShows": 2},
+    {"originalId": "1771", "name": "Tempodrom", "city": "Berlin", "state": "", "country": "GER", "venueType": "arena", "totalShows": 3},
+    {"originalId": "31133", "name": "Geraldine's (Hotel Van Zandt)", "city": "Austin", "state": "TX", "country": "USA", "venueType": "club", "totalShows": 1},
+    {"originalId": "32", "name": "Alpine Valley Music Theatre", "city": "East Troy", "state": "WI", "country": "USA", "venueType": "amphitheatre", "totalShows": 38},
+    {"originalId": "33", "name": "Saratoga Performing Arts Center", "city": "Saratoga Springs", "state": "NY", "country": "USA", "venueType": "amphitheatre", "totalShows": 52},
+    {"originalId": "34", "name": "Merriweather Post Pavilion", "city": "Columbia", "state": "MD", "country": "USA", "venueType": "amphitheatre", "totalShows": 48},
+    {"originalId": "35", "name": "Deer Creek Music Center", "city": "Noblesville", "state": "IN", "country": "USA", "venueType": "amphitheatre", "totalShows": 42},
+    {"originalId": "36", "name": "Madison Square Garden", "city": "New York", "state": "NY", "country": "USA", "venueType": "arena", "totalShows": 35},
+    {"originalId": "37", "name": "Red Rocks Amphitheatre", "city": "Morrison", "state": "CO", "country": "USA", "venueType": "amphitheatre", "totalShows": 28},
+    {"originalId": "38", "name": "Jiffy Lube Live", "city": "Bristow", "state": "VA", "country": "USA", "venueType": "amphitheatre", "totalShows": 55},
+    {"originalId": "39", "name": "Shoreline Amphitheatre", "city": "Mountain View", "state": "CA", "country": "USA", "venueType": "amphitheatre", "totalShows": 22},
+    {"originalId": "40", "name": "Hollywood Bowl", "city": "Los Angeles", "state": "CA", "country": "USA", "venueType": "amphitheatre", "totalShows": 15},
+    {"originalId": "41", "name": "Wrigley Field", "city": "Chicago", "state": "IL", "country": "USA", "venueType": "stadium", "totalShows": 8},
+    {"originalId": "42", "name": "Fenway Park", "city": "Boston", "state": "MA", "country": "USA", "venueType": "stadium", "totalShows": 6},
+    {"originalId": "43", "name": "Citi Field", "city": "New York", "state": "NY", "country": "USA", "venueType": "stadium", "totalShows": 4},
+    {"originalId": "1", "name": "Trax", "city": "Charlottesville", "state": "VA", "country": "USA", "venueType": "club", "totalShows": 85}
+  ]
+}

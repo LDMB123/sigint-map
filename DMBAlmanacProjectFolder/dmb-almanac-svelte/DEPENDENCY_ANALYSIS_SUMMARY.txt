@@ -1,0 +1,195 @@
+================================================================================
+DMB ALMANAC SVELTE - DEPENDENCY & OPTIMIZATION ANALYSIS
+Generated: January 21, 2026
+================================================================================
+
+PROJECT OVERVIEW
+================================================================================
+- Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte
+- Framework: SvelteKit 2 + Svelte 5
+- Target: Chromium 143+, Apple Silicon
+- Node Modules Size: 123 MB (dev environment only)
+- Production Dependencies: 5 packages
+- Dev Dependencies: 15 packages
+
+KEY FINDINGS
+================================================================================
+
+1. OUTDATED PACKAGES (4 Found)
+   - @sveltejs/adapter-auto: 3.3.1 -> 7.0.0 (Major, High Risk)
+   - vite: 6.4.1 -> 7.3.1 (Major, Medium Risk)
+   - @sveltejs/vite-plugin-svelte: 5.1.1 -> 6.2.4 (Major, Medium Risk)
+   - eslint-plugin-svelte: 2.46.1 -> 3.14.0 (Major, Low Risk)
+
+2. EXCELLENT PRACTICES DETECTED
+   ✓ No heavy utility libraries (no lodash, moment, axios, uuid)
+   ✓ Uses native browser APIs (Intl, fetch, ResizeObserver, IndexedDB)
+   ✓ No polyfills needed (targets es2022 only)
+   ✓ No duplicate packages found
+   ✓ No security vulnerabilities detected
+
+3. OPTIMIZATION OPPORTUNITIES
+
+   PRIORITY 1 (High Impact, Low Effort):
+   - Update eslint-plugin-svelte to 3.14.0 (30 min)
+   - Expected: Security patches, improved linting
+
+   PRIORITY 2 (Medium Impact, Medium Effort):
+   - Replace `import * as d3 from 'd3'` with specific module imports
+   - Files affected: 8 visualization files
+   - Expected savings: 30-50 KB gzipped (30-40% D3 bundle reduction)
+   - Effort: 3-4 hours
+
+   PRIORITY 3 (High Impact, High Effort):
+   - Plan vite@7 + @sveltejs/adapter-auto@7 migration
+   - Requires: Testing, breaking change review
+   - Effort: 4-8 hours
+
+   PRIORITY 4 (Optional - Only if bandwidth critical):
+   - Replace Dexie with native IndexedDB
+   - Savings: 400 KB gzipped
+   - Risk: High (2-3 week refactoring)
+   - Verdict: Not recommended unless critical
+
+DEPENDENCY ANALYSIS
+================================================================================
+
+PRODUCTION DEPENDENCIES (5 packages, 123 MB total)
+
+  better-sqlite3@12.6.2
+    Size: 12 MB (server-only, not in client bundle)
+    Status: Fully maintained (updated 5 days ago)
+    Verdict: KEEP - Essential for SQLite backend
+    
+  d3@7.9.0
+    Size: 871 KB (100-150 KB gzipped)
+    Status: Maintained
+    Verdict: OPTIMIZE - Remove wildcard imports
+    
+  d3-sankey@0.12.3
+    Size: 46 KB (included in d3)
+    Status: Maintained
+    Verdict: KEEP - Specialized for TransitionFlow viz
+    
+  dexie@4.2.1
+    Size: 3.0 MB (400-600 KB gzipped)
+    Status: Maintained (3 months ago)
+    Verdict: KEEP - Eases IndexedDB complexity for user data
+    
+  topojson-client@3.1.0
+    Size: 67 KB
+    Status: Maintained
+    Verdict: KEEP - Required for TourMap geographic viz
+
+BUNDLE SIZE ESTIMATE
+================================================================================
+Current estimated production build (gzipped):
+
+  Main chunk (SSR):             115 KB
+  Visualization chunks:        175-225 KB
+  Client app:                   95 KB
+  ─────────────────────────────────────
+  TOTAL:                       385-435 KB
+
+After D3 optimization:          355-405 KB (30-50 KB savings)
+
+NATIVE API USAGE VERIFICATION
+================================================================================
+
+✓ Date handling: Uses Intl.DateTimeFormat instead of moment/date-fns
+✓ Array operations: Uses native ES2024 methods instead of lodash
+✓ HTTP requests: Uses fetch API instead of axios
+✓ UUIDs: Not used (could use crypto.randomUUID() if needed)
+✓ Positioning: Uses CSS instead of @floating-ui
+✓ Class binding: Uses template literals instead of classnames/clsx
+✓ Database: IndexedDB wrapper (Dexie) instead of custom storage
+
+No replaceable heavy dependencies found!
+
+SECURITY STATUS
+================================================================================
+✓ All dependencies actively maintained
+✓ No known CVEs (Common Vulnerabilities)
+✓ No deprecated packages
+✓ Regular updates recommended (npm audit monthly)
+
+CHROMIUM 143+ COMPLIANCE
+================================================================================
+✓ Target: es2022 (no IE11 support)
+✓ No legacy polyfills needed
+✓ Modern CSS features used (oklch, custom properties)
+✓ Modern APIs used:
+  - ResizeObserver (responsive charts)
+  - matchMedia (reduced motion detection)
+  - fetch API (data loading)
+  - IndexedDB (offline storage)
+
+ACTION ITEMS
+================================================================================
+
+IMMEDIATE (This week):
+  1. Update eslint-plugin-svelte
+     npm install -D eslint-plugin-svelte@latest
+     npm run check && npm run lint
+
+  2. Plan D3 optimization
+     Review: D3_OPTIMIZATION_GUIDE.md (included)
+     Effort: 3-4 hours
+     Impact: 30-50 KB savings
+
+NEXT MONTH:
+  3. Test vite@7 upgrade in staging
+     npm install -D vite@latest
+     npm run build && npm run preview
+     
+  4. Test @sveltejs/adapter-auto@7 upgrade
+     npm install -D @sveltejs/adapter-auto@latest
+     Full regression testing required
+
+QUARTERLY:
+  5. Run `npm audit` and review new package versions
+  6. Monitor D3 v8 beta for major features
+
+DOCUMENTATION GENERATED
+================================================================================
+
+Files created in project root:
+
+  DEPENDENCY_ANALYSIS.md (11 KB)
+    - Complete dependency audit
+    - Size breakdown
+    - Recommendations with priorities
+    - Security assessment
+    - Bundle size estimates
+
+  D3_OPTIMIZATION_GUIDE.md (5.0 KB)
+    - Step-by-step D3 import optimization
+    - Files to modify
+    - Testing checklist
+    - Rollback plan
+
+SCORING
+================================================================================
+
+Overall Health Score: 7.5/10
+
+  Dependencies:      8/10  (4 outdated, but well-chosen)
+  Security:          9/10  (No CVEs, actively maintained)
+  Performance:       8/10  (Good bundle, D3 optimization possible)
+  Practices:        10/10  (Excellent use of native APIs)
+  Maintenance:       7/10  (Regular updates needed)
+
+NEXT STEPS
+================================================================================
+
+1. Read: DEPENDENCY_ANALYSIS.md (this directory)
+2. Read: D3_OPTIMIZATION_GUIDE.md (this directory)
+3. Execute Priority 1 action (Update eslint-plugin-svelte)
+4. Plan Priority 2 action (D3 tree-shaking)
+5. Schedule Priority 3 action (Vite upgrade)
+
+For questions or detailed analysis, see the full reports.
+
+================================================================================
+END ANALYSIS REPORT
+================================================================================

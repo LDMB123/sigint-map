@@ -1,0 +1,814 @@
+/**
+ * Scoped CSS Patterns - Chrome 118+
+ *
+ * @scope Rules for Component Isolation
+ *
+ * Benefits of @scope:
+ * - Component style isolation without BEM naming conventions
+ * - Prevent style leakage to nested components
+ * - Explicit scope boundaries with "to" keyword
+ * - Eliminates need for CSS Modules or CSS-in-JS for basic scoping
+ * - Reduces specificity conflicts in large applications
+ * - Cleaner, more maintainable CSS for component-based architectures
+ *
+ * Browser Support: Chrome 118+
+ * MDN: https://developer.mozilla.org/en-US/docs/Web/CSS/@scope
+ */
+
+/* ============================================================================
+ * 1. CARD COMPONENT SCOPING
+ * ============================================================================
+ *
+ * @scope (.card) to (.card-content)
+ * Syntax: @scope (root selector) to (boundary selector)
+ *
+ * Benefit: Styles apply to .card and its descendants, but NOT inside
+ * .card-content (useful for excluding nested components)
+ */
+
+@scope (.card) to (.card-content) {
+  /* :scope refers to the scoped element itself (.card) */
+  :scope {
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--card-border, #e5e7eb);
+    border-radius: var(--card-radius, 8px);
+    box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.1));
+    overflow: hidden;
+    transition: box-shadow 0.2s ease-in-out;
+  }
+
+  /* Hover state - scoped only to this card */
+  :scope:hover {
+    box-shadow: var(--card-shadow-hover, 0 4px 12px rgba(0, 0, 0, 0.15));
+  }
+
+  /* All headings inside card (except in nested components) */
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    margin-block-end: 0.5rem;
+    color: var(--card-heading-color, #1f2937);
+    line-height: 1.4;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  /* Paragraph text - does not apply inside .card-content */
+  p {
+    margin: 0;
+    margin-block-end: 1rem;
+    color: var(--card-text-color, #4b5563);
+    line-height: 1.6;
+    font-size: 0.95rem;
+  }
+
+  /* Last paragraph in card has no margin */
+  p:last-child {
+    margin-block-end: 0;
+  }
+
+  /* Links inside card - scoped styling */
+  a {
+    color: var(--card-link-color, #0066cc);
+    text-decoration: none;
+    transition: color 0.15s ease-in-out;
+  }
+
+  a:hover {
+    color: var(--card-link-hover, #0052a3);
+    text-decoration: underline;
+  }
+
+  /* Images responsive within card */
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+}
+
+/* ============================================================================
+ * 2. FORM INPUT COMPONENT SCOPING
+ * ============================================================================
+ *
+ * @scope (form)
+ * Syntax: @scope (root selector) - no boundary means style until document end
+ *
+ * Benefit: Form-specific styling without affecting inputs outside the form
+ * Prevents global input styles from being overridden by mistake
+ */
+
+@scope (form) {
+  /* Form container styles */
+  :scope {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: var(--form-padding, 0);
+  }
+
+  /* Form field wrapper - common pattern */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Labels inside form */
+  label {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--form-label-color, #1f2937);
+    display: inline-block;
+    cursor: pointer;
+  }
+
+  /* Required field indicator */
+  label[for] {
+    padding-inline-end: 0.5rem;
+  }
+
+  label[aria-required="true"]::after {
+    content: " *";
+    color: var(--form-required-color, #dc2626);
+    font-weight: 600;
+  }
+
+  /* Input elements - text, email, password, etc */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  input[type="time"],
+  textarea,
+  select {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.95rem;
+    border: 1px solid var(--form-border, #d1d5db);
+    border-radius: 4px;
+    background-color: var(--form-bg, #ffffff);
+    color: var(--form-text, #1f2937);
+    font-family: inherit;
+    transition: all 0.15s ease-in-out;
+  }
+
+  /* Input focus state - keyboard navigation */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--form-focus-ring, #0066cc);
+    outline-offset: 1px;
+    border-color: var(--form-focus-ring, #0066cc);
+  }
+
+  /* Input hover state */
+  input:hover,
+  textarea:hover,
+  select:hover {
+    border-color: var(--form-border-hover, #9ca3af);
+  }
+
+  /* Textarea specific - allow resize */
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+    font-family: 'Monaco', 'Courier New', monospace;
+  }
+
+  /* Disabled state - applies to all inputs */
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
+    background-color: var(--form-disabled-bg, #f3f4f6);
+    color: var(--form-disabled-text, #9ca3af);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  /* Checkbox and radio custom styling */
+  input[type="checkbox"],
+  input[type="radio"] {
+    cursor: pointer;
+    margin-inline-end: 0.5rem;
+  }
+
+  /* Validation states */
+  input[aria-invalid="true"],
+  textarea[aria-invalid="true"],
+  select[aria-invalid="true"] {
+    border-color: var(--form-error-color, #dc2626);
+    background-color: var(--form-error-bg, #fef2f2);
+  }
+
+  input[aria-invalid="true"]:focus-visible,
+  textarea[aria-invalid="true"]:focus-visible,
+  select[aria-invalid="true"]:focus-visible {
+    outline-color: var(--form-error-color, #dc2626);
+  }
+
+  /* Error message styling */
+  .form-error {
+    font-size: 0.875rem;
+    color: var(--form-error-color, #dc2626);
+    margin-block-start: 0.25rem;
+    font-weight: 500;
+  }
+
+  /* Success message styling */
+  .form-success {
+    font-size: 0.875rem;
+    color: var(--form-success-color, #059669);
+    margin-block-start: 0.25rem;
+    font-weight: 500;
+  }
+
+  /* Helper text styling */
+  .form-hint {
+    font-size: 0.8125rem;
+    color: var(--form-hint-color, #6b7280);
+    margin-block-start: 0.25rem;
+    line-height: 1.5;
+  }
+
+  /* Form button styling within form */
+  button,
+  input[type="submit"],
+  input[type="reset"],
+  input[type="button"] {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--form-button-bg, #0066cc);
+    color: var(--form-button-text, #ffffff);
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+  }
+
+  button:hover,
+  input[type="submit"]:hover,
+  input[type="reset"]:hover,
+  input[type="button"]:hover {
+    background-color: var(--form-button-hover, #0052a3);
+  }
+
+  button:focus-visible,
+  input[type="submit"]:focus-visible,
+  input[type="reset"]:focus-visible,
+  input[type="button"]:focus-visible {
+    outline: 2px solid var(--form-focus-ring, #0066cc);
+    outline-offset: 2px;
+  }
+
+  /* Disabled button state */
+  button:disabled,
+  input[type="submit"]:disabled,
+  input[type="reset"]:disabled,
+  input[type="button"]:disabled {
+    background-color: var(--form-button-disabled, #d1d5db);
+    color: var(--form-button-disabled-text, #6b7280);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+/* ============================================================================
+ * 3. NAVIGATION COMPONENT SCOPING
+ * ============================================================================
+ *
+ * @scope (nav)
+ * Syntax: @scope (HTML element selector)
+ *
+ * Benefit: Navigation-specific styling without affecting other lists or links
+ * Perfect for header navigation that has unique styling requirements
+ */
+
+@scope (nav) {
+  /* Navigation container */
+  :scope {
+    display: flex;
+    align-items: center;
+    background-color: var(--nav-bg, #ffffff);
+    border-bottom: 1px solid var(--nav-border, #e5e7eb);
+    padding: var(--nav-padding, 1rem 0);
+  }
+
+  /* Primary list in navigation */
+  ul, ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: var(--nav-gap, 0.5rem);
+  }
+
+  /* List items - only in nav */
+  li {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Links in navigation - primary styling */
+  a {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    color: var(--nav-link-color, #374151);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.15s ease-in-out;
+    border-radius: 4px;
+    position: relative;
+  }
+
+  /* Navigation link hover state */
+  a:hover {
+    color: var(--nav-link-hover-color, #0066cc);
+    background-color: var(--nav-link-hover-bg, #f3f4f6);
+  }
+
+  /* Active navigation link */
+  a[aria-current="page"],
+  a.active {
+    color: var(--nav-link-active-color, #0066cc);
+    background-color: var(--nav-link-active-bg, #eff6ff);
+    font-weight: 600;
+  }
+
+  /* Optional underline for active link */
+  a[aria-current="page"]::after,
+  a.active::after {
+    content: "";
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline: 1rem;
+    height: 2px;
+    background-color: var(--nav-active-indicator, #0066cc);
+  }
+
+  /* Dropdown menu styling (if present) */
+  .nav-dropdown {
+    position: relative;
+  }
+
+  /* Dropdown button */
+  .nav-dropdown > a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Dropdown menu container */
+  .nav-menu {
+    position: absolute;
+    inset-block-start: 100%;
+    inset-inline-start: 0;
+    min-width: 200px;
+    background-color: var(--nav-dropdown-bg, #ffffff);
+    border: 1px solid var(--nav-dropdown-border, #e5e7eb);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-block-start: 0.5rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease-in-out;
+    z-index: 100;
+  }
+
+  /* Show dropdown on hover */
+  .nav-dropdown:hover .nav-menu {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Dropdown menu items */
+  .nav-menu a {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--nav-dropdown-link-color, #374151);
+    border-radius: 0;
+  }
+
+  .nav-menu a:hover {
+    background-color: var(--nav-dropdown-link-hover-bg, #f3f4f6);
+  }
+
+  /* Divider in dropdown */
+  .nav-divider {
+    height: 1px;
+    background-color: var(--nav-dropdown-border, #e5e7eb);
+    margin-block: 0.5rem;
+  }
+
+  /* Mobile responsive - hide on small screens */
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0;
+
+    ul, ol {
+      flex-direction: column;
+      width: 100%;
+      gap: 0;
+    }
+
+    a {
+      display: block;
+      padding-inline: 1rem;
+      padding-block: 0.75rem;
+      width: 100%;
+      border-radius: 0;
+    }
+
+    .nav-menu {
+      position: static;
+      opacity: 1;
+      visibility: visible;
+      border: none;
+      box-shadow: none;
+      margin-block-start: 0;
+      background-color: var(--nav-mobile-bg, #f9fafb);
+      padding-block: 0.5rem;
+    }
+  }
+}
+
+/* ============================================================================
+ * 4. MODAL / DIALOG COMPONENT SCOPING
+ * ============================================================================
+ *
+ * @scope (.modal) to (boundary selectors)
+ * Syntax: @scope (root) to (limit scope, exclude nested components)
+ *
+ * Benefit: Modal styles are completely isolated, preventing accidental
+ * styling of nested components like close buttons or form content
+ * Perfect for preventing "style leakage" in modals
+ */
+
+@scope (.modal) to (.modal-content, .modal-nested) {
+  /* Modal overlay/backdrop */
+  :scope {
+    position: fixed;
+    inset: 0;
+    background-color: var(--modal-overlay-bg, rgba(0, 0, 0, 0.5));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: modal-fade-in 0.3s ease-in-out;
+  }
+
+  /* Modal dialog box */
+  .modal-box {
+    background-color: var(--modal-bg, #ffffff);
+    border-radius: var(--modal-radius, 8px);
+    box-shadow: var(--modal-shadow, 0 10px 40px rgba(0, 0, 0, 0.3));
+    max-width: var(--modal-max-width, 500px);
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modal-slide-up 0.3s ease-in-out;
+    position: relative;
+  }
+
+  /* Modal header section */
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--modal-header-padding, 1.5rem);
+    border-block-end: 1px solid var(--modal-header-border, #e5e7eb);
+  }
+
+  .modal-header h1,
+  .modal-header h2 {
+    margin: 0;
+    color: var(--modal-title-color, #1f2937);
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  /* Close button in modal header */
+  .modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: transparent;
+    border: none;
+    color: var(--modal-close-color, #6b7280);
+    font-size: 1.5rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s ease-in-out;
+  }
+
+  .modal-close:hover {
+    background-color: var(--modal-close-hover-bg, #f3f4f6);
+    color: var(--modal-close-hover-color, #1f2937);
+  }
+
+  .modal-close:focus-visible {
+    outline: 2px solid var(--modal-focus-ring, #0066cc);
+    outline-offset: 2px;
+  }
+
+  /* Modal content section - NOT SCOPED (excluded via "to") */
+  .modal-content {
+    padding: var(--modal-body-padding, 1.5rem);
+    color: var(--modal-text-color, #4b5563);
+    line-height: 1.6;
+  }
+
+  /* Modal footer section */
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: var(--modal-footer-padding, 1.5rem);
+    border-block-start: 1px solid var(--modal-footer-border, #e5e7eb);
+    background-color: var(--modal-footer-bg, #f9fafb);
+  }
+
+  /* Modal action buttons */
+  .modal-action {
+    padding: 0.625rem 1.25rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+  }
+
+  .modal-action.primary {
+    background-color: var(--modal-button-primary-bg, #0066cc);
+    color: var(--modal-button-primary-text, #ffffff);
+  }
+
+  .modal-action.primary:hover {
+    background-color: var(--modal-button-primary-hover, #0052a3);
+  }
+
+  .modal-action.secondary {
+    background-color: var(--modal-button-secondary-bg, #e5e7eb);
+    color: var(--modal-button-secondary-text, #1f2937);
+  }
+
+  .modal-action.secondary:hover {
+    background-color: var(--modal-button-secondary-hover, #d1d5db);
+  }
+
+  .modal-action:focus-visible {
+    outline: 2px solid var(--modal-focus-ring, #0066cc);
+    outline-offset: 2px;
+  }
+
+  .modal-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* ============================================================================
+ * ANIMATION DEFINITIONS FOR SCOPED COMPONENTS
+ * ============================================================================
+ */
+
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+ * CUSTOM PROPERTIES / CSS VARIABLES FOR SCOPED PATTERNS
+ * ============================================================================
+ *
+ * Define these at :root or component level to customize scoped components
+ * Example: --card-bg, --form-label-color, --nav-link-hover-color, etc.
+ */
+
+:root {
+  /* Card component variables */
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --card-radius: 8px;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --card-heading-color: #1f2937;
+  --card-text-color: #4b5563;
+  --card-link-color: #0066cc;
+  --card-link-hover: #0052a3;
+
+  /* Form variables */
+  --form-label-color: #1f2937;
+  --form-border: #d1d5db;
+  --form-bg: #ffffff;
+  --form-text: #1f2937;
+  --form-focus-ring: #0066cc;
+  --form-disabled-bg: #f3f4f6;
+  --form-disabled-text: #9ca3af;
+  --form-error-color: #dc2626;
+  --form-success-color: #059669;
+  --form-hint-color: #6b7280;
+  --form-button-bg: #0066cc;
+  --form-button-hover: #0052a3;
+
+  /* Navigation variables */
+  --nav-bg: #ffffff;
+  --nav-border: #e5e7eb;
+  --nav-link-color: #374151;
+  --nav-link-hover-color: #0066cc;
+  --nav-link-hover-bg: #f3f4f6;
+  --nav-link-active-color: #0066cc;
+  --nav-link-active-bg: #eff6ff;
+  --nav-active-indicator: #0066cc;
+  --nav-dropdown-bg: #ffffff;
+  --nav-dropdown-border: #e5e7eb;
+  --nav-dropdown-link-color: #374151;
+
+  /* Modal variables */
+  --modal-overlay-bg: rgba(0, 0, 0, 0.5);
+  --modal-bg: #ffffff;
+  --modal-radius: 8px;
+  --modal-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  --modal-max-width: 500px;
+  --modal-title-color: #1f2937;
+  --modal-text-color: #4b5563;
+  --modal-close-color: #6b7280;
+  --modal-close-hover-bg: #f3f4f6;
+  --modal-button-primary-bg: #0066cc;
+  --modal-button-primary-hover: #0052a3;
+  --modal-focus-ring: #0066cc;
+}
+
+/* ============================================================================
+ * DARK MODE VARIANT USING CSS CUSTOM PROPERTIES
+ * ============================================================================
+ *
+ * Simply update custom properties for dark mode without repeating @scope
+ * This demonstrates the power of combining @scope with custom properties
+ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Card dark mode */
+    --card-bg: #1f2937;
+    --card-border: #374151;
+    --card-heading-color: #f3f4f6;
+    --card-text-color: #d1d5db;
+    --card-link-color: #60a5fa;
+    --card-link-hover: #93c5fd;
+
+    /* Form dark mode */
+    --form-label-color: #f3f4f6;
+    --form-border: #4b5563;
+    --form-bg: #111827;
+    --form-text: #f3f4f6;
+    --form-focus-ring: #60a5fa;
+    --form-disabled-bg: #374151;
+    --form-disabled-text: #9ca3af;
+    --form-button-bg: #0066cc;
+    --form-button-hover: #0052a3;
+
+    /* Navigation dark mode */
+    --nav-bg: #1f2937;
+    --nav-border: #374151;
+    --nav-link-color: #d1d5db;
+    --nav-link-hover-color: #60a5fa;
+    --nav-link-hover-bg: #374151;
+    --nav-link-active-color: #60a5fa;
+    --nav-link-active-bg: #0f172a;
+    --nav-active-indicator: #60a5fa;
+    --nav-dropdown-bg: #111827;
+    --nav-dropdown-border: #374151;
+    --nav-dropdown-link-color: #d1d5db;
+
+    /* Modal dark mode */
+    --modal-overlay-bg: rgba(0, 0, 0, 0.8);
+    --modal-bg: #1f2937;
+    --modal-title-color: #f3f4f6;
+    --modal-text-color: #d1d5db;
+    --modal-close-color: #9ca3af;
+    --modal-close-hover-bg: #374151;
+    --modal-button-primary-bg: #0066cc;
+    --modal-button-primary-hover: #0052a3;
+    --modal-focus-ring: #60a5fa;
+  }
+}
+
+/* ============================================================================
+ * 5. CHROMIUM 143+ ENHANCED @SCOPE WITH CONDITIONAL CSS
+ * ============================================================================
+ *
+ * Combining @scope with CSS if() for advanced component isolation
+ * and conditional styling based on custom properties
+ *
+ * Browser Support: Chrome 118+ (@scope), Chrome 143+ (if())
+ * Graceful degradation: Older browsers ignore if(), @scope still works
+ */
+
+@supports (width: if(style(--x: 1), 10px, 20px)) {
+  /* Compact mode card styling using if() within @scope */
+  @scope (.card) to (.card-content) {
+    :scope {
+      padding: if(style(--compact-mode: true), 1rem, 1.5rem);
+      margin-bottom: if(style(--compact-mode: true), 0.5rem, 1rem);
+    }
+
+    h2 {
+      font-size: if(style(--compact-mode: true), 1.125rem, 1.25rem);
+      margin-block-end: if(style(--compact-mode: true), 0.25rem, 0.5rem);
+    }
+
+    p {
+      font-size: if(style(--compact-mode: true), 0.875rem, 0.95rem);
+      line-height: if(style(--compact-mode: true), 1.4, 1.6);
+    }
+  }
+
+  /* Dense form layout conditional */
+  @scope (form) {
+    .form-group {
+      gap: if(style(--compact-mode: true), 0.25rem, 0.5rem);
+      margin-block-end: if(style(--compact-mode: true), 1rem, 1.5rem);
+    }
+
+    label {
+      font-size: if(style(--compact-mode: true), 0.875rem, 0.9375rem);
+    }
+
+    input,
+    textarea,
+    select {
+      padding: if(style(--compact-mode: true), 0.5rem 0.625rem, 0.625rem 0.75rem);
+    }
+  }
+
+  /* Navigation density control */
+  @scope (nav) {
+    a {
+      padding: if(style(--compact-mode: true), 0.375rem 0.75rem, 0.5rem 1rem);
+      font-size: if(style(--compact-mode: true), 0.875rem, 0.95rem);
+    }
+
+    ul, ol {
+      gap: if(style(--compact-mode: true), 0.25rem, 0.5rem);
+    }
+  }
+}
+
+/* ============================================================================
+ * 6. NESTED @SCOPE WITH BOUNDARY EXCLUSIONS - CHROME 118+
+ * ============================================================================
+ *
+ * Demonstrates nested @scope rules for complex component hierarchies
+ * The "to" boundary prevents style leakage to nested components
+ */
+
+@scope (.container) to (.nested-container) {
+  /* Container layout styles - won't leak into .nested-container */
+  :scope {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  @scope (.item) to (.item-nested) {
+    /* Item styles, nested within container scope */
+    :scope {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      transition: box-shadow 0.2s ease;
+    }
+
+    :scope:hover {
+      box-shadow: var(--shadow-lg);
+    }
+  }
+}

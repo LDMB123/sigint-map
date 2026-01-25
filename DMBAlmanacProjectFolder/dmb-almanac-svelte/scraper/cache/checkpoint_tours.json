@@ -1,0 +1,1586 @@
+{
+  "completedIds": [
+    "65",
+    "8173",
+    "8182",
+    "56",
+    "57",
+    "1131",
+    "51",
+    "53",
+    "1132",
+    "52",
+    "63",
+    "1133",
+    "48",
+    "46",
+    "126",
+    "45",
+    "44",
+    "41",
+    "42",
+    "1134",
+    "36",
+    "43",
+    "37",
+    "89",
+    "38",
+    "40",
+    "31",
+    "1135",
+    "27",
+    "35",
+    "28",
+    "68",
+    "67",
+    "29",
+    "30",
+    "26",
+    "1136",
+    "24",
+    "25",
+    "23",
+    "34",
+    "1137",
+    "19",
+    "20",
+    "21",
+    "22",
+    "18",
+    "62",
+    "1138",
+    "16",
+    "17",
+    "15",
+    "1139",
+    "13",
+    "14",
+    "1",
+    "1140",
+    "33",
+    "2",
+    "32",
+    "66",
+    "1141",
+    "12",
+    "58",
+    "69",
+    "75",
+    "1142",
+    "70",
+    "72",
+    "76",
+    "79",
+    "1143",
+    "77",
+    "80",
+    "81",
+    "84",
+    "1144",
+    "82",
+    "83",
+    "85",
+    "86",
+    "1145",
+    "87",
+    "93",
+    "1146",
+    "91",
+    "92",
+    "96",
+    "97",
+    "1147",
+    "98",
+    "104",
+    "1152",
+    "103",
+    "106",
+    "109",
+    "1148",
+    "107",
+    "110",
+    "112",
+    "113",
+    "114",
+    "1149",
+    "115",
+    "116",
+    "1150",
+    "117",
+    "118",
+    "119",
+    "1151",
+    "120",
+    "121",
+    "122",
+    "1130",
+    "124",
+    "125",
+    "127",
+    "1153",
+    "128",
+    "1129",
+    "1154",
+    "2155",
+    "2154",
+    "3154",
+    "5155",
+    "4154",
+    "5154",
+    "5156",
+    "6157",
+    "6156",
+    "6159",
+    "6158",
+    "8160",
+    "6160",
+    "7160",
+    "8161",
+    "8162",
+    "8166",
+    "8165",
+    "8168",
+    "8164",
+    "8167",
+    "8170",
+    "8169",
+    "8172",
+    "8171",
+    "8175",
+    "8174",
+    "8178",
+    "8176",
+    "8180",
+    "8179",
+    "8181",
+    "8184",
+    "8183",
+    "8186",
+    "8185",
+    "8187"
+  ],
+  "tours": [
+    {
+      "originalId": "65",
+      "name": "General 1991",
+      "slug": "general-1991",
+      "year": 1991,
+      "startDate": "0918-03-14",
+      "endDate": "1991-12-31",
+      "showCount": 42
+    },
+    {
+      "originalId": "8173",
+      "name": "Misc 1991",
+      "slug": "misc-1991",
+      "year": 1991,
+      "startDate": "1991-03-26",
+      "endDate": "1991-12-14",
+      "showCount": 33
+    },
+    {
+      "originalId": "8182",
+      "name": "Guesting 1991",
+      "slug": "guesting-1991",
+      "year": 1991,
+      "startDate": "1991-06-02",
+      "endDate": "1991-12-27",
+      "showCount": 5
+    },
+    {
+      "originalId": "56",
+      "name": "General 1992",
+      "slug": "general-1992",
+      "year": 1992,
+      "startDate": "1992-01-04",
+      "endDate": "1992-12-31",
+      "showCount": 182
+    },
+    {
+      "originalId": "57",
+      "name": "Misc 1992",
+      "slug": "misc-1992",
+      "year": 1992,
+      "startDate": "1992-01-08",
+      "endDate": "1992-12-31",
+      "showCount": 70
+    },
+    {
+      "originalId": "1131",
+      "name": "Guesting 1992",
+      "slug": "guesting-1992",
+      "year": 1992,
+      "startDate": "1992-10-12",
+      "endDate": "1992-10-12",
+      "showCount": 4
+    },
+    {
+      "originalId": "51",
+      "name": "General 1993",
+      "slug": "general-1993",
+      "year": 1993,
+      "startDate": "1993-01-02",
+      "endDate": "1993-12-31",
+      "showCount": 195
+    },
+    {
+      "originalId": "53",
+      "name": "Misc 1993",
+      "slug": "misc-1993",
+      "year": 1993,
+      "startDate": "1993-01-03",
+      "endDate": "1993-12-28",
+      "showCount": 50
+    },
+    {
+      "originalId": "1132",
+      "name": "Guesting 1993",
+      "slug": "guesting-1993",
+      "year": 1993,
+      "startDate": "1993-02-05",
+      "endDate": "1993-11-30",
+      "showCount": 12
+    },
+    {
+      "originalId": "52",
+      "name": "Misc 1994",
+      "slug": "misc-1994",
+      "year": 1994,
+      "startDate": "1994-01-01",
+      "endDate": "1994-12-15",
+      "showCount": 40
+    },
+    {
+      "originalId": "63",
+      "name": "Radio 1994",
+      "slug": "radio-1994",
+      "year": 1994,
+      "startDate": "1994-01-14",
+      "endDate": "1994-12-06",
+      "showCount": 11
+    },
+    {
+      "originalId": "1133",
+      "name": "Guesting 1994",
+      "slug": "guesting-1994",
+      "year": 1994,
+      "startDate": "1994-01-07",
+      "endDate": "1994-11-23",
+      "showCount": 20
+    },
+    {
+      "originalId": "48",
+      "name": "Winter/Spring 1994",
+      "slug": "winterspring-1994",
+      "year": 1994,
+      "startDate": "1994-01-03",
+      "endDate": "9411-01-03",
+      "showCount": 78
+    },
+    {
+      "originalId": "46",
+      "name": "Summer 1994",
+      "slug": "summer-1994",
+      "year": 1994,
+      "startDate": "0943-07-17",
+      "endDate": "1994-08-13",
+      "showCount": 23
+    },
+    {
+      "originalId": "126",
+      "name": "HORDE 1994",
+      "slug": "horde-1994",
+      "year": 1994,
+      "startDate": "0946-08-16",
+      "endDate": "1994-09-04",
+      "showCount": 16
+    },
+    {
+      "originalId": "45",
+      "name": "Fall 1994",
+      "slug": "fall-1994",
+      "year": 1994,
+      "startDate": "1994-09-27",
+      "endDate": "9414-09-27",
+      "showCount": 61
+    },
+    {
+      "originalId": "44",
+      "name": "New Years Run 1994",
+      "slug": "new-years-run-1994",
+      "year": 1994,
+      "startDate": "0941-12-27",
+      "endDate": "1994-12-31",
+      "showCount": 8
+    },
+    {
+      "originalId": "41",
+      "name": "Misc 1995",
+      "slug": "misc-1995",
+      "year": 1995,
+      "startDate": "1995-02-24",
+      "endDate": "1995-12-15",
+      "showCount": 28
+    },
+    {
+      "originalId": "42",
+      "name": "Radio 1995",
+      "slug": "radio-1995",
+      "year": 1995,
+      "startDate": "1995-02-12",
+      "endDate": "1995-08-13",
+      "showCount": 12
+    },
+    {
+      "originalId": "1134",
+      "name": "Guesting 1995",
+      "slug": "guesting-1995",
+      "year": 1995,
+      "startDate": "1995-05-21",
+      "endDate": "1995-06-17",
+      "showCount": 6
+    },
+    {
+      "originalId": "36",
+      "name": "Winter 1995",
+      "slug": "winter-1995",
+      "year": 1995,
+      "startDate": "1995-01-26",
+      "endDate": "9533-01-26",
+      "showCount": 40
+    },
+    {
+      "originalId": "43",
+      "name": "Europe Spring 1995",
+      "slug": "europe-spring-1995",
+      "year": 1995,
+      "startDate": "0959-03-22",
+      "endDate": "1995-04-03",
+      "showCount": 13
+    },
+    {
+      "originalId": "37",
+      "name": "Spring 1995",
+      "slug": "spring-1995",
+      "year": 1995,
+      "startDate": "0954-04-07",
+      "endDate": "1995-05-14",
+      "showCount": 31
+    },
+    {
+      "originalId": "89",
+      "name": "Europe Summer 1995",
+      "slug": "europe-summer-1995",
+      "year": 1995,
+      "startDate": "1995-06-03",
+      "endDate": "1995-07-09",
+      "showCount": 16
+    },
+    {
+      "originalId": "38",
+      "name": "Summer 1995",
+      "slug": "summer-1995",
+      "year": 1995,
+      "startDate": "1995-07-20",
+      "endDate": "9511-07-20",
+      "showCount": 38
+    },
+    {
+      "originalId": "40",
+      "name": "New Years Run 1995",
+      "slug": "new-years-run-1995",
+      "year": 1995,
+      "startDate": "0954-12-27",
+      "endDate": "1995-12-31",
+      "showCount": 8
+    },
+    {
+      "originalId": "31",
+      "name": "Misc 1996",
+      "slug": "misc-1996",
+      "year": 1996,
+      "startDate": "1996-04-08",
+      "endDate": "1996-12-19",
+      "showCount": 35
+    },
+    {
+      "originalId": "1135",
+      "name": "Guesting 1996",
+      "slug": "guesting-1996",
+      "year": 1996,
+      "startDate": "1996-02-17",
+      "endDate": "1996-08-04",
+      "showCount": 10
+    },
+    {
+      "originalId": "27",
+      "name": "Dave and Tim Winter 1996",
+      "slug": "dave-and-tim-winter-1996",
+      "year": 1996,
+      "startDate": "1996-02-01",
+      "endDate": "9614-02-01",
+      "showCount": 18
+    },
+    {
+      "originalId": "35",
+      "name": "International Spring 1996",
+      "slug": "international-spring-1996",
+      "year": 1996,
+      "startDate": "0967-05-09",
+      "endDate": "1996-05-31",
+      "showCount": 17
+    },
+    {
+      "originalId": "28",
+      "name": "Summer 1996",
+      "slug": "summer-1996",
+      "year": 1996,
+      "startDate": "0963-06-04",
+      "endDate": "1996-06-23",
+      "showCount": 18
+    },
+    {
+      "originalId": "68",
+      "name": "Europe Summer 1996",
+      "slug": "europe-summer-1996",
+      "year": 1996,
+      "startDate": "1996-06-28",
+      "endDate": "9610-06-28",
+      "showCount": 15
+    },
+    {
+      "originalId": "67",
+      "name": "HORDE 1996",
+      "slug": "horde-1996",
+      "year": 1996,
+      "startDate": "1996-07-18",
+      "endDate": "9611-07-18",
+      "showCount": 17
+    },
+    {
+      "originalId": "29",
+      "name": "Fall 1996",
+      "slug": "fall-1996",
+      "year": 1996,
+      "startDate": "1996-08-30",
+      "endDate": "9617-08-30",
+      "showCount": 57
+    },
+    {
+      "originalId": "30",
+      "name": "New Years Run 1996",
+      "slug": "new-years-run-1996",
+      "year": 1996,
+      "startDate": "0961-12-27",
+      "endDate": "1996-12-31",
+      "showCount": 8
+    },
+    {
+      "originalId": "26",
+      "name": "Misc 1997",
+      "slug": "misc-1997",
+      "year": 1997,
+      "startDate": "1997-01-17",
+      "endDate": "1997-12-05",
+      "showCount": 14
+    },
+    {
+      "originalId": "1136",
+      "name": "Guesting 1997",
+      "slug": "guesting-1997",
+      "year": 1997,
+      "startDate": "1997-03-18",
+      "endDate": "1997-12-12",
+      "showCount": 7
+    },
+    {
+      "originalId": "24",
+      "name": "Dave and Tim Winter 1997",
+      "slug": "dave-and-tim-winter-1997",
+      "year": 1997,
+      "startDate": "1997-01-14",
+      "endDate": "9722-01-14",
+      "showCount": 32
+    },
+    {
+      "originalId": "25",
+      "name": "Summer 1997",
+      "slug": "summer-1997",
+      "year": 1997,
+      "startDate": "1997-06-03",
+      "endDate": "9711-06-03",
+      "showCount": 32
+    },
+    {
+      "originalId": "23",
+      "name": "Misc 1998",
+      "slug": "misc-1998",
+      "year": 1998,
+      "startDate": "1998-04-18",
+      "endDate": "1998-10-18",
+      "showCount": 17
+    },
+    {
+      "originalId": "34",
+      "name": "Dave Solo Radio 1998",
+      "slug": "dave-solo-radio-1998",
+      "year": 1998,
+      "startDate": "1998-05-04",
+      "endDate": "1998-12-11",
+      "showCount": 13
+    },
+    {
+      "originalId": "1137",
+      "name": "Guesting 1998",
+      "slug": "guesting-1998",
+      "year": 1998,
+      "startDate": "1998-06-21",
+      "endDate": "1998-12-07",
+      "showCount": 18
+    },
+    {
+      "originalId": "19",
+      "name": "Spring 1998",
+      "slug": "spring-1998",
+      "year": 1998,
+      "startDate": "1998-05-02",
+      "endDate": "9814-05-02",
+      "showCount": 25
+    },
+    {
+      "originalId": "20",
+      "name": "Europe Summer 1998",
+      "slug": "europe-summer-1998",
+      "year": 1998,
+      "startDate": "0989-06-20",
+      "endDate": "1998-07-12",
+      "showCount": 20
+    },
+    {
+      "originalId": "21",
+      "name": "Summer 1998",
+      "slug": "summer-1998",
+      "year": 1998,
+      "startDate": "0988-07-22",
+      "endDate": "1998-08-30",
+      "showCount": 31
+    },
+    {
+      "originalId": "22",
+      "name": "Fall 1998",
+      "slug": "fall-1998",
+      "year": 1998,
+      "startDate": "1998-10-26",
+      "endDate": "9812-10-26",
+      "showCount": 37
+    },
+    {
+      "originalId": "18",
+      "name": "Misc 1999",
+      "slug": "misc-1999",
+      "year": 1999,
+      "startDate": "1999-01-27",
+      "endDate": "1999-09-12",
+      "showCount": 11
+    },
+    {
+      "originalId": "62",
+      "name": "Dave Solo Radio 1999",
+      "slug": "dave-solo-radio-1999",
+      "year": 1999,
+      "startDate": "1999-03-08",
+      "endDate": "1999-07-15",
+      "showCount": 16
+    },
+    {
+      "originalId": "1138",
+      "name": "Guesting 1999",
+      "slug": "guesting-1999",
+      "year": 1999,
+      "startDate": "1999-06-01",
+      "endDate": "1999-07-28",
+      "showCount": 6
+    },
+    {
+      "originalId": "16",
+      "name": "Dave and Tim Winter 1999",
+      "slug": "dave-and-tim-winter-1999",
+      "year": 1999,
+      "startDate": "0995-01-19",
+      "endDate": "1999-03-25",
+      "showCount": 42
+    },
+    {
+      "originalId": "17",
+      "name": "Summer 1999",
+      "slug": "summer-1999",
+      "year": 1999,
+      "startDate": "1999-05-01",
+      "endDate": "9922-05-01",
+      "showCount": 63
+    },
+    {
+      "originalId": "15",
+      "name": "Misc 2000",
+      "slug": "misc-2000",
+      "year": 2000,
+      "startDate": "2000-02-20",
+      "endDate": "2000-10-29",
+      "showCount": 7
+    },
+    {
+      "originalId": "1139",
+      "name": "Guesting 2000",
+      "slug": "guesting-2000",
+      "year": 2000,
+      "startDate": "2000-04-08",
+      "endDate": "2000-12-09",
+      "showCount": 7
+    },
+    {
+      "originalId": "13",
+      "name": "Summer 2000",
+      "slug": "summer-2000",
+      "year": 2000,
+      "startDate": "2000-06-19",
+      "endDate": "2013-06-19",
+      "showCount": 55
+    },
+    {
+      "originalId": "14",
+      "name": "Fall 2000",
+      "slug": "fall-2000",
+      "year": 2000,
+      "startDate": "2000-12-03",
+      "endDate": "2007-12-03",
+      "showCount": 14
+    },
+    {
+      "originalId": "1",
+      "name": "Misc 2001",
+      "slug": "misc-2001",
+      "year": 2001,
+      "startDate": "2001-01-20",
+      "endDate": "2001-12-11",
+      "showCount": 40
+    },
+    {
+      "originalId": "1140",
+      "name": "Guesting 2001",
+      "slug": "guesting-2001",
+      "year": 2001,
+      "startDate": "2001-02-28",
+      "endDate": "2001-10-18",
+      "showCount": 8
+    },
+    {
+      "originalId": "33",
+      "name": "Dave Solo Radio Spring 2001",
+      "slug": "dave-solo-radio-spring-2001",
+      "year": 2001,
+      "startDate": "2001-02-01",
+      "endDate": "2011-02-01",
+      "showCount": 25
+    },
+    {
+      "originalId": "2",
+      "name": "Spring/Summer 2001",
+      "slug": "springsummer-2001",
+      "year": 2001,
+      "startDate": "0147-04-21",
+      "endDate": "2001-08-28",
+      "showCount": 54
+    },
+    {
+      "originalId": "32",
+      "name": "Misc 2002",
+      "slug": "misc-2002",
+      "year": 2002,
+      "startDate": "2002-02-09",
+      "endDate": "2002-12-20",
+      "showCount": 25
+    },
+    {
+      "originalId": "66",
+      "name": "Dave Solo Radio 2002",
+      "slug": "dave-solo-radio-2002",
+      "year": 2002,
+      "startDate": "2002-05-10",
+      "endDate": "2002-09-06",
+      "showCount": 19
+    },
+    {
+      "originalId": "1141",
+      "name": "Guesting 2002",
+      "slug": "guesting-2002",
+      "year": 2002,
+      "startDate": "2002-04-17",
+      "endDate": "2002-11-11",
+      "showCount": 15
+    },
+    {
+      "originalId": "12",
+      "name": "Spring 2002",
+      "slug": "spring-2002",
+      "year": 2002,
+      "startDate": "0218-04-04",
+      "endDate": "2002-05-29",
+      "showCount": 36
+    },
+    {
+      "originalId": "58",
+      "name": "Summer 2002",
+      "slug": "summer-2002",
+      "year": 2002,
+      "startDate": "0227-07-05",
+      "endDate": "2002-09-08",
+      "showCount": 37
+    },
+    {
+      "originalId": "69",
+      "name": "Fall 2002",
+      "slug": "fall-2002",
+      "year": 2002,
+      "startDate": "2002-12-10",
+      "endDate": "2025-12-10",
+      "showCount": 12
+    },
+    {
+      "originalId": "75",
+      "name": "Misc 2003",
+      "slug": "misc-2003",
+      "year": 2003,
+      "startDate": "2003-03-29",
+      "endDate": "2003-12-18",
+      "showCount": 18
+    },
+    {
+      "originalId": "1142",
+      "name": "Guesting 2003",
+      "slug": "guesting-2003",
+      "year": 2003,
+      "startDate": "2003-05-22",
+      "endDate": "2003-08-28",
+      "showCount": 7
+    },
+    {
+      "originalId": "70",
+      "name": "Dave and Tim Spring 2003",
+      "slug": "dave-and-tim-spring-2003",
+      "year": 2003,
+      "startDate": "2003-03-19",
+      "endDate": "2037-03-19",
+      "showCount": 15
+    },
+    {
+      "originalId": "72",
+      "name": "Summer 2003",
+      "slug": "summer-2003",
+      "year": 2003,
+      "startDate": "0321-06-17",
+      "endDate": "2003-09-24",
+      "showCount": 58
+    },
+    {
+      "originalId": "76",
+      "name": "Dave and Friends Fall 2003",
+      "slug": "dave-and-friends-fall-2003",
+      "year": 2003,
+      "startDate": "2003-12-12",
+      "endDate": "2038-12-12",
+      "showCount": 11
+    },
+    {
+      "originalId": "79",
+      "name": "Misc 2004",
+      "slug": "misc-2004",
+      "year": 2004,
+      "startDate": "2004-01-09",
+      "endDate": "2004-11-13",
+      "showCount": 4
+    },
+    {
+      "originalId": "1143",
+      "name": "Guesting 2004",
+      "slug": "guesting-2004",
+      "year": 2004,
+      "startDate": "2004-01-21",
+      "endDate": "2004-10-11",
+      "showCount": 17
+    },
+    {
+      "originalId": "77",
+      "name": "Dave and Friends Winter 2004",
+      "slug": "dave-and-friends-winter-2004",
+      "year": 2004,
+      "startDate": "2004-01-12",
+      "endDate": "2042-01-12",
+      "showCount": 7
+    },
+    {
+      "originalId": "80",
+      "name": "Summer 2004",
+      "slug": "summer-2004",
+      "year": 2004,
+      "startDate": "0435-06-17",
+      "endDate": "2004-09-12",
+      "showCount": 51
+    },
+    {
+      "originalId": "81",
+      "name": "Vote For Change Tour 2004",
+      "slug": "vote-for-change-tour-2004",
+      "year": 2004,
+      "startDate": "2004-10-01",
+      "endDate": "2046-10-01",
+      "showCount": 10
+    },
+    {
+      "originalId": "84",
+      "name": "Misc 2005",
+      "slug": "misc-2005",
+      "year": 2005,
+      "startDate": "2005-03-22",
+      "endDate": "2005-12-08",
+      "showCount": 17
+    },
+    {
+      "originalId": "1144",
+      "name": "Guesting 2005",
+      "slug": "guesting-2005",
+      "year": 2005,
+      "startDate": "2005-02-10",
+      "endDate": "2005-09-20",
+      "showCount": 13
+    },
+    {
+      "originalId": "82",
+      "name": "Australia Spring 2005",
+      "slug": "australia-spring-2005",
+      "year": 2005,
+      "startDate": "1952-03-20",
+      "endDate": "2005-03-27",
+      "showCount": 9
+    },
+    {
+      "originalId": "83",
+      "name": "Summer 2005",
+      "slug": "summer-2005",
+      "year": 2005,
+      "startDate": "0538-06-01",
+      "endDate": "2005-09-12",
+      "showCount": 57
+    },
+    {
+      "originalId": "85",
+      "name": "Fall 2005",
+      "slug": "fall-2005",
+      "year": 2005,
+      "startDate": "1953-11-26",
+      "endDate": "2005-12-15",
+      "showCount": 16
+    },
+    {
+      "originalId": "86",
+      "name": "Misc 2006",
+      "slug": "misc-2006",
+      "year": 2006,
+      "startDate": "2006-02-04",
+      "endDate": "2006-12-16",
+      "showCount": 26
+    },
+    {
+      "originalId": "1145",
+      "name": "Guesting 2006",
+      "slug": "guesting-2006",
+      "year": 2006,
+      "startDate": "2006-04-20",
+      "endDate": "2006-10-22",
+      "showCount": 9
+    },
+    {
+      "originalId": "87",
+      "name": "Summer 2006",
+      "slug": "summer-2006",
+      "year": 2006,
+      "startDate": "0627-05-30",
+      "endDate": "2006-09-23",
+      "showCount": 56
+    },
+    {
+      "originalId": "93",
+      "name": "Misc 2007",
+      "slug": "misc-2007",
+      "year": 2007,
+      "startDate": "2007-03-19",
+      "endDate": "2007-12-21",
+      "showCount": 29
+    },
+    {
+      "originalId": "1146",
+      "name": "Guesting 2007",
+      "slug": "guesting-2007",
+      "year": 2007,
+      "startDate": "2007-04-19",
+      "endDate": "2007-11-15",
+      "showCount": 9
+    },
+    {
+      "originalId": "91",
+      "name": "Dave and Tim Europe Winter 2007",
+      "slug": "dave-and-tim-europe-winter-2007",
+      "year": 2007,
+      "startDate": "0710-02-23",
+      "endDate": "2007-03-14",
+      "showCount": 17
+    },
+    {
+      "originalId": "92",
+      "name": "International Spring 2007",
+      "slug": "international-spring-2007",
+      "year": 2007,
+      "startDate": "1975-05-01",
+      "endDate": "2007-05-30",
+      "showCount": 12
+    },
+    {
+      "originalId": "96",
+      "name": "Summer 2007",
+      "slug": "summer-2007",
+      "year": 2007,
+      "startDate": "0723-08-01",
+      "endDate": "2007-10-02",
+      "showCount": 40
+    },
+    {
+      "originalId": "97",
+      "name": "Misc 2008",
+      "slug": "misc-2008",
+      "year": 2008,
+      "startDate": "2008-01-09",
+      "endDate": "2008-10-26",
+      "showCount": 21
+    },
+    {
+      "originalId": "1147",
+      "name": "Guesting 2008",
+      "slug": "guesting-2008",
+      "year": 2008,
+      "startDate": "2008-04-19",
+      "endDate": "2008-07-02",
+      "showCount": 6
+    },
+    {
+      "originalId": "98",
+      "name": "Summer 2008",
+      "slug": "summer-2008",
+      "year": 2008,
+      "startDate": "0816-05-30",
+      "endDate": "2008-09-07",
+      "showCount": 54
+    },
+    {
+      "originalId": "104",
+      "name": "Misc 2009",
+      "slug": "misc-2009",
+      "year": 2009,
+      "startDate": "2009-01-24",
+      "endDate": "2009-12-12",
+      "showCount": 34
+    },
+    {
+      "originalId": "1152",
+      "name": "Guesting 2009",
+      "slug": "guesting-2009",
+      "year": 2009,
+      "startDate": "2009-05-03",
+      "endDate": "2009-12-12",
+      "showCount": 5
+    },
+    {
+      "originalId": "103",
+      "name": "Spring 2009",
+      "slug": "spring-2009",
+      "year": 2009,
+      "startDate": "1994-04-14",
+      "endDate": "2009-05-09",
+      "showCount": 19
+    },
+    {
+      "originalId": "106",
+      "name": "International Summer 2009",
+      "slug": "international-summer-2009",
+      "year": 2009,
+      "startDate": "1998-05-27",
+      "endDate": "2009-10-03",
+      "showCount": 62
+    },
+    {
+      "originalId": "109",
+      "name": "Misc 2010",
+      "slug": "misc-2010",
+      "year": 2010,
+      "startDate": "2010-01-22",
+      "endDate": "2010-12-16",
+      "showCount": 29
+    },
+    {
+      "originalId": "1148",
+      "name": "Guesting 2010",
+      "slug": "guesting-2010",
+      "year": 2010,
+      "startDate": "2010-06-11",
+      "endDate": "2010-10-02",
+      "showCount": 7
+    },
+    {
+      "originalId": "107",
+      "name": "Europe Winter 2010",
+      "slug": "europe-winter-2010",
+      "year": 2010,
+      "startDate": "1012-02-16",
+      "endDate": "2010-03-15",
+      "showCount": 21
+    },
+    {
+      "originalId": "110",
+      "name": "Summer 2010",
+      "slug": "summer-2010",
+      "year": 2010,
+      "startDate": "0108-05-28",
+      "endDate": "2010-09-18",
+      "showCount": 56
+    },
+    {
+      "originalId": "112",
+      "name": "Fall 2010",
+      "slug": "fall-2010",
+      "year": 2010,
+      "startDate": "0104-11-02",
+      "endDate": "2010-11-20",
+      "showCount": 15
+    },
+    {
+      "originalId": "113",
+      "name": "Dave and Tim Fall 2010",
+      "slug": "dave-and-tim-fall-2010",
+      "year": 2010,
+      "startDate": "0104-12-06",
+      "endDate": "2010-12-11",
+      "showCount": 8
+    },
+    {
+      "originalId": "114",
+      "name": "Misc 2011",
+      "slug": "misc-2011",
+      "year": 2011,
+      "startDate": "2011-01-21",
+      "endDate": "2011-12-10",
+      "showCount": 28
+    },
+    {
+      "originalId": "1149",
+      "name": "Guesting 2011",
+      "slug": "guesting-2011",
+      "year": 2011,
+      "startDate": "2011-04-13",
+      "endDate": "2011-10-23",
+      "showCount": 10
+    },
+    {
+      "originalId": "115",
+      "name": "DMB Caravan 2011",
+      "slug": "dmb-caravan-2011",
+      "year": 2011,
+      "startDate": "1111-06-24",
+      "endDate": "2011-09-18",
+      "showCount": 16
+    },
+    {
+      "originalId": "116",
+      "name": "Misc 2012",
+      "slug": "misc-2012",
+      "year": 2012,
+      "startDate": "2012-02-17",
+      "endDate": "2012-12-03",
+      "showCount": 23
+    },
+    {
+      "originalId": "1150",
+      "name": "Guesting 2012",
+      "slug": "guesting-2012",
+      "year": 2012,
+      "startDate": "2012-03-28",
+      "endDate": "2012-10-27",
+      "showCount": 17
+    },
+    {
+      "originalId": "117",
+      "name": "Summer 2012",
+      "slug": "summer-2012",
+      "year": 2012,
+      "startDate": "1239-05-18",
+      "endDate": "2012-09-12",
+      "showCount": 46
+    },
+    {
+      "originalId": "118",
+      "name": "Fall 2012",
+      "slug": "fall-2012",
+      "year": 2012,
+      "startDate": "0129-11-30",
+      "endDate": "2012-12-22",
+      "showCount": 18
+    },
+    {
+      "originalId": "119",
+      "name": "Misc 2013",
+      "slug": "misc-2013",
+      "year": 2013,
+      "startDate": "2013-01-18",
+      "endDate": "2013-10-27",
+      "showCount": 16
+    },
+    {
+      "originalId": "1151",
+      "name": "Guesting 2013",
+      "slug": "guesting-2013",
+      "year": 2013,
+      "startDate": "2013-02-06",
+      "endDate": "2013-09-26",
+      "showCount": 24
+    },
+    {
+      "originalId": "120",
+      "name": "Summer 2013",
+      "slug": "summer-2013",
+      "year": 2013,
+      "startDate": "1317-05-17",
+      "endDate": "2013-09-08",
+      "showCount": 48
+    },
+    {
+      "originalId": "121",
+      "name": "International Fall 2013",
+      "slug": "international-fall-2013",
+      "year": 2013,
+      "startDate": "0134-11-30",
+      "endDate": "2013-12-17",
+      "showCount": 11
+    },
+    {
+      "originalId": "122",
+      "name": "Misc 2014",
+      "slug": "misc-2014",
+      "year": 2014,
+      "startDate": "2014-01-08",
+      "endDate": "2014-09-19",
+      "showCount": 12
+    },
+    {
+      "originalId": "1130",
+      "name": "Guesting 2014",
+      "slug": "guesting-2014",
+      "year": 2014,
+      "startDate": "2014-01-30",
+      "endDate": "2014-10-18",
+      "showCount": 10
+    },
+    {
+      "originalId": "124",
+      "name": "Australia Spring 2014",
+      "slug": "australia-spring-2014",
+      "year": 2014,
+      "startDate": "0145-04-13",
+      "endDate": "2014-04-21",
+      "showCount": 8
+    },
+    {
+      "originalId": "125",
+      "name": "Summer 2014",
+      "slug": "summer-2014",
+      "year": 2014,
+      "startDate": "1428-05-16",
+      "endDate": "2014-09-06",
+      "showCount": 45
+    },
+    {
+      "originalId": "127",
+      "name": "Misc 2015",
+      "slug": "misc-2015",
+      "year": 2015,
+      "startDate": "2015-01-16",
+      "endDate": "2015-09-19",
+      "showCount": 13
+    },
+    {
+      "originalId": "1153",
+      "name": "Guesting 2015",
+      "slug": "guesting-2015",
+      "year": 2015,
+      "startDate": "2015-09-27",
+      "endDate": "2015-09-27",
+      "showCount": 5
+    },
+    {
+      "originalId": "128",
+      "name": "Summer 2015",
+      "slug": "summer-2015",
+      "year": 2015,
+      "startDate": "1533-05-13",
+      "endDate": "2015-09-13",
+      "showCount": 50
+    },
+    {
+      "originalId": "1129",
+      "name": "International Fall 2015",
+      "slug": "international-fall-2015",
+      "year": 2015,
+      "startDate": "1516-10-08",
+      "endDate": "2015-11-13",
+      "showCount": 24
+    },
+    {
+      "originalId": "1154",
+      "name": "Misc 2016",
+      "slug": "misc-2016",
+      "year": 2016,
+      "startDate": "2016-01-30",
+      "endDate": "2016-11-27",
+      "showCount": 20
+    },
+    {
+      "originalId": "2155",
+      "name": "Guesting 2016",
+      "slug": "guesting-2016",
+      "year": 2016,
+      "startDate": "2016-02-02",
+      "endDate": "2016-12-14",
+      "showCount": 27
+    },
+    {
+      "originalId": "2154",
+      "name": "Summer 2016",
+      "slug": "summer-2016",
+      "year": 2016,
+      "startDate": "1635-05-07",
+      "endDate": "2016-09-04",
+      "showCount": 50
+    },
+    {
+      "originalId": "3154",
+      "name": "Misc 2017",
+      "slug": "misc-2017",
+      "year": 2017,
+      "startDate": "2017-01-25",
+      "endDate": "2017-11-09",
+      "showCount": 21
+    },
+    {
+      "originalId": "5155",
+      "name": "Guesting 2017",
+      "slug": "guesting-2017",
+      "year": 2017,
+      "startDate": "2017-02-24",
+      "endDate": "2017-12-10",
+      "showCount": 66
+    },
+    {
+      "originalId": "4154",
+      "name": "Dave and Tim Europe Spring 2017",
+      "slug": "dave-and-tim-europe-spring-2017",
+      "year": 2017,
+      "startDate": "1713-03-20",
+      "endDate": "2017-04-11",
+      "showCount": 18
+    },
+    {
+      "originalId": "5154",
+      "name": "Dave and Tim Spring 2017",
+      "slug": "dave-and-tim-spring-2017",
+      "year": 2017,
+      "startDate": "1716-05-03",
+      "endDate": "2017-06-18",
+      "showCount": 21
+    },
+    {
+      "originalId": "5156",
+      "name": "Misc 2018",
+      "slug": "misc-2018",
+      "year": 2018,
+      "startDate": "2018-01-06",
+      "endDate": "2018-12-28",
+      "showCount": 31
+    },
+    {
+      "originalId": "6157",
+      "name": "Guesting 2018",
+      "slug": "guesting-2018",
+      "year": 2018,
+      "startDate": "2018-01-25",
+      "endDate": "2018-01-25",
+      "showCount": 4
+    },
+    {
+      "originalId": "6156",
+      "name": "Summer 2018",
+      "slug": "summer-2018",
+      "year": 2018,
+      "startDate": "1822-05-18",
+      "endDate": "2018-09-10",
+      "showCount": 50
+    },
+    {
+      "originalId": "6159",
+      "name": "Fall 2018",
+      "slug": "fall-2018",
+      "year": 2018,
+      "startDate": "0186-11-27",
+      "endDate": "2018-12-15",
+      "showCount": 15
+    },
+    {
+      "originalId": "6158",
+      "name": "Misc 2019",
+      "slug": "misc-2019",
+      "year": 2019,
+      "startDate": "2019-01-12",
+      "endDate": "2019-12-04",
+      "showCount": 25
+    },
+    {
+      "originalId": "8160",
+      "name": "Guesting 2019",
+      "slug": "guesting-2019",
+      "year": 2019,
+      "startDate": "2019-02-17",
+      "endDate": "2019-09-01",
+      "showCount": 5
+    },
+    {
+      "originalId": "6160",
+      "name": "Europe Spring 2019",
+      "slug": "europe-spring-2019",
+      "year": 2019,
+      "startDate": "1910-03-06",
+      "endDate": "2019-04-06",
+      "showCount": 21
+    },
+    {
+      "originalId": "7160",
+      "name": "Summer 2019",
+      "slug": "summer-2019",
+      "year": 2019,
+      "startDate": "1926-04-30",
+      "endDate": "2019-09-22",
+      "showCount": 49
+    },
+    {
+      "originalId": "8161",
+      "name": "Latin America Fall 2019",
+      "slug": "latin-america-fall-2019",
+      "year": 2019,
+      "startDate": "0191-09-27",
+      "endDate": "2019-10-08",
+      "showCount": 8
+    },
+    {
+      "originalId": "8162",
+      "name": "Misc 2020",
+      "slug": "misc-2020",
+      "year": 2020,
+      "startDate": "2020-01-25",
+      "endDate": "2020-10-04",
+      "showCount": 58
+    },
+    {
+      "originalId": "8166",
+      "name": "Dave Solo at Home 2020",
+      "slug": "dave-solo-at-home-2020",
+      "year": 2020,
+      "startDate": "0201-03-24",
+      "endDate": "2020-12-26",
+      "showCount": 43
+    },
+    {
+      "originalId": "8165",
+      "name": "Misc 2021",
+      "slug": "misc-2021",
+      "year": 2021,
+      "startDate": "2021-04-15",
+      "endDate": "2021-11-20",
+      "showCount": 56
+    },
+    {
+      "originalId": "8168",
+      "name": "Guesting 2021",
+      "slug": "guesting-2021",
+      "year": 2021,
+      "startDate": "2021-08-13",
+      "endDate": "2021-11-13",
+      "showCount": 6
+    },
+    {
+      "originalId": "8164",
+      "name": "Summer/Fall 2021",
+      "slug": "summerfall-2021",
+      "year": 2021,
+      "startDate": "2021-07-23",
+      "endDate": "2126-07-23",
+      "showCount": 46
+    },
+    {
+      "originalId": "8167",
+      "name": "Misc 2022",
+      "slug": "misc-2022",
+      "year": 2022,
+      "startDate": "2022-02-18",
+      "endDate": "2022-11-29",
+      "showCount": 29
+    },
+    {
+      "originalId": "8170",
+      "name": "Guesting 2022",
+      "slug": "guesting-2022",
+      "year": 2022,
+      "startDate": "2022-02-24",
+      "endDate": "2022-02-24",
+      "showCount": 4
+    },
+    {
+      "originalId": "8169",
+      "name": "Summer 2022",
+      "slug": "summer-2022",
+      "year": 2022,
+      "startDate": "2022-05-11",
+      "endDate": "2237-05-11",
+      "showCount": 49
+    },
+    {
+      "originalId": "8172",
+      "name": "Fall 2022",
+      "slug": "fall-2022",
+      "year": 2022,
+      "startDate": "0228-11-02",
+      "endDate": "2022-11-19",
+      "showCount": 14
+    },
+    {
+      "originalId": "8171",
+      "name": "Misc 2023",
+      "slug": "misc-2023",
+      "year": 2023,
+      "startDate": "2023-01-24",
+      "endDate": "2023-12-13",
+      "showCount": 26
+    },
+    {
+      "originalId": "8175",
+      "name": "Guesting 2023",
+      "slug": "guesting-2023",
+      "year": 2023,
+      "startDate": "2023-07-03",
+      "endDate": "2023-09-23",
+      "showCount": 7
+    },
+    {
+      "originalId": "8174",
+      "name": "Summer 2023",
+      "slug": "summer-2023",
+      "year": 2023,
+      "startDate": "2023-05-09",
+      "endDate": "2337-05-09",
+      "showCount": 48
+    },
+    {
+      "originalId": "8178",
+      "name": "Fall 2023",
+      "slug": "fall-2023",
+      "year": 2023,
+      "startDate": "0236-11-07",
+      "endDate": "2023-11-18",
+      "showCount": 11
+    },
+    {
+      "originalId": "8176",
+      "name": "Misc 2024",
+      "slug": "misc-2024",
+      "year": 2024,
+      "startDate": "2024-01-06",
+      "endDate": "2024-12-08",
+      "showCount": 22
+    },
+    {
+      "originalId": "8180",
+      "name": "Guesting 2024",
+      "slug": "guesting-2024",
+      "year": 2024,
+      "startDate": "2024-01-17",
+      "endDate": "2024-09-29",
+      "showCount": 6
+    },
+    {
+      "originalId": "8179",
+      "name": "Europe Spring 2024",
+      "slug": "europe-spring-2024",
+      "year": 2024,
+      "startDate": "0249-04-02",
+      "endDate": "2024-05-05",
+      "showCount": 22
+    },
+    {
+      "originalId": "8181",
+      "name": "Summer 2024",
+      "slug": "summer-2024",
+      "year": 2024,
+      "startDate": "2024-05-22",
+      "endDate": "2424-05-22",
+      "showCount": 35
+    },
+    {
+      "originalId": "8184",
+      "name": "Fall 2024",
+      "slug": "fall-2024",
+      "year": 2024,
+      "startDate": "0243-11-15",
+      "endDate": "2024-11-23",
+      "showCount": 9
+    },
+    {
+      "originalId": "8183",
+      "name": "Misc 2025",
+      "slug": "misc-2025",
+      "year": 2025,
+      "startDate": "2025-01-24",
+      "endDate": "2025-10-16",
+      "showCount": 19
+    },
+    {
+      "originalId": "8186",
+      "name": "Guesting 2025",
+      "slug": "guesting-2025",
+      "year": 2025,
+      "startDate": "2025-04-27",
+      "endDate": "2025-09-20",
+      "showCount": 7
+    },
+    {
+      "originalId": "8185",
+      "name": "Summer 2025",
+      "slug": "summer-2025",
+      "year": 2025,
+      "startDate": "2025-05-24",
+      "endDate": "2530-05-24",
+      "showCount": 38
+    },
+    {
+      "originalId": "8187",
+      "name": "Misc 2026",
+      "slug": "misc-2026",
+      "year": 2026,
+      "startDate": "2026-01-17",
+      "endDate": "2026-05-23",
+      "showCount": 9
+    }
+  ]
+}

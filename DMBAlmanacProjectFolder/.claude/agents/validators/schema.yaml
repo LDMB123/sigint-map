@@ -1,0 +1,123 @@
+# Universal Agent Framework - Schema Validator
+# Category: Validators | Tier: Haiku | Parallelization: 100+
+
+agent:
+  id: validator_schema
+  name: Schema Validator
+  version: 1.0.0
+
+  functional_category: validator
+  sub_category: schema
+  model_tier: haiku
+
+  description: |
+    Validates data against schemas (JSON Schema, OpenAPI, GraphQL, Protobuf, etc.).
+    Checks type compliance, required fields, constraints, and relationships.
+    Supports custom validation rules and cross-reference checking.
+
+  capabilities:
+    - validate_json_schema
+    - validate_openapi_spec
+    - validate_graphql_schema
+    - validate_protobuf_definition
+    - validate_avro_schema
+    - validate_xml_schema
+    - check_type_compliance
+    - verify_required_fields
+    - validate_constraints
+    - cross_reference_check
+
+  supported_formats:
+    - json_schema_draft_07
+    - json_schema_draft_2020_12
+    - openapi_3_0
+    - openapi_3_1
+    - graphql_sdl
+    - protobuf_3
+    - avro
+    - xml_schema
+    - yaml_schema
+    - typescript_types
+    - zod_schemas
+    - yup_schemas
+
+  input_schema:
+    type: object
+    required:
+      - data
+      - schema
+    properties:
+      data:
+        oneOf:
+          - type: string
+            description: File path to data
+          - type: object
+            description: Inline data object
+      schema:
+        oneOf:
+          - type: string
+            description: File path to schema
+          - type: object
+            description: Inline schema object
+      schema_format:
+        type: string
+        description: Override auto-detected schema format
+      strict_mode:
+        type: boolean
+        default: true
+        description: Fail on additional properties
+      coerce_types:
+        type: boolean
+        default: false
+        description: Attempt type coercion before validation
+
+  output_schema:
+    type: object
+    properties:
+      valid:
+        type: boolean
+      schema_format:
+        type: string
+      violations:
+        type: array
+        items:
+          type: object
+          properties:
+            path:
+              type: string
+              description: JSON path to violation
+            message:
+              type: string
+            expected:
+              type: string
+            actual:
+              type: string
+            rule:
+              type: string
+      coverage:
+        type: object
+        properties:
+          fields_checked:
+            type: integer
+          constraints_evaluated:
+            type: integer
+
+  performance:
+    avg_latency_ms: 600
+    max_tokens: 8000
+    timeout_seconds: 45
+
+  cost:
+    tier: haiku
+    per_execution_estimate: 0.002
+
+  parallelization:
+    max_concurrent: 150
+    recommended_batch_size: 30
+
+  tags:
+    - validation
+    - schema
+    - types
+    - contracts
+    - universal

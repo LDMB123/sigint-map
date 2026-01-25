@@ -1,0 +1,202 @@
+WEB SPEECH API INTEGRATION OPPORTUNITIES - DMB ALMANAC
+=======================================================
+
+FINDINGS BY LOCATION:
+
+FILE:LINE - SEARCH_FEATURE - VOICE_OPPORTUNITY - COMPLEXITY
+
+src/lib/stores/dexie.ts:1263-1326
+Song/Venue/Guest Search Stores (Debounced)
+Separate search stores for songs, venues, guests with case-insensitive indexing
+Voice Opportunity: VERY HIGH - Direct voice->setQuery() integration, Dexie indexes handle fuzzy matching
+Complexity: LOW
+Effort: 2 hours (wire voice input to search store)
+
+---
+
+src/lib/stores/dexie.ts:1330-1516
+Global Search (Unified Multi-Category)
+Searches across songs, venues, tours, guests, shows, releases in single transaction
+Voice Opportunity: VERY HIGH - Best for complex queries like "find shows where they played [song]"
+Complexity: LOW (basic voice) to MEDIUM (multi-step commands)
+Effort: 3-6 hours depending on command sophistication
+
+---
+
+src/routes/search/+page.svelte:154-220
+Search Input Form
+Text input with datalist suggestions (songs/venues/years), autofocus, accessible ARIA labels
+Voice Opportunity: HIGH - Can populate input field directly from voice transcript
+Complexity: LOW
+Effort: 1.5 hours (add microphone button, wire speech recognition)
+Accessibility: Already has ARIA labels, role="search", input type="search"
+
+---
+
+src/routes/search/+page.svelte:76-104
+Debounced Query Handler
+Handles URL updates with 300ms debounce, scheduler.yield() for INP optimization
+Voice Opportunity: HIGH - Voice handler feeds recognized text directly to this handler
+Complexity: LOW
+Effort: 1 hour (create voice event listener that calls handleSearchInput)
+
+---
+
+src/routes/songs/+page.svelte
+Song Browse & Sort
+6 sort options (alphabetical, most played, recently played, openers, closers), letter navigation
+Voice Opportunity: MEDIUM-HIGH
+Commands:
+  - "Show me most played songs" -> sort = 'performances'
+  - "Order by alphabetical" -> sort = 'alphabetical'
+  - "Show top openers" -> sort = 'openers'
+Complexity: MEDIUM
+Effort: 2-3 hours (intent classification, sort state management)
+
+---
+
+src/routes/venues/+page.svelte
+Venue Browse & Filter
+3 sort options (by state, most shows, A-Z), state grouping
+Voice Opportunity: MEDIUM-HIGH
+Commands:
+  - "Venues in Colorado" -> filter by state
+  - "Show me venues" -> browse interface
+  - "Most shows" -> sort by show count
+Complexity: MEDIUM
+Effort: 2-3 hours (state extraction, geo-based filtering)
+
+---
+
+src/routes/shows/+page.svelte
+Show Archive with Virtual Scrolling
+Grouped by year, 3000+ shows, virtual list for performance
+Voice Opportunity: MEDIUM-HIGH
+Commands:
+  - "Shows from 2023" -> filter by year
+  - "Find shows in 1995" -> year filtering
+  - "Shows in [Venue]" -> venue-based filtering
+Complexity: MEDIUM
+Effort: 3 hours (year extraction, venue lookup, filtering logic)
+
+---
+
+src/routes/songs/[slug]/+page.svelte
+Song Detail Page
+Shows recent performances, lyrics, slot breakdown, statistics
+Voice Opportunity: LOW-MEDIUM
+Possible enhancements:
+  - "Read the lyrics" -> text-to-speech
+  - "Show performances" -> scroll to section
+  - "Tell me more" -> context-aware help
+Complexity: MEDIUM-HIGH
+Effort: 3-4 hours (more UI interaction needed)
+
+---
+
+DOMAIN-SPECIFIC VOICE OPPORTUNITIES (Not Yet Implemented):
+========================================================
+
+1. CONTEXTUAL BIASING - Song Titles
+   Popular 50 songs to boost recognition accuracy
+   Phrases: 'Crash Into Me', 'Ants Marching', 'Two Step', 'Warehouse', 'Satellite', etc.
+   Accuracy Boost: +4-8% confidence
+   Effort: 0.5 hours (add to grammar rules)
+
+2. CONTEXTUAL BIASING - Venues
+   Top 20 venues by performance count
+   Phrases: 'The Gorge', 'SPAC', 'Alpine Valley', 'Red Rocks', 'MSG', 'Fiddler\'s Green'
+   Accuracy Boost: +3-6% confidence
+   Effort: 0.5 hours (fetch from database)
+
+3. CONTEXTUAL BIASING - US States
+   All 50 states + DC + Canada provinces for venue filtering
+   Boost during state-related queries
+   Accuracy Boost: +5-10% confidence
+   Effort: 0.5 hours (static list)
+
+4. MULTI-STEP COMMAND: "Find shows where they played [Song]"
+   Intent: Find all performances of a specific song
+   Steps: 1) Recognize song name, 2) Search song DB, 3) Get setlist entries, 4) Fetch shows
+   Complexity: HIGH
+   Accuracy: 80-92% (depends on song name clarity)
+   Effort: 4-5 hours
+
+5. MULTI-STEP COMMAND: "Shows at [Venue] in [Year]"
+   Intent: Venue + year filtering
+   Steps: 1) Extract venue name, 2) Extract year, 3) Filter shows
+   Complexity: MEDIUM-HIGH
+   Accuracy: 85-90%
+   Effort: 3 hours
+
+---
+
+MISSING INFRASTRUCTURE (Requires Implementation):
+================================================
+
+1. VoiceRecognizer wrapper class
+   ~150 lines, wraps Web Speech API with error handling
+   Complexity: LOW
+   Effort: 2 hours
+
+2. TextToSpeech wrapper class
+   ~100 lines, wraps Web Speech Synthesis API
+   Complexity: LOW
+   Effort: 1.5 hours
+
+3. VoiceCommandSystem with pattern matching
+   ~200 lines, registry pattern for voice commands
+   Complexity: MEDIUM
+   Effort: 3 hours
+
+4. Voice command definitions for DMB domain
+   ~500 lines, song search, venue search, year filter, etc.
+   Complexity: MEDIUM
+   Effort: 4-6 hours
+
+5. Voice UI component (microphone button, indicator, transcript)
+   ~150 lines, accessibility-first design
+   Complexity: MEDIUM
+   Effort: 2-3 hours
+
+---
+
+SUMMARY ASSESSMENT:
+===================
+
+OVERALL READINESS: EXCELLENT (8/10)
+
+Strengths:
++ Existing search stores are perfectly suited for voice input
++ Global search handles complex multi-category queries
++ Debounced input prevents race conditions
++ Accessibility foundation already in place (ARIA, semantic HTML)
++ No existing voice code to conflict with
++ Database schema supports contextual biasing (searchText fields)
++ Small domain (50 popular songs, 100 venues) for biasing
+
+Weaknesses:
+- No voice framework currently in place (needs ~12-15 hours to build)
+- Multi-step commands require sophisticated intent classification
+- Some commands require proper noun recognition (venue names)
+
+Quick Wins (Highest ROI):
+1. Basic song search (2-3 hours) - "Find [Song]"
+2. Basic venue search (2-3 hours) - "Venues in [State]"
+3. Year filtering (1-2 hours) - "Shows from [Year]"
+
+Total estimated effort for Phase 1 (foundation + quick wins): 20-25 hours
+ROI: High - voice search is major UX improvement for music database
+
+---
+
+RECOMMENDED NEXT STEPS:
+
+1. Review WEB_SPEECH_API_ANALYSIS.md for detailed implementation strategy
+2. Decide: Dedicated voice component vs. inline enhancement
+3. Start with VoiceRecognizer + TextToSpeech wrappers
+4. Implement song/venue search commands (Tier 1)
+5. Add voice UI indicators and feedback
+6. Beta test with power users (DMB fan community)
+
+Contact Claude Code Agent for implementation if ready to proceed.

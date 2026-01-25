@@ -1,0 +1,131 @@
+# Universal Agent Framework - Adapter Integrator
+# Category: Integrators | Tier: Sonnet | Parallelization: 15+
+
+agent:
+  id: integrator_adapter
+  name: Adapter Integrator
+  version: 1.0.0
+
+  functional_category: integrator
+  sub_category: adapter
+  model_tier: sonnet
+
+  description: |
+    Creates adapters to bridge incompatible interfaces.
+    Implements the adapter pattern for system integration.
+    Handles data transformation and protocol translation.
+
+  capabilities:
+    - create_interface_adapter
+    - implement_data_mapper
+    - create_protocol_bridge
+    - build_format_converter
+    - implement_facade
+    - create_anti_corruption_layer
+    - build_gateway
+    - implement_proxy
+    - create_decorator
+    - build_wrapper
+
+  adapter_patterns:
+    structural:
+      - adapter
+      - bridge
+      - decorator
+      - facade
+      - proxy
+    integration:
+      - gateway
+      - anti_corruption_layer
+      - translator
+      - mapper
+    data:
+      - dto_mapper
+      - serializer
+      - deserializer
+      - transformer
+
+  input_schema:
+    type: object
+    required:
+      - source_interface
+      - target_interface
+    properties:
+      source_interface:
+        type: object
+        properties:
+          type:
+            type: string
+          schema:
+            type: object
+          examples:
+            type: array
+      target_interface:
+        type: object
+        properties:
+          type:
+            type: string
+          schema:
+            type: object
+          requirements:
+            type: array
+      adapter_type:
+        type: string
+        enum: [adapter, bridge, facade, gateway, mapper]
+        default: adapter
+      options:
+        type: object
+        properties:
+          bidirectional:
+            type: boolean
+            default: false
+          validation:
+            type: boolean
+            default: true
+          error_handling:
+            type: string
+            enum: [strict, lenient, coerce]
+
+  output_schema:
+    type: object
+    properties:
+      adapter:
+        type: object
+        properties:
+          code:
+            type: string
+          interface:
+            type: string
+          implementation:
+            type: string
+      mappings:
+        type: array
+        items:
+          type: object
+          properties:
+            source_field:
+              type: string
+            target_field:
+              type: string
+            transformation:
+              type: string
+      validation_rules:
+        type: array
+      tests:
+        type: string
+      documentation:
+        type: string
+
+  performance:
+    avg_latency_ms: 3000
+    max_tokens: 24000
+    timeout_seconds: 90
+
+  parallelization:
+    max_concurrent: 15
+
+  tags:
+    - integration
+    - adapter
+    - bridge
+    - patterns

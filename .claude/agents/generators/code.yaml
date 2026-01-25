@@ -1,0 +1,184 @@
+# Universal Agent Framework - Code Generator
+# Category: Generators | Tier: Sonnet | Parallelization: 20+
+
+agent:
+  id: generator_code
+  name: Code Generator
+  version: 1.0.0
+
+  functional_category: generator
+  sub_category: code
+  model_tier: sonnet
+
+  description: |
+    Generates production-quality code from specifications, schemas, or natural language.
+    Supports all major programming languages with idiomatic patterns.
+    Can generate functions, classes, modules, or complete features.
+
+  capabilities:
+    - generate_from_spec
+    - generate_from_schema
+    - generate_from_examples
+    - generate_boilerplate
+    - generate_scaffolding
+    - implement_interface
+    - generate_adapter
+    - create_data_models
+    - generate_api_handlers
+    - create_cli_commands
+
+  supported_languages:
+    - javascript
+    - typescript
+    - python
+    - rust
+    - go
+    - java
+    - kotlin
+    - swift
+    - ruby
+    - php
+    - csharp
+    - cpp
+    - scala
+    - elixir
+    - haskell
+    - clojure
+
+  input_schema:
+    type: object
+    required:
+      - specification
+    properties:
+      specification:
+        oneOf:
+          - type: string
+            description: Natural language description
+          - type: object
+            description: Structured specification
+      target_language:
+        type: string
+        description: Target programming language
+      output_path:
+        type: string
+        description: Where to write generated code
+      style_guide:
+        type: string
+        description: Path to style configuration
+      context_files:
+        type: array
+        items:
+          type: string
+        description: Files to use as context for consistent style
+      generation_type:
+        type: string
+        enum:
+          - function
+          - class
+          - module
+          - feature
+          - complete_file
+        default: function
+      include_tests:
+        type: boolean
+        default: false
+      include_docs:
+        type: boolean
+        default: true
+
+  output_schema:
+    type: object
+    properties:
+      generated_code:
+        type: string
+      language:
+        type: string
+      files:
+        type: array
+        items:
+          type: object
+          properties:
+            path:
+              type: string
+            content:
+              type: string
+            type:
+              type: string
+              enum: [source, test, documentation]
+      metadata:
+        type: object
+        properties:
+          lines_of_code:
+            type: integer
+          functions_generated:
+            type: integer
+          classes_generated:
+            type: integer
+          dependencies_required:
+            type: array
+            items:
+              type: string
+
+  performance:
+    avg_latency_ms: 3000
+    max_tokens: 32000
+    timeout_seconds: 120
+
+  parallelization:
+    max_concurrent: 20
+    recommended_batch_size: 5
+
+  quality_metrics:
+    syntax_validity: 0.99
+    style_compliance: 0.95
+    test_passthrough: 0.90
+
+  collaboration:
+    receives_from:
+      - full-stack-developer: Code generation from specifications
+      - feature-delivery-orchestrator: Feature implementation generation
+      - migration-orchestrator: Generate boilerplate for new patterns
+      - refactoring-guru: Generate refactored code implementations
+    delegates_to:
+      - syntax-validator: Validate generated code syntax
+      - style-validator: Ensure generated code follows style conventions
+      - test-generator: Generate tests for generated code
+    queries:
+      - convention-extractor: Query coding conventions to follow
+      - codebase-indexer: Query existing patterns for consistency
+    escalates_to:
+      - full-stack-developer: Complex generation requiring human expertise
+    returns_to:
+      - orchestrating-agent: Generated code with validation status
+    swarm_pattern: pipeline
+    coordinates_with:
+      - documentation-generator: Generate docs for generated code
+
+  tags:
+    - generation
+    - code
+    - implementation
+    - scaffolding
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: sonnet
+  per_execution_estimate: 0.03
+  typical_range: [0.01, 0.08]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

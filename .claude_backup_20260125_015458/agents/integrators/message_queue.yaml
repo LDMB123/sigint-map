@@ -1,0 +1,125 @@
+# Universal Agent Framework - Message Queue Integrator
+# Category: Integrators | Tier: Sonnet | Parallelization: 10+
+
+agent:
+  id: integrator_message_queue
+  name: Message Queue Integrator
+  version: 1.0.0
+
+  functional_category: integrator
+  sub_category: message_queue
+  model_tier: sonnet
+
+  description: |
+    Creates message queue integrations for async communication.
+    Implements publishers, subscribers, and event handlers.
+    Supports Kafka, RabbitMQ, SQS, and more.
+
+  capabilities:
+    - create_publisher
+    - implement_subscriber
+    - generate_event_handlers
+    - create_message_schemas
+    - implement_dead_letter_queue
+    - add_retry_logic
+    - create_event_sourcing
+    - implement_saga_pattern
+    - generate_message_validators
+    - create_monitoring
+
+  queue_types:
+    - kafka
+    - rabbitmq
+    - sqs
+    - sns
+    - redis_pubsub
+    - nats
+    - pulsar
+    - google_pubsub
+    - azure_service_bus
+
+  patterns:
+    - pub_sub
+    - request_reply
+    - competing_consumers
+    - event_sourcing
+    - saga
+    - outbox
+    - inbox
+
+  input_schema:
+    type: object
+    required:
+      - queue_type
+      - events
+    properties:
+      queue_type:
+        type: string
+      events:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            schema:
+              type: object
+            topic:
+              type: string
+      pattern:
+        type: string
+        enum: [pub_sub, request_reply, competing_consumers, saga]
+        default: pub_sub
+      options:
+        type: object
+        properties:
+          dead_letter:
+            type: boolean
+            default: true
+          retry_config:
+            type: object
+          serialization:
+            type: string
+            enum: [json, avro, protobuf]
+
+  output_schema:
+    type: object
+    properties:
+      integration:
+        type: object
+        properties:
+          publishers:
+            type: string
+          subscribers:
+            type: string
+          handlers:
+            type: string
+          schemas:
+            type: string
+      files:
+        type: array
+        items:
+          type: object
+          properties:
+            path:
+              type: string
+            content:
+              type: string
+      configuration:
+        type: object
+      monitoring:
+        type: string
+
+  performance:
+    avg_latency_ms: 3500
+    max_tokens: 24000
+    timeout_seconds: 90
+
+  parallelization:
+    max_concurrent: 10
+
+  tags:
+    - integration
+    - messaging
+    - async
+    - events

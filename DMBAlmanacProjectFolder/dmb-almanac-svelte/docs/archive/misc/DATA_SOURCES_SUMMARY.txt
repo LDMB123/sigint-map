@@ -1,0 +1,391 @@
+================================================================================
+DMBAlmanac.com DATA SOURCES AUDIT - EXECUTIVE SUMMARY
+================================================================================
+
+PROJECT: DMB Almanac v2.0 - Data Completeness Assessment
+DATE: January 16, 2026
+RESEARCHER: Site Architecture Expert
+
+================================================================================
+CURRENT STATE
+================================================================================
+
+ACTIVE SCRAPERS (5):
+  ✅ Shows (shows-all-years.ts)           - Tour listings, dates, venues
+  ✅ Setlists (setlists.ts)               - Song sequences, segues
+  ✅ Guests (guests.ts)                   - Guest musicians
+  ✅ Releases (releases.ts)               - Albums & tracks
+  ✅ Almanac IDs (update-almanac-ids.ts)  - ID mapping
+
+CURRENT DATABASE TABLES POPULATED:
+  ✅ shows (2,800+ records)
+  ✅ venues (600+ records)
+  ✅ tours (35 records)
+  ✅ setlist_entries (100,000+ records)
+  ✅ songs (300+ records)
+  ✅ guests (100+ records)
+  ✅ guest_appearances (5,000+ records)
+  ✅ releases (577 records)
+  ✅ release_tracks (9,000+ records)
+
+CURRENT COVERAGE: ~65%
+
+================================================================================
+MISSING DATA SOURCES (HIGH PRIORITY)
+================================================================================
+
+TIER 1: CRITICAL (Should implement immediately)
+────────────────────────────────────────────────────────────────────────────
+
+1. SONG STATISTICS SCRAPER ⭐⭐⭐
+   URL: https://dmbalmanac.com/SongStats.aspx?sid=XXX
+   Data to Extract:
+     • Play counts (times_played)
+     • First/last play dates (first_played, last_played)
+     • Set position statistics (opener_count, closer_count, encore_count)
+     • Average song duration
+     • Longest/shortest versions with dates
+     • Segue data (songs that segue into/from this song)
+     • Release information (studio, live, warehouse, etc.)
+   Affects Tables: songs (enhance), song_statistics (new?)
+   Estimated Effort: 4-6 hours dev, 45 min run
+   Impact: HIGH - Core song metrics
+
+2. LIBERATION LIST SCRAPER ⭐⭐⭐
+   URL: https://dmbalmanac.com/Liberation.aspx (inferred)
+   Data to Extract:
+     • Days since last played
+     • Shows since last played
+     • Songs that have been "liberated" (50+ show gaps)
+     • Liberation records/history
+   Affects Tables: liberation_list (populate)
+   Estimated Effort: 2-3 hours dev, < 10 min run
+   Impact: HIGH - Fan community feature
+
+3. VENUE STATISTICS SCRAPER ⭐⭐⭐
+   URL: https://dmbalmanac.com/VenueStats.aspx?vid=XXX
+   Data to Extract:
+     • First show date at venue
+     • Last show date at venue
+     • Most played songs at venue
+     • Consecutive show records
+     • Official live releases at venue
+     • Venue type & capacity
+   Affects Tables: venues (enhance)
+   Estimated Effort: 3-4 hours dev, 10-15 min run
+   Impact: HIGH - Venue history and analytics
+
+────────────────────────────────────────────────────────────────────────────
+
+TIER 2: IMPORTANT (Implement in second phase)
+────────────────────────────────────────────────────────────────────────────
+
+4. CURATED LISTS SCRAPER ⭐⭐
+   URL: https://dmbalmanac.com/Lists.aspx
+   Data Types Available:
+     • Rarest songs per album
+     • Top longest intros
+     • Acoustic performances
+     • Duets
+     • Tribute songs
+     • Venue lists
+     • Release series info
+   Affects Tables: curated_lists, curated_list_items (populate)
+   Estimated Effort: 4-5 hours dev, 15-20 min run
+   Impact: MEDIUM - Themed content browsing
+
+5. TOUR STATISTICS SCRAPER ⭐⭐
+   URL: https://dmbalmanac.com/TourStats.aspx?tid=XXX
+   Data to Extract:
+     • Tour year & name
+     • Total shows that year
+     • Unique songs that year
+     • Most/least played songs
+     • Venue count
+   Affects Tables: tours (enhance)
+   Estimated Effort: 2-3 hours dev, < 10 min run
+   Impact: MEDIUM - Tour analytics
+
+────────────────────────────────────────────────────────────────────────────
+
+TIER 3: OPTIONAL (Nice-to-have enhancements)
+────────────────────────────────────────────────────────────────────────────
+
+6. SONG LYRICS SCRAPER
+   URL: https://dmbalmanac.com/SongStats.aspx (with lyrics section)
+   Data: Full lyrics text
+   Estimated Effort: 2-3 hours dev
+   Impact: LOW - Supplementary content
+
+7. LIST SUMMARY PAGES
+   URLs: SongList.aspx, VenueList.aspx, GuestList.aspx
+   Purpose: Validation & ID mapping
+   Estimated Effort: 1-2 hours dev
+   Impact: LOW - Support data
+
+================================================================================
+DATABASE TABLE STATUS
+================================================================================
+
+FULLY POPULATED (✅):
+  • shows
+  • venues (basic)
+  • tours (basic)
+  • setlist_entries
+  • songs (basic)
+  • guests
+  • guest_appearances
+  • releases
+  • release_tracks
+
+PARTIALLY POPULATED (⚠️):
+  • songs - Missing: first_played, last_played, times_played,
+           opener_count, closer_count, encore_count, avg_gap_days, lyrics
+  • venues - Missing: first_show_date, last_show_date, venue_type details
+  • tours - Basic info only, missing detailed statistics
+
+NOT POPULATED (❌):
+  • liberation_list - Currently empty, needs Liberation List scraper
+  • curated_lists - Currently empty, needs Curated Lists scraper
+  • curated_list_items - Currently empty, needs Curated Lists scraper
+  • song_embeddings - For ML features (separate pipeline)
+  • show_embeddings - For ML features (separate pipeline)
+  • user_preferences - For personalization (user-generated)
+
+================================================================================
+IMPLEMENTATION ROADMAP
+================================================================================
+
+PHASE 1: ESSENTIAL DATA (Week 1-2)
+  Task 1: Song Statistics Scraper
+    • Queries all songs, fetches SongStats pages
+    • Updates song records with metrics
+    • Duration: 4-6 hours dev, 45 min run
+
+  Task 2: Liberation List Scraper
+    • Populates liberation_list table
+    • Duration: 2-3 hours dev, 10 min run
+
+  Task 3: Venue Statistics Scraper
+    • Enhances venue records
+    • Duration: 3-4 hours dev, 15 min run
+
+  TOTAL PHASE 1: 10-15 hours dev, 70 minutes runtime
+
+────────────────────────────────────────────────────────────────────────────
+
+PHASE 2: ENRICHMENT DATA (Week 3)
+  Task 4: Curated Lists Scraper
+    • Populates curated list tables
+    • Duration: 4-5 hours dev, 20 min run
+
+  Task 5: Tour Statistics Scraper
+    • Enhances tour metrics
+    • Duration: 2-3 hours dev, 10 min run
+
+  TOTAL PHASE 2: 6-8 hours dev, 30 minutes runtime
+
+────────────────────────────────────────────────────────────────────────────
+
+PHASE 3: POLISH (Week 4, if time permits)
+  Task 6: Song Lyrics Scraper
+    • Adds lyrics to songs
+    • Duration: 2-3 hours dev, 60 min run
+
+  Task 7: List Summary Pages
+    • Validation & enhancement
+    • Duration: 1-2 hours dev, 5 min run
+
+  TOTAL PHASE 3: 3-5 hours dev, 65 minutes runtime
+
+================================================================================
+TOTAL PROJECT EFFORT
+================================================================================
+
+Development Time: 19-28 hours
+Runtime (one-time): ~3 hours (rate-limited at 1 second per request)
+Monthly Maintenance: 30-45 minutes
+
+After completion:
+  • Current coverage: 65% → Target: 95%
+  • Incomplete tables: 4 → Complete/Enhanced
+  • Enhanced tables: 3 (songs, venues, tours)
+  • New tables populated: 4 (liberation_list, curated_lists, etc.)
+
+================================================================================
+KEY METRICS
+================================================================================
+
+Data Sources on dmbalmanac.com:
+  Total: 15+ distinct data sources
+  Currently scraped: 5 (33%)
+  Planned to scrape: 5 more (33%)
+  Optional: 5+ (34%)
+
+Database Coverage:
+  Tables: 9 active / 14 total = 64%
+  Songs: Basic info scraped, statistics missing
+  Venues: Basic info scraped, history missing
+  Tours: Basic info scraped, stats missing
+  Guests: Fully scraped ✅
+  Releases: Fully scraped ✅
+  New content: Curated lists completely missing
+
+================================================================================
+RECOMMENDED ACTION PLAN
+================================================================================
+
+IMMEDIATE (This week):
+  □ Review this research with development team
+  □ Assess resource availability
+  □ Plan sprint for Phase 1
+  □ Assign Song Statistics scraper
+
+SHORT-TERM (Next 2 weeks):
+  □ Implement Song Statistics scraper
+  □ Implement Liberation List scraper
+  □ Implement Venue Statistics scraper
+  □ Test all three with full dataset
+  □ Deploy to production
+
+MEDIUM-TERM (Week 3-4):
+  □ Implement Curated Lists scraper
+  □ Implement Tour Statistics scraper
+  □ Create validation queries
+  □ Test data integrity
+
+LONG-TERM (Maintenance):
+  □ Schedule monthly scraper runs
+  □ Monitor for HTML structure changes
+  □ Add new features as site evolves
+  □ Consider ML embeddings pipeline
+
+================================================================================
+SUCCESS CRITERIA
+================================================================================
+
+After Phase 1 Complete:
+  ✓ All songs have play statistics
+  ✓ Liberation list is populated
+  ✓ All venues have date information
+  ✓ Database coverage > 85%
+  ✓ No duplicate records
+  ✓ All foreign keys valid
+
+After Phase 2 Complete:
+  ✓ All curated lists available
+  ✓ Tour statistics complete
+  ✓ Database coverage > 95%
+  ✓ Full data consistency checks pass
+  ✓ Production deployment complete
+
+================================================================================
+RISKS & MITIGATION
+================================================================================
+
+Risk: HTML structure changes on dmbalmanac.com
+  Impact: Scraper failures
+  Probability: LOW
+  Mitigation: Use robust selectors, implement fallback parsing
+
+Risk: Rate limiting tolerance unknown
+  Impact: IP blocking
+  Probability: VERY LOW
+  Mitigation: Start with 1-2 sec delays, monitor response codes
+
+Risk: Incomplete data on some pages
+  Impact: Null values in database
+  Probability: MEDIUM
+  Mitigation: Handle null gracefully, use Optional fields
+
+Risk: ID extraction difficulties (SID, VID, TID)
+  Impact: Can't fetch individual pages
+  Probability: MEDIUM
+  Mitigation: Parse list pages first to get IDs, validate extraction
+
+================================================================================
+RESOURCE REQUIREMENTS
+================================================================================
+
+Development:
+  • 1 Full-stack developer: 2-3 weeks
+  • OR 2 Developers: 1-2 weeks (parallel work)
+  • Experience: HTML parsing, database design, TypeScript/Node.js
+
+Infrastructure:
+  • PostgreSQL database (existing)
+  • Prisma ORM (existing)
+  • Cheerio HTML parsing library (existing)
+  • Axios/Fetch for HTTP (existing)
+
+External Dependencies:
+  • dmbalmanac.com availability (stable)
+  • Network connectivity (reliable)
+
+================================================================================
+DELIVERABLES
+================================================================================
+
+For Each Scraper:
+  1. TypeScript source code (src/scrapers/[name].ts)
+  2. README with usage examples
+  3. Error handling and retry logic
+  4. Database insert/update logic
+  5. CLI argument parsing (--limit, --dry-run, etc.)
+  6. Logging and progress indicators
+  7. Unit tests
+  8. Documentation
+
+Project Artifacts:
+  • Updated database schema (if needed)
+  • Migration scripts
+  • Data validation queries
+  • Monitoring/alerting setup
+  • Deployment checklist
+
+================================================================================
+ESTIMATED BUDGET (IF OUTSOURCED)
+================================================================================
+
+Tier 1 Scrapers (Song Stats, Liberation, Venue Stats):
+  • Development: 40-50 hours @ $100-150/hr = $4,000-7,500
+  • Testing & QA: 8-10 hours @ $75-100/hr = $600-1,000
+  • Total: $4,600-8,500
+
+Tier 2 Scrapers (Curated Lists, Tour Stats):
+  • Development: 20-30 hours @ $100-150/hr = $2,000-4,500
+  • Testing & QA: 4-6 hours @ $75-100/hr = $300-600
+  • Total: $2,300-5,100
+
+Optional Enhancements (Lyrics, List Summaries):
+  • Development: 8-10 hours @ $100-150/hr = $800-1,500
+  • Total: $800-1,500
+
+GRAND TOTAL: $7,700-15,100 (depending on team location & expertise)
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The dmbalmanac.com website contains significantly more data than we're currently
+scraping. Our research identified 5 additional scrapers that would bring our
+database coverage from 65% to 95%, unlocking important features like:
+
+  • Song rarity and liberation tracking
+  • Venue performance history
+  • Curated themed lists
+  • Tour-level analytics
+  • Full lyrical content
+
+With an estimated 19-28 hours of development work and 3 hours of runtime, this
+represents a high-value investment for feature completeness and user experience.
+
+The recommended approach is to implement Phase 1 (Song Stats, Liberation, Venue
+Stats) first, which are essential for core features and relatively quick to build.
+
+See the comprehensive research documents for detailed specifications:
+  • DMBALMANAC_DATA_SOURCES_RESEARCH.md (full audit)
+  • MISSING_SCRAPERS_TECHNICAL_SPEC.md (implementation details)
+  • DMBALMANAC_SCRAPER_QUICK_REFERENCE.md (quick lookup guide)
+
+================================================================================

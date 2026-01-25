@@ -1,0 +1,224 @@
+# Universal Agent Framework - Hierarchical Delegation Swarm Pattern
+# Pattern: Hierarchical | Levels: 3 | Speedup: 10-100x
+
+swarm_pattern:
+  id: hierarchical_delegation
+  name: Hierarchical Delegation
+  version: 1.0.0
+
+  description: |
+    Three-tier hierarchy for large-scale operations.
+    Opus strategizes → Sonnet coordinates → Haiku executes.
+
+    Enables processing of 1000+ items through cascading delegation.
+    Each level can spawn multiple sub-coordinators.
+
+  architecture:
+    level_1_strategic:
+      tier: opus
+      role: Strategy, partitioning, final verification
+      count: 1
+
+    level_2_tactical:
+      tier: sonnet
+      role: Module coordination, conflict resolution
+      count: dynamic  # Typically 5-20
+
+    level_3_execution:
+      tier: haiku
+      role: Execute atomic tasks
+      count: dynamic  # Typically 50-500
+
+  workflow:
+    level_1_strategy:
+      name: Strategic Planning
+      agent: orchestrator_workflow
+      tier: opus
+      actions:
+        - Analyze full scope of work
+        - Create high-level strategy
+        - Partition into modules/domains
+        - Define success criteria
+        - Assign Sonnet coordinators
+      output: strategy_plan
+      timeout_seconds: 300
+
+    level_2_coordination:
+      name: Tactical Coordination
+      agent: orchestrator_delegation
+      tier: sonnet
+      parallelization:
+        strategy: map
+        max_concurrent: 20
+      actions:
+        - Receive module assignment
+        - Break into atomic tasks
+        - Spawn Haiku workers
+        - Coordinate execution
+        - Resolve conflicts
+        - Report to Opus
+      output: module_results
+      timeout_seconds: 600
+
+    level_3_execution:
+      name: Task Execution
+      agent: transformer_*  # Various transformers
+      tier: haiku
+      parallelization:
+        strategy: map
+        max_concurrent: 100
+        per_coordinator: true
+      actions:
+        - Execute single atomic task
+        - Return result
+      output: task_result
+      timeout_seconds: 60
+
+    level_2_integration:
+      name: Module Integration
+      agent: orchestrator_delegation
+      tier: sonnet
+      actions:
+        - Collect task results
+        - Integrate changes
+        - Resolve merge conflicts
+        - Run module tests
+        - Report status
+      output: integrated_module
+
+    level_1_verification:
+      name: Final Verification
+      agent: orchestrator_workflow
+      tier: opus
+      actions:
+        - Collect all module results
+        - Verify global constraints
+        - Run integration tests
+        - Generate final report
+      output: final_report
+
+  configuration:
+    partitioning:
+      strategy: auto  # or manual
+      max_tasks_per_coordinator: 50
+      prefer_balanced_load: true
+
+    resource_limits:
+      max_sonnet_coordinators: 20
+      max_haiku_per_coordinator: 100
+      max_total_haiku: 500
+      total_timeout_seconds: 3600
+
+    error_handling:
+      on_task_failure:
+        strategy: retry_then_escalate
+        max_retries: 2
+        escalate_to: sonnet
+      on_module_failure:
+        strategy: isolate_and_continue
+        rollback_module: true
+
+    checkpointing:
+      enabled: true
+      frequency: after_each_module
+      enable_resume: true
+
+  input_schema:
+    type: object
+    required:
+      - operation
+      - targets
+    properties:
+      operation:
+        type: string
+        enum: [migration, refactoring, transformation, analysis]
+      targets:
+        type: array
+        items:
+          type: string
+      operation_config:
+        type: object
+        description: Operation-specific configuration
+      partitioning_hints:
+        type: array
+        items:
+          type: object
+          properties:
+            module:
+              type: string
+            files:
+              type: array
+
+  output_schema:
+    type: object
+    properties:
+      success:
+        type: boolean
+      modules:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            status:
+              type: string
+            tasks_completed:
+              type: integer
+            tasks_failed:
+              type: integer
+      metrics:
+        type: object
+        properties:
+          total_tasks:
+            type: integer
+          completed:
+            type: integer
+          failed:
+            type: integer
+          duration_seconds:
+            type: number
+          parallel_efficiency:
+            type: number
+          cost:
+            type: number
+      checkpoints:
+        type: array
+        items:
+          type: object
+
+  cost_model:
+    level_1_opus: 0.015
+    per_level_2_sonnet: 0.003
+    per_level_3_haiku: 0.00025
+
+    example_1000_files:
+      modules: 20
+      tasks_per_module: 50
+      # 1 Opus + 20 Sonnet + 1000 Haiku
+      total_cost: 0.325  # vs 3.00 all-Sonnet
+      savings_percent: 89.2
+
+  examples:
+    - name: Migrate 1000 files from REST to GraphQL
+      expected:
+        opus_calls: 2
+        sonnet_coordinators: 20
+        haiku_workers: 1000
+        duration_minutes: 30
+        cost: 0.33
+
+    - name: Refactor authentication across codebase
+      expected:
+        opus_calls: 2
+        sonnet_coordinators: 10
+        haiku_workers: 500
+        duration_minutes: 20
+        cost: 0.175
+
+  best_practices:
+    - Use for operations affecting 100+ files
+    - Partition by logical modules, not file count
+    - Enable checkpointing for long operations
+    - Monitor coordinator bottlenecks
+    - Balance load across coordinators

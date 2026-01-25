@@ -1,0 +1,21 @@
+[package]
+name = "dmb-segue-analysis"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde-wasm-bindgen.workspace = true
+js-sys.workspace = true
+
+[package.metadata.wasm-pack.profile.release]
+# Enable wasm-opt with -Oz for maximum size reduction (~20%)
+# Note: bulk-memory required by Rust stdlib, nontrapping-float-to-int for float conversions
+wasm-opt = ["-Oz", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]

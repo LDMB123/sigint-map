@@ -1,0 +1,144 @@
+# Universal Agent Framework - Optimize Transformer
+# Category: Transformers | Tier: Sonnet | Parallelization: 20+
+
+agent:
+  id: transformer_optimize
+  name: Optimize Transformer
+  version: 1.0.0
+
+  functional_category: transformer
+  sub_category: optimize
+  model_tier: sonnet
+
+  description: |
+    Optimizes code for performance, readability, or size.
+    Applies optimization patterns while preserving behavior.
+    Supports both micro and macro optimizations.
+
+  capabilities:
+    - optimize_algorithms
+    - reduce_complexity
+    - improve_memory_usage
+    - optimize_loops
+    - inline_functions
+    - eliminate_redundancy
+    - optimize_data_structures
+    - reduce_bundle_size
+    - optimize_queries
+    - improve_caching
+
+  optimization_categories:
+    performance:
+      - loop_optimization
+      - algorithm_improvement
+      - memoization
+      - lazy_evaluation
+      - parallel_processing
+      - batch_operations
+    memory:
+      - reduce_allocations
+      - object_pooling
+      - weak_references
+      - stream_processing
+      - garbage_collection_hints
+    readability:
+      - simplify_expressions
+      - extract_constants
+      - improve_naming
+      - reduce_nesting
+      - consolidate_logic
+    size:
+      - dead_code_elimination
+      - tree_shaking_hints
+      - code_splitting
+      - compression_ready
+
+  input_schema:
+    type: object
+    required:
+      - source_file
+    properties:
+      source_file:
+        type: string
+      optimization_goals:
+        type: array
+        items:
+          type: string
+          enum:
+            - performance
+            - memory
+            - readability
+            - size
+        default: [performance]
+      constraints:
+        type: object
+        properties:
+          preserve_api:
+            type: boolean
+            default: true
+          max_complexity_increase:
+            type: number
+            default: 1.2
+          target_runtime:
+            type: string
+      profile_data:
+        type: string
+        description: Path to profiling data for guided optimization
+
+  output_schema:
+    type: object
+    properties:
+      optimized_code:
+        type: string
+      optimizations_applied:
+        type: array
+        items:
+          type: object
+          properties:
+            type:
+              type: string
+            location:
+              type: object
+            description:
+              type: string
+            estimated_improvement:
+              type: string
+            tradeoffs:
+              type: array
+              items:
+                type: string
+      metrics:
+        type: object
+        properties:
+          estimated_speedup:
+            type: number
+          complexity_change:
+            type: number
+          size_change:
+            type: number
+      recommendations:
+        type: array
+        items:
+          type: object
+          properties:
+            optimization:
+              type: string
+            requires_manual_review:
+              type: boolean
+            reason:
+              type: string
+
+  performance:
+    avg_latency_ms: 3000
+    max_tokens: 24000
+    timeout_seconds: 120
+
+  parallelization:
+    max_concurrent: 20
+    recommended_batch_size: 5
+
+  tags:
+    - transformation
+    - optimization
+    - performance
+    - refactoring

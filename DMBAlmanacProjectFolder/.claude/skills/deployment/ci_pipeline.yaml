@@ -1,0 +1,137 @@
+# Universal Agent Framework - CI Pipeline Skill
+# Category: Deployment | Swarm: Self-Healing | Automation: Full
+
+skill:
+  id: skill_ci_pipeline
+  name: CI Pipeline Generation
+  version: 1.0.0
+  category: deployment
+
+  description: |
+    Generates comprehensive CI/CD pipeline configurations.
+    Supports GitHub Actions, GitLab CI, and other platforms.
+    Includes testing, security scanning, and deployment stages.
+
+  invocation:
+    command: /ci-setup
+    aliases: [setup-ci, ci]
+
+  parameters:
+    - name: platform
+      type: string
+      enum: [github_actions, gitlab_ci, circleci, jenkins, azure_devops]
+      default: github_actions
+
+    - name: project_type
+      type: string
+      description: Auto-detected from package.json/Cargo.toml/etc
+
+    - name: include_stages
+      type: array
+      items:
+        type: string
+        enum: [lint, test, build, security, deploy, notify]
+      default: [lint, test, build, security]
+
+    - name: environments
+      type: array
+      items:
+        type: string
+      default: [development, staging]
+
+    - name: node_version
+      type: string
+      default: "20"
+
+  workflow:
+    phases:
+      - name: Project Analysis
+        agent: learner_convention_extractor
+        tier: haiku
+        actions:
+          - Detect project type
+          - Identify frameworks
+          - Find existing CI config
+        output: project_analysis
+
+      - name: Pipeline Generation
+        agent: generator_config
+        tier: sonnet
+        actions:
+          - Generate CI configuration
+          - Add caching strategies
+          - Configure matrix builds
+          - Add notifications
+        output: pipeline_config
+
+      - name: Security Integration
+        agent: generator_config
+        tier: haiku
+        condition: security in include_stages
+        actions:
+          - Add security scanning jobs
+          - Configure dependency audit
+          - Add secret scanning
+        output: security_config
+
+      - name: Deployment Setup
+        agent: generator_config
+        tier: sonnet
+        condition: deploy in include_stages
+        actions:
+          - Generate deployment jobs
+          - Configure environments
+          - Add approval gates
+        output: deployment_config
+
+      - name: Validation
+        agent: validator_schema
+        tier: haiku
+        actions:
+          - Validate CI config syntax
+          - Check for best practices
+        output: validation_results
+
+  outputs:
+    - name: ci_config
+      type: object
+      schema:
+        filename: string
+        content: string
+        additional_files: array
+
+    - name: setup_instructions
+      type: string
+      description: Instructions for required secrets and setup
+
+  cost_model:
+    basic_pipeline:
+      sonnet_calls: 2
+      haiku_calls: 3
+      estimated_cost: 0.007
+
+    full_pipeline:
+      sonnet_calls: 4
+      haiku_calls: 5
+      estimated_cost: 0.013
+
+  examples:
+    - name: Basic GitHub Actions
+      invocation: /ci-setup --platform github_actions
+      expected:
+        files_generated: 1
+        jobs: 4
+        cost: 0.007
+
+    - name: Full pipeline with deployments
+      invocation: /ci-setup --include_stages lint,test,build,security,deploy --environments development,staging,production
+      expected:
+        files_generated: 3
+        jobs: 8
+        cost: 0.013
+
+  tags:
+    - ci_cd
+    - automation
+    - deployment
+    - devops

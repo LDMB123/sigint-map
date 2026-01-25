@@ -1,0 +1,190 @@
+{
+	"prerender": [
+		{
+			"where": { "href_matches": "/" },
+			"eagerness": "eager",
+			"referrer_policy": "strict-origin-when-cross-origin"
+		},
+		{
+			"where": { "selector_matches": ".hero-link, .featured-link, [data-prerender=\"true\"]" },
+			"eagerness": "eager"
+		},
+		{
+			"where": { "href_matches": "/songs" },
+			"eagerness": "moderate",
+			"referrer_policy": "strict-origin-when-cross-origin"
+		},
+		{
+			"where": { "href_matches": "/tours" },
+			"eagerness": "moderate",
+			"referrer_policy": "strict-origin-when-cross-origin"
+		},
+		{
+			"where": { "href_matches": "/venues" },
+			"eagerness": "moderate",
+			"referrer_policy": "strict-origin-when-cross-origin"
+		},
+		{
+			"where": { "href_matches": "/guests" },
+			"eagerness": "conservative",
+			"referrer_policy": "strict-origin-when-cross-origin"
+		},
+		{
+			"where": { "href_matches": "/stats" },
+			"eagerness": "conservative",
+			"referrer_policy": "strict-origin-when-cross-origin"
+		},
+		{
+			"where": { "href_matches": "/liberation" },
+			"eagerness": "conservative",
+			"referrer_policy": "strict-origin-when-cross-origin"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/tours/*" },
+					{ "selector_matches": "a[href^=\"/tours/202\"]" }
+				]
+			},
+			"eagerness": "moderate"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/shows/*" },
+					{ "selector_matches": "[data-priority=\"eager\"] a" }
+				]
+			},
+			"eagerness": "moderate"
+		},
+		{
+			"where": { "selector_matches": "[data-related=\"true\"] a" },
+			"eagerness": "conservative"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/songs/*" },
+					{ "selector_matches": "[data-song-adjacent] a" }
+				]
+			},
+			"eagerness": "conservative"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/venues/*" },
+					{ "selector_matches": "[data-venue-adjacent] a" }
+				]
+			},
+			"eagerness": "conservative"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/tours/*" },
+					{ "selector_matches": "[data-tour-nav] a" }
+				]
+			},
+			"eagerness": "conservative"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/shows/*" },
+					{ "selector_matches": "[data-show-context] a" }
+				]
+			},
+			"eagerness": "conservative"
+		}
+	],
+	"prefetch": [
+		{
+			"where": {
+				"selector_matches": "nav a"
+			},
+			"eagerness": "moderate",
+			"referrer_policy": "strict-origin-when-cross-origin"
+		},
+		{
+			"where": {
+				"selector_matches": "a[href^=\"/songs\"], a[href^=\"/tours\"], a[href^=\"/venues\"], a[href^=\"/guests\"]"
+			},
+			"eagerness": "conservative"
+		},
+		{
+			"where": { "selector_matches": "a[href^=\"/shows/\"]" },
+			"eagerness": "conservative"
+		},
+		{
+			"where": {
+				"selector_matches": "a[href^=\"/stats\"], a[href^=\"/analysis\"], a[data-analytics=\"true\"]"
+			},
+			"eagerness": "conservative"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/songs/*" },
+					{ "selector_matches": "[data-setlist-id] a" }
+				]
+			},
+			"eagerness": "conservative"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/venues/*" },
+					{ "selector_matches": "[data-venue-context] a" }
+				]
+			},
+			"eagerness": "conservative"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/tours/*" },
+					{ "selector_matches": "[data-tour-context] a" }
+				]
+			},
+			"eagerness": "conservative"
+		},
+		{
+			"where": { "selector_matches": "[data-page-nav] a, a[rel=\"next\"], a[rel=\"prev\"]" },
+			"eagerness": "moderate"
+		},
+		{
+			"where": {
+				"selector_matches": "[data-search-filters] a, [data-sort-option] a"
+			},
+			"eagerness": "conservative"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/songs/*" },
+					{ "selector_matches": "[data-song-context] a" }
+				]
+			},
+			"eagerness": "conservative"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/venues/*" },
+					{ "selector_matches": "[data-show-context] a" }
+				]
+			},
+			"eagerness": "conservative"
+		},
+		{
+			"where": {
+				"and": [
+					{ "href_matches": "/tours/*" },
+					{ "selector_matches": "[data-show-context] a" }
+				]
+			},
+			"eagerness": "conservative"
+		}
+	]
+}

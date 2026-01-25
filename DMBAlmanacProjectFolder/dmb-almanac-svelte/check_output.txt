@@ -1,0 +1,1199 @@
+
+> dmb-almanac-svelte@0.1.0 check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte
+Getting Svelte diagnostics...
+
+The following Vite config options will be overridden by SvelteKit:
+  - build.rollupOptions.output.assetFileNames
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/stores/pwa.ts:132:12
+Error: 'reg.periodicSync' is of type 'unknown'. 
+				try {
+					await reg.periodicSync.register('dmb-data-refresh', {
+						minInterval: 24 * 60 * 60 * 1000 // 24 hours
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:61:5
+Error: at-rule or selector expected (css)
+      letter-spacing: if(style(--use-compact-spacing: true), 0em, var(--tracking-wide));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:67:5
+Error: at-rule or selector expected (css)
+      letter-spacing: if(style(--use-compact-spacing: true), 0em, var(--tracking-wide));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:73:5
+Error: at-rule or selector expected (css)
+      letter-spacing: if(style(--use-compact-spacing: true), 0em, var(--tracking-wide));
+    }
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:81:5
+Error: at-rule or selector expected (css)
+      font-size: 10px;
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:92:3
+Error: at-rule or selector expected (css)
+    }
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:56:37
+Error: { expected (css)
+  /* Sizes - CSS if() for density-responsive badge sizing (Chrome 143+) */
+  @supports (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:56:33
+Error: ) expected (css)
+  /* Sizes - CSS if() for density-responsive badge sizing (Chrome 143+) */
+  @supports (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:59:16
+Error: { expected (css)
+      padding: if(style(--use-compact-spacing: true), 1px 6px, 2px 8px);
+      font-size: if(style(--use-compact-spacing: true), 9px, 10px);
+      letter-spacing: if(style(--use-compact-spacing: true), 0em, var(--tracking-wide));
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:60:21
+Error: { expected (css)
+      font-size: if(style(--use-compact-spacing: true), 9px, 10px);
+      letter-spacing: if(style(--use-compact-spacing: true), 0em, var(--tracking-wide));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:64:46
+Error: ) expected (css)
+    .md {
+      padding: if(style(--use-compact-spacing: true), 3px 8px, 4px 10px);
+      font-size: if(style(--use-compact-spacing: true), 10px, var(--text-xs));
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:65:16
+Error: { expected (css)
+      padding: if(style(--use-compact-spacing: true), 3px 8px, 4px 10px);
+      font-size: if(style(--use-compact-spacing: true), 10px, var(--text-xs));
+      letter-spacing: if(style(--use-compact-spacing: true), 0em, var(--tracking-wide));
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:66:21
+Error: { expected (css)
+      font-size: if(style(--use-compact-spacing: true), 10px, var(--text-xs));
+      letter-spacing: if(style(--use-compact-spacing: true), 0em, var(--tracking-wide));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:70:46
+Error: ) expected (css)
+    .lg {
+      padding: if(style(--use-compact-spacing: true), 4px 12px, 5px 14px);
+      font-size: if(style(--use-compact-spacing: true), var(--text-xs), var(--text-sm));
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:71:16
+Error: { expected (css)
+      padding: if(style(--use-compact-spacing: true), 4px 12px, 5px 14px);
+      font-size: if(style(--use-compact-spacing: true), var(--text-xs), var(--text-sm));
+      letter-spacing: if(style(--use-compact-spacing: true), 0em, var(--tracking-wide));
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:72:21
+Error: { expected (css)
+      font-size: if(style(--use-compact-spacing: true), var(--text-xs), var(--text-sm));
+      letter-spacing: if(style(--use-compact-spacing: true), 0em, var(--tracking-wide));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:77:41
+Error: { expected (css)
+  /* Fallback for browsers without CSS if() support */
+  @supports not (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:77:37
+Error: ) expected (css)
+  /* Fallback for browsers without CSS if() support */
+  @supports not (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Badge.svelte:80:16
+Error: { expected (css)
+      padding: 2px 8px;
+      font-size: 10px;
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:183:5
+Error: at-rule or selector expected (css)
+      padding: if(style(--card-density: compact), var(--space-1), 0);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:187:5
+Error: at-rule or selector expected (css)
+      padding: if(style(--card-density: compact), var(--space-2), var(--space-3));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:191:5
+Error: at-rule or selector expected (css)
+      padding: if(style(--card-density: compact), var(--space-3), var(--space-4));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:195:5
+Error: at-rule or selector expected (css)
+      padding: if(style(--card-density: compact), var(--space-4), var(--space-6));
+    }
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:202:5
+Error: at-rule or selector expected (css)
+      padding: 0;
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:215:3
+Error: at-rule or selector expected (css)
+    }
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:180:37
+Error: { expected (css)
+  /* Padding - CSS if() for density-responsive padding (Chrome 143+) */
+  @supports (width: if(style(--x: 1), 10px, 20px)) {
+    .padding-none {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:180:33
+Error: ) expected (css)
+  /* Padding - CSS if() for density-responsive padding (Chrome 143+) */
+  @supports (width: if(style(--x: 1), 10px, 20px)) {
+    .padding-none {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:186:39
+Error: ) expected (css)
+    .padding-sm {
+      padding: if(style(--card-density: compact), var(--space-2), var(--space-3));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:190:39
+Error: ) expected (css)
+    .padding-md {
+      padding: if(style(--card-density: compact), var(--space-3), var(--space-4));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:194:39
+Error: ) expected (css)
+    .padding-lg {
+      padding: if(style(--card-density: compact), var(--space-4), var(--space-6));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:199:41
+Error: { expected (css)
+  /* Fallback for browsers without CSS if() support */
+  @supports not (width: if(style(--x: 1), 10px, 20px)) {
+    .padding-none {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Card.svelte:199:37
+Error: ) expected (css)
+  /* Fallback for browsers without CSS if() support */
+  @supports not (width: if(style(--x: 1), 10px, 20px)) {
+    .padding-none {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/TourMap.svelte:216:23
+Error: 'd3Scale' is possibly 'null'. (ts)
+      legendItems.forEach((color, i) => {
+        const scale = d3Scale.scaleLinear()
+          .domain([0, legendItems.length - 1])
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/GapTimeline.svelte:318:3
+Warn: Do not use empty rulesets (css)
+  /* Add scroll-driven animation support */
+  :global(.gap-timeline.scroll-reveal) {
+    /* Styles are handled by global utility class */
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/GapTimeline.svelte:59:28
+Error: Cannot find name 'renderChart'. (ts)
+      // Render after modules are loaded
+      if (data.length > 0) renderChart();
+    } catch (error) {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/GapTimeline.svelte:133:26
+Error: Untyped function calls may not accept type arguments. (ts)
+      const uniqueSongs = Array.from(new Set(parsedData.map(d => d.songName)));
+      const colorScale = d3Scale.scaleOrdinal<string>()
+        .domain(uniqueSongs)
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/GapTimeline.svelte:217:35
+Error: Parameter 'event' implicitly has an 'any' type. (ts)
+        .attr('pointer-events', 'all')
+        .on('mousemove', function(event) {
+          const [mouseX] = d3Selection.pointer(event, this);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/GapTimeline.svelte:218:55
+Error: 'this' implicitly has type 'any' because it does not have a type annotation. (ts)
+        .on('mousemove', function(event) {
+          const [mouseX] = d3Selection.pointer(event, this);
+          const date = xScale.invert(mouseX);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/SongHeatmap.svelte:262:3
+Warn: Do not use empty rulesets (css)
+  
+  :global(.song-heatmap.scroll-reveal) {
+    /* Styles handled by global utility */
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:101:26
+Error: Untyped function calls may not accept type arguments. (ts)
+      // Color scale - more red = more rare
+      const colorScale = d3Scale.scaleLinear<string>()
+        .domain([0, arrayMax(topData, d => d.rarity) || 100])
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:109:20
+Error: Parameter 'd' implicitly has an 'any' type. (ts)
+        .join('rect')
+        .attr('x', d => xScale(d.id) || 0)
+        .attr('y', d => yScale(d.rarity))
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:110:20
+Error: Parameter 'd' implicitly has an 'any' type. (ts)
+        .attr('x', d => xScale(d.id) || 0)
+        .attr('y', d => yScale(d.rarity))
+        .attr('width', xScale.bandwidth())
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:112:25
+Error: Parameter 'd' implicitly has an 'any' type. (ts)
+        .attr('width', xScale.bandwidth())
+        .attr('height', d => innerHeight - yScale(d.rarity))
+        .attr('fill', d => colorScale(d.rarity))
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:113:23
+Error: Parameter 'd' implicitly has an 'any' type. (ts)
+        .attr('height', d => innerHeight - yScale(d.rarity))
+        .attr('fill', d => colorScale(d.rarity))
+        .attr('rx', 4)
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:116:35
+Error: Parameter 'event' implicitly has an 'any' type. (ts)
+        .style('cursor', 'pointer')
+        .on('mouseover', function(event, d) {
+          selectedSong = d.id;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:116:42
+Error: Parameter 'd' implicitly has an 'any' type. (ts)
+        .style('cursor', 'pointer')
+        .on('mouseover', function(event, d) {
+          selectedSong = d.id;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:118:30
+Error: 'this' implicitly has type 'any' because it does not have a type annotation. (ts)
+          selectedSong = d.id;
+          d3Selection.select(this)
+            .transition()
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:125:30
+Error: 'this' implicitly has type 'any' because it does not have a type annotation. (ts)
+          selectedSong = null;
+          d3Selection.select(this)
+            .transition()
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:131:15
+Error: Parameter 'd' implicitly has an 'any' type. (ts)
+        .append('title')
+        .text(d => `${d.name}: Rarity ${Math.round(d.rarity)}%`);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:149:20
+Error: Parameter 'd' implicitly has an 'any' type. (ts)
+        .join('text')
+        .attr('x', d => (xScale(d.id) || 0) + (xScale.bandwidth() / 2))
+        .attr('y', 10)
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:154:15
+Error: Parameter 'd' implicitly has an 'any' type. (ts)
+        .attr('fill', 'currentColor')
+        .text(d => d.name);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:161:20
+Error: Parameter 'd' implicitly has an 'any' type. (ts)
+        .attr('class', 'value-label')
+        .attr('x', d => (xScale(d.id) || 0) + (xScale.bandwidth() / 2))
+        .attr('y', d => yScale(d.rarity) - 5)
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:162:20
+Error: Parameter 'd' implicitly has an 'any' type. (ts)
+        .attr('x', d => (xScale(d.id) || 0) + (xScale.bandwidth() / 2))
+        .attr('y', d => yScale(d.rarity) - 5)
+        .attr('text-anchor', 'middle')
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:167:15
+Error: Parameter 'd' implicitly has an 'any' type. (ts)
+        .attr('fill', 'currentColor')
+        .text(d => `${Math.round(d.rarity)}%`);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/visualizations/RarityScorecard.svelte:203:30
+Error: Argument of type 'HTMLDivElement | undefined' is not assignable to parameter of type 'Element'.
+  Type 'undefined' is not assignable to type 'Element'. (ts)
+      });
+      resizeObserver.observe(containerElement);
+    });
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/bridge.ts:751:26
+Error: Cannot find name 'shows'. 
+        const wasmReturn = accessor.getSongIdsForVenueTyped(
+          JSON.stringify(shows),
+          inputJson,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/bridge.ts:753:18
+Error: Cannot find name 'venueId'. 
+          inputJson,
+          BigInt(venueId)
+        );
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/bridge.ts:841:13
+Error: Type '{ ids: BigInt64Array<ArrayBufferLike>; counts: Int32Array<ArrayBufferLike>; }' is missing the following properties from type 'ParallelTypedArrays<BigInt64Array<ArrayBufferLike>, Int32Array<ArrayBufferLike>>': values, length, isZeroCopy 
+            success: true,
+            data: result,
+            executionTime,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/errors/types.ts:271:12
+Error: Property 'statusCode' in type 'TelemetryError' is not assignable to the same property in base type 'AppError'.
+  Type 'number | undefined' is not assignable to type 'number'.
+    Type 'undefined' is not assignable to type 'number'. 
+  readonly errorCode: string;
+  readonly statusCode?: number;
+  readonly entryId?: number;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/services/telemetryQueue.ts:473:68
+Error: Argument of type 'unknown' is not assignable to parameter of type 'Error | AppError | undefined'. 
+  } catch (error) {
+    errorLogger.error('[TelemetryQueue] Error queueing telemetry', error, {
+      errorCode: TelemetryErrorCode.UNKNOWN_ERROR,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/services/telemetryQueue.ts:569:86
+Error: Argument of type 'unknown' is not assignable to parameter of type 'Error | AppError | undefined'. 
+          } catch (error) {
+            errorLogger.error(`[TelemetryQueue] Error processing entry ${entry.id}`, error);
+            return {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/services/telemetryQueue.ts:637:65
+Error: Argument of type 'unknown' is not assignable to parameter of type 'Error | AppError | undefined'. 
+  } catch (error) {
+    errorLogger.error('[TelemetryQueue] Error in processQueue', error);
+    throw error;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/services/telemetryQueue.ts:916:77
+Error: Argument of type 'unknown' is not assignable to parameter of type 'Error | AppError | undefined'. 
+  } catch (error) {
+    errorLogger.error('[TelemetryQueue] Error registering Background Sync', error);
+    throw error;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/index.ts:360:3
+Error: Module '"./browser-apis"' declares 'Scheduler' locally, but it is not exported. 
+export type {
+  Scheduler,
+  YieldOptions,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/index.ts:361:3
+Error: Module '"./browser-apis"' declares 'YieldOptions' locally, but it is not exported. 
+  Scheduler,
+  YieldOptions,
+  PostTaskOptions,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/index.ts:362:3
+Error: Module '"./browser-apis"' declares 'PostTaskOptions' locally, but it is not exported. 
+  YieldOptions,
+  PostTaskOptions,
+  NavigatorWithInputPending,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/index.ts:363:3
+Error: Module '"./browser-apis"' has no exported member 'NavigatorWithInputPending'. 
+  PostTaskOptions,
+  NavigatorWithInputPending,
+  DocumentWithPrerendering,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/index.ts:364:3
+Error: Module '"./browser-apis"' has no exported member 'DocumentWithPrerendering'. 
+  NavigatorWithInputPending,
+  DocumentWithPrerendering,
+  ViewTransition,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/index.ts:365:3
+Error: Module '"./browser-apis"' has no exported member 'ViewTransition'. 
+  DocumentWithPrerendering,
+  ViewTransition,
+  SpeculationRulesEagerness,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/index.ts:366:3
+Error: Module '"./browser-apis"' declares 'SpeculationRulesEagerness' locally, but it is not exported. 
+  ViewTransition,
+  SpeculationRulesEagerness,
+  SpeculationRulesPrerender,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/index.ts:367:3
+Error: Module '"./browser-apis"' declares 'SpeculationRulesPrerender' locally, but it is not exported. 
+  SpeculationRulesEagerness,
+  SpeculationRulesPrerender,
+  SpeculationRulesPrefetch,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/index.ts:368:3
+Error: Module '"./browser-apis"' declares 'SpeculationRulesPrefetch' locally, but it is not exported. 
+  SpeculationRulesPrerender,
+  SpeculationRulesPrefetch,
+  PerformanceScriptTiming,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/index.ts:369:3
+Error: Module '"./browser-apis"' declares 'PerformanceScriptTiming' locally, but it is not exported. 
+  SpeculationRulesPrefetch,
+  PerformanceScriptTiming,
+  PerformanceEntryWithLongAnimationFrame,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/types/index.ts:370:3
+Error: Module '"./browser-apis"' declares 'PerformanceEntryWithLongAnimationFrame' locally, but it is not exported. 
+  PerformanceScriptTiming,
+  PerformanceEntryWithLongAnimationFrame,
+} from './browser-apis';
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/utils/performance.ts:395:12
+Error: 'globalThis.scheduler.postTask' is of type 'unknown'. 
+  ) {
+    return globalThis.scheduler.postTask(task, { priority });
+  } else {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:352:5
+Error: Unused '@ts-expect-error' directive. 
+  if (!transformModuleLoaded) {
+    // @ts-expect-error - WASM module path resolution handled by Vite
+    const module = await import('$wasm/dmb-transform/pkg/dmb_transform.js');
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:356:12
+Error: Conversion of type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/pkg/dmb_transform")' to type 'WasmModuleConstructors & { default: () => Promise<void>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'SetlistPredictor' is missing in type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/pkg/dmb_transform")' but required in type 'WasmModuleConstructors'. 
+    transformModuleLoaded = true;
+    return module as WasmModuleConstructors & { default: () => Promise<void> };
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:359:3
+Error: Unused '@ts-expect-error' directive. 
+
+  // @ts-expect-error - WASM module path resolution handled by Vite
+  const module = await import('$wasm/dmb-transform/pkg/dmb_transform.js');
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:361:10
+Error: Conversion of type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/pkg/dmb_transform")' to type 'WasmModuleConstructors & { default: () => Promise<void>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'SetlistPredictor' is missing in type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/pkg/dmb_transform")' but required in type 'WasmModuleConstructors'. 
+  const module = await import('$wasm/dmb-transform/pkg/dmb_transform.js');
+  return module as WasmModuleConstructors & { default: () => Promise<void> };
+}
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:374:5
+Error: Unused '@ts-expect-error' directive. 
+  if (!segueModuleLoaded) {
+    // @ts-expect-error - WASM module path resolution handled by Vite
+    const module = await import('$wasm/dmb-segue-analysis/pkg/dmb_segue_analysis.js');
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:378:12
+Error: Conversion of type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-segue-analysis/pkg/dmb_segue_analysis")' to type 'WasmModuleConstructors & { default: () => Promise<void>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-segue-analysis/pkg/dmb_segue_analysis")' is missing the following properties from type 'WasmModuleConstructors': TfIdfIndex, SetlistSimilarityEngine, RarityEngine 
+    segueModuleLoaded = true;
+    return module as WasmModuleConstructors & { default: () => Promise<void> };
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:381:3
+Error: Unused '@ts-expect-error' directive. 
+
+  // @ts-expect-error - WASM module path resolution handled by Vite
+  const module = await import('$wasm/dmb-segue-analysis/pkg/dmb_segue_analysis.js');
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:383:10
+Error: Conversion of type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-segue-analysis/pkg/dmb_segue_analysis")' to type 'WasmModuleConstructors & { default: () => Promise<void>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-segue-analysis/pkg/dmb_segue_analysis")' is missing the following properties from type 'WasmModuleConstructors': TfIdfIndex, SetlistSimilarityEngine, RarityEngine 
+  const module = await import('$wasm/dmb-segue-analysis/pkg/dmb_segue_analysis.js');
+  return module as WasmModuleConstructors & { default: () => Promise<void> };
+}
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:396:5
+Error: Unused '@ts-expect-error' directive. 
+  if (!dateUtilsModuleLoaded) {
+    // @ts-expect-error - WASM module path resolution handled by Vite
+    const module = await import('$wasm/dmb-date-utils/pkg/dmb_date_utils.js');
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:400:12
+Error: Conversion of type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-date-utils/pkg/dmb_date_utils")' to type 'DateUtilsModule & { default: () => Promise<void>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'daysBetween' is missing in type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-date-utils/pkg/dmb_date_utils")' but required in type 'DateUtilsModule'. 
+    dateUtilsModuleLoaded = true;
+    return module as DateUtilsModule & { default: () => Promise<void> };
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:403:3
+Error: Unused '@ts-expect-error' directive. 
+
+  // @ts-expect-error - WASM module path resolution handled by Vite
+  const module = await import('$wasm/dmb-date-utils/pkg/dmb_date_utils.js');
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts:405:10
+Error: Conversion of type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-date-utils/pkg/dmb_date_utils")' to type 'DateUtilsModule & { default: () => Promise<void>; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'daysBetween' is missing in type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-date-utils/pkg/dmb_date_utils")' but required in type 'DateUtilsModule'. 
+  const module = await import('$wasm/dmb-date-utils/pkg/dmb_date_utils.js');
+  return module as DateUtilsModule & { default: () => Promise<void> };
+}
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1279:1
+Error: Declaration or statement expected. 
+	return result;
+}
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1232:2
+Error: Type '{ byYear: { years: Int32Array<ArrayBuffer>; counts: Uint32Array<ArrayBuffer>; minYear: number; maxYear: number; total: number; }; bySong: { ...; }; uniqueSongsByYear: YearCount[]; }' is not assignable to type '{ byYear: TypedYearAggregation; bySong: { songIds: Int32Array<ArrayBufferLike>; counts: Int32Array<ArrayBufferLike>; }; uniqueSongsByYear: YearCount[]; }'.
+  Types of property 'byYear' are incompatible.
+    Property 'length' is missing in type '{ years: Int32Array<ArrayBuffer>; counts: Uint32Array<ArrayBuffer>; minYear: number; maxYear: number; total: number; }' but required in type 'TypedYearAggregation'. 
+	cache.set(cacheKey, multiFieldResult, CacheTTL.AGGREGATION);
+	return multiFieldResult;
+}
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1236:23
+Error: Cannot find name 'yearCounts'. 
+	// Build year aggregation
+	const nonZeroYears = yearCounts.reduce((sum, c) => sum + (c > 0 ? 1 : 0), 0);
+	const years = new Int32Array(nonZeroYears);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1236:42
+Error: Parameter 'sum' implicitly has an 'any' type. 
+	// Build year aggregation
+	const nonZeroYears = yearCounts.reduce((sum, c) => sum + (c > 0 ? 1 : 0), 0);
+	const years = new Int32Array(nonZeroYears);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1236:47
+Error: Parameter 'c' implicitly has an 'any' type. 
+	// Build year aggregation
+	const nonZeroYears = yearCounts.reduce((sum, c) => sum + (c > 0 ? 1 : 0), 0);
+	const years = new Int32Array(nonZeroYears);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1241:22
+Error: Cannot find name 'yearCounts'. 
+	let idx = 0;
+	for (let i = 0; i < yearCounts.length; i++) {
+		if (yearCounts[i] > 0) {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1242:7
+Error: Cannot find name 'yearCounts'. 
+	for (let i = 0; i < yearCounts.length; i++) {
+		if (yearCounts[i] > 0) {
+			years[idx] = indexToYear(i);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1244:18
+Error: Cannot find name 'yearCounts'. 
+			years[idx] = indexToYear(i);
+			counts[idx] = yearCounts[i];
+			idx++;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1250:26
+Error: Cannot find name 'songCounts'. Did you mean 'songCountArr'? 
+	// Build song counts (sorted by count descending)
+	const sortedSongs = [...songCounts.entries()].sort((a, b) => b[1] - a[1]);
+	const songIds = new Int32Array(sortedSongs.length);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1260:39
+Error: Cannot find name 'songsByYear'. 
+	// Build unique songs by year
+	const uniqueSongsByYear = Array.from(songsByYear.entries())
+		.map(([year, songs]) => ({ year, count: songs.size }))
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1261:8
+Error: Argument of type '([year, songs]: [any, any]) => { year: any; count: any; }' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => { year: any; count: any; }'.
+  Types of parameters '__0' and 'value' are incompatible.
+    Type 'unknown' is not assignable to type '[any, any]'. 
+	const uniqueSongsByYear = Array.from(songsByYear.entries())
+		.map(([year, songs]) => ({ year, count: songs.size }))
+		.sort((a, b) => b.year - a.year);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1262:19
+Error: 'b' is of type 'unknown'. 
+		.map(([year, songs]) => ({ year, count: songs.size }))
+		.sort((a, b) => b.year - a.year);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1262:28
+Error: 'a' is of type 'unknown'. 
+		.map(([year, songs]) => ({ year, count: songs.size }))
+		.sort((a, b) => b.year - a.year);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1269:13
+Error: Cannot find name 'minYear'. 
+			length: nonZeroYears,
+			minYear: minYear === Infinity ? BASE_YEAR : minYear,
+			maxYear: maxYear === -Infinity ? BASE_YEAR : maxYear,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1269:48
+Error: Cannot find name 'minYear'. 
+			length: nonZeroYears,
+			minYear: minYear === Infinity ? BASE_YEAR : minYear,
+			maxYear: maxYear === -Infinity ? BASE_YEAR : maxYear,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1270:13
+Error: Cannot find name 'maxYear'. 
+			minYear: minYear === Infinity ? BASE_YEAR : minYear,
+			maxYear: maxYear === -Infinity ? BASE_YEAR : maxYear,
+			total: totalByYear
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1270:49
+Error: Cannot find name 'maxYear'. 
+			minYear: minYear === Infinity ? BASE_YEAR : minYear,
+			maxYear: maxYear === -Infinity ? BASE_YEAR : maxYear,
+			total: totalByYear
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1271:11
+Error: Cannot find name 'totalByYear'. 
+			maxYear: maxYear === -Infinity ? BASE_YEAR : maxYear,
+			total: totalByYear
+		},
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1277:2
+Error: Cannot find name 'cache'. 
+
+	cache.set(cacheKey, result, CacheTTL.AGGREGATION);
+	return result;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/aggregations.ts:1277:12
+Error: Cannot find name 'cacheKey'. 
+
+	cache.set(cacheKey, result, CacheTTL.AGGREGATION);
+	return result;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/forceSimulation.ts:1223:35
+Error: Cannot find module '/wasm/dmb-force-simulation/pkg/dmb_force_simulation.js' or its corresponding type declarations. 
+      // Dynamic import of the WASM module
+      const module = await import('/wasm/dmb-force-simulation/pkg/dmb_force_simulation.js');
+      await module.default?.();  // Initialize if init function exists
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/forceSimulation.ts:1645:31
+Error: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'. 
+    alpha(value?: number): any {
+      return simulation.alpha(value);
+    },
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/search.ts:533:1
+Error: 'catch' or 'finally' expected. 
+ */
+function transformWasmSearchResults(
+	wasmResults: WasmSearchResultInternal,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/search.ts:857:1
+Error: '}' expected. 
+}
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/search.ts:435:4
+Error: Function lacks ending return statement and return type does not include 'undefined'. 
+	limit: number = 10
+): Promise<GlobalSearchResults> {
+	// Normalize query first
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/validation.ts:157:23
+Error: Property 'validateForeignKeysTyped' does not exist on type 'typeof import("/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/pkg/dmb_transform")'. Did you mean 'validateForeignKeys'? 
+      // Check if validation functions are available
+      if (typeof wasm.validateForeignKeysTyped !== 'function') {
+        console.warn('[WASM Validation] Validation functions not available in WASM module');
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/index.ts:446:3
+Error: Module '"./search"' has no exported member 'wasmBatchSearchTyped'. 
+  // TypedArray batch search
+  wasmBatchSearchTyped,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/index.ts:449:3
+Error: Module '"./search"' has no exported member 'wasmIncrementalSearch'. 
+  // Incremental search (for typeahead)
+  wasmIncrementalSearch,
+  resetIncrementalSearch,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/index.ts:450:3
+Error: Module '"./search"' has no exported member 'resetIncrementalSearch'. 
+  wasmIncrementalSearch,
+  resetIncrementalSearch,
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/WindowControlsOverlayHeader.svelte:116:5
+Warn: Unknown property: 'app-region' (css)
+    /* stylelint-disable-next-line property-no-unknown */
+    app-region: drag;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/WindowControlsOverlayHeader.svelte:128:5
+Warn: Unknown property: 'app-region' (css)
+    /* stylelint-disable-next-line property-no-unknown */
+    app-region: no-drag;
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/WindowControlsOverlayHeader.svelte:214:7
+Warn: Unknown property: 'app-region' (css)
+      /* stylelint-disable-next-line property-no-unknown */
+      app-region: initial;
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Dropdown.svelte:38:32
+Warn: This reference only captures the initial value of `id`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+  let focusedIndex = $state(-1);
+  const anchorName = `--menu-${id}`;
+  let menuElement = $state<HTMLElement | null>(null);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Dropdown.svelte:160:5
+Warn: Unknown property: 'touch-target-size' (css)
+    /* stylelint-disable-next-line property-no-unknown -- CSS Interop spec draft property */
+    touch-target-size: var(--touch-target-min);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Dropdown.svelte:224:5
+Warn: Unknown property: 'inset-area' (css)
+  .dropdown-menu.position-bottom {
+    inset-area: bottom;
+    margin-top: 4px;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Dropdown.svelte:230:5
+Warn: Unknown property: 'inset-area' (css)
+  .dropdown-menu.position-top {
+    inset-area: top;
+    margin-bottom: 4px;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Dropdown.svelte:91:3
+Error: Cannot find name 'onMount'. (ts)
+
+  onMount(() => {
+    if (menuElement) {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Popover.svelte:37:43
+Warn: This reference only captures the initial value of `id`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+  const anchorName = `--popover-trigger-${id}`;
+  let popoverElement = $state<HTMLElement | null>(null);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Popover.svelte:197:7
+Warn: Unknown property: 'inset-area' (css)
+    .popover-content.position-bottom {
+      inset-area: bottom;
+      margin-top: var(--popover-offset);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Popover.svelte:203:7
+Warn: Unknown property: 'inset-area' (css)
+    .popover-content.position-top {
+      inset-area: top;
+      margin-bottom: var(--popover-offset);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Popover.svelte:209:7
+Warn: Unknown property: 'inset-area' (css)
+    .popover-content.position-left {
+      inset-area: left;
+      margin-right: var(--popover-offset);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Popover.svelte:215:7
+Warn: Unknown property: 'inset-area' (css)
+    .popover-content.position-right {
+      inset-area: right;
+      margin-left: var(--popover-offset);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Tooltip.svelte:33:35
+Warn: This reference only captures the initial value of `id`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+  const anchorName = `--trigger-${id}`;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Tooltip.svelte:123:3
+Warn: Unused CSS selector ".tooltip-content.visible"
+https://svelte.dev/e/css_unused_selector (svelte)
+  .tooltip-content:popover-open,
+  .tooltip-content.visible { /* Support both popover and manual show/hide */
+    opacity: 1;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Tooltip.svelte:130:5
+Warn: Unused CSS selector ".tooltip-content.visible"
+https://svelte.dev/e/css_unused_selector (svelte)
+    .tooltip-content:popover-open,
+    .tooltip-content.visible {
+      opacity: 0;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Tooltip.svelte:138:5
+Warn: Unknown property: 'inset-area' (css)
+  .tooltip-content.position-top {
+    inset-area: top;
+    margin-bottom: var(--tooltip-offset);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Tooltip.svelte:150:5
+Warn: Unknown property: 'inset-area' (css)
+  .tooltip-content.position-bottom {
+    inset-area: bottom;
+    margin-top: var(--tooltip-offset);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Tooltip.svelte:162:5
+Warn: Unknown property: 'inset-area' (css)
+  .tooltip-content.position-left {
+    inset-area: left;
+    margin-right: var(--tooltip-offset);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/anchored/Tooltip.svelte:174:5
+Warn: Unknown property: 'inset-area' (css)
+  .tooltip-content.position-right {
+    inset-area: right;
+    margin-left: var(--tooltip-offset);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:210:5
+Error: at-rule or selector expected (css)
+      border-radius: var(--radius-md);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:216:5
+Error: at-rule or selector expected (css)
+      height: if(style(--button-size: large), 44px, 40px);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:223:5
+Error: at-rule or selector expected (css)
+      font-weight: var(--font-semibold);
+    }
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:234:5
+Error: at-rule or selector expected (css)
+      border-radius: var(--radius-md);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:248:3
+Error: at-rule or selector expected (css)
+    }
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:203:37
+Error: { expected (css)
+  /* Sizes - CSS if() for size-responsive values (Chrome 143+) */
+  @supports (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:203:33
+Error: ) expected (css)
+  /* Sizes - CSS if() for size-responsive values (Chrome 143+) */
+  @supports (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:206:16
+Error: { expected (css)
+      padding: if(style(--button-size: large), 0.5rem 1rem, var(--space-1) var(--space-3));
+      font-size: if(style(--button-size: large), 0.9375rem, var(--text-sm));
+      height: if(style(--button-size: large), 36px, 32px);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:207:13
+Error: { expected (css)
+      font-size: if(style(--button-size: large), 0.9375rem, var(--text-sm));
+      height: if(style(--button-size: large), 36px, 32px);
+      min-height: if(style(--button-size: large), 36px, 32px);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:208:17
+Error: { expected (css)
+      height: if(style(--button-size: large), 36px, 32px);
+      min-height: if(style(--button-size: large), 36px, 32px);
+      border-radius: var(--radius-md);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:209:20
+Error: { expected (css)
+      min-height: if(style(--button-size: large), 36px, 32px);
+      border-radius: var(--radius-md);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:213:38
+Error: ) expected (css)
+    .md {
+      padding: if(style(--button-size: large), 0.75rem 1.25rem, var(--space-2) var(--space-4));
+      font-size: if(style(--button-size: large), 0.9375rem, var(--text-sm));
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:214:16
+Error: { expected (css)
+      padding: if(style(--button-size: large), 0.75rem 1.25rem, var(--space-2) var(--space-4));
+      font-size: if(style(--button-size: large), 0.9375rem, var(--text-sm));
+      height: if(style(--button-size: large), 44px, 40px);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:215:13
+Error: { expected (css)
+      font-size: if(style(--button-size: large), 0.9375rem, var(--text-sm));
+      height: if(style(--button-size: large), 44px, 40px);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:219:38
+Error: ) expected (css)
+    .lg {
+      padding: if(style(--button-size: large), 1rem 1.5rem, var(--space-3) var(--space-6));
+      font-size: if(style(--button-size: large), 1.0625rem, var(--text-base));
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:220:16
+Error: { expected (css)
+      padding: if(style(--button-size: large), 1rem 1.5rem, var(--space-3) var(--space-6));
+      font-size: if(style(--button-size: large), 1.0625rem, var(--text-base));
+      height: if(style(--button-size: large), 52px, 48px);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:221:13
+Error: { expected (css)
+      font-size: if(style(--button-size: large), 1.0625rem, var(--text-base));
+      height: if(style(--button-size: large), 52px, 48px);
+      font-weight: var(--font-semibold);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:222:18
+Error: { expected (css)
+      height: if(style(--button-size: large), 52px, 48px);
+      font-weight: var(--font-semibold);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:227:41
+Error: { expected (css)
+  /* Fallback for browsers without CSS if() support */
+  @supports not (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:227:37
+Error: ) expected (css)
+  /* Fallback for browsers without CSS if() support */
+  @supports not (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:230:16
+Error: { expected (css)
+      padding: var(--space-1) var(--space-3);
+      font-size: var(--text-sm);
+      height: 32px;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:231:13
+Error: { expected (css)
+      font-size: var(--text-sm);
+      height: 32px;
+      min-height: 32px;
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:232:17
+Error: { expected (css)
+      height: 32px;
+      min-height: 32px;
+      border-radius: var(--radius-md);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/Button.svelte:233:20
+Error: { expected (css)
+      min-height: 32px;
+      border-radius: var(--radius-md);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:225:5
+Error: at-rule or selector expected (css)
+      gap: if(style(--card-density: compact), var(--space-1), var(--space-2));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:230:5
+Error: at-rule or selector expected (css)
+      height: if(style(--card-density: compact), 32px, 36px);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:235:5
+Error: at-rule or selector expected (css)
+      height: if(style(--card-density: compact), 16px, 18px);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:239:5
+Error: at-rule or selector expected (css)
+      font-size: if(style(--card-density: compact), var(--text-xl), var(--text-2xl));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:243:5
+Error: at-rule or selector expected (css)
+      font-size: if(style(--card-density: compact), 10px, var(--text-xs));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:247:5
+Error: at-rule or selector expected (css)
+      padding: if(style(--card-density: compact), var(--space-3), var(--space-4));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:252:5
+Error: at-rule or selector expected (css)
+      gap: if(style(--card-density: compact), var(--space-2), var(--space-4));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:257:5
+Error: at-rule or selector expected (css)
+      height: if(style(--card-density: compact), 48px, 64px);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:262:5
+Error: at-rule or selector expected (css)
+      height: if(style(--card-density: compact), 24px, 32px);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:266:5
+Error: at-rule or selector expected (css)
+      font-size: if(style(--card-density: compact), var(--text-3xl), var(--text-4xl));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:270:5
+Error: at-rule or selector expected (css)
+      font-size: if(style(--card-density: compact), var(--text-sm), var(--text-base));
+    }
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:278:5
+Error: at-rule or selector expected (css)
+      gap: var(--space-2);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:324:3
+Error: at-rule or selector expected (css)
+    }
+  }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:221:37
+Error: { expected (css)
+  /* Size variants - CSS if() for density-responsive sizing (Chrome 143+) */
+  @supports (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:221:33
+Error: ) expected (css)
+  /* Size variants - CSS if() for density-responsive sizing (Chrome 143+) */
+  @supports (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:224:10
+Error: { expected (css)
+      padding: if(style(--card-density: compact), var(--space-2), var(--space-3));
+      gap: if(style(--card-density: compact), var(--space-1), var(--space-2));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:228:37
+Error: ) expected (css)
+    .sm .icon-container {
+      width: if(style(--card-density: compact), 32px, 36px);
+      height: if(style(--card-density: compact), 32px, 36px);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:229:13
+Error: { expected (css)
+      width: if(style(--card-density: compact), 32px, 36px);
+      height: if(style(--card-density: compact), 32px, 36px);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:233:37
+Error: ) expected (css)
+    .sm .icon-container :global(svg) {
+      width: if(style(--card-density: compact), 16px, 18px);
+      height: if(style(--card-density: compact), 16px, 18px);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:234:13
+Error: { expected (css)
+      width: if(style(--card-density: compact), 16px, 18px);
+      height: if(style(--card-density: compact), 16px, 18px);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:238:41
+Error: ) expected (css)
+    .sm .value {
+      font-size: if(style(--card-density: compact), var(--text-xl), var(--text-2xl));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:242:41
+Error: ) expected (css)
+    .sm .label {
+      font-size: if(style(--card-density: compact), 10px, var(--text-xs));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:246:39
+Error: ) expected (css)
+    .md {
+      padding: if(style(--card-density: compact), var(--space-3), var(--space-4));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:250:39
+Error: ) expected (css)
+    .lg {
+      padding: if(style(--card-density: compact), var(--space-4), var(--space-6));
+      gap: if(style(--card-density: compact), var(--space-2), var(--space-4));
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:251:10
+Error: { expected (css)
+      padding: if(style(--card-density: compact), var(--space-4), var(--space-6));
+      gap: if(style(--card-density: compact), var(--space-2), var(--space-4));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:255:37
+Error: ) expected (css)
+    .lg .icon-container {
+      width: if(style(--card-density: compact), 48px, 64px);
+      height: if(style(--card-density: compact), 48px, 64px);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:256:13
+Error: { expected (css)
+      width: if(style(--card-density: compact), 48px, 64px);
+      height: if(style(--card-density: compact), 48px, 64px);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:260:37
+Error: ) expected (css)
+    .lg .icon-container :global(svg) {
+      width: if(style(--card-density: compact), 24px, 32px);
+      height: if(style(--card-density: compact), 24px, 32px);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:261:13
+Error: { expected (css)
+      width: if(style(--card-density: compact), 24px, 32px);
+      height: if(style(--card-density: compact), 24px, 32px);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:265:41
+Error: ) expected (css)
+    .lg .value {
+      font-size: if(style(--card-density: compact), var(--text-3xl), var(--text-4xl));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:269:41
+Error: ) expected (css)
+    .lg .label {
+      font-size: if(style(--card-density: compact), var(--text-sm), var(--text-base));
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:274:41
+Error: { expected (css)
+  /* Fallback for browsers without CSS if() support */
+  @supports not (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:274:37
+Error: ) expected (css)
+  /* Fallback for browsers without CSS if() support */
+  @supports not (width: if(style(--x: 1), 10px, 20px)) {
+    .sm {
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/components/ui/StatCard.svelte:277:10
+Error: { expected (css)
+      padding: var(--space-3);
+      gap: var(--space-2);
+    }
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/+error.svelte:70:26
+Warn: Redundant role 'main'
+https://svelte.dev/e/a11y_no_redundant_roles (svelte)
+
+<main class="error-page" role="main">
+	<div class="error-container">
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/protocol-test/+page.svelte:14:6
+Error: 'state' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer. (ts)
+	// State
+	let state = $state<ProtocolHandlerState | null>(null);
+	let capabilities = $state<ReturnType<typeof getProtocolHandlerCapabilities> | null>(null);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/protocol-test/+page.svelte:14:14
+Error: Block-scoped variable '$state' used before its declaration. (ts)
+	// State
+	let state = $state<ProtocolHandlerState | null>(null);
+	let capabilities = $state<ReturnType<typeof getProtocolHandlerCapabilities> | null>(null);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/protocol-test/+page.svelte:14:14
+Error: Untyped function calls may not accept type arguments. (ts)
+	// State
+	let state = $state<ProtocolHandlerState | null>(null);
+	let capabilities = $state<ReturnType<typeof getProtocolHandlerCapabilities> | null>(null);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/protocol-test/+page.svelte:15:21
+Error: Untyped function calls may not accept type arguments. (ts)
+	let state = $state<ProtocolHandlerState | null>(null);
+	let capabilities = $state<ReturnType<typeof getProtocolHandlerCapabilities> | null>(null);
+	let testUrl = $state('web+dmb://show/1991-03-23');
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/protocol-test/+page.svelte:17:18
+Error: Untyped function calls may not accept type arguments. (ts)
+	let testUrl = $state('web+dmb://show/1991-03-23');
+	let parsedUrl = $state<{ resource: string; identifier: string } | null>(null);
+	let targetRoute = $state<string | null>(null);
+
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/routes/protocol-test/+page.svelte:18:20
+Error: Untyped function calls may not accept type arguments. (ts)
+	let parsedUrl = $state<{ resource: string; identifier: string } | null>(null);
+	let targetRoute = $state<string | null>(null);
+	let copySuccess = $state('');
+
+====================================
+svelte-check found 179 errors and 22 warnings in 26 files

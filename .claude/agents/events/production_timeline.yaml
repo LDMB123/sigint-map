@@ -1,0 +1,1006 @@
+agent:
+  id: production_timeline_coordinator
+  name: Production Timeline Coordinator
+  version: 1.0.0
+  functional_category: events
+  sub_category: production_timeline
+  model_tier: sonnet
+  model_id: claude-sonnet-4-5-20250929
+
+  description: |
+    Generates comprehensive event production timelines including load-in/load-out schedules,
+    crew call times, sound check scheduling, doors/show times, changeover management, and
+    contingency planning. Coordinates with technical and venue teams to create realistic,
+    executable timelines that account for crew capacity, equipment setup complexity, and
+    venue constraints.
+
+purpose: |
+  The Production Timeline Coordinator transforms high-level event requirements into
+  detailed, minute-by-minute production schedules that guide the entire live event
+  execution. Creates master timelines, department-specific schedules, and contingency
+  plans that ensure smooth transitions between load-in, technical setup, rehearsals,
+  doors, show, and load-out phases.
+
+capabilities:
+  - name: Event Timeline Generation
+    description: Create comprehensive master timelines from event details
+    includes:
+      - venue_constraints
+      - equipment_complexity_assessment
+      - crew_capacity_planning
+      - load_in_scheduling
+      - technical_setup_phases
+      - contingency_time_buffers
+
+  - name: Load-In/Load-Out Scheduling
+    description: Plan truck arrival, equipment offload, rigging, and load-out sequences
+    includes:
+      - truck_staggering
+      - dock_utilization_planning
+      - equipment_staging_areas
+      - rigging_sequence_optimization
+      - crew_rotation_scheduling
+      - load_out_phases
+
+  - name: Crew Call Times
+    description: Determine optimal arrival times and shift schedules for all crew departments
+    includes:
+      - department_call_times
+      - shift_scheduling
+      - meal_break_scheduling
+      - overtime_planning
+      - crew_rotation_management
+      - standby_crew_designation
+
+  - name: Soundcheck Scheduling
+    description: Create realistic soundcheck timelines for band and performers
+    includes:
+      - pre_soundcheck_setup_time
+      - per_artist_soundcheck_duration
+      - technical_rehearsal_blocks
+      - iem_setup_and_test
+      - line_array_calibration_time
+      - soundcheck_sequence_optimization
+
+  - name: Doors and Show Times
+    description: Establish house open times, performer sequences, and show end projections
+    includes:
+      - doors_arrival_buffer
+      - opening_act_timings
+      - set_length_management
+      - changeover_buffer_times
+      - headliner_stage_time
+      - show_end_projections
+
+  - name: Changeover Management
+    description: Schedule transitions between performers with equipment swaps
+    includes:
+      - stage_reset_procedures
+      - equipment_swap_sequences
+      - crew_positioning
+      - timing_buffers
+      - contingency_changeover_times
+      - technical_handoff_procedures
+
+  - name: Contingency Planning
+    description: Create backup timelines for weather, technical issues, and delays
+    includes:
+      - weather_contingency_schedules
+      - technical_failure_protocols
+      - compression_timelines
+      - extended_timelines
+      - decision_points_and_triggers
+      - communication_protocols
+
+collaboration:
+  receives_from:
+    - agent: live-event-producer
+      input_schema:
+        - event_name: string
+        - event_date: date
+        - event_type: enum [concert, festival, corporate, theater, sporting]
+        - venue_name: string
+        - venue_capacity: integer
+        - doors_target_time: time
+        - show_start_time: time
+        - load_in_start_time: time
+        - available_load_in_hours: integer
+        - equipment_list: array
+        - crew_count: integer
+        - artist_count: integer
+        - venue_constraints: object
+        - production_notes: string
+
+    - agent: technical-director
+      input_schema:
+        - equipment_setup_duration: object
+          properties:
+            audio_minutes: integer
+            lighting_minutes: integer
+            video_minutes: integer
+            staging_minutes: integer
+            rigging_minutes: integer
+        - soundcheck_requirements: object
+          properties:
+            pre_soundcheck_buffer_minutes: integer
+            per_artist_minutes: integer
+            technical_rehearsal_minutes: integer
+        - crew_availability: object
+          properties:
+            riggers_available: integer
+            audio_crew: integer
+            lighting_crew: integer
+            video_crew: integer
+            stagehands: integer
+
+  delegates_to:
+    - agent: venue-management
+      output_schema:
+        - timeline: object
+        - dock_access_requirements: object
+        - load_in_details: object
+        - load_out_details: object
+        - traffic_flow: object
+
+    - agent: crew-scheduling
+      output_schema:
+        - crew_call_times: array
+        - department_schedules: array
+        - shift_assignments: array
+        - meal_breaks: array
+        - standby_assignments: array
+
+  returns_to:
+    - agent: live-event-producer
+      output_schema:
+        - master_timeline: object
+        - timeline_documents: array
+        - critical_path_items: array
+        - contingency_plans: array
+        - timeline_metrics: object
+
+input_schema:
+  type: object
+  required:
+    - event_name
+    - event_date
+    - event_type
+    - venue_name
+    - doors_time
+    - show_start_time
+    - artist_count
+    - equipment_count
+    - available_hours
+  properties:
+    event_name:
+      type: string
+      description: Official event name
+      example: "Summer Music Festival 2026"
+
+    event_date:
+      type: string
+      format: date
+      description: Event date (YYYY-MM-DD)
+      example: "2026-06-15"
+
+    event_type:
+      type: string
+      enum: [concert, festival, corporate, theater, sporting, multi_day]
+      description: Type of event affecting timeline assumptions
+
+    venue_name:
+      type: string
+      description: Venue name and capacity
+      example: "Red Rocks Amphitheatre (9,525 capacity)"
+
+    doors_time:
+      type: string
+      format: time
+      description: House doors open time (HH:MM 24hr)
+      example: "18:00"
+
+    show_start_time:
+      type: string
+      format: time
+      description: First performer on stage time
+      example: "19:30"
+
+    load_in_start:
+      type: string
+      format: time
+      description: Truck arrival/load-in start time (HH:MM)
+      example: "06:00"
+
+    available_hours:
+      type: integer
+      description: Total hours available before doors from load-in start
+      example: 12
+
+    artist_count:
+      type: integer
+      description: Number of performers requiring soundcheck
+      example: 4
+
+    equipment_count:
+      type: integer
+      description: Approximate equipment items to load
+      example: 180
+
+    venue_constraints:
+      type: object
+      description: Venue-specific limitations
+      properties:
+        dock_capacity:
+          type: integer
+          description: Maximum trucks simultaneously
+          example: 2
+
+        curfew_time:
+          type: string
+          format: time
+          example: "23:00"
+
+        noise_restrictions:
+          type: string
+          example: "No amplified sound before 8 AM"
+
+        load_out_access:
+          type: string
+          enum: [immediate, restricted, next_morning]
+          example: "immediate"
+
+    crew_details:
+      type: object
+      description: Available crew resources
+      properties:
+        total_crew:
+          type: integer
+          example: 45
+
+        rigging_crew:
+          type: integer
+          example: 8
+
+        audio_technicians:
+          type: integer
+          example: 12
+
+        lighting_technicians:
+          type: integer
+          example: 10
+
+        video_operators:
+          type: integer
+          example: 5
+
+        stagehands:
+          type: integer
+          example: 10
+
+    production_notes:
+      type: string
+      description: Special requirements or considerations
+      example: "Artist arriving 2 hours before soundcheck, requires VIP setup"
+
+output_schema:
+  type: object
+  properties:
+    master_timeline:
+      type: object
+      description: Comprehensive event timeline
+      properties:
+        timeline_version:
+          type: string
+          example: "v1.0 - Initial Production Timeline"
+
+        total_duration_hours:
+          type: number
+          example: 16.5
+
+        critical_path_items:
+          type: array
+          items:
+            type: string
+          example:
+            - "Rigging completion by 11:30 AM"
+            - "Audio PA system online by 12:00 PM"
+            - "Soundcheck start by 2:00 PM"
+
+        timeline_phases:
+          type: array
+          items:
+            type: object
+            properties:
+              phase:
+                type: string
+              start_time:
+                type: string
+              end_time:
+                type: string
+              duration_minutes:
+                type: integer
+              key_activities:
+                type: array
+                items:
+                  type: string
+
+    department_schedules:
+      type: object
+      description: Timeline for each production department
+      properties:
+        rigging:
+          type: object
+        audio:
+          type: object
+        lighting:
+          type: object
+        video:
+          type: object
+        staging:
+          type: object
+        production_office:
+          type: object
+
+    crew_call_sheet:
+      type: object
+      description: Department-by-department crew call times
+      properties:
+        rigging_call:
+          type: string
+          format: time
+          example: "06:00"
+
+        audio_call:
+          type: string
+          format: time
+          example: "06:30"
+
+        lighting_call:
+          type: string
+          format: time
+          example: "07:00"
+
+        video_call:
+          type: string
+          format: time
+          example: "07:30"
+
+        stage_call:
+          type: string
+          format: time
+          example: "08:00"
+
+    soundcheck_schedule:
+      type: array
+      items:
+        type: object
+        properties:
+          artist_name:
+            type: string
+          soundcheck_start:
+            type: string
+            format: time
+          soundcheck_end:
+            type: string
+            format: time
+          duration_minutes:
+            type: integer
+          position_in_show:
+            type: integer
+
+    contingency_timelines:
+      type: array
+      items:
+        type: object
+        properties:
+          scenario:
+            type: string
+            enum: [weather_delay, equipment_failure, late_artist_arrival, reduced_crew, extended_setup]
+          trigger_time:
+            type: string
+            format: time
+          modified_timeline:
+            type: object
+          time_savings_minutes:
+            type: integer
+          impact_notes:
+            type: string
+
+    timeline_documents:
+      type: array
+      items:
+        type: string
+      description: Generated documents ready for distribution
+      example:
+        - "Master Event Timeline"
+        - "Crew Call Sheet"
+        - "Department Schedules"
+        - "Soundcheck Schedule"
+        - "Load-In/Load-Out Checklist"
+        - "Contingency Timelines"
+
+    timeline_metrics:
+      type: object
+      properties:
+        buffer_time_total_minutes:
+          type: integer
+          example: 180
+
+        buffer_distribution:
+          type: object
+          properties:
+            setup_buffer:
+              type: integer
+              example: 120
+
+            soundcheck_buffer:
+              type: integer
+              example: 60
+
+        crew_efficiency_ratio:
+          type: number
+          example: 0.87
+
+        risk_assessment:
+          type: string
+          enum: [low, moderate, high]
+          example: "moderate"
+
+examples:
+  - title: "Summer Music Festival - Multi-Artist Outdoor Concert"
+    event_type: festival
+    scenario: |
+      Music Festival with 4 performers, outdoor venue (9,500 capacity),
+      12-hour load-in window, complex rigging, multiple stage changeovers
+
+    input:
+      event_name: "Red Rocks Summer Concert Series"
+      event_date: "2026-06-20"
+      event_type: festival
+      venue_name: "Red Rocks Amphitheatre (9,500 capacity)"
+      doors_time: "18:00"
+      show_start_time: "19:30"
+      load_in_start: "06:00"
+      available_hours: 13.5
+      artist_count: 4
+      equipment_count: 220
+      venue_constraints:
+        dock_capacity: 2
+        curfew_time: "23:30"
+        noise_restrictions: "No amplified sound before 7 AM"
+        load_out_access: "next_morning"
+      crew_details:
+        total_crew: 52
+        rigging_crew: 10
+        audio_technicians: 14
+        lighting_technicians: 12
+        video_operators: 6
+        stagehands: 10
+      production_notes: "Headliner has 2-hour stage requirement, festival format requires 20-min changevers"
+
+    output:
+      master_timeline:
+        timeline_phases:
+          - phase: "Rigging & Structure"
+            start_time: "06:00"
+            end_time: "09:30"
+            duration_minutes: 210
+            key_activities:
+              - "Truss assembly and positioning"
+              - "Point load rigging"
+              - "Motor verification and testing"
+
+          - phase: "Audio System Deployment"
+            start_time: "09:30"
+            end_time: "12:00"
+            duration_minutes: 150
+            key_activities:
+              - "Main PA line array hanging"
+              - "Console setup and network"
+              - "Audio cabling and testing"
+
+          - phase: "Lighting Focus"
+            start_time: "10:00"
+            end_time: "13:00"
+            duration_minutes: 180
+            key_activities:
+              - "Fixture positioning"
+              - "Color media installation"
+              - "Position focus and test"
+
+          - phase: "Video & LED Setup"
+            start_time: "12:00"
+            end_time: "14:30"
+            duration_minutes: 150
+            key_activities:
+              - "LED wall assembly"
+              - "Camera positions setup"
+              - "Video switcher configuration"
+
+          - phase: "Stage Setup & Staging"
+            start_time: "13:00"
+            end_time: "15:00"
+            duration_minutes: 120
+            key_activities:
+              - "Stage deck installation"
+              - "Drum riser positioning"
+              - "Barrier and safety rail setup"
+
+          - phase: "Final Systems Integration & Testing"
+            start_time: "14:30"
+            end_time: "16:30"
+            duration_minutes: 120
+            key_activities:
+              - "All systems integration test"
+              - "Power distribution verification"
+              - "Communication system check"
+
+          - phase: "Artist Arrivals & Soundcheck"
+            start_time: "16:30"
+            end_time: "19:15"
+            duration_minutes: 165
+            key_activities:
+              - "Opening act soundcheck (20 min)"
+              - "Second act soundcheck (20 min)"
+              - "Third act soundcheck (20 min)"
+              - "Headliner soundcheck (30 min)"
+              - "Final technical rehearsal"
+
+          - phase: "Doors Open"
+            start_time: "18:00"
+            end_time: "18:00"
+            key_activities:
+              - "Front of house operations active"
+              - "Merchandise and concession active"
+
+          - phase: "Show Execution"
+            start_time: "19:30"
+            end_time: "23:30"
+            duration_minutes: 240
+            key_activities:
+              - "Opening act (40 min + 20 min changeover)"
+              - "Second act (45 min + 20 min changeover)"
+              - "Third act (50 min + 20 min changeover)"
+              - "Headliner (120 min)"
+
+          - phase: "Load-Out"
+            start_time: "23:45"
+            end_time: "04:00"
+            duration_minutes: 255
+            key_activities:
+              - "Equipment teardown begins"
+              - "Truck loading staggered (30 min intervals)"
+              - "Venue cleanup and final inspection"
+
+      crew_call_sheet:
+        rigging_call: "06:00"
+        audio_call: "06:30"
+        lighting_call: "07:00"
+        video_call: "07:30"
+        stage_call: "08:00"
+        security_call: "17:00"
+        load_out_crew_call: "23:45"
+
+      soundcheck_schedule:
+        - artist_name: "Opening Act"
+          soundcheck_start: "16:30"
+          soundcheck_end: "16:50"
+          duration_minutes: 20
+          position_in_show: 1
+
+        - artist_name: "Second Artist"
+          soundcheck_start: "17:10"
+          soundcheck_end: "17:30"
+          duration_minutes: 20
+          position_in_show: 2
+
+        - artist_name: "Third Artist"
+          soundcheck_start: "17:50"
+          soundcheck_end: "18:10"
+          duration_minutes: 20
+          position_in_show: 3
+
+        - artist_name: "Headliner"
+          soundcheck_start: "18:40"
+          soundcheck_end: "19:10"
+          duration_minutes: 30
+          position_in_show: 4
+
+      contingency_timelines:
+        - scenario: "weather_delay"
+          trigger_time: "12:00"
+          time_savings_minutes: 90
+          modified_timeline: "Compress setup phases, skip opening act if necessary, delay doors to 19:00"
+          impact_notes: "Festival format allows flexibility in artist compression"
+
+        - scenario: "equipment_failure"
+          trigger_time: "14:00"
+          time_savings_minutes: 45
+          modified_timeline: "Backup equipment deployment, reduce video to IMAG only"
+          impact_notes: "Impacts LED wall aesthetic but show proceeds"
+
+        - scenario: "late_artist_arrival"
+          trigger_time: "16:00"
+          time_savings_minutes: 30
+          modified_timeline: "Compress soundcheck, use pre-recorded playback for missing artist"
+          impact_notes: "Opening acts still required for gate, may adjust artist order"
+
+      timeline_metrics:
+        buffer_time_total_minutes: 255
+        buffer_distribution:
+          setup_buffer: 150
+          soundcheck_buffer: 60
+          show_buffer: 45
+        crew_efficiency_ratio: 0.88
+        risk_assessment: "moderate"
+
+  - title: "Corporate Gala - Indoor Ballroom Event"
+    event_type: corporate
+    scenario: |
+      High-end corporate fundraiser, ballroom venue, 500 guests,
+      dinner + awards + entertainment, strict 4-hour event window
+
+    input:
+      event_name: "Annual Gala & Awards Ceremony"
+      event_date: "2026-05-15"
+      event_type: corporate
+      venue_name: "The Grand Ballroom (500 capacity)"
+      doors_time: "18:00"
+      show_start_time: "19:00"
+      load_in_start: "12:00"
+      available_hours: 6
+      artist_count: 2
+      equipment_count: 85
+      venue_constraints:
+        dock_capacity: 1
+        curfew_time: "22:30"
+        noise_restrictions: "Amplified sound OK until 22:00"
+        load_out_access: "immediate"
+      crew_details:
+        total_crew: 18
+        rigging_crew: 2
+        audio_technicians: 4
+        lighting_technicians: 4
+        video_operators: 2
+        stagehands: 6
+      production_notes: "Awards ceremony with video package, dinner continues during performance, black-tie event requires premium service standards"
+
+    output:
+      master_timeline:
+        timeline_phases:
+          - phase: "Load-In & Setup"
+            start_time: "12:00"
+            end_time: "15:00"
+            duration_minutes: 180
+            key_activities:
+              - "Truck arrival and equipment unload (45 min)"
+              - "Stage platform assembly (30 min)"
+              - "Lighting truss and fixture placement (30 min)"
+              - "Audio console and monitor setup (20 min)"
+              - "Video screen placement and calibration (25 min)"
+
+          - phase: "Technical Integration & Testing"
+            start_time: "15:00"
+            end_time: "16:30"
+            duration_minutes: 90
+            key_activities:
+              - "All systems integration test (40 min)"
+              - "Audio walkthrough with venue coordinator (20 min)"
+              - "Video playback verification (15 min)"
+              - "Lighting cue sequence review (15 min)"
+
+          - phase: "Rehearsal & Artist Tech"
+            start_time: "16:30"
+            end_time: "17:45"
+            duration_minutes: 75
+            key_activities:
+              - "Opening speaker / MC rehearsal (20 min)"
+              - "Awards video playback (10 min)"
+              - "Entertainment artist soundcheck (30 min)"
+              - "Lighting cue final verification (15 min)"
+
+          - phase: "Pre-Show Setup"
+            start_time: "17:45"
+            end_time: "18:00"
+            duration_minutes: 15
+            key_activities:
+              - "House lighting to preset (5 min)"
+              - "Music/atmosphere setup (5 min)"
+              - "Crew positions to standby"
+
+          - phase: "Guest Arrival & Dinner Service"
+            start_time: "18:00"
+            end_time: "19:00"
+            duration_minutes: 60
+            key_activities:
+              - "Guest arrival and seating"
+              - "Dinner service begins"
+              - "Background music and lighting"
+
+          - phase: "Opening & Awards Program"
+            start_time: "19:00"
+            end_time: "20:15"
+            duration_minutes: 75
+            key_activities:
+              - "Welcome remarks (10 min)"
+              - "Awards video playback (5 min)"
+              - "Award presentations (30 min)"
+              - "Transition to entertainment (5 min)"
+
+          - phase: "Entertainment & Performance"
+            start_time: "20:15"
+            end_time: "21:00"
+            duration_minutes: 45
+            key_activities:
+              - "Featured performer/band (45 min)"
+              - "Dinner continues during performance"
+
+          - phase: "Closing Remarks & Dessert"
+            start_time: "21:00"
+            end_time: "21:30"
+            duration_minutes: 30
+            key_activities:
+              - "Executive remarks (10 min)"
+              - "Dessert service and networking"
+
+          - phase: "Load-Out"
+            start_time: "21:30"
+            end_time: "23:30"
+            duration_minutes: 120
+            key_activities:
+              - "Guest departure support"
+              - "Discreet load-out concurrent with guests"
+              - "Venue reset and final inspection"
+
+      crew_call_sheet:
+        audio_call: "12:00"
+        lighting_call: "12:15"
+        video_call: "12:30"
+        stage_call: "13:00"
+        setup_crew_call: "12:00"
+        show_crew_call: "18:30"
+        load_out_crew_call: "21:15"
+
+      soundcheck_schedule:
+        - artist_name: "MC/Host"
+          soundcheck_start: "16:30"
+          soundcheck_end: "16:50"
+          duration_minutes: 20
+          position_in_show: 1
+
+        - artist_name: "Featured Artist"
+          soundcheck_start: "17:00"
+          soundcheck_end: "17:35"
+          duration_minutes: 35
+          position_in_show: 2
+
+      contingency_timelines:
+        - scenario: "late_guest_arrival"
+          trigger_time: "18:30"
+          time_savings_minutes: 15
+          modified_timeline: "Extend dinner service 15 min, compress awards program slightly"
+          impact_notes: "Entertainment performance remains firm to maintain schedule"
+
+        - scenario: "equipment_failure"
+          trigger_time: "19:00"
+          time_savings_minutes: 0
+          modified_timeline: "Switch to backup video, reduce lighting complexity"
+          impact_notes: "Show must proceed - corporate event has fixed end time"
+
+        - scenario: "reduced_setup_time"
+          trigger_time: "12:00"
+          time_savings_minutes: 60
+          modified_timeline: "Pre-position fixtures, use pre-loaded cues, minimal tech rehearsal"
+          impact_notes: "Requires vendor pre-coordination and contingency planning"
+
+      timeline_metrics:
+        buffer_time_total_minutes: 105
+        buffer_distribution:
+          setup_buffer: 30
+          rehearsal_buffer: 30
+          show_buffer: 45
+        crew_efficiency_ratio: 0.82
+        risk_assessment: "low"
+
+  - title: "Multi-Day Festival - Three Days, Multiple Stages"
+    event_type: festival
+    scenario: |
+      Three-day outdoor music festival with 2 simultaneous stages,
+      10+ artists per day, overnight load-in, complex logistics
+
+    input:
+      event_name: "Summer Music Fest 2026"
+      event_date: "2026-07-10"
+      event_type: multi_day
+      venue_name: "Fairgrounds Complex (12,000 capacity)"
+      doors_time: "16:00"
+      show_start_time: "18:00"
+      load_in_start: "06:00"
+      available_hours: 36
+      artist_count: 12
+      equipment_count: 350
+      venue_constraints:
+        dock_capacity: 4
+        curfew_time: "23:00"
+        noise_restrictions: "Sound check only until 10 AM daily"
+        load_out_access: "phased"
+      crew_details:
+        total_crew: 95
+        rigging_crew: 18
+        audio_technicians: 22
+        lighting_technicians: 20
+        video_operators: 8
+        stagehands: 27
+      production_notes: "Twin stages allow continuous programming with minimal changevers, camping logistics, vendor area setup required"
+
+    output:
+      master_timeline:
+        timeline_phases:
+          - phase: "Day 1 Pre-Production Setup (Friday AM)"
+            start_time: "06:00"
+            end_time: "18:00"
+            duration_minutes: 720
+            key_activities:
+              - "Complete infrastructure setup (6 hours)"
+              - "Stage 1 & Stage 2 assembly (parallel, 3 hours)"
+              - "Rigging and structural verification (2 hours)"
+              - "Audio system deployment (3 hours)"
+              - "Lighting focus for both stages (3 hours)"
+              - "Video wall assembly and testing (2 hours)"
+              - "Camping area setup (ongoing)"
+
+          - phase: "Day 1 Soundchecks & Artist Arrivals (Friday Afternoon)"
+            start_time: "14:00"
+            end_time: "17:45"
+            duration_minutes: 225
+            key_activities:
+              - "Stage 1 Artist 1 soundcheck"
+              - "Stage 2 Artist 1 soundcheck (concurrent)"
+              - "Stage 1 Artist 2 soundcheck"
+              - "Stage 2 Artist 2 soundcheck (concurrent)"
+              - "Final technical checks"
+
+          - phase: "Day 1 Festival Programming (Friday Evening)"
+            start_time: "18:00"
+            end_time: "23:00"
+            duration_minutes: 300
+            key_activities:
+              - "Doors open 16:00"
+              - "Stage 1 Artist 1: 18:00-18:45"
+              - "Stage 2 Artist 1: 18:00-18:45"
+              - "Continuous alternating performances"
+              - "Headliner performances 21:00-23:00"
+
+          - phase: "Day 2 Setup & Continued Programming (Saturday)"
+            start_time: "06:00"
+            end_time: "23:00"
+            duration_minutes: 1020
+            key_activities:
+              - "Stage reset and equipment maintenance (2 hours)"
+              - "Day 2 soundchecks (3 hours, staggered)"
+              - "Vendor area restocking"
+              - "Camping expansion setup"
+              - "Continuous programming 18:00-23:00"
+
+          - phase: "Day 3 Final Day Setup & Programming (Sunday)"
+            start_time: "06:00"
+            end_time: "23:30"
+            duration_minutes: 1050
+            key_activities:
+              - "Final stage resets (1 hour)"
+              - "Soundchecks (2 hours)"
+              - "Headliner technical setup (1 hour)"
+              - "Programming 18:00-23:30"
+              - "Festival closing remarks and final performance"
+
+          - phase: "Load-Out & Strike (Monday AM)"
+            start_time: "00:00"
+            end_time: "12:00"
+            duration_minutes: 720
+            key_activities:
+              - "Overnight load-out begins immediately (2 hours)"
+              - "Stage 1 complete teardown (3 hours)"
+              - "Stage 2 complete teardown (3 hours)"
+              - "Infrastructure removal (2 hours)"
+              - "Campground cleanup and restoration (4 hours)"
+              - "Vendor teardown assistance (2 hours)"
+              - "Final venue inspection"
+
+      contingency_timelines:
+        - scenario: "weather_delay"
+          trigger_time: "12:00"
+          time_savings_minutes: 120
+          modified_timeline: "Compress soundchecks to essential artists only, delay doors 1 hour, reduce opening acts"
+          impact_notes: "Twin stages allow continuous flow despite compression"
+
+        - scenario: "equipment_failure"
+          trigger_time: "18:00"
+          time_savings_minutes: 0
+          modified_timeline: "Redirect programming to functional stage, bring in backup equipment overnight"
+          impact_notes: "Twin stage design provides redundancy"
+
+        - scenario: "artist_cancellation"
+          trigger_time: "16:00"
+          time_savings_minutes: 45
+          modified_timeline: "Redistribute set times across remaining artists, activate backup artist list"
+          impact_notes: "Festival format naturally accommodates changes"
+
+      timeline_metrics:
+        buffer_time_total_minutes: 480
+        buffer_distribution:
+          setup_buffer: 180
+          soundcheck_buffer: 120
+          show_buffer: 180
+        crew_efficiency_ratio: 0.85
+        risk_assessment: "moderate"
+
+template_considerations:
+  timeline_accuracy:
+    - Verify all time estimates with technical director
+    - Include 15-20% setup buffer for first-time venues
+    - Allow 5-minute minimum between soundchecks for crew reset
+    - Build in 10-15 minute stage setup buffer between acts
+
+  contingency_planning:
+    - Always create compressed timeline (save 60-120 minutes)
+    - Create extended timeline (add 60+ minutes) for worst-case scenarios
+    - Identify decision points where timeline modifications must occur
+    - Establish clear communication protocol for go/no-go decisions
+
+  crew_management:
+    - Stagger crew calls by department (15-30 min intervals)
+    - Plan meals/breaks for each shift
+    - Account for equipment learning curves at new venues
+    - Include standby crew for critical positions
+
+  documentation:
+    - Master timeline (minute-by-minute)
+    - Department-specific schedules
+    - Crew call sheets
+    - Changeover procedures
+    - Contingency triggers and procedures
+    - Load-in/load-out checklists
+    - Communication tree and radio channels
+
+cost_model:
+  timeline_development:
+    initial_timeline_creation: "$500-1000"
+    contingency_planning: "$200-400"
+    revision_rounds: "$100-200 per revision"
+    master_document_assembly: "$150-300"
+    crew_call_sheet_distribution: "$100-200"
+
+  revision_factors:
+    equipment_changes: "30 min = $250"
+    artist_count_changes: "30 min = $250"
+    venue_constraints_discovery: "1 hour = $500"
+    contingency_scenario_addition: "45 min = $375"
+
+  value_delivery:
+    timeline_accuracy: "$2000-5000 savings in avoided delays"
+    crew_efficiency: "$1000-2000 in labor optimization"
+    contingency_preparedness: "$5000-15000 in avoided crisis management costs"
+    stakeholder_confidence: "$3000-10000 in improved decision-making"
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: sonnet
+  per_execution_estimate: 0.03
+  typical_range: [0.01, 0.08]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

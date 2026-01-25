@@ -1,0 +1,211 @@
+# Universal Agent Framework - Workflow Orchestrator
+# Category: Orchestrators | Tier: Opus | Parallelization: 1-3
+
+agent:
+  id: orchestrator_workflow
+  name: Workflow Orchestrator
+  version: 1.0.0
+
+  functional_category: orchestrator
+  sub_category: workflow
+  model_tier: sonnet
+
+  description: |
+    Master orchestrator for complex multi-agent workflows.
+    Decomposes tasks, delegates to appropriate agents, and coordinates results.
+    Handles dependencies, parallelization, and error recovery.
+
+  capabilities:
+    - decompose_complex_tasks
+    - select_optimal_agents
+    - coordinate_parallel_execution
+    - manage_dependencies
+    - aggregate_results
+    - handle_failures
+    - optimize_cost_performance
+    - track_progress
+    - make_strategic_decisions
+    - escalate_when_needed
+
+  orchestration_patterns:
+    - fan_out_fan_in
+    - pipeline
+    - scatter_gather
+    - saga
+    - choreography
+    - hierarchical_delegation
+    - consensus_building
+    - progressive_refinement
+
+  input_schema:
+    type: object
+    required:
+      - task
+    properties:
+      task:
+        oneOf:
+          - type: string
+            description: Natural language task description
+          - type: object
+            description: Structured task specification
+      constraints:
+        type: object
+        properties:
+          max_cost:
+            type: number
+          max_time_seconds:
+            type: integer
+          quality_threshold:
+            type: number
+          max_parallel_agents:
+            type: integer
+      context:
+        type: object
+        properties:
+          codebase_root:
+            type: string
+          relevant_files:
+            type: array
+            items:
+              type: string
+          previous_results:
+            type: object
+      preferences:
+        type: object
+        properties:
+          prefer_speed:
+            type: boolean
+          prefer_quality:
+            type: boolean
+          prefer_cost:
+            type: boolean
+
+  output_schema:
+    type: object
+    properties:
+      success:
+        type: boolean
+      result:
+        type: object
+        description: Task-specific result
+      execution_plan:
+        type: object
+        properties:
+          phases:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                agents:
+                  type: array
+                parallel:
+                  type: boolean
+                dependencies:
+                  type: array
+      execution_log:
+        type: array
+        items:
+          type: object
+          properties:
+            timestamp:
+              type: string
+            agent:
+              type: string
+            action:
+              type: string
+            status:
+              type: string
+            duration_ms:
+              type: integer
+      metrics:
+        type: object
+        properties:
+          total_duration_ms:
+            type: integer
+          total_cost:
+            type: number
+          agents_used:
+            type: integer
+          parallel_efficiency:
+            type: number
+      errors:
+        type: array
+        items:
+          type: object
+          properties:
+            agent:
+              type: string
+            error:
+              type: string
+            recovered:
+              type: boolean
+            recovery_action:
+              type: string
+
+  performance:
+    avg_latency_ms: 10000
+    max_tokens: 100000
+    timeout_seconds: 600
+
+  parallelization:
+    max_concurrent: 3
+    recommended_batch_size: 1
+    can_spawn_sub_orchestrators: true
+
+  cost_management:
+    tracks_cost: true
+    enforces_budget: true
+    optimizes_for_cost: true
+
+  collaboration:
+    receives_from:
+      - engineering-manager: Complex multi-phase projects
+      - system-architect: Architectural implementation workflows
+      - product-manager: Feature delivery workflows
+    delegates_to:
+      - migration-orchestrator: Migration workflows
+      - performance-optimization-orchestrator: Performance workflows
+      - test-coverage-orchestrator: Testing workflows
+      - security-hardening-orchestrator: Security workflows
+      - feature-delivery-orchestrator: Feature implementation workflows
+      - production-readiness-orchestrator: Deployment workflows
+      - technical-debt-coordinator: Technical debt workflows
+    escalates_to:
+      - engineering-manager: Workflow failures or budget overruns
+      - system-architect: Strategic technical decisions
+    returns_to:
+      - requesting-stakeholder: Workflow results with execution log and metrics
+    swarm_pattern: hierarchical
+    coordinates_with:
+      - summary-reporter: Generate workflow summaries for stakeholders
+
+  tags:
+    - orchestration
+    - workflow
+    - coordination
+    - strategic
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: opus
+  per_execution_estimate: 0.15
+  typical_range: [0.10, 0.30]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

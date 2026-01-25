@@ -1,0 +1,343 @@
+================================================================================
+DMB ALMANAC DATABASE - DATA GAPS ANALYSIS & SCRAPING ROADMAP
+Generated: January 23, 2026
+================================================================================
+
+EXECUTIVE SUMMARY
+─────────────────────────────────────────────────────────────────────────────
+
+Current Database State:
+  ✓ Shows:        3,454      |  ✗ Missing: 927 setlists (26.9%)
+  ✓ Setlist Entries: 39,949  |  ✗ Missing: 4,385 durations (11.0%)
+  ✓ Songs:        1,240      |  ✗ Missing: 792 composers (63.9%), 1,240 lyrics (100%)
+  ✓ Venues:       2,855      |  ✗ Missing: 2,855 coordinates (100%), 2,813 types (98.5%)
+  ✓ Guests:       1,442      |  ✗ Only 131 shows have guest data (3.8%)
+  ✓ Tours:          194      |  ✗ Missing: 158 dates (81.4%)
+
+Overall Completeness: ~70%
+
+================================================================================
+CRITICAL PRIORITY - DO FIRST
+================================================================================
+
+TASK 1: COMPLETE SHOW SCRAPER (2018-2026)
+────────────────────────────────────────────────────────────────────────────
+Impact:      CRITICAL - Fill 927 missing shows with complete setlists
+Current:     Shows 1991-2017 complete (27 years)
+Missing:     Shows 2018-2026 incomplete (9 years, 927 shows)
+Status:      Checkpoint exists, can resume
+Files:       /scraper/src/scrapers/shows.ts
+             /scraper/cache/checkpoint_shows.json
+             /scraper/output/shows.json (20.2MB)
+
+Distribution of Missing Shows by Year:
+  1991-1996:  658 shows  ← EARLY YEARS WORST
+  1992:       287 shows  ← SINGLE WORST YEAR
+  1993:       260 shows  ← SECOND WORST
+  2017:       45 shows   ← Recent gap
+  2020-2021:  66 shows   ← Post-COVID gap
+
+Command:
+  cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+  npm run scrape:shows
+
+Expected Runtime:  2-3 hours
+Expected Output:   ~800 shows, ~11,000 setlist entries
+Validation:        SELECT COUNT(*) FROM shows;  -- expect 4,254+
+
+──────────────────────────────────────────────────────────────────────────
+
+TASK 2: IMPORT GUEST APPEARANCES
+────────────────────────────────────────────────────────────────────────────
+Impact:      HIGH - Link existing guest data to shows and setlist entries
+Current:     2,011 guest appearances in 131 shows only
+Status:      Data already scraped! 286MB checkpoint file exists
+Files:       /scraper/output/guest-shows.json (300MB, fully scraped)
+
+No new scraping needed - just import/link existing data
+
+Expected Output:   20,000+ guest appearance records
+Expected Time:     30-60 minutes (data processing, no web requests)
+Validation:        SELECT COUNT(*) FROM guest_appearances;
+
+──────────────────────────────────────────────────────────────────────────
+
+TASK 3: DERIVE TOUR DATES
+────────────────────────────────────────────────────────────────────────────
+Impact:      MEDIUM - Populate 158 missing tour start/end dates
+Current:     All "Misc", "Guesting", "Summer", "Fall" tours 2018-2025 empty
+Status:      Single SQL update, no scraping needed
+Affected:    158 tours (81.4% of total tours)
+
+SQL Command:
+  UPDATE tours t
+  SET start_date = (SELECT MIN(date) FROM shows WHERE tour_id = t.id),
+      end_date = (SELECT MAX(date) FROM shows WHERE tour_id = t.id)
+  WHERE start_date IS NULL OR end_date IS NULL;
+
+Expected Time:     2 minutes
+Validation:        SELECT COUNT(*) FROM tours WHERE start_date IS NULL;
+                   -- expect 0
+
+================================================================================
+HIGH PRIORITY - DO NEXT (After Critical)
+================================================================================
+
+TASK 4: GEOCODE ALL VENUES (2,855 venues)
+────────────────────────────────────────────────────────────────────────────
+Impact:      HIGH - Enable map visualizations, location-based discovery
+Current:     0 venues with coordinates (0%)
+Status:      Requires external API (OpenStreetMap Nominatim - free)
+Coverage:    2,500+ venues should be geocodable
+
+Implementation:
+  - Use OpenStreetMap Nominatim API (free, no API key required)
+  - Rate limit: 1 request per 1.5 seconds (Nominatim policy)
+  - Batch process 100 venues at a time
+  - Process in multiple runs if needed
+
+Expected Time:     2-4 hours (rate-limited)
+Error Rate:        ~2-5% (venue name ambiguity)
+Success Rate:      ~95% of geocoding attempts
+
+Examples of Venues Needing Coordinates:
+  ✗ The Gorge Amphitheatre (George, WA) - iconic venue
+  ✗ Alpine Valley (East Troy, WI) - frequent venue
+  ✗ Red Rocks (Morrison, CO) - very frequent
+  ✗ Cellairis Amphitheatre (Atlanta, GA)
+  ✗ International venues (Berlin, London, Tokyo, etc)
+
+Validation:
+  SELECT COUNT(*) FROM venues WHERE latitude IS NOT NULL;
+  -- expect 2,500+
+
+──────────────────────────────────────────────────────────────────────────
+
+TASK 5: RESUME SONG-STATS SCRAPER
+────────────────────────────────────────────────────────────────────────────
+Impact:      HIGH - Fill 792 missing song composers, metadata
+Current:     63.9% complete (792 missing composers, 950 missing avg_length)
+Status:      Checkpoint exists, can resume
+Files:       /scraper/src/scrapers/song-stats.ts
+             /scraper/cache/checkpoint_song-stats.json
+             /scraper/output/song-stats.json (2.3MB)
+
+Command:
+  cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+  npm run scrape:songs
+
+Expected Time:     45-90 minutes
+Expected Output:   792 composers, 950 duration values
+Validation:        SELECT COUNT(*) FROM songs WHERE composer IS NULL;
+                   -- expect < 100
+
+================================================================================
+MEDIUM PRIORITY - DO AFTER HIGH PRIORITY
+================================================================================
+
+TASK 6: CLASSIFY VENUE TYPES (2,813 venues marked "other")
+────────────────────────────────────────────────────────────────────────────
+Impact:      MEDIUM - Enable venue filtering, categorization
+Current:     2,813 venues (98.5%) marked as "other"
+Status:      Name-based classification + optional scraping
+
+Valid Types: amphitheatre, arena, stadium, theater, club, festival,
+             outdoor, cruise, pavilion, coliseum, other
+
+Approach:
+  1. Name-based regex patterns (covers ~70% of venues)
+  2. Optional: Scrape dmbalmanac.com venue pages for hints
+  3. Manual review for high-traffic venues
+
+Examples of Name-Based Classification:
+  ✓ "*Amphitheatre*" → amphitheatre
+  ✓ "*Arena*" → arena
+  ✓ "*Theater/Theatre*" → theatre
+  ✓ "*Club*" → club
+  ✓ "*Pavilion*" → pavilion
+  ✓ "*Cruise*" → cruise
+
+Expected Output:   2,000+ venues automatically classified
+Expected Time:     1-2 hours
+Validation:        SELECT COUNT(*) FROM venues WHERE venue_type != 'other';
+                   -- expect 2,000+
+
+──────────────────────────────────────────────────────────────────────────
+
+TASK 7: PARSE SETLIST DURATIONS (4,385 entries)
+────────────────────────────────────────────────────────────────────────────
+Impact:      MEDIUM - Duration data already parsed, needs database mapping
+Current:     4,385 entries (11%) missing duration_seconds
+Status:      Data already exists in parsed shows, extraction only
+Files:       Data exists in shows.json parser output
+
+Note:        Show scraper already parses duration from HTML
+             This task is to map/persist that duration data to database
+
+Expected Output:   4,000+ duration values
+Expected Time:     30 minutes
+Validation:        SELECT AVG(duration_seconds) FROM setlist_entries;
+                   -- should show average song length ~280 seconds
+
+================================================================================
+LOW PRIORITY - OPTIONAL
+================================================================================
+
+TASK 8: ENHANCE VENUE METADATA (Capacity, etc)
+────────────────────────────────────────────────────────────────────────────
+Impact:      LOW - Nice-to-have for venue comparison
+Current:     2,412 venues (84.5%) missing capacity
+Status:      External data required (Wikipedia, venue websites)
+Approach:    Optional scraping + manual entry for top venues
+
+Expected Time:     2-3 hours
+Value:            Venue capacity-based analytics only
+
+──────────────────────────────────────────────────────────────────────────
+
+TASK 9: SONG LYRICS (Not Available on dmbalmanac.com)
+────────────────────────────────────────────────────────────────────────────
+Impact:      LOW - Out of scope, not on dmbalmanac.com
+Current:     1,240 songs (100%) missing lyrics
+Status:      Would require third-party API (Genius, AZLyrics, etc)
+Recommendation:   SKIP - Low value, external API complexity
+
+──────────────────────────────────────────────────────────────────────────
+
+TASK 10: REBUILD FULL-TEXT SEARCH INDEXES
+────────────────────────────────────────────────────────────────────────────
+Impact:      LOW - Performance optimization
+Status:      After all other tasks complete
+Time:        5 minutes
+
+================================================================================
+EXECUTION TIMELINE
+================================================================================
+
+PHASE 1: CRITICAL (Today, 2-3 hours)
+────────────────────────────────────────────────────────────────────────────
+1. Resume show scraper 2018-2026        [2-3 hours, 927 shows added]
+2. Import guest appearances             [30 min, 20K appearances]
+3. Derive tour dates                    [2 min, 158 tours]
+
+RESULT: Core data mostly complete
+
+PHASE 2: HIGH VALUE (Tomorrow, 4 hours)
+────────────────────────────────────────────────────────────────────────────
+4. Geocode all venues                   [2-4 hours, 2,500+ venues]
+5. Resume song-stats                    [1-2 hours, 792 composers]
+
+RESULT: Maps working, search enhanced
+
+PHASE 3: POLISH (Next 2 days, 3 hours)
+────────────────────────────────────────────────────────────────────────────
+6. Classify venue types                 [1-2 hours, 2,000+ venues]
+7. Parse setlist durations              [30 min, 4,000+ values]
+8. Rebuild FTS indexes                  [5 min]
+
+RESULT: Database production-ready
+
+TOTAL TIME: 8-11 hours of execution (can be parallelized)
+
+================================================================================
+SCRAPER CHECKPOINT STATUS
+================================================================================
+
+✓ Completed Scrapers (data collected, may need import):
+  • shows.json [20.2MB] - years 1991-2017 complete
+  • song-stats.json [2.3MB] - 792 missing composers
+  • song-details.json [615KB] - covers info
+  • venue-stats.json [1.6MB] - venue statistics
+  • guest-shows.json [300MB] - ALL guest data already scraped!
+  • tours.json [33KB] - tour definitions
+  • releases.json [107KB] - release information
+  • rarity.json [6KB] - rarity scoring
+  • history.json [3.3MB] - historical data
+  • lists.json [861KB] - curated lists
+
+Pending Scrapers (need to write):
+  • venues-geocoding.ts - NOT YET WRITTEN (needs to be created)
+
+Cache Status:
+  • Location: /scraper/cache/ (8GB, 260K files)
+  • Hit rate: 95%+ (almost all pages cached)
+
+================================================================================
+KEY METRICS TO MONITOR
+================================================================================
+
+During Scraping:
+  ✓ Requests/minute: Should be 20-30, MAX 30 (respect rate limits)
+  ✓ Cache hit rate: Should be 95%+ (reuse cached pages)
+  ✓ Error rate: Should be < 2%
+  ✓ Response times: Should be < 5 seconds
+
+After Completion:
+  ✓ Shows with setlists: 100% (currently 73%)
+  ✓ Venues with coordinates: 95%+ (currently 0%)
+  ✓ Songs with composer: 95%+ (currently 36%)
+  ✓ Tours with dates: 100% (currently 19%)
+  ✓ Guest shows: 50%+ (currently 4%)
+  ✓ Overall completeness: 95%+ (currently 70%)
+
+================================================================================
+VALIDATION QUERIES
+================================================================================
+
+After Each Phase, Run These:
+
+PHASE 1 COMPLETION:
+  SELECT COUNT(*) as total_shows FROM shows;
+  -- expect: 4,254+ (up from 3,454)
+
+  SELECT COUNT(*) as guest_appearances FROM guest_appearances;
+  -- expect: 20,000+ (up from 2,011)
+
+  SELECT COUNT(*) as tours_missing_dates FROM tours
+    WHERE start_date IS NULL;
+  -- expect: 0 (was 158)
+
+PHASE 2 COMPLETION:
+  SELECT COUNT(*) as venues_geocoded FROM venues
+    WHERE latitude IS NOT NULL;
+  -- expect: 2,500+ (up from 0)
+
+  SELECT COUNT(*) as songs_no_composer FROM songs
+    WHERE composer IS NULL;
+  -- expect: <100 (down from 792)
+
+PHASE 3 COMPLETION:
+  SELECT COUNT(*) as venues_classified FROM venues
+    WHERE venue_type != 'other';
+  -- expect: 2,000+ (up from 42)
+
+  SELECT COUNT(*) as entries_with_duration FROM setlist_entries
+    WHERE duration_seconds IS NOT NULL;
+  -- expect: 36,000+ (up from 35,564)
+
+================================================================================
+NEXT ACTIONS
+================================================================================
+
+IMMEDIATE (Right now):
+  1. Read DATA_GAPS_ANALYSIS.md for detailed findings
+  2. Read SCRAPING_TASKS_PRIORITIZED.md for implementation details
+
+TODAY:
+  1. Start show scraper resume (expect 2-3 hour runtime)
+  2. While that runs, prepare venues-geocoding.ts script
+  3. Prepare guest appearance import script
+
+TOMORROW:
+  1. Review show scraper results
+  2. Start venue geocoding
+  3. Resume song-stats scraper
+  4. Validate results
+
+NEXT WEEK:
+  1. Classify venue types
+  2. Parse remaining durations
+  3. Rebuild indexes
+  4. Final validation
+
+================================================================================

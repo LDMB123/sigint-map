@@ -1,0 +1,249 @@
+# Universal Agent Framework - Consensus Building Swarm Pattern
+# Pattern: Consensus | Decision Quality: High | Use: Architecture Decisions
+
+swarm_pattern:
+  id: consensus_building
+  name: Consensus Building
+  version: 1.0.0
+
+  description: |
+    Multi-perspective decision making for important choices.
+    Multiple agents propose solutions, evaluate each other's proposals,
+    and an Opus arbiter makes the final decision.
+
+    Ideal for: Architecture decisions, technology selection,
+    design patterns, migration strategies.
+
+  architecture:
+    proposers:
+      tier: sonnet
+      role: Generate diverse proposals
+      count: 3-5
+
+    evaluators:
+      tier: haiku
+      role: Score proposals against criteria
+      count: dynamic  # proposers × criteria
+
+    arbiter:
+      tier: opus
+      role: Final decision with rationale
+      count: 1
+
+  workflow:
+    phase_1_framing:
+      name: Problem Framing
+      agent: orchestrator_consensus
+      tier: opus
+      actions:
+        - Define decision context
+        - Establish constraints
+        - Define evaluation criteria
+        - Assign proposer perspectives
+      output: decision_framework
+      timeout_seconds: 120
+
+    phase_2_proposals:
+      name: Proposal Generation
+      agent: generator_code  # or domain-specific
+      tier: sonnet
+      parallelization:
+        strategy: map
+        count: 5
+        diversity_enforced: true
+      actions:
+        - Receive assigned perspective
+        - Generate unique proposal
+        - Document trade-offs
+      output: proposals
+      timeout_seconds: 300
+
+    phase_3_evaluation:
+      name: Cross-Evaluation
+      agent: analyzer_semantic
+      tier: haiku
+      parallelization:
+        strategy: cartesian  # proposals × criteria
+        max_concurrent: 25
+      actions:
+        - Evaluate proposal against criterion
+        - Assign score 1-10
+        - Document reasoning
+      output: evaluation_matrix
+      timeout_seconds: 180
+
+    phase_4_deliberation:
+      name: Final Decision
+      agent: orchestrator_consensus
+      tier: opus
+      actions:
+        - Analyze evaluation matrix
+        - Consider trade-offs
+        - Identify best approach
+        - Consider hybrid solutions
+        - Document rationale
+        - Create ADR
+      output: final_decision
+      timeout_seconds: 300
+
+  configuration:
+    proposal_count:
+      min: 3
+      max: 5
+      default: 4
+
+    evaluation_criteria:
+      default:
+        - maintainability
+        - performance
+        - security
+        - cost
+        - complexity
+      weights:
+        maintainability: 0.25
+        performance: 0.20
+        security: 0.25
+        cost: 0.15
+        complexity: 0.15
+
+    diversity_enforcement:
+      enabled: true
+      perspectives:
+        - conservative_approach
+        - innovative_approach
+        - cost_optimized
+        - performance_optimized
+        - simplicity_focused
+
+    tie_breaking:
+      strategy: opus_judgment
+      consider_hybrid: true
+
+  input_schema:
+    type: object
+    required:
+      - decision_topic
+      - context
+    properties:
+      decision_topic:
+        type: string
+      context:
+        type: object
+        properties:
+          background:
+            type: string
+          constraints:
+            type: array
+          requirements:
+            type: array
+          stakeholders:
+            type: array
+      criteria:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            weight:
+              type: number
+            description:
+              type: string
+      perspectives:
+        type: array
+        items:
+          type: string
+        description: Override default perspectives
+
+  output_schema:
+    type: object
+    properties:
+      decision:
+        type: object
+        properties:
+          selected_proposal:
+            type: string
+          hybrid_elements:
+            type: array
+          summary:
+            type: string
+      confidence:
+        type: number
+        minimum: 0
+        maximum: 1
+      proposals:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            perspective:
+              type: string
+            summary:
+              type: string
+            details:
+              type: object
+            scores:
+              type: object
+            final_score:
+              type: number
+      evaluation_matrix:
+        type: object
+      adr:
+        type: object
+        properties:
+          title:
+            type: string
+          status:
+            type: string
+          context:
+            type: string
+          decision:
+            type: string
+          consequences:
+            type: array
+          alternatives_considered:
+            type: array
+      dissenting_opinions:
+        type: array
+
+  cost_model:
+    framing_opus: 0.015
+    per_proposal_sonnet: 0.003
+    per_evaluation_haiku: 0.00025
+    decision_opus: 0.015
+
+    example_5_proposals_5_criteria:
+      # 2 Opus + 5 Sonnet + 25 Haiku
+      total_cost: 0.051
+      value: "High-quality architectural decision"
+
+  examples:
+    - name: Choose database technology
+      input:
+        decision_topic: "Select database for new analytics service"
+        constraints: ["Must handle 100k writes/sec", "Budget < $5k/month"]
+      expected:
+        proposals: 5
+        evaluations: 25
+        duration_minutes: 15
+        cost: 0.051
+
+    - name: Design API architecture
+      input:
+        decision_topic: "REST vs GraphQL vs tRPC"
+        context:
+          requirements: ["Type safety", "Mobile support", "Caching"]
+      expected:
+        proposals: 4
+        evaluations: 20
+        duration_minutes: 12
+        cost: 0.042
+
+  best_practices:
+    - Use for decisions with long-term impact
+    - Ensure diversity in perspectives
+    - Weight criteria based on priorities
+    - Document rationale thoroughly
+    - Review ADR with stakeholders

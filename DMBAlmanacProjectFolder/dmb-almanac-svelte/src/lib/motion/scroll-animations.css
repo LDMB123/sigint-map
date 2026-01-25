@@ -1,0 +1,639 @@
+/**
+ * DMB Almanac - CSS Scroll-Driven Animations
+ * Chrome 115+ (animation-timeline, @supports)
+ * Chromium 143+ optimized for Apple Silicon
+ *
+ * Zero-JavaScript scroll animations using native CSS features:
+ * - animation-timeline: scroll() - document scroll progress
+ * - animation-timeline: view() - element visibility tracking
+ * - animation-range - precise timing within scroll ranges
+ * - GPU-accelerated with transform/opacity only
+ */
+
+/* Feature detection for scroll-driven animations */
+@supports (animation-timeline: scroll()) {
+
+  /* ==================== SCROLL PROGRESS BAR ==================== */
+  /* Fixed progress bar tied to document scroll position */
+  .scroll-progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: auto;
+    /* Prevent stretching */
+    bottom: auto;
+    /* Prevent viewport fill */
+    width: 100%;
+    height: 4px;
+    max-height: 4px;
+    /* Explicit constraint */
+    background: var(--color-primary-600);
+    transform-origin: left;
+    z-index: var(--z-sticky);
+
+    /* Tied to document scroll position */
+    animation: scrollProgress linear both;
+    animation-timeline: scroll(root block);
+
+    /* Progress bar grows from 0 to 100% as user scrolls down */
+    will-change: transform;
+  }
+
+  @keyframes scrollProgress {
+    from {
+      transform: scaleX(0);
+    }
+
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /* Optional: Gradient progress bar */
+  .scroll-progress-bar.gradient {
+    background: linear-gradient(90deg,
+        var(--color-primary-500),
+        var(--color-primary-600),
+        var(--color-accent-orange));
+    background-size: 200% 100%;
+  }
+
+  /* ==================== VIEW-BASED ANIMATIONS ==================== */
+  /* Elements fade/slide in as they enter viewport */
+
+  /* Basic fade-in on scroll */
+  .scroll-fade-in {
+    animation: scrollFadeIn linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 40%;
+  }
+
+  @keyframes scrollFadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Fade + slide up on scroll - cards, sections */
+  .scroll-slide-up {
+    animation: scrollSlideUp linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 50%;
+  }
+
+  @keyframes scrollSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Slide in from left */
+  .scroll-slide-in-left {
+    animation: scrollSlideInLeft linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 50%;
+  }
+
+  @keyframes scrollSlideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-40px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Slide in from right */
+  .scroll-slide-in-right {
+    animation: scrollSlideInRight linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 50%;
+  }
+
+  @keyframes scrollSlideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(40px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Scale up on scroll */
+  .scroll-scale-up {
+    animation: scrollScaleUp linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 50%;
+  }
+
+  @keyframes scrollScaleUp {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* ==================== PARALLAX EFFECTS ==================== */
+  /* Background moves slower than scroll = parallax illusion */
+
+  /* Hero parallax background */
+  .parallax-slow {
+    animation: parallaxSlow linear;
+    animation-timeline: scroll(root block);
+
+    /* Moves from 0 to -50px as user scrolls 0 to 100vh */
+    animation-range: 0vh 100vh;
+    will-change: transform;
+  }
+
+  @keyframes parallaxSlow {
+    from {
+      transform: translateY(0);
+    }
+
+    to {
+      transform: translateY(-50px);
+    }
+  }
+
+  /* Medium parallax */
+  .parallax-medium {
+    animation: parallaxMedium linear;
+    animation-timeline: scroll(root block);
+    animation-range: 0vh 80vh;
+    will-change: transform;
+  }
+
+  @keyframes parallaxMedium {
+    from {
+      transform: translateY(0);
+    }
+
+    to {
+      transform: translateY(-30px);
+    }
+  }
+
+  /* Fast parallax (subtle) */
+  .parallax-fast {
+    animation: parallaxFast linear;
+    animation-timeline: scroll(root block);
+    animation-range: 0vh 60vh;
+    will-change: transform;
+  }
+
+  @keyframes parallaxFast {
+    from {
+      transform: translateY(0);
+    }
+
+    to {
+      transform: translateY(-15px);
+    }
+  }
+
+  /* ==================== STAGGER ANIMATIONS ==================== */
+  /* Sequential animations for list items */
+
+  /* Staggered fade-in with view timeline */
+  .scroll-stagger-item {
+    animation: scrollFadeIn linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 40%;
+  }
+
+  /* Apply stagger delay via CSS custom property or nth-child */
+  .scroll-stagger-item:nth-child(1) {
+    animation-delay: 0ms;
+  }
+
+  .scroll-stagger-item:nth-child(2) {
+    animation-delay: 50ms;
+  }
+
+  .scroll-stagger-item:nth-child(3) {
+    animation-delay: 100ms;
+  }
+
+  .scroll-stagger-item:nth-child(4) {
+    animation-delay: 150ms;
+  }
+
+  .scroll-stagger-item:nth-child(5) {
+    animation-delay: 200ms;
+  }
+
+  .scroll-stagger-item:nth-child(n + 6) {
+    animation-delay: 250ms;
+  }
+
+  /* ==================== STICKY HEADER ANIMATIONS ==================== */
+  /* Header shrinks as user scrolls past it */
+  /* OPTIMIZED: Uses transform instead of padding for GPU acceleration on Apple Silicon */
+
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    animation: headerShrink linear both;
+    animation-timeline: scroll(root block);
+
+    /* Shrink from 0 to 200px of scroll */
+    animation-range: 0 200px;
+    z-index: var(--z-sticky);
+    will-change: transform, opacity;
+  }
+
+  /* Inner content wrapper for transform-based shrinking */
+  .sticky-header-content {
+    padding-block: 1.5rem;
+    transition: padding-block 0.2s ease-out;
+  }
+
+  .sticky-header.scrolled .sticky-header-content {
+    padding-block: 0.5rem;
+  }
+
+  @keyframes headerShrink {
+    from {
+      transform: translateY(0);
+      box-shadow: none;
+      background-color: transparent;
+    }
+
+    to {
+      transform: translateY(0);
+      box-shadow: var(--shadow-md);
+      background-color: var(--background);
+    }
+  }
+
+  /* ==================== CLIP PATH REVEALS ==================== */
+  /* Text reveals letter by letter on scroll */
+
+  .scroll-clip-reveal {
+    animation: scrollClipReveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 50%;
+  }
+
+  @keyframes scrollClipReveal {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  /* Reveal from bottom */
+  .scroll-clip-reveal-bottom {
+    animation: scrollClipRevealBottom linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 50%;
+  }
+
+  @keyframes scrollClipRevealBottom {
+    from {
+      clip-path: inset(100% 0 0 0);
+    }
+
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  /* ==================== OPACITY TRANSITIONS ==================== */
+  /* Fade in/out as element moves through viewport */
+
+  .scroll-fade-through {
+    animation: scrollFadeThrough linear both;
+    animation-timeline: view();
+
+    /* Fade in from entry, fade out at exit */
+    animation-range: entry 0% exit 100%;
+  }
+
+  @keyframes scrollFadeThrough {
+    0% {
+      opacity: 0;
+    }
+
+    50% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* ==================== NAMED SCROLL TIMELINES ==================== */
+  /* For containers with scroll overflow */
+
+  /* Define scroll timeline on container */
+  .scroll-timeline-container {
+    scroll-timeline-name: --container-scroll;
+    scroll-timeline-axis: block;
+    overflow-y: auto;
+  }
+
+  /* Use timeline in child */
+  .scroll-timeline-container .timeline-item {
+    animation: scrollProgress linear;
+    animation-timeline: --container-scroll;
+  }
+
+  /* ==================== INTERACTIVE REVEAL EFFECTS ==================== */
+  /* Smooth reveal as user hovers/interacts */
+
+  .scroll-reveal-on-hover {
+    animation: scrollRevealHover linear both;
+    animation-timeline: view();
+    animation-range: entry 0% contain 100%;
+  }
+
+  @keyframes scrollRevealHover {
+    from {
+      opacity: 0.5;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ==================== CARD/LIST ITEM ANIMATIONS ==================== */
+
+  /* General purpose card reveal */
+  .scroll-card-reveal {
+    animation: scrollCardReveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 40%;
+  }
+
+  @keyframes scrollCardReveal {
+    from {
+      opacity: 0;
+      transform: translateY(25px) scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* ==================== SECTION ANIMATIONS ==================== */
+
+  /* Full-width section reveal */
+  .scroll-section-reveal {
+    animation: scrollSectionReveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 50%;
+  }
+
+  @keyframes scrollSectionReveal {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* ==================== GALLERY/CAROUSEL ANIMATIONS ==================== */
+  /* For image galleries and carousels */
+
+  .scroll-gallery-item {
+    animation: scrollGalleryItem linear both;
+    animation-timeline: view(inline);
+    animation-range: contain 0% contain 100%;
+  }
+
+  @keyframes scrollGalleryItem {
+
+    0%,
+    100% {
+      transform: scale(0.8);
+      opacity: 0.5;
+    }
+
+    50% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* ==================== COUNTER ANIMATIONS ==================== */
+  /* Animate numbers as they come into view */
+
+  .scroll-counter {
+    animation: scrollCounter linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 100%;
+  }
+
+  @keyframes scrollCounter {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* ==================== BORDER ANIMATIONS ==================== */
+
+  .scroll-border-animate {
+    animation: scrollBorderAnimate linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 60%;
+  }
+
+  @keyframes scrollBorderAnimate {
+    from {
+      box-shadow: inset 0 0 0 0 var(--border-color, currentColor);
+    }
+
+    to {
+      box-shadow: inset 0 0 0 4px var(--border-color, currentColor);
+    }
+  }
+
+  /* ==================== BACKGROUND COLOR CHANGE ==================== */
+
+  .scroll-color-change {
+    animation: scrollColorChange linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0vh 200vh;
+  }
+
+  @keyframes scrollColorChange {
+    from {
+      background-color: var(--background);
+    }
+
+    to {
+      background-color: var(--background-secondary);
+    }
+  }
+
+  /* ==================== ROTATION ANIMATIONS ==================== */
+
+  .scroll-rotate {
+    animation: scrollRotate linear;
+    animation-timeline: scroll(root block);
+    animation-range: 0vh 150vh;
+    will-change: transform;
+  }
+
+  @keyframes scrollRotate {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* ==================== FILTER EFFECTS ==================== */
+
+  .scroll-blur-in {
+    animation: scrollBlurIn linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 50%;
+    will-change: filter;
+  }
+
+  @keyframes scrollBlurIn {
+    from {
+      filter: blur(10px);
+      opacity: 0;
+    }
+
+    to {
+      filter: blur(0);
+      opacity: 1;
+    }
+  }
+
+  /* ==================== COMBINED ANIMATIONS ==================== */
+
+  /* Epic reveal: slide + fade + scale */
+  .scroll-epic-reveal {
+    animation: scrollEpicReveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 60%;
+  }
+
+  @keyframes scrollEpicReveal {
+    from {
+      opacity: 0;
+      transform: translateY(40px) scale(0.9) rotate(-2deg);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1) rotate(0deg);
+    }
+  }
+
+  /* ==================== ACCESSIBILITY ==================== */
+  /* Respect prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+
+    .scroll-fade-in,
+    .scroll-slide-up,
+    .scroll-slide-in-left,
+    .scroll-slide-in-right,
+    .scroll-scale-up,
+    .parallax-slow,
+    .parallax-medium,
+    .parallax-fast,
+    .scroll-stagger-item,
+    .sticky-header,
+    .scroll-clip-reveal,
+    .scroll-clip-reveal-bottom,
+    .scroll-fade-through,
+    .scroll-reveal-on-hover,
+    .scroll-card-reveal,
+    .scroll-section-reveal,
+    .scroll-gallery-item,
+    .scroll-counter,
+    .scroll-border-animate,
+    .scroll-color-change,
+    .scroll-rotate,
+    .scroll-blur-in,
+    .scroll-epic-reveal,
+    .scroll-progress-bar {
+      animation: none !important;
+      transform: none !important;
+      opacity: 1 !important;
+      filter: none !important;
+    }
+  }
+
+  /* ==================== GPU OPTIMIZATION ==================== */
+  /* Hint browser for GPU acceleration */
+  .scroll-accelerated {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+}
+
+/* ==================== FALLBACK FOR OLDER BROWSERS ==================== */
+/* If scroll-driven animations aren't supported, use traditional animations */
+@supports not (animation-timeline: scroll()) {
+
+  .scroll-fade-in,
+  .scroll-slide-up,
+  .scroll-slide-in-left,
+  .scroll-slide-in-right,
+  .scroll-scale-up,
+  .scroll-card-reveal,
+  .scroll-section-reveal {
+    /* Fallback: fade in on load with traditional animation */
+    animation: fadeInFallback 0.6s ease-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeInFallback {
+    to {
+      opacity: 1;
+    }
+  }
+
+  .parallax-slow,
+  .parallax-medium,
+  .parallax-fast {
+    /* No parallax effect without scroll timeline support */
+  }
+}

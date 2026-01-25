@@ -1,0 +1,180 @@
+# Universal Agent Framework - API Client Integrator
+# Category: Integrators | Tier: Sonnet | Parallelization: 20+
+
+agent:
+  id: integrator_api_client
+  name: API Client Integrator
+  version: 1.0.0
+
+  functional_category: integrator
+  sub_category: api_client
+  model_tier: sonnet
+
+  description: |
+    Generates type-safe API clients from specifications.
+    Supports OpenAPI, GraphQL, gRPC, and custom APIs.
+    Creates SDKs with error handling and retry logic.
+
+  capabilities:
+    - generate_rest_client
+    - create_graphql_client
+    - generate_grpc_client
+    - create_websocket_client
+    - generate_typed_client
+    - add_authentication
+    - implement_retry_logic
+    - add_rate_limiting
+    - generate_mocks
+    - create_tests
+
+  api_types:
+    - openapi_3
+    - openapi_2
+    - graphql
+    - grpc
+    - json_rpc
+    - soap
+    - websocket
+    - sse
+
+  input_schema:
+    type: object
+    required:
+      - spec
+    properties:
+      spec:
+        oneOf:
+          - type: string
+            description: Path or URL to API specification
+          - type: object
+            description: Inline specification
+      api_type:
+        type: string
+        description: Override auto-detected API type
+      target_language:
+        type: string
+        default: typescript
+      options:
+        type: object
+        properties:
+          typed:
+            type: boolean
+            default: true
+          auth_type:
+            type: string
+            enum: [none, bearer, api_key, oauth2, basic]
+          retry_config:
+            type: object
+          rate_limit_config:
+            type: object
+          generate_mocks:
+            type: boolean
+            default: false
+          generate_tests:
+            type: boolean
+            default: false
+
+  output_schema:
+    type: object
+    properties:
+      client:
+        type: object
+        properties:
+          code:
+            type: string
+          types:
+            type: string
+          tests:
+            type: string
+          mocks:
+            type: string
+      files:
+        type: array
+        items:
+          type: object
+          properties:
+            path:
+              type: string
+            content:
+              type: string
+      dependencies:
+        type: array
+        items:
+          type: string
+      usage_examples:
+        type: array
+        items:
+          type: object
+          properties:
+            endpoint:
+              type: string
+            example:
+              type: string
+
+  performance:
+    avg_latency_ms: 4000
+    max_tokens: 32000
+    timeout_seconds: 120
+
+  parallelization:
+    max_concurrent: 20
+
+  collaboration:
+    receives_from:
+      - api-integration-orchestrator: API client generation and integration
+      - integration-debugger: Test API connectivity
+      - full-stack-developer: API integration requests
+      - devops-engineer: Service integration
+    delegates_to:
+      - code-generator: Generate API client code
+      - test-generator: Generate API tests
+      - documentation-generator: Generate API documentation
+    queries:
+      - pattern-miner: Identify API client patterns
+    escalates_to:
+      - system-architect: Complex API integration requiring architectural decisions
+      - devops-engineer: API authentication or infrastructure issues
+    returns_to:
+      - requesting-agent: API client implementation with tests and documentation
+    swarm_pattern: pipeline
+
+  tags:
+    - integration
+    - api
+    - client
+    - sdk
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+security:
+  input_validation:
+    enabled: true
+    sanitize_sql: true
+    sanitize_shell: true
+    max_input_size: 10000
+    reject_patterns:
+      - "'; DROP TABLE"
+      - "rm -rf /"
+      - "../"
+      - "<script>"
+
+cost:
+  tier: sonnet
+  per_execution_estimate: 0.03
+  typical_range: [0.01, 0.08]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

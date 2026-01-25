@@ -1,0 +1,196 @@
+# Universal Agent Framework - Fan-Out Validation Swarm Pattern
+# Pattern: Fan-Out | Speedup: 50-200x | Cost Savings: 70-90%
+
+swarm_pattern:
+  id: fan_out_validation
+  name: Fan-Out Validation
+  version: 1.0.0
+
+  description: |
+    Distributes validation tasks across many parallel Haiku workers.
+    One coordinator spawns N validators, each checking one file/item.
+    Results are aggregated and reported.
+
+    Ideal for: Syntax validation, style checking, schema validation,
+    security scanning, test validation across large codebases.
+
+  architecture:
+    coordinator:
+      tier: sonnet
+      role: Plan work, spawn workers, aggregate results
+      count: 1
+
+    workers:
+      tier: haiku
+      role: Execute validation on single item
+      count: dynamic  # Based on workload
+      max_concurrent: 200
+
+  workflow:
+    phase_1_planning:
+      name: Work Distribution
+      agent: orchestrator_delegation
+      tier: sonnet
+      actions:
+        - Receive validation request
+        - Analyze target files/items
+        - Partition work into batches
+        - Calculate optimal parallelism
+      output: validation_plan
+      timeout_seconds: 30
+
+    phase_2_fan_out:
+      name: Parallel Execution
+      agent: validator_*  # Any validator agent
+      tier: haiku
+      parallelization:
+        strategy: map
+        max_concurrent: 200
+        batch_size: 50
+      actions:
+        - Receive single item to validate
+        - Execute validation
+        - Return result
+      timeout_seconds: 30
+      retry:
+        max_attempts: 2
+        backoff_ms: 1000
+
+    phase_3_aggregation:
+      name: Result Collection
+      agent: reporter_summary
+      tier: haiku
+      actions:
+        - Collect all worker results
+        - Aggregate statistics
+        - Identify failures
+        - Generate summary report
+      output: validation_report
+      timeout_seconds: 30
+
+  configuration:
+    default_validators:
+      syntax: validator_syntax
+      style: validator_style
+      schema: validator_schema
+      security: validator_security
+      test: validator_test
+
+    resource_limits:
+      max_workers: 200
+      timeout_per_worker_seconds: 30
+      total_timeout_seconds: 300
+
+    error_handling:
+      on_worker_failure: continue
+      failure_threshold: 0.1  # Fail if >10% workers fail
+      retry_failed: true
+
+    cost_optimization:
+      prefer_haiku: true
+      batch_similar_tasks: true
+      cache_results: true
+      deduplicate_inputs: true
+
+  input_schema:
+    type: object
+    required:
+      - targets
+      - validation_type
+    properties:
+      targets:
+        oneOf:
+          - type: string
+            description: Glob pattern
+          - type: array
+            items:
+              type: string
+      validation_type:
+        type: string
+        enum: [syntax, style, schema, security, test, custom]
+      custom_validator:
+        type: string
+        description: Agent ID for custom validation
+      config:
+        type: object
+        description: Validator-specific configuration
+
+  output_schema:
+    type: object
+    properties:
+      success:
+        type: boolean
+      summary:
+        type: object
+        properties:
+          total_items:
+            type: integer
+          passed:
+            type: integer
+          failed:
+            type: integer
+          skipped:
+            type: integer
+          pass_rate:
+            type: number
+      results:
+        type: array
+        items:
+          type: object
+          properties:
+            item:
+              type: string
+            status:
+              type: string
+              enum: [passed, failed, skipped, error]
+            issues:
+              type: array
+            duration_ms:
+              type: integer
+      metrics:
+        type: object
+        properties:
+          total_duration_ms:
+            type: integer
+          parallel_efficiency:
+            type: number
+          cost_total:
+            type: number
+          cost_per_item:
+            type: number
+
+  cost_model:
+    coordinator: 0.003  # Sonnet
+    per_worker: 0.00025  # Haiku
+    aggregator: 0.00025  # Haiku
+
+    example_100_files:
+      traditional_sonnet: 0.30  # 100 × $0.003
+      swarm_approach: 0.031    # 1 × $0.003 + 100 × $0.00025 + 1 × $0.00025
+      savings_percent: 89.7
+
+  examples:
+    - name: Validate 500 TypeScript files
+      input:
+        targets: "src/**/*.ts"
+        validation_type: syntax
+      expected:
+        workers_spawned: 500
+        duration_seconds: 15  # vs 250s sequential
+        cost: 0.128
+
+    - name: Security scan entire codebase
+      input:
+        targets: ["src/**/*.ts", "lib/**/*.js"]
+        validation_type: security
+      expected:
+        workers_spawned: 1000
+        duration_seconds: 45
+        cost: 0.253
+
+  best_practices:
+    - Use for tasks with 10+ independent items
+    - Keep per-worker timeout short (30s)
+    - Batch results to reduce aggregation overhead
+    - Monitor failure rate to detect systemic issues
+    - Cache validation results for unchanged files

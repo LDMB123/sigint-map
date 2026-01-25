@@ -1,0 +1,88 @@
+openapi: 3.0.0
+info:
+  title: Agent Invocation API
+  version: 1.0.0
+  description: API for invoking and managing Claude agents
+
+paths:
+  /agents/{agentId}/invoke:
+    post:
+      summary: Invoke an agent
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                input:
+                  type: object
+                context:
+                  type: object
+                options:
+                  type: object
+      responses:
+        '200':
+          description: Successful invocation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                  metadata:
+                    type: object
+                  cost:
+                    type: number
+        '400':
+          description: Invalid input
+        '500':
+          description: Agent execution error
+
+  /agents/{agentId}/status:
+    get:
+      summary: Get agent status
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [idle, running, error]
+                  last_execution:
+                    type: string
+                    format: date-time
+                  total_executions:
+                    type: integer
+
+components:
+  schemas:
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        tier:
+          type: string
+          enum: [haiku, sonnet, opus]
+        category:
+          type: string

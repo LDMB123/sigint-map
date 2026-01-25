@@ -1,0 +1,183 @@
+# Universal Agent Framework - Migration Transformer
+# Category: Transformers | Tier: Sonnet | Parallelization: 30
+
+agent:
+  id: transformer_migrate
+  name: Migration Transformer
+  version: 1.0.0
+
+  functional_category: transformer
+  sub_category: migrate
+  model_tier: sonnet
+  model_id: claude-sonnet-4-5-20250929
+
+  description: |
+    Performs code migrations between API versions, frameworks, and patterns.
+    Handles breaking changes, deprecated APIs, and syntax updates.
+    Supports batch migration for large codebases.
+
+  capabilities:
+    - migrate_api_version
+    - upgrade_framework
+    - convert_syntax
+    - update_deprecated_apis
+    - transform_patterns
+    - migrate_imports
+    - update_configuration
+    - convert_types
+    - migrate_tests
+    - update_build_scripts
+
+  migration_types:
+    api_migrations:
+      - major_version_upgrade
+      - minor_api_changes
+      - deprecated_to_current
+      - breaking_change_adaptation
+    framework_migrations:
+      - react_class_to_hooks
+      - vue_2_to_3
+      - angular_upgrade
+      - express_to_fastify
+      - jest_to_vitest
+    language_migrations:
+      - javascript_to_typescript
+      - commonjs_to_esm
+      - callback_to_promise
+      - promise_to_async_await
+    pattern_migrations:
+      - mvc_to_mvvm
+      - monolith_to_microservice
+      - rest_to_graphql
+      - sql_to_orm
+
+  input_schema:
+    type: object
+    required:
+      - source_file
+      - migration_type
+    properties:
+      source_file:
+        type: string
+      migration_type:
+        type: string
+      from_version:
+        type: string
+      to_version:
+        type: string
+      options:
+        type: object
+        properties:
+          preserve_comments:
+            type: boolean
+            default: true
+          add_migration_comments:
+            type: boolean
+            default: true
+          strict_mode:
+            type: boolean
+            default: false
+          codemods:
+            type: array
+            items:
+              type: string
+
+  output_schema:
+    type: object
+    properties:
+      success:
+        type: boolean
+      migrated_code:
+        type: string
+      changes:
+        type: array
+        items:
+          type: object
+          properties:
+            line:
+              type: integer
+            type:
+              type: string
+            before:
+              type: string
+            after:
+              type: string
+            reason:
+              type: string
+      manual_interventions:
+        type: array
+        items:
+          type: object
+          properties:
+            line:
+              type: integer
+            issue:
+              type: string
+            suggestion:
+              type: string
+      statistics:
+        type: object
+        properties:
+          automated_changes:
+            type: integer
+          manual_required:
+            type: integer
+          confidence:
+            type: number
+
+  performance:
+    avg_latency_ms: 2500
+    max_tokens: 16000
+    timeout_seconds: 60
+
+  parallelization:
+    max_concurrent: 30
+    recommended_batch_size: 20
+
+  collaboration:
+    receives_from:
+      - migration-orchestrator: Code migration execution requests
+      - full-stack-developer: Framework upgrade transformations
+      - technical-debt-coordinator: API modernization migrations
+    delegates_to:
+      - test-validator: Validate migrated code has passing tests
+      - static-analyzer: Check migrated code quality
+      - syntax-validator: Ensure migrated code is syntactically correct
+    escalates_to:
+      - migration-orchestrator: Complex migrations requiring manual intervention
+      - system-architect: Architectural migration decisions
+    returns_to:
+      - orchestrating-agent: Migration results with change summary and manual intervention points
+    swarm_pattern: pipeline
+    coordinates_with:
+      - refactoring-guru: Code refactoring during migration
+      - documentation-generator: Update docs after migration
+
+  tags:
+    - transformation
+    - migration
+    - upgrade
+    - version
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: sonnet
+  per_execution_estimate: 0.03
+  typical_range: [0.01, 0.08]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

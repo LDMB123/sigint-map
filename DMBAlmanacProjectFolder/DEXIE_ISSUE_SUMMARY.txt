@@ -1,0 +1,280 @@
+================================================================================
+DMB ALMANAC DEXIE/INDEXEDDB AUDIT - ISSUE SUMMARY
+================================================================================
+
+AUDIT DATE: January 23, 2026
+SCOPE: /src/lib/db/dexie/ directory (19 TypeScript files)
+STATUS: 15 Issues Identified (3 causing test failures)
+
+================================================================================
+TEST FAILURE ROOT CAUSES
+================================================================================
+
+FAILING TEST FILE 1: query-helpers.test.ts
+  Failed Tests: 10
+  Root Cause: Cache invalidation race condition
+  Location: /src/lib/db/dexie/cache.ts:557-580
+  Issue: invalidateCache() called immediately instead of debounced
+  Severity: CRITICAL
+  Fix Complexity: MEDIUM
+  Estimated Fix Time: 15 minutes
+
+FAILING TEST FILE 2: data-loader.test.ts
+  Failed Tests: 4
+  Root Cause: Compression type mismatch + missing imports
+  Location: /src/lib/db/dexie/data-loader.test.ts:1-50 (imports)
+  Location: /src/lib/db/dexie/data-loader.ts:28-51 (type unsafe)
+  Issue 1: getSupportedEncodings() not imported in test
+  Issue 2: DecompressionStream mock doesn't validate format parameter
+  Issue 3: Type assertion `as CompressionFormat` bypasses safety
+  Severity: CRITICAL
+  Fix Complexity: MEDIUM
+  Estimated Fix Time: 20 minutes
+
+FAILING TEST FILE 3: queries.test.ts
+  Failed Tests: 1
+  Root Cause: Global search uses non-namespaced entity IDs
+  Location: /src/lib/db/dexie/queries.ts:1254-1283
+  Issue: SearchResult.id collision (song #1, venue #1 both id=1)
+  Severity: HIGH
+  Fix Complexity: LOW
+  Estimated Fix Time: 10 minutes
+
+================================================================================
+CRITICAL ISSUES (Non-Test Related)
+================================================================================
+
+ISSUE 4: Transaction Deadlock in safeQuery
+  File: /src/lib/db/dexie/query-helpers.ts:386-397
+  Problem: Queries run outside transaction context
+  Risk: Concurrent operations create IndexedDB locks, causing deadlock
+  Fix: Wrap queries in explicit read transactions
+  Severity: HIGH
+
+ISSUE 5: Foreign Key Validation Silent Failure
+  File: /src/lib/db/dexie/data-loader.ts:929-998
+  Problem: Orphaned records only logged, not prevented
+  Risk: Silent data corruption, cascading failures in queries
+  Fix: Check FK validation result, throw if critical violations found
+  Severity: HIGH
+
+ISSUE 6: VersionError No Recovery Mechanism
+  File: /src/lib/db/dexie/db.ts:264-293
+  Problem: Hard closes connection on version change, requires manual refresh
+  Risk: Users lose connection without retry attempt
+  Fix: Implement exponential backoff reconnection with user notification
+  Severity: HIGH
+
+ISSUE 7: QuotaExceededError Not Recoverable
+  File: /src/lib/db/dexie/queries.ts:1305-1341
+  Problem: Bulk operations fail hard on quota exceeded
+  Risk: Users can't load data if storage full
+  Fix: Implement LRU eviction (delete old shows) + retry
+  Severity: HIGH
+
+================================================================================
+HIGH PRIORITY ISSUES
+================================================================================
+
+ISSUE 8: Compression Monitor Metrics Not Exported
+  File: /src/lib/db/dexie/data-loader.ts:343-366, 1317
+  Problem: compressionMonitor.recordLoad() called but module may throw
+  Risk: Silent failures if monitor crashes
+  Fix: Wrap monitor calls in try-catch
+
+ISSUE 9: bulkOperation Mode Always 'rw'
+  File: /src/lib/db/dexie/query-helpers.ts:560-625
+  Problem: Hardcoded 'rw' mode causes unnecessary write locks
+  Risk: Read-only operations block concurrent writes
+  Fix: Add transactionMode parameter (default 'rw' for writes)
+
+ISSUE 10: Cache Cleanup Never Initialized
+  File: /src/lib/db/dexie/cache.ts:664-687
+  File: /src/lib/db/dexie/init.ts (missing call)
+  Problem: startPeriodicCacheCleanup() defined but never called
+  Risk: Cache grows unbounded, memory leak
+  Fix: Call setupCacheInvalidationListeners() + startPeriodicCacheCleanup() in init
+
+ISSUE 11: Missing [songId+showDate] Index Usage
+  File: /src/lib/db/dexie/queries.ts:527-542
+  Problem: getShowsForSong uses songId only, ignores compound index
+  Risk: 30-50% slower than necessary (from schema.ts line 660)
+  Fix: Use .where('[songId+showDate]').between(...) instead
+
+ISSUE 12: Sync Module No Transaction Semantics
+  File: /src/lib/db/dexie/sync.ts (lines 1+)
+  Problem: Server→Client sync updates not atomic
+  Risk: Partial updates if operation fails mid-sync
+  Fix: Wrap all sync operations in transactions
+
+ISSUE 13: No Batch Retry Logic
+  File: /src/lib/db/dexie/query-helpers.ts:560-625
+  Problem: bulkOperation fails on first error, no retry
+  Risk: Transient IndexedDB locks cause entire operation to fail
+  Fix: Add retry loop with exponential backoff
+
+ISSUE 14: Cache TTL Not Validated
+  File: /src/lib/db/dexie/cache.ts:336-350
+  Problem: Cache TTL values chosen arbitrarily, no bounds checking
+  Risk: TTL too short wastes queries, too long stales data
+  Fix: Add MIN_TTL/MAX_TTL validation, make environment-aware
+
+ISSUE 15: No Query Performance Metrics
+  File: /src/lib/db/dexie/queries.ts + query-helpers.ts
+  Problem: No visibility into slow queries
+  Risk: Can't detect regression when indexes degrade
+  Fix: Add timedQuery() helper with performance thresholds
+
+================================================================================
+FILE-BY-FILE BREAKDOWN
+================================================================================
+
+/src/lib/db/dexie/db.ts
+  - ISSUE 6: VersionError no recovery (line 264-293)
+  - Location: versionchange event handler
+  - Status: CRITICAL
+
+/src/lib/db/dexie/schema.ts
+  - ISSUE 11: Defines [songId+showDate] index (line 660)
+  - Issue: queries.ts doesn't use it
+  - Status: Related to HIGH PRIORITY issue
+
+/src/lib/db/dexie/queries.ts
+  - ISSUE 3: Global search entity ID collision (line 1254-1283)
+  - ISSUE 7: QuotaExceededError not recoverable (line 1305-1341)
+  - ISSUE 11: Missing [songId+showDate] index (line 527-542)
+  - Status: 1 TEST FAILING + 2 CRITICAL
+
+/src/lib/db/dexie/query-helpers.ts
+  - ISSUE 4: Transaction deadlock in safeQuery (line 386-397)
+  - ISSUE 9: bulkOperation mode hardcoded (line 560-625)
+  - ISSUE 13: No batch retry logic (line 560-625)
+  - Status: 3 HIGH PRIORITY
+
+/src/lib/db/dexie/cache.ts
+  - ISSUE 1: Cache invalidation race (line 557-580)
+  - ISSUE 10: Cache cleanup never called (line 664-687)
+  - ISSUE 14: Cache TTL not validated (line 336-350)
+  - Status: 1 CRITICAL + 2 MEDIUM
+
+/src/lib/db/dexie/data-loader.ts
+  - ISSUE 2: Compression type mismatch (line 28-51)
+  - ISSUE 5: Foreign key validation silent (line 929-998)
+  - ISSUE 8: compressionMonitor error handling (line 343-366)
+  - Status: 1 CRITICAL + 2 HIGH
+
+/src/lib/db/dexie/sync.ts
+  - ISSUE 12: No transaction semantics (full file)
+  - Status: MEDIUM PRIORITY
+
+/src/lib/db/dexie/init.ts
+  - ISSUE 10: Cache cleanup not initialized (missing call)
+  - Status: MEDIUM PRIORITY
+
+/src/lib/db/dexie/query-helpers.test.ts
+  - TEST FAILURE: 10 tests (all cache-related)
+  - Root Cause: ISSUE 1 cache invalidation race
+  - Status: FAILING
+
+/src/lib/db/dexie/data-loader.test.ts
+  - TEST FAILURE: 4 tests (all compression-related)
+  - Root Cause: ISSUE 2 compression type mismatch
+  - Status: FAILING
+
+/src/lib/db/dexie/queries.test.ts
+  - TEST FAILURE: 1 test (global search)
+  - Root Cause: ISSUE 3 entity ID collision
+  - Status: FAILING
+
+================================================================================
+IMPACT ANALYSIS
+================================================================================
+
+User-Facing Impact:
+  ✗ Global search shows wrong results (entity collisions)
+  ✗ Database fails to load if storage quota reached
+  ✗ Manual page refresh required on version change
+  ✗ Occasional query failures due to race conditions
+
+Developer-Facing Impact:
+  ✗ 15 test failures block CI/CD
+  ✗ Cache inconsistency makes debugging hard
+  ✗ No performance visibility
+  ✗ Sync operations prone to partial failures
+
+Data Integrity Impact:
+  ✗ Orphaned FK references stored silently
+  ✗ Race conditions cause stale data visibility
+  ✗ Partial syncs possible without atomicity
+
+Performance Impact:
+  ✗ 30-50% slower getShowsForSong() (missing index usage)
+  ✗ Unbounded cache growth (memory leak)
+  ✗ Unnecessary write locks on read-only queries
+
+================================================================================
+RECOMMENDED FIX ORDER
+================================================================================
+
+IMMEDIATE (Block CI/CD):
+  1. ISSUE 1: Cache invalidation race (query-helpers.test.ts: 10 tests)
+  2. ISSUE 2: Compression type mismatch (data-loader.test.ts: 4 tests)
+  3. ISSUE 3: Global search entity IDs (queries.test.ts: 1 test)
+  ~ 45 minutes total, all tests should pass
+
+SHORT TERM (Next 1-2 weeks):
+  4. ISSUE 6: VersionError recovery (HIGH user impact)
+  5. ISSUE 7: QuotaExceededError recovery (HIGH user impact)
+  6. ISSUE 5: FK validation (data integrity)
+  7. ISSUE 4: Transaction deadlock (stability)
+
+MEDIUM TERM (Next 1 month):
+  8. ISSUE 10: Cache cleanup init (memory leak)
+  9. ISSUE 12: Sync transactions (data integrity)
+ 10. ISSUE 11: Use [songId+showDate] index (performance)
+
+LONG TERM (Nice to have):
+ 11. ISSUE 9: bulkOperation mode param
+ 12. ISSUE 13: Batch retry logic
+ 13. ISSUE 14: Cache TTL validation
+ 14. ISSUE 8: Monitor error handling
+ 15. ISSUE 15: Query metrics
+
+================================================================================
+VERIFICATION CHECKLIST
+================================================================================
+
+After fixing Issues 1-3 (tests):
+  ☐ npm run test passes all 15 tests
+  ☐ No console errors in DevTools
+  ☐ Application loads without errors
+
+After fixing Issues 4-7 (critical):
+  ☐ Global search works correctly
+  ☐ Version change handling works
+  ☐ Quota errors show recovery UI
+  ☐ Cross-tab sync stable
+
+After fixing Issues 8-10 (stability):
+  ☐ Memory usage stable over time
+  ☐ Compression metrics available
+  ☐ Sync operations atomic
+
+After fixing Issues 11-15 (polish):
+  ☐ Performance metrics available
+  ☐ Query performance matches baseline
+  ☐ Cache optimization working
+
+================================================================================
+DOCUMENTATION REFERENCES
+================================================================================
+
+Full Audit: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/DEXIE_INDEXEDDB_AUDIT.md
+Quick Fix Guide: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/DEXIE_QUICK_FIX_GUIDE.md
+
+Key Schema:
+  - IndexedDB Indexes: /src/lib/db/dexie/schema.ts (lines 504-690)
+  - Cache Settings: /src/lib/db/dexie/cache.ts (lines 336-450)
+  - Query Functions: /src/lib/db/dexie/queries.ts (lines 1240-1291)
+
+================================================================================

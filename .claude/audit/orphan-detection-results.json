@@ -1,0 +1,1686 @@
+{
+  "generated_at": "2026-01-25",
+  "summary": {
+    "total_agents": 470,
+    "shadowed": 0,
+    "disabled": 0,
+    "dangling_references": 14,
+    "model_issues": 0,
+    "unreachable": 254,
+    "format_issues": 4,
+    "total_issues": 272
+  },
+  "findings": {
+    "shadowed": [],
+    "disabled": [],
+    "dangling_references": [
+      {
+        "name": "All orchestrators",
+        "referenced_by": [
+          "adaptive-strategy-executor"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "any-sonnet-orchestrator",
+        "referenced_by": [
+          "file-pattern-finder",
+          "batch-formatter",
+          "code-pattern-matcher"
+        ],
+        "reference_count": 3,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "build-debugger",
+        "referenced_by": [
+          "migration-orchestrator"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "compliance-checker",
+        "referenced_by": [
+          "security-hardening-orchestrator"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "dependency-analyzer",
+        "referenced_by": [
+          "migration-orchestrator"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "documentation-generator",
+        "referenced_by": [
+          "api-evolution-orchestrator"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "domain-specific-experts",
+        "referenced_by": [
+          "first-principles-thinker"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "haiku-swarm-coordinator",
+        "referenced_by": [
+          "code-pattern-matcher"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "junior-developers",
+        "referenced_by": [
+          "rubber-duck-debugger"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "migration-transformer",
+        "referenced_by": [
+          "migration-orchestrator"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "risk-assessor",
+        "referenced_by": [
+          "expert-planner"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "secret-detector",
+        "referenced_by": [
+          "security-hardening-orchestrator"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "static-analyzer",
+        "referenced_by": [
+          "migration-orchestrator"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      },
+      {
+        "name": "test-validator",
+        "referenced_by": [
+          "test-coverage-orchestrator"
+        ],
+        "reference_count": 1,
+        "reason": "Agent referenced in collaboration metadata but file does not exist"
+      }
+    ],
+    "model_issues": [],
+    "unreachable": [
+      {
+        "name": "dmb-brand-dna-expert",
+        "file_path": "/Users/louisherman/.claude/agents/DMB Brand DNA Expert.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "ai-product-fusion-agent",
+        "file_path": "/Users/louisherman/.claude/agents/fusion/AI Product Fusion Agent.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "performance-security-fusion-agent",
+        "file_path": "/Users/louisherman/.claude/agents/fusion/Performance Security Fusion Agent.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "security-devops-fusion-agent",
+        "file_path": "/Users/louisherman/.claude/agents/fusion/Security DevOps Fusion Agent.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "full-stack-fusion-agent",
+        "file_path": "/Users/louisherman/.claude/agents/fusion/Full Stack Fusion Agent.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "data-analytics-fusion-agent",
+        "file_path": "/Users/louisherman/.claude/agents/fusion/Data Analytics Fusion Agent.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "super-agent-generator",
+        "file_path": "/Users/louisherman/.claude/agents/fusion-compiler/Super Agent Generator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "runtime-fuser",
+        "file_path": "/Users/louisherman/.claude/agents/fusion-compiler/Runtime Fuser.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "ux-researcher",
+        "file_path": "/Users/louisherman/.claude/agents/design/UX Researcher.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "creative-director",
+        "file_path": "/Users/louisherman/.claude/agents/design/Creative Director.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "ui-designer",
+        "file_path": "/Users/louisherman/.claude/agents/design/UI Designer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "brand-designer",
+        "file_path": "/Users/louisherman/.claude/agents/design/Brand Designer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "web-designer",
+        "file_path": "/Users/louisherman/.claude/agents/design/Web Designer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "motion-designer",
+        "file_path": "/Users/louisherman/.claude/agents/design/Motion Designer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "platform-engineer",
+        "file_path": "/Users/louisherman/.claude/agents/devops/Platform Engineer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "finops-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/devops/FinOps Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "e-commerce-analyst",
+        "file_path": "/Users/louisherman/.claude/agents/ecommerce/E-commerce Analyst.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "etsy-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ecommerce/Etsy Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "ecommerce-strategist",
+        "file_path": "/Users/louisherman/.claude/agents/ecommerce/E-commerce Strategist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "inventory-manager",
+        "file_path": "/Users/louisherman/.claude/agents/ecommerce/inventory-manager.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "print-on-demand-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ecommerce/Print on Demand Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "amazon-seller-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ecommerce/Amazon Seller Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "pricing-strategist",
+        "file_path": "/Users/louisherman/.claude/agents/ecommerce/pricing-strategist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "social-commerce-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ecommerce/Social Commerce Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "shopify-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ecommerce/Shopify Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "cross-domain-transferer",
+        "file_path": "/Users/louisherman/.claude/agents/zero-shot/Cross Domain Transferer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "knowledge-distiller",
+        "file_path": "/Users/louisherman/.claude/agents/zero-shot/Knowledge Distiller.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "fallback-router",
+        "file_path": "/Users/louisherman/.claude/agents/circuit-breaker/fallback-router.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "failure-rate-monitor",
+        "file_path": "/Users/louisherman/.claude/agents/circuit-breaker/failure-rate-monitor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "circuit-breaker-controller",
+        "file_path": "/Users/louisherman/.claude/agents/circuit-breaker/circuit-breaker-controller.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "escalation-manager",
+        "file_path": "/Users/louisherman/.claude/agents/self-healing/Escalation Manager.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "auto-recovery-agent",
+        "file_path": "/Users/louisherman/.claude/agents/self-healing/Auto Recovery Agent.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "error-detector",
+        "file_path": "/Users/louisherman/.claude/agents/self-healing/Error Detector.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "live-show-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/dmb/live-show-analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "setlist-pattern-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/dmb/setlist-pattern-analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "guest-appearance-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/dmb/guest-appearance-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "tour-route-optimizer",
+        "file_path": "/Users/louisherman/.claude/agents/dmb/tour-route-optimizer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "tier-cascader",
+        "file_path": "/Users/louisherman/.claude/agents/cascading/Tier Cascader.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "cascade-optimizer",
+        "file_path": "/Users/louisherman/.claude/agents/cascading/Cascade Optimizer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "veo-video-generation-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/google/Veo Video Generation Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "gemini-integration-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/google/Gemini Integration Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "imagen-creative-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/google/Imagen Creative Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "google-workflow-automation-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/google/Google Workflow Automation Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "google-workspace-productivity-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/google/Google Workspace Productivity Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "google-ai-studio-guide",
+        "file_path": "/Users/louisherman/.claude/agents/google/Google AI Studio Guide.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "google-labs-creative-guide",
+        "file_path": "/Users/louisherman/.claude/agents/google/Google Labs Creative Guide.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "scrum-master",
+        "file_path": "/Users/louisherman/.claude/agents/project_management/Scrum Master.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "agile-project-manager",
+        "file_path": "/Users/louisherman/.claude/agents/project_management/Agile Project Manager.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "auto-parallelization-detector",
+        "file_path": "/Users/louisherman/.claude/agents/meta/auto-parallelization-detector.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "skill-recommender",
+        "file_path": "/Users/louisherman/.claude/agents/meta/skill-recommender.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "blog-writer",
+        "file_path": "/Users/louisherman/.claude/agents/content/Blog Writer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "copywriter",
+        "file_path": "/Users/louisherman/.claude/agents/content/Copywriter.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "content-strategist",
+        "file_path": "/Users/louisherman/.claude/agents/content/Content Strategist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "social-media-manager",
+        "file_path": "/Users/louisherman/.claude/agents/content/Social Media Manager.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "stigmergic-coordinator",
+        "file_path": "/Users/louisherman/.claude/agents/swarm-intelligence/Stigmergic Coordinator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "collective-memory",
+        "file_path": "/Users/louisherman/.claude/agents/swarm-intelligence/Collective Memory.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "emergent-behavior-monitor",
+        "file_path": "/Users/louisherman/.claude/agents/swarm-intelligence/Emergent Behavior Monitor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "agent-loader",
+        "file_path": "/Users/louisherman/.claude/agents/lazy-loading/Agent Loader.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "resource-manager",
+        "file_path": "/Users/louisherman/.claude/agents/lazy-loading/Resource Manager.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "experiment-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/product/Experiment Analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "experiment-designer",
+        "file_path": "/Users/louisherman/.claude/agents/product/Experiment Designer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "Product Analyst",
+        "file_path": "/Users/louisherman/.claude/agents/product/Product Analyst.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "finance-ops",
+        "file_path": "/Users/louisherman/.claude/agents/operations/Finance Ops.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "cost-optimization-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/operations/Cost Optimization Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "github-actions-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/operations/GitHub Actions Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "operations-manager",
+        "file_path": "/Users/louisherman/.claude/agents/operations/Operations Manager.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "hr-people-ops",
+        "file_path": "/Users/louisherman/.claude/agents/operations/HR-People Ops.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "analytics-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/growth/Analytics Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "performance-tester",
+        "file_path": "/Users/louisherman/.claude/agents/testing/Performance Tester.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "apple-silicon-browser-optimizer",
+        "file_path": "/Users/louisherman/.claude/agents/browser/apple-silicon-browser-optimizer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "web-speech-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/browser/web-speech-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "pwa-advanced-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/browser/pwa-advanced-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "css-container-query-architect",
+        "file_path": "/Users/louisherman/.claude/agents/browser/css-container-query-architect.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "native-api-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/browser/native-api-analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "devtools-mcp-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/browser/devtools-mcp-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "tailwind-v4-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/browser/tailwind-v4-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "css-anchor-positioning-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/browser/css-anchor-positioning-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "webgpu-compute-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/browser/webgpu-compute-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "chromium-feature-validator",
+        "file_path": "/Users/louisherman/.claude/agents/browser/chromium-feature-validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "css-scroll-animation-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/browser/css-scroll-animation-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "css-apple-silicon-optimizer",
+        "file_path": "/Users/louisherman/.claude/agents/browser/css-apple-silicon-optimizer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "data-pipeline-architect",
+        "file_path": "/Users/louisherman/.claude/agents/data-engineering/Data Pipeline Architect.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "stream-processing-agent",
+        "file_path": "/Users/louisherman/.claude/agents/data-engineering/Stream Processing Agent.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "bi-analytics-engineer",
+        "file_path": "/Users/louisherman/.claude/agents/data-engineering/BI Analytics Engineer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "request-similarity-detector",
+        "file_path": "/Users/louisherman/.claude/agents/batching/request-similarity-detector.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "batch-aggregator",
+        "file_path": "/Users/louisherman/.claude/agents/batching/batch-aggregator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "result-distributor",
+        "file_path": "/Users/louisherman/.claude/agents/batching/result-distributor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "context-compressor",
+        "file_path": "/Users/louisherman/.claude/agents/compression/Context Compressor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "adaptive-context-manager",
+        "file_path": "/Users/louisherman/.claude/agents/compression/Adaptive Context Manager.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "context-decompressor",
+        "file_path": "/Users/louisherman/.claude/agents/compression/Context Decompressor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "pattern-learner",
+        "file_path": "/Users/louisherman/.claude/agents/improvement/Pattern Learner.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "prompt-optimizer",
+        "file_path": "/Users/louisherman/.claude/agents/improvement/Prompt Optimizer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "influencer-marketing-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/marketing/Influencer Marketing Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "email-marketer",
+        "file_path": "/Users/louisherman/.claude/agents/marketing/Email Marketer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "affiliate-marketing-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/marketing/Affiliate Marketing Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "performance-marketer",
+        "file_path": "/Users/louisherman/.claude/agents/marketing/Performance Marketer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "seo-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/marketing/SEO Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "email-marketing-automation-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/marketing/Email Marketing Automation Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "short-form-video-strategist",
+        "file_path": "/Users/louisherman/.claude/agents/marketing/Short-Form Video Strategist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "result-predictor",
+        "file_path": "/Users/louisherman/.claude/agents/predictive-cache/Result Predictor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "session-prewarmer",
+        "file_path": "/Users/louisherman/.claude/agents/predictive-cache/Session Prewarmer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "entanglement-manager",
+        "file_path": "/Users/louisherman/.claude/agents/quantum-parallel/Entanglement Manager.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "superposition-executor",
+        "file_path": "/Users/louisherman/.claude/agents/quantum-parallel/Superposition Executor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "cache-invalidation-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/Cache Invalidation Checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "migration-risk-scorer",
+        "file_path": "/Users/louisherman/.claude/agents/workers/Migration Risk Scorer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "api-contract-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/API Contract Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "e2e-test-gap-finder",
+        "file_path": "/Users/louisherman/.claude/agents/workers/E2E Test Gap Finder.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "event-loop-blocker-finder",
+        "file_path": "/Users/louisherman/.claude/agents/workers/Event Loop Blocker Finder.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "performance-regression-detector",
+        "file_path": "/Users/louisherman/.claude/agents/workers/Performance Regression Detector.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "similarity-cache-manager",
+        "file_path": "/Users/louisherman/.claude/agents/semantic-cache/similarity-cache-manager.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "semantic-hash-generator",
+        "file_path": "/Users/louisherman/.claude/agents/semantic-cache/semantic-hash-generator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "cache-result-adapter",
+        "file_path": "/Users/louisherman/.claude/agents/semantic-cache/cache-result-adapter.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "speculative-executor",
+        "file_path": "/Users/louisherman/.claude/agents/speculative/Speculative Executor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "intent-predictor",
+        "file_path": "/Users/louisherman/.claude/agents/speculative/Intent Predictor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "predictive-task-router",
+        "file_path": "/Users/louisherman/.claude/agents/routing/Predictive Task Router.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "event-budget-analyst",
+        "file_path": "/Users/louisherman/.claude/agents/events/Event Budget Analyst.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "creative-event-brainstormer",
+        "file_path": "/Users/louisherman/.claude/agents/events/Creative Event Brainstormer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "tour-manager",
+        "file_path": "/Users/louisherman/.claude/agents/events/Tour Manager.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "live-event-producer",
+        "file_path": "/Users/louisherman/.claude/agents/events/Live Event Producer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "technical-director",
+        "file_path": "/Users/louisherman/.claude/agents/events/Technical Director.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "event-marketing-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/events/Event Marketing Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "data-analyst",
+        "file_path": "/Users/louisherman/.claude/agents/data/Data Analyst.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "web-scraping-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/data/Web Scraping Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "ticketing-operations-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ticketing/Ticketing Operations Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "axs-platform-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ticketing/AXS Platform Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "secondary-market-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ticketing/Secondary Market Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "vip-packages-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ticketing/VIP Packages Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "presale-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ticketing/Presale Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "pricing-strategy-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ticketing/Pricing Strategy Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "ticketmaster-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/ticketing/Ticketmaster Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "agent-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/compiler/Agent Analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "fast-path-generator",
+        "file_path": "/Users/louisherman/.claude/agents/compiler/Fast Path Generator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "cross-platform-pwa-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Cross-Platform PWA Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "css-specificity-checker",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/CSS Specificity Checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "dexie-database-architect",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Dexie Database Architect.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "json-feed-validator",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/JSON Feed Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "npm-ecosystem-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/npm-ecosystem-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "microservices-architect",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Microservices Architect.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "release-validator",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Release Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "indexeddb-performance-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/IndexedDB Performance Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "graphql-query-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/GraphQL Query Analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "grpc-service-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/GRPC Service Analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "npx-automation-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/npx-automation-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "design-token-validator",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Design Token Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "redis-cache-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Redis Cache Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "seo-meta-checker",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/SEO Meta Checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "web-speech-recognition-expert",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Web Speech Recognition Expert.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "zustand-state-architect",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Zustand State Architect.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "fedcm-identity-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/FedCM Identity Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "d3-visualization-expert",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/D3 Visualization Expert.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "python-backend-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Python Backend Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "ai-video-production-engineer",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/AI Video Production Engineer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "sqlite-data-pipeline-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/SQLite Data Pipeline Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "webpack-config-linter",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Webpack Config Linter.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "pwa-testing-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/PWA Testing Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "monorepo-tooling-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/monorepo-tooling-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "push-notification-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Push Notification Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "realtime-systems-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Real-Time Systems Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "go-backend-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Go Backend Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "npm-security-auditor",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/npm-security-auditor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "shadcn-ui-component-developer",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/shadcn-ui Component Developer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "mongodb-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/MongoDB Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "feature-flags-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Feature Flags Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "data-streaming-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Data Streaming Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "readme-section-validator",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Readme Section Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "cloud-platform-architect",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Cloud Platform Architect.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "database-architect",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Database Architect.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "macos-system-expert",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/macOS System Expert.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "codebase-health-monitor",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Codebase Health Monitor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "tailwind-config-auditor",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Tailwind Config Auditor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "vector-database-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Vector Database Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "pwa-web-audio-engineer",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/PWA Web Audio Engineer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "google-apis-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Google APIs Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "coreml-optimization-expert",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/Core ML Optimization Expert.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "devtools-mcp-integration-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/engineering/DevTools MCP Integration Specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "project-context-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/agent-warming/project-context-analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "agent-prewarmer",
+        "file_path": "/Users/louisherman/.claude/agents/agent-warming/agent-prewarmer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "agent-template-generator",
+        "file_path": "/Users/louisherman/.claude/agents/factory/Agent Template Generator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "agent-validator",
+        "file_path": "/Users/louisherman/.claude/agents/factory/Agent Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "gap-detector",
+        "file_path": "/Users/louisherman/.claude/agents/factory/Gap Detector.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "css-debugger",
+        "file_path": "/Users/louisherman/.claude/agents/debug/css-debugger.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "javascript-debugger",
+        "file_path": "/Users/louisherman/.claude/agents/debug/javascript-debugger.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "nodejs-debugger",
+        "file_path": "/Users/louisherman/.claude/agents/debug/nodejs-debugger.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "console-devtools-specialist",
+        "file_path": "/Users/louisherman/.claude/agents/debug/console-devtools-specialist.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "state-management-debugger",
+        "file_path": "/Users/louisherman/.claude/agents/debug/state-management-debugger.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "esm-cjs-compatibility-debugger",
+        "file_path": "/Users/louisherman/.claude/agents/debug/esm-cjs-compatibility-debugger.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "indexeddb-debugger",
+        "file_path": "/Users/louisherman/.claude/agents/debug/indexeddb-debugger.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "react-debugger",
+        "file_path": "/Users/louisherman/.claude/agents/debug/react-debugger.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "fine-tuning-config-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/ai-ml-validation/fine-tuning-config-validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "agent-prompt-auditor",
+        "file_path": "/Users/louisherman/.claude/agents/workers/ai-ml-validation/agent-prompt-auditor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "context-window-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/workers/ai-ml-validation/context-window-analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "model-cost-estimator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/ai-ml-validation/model-cost-estimator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "vector-store-schema-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/ai-ml-validation/vector-store-schema-checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "hallucination-pattern-detector",
+        "file_path": "/Users/louisherman/.claude/agents/workers/ai-ml-validation/hallucination-pattern-detector.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "helm-chart-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/infra/Helm Chart Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "dockerfile-best-practices",
+        "file_path": "/Users/louisherman/.claude/agents/workers/infra/Dockerfile Best Practices.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "k8s-manifest-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/infra/K8s Manifest Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "ci-pipeline-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/infra/CI Pipeline Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "terraform-plan-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/workers/infra/Terraform Plan Analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "database-connection-pool-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/workers/perf-extended/database-connection-pool-analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "react-hydration-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/perf-extended/react-hydration-checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "ssr-config-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/perf-extended/ssr-config-validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "promise-chain-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/workers/js/promise-chain-analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "flag-cleanup-detector",
+        "file_path": "/Users/louisherman/.claude/agents/workers/feature-flags/flag-cleanup-detector.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "flag-coverage-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/feature-flags/flag-coverage-checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "alert-coverage-finder",
+        "file_path": "/Users/louisherman/.claude/agents/workers/observability/alert-coverage-finder.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "otel-span-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/observability/otel-span-validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "metric-schema-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/observability/metric-schema-checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "log-format-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/observability/log-format-validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "token-usage-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/workers/ai-ml/Token Usage Analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "prompt-template-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/ai-ml/Prompt Template Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "package-json-script-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/dx/package-json-script-validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "typescript-strictness-auditor",
+        "file_path": "/Users/louisherman/.claude/agents/workers/dx/typescript-strictness-auditor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "error-message-clarity-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/dx/error-message-clarity-checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "eslint-rule-consistency-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/dx/eslint-rule-consistency-checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "debug-experience-auditor",
+        "file_path": "/Users/louisherman/.claude/agents/workers/dx/debug-experience-auditor.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "cli-usability-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/dx/cli-usability-validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "onboarding-complexity-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/workers/dx/onboarding-complexity-analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "cloud-cost-anomaly-detector",
+        "file_path": "/Users/louisherman/.claude/agents/workers/cloud/cloud-cost-anomaly-detector.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "service-mesh-config-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/cloud/service-mesh-config-checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "iam-policy-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/cloud/iam-policy-validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "autoscaling-config-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/cloud/autoscaling-config-validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "grpc-proto-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/api/gRPC Proto Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "trpc-router-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/api/tRPC Router Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "lighthouse-score-parser",
+        "file_path": "/Users/louisherman/.claude/agents/workers/perf/Lighthouse Score Parser.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "bundle-treemap-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/workers/perf/Bundle Treemap Analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "dexie-migration-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/data/Dexie Migration Checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "foreign-key-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/data/Foreign Key Checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "schema-diff-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/data/Schema Diff Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "null-safety-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/workers/data/Null Safety Analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "query-plan-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/data/Query Plan Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "index-usage-analyzer",
+        "file_path": "/Users/louisherman/.claude/agents/workers/data/Index Usage Analyzer.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "indexeddb-schema-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/data/IndexedDB Schema Validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "failure-mode-simulator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/chaos/failure-mode-simulator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "chaos-scenario-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/chaos/chaos-scenario-validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "package-outdated-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/npm/package-outdated-checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "lockfile-drift-detector",
+        "file_path": "/Users/louisherman/.claude/agents/workers/npm/lockfile-drift-detector.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "peer-dependency-validator",
+        "file_path": "/Users/louisherman/.claude/agents/workers/npm/peer-dependency-validator.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "test-isolation-checker",
+        "file_path": "/Users/louisherman/.claude/agents/workers/testing-extended/test-isolation-checker.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "snapshot-drift-detector",
+        "file_path": "/Users/louisherman/.claude/agents/workers/testing-extended/snapshot-drift-detector.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "coverage-regression-detector",
+        "file_path": "/Users/louisherman/.claude/agents/workers/testing-extended/coverage-regression-detector.md",
+        "scope": "user",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "sveltekit-engineer",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/01-sveltekit-engineer.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "modern-css-architect",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/12-modern-css-architect.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "caching-specialist",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/04-caching-specialist.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "pwa-engineer",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/05-pwa-engineer.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "vite-build-engineer",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/03-vite-build-engineer.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "lint-regression-debugger",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/14-lint-regression-debugger.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "local-first-steward",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/06-local-first-steward.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "dmb-performance-optimizer",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/07-performance-optimizer.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "parallel-coordinator",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/10-parallel-coordinator.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "dmb-qa-engineer",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/08-qa-engineer.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "eslint-typescript-steward",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/09-eslint-typescript-steward.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "semantic-html-engineer",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/11-semantic-html-engineer.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      },
+      {
+        "name": "svelte-component-engineer",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/02-svelte-component-engineer.md",
+        "scope": "project",
+        "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
+      }
+    ],
+    "format_issues": [
+      {
+        "name": "modern-css-architect",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/12-modern-css-architect.md",
+        "issue": "format_inconsistency",
+        "reason": "Project agent uses YAML frontmatter instead of plain markdown (unlike others)"
+      },
+      {
+        "name": "lint-regression-debugger",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/14-lint-regression-debugger.md",
+        "issue": "format_inconsistency",
+        "reason": "Project agent uses YAML frontmatter instead of plain markdown (unlike others)"
+      },
+      {
+        "name": "ui-regression-debugger",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/13-ui-regression-debugger.md",
+        "issue": "format_inconsistency",
+        "reason": "Project agent uses YAML frontmatter instead of plain markdown (unlike others)"
+      },
+      {
+        "name": "semantic-html-engineer",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/11-semantic-html-engineer.md",
+        "issue": "format_inconsistency",
+        "reason": "Project agent uses YAML frontmatter instead of plain markdown (unlike others)"
+      }
+    ]
+  }
+}

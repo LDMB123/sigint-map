@@ -1,0 +1,191 @@
+# Universal Agent Framework - Pipeline Orchestrator
+# Category: Orchestrators | Tier: Sonnet | Parallelization: 3-5
+
+agent:
+  id: orchestrator_pipeline
+  name: Pipeline Orchestrator
+  version: 1.0.0
+
+  functional_category: orchestrator
+  sub_category: pipeline
+  model_tier: sonnet
+
+  description: |
+    Orchestrates sequential and parallel pipeline stages.
+    Manages data flow between stages with buffering and backpressure.
+    Handles stage failures with retry and recovery mechanisms.
+
+  capabilities:
+    - define_pipeline_stages
+    - manage_data_flow
+    - handle_backpressure
+    - buffer_intermediate_results
+    - parallelize_stages
+    - recover_from_failures
+    - checkpoint_progress
+    - optimize_throughput
+    - monitor_pipeline_health
+    - support_streaming
+
+  pipeline_patterns:
+    linear:
+      description: "A → B → C → D"
+      parallelization: "Within stages only"
+
+    diamond:
+      description: "A → [B, C] → D"
+      parallelization: "B and C parallel"
+
+    complex_dag:
+      description: "Arbitrary directed acyclic graph"
+      parallelization: "All independent stages"
+
+    streaming:
+      description: "Continuous data flow"
+      parallelization: "Pipeline parallelism"
+
+  input_schema:
+    type: object
+    required:
+      - stages
+      - input_data
+    properties:
+      stages:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            agent:
+              type: string
+            config:
+              type: object
+            depends_on:
+              type: array
+              items:
+                type: string
+            parallel_instances:
+              type: integer
+              default: 1
+            timeout_ms:
+              type: integer
+            retry_policy:
+              type: object
+      input_data:
+        type: object
+        description: Initial pipeline input
+      config:
+        type: object
+        properties:
+          buffer_size:
+            type: integer
+            default: 100
+          checkpoint_frequency:
+            type: integer
+          max_parallel_stages:
+            type: integer
+            default: 10
+          fail_fast:
+            type: boolean
+            default: false
+          streaming:
+            type: boolean
+            default: false
+
+  output_schema:
+    type: object
+    properties:
+      success:
+        type: boolean
+      final_output:
+        type: object
+      stage_results:
+        type: object
+        additionalProperties:
+          type: object
+          properties:
+            status:
+              type: string
+            output:
+              type: object
+            duration_ms:
+              type: integer
+            retries:
+              type: integer
+      pipeline_metrics:
+        type: object
+        properties:
+          total_duration_ms:
+            type: integer
+          stages_executed:
+            type: integer
+          stages_failed:
+            type: integer
+          items_processed:
+            type: integer
+          throughput_per_second:
+            type: number
+      checkpoints:
+        type: array
+        items:
+          type: object
+
+  performance:
+    avg_latency_ms: 2000
+    max_tokens: 32000
+    timeout_seconds: 1800
+
+  parallelization:
+    max_concurrent: 5
+    supports_streaming: true
+
+  collaboration:
+    receives_from:
+      - workflow-orchestrator: Multi-stage data processing workflows
+      - migration-orchestrator: Sequential migration pipelines
+      - data-integration-orchestrator: Data ETL pipelines
+    delegates_to:
+      - delegation-orchestrator: Stage-specific task routing
+      - static-analyzer: Analysis stage execution
+      - refactor-transformer: Transformation stage execution
+      - syntax-validator: Validation stage execution
+      - test-generator: Test generation stage execution
+      - format-transformer: Formatting stage execution
+    escalates_to:
+      - workflow-orchestrator: Pipeline failures or stage timeout issues
+    returns_to:
+      - requesting-orchestrator: Final pipeline output with stage metrics
+    swarm_pattern: pipeline
+    coordinates_with:
+      - metrics-reporter: Track pipeline performance and bottlenecks
+      - audit-trail-reporter: Document pipeline execution history
+
+  tags:
+    - orchestration
+    - pipeline
+    - dataflow
+    - streaming
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: sonnet
+  per_execution_estimate: 0.03
+  typical_range: [0.01, 0.08]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

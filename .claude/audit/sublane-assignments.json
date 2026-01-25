@@ -1,0 +1,914 @@
+{
+  "categories": {
+    "DMB Analysis": [
+      {
+        "name": "dmb-indexeddb-debugger",
+        "path": "/Users/louisherman/.claude/agents/dmb-indexeddb-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "dmb-liberation-calculator",
+        "path": "/Users/louisherman/.claude/agents/dmb-liberation-calculator.md",
+        "type": "agent"
+      },
+      {
+        "name": "dmb-migration-coordinator",
+        "path": "/Users/louisherman/.claude/agents/dmb-migration-coordinator.md",
+        "type": "agent"
+      },
+      {
+        "name": "DMB Brand DNA Expert",
+        "path": "/Users/louisherman/.claude/agents/DMB Brand DNA Expert.md",
+        "type": "agent"
+      },
+      {
+        "name": "DMBAlmanac Scraper",
+        "path": "/Users/louisherman/.claude/agents/DMBAlmanac Scraper.md",
+        "type": "agent"
+      },
+      {
+        "name": "dmb-scraper-debugger",
+        "path": "/Users/louisherman/.claude/agents/dmb-scraper-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "dmb-song-stats-checker",
+        "path": "/Users/louisherman/.claude/agents/dmb-song-stats-checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "dmb-guest-specialist",
+        "path": "/Users/louisherman/.claude/agents/dmb-guest-specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "dmb-prisma-unwinder",
+        "path": "/Users/louisherman/.claude/agents/dmb-prisma-unwinder.md",
+        "type": "agent"
+      },
+      {
+        "name": "dmb-drizzle-unwinder",
+        "path": "/Users/louisherman/.claude/agents/dmb-drizzle-unwinder.md",
+        "type": "agent"
+      },
+      {
+        "name": "dmb-pwa-debugger",
+        "path": "/Users/louisherman/.claude/agents/dmb-pwa-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "DMB Expert",
+        "path": "/Users/louisherman/.claude/agents/DMB Expert.md",
+        "type": "agent"
+      },
+      {
+        "name": "dmb-guest-appearance-checker",
+        "path": "/Users/louisherman/.claude/agents/dmb-guest-appearance-checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "dmb-venue-consistency-checker",
+        "path": "/Users/louisherman/.claude/agents/dmb-venue-consistency-checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "dmb-tour-optimizer",
+        "path": "/Users/louisherman/.claude/agents/dmb-tour-optimizer.md",
+        "type": "agent"
+      },
+      {
+        "name": "E-commerce Analyst",
+        "path": "/Users/louisherman/.claude/agents/ecommerce/E-commerce Analyst.md",
+        "type": "agent"
+      },
+      {
+        "name": "E-commerce Strategist",
+        "path": "/Users/louisherman/.claude/agents/ecommerce/E-commerce Strategist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Amazon Seller Specialist",
+        "path": "/Users/louisherman/.claude/agents/ecommerce/Amazon Seller Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "tour-route-optimizer",
+        "path": "/Users/louisherman/.claude/agents/dmb/tour-route-optimizer.md",
+        "type": "agent"
+      },
+      {
+        "name": "Copywriter",
+        "path": "/Users/louisherman/.claude/agents/content/Copywriter.md",
+        "type": "agent"
+      },
+      {
+        "name": "Context Decompressor",
+        "path": "/Users/louisherman/.claude/agents/compression/Context Decompressor.md",
+        "type": "agent"
+      },
+      {
+        "name": "Email Marketer",
+        "path": "/Users/louisherman/.claude/agents/marketing/Email Marketer.md",
+        "type": "agent"
+      },
+      {
+        "name": "Affiliate Marketing Specialist",
+        "path": "/Users/louisherman/.claude/agents/marketing/Affiliate Marketing Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Event Budget Analyst",
+        "path": "/Users/louisherman/.claude/agents/events/Event Budget Analyst.md",
+        "type": "agent"
+      },
+      {
+        "name": "Tour Manager",
+        "path": "/Users/louisherman/.claude/agents/events/Tour Manager.md",
+        "type": "agent"
+      },
+      {
+        "name": "Live Event Producer",
+        "path": "/Users/louisherman/.claude/agents/events/Live Event Producer.md",
+        "type": "agent"
+      },
+      {
+        "name": "Event Marketing Specialist",
+        "path": "/Users/louisherman/.claude/agents/events/Event Marketing Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "AXS Platform Specialist",
+        "path": "/Users/louisherman/.claude/agents/ticketing/AXS Platform Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Secondary Market Specialist",
+        "path": "/Users/louisherman/.claude/agents/ticketing/Secondary Market Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Ticketmaster Specialist",
+        "path": "/Users/louisherman/.claude/agents/ticketing/Ticketmaster Specialist.md",
+        "type": "agent"
+      }
+    ],
+    "Meta/Orchestration": [
+      {
+        "name": "Full Stack Fusion Agent",
+        "path": "/Users/louisherman/.claude/agents/fusion/Full Stack Fusion Agent.md",
+        "type": "agent"
+      },
+      {
+        "name": "Cascade Optimizer",
+        "path": "/Users/louisherman/.claude/agents/cascading/Cascade Optimizer.md",
+        "type": "agent"
+      },
+      {
+        "name": "Adaptive Context Manager",
+        "path": "/Users/louisherman/.claude/agents/compression/Adaptive Context Manager.md",
+        "type": "agent"
+      },
+      {
+        "name": "Head of Marketing",
+        "path": "/Users/louisherman/.claude/agents/marketing/Head of Marketing.md",
+        "type": "agent"
+      },
+      {
+        "name": "similarity-cache-manager",
+        "path": "/Users/louisherman/.claude/agents/semantic-cache/similarity-cache-manager.md",
+        "type": "agent"
+      },
+      {
+        "name": "Swarm Commander",
+        "path": "/Users/louisherman/.claude/agents/meta-orchestrators/Swarm Commander.md",
+        "type": "agent"
+      },
+      {
+        "name": "Kubernetes Specialist",
+        "path": "/Users/louisherman/.claude/agents/engineering/Kubernetes Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "css-debugger",
+        "path": "/Users/louisherman/.claude/agents/debug/css-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "meta-learner",
+        "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/self-improving/meta-learner.md",
+        "type": "agent"
+      },
+      {
+        "name": "wave-function-optimizer",
+        "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/quantum-parallel/wave-function-optimizer.md",
+        "type": "agent"
+      },
+      {
+        "name": "massive-parallel-coordinator",
+        "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/quantum-parallel/massive-parallel-coordinator.md",
+        "type": "agent"
+      }
+    ],
+    "E-commerce": [
+      {
+        "name": "inventory-manager",
+        "path": "/Users/louisherman/.claude/agents/ecommerce/inventory-manager.md",
+        "type": "agent"
+      },
+      {
+        "name": "Print on Demand Specialist",
+        "path": "/Users/louisherman/.claude/agents/ecommerce/Print on Demand Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "pricing-strategist",
+        "path": "/Users/louisherman/.claude/agents/ecommerce/pricing-strategist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Shopify Specialist",
+        "path": "/Users/louisherman/.claude/agents/ecommerce/Shopify Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Email Marketing Automation Specialist",
+        "path": "/Users/louisherman/.claude/agents/marketing/Email Marketing Automation Specialist.md",
+        "type": "agent"
+      }
+    ],
+    "Apple/macOS": [
+      {
+        "name": "Emergent Behavior Monitor",
+        "path": "/Users/louisherman/.claude/agents/swarm-intelligence/Emergent Behavior Monitor.md",
+        "type": "agent"
+      },
+      {
+        "name": "apple-silicon-browser-optimizer",
+        "path": "/Users/louisherman/.claude/agents/browser/apple-silicon-browser-optimizer.md",
+        "type": "agent"
+      },
+      {
+        "name": "Superposition Executor",
+        "path": "/Users/louisherman/.claude/agents/quantum-parallel/Superposition Executor.md",
+        "type": "agent"
+      },
+      {
+        "name": "Cross-Platform PWA Specialist",
+        "path": "/Users/louisherman/.claude/agents/engineering/Cross-Platform PWA Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "chrome-devtools-debugger",
+        "path": "/Users/louisherman/.claude/agents/debug/chrome-devtools-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "flag-cleanup-detector",
+        "path": "/Users/louisherman/.claude/agents/workers/feature-flags/flag-cleanup-detector.md",
+        "type": "agent"
+      },
+      {
+        "name": "superposition-executor",
+        "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/quantum-parallel/superposition-executor.md",
+        "type": "agent"
+      }
+    ],
+    "Google APIs": [
+      {
+        "name": "Gemini Integration Specialist",
+        "path": "/Users/louisherman/.claude/agents/google/Gemini Integration Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Imagen Creative Specialist",
+        "path": "/Users/louisherman/.claude/agents/google/Imagen Creative Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Google Workflow Automation Specialist",
+        "path": "/Users/louisherman/.claude/agents/google/Google Workflow Automation Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Google Workspace Productivity Specialist",
+        "path": "/Users/louisherman/.claude/agents/google/Google Workspace Productivity Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Google Labs Creative Guide",
+        "path": "/Users/louisherman/.claude/agents/google/Google Labs Creative Guide.md",
+        "type": "agent"
+      },
+      {
+        "name": "Google APIs Specialist",
+        "path": "/Users/louisherman/.claude/agents/engineering/Google APIs Specialist.md",
+        "type": "agent"
+      }
+    ],
+    "Live Events": [
+      {
+        "name": "Ticketing Operations Specialist",
+        "path": "/Users/louisherman/.claude/agents/ticketing/Ticketing Operations Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Web Manifest Expert",
+        "path": "/Users/louisherman/.claude/agents/engineering/Web Manifest Expert.md",
+        "type": "agent"
+      },
+      {
+        "name": "pwa-debugger",
+        "path": "/Users/louisherman/.claude/agents/debug/pwa-debugger.md",
+        "type": "agent"
+      }
+    ],
+    "Marketing/Growth": [
+      {
+        "name": "Social Commerce Specialist",
+        "path": "/Users/louisherman/.claude/agents/ecommerce/Social Commerce Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Blog Writer",
+        "path": "/Users/louisherman/.claude/agents/content/Blog Writer.md",
+        "type": "agent"
+      },
+      {
+        "name": "Content Strategist",
+        "path": "/Users/louisherman/.claude/agents/content/Content Strategist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Social Media Manager",
+        "path": "/Users/louisherman/.claude/agents/content/Social Media Manager.md",
+        "type": "agent"
+      },
+      {
+        "name": "Product Analyst",
+        "path": "/Users/louisherman/.claude/agents/product/Product Analyst.md",
+        "type": "agent"
+      },
+      {
+        "name": "Analytics Specialist",
+        "path": "/Users/louisherman/.claude/agents/growth/Analytics Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Growth Lead",
+        "path": "/Users/louisherman/.claude/agents/growth/Growth Lead.md",
+        "type": "agent"
+      },
+      {
+        "name": "Growth Hacker",
+        "path": "/Users/louisherman/.claude/agents/growth/Growth Hacker.md",
+        "type": "agent"
+      },
+      {
+        "name": "Influencer Marketing Specialist",
+        "path": "/Users/louisherman/.claude/agents/marketing/Influencer Marketing Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Lighthouse Score Parser",
+        "path": "/Users/louisherman/.claude/agents/workers/perf/Lighthouse Score Parser.md",
+        "type": "agent"
+      }
+    ],
+    "Business/Ops": [
+      {
+        "name": "Escalation Manager",
+        "path": "/Users/louisherman/.claude/agents/self-healing/Escalation Manager.md",
+        "type": "agent"
+      },
+      {
+        "name": "Scrum Master",
+        "path": "/Users/louisherman/.claude/agents/project_management/Scrum Master.md",
+        "type": "agent"
+      },
+      {
+        "name": "Agile Project Manager",
+        "path": "/Users/louisherman/.claude/agents/project_management/Agile Project Manager.md",
+        "type": "agent"
+      },
+      {
+        "name": "Legal Advisor",
+        "path": "/Users/louisherman/.claude/agents/operations/Legal Advisor.md",
+        "type": "agent"
+      },
+      {
+        "name": "Operations Manager",
+        "path": "/Users/louisherman/.claude/agents/operations/Operations Manager.md",
+        "type": "agent"
+      },
+      {
+        "name": "LLM Cost Optimizer",
+        "path": "/Users/louisherman/.claude/agents/ai-ml/LLM Cost Optimizer.md",
+        "type": "agent"
+      },
+      {
+        "name": "Entanglement Manager",
+        "path": "/Users/louisherman/.claude/agents/quantum-parallel/Entanglement Manager.md",
+        "type": "agent"
+      },
+      {
+        "name": "Lighthouse WebVitals Expert",
+        "path": "/Users/louisherman/.claude/agents/engineering/Lighthouse WebVitals Expert.md",
+        "type": "agent"
+      },
+      {
+        "name": "async-debugging-specialist",
+        "path": "/Users/louisherman/.claude/agents/debug/async-debugging-specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "console-devtools-specialist",
+        "path": "/Users/louisherman/.claude/agents/debug/console-devtools-specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "indexeddb-debugger",
+        "path": "/Users/louisherman/.claude/agents/debug/indexeddb-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "cloud-cost-anomaly-detector",
+        "path": "/Users/louisherman/.claude/agents/workers/cloud/cloud-cost-anomaly-detector.md",
+        "type": "agent"
+      }
+    ],
+    "Design/Creative": [
+      {
+        "name": "Creative Director",
+        "path": "/Users/louisherman/.claude/agents/design/Creative Director.md",
+        "type": "agent"
+      }
+    ],
+    "Data Engineering": [
+      {
+        "name": "Data Lineage Agent",
+        "path": "/Users/louisherman/.claude/agents/data-engineering/Data Lineage Agent.md",
+        "type": "agent"
+      },
+      {
+        "name": "Data Analyst",
+        "path": "/Users/louisherman/.claude/agents/data/Data Analyst.md",
+        "type": "agent"
+      },
+      {
+        "name": "Data Scientist",
+        "path": "/Users/louisherman/.claude/agents/data/Data Scientist.md",
+        "type": "agent"
+      }
+    ],
+    "Reliability Engineering": [
+      {
+        "name": "failure-rate-monitor",
+        "path": "/Users/louisherman/.claude/agents/circuit-breaker/failure-rate-monitor.md",
+        "type": "agent"
+      },
+      {
+        "name": "circuit-breaker-controller",
+        "path": "/Users/louisherman/.claude/agents/circuit-breaker/circuit-breaker-controller.md",
+        "type": "agent"
+      },
+      {
+        "name": "failure-mode-simulator",
+        "path": "/Users/louisherman/.claude/agents/workers/chaos/failure-mode-simulator.md",
+        "type": "agent"
+      }
+    ],
+    "Agent Ecosystem": [
+      {
+        "name": "skill-recommender",
+        "path": "/Users/louisherman/.claude/agents/meta/skill-recommender.md",
+        "type": "agent"
+      },
+      {
+        "name": "Cross Domain Transferer",
+        "path": "/Users/louisherman/.claude/agents/zero-shot/Cross Domain Transferer.md",
+        "type": "agent"
+      },
+      {
+        "name": "Knowledge Distiller",
+        "path": "/Users/louisherman/.claude/agents/zero-shot/Knowledge Distiller.md",
+        "type": "agent"
+      },
+      {
+        "name": "Auto Recovery Agent",
+        "path": "/Users/louisherman/.claude/agents/self-healing/Auto Recovery Agent.md",
+        "type": "agent"
+      },
+      {
+        "name": "Error Detector",
+        "path": "/Users/louisherman/.claude/agents/self-healing/Error Detector.md",
+        "type": "agent"
+      },
+      {
+        "name": "auto-parallelization-detector",
+        "path": "/Users/louisherman/.claude/agents/meta/auto-parallelization-detector.md",
+        "type": "agent"
+      },
+      {
+        "name": "Collective Memory",
+        "path": "/Users/louisherman/.claude/agents/swarm-intelligence/Collective Memory.md",
+        "type": "agent"
+      },
+      {
+        "name": "Domain Classifier",
+        "path": "/Users/louisherman/.claude/agents/routing/Domain Classifier.md",
+        "type": "agent"
+      },
+      {
+        "name": "Predictive Task Router",
+        "path": "/Users/louisherman/.claude/agents/routing/Predictive Task Router.md",
+        "type": "agent"
+      },
+      {
+        "name": "Agent Matcher",
+        "path": "/Users/louisherman/.claude/agents/routing/Agent Matcher.md",
+        "type": "agent"
+      },
+      {
+        "name": "Task Router",
+        "path": "/Users/louisherman/.claude/agents/engineering/Task Router.md",
+        "type": "agent"
+      },
+      {
+        "name": "Pattern Learner",
+        "path": "/Users/louisherman/.claude/agents/improvement/Pattern Learner.md",
+        "type": "agent"
+      },
+      {
+        "name": "Gap Detector",
+        "path": "/Users/louisherman/.claude/agents/factory/Gap Detector.md",
+        "type": "agent"
+      }
+    ],
+    "Content/Creative Tools": [
+      {
+        "name": "tailwind-v4-specialist",
+        "path": "/Users/louisherman/.claude/agents/browser/tailwind-v4-specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Short-Form Video Strategist",
+        "path": "/Users/louisherman/.claude/agents/marketing/Short-Form Video Strategist.md",
+        "type": "agent"
+      }
+    ],
+    "Monitoring/Observability": [
+      {
+        "name": "ML Monitoring Agent",
+        "path": "/Users/louisherman/.claude/agents/ai-ml/ML Monitoring Agent.md",
+        "type": "agent"
+      },
+      {
+        "name": "Codebase Health Monitor",
+        "path": "/Users/louisherman/.claude/agents/engineering/Codebase Health Monitor.md",
+        "type": "agent"
+      },
+      {
+        "name": "Resource Manager",
+        "path": "/Users/louisherman/.claude/agents/lazy-loading/Resource Manager.md",
+        "type": "agent"
+      },
+      {
+        "name": "Distributed Tracing Specialist",
+        "path": "/Users/louisherman/.claude/agents/observability/Distributed Tracing Specialist.md",
+        "type": "agent"
+      }
+    ],
+    "Performance Optimization": [
+      {
+        "name": "batch-aggregator",
+        "path": "/Users/louisherman/.claude/agents/batching/batch-aggregator.md",
+        "type": "agent"
+      },
+      {
+        "name": "Performance Tracker",
+        "path": "/Users/louisherman/.claude/agents/improvement/Performance Tracker.md",
+        "type": "agent"
+      },
+      {
+        "name": "Session Prewarmer",
+        "path": "/Users/louisherman/.claude/agents/predictive-cache/Session Prewarmer.md",
+        "type": "agent"
+      },
+      {
+        "name": "Cache Invalidation Checker",
+        "path": "/Users/louisherman/.claude/agents/workers/Cache Invalidation Checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "cache-result-adapter",
+        "path": "/Users/louisherman/.claude/agents/semantic-cache/cache-result-adapter.md",
+        "type": "agent"
+      },
+      {
+        "name": "Speculative Executor",
+        "path": "/Users/louisherman/.claude/agents/speculative/Speculative Executor.md",
+        "type": "agent"
+      },
+      {
+        "name": "Batch Formatter",
+        "path": "/Users/louisherman/.claude/agents/engineering/Batch Formatter.md",
+        "type": "agent"
+      },
+      {
+        "name": "agent-prewarmer",
+        "path": "/Users/louisherman/.claude/agents/agent-warming/agent-prewarmer.md",
+        "type": "agent"
+      },
+      {
+        "name": "request-similarity-detector",
+        "path": "/Users/louisherman/.claude/agents/batching/request-similarity-detector.md",
+        "type": "agent"
+      },
+      {
+        "name": "Context Compressor",
+        "path": "/Users/louisherman/.claude/agents/compression/Context Compressor.md",
+        "type": "agent"
+      },
+      {
+        "name": "Build Time Profiler",
+        "path": "/Users/louisherman/.claude/agents/engineering/Build Time Profiler.md",
+        "type": "agent"
+      }
+    ],
+    "ML/AI Infrastructure": [
+      {
+        "name": "Prompt Optimizer",
+        "path": "/Users/louisherman/.claude/agents/improvement/Prompt Optimizer.md",
+        "type": "agent"
+      },
+      {
+        "name": "model-cost-estimator",
+        "path": "/Users/louisherman/.claude/agents/workers/ai-ml-validation/model-cost-estimator.md",
+        "type": "agent"
+      },
+      {
+        "name": "vector-store-schema-checker",
+        "path": "/Users/louisherman/.claude/agents/workers/ai-ml-validation/vector-store-schema-checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "hallucination-pattern-detector",
+        "path": "/Users/louisherman/.claude/agents/workers/ai-ml-validation/hallucination-pattern-detector.md",
+        "type": "agent"
+      }
+    ],
+    "Code Quality/Linting": [
+      {
+        "name": "Dependency Conflict Detector",
+        "path": "/Users/louisherman/.claude/agents/workers/Dependency Conflict Detector.md",
+        "type": "agent"
+      },
+      {
+        "name": "React Hook Linter",
+        "path": "/Users/louisherman/.claude/agents/engineering/React Hook Linter.md",
+        "type": "agent"
+      },
+      {
+        "name": "CSS Specificity Checker",
+        "path": "/Users/louisherman/.claude/agents/engineering/CSS Specificity Checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "Webpack Config Linter",
+        "path": "/Users/louisherman/.claude/agents/engineering/Webpack Config Linter.md",
+        "type": "agent"
+      },
+      {
+        "name": "Dependency Checker",
+        "path": "/Users/louisherman/.claude/agents/engineering/Dependency Checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "Dead Code Detector",
+        "path": "/Users/louisherman/.claude/agents/engineering/Dead Code Detector.md",
+        "type": "agent"
+      },
+      {
+        "name": "Dockerfile Linter",
+        "path": "/Users/louisherman/.claude/agents/engineering/Dockerfile Linter.md",
+        "type": "agent"
+      },
+      {
+        "name": "react-hydration-checker",
+        "path": "/Users/louisherman/.claude/agents/workers/perf-extended/react-hydration-checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "eslint-rule-consistency-checker",
+        "path": "/Users/louisherman/.claude/agents/workers/dx/eslint-rule-consistency-checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "Complexity Calculator",
+        "path": "/Users/louisherman/.claude/agents/engineering/Complexity Calculator.md",
+        "type": "agent"
+      },
+      {
+        "name": "Docstring Checker",
+        "path": "/Users/louisherman/.claude/agents/engineering/Docstring Checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "TypeScript Type Wizard",
+        "path": "/Users/louisherman/.claude/agents/engineering/TypeScript Type Wizard.md",
+        "type": "agent"
+      }
+    ],
+    "DevOps/Tooling": [
+      {
+        "name": "npm-ecosystem-specialist",
+        "path": "/Users/louisherman/.claude/agents/engineering/npm-ecosystem-specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "npx-automation-specialist",
+        "path": "/Users/louisherman/.claude/agents/engineering/npx-automation-specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Dockerfile Best Practices",
+        "path": "/Users/louisherman/.claude/agents/workers/infra/Dockerfile Best Practices.md",
+        "type": "agent"
+      },
+      {
+        "name": "lockfile-drift-detector",
+        "path": "/Users/louisherman/.claude/agents/workers/npm/lockfile-drift-detector.md",
+        "type": "agent"
+      },
+      {
+        "name": "Migration Risk Scorer",
+        "path": "/Users/louisherman/.claude/agents/workers/Migration Risk Scorer.md",
+        "type": "agent"
+      },
+      {
+        "name": "Dexie Migration Checker",
+        "path": "/Users/louisherman/.claude/agents/workers/data/Dexie Migration Checker.md",
+        "type": "agent"
+      }
+    ],
+    "Debugging Specialists": [
+      {
+        "name": "Runtime Error Diagnostician",
+        "path": "/Users/louisherman/.claude/agents/engineering/Runtime Error Diagnostician.md",
+        "type": "agent"
+      },
+      {
+        "name": "Rubber Duck Debugger",
+        "path": "/Users/louisherman/.claude/agents/engineering/Rubber Duck Debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "javascript-debugger",
+        "path": "/Users/louisherman/.claude/agents/debug/javascript-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "nodejs-debugger",
+        "path": "/Users/louisherman/.claude/agents/debug/nodejs-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "network-debugger",
+        "path": "/Users/louisherman/.claude/agents/debug/network-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "state-management-debugger",
+        "path": "/Users/louisherman/.claude/agents/debug/state-management-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "esm-cjs-compatibility-debugger",
+        "path": "/Users/louisherman/.claude/agents/debug/esm-cjs-compatibility-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "react-debugger",
+        "path": "/Users/louisherman/.claude/agents/debug/react-debugger.md",
+        "type": "agent"
+      },
+      {
+        "name": "source-map-debugger",
+        "path": "/Users/louisherman/.claude/agents/debug/source-map-debugger.md",
+        "type": "agent"
+      }
+    ],
+    "Frontend Specialists": [
+      {
+        "name": "Workbox ServiceWorker Expert",
+        "path": "/Users/louisherman/.claude/agents/engineering/Workbox ServiceWorker Expert.md",
+        "type": "agent"
+      },
+      {
+        "name": "I18n String Extractor",
+        "path": "/Users/louisherman/.claude/agents/engineering/I18n String Extractor.md",
+        "type": "agent"
+      },
+      {
+        "name": "i18n Specialist",
+        "path": "/Users/louisherman/.claude/agents/engineering/i18n Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Mobile Viewport Checker",
+        "path": "/Users/louisherman/.claude/agents/engineering/Mobile Viewport Checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "Render Perf Checker",
+        "path": "/Users/louisherman/.claude/agents/engineering/Render Perf Checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "PWA Analytics Specialist",
+        "path": "/Users/louisherman/.claude/agents/engineering/PWA Analytics Specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "Offline Capability Detector",
+        "path": "/Users/louisherman/.claude/agents/engineering/Offline Capability Detector.md",
+        "type": "agent"
+      }
+    ],
+    "Backend/Infrastructure": [
+      {
+        "name": "monorepo-tooling-specialist",
+        "path": "/Users/louisherman/.claude/agents/engineering/monorepo-tooling-specialist.md",
+        "type": "agent"
+      },
+      {
+        "name": "service-mesh-config-checker",
+        "path": "/Users/louisherman/.claude/agents/workers/cloud/service-mesh-config-checker.md",
+        "type": "agent"
+      },
+      {
+        "name": "Stream Processing Agent",
+        "path": "/Users/louisherman/.claude/agents/data-engineering/Stream Processing Agent.md",
+        "type": "agent"
+      },
+      {
+        "name": "IndexedDB Storage Specialist",
+        "path": "/Users/louisherman/.claude/agents/engineering/IndexedDB Storage Specialist.md",
+        "type": "agent"
+      }
+    ],
+    "Performance Diagnostics": [
+      {
+        "name": "closure-leak-detector",
+        "path": "/Users/louisherman/.claude/agents/workers/js/closure-leak-detector.md",
+        "type": "agent"
+      },
+      {
+        "name": "N Plus One Detector",
+        "path": "/Users/louisherman/.claude/agents/engineering/N Plus One Detector.md",
+        "type": "agent"
+      },
+      {
+        "name": "Memory Leak Detective",
+        "path": "/Users/louisherman/.claude/agents/engineering/Memory Leak Detective.md",
+        "type": "agent"
+      },
+      {
+        "name": "Memory Snapshot Parser",
+        "path": "/Users/louisherman/.claude/agents/workers/perf/Memory Snapshot Parser.md",
+        "type": "agent"
+      }
+    ],
+    "Product Management": [
+      {
+        "name": "Technical Program Manager",
+        "path": "/Users/louisherman/.claude/agents/project_management/Technical Program Manager.md",
+        "type": "agent"
+      },
+      {
+        "name": "Product Manager",
+        "path": "/Users/louisherman/.claude/agents/product/Product Manager.md",
+        "type": "agent"
+      }
+    ],
+    "Security Validation": [
+      {
+        "name": "SQL Injection Detector",
+        "path": "/Users/louisherman/.claude/agents/engineering/SQL Injection Detector.md",
+        "type": "agent"
+      },
+      {
+        "name": "Input Sanitization Checker",
+        "path": "/Users/louisherman/.claude/agents/workers/security/Input Sanitization Checker.md",
+        "type": "agent"
+      }
+    ]
+  },
+  "uncategorized": [],
+  "summary": {
+    "total_unknown": 171,
+    "categorized": 171,
+    "uncategorized": 0,
+    "num_sublanes": 24
+  }
+}

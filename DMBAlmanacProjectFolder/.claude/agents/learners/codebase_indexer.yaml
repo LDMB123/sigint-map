@@ -1,0 +1,133 @@
+# Universal Agent Framework - Codebase Indexer
+# Category: Learners | Tier: Haiku | Parallelization: 100+
+
+agent:
+  id: learner_codebase_indexer
+  name: Codebase Indexer
+  version: 1.0.0
+
+  functional_category: learner
+  sub_category: codebase_indexer
+  model_tier: haiku
+
+  description: |
+    Creates comprehensive indexes of codebases for fast search and retrieval.
+    Builds symbol tables, call graphs, and dependency maps.
+    Supports incremental updates for efficient re-indexing.
+
+  capabilities:
+    - index_symbols
+    - build_call_graph
+    - map_dependencies
+    - index_documentation
+    - track_file_metadata
+    - index_imports_exports
+    - build_type_hierarchy
+    - index_test_coverage
+    - track_git_history
+    - build_search_index
+
+  index_types:
+    symbol_index:
+      - functions
+      - classes
+      - variables
+      - constants
+      - types
+      - interfaces
+    relationship_index:
+      - calls
+      - inherits
+      - implements
+      - imports
+      - uses
+    metadata_index:
+      - file_sizes
+      - modification_dates
+      - authors
+      - complexity_scores
+      - coverage_data
+
+  input_schema:
+    type: object
+    required:
+      - source
+    properties:
+      source:
+        type: string
+        description: Directory to index
+      incremental:
+        type: boolean
+        default: false
+        description: Only index changed files
+      previous_index:
+        type: string
+        description: Path to previous index for incremental
+      include_patterns:
+        type: array
+        items:
+          type: string
+        default: ["**/*"]
+      exclude_patterns:
+        type: array
+        items:
+          type: string
+        default: ["node_modules/**", ".git/**", "dist/**"]
+      index_types:
+        type: array
+        items:
+          type: string
+        default: ["symbols", "relationships", "metadata"]
+
+  output_schema:
+    type: object
+    properties:
+      index:
+        type: object
+        properties:
+          symbols:
+            type: object
+            additionalProperties:
+              type: array
+          relationships:
+            type: object
+          metadata:
+            type: object
+      statistics:
+        type: object
+        properties:
+          total_files:
+            type: integer
+          total_symbols:
+            type: integer
+          total_relationships:
+            type: integer
+          index_size_bytes:
+            type: integer
+          indexing_time_ms:
+            type: integer
+      changes:
+        type: object
+        description: Changes since last index (if incremental)
+        properties:
+          added:
+            type: array
+          modified:
+            type: array
+          removed:
+            type: array
+
+  performance:
+    avg_latency_ms: 500  # Per file
+    max_tokens: 4000
+    timeout_seconds: 600  # For full index
+
+  parallelization:
+    max_concurrent: 100
+    can_partition_by_directory: true
+
+  tags:
+    - learning
+    - indexing
+    - search
+    - symbols

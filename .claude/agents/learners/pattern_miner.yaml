@@ -1,0 +1,208 @@
+# Universal Agent Framework - Pattern Miner
+# Category: Learners | Tier: Sonnet | Parallelization: 10+
+
+agent:
+  id: learner_pattern_miner
+  name: Pattern Miner
+  version: 1.0.0
+
+  functional_category: learner
+  sub_category: pattern_miner
+  model_tier: sonnet
+
+  description: |
+    Extracts reusable patterns from existing codebases.
+    Identifies architectural patterns, coding idioms, and best practices.
+    Builds pattern libraries for code generation and review.
+
+  capabilities:
+    - extract_code_patterns
+    - identify_design_patterns
+    - discover_idioms
+    - find_anti_patterns
+    - learn_naming_conventions
+    - extract_error_handling_patterns
+    - identify_testing_patterns
+    - discover_api_patterns
+    - extract_data_patterns
+    - learn_project_structure
+
+  pattern_categories:
+    architectural:
+      - mvc
+      - mvvm
+      - clean_architecture
+      - hexagonal
+      - microservices
+      - serverless
+    design:
+      - singleton
+      - factory
+      - observer
+      - strategy
+      - decorator
+      - adapter
+    coding:
+      - error_handling
+      - validation
+      - logging
+      - caching
+      - retry
+      - circuit_breaker
+    testing:
+      - arrange_act_assert
+      - given_when_then
+      - test_fixtures
+      - mocking_patterns
+
+  input_schema:
+    type: object
+    required:
+      - source
+    properties:
+      source:
+        oneOf:
+          - type: string
+            description: Directory or file path
+          - type: array
+            items:
+              type: string
+      pattern_types:
+        type: array
+        items:
+          type: string
+        description: Types of patterns to look for
+      min_occurrences:
+        type: integer
+        default: 3
+        description: Minimum occurrences to consider a pattern
+      context:
+        type: object
+        properties:
+          project_type:
+            type: string
+          framework:
+            type: string
+          domain:
+            type: string
+
+  output_schema:
+    type: object
+    properties:
+      patterns:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            category:
+              type: string
+            description:
+              type: string
+            occurrences:
+              type: integer
+            examples:
+              type: array
+              items:
+                type: object
+                properties:
+                  file:
+                    type: string
+                  code:
+                    type: string
+            template:
+              type: string
+              description: Generalized pattern template
+            usage_guidelines:
+              type: string
+      anti_patterns:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            occurrences:
+              type: integer
+            recommendation:
+              type: string
+      conventions:
+        type: object
+        properties:
+          naming:
+            type: object
+          structure:
+            type: object
+          imports:
+            type: object
+      statistics:
+        type: object
+        properties:
+          files_analyzed:
+            type: integer
+          patterns_found:
+            type: integer
+          anti_patterns_found:
+            type: integer
+
+  performance:
+    avg_latency_ms: 5000
+    max_tokens: 32000
+    timeout_seconds: 300
+
+  parallelization:
+    max_concurrent: 10
+    can_partition_codebase: true
+
+  collaboration:
+    receives_from:
+      - code-reviewer: Extract patterns from codebase for review standards
+      - refactoring-guru: Identify refactoring patterns
+      - full-stack-developer: Pattern discovery requests
+      - system-architect: Architectural pattern analysis
+    delegates_to:
+      - static-analyzer: Analyze code structure for patterns
+      - semantic-analyzer: Extract semantic patterns
+    provides_to:
+      - code-generator: Pattern templates for generation
+      - convention-extractor: Pattern-based conventions
+      - translate-transformer: Language-specific patterns for translation
+    escalates_to:
+      - system-architect: Novel architectural patterns requiring documentation
+    returns_to:
+      - requesting-agent: Pattern library with examples and templates
+    swarm_pattern: fan-out
+
+  tags:
+    - learning
+    - patterns
+    - mining
+    - best_practices
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: sonnet
+  per_execution_estimate: 0.03
+  typical_range: [0.01, 0.08]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

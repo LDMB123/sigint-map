@@ -1,0 +1,208 @@
+# Universal Agent Framework - Refactor Transformer
+# Category: Transformers | Tier: Sonnet | Parallelization: 15+
+
+agent:
+  id: transformer_refactor
+  name: Refactor Transformer
+  version: 1.0.0
+
+  functional_category: transformer
+  sub_category: refactor
+  model_tier: sonnet
+
+  description: |
+    Performs safe code refactoring while preserving semantics.
+    Applies refactoring patterns from Martin Fowler's catalog.
+    Ensures behavior preservation through incremental transformations.
+
+  capabilities:
+    - extract_method
+    - extract_class
+    - inline_method
+    - rename_symbol
+    - move_method
+    - pull_up_method
+    - push_down_method
+    - replace_conditional
+    - introduce_parameter_object
+    - decompose_conditional
+    - consolidate_conditional
+    - remove_dead_code
+    - simplify_expressions
+    - replace_magic_numbers
+
+  refactoring_patterns:
+    composing_methods:
+      - extract_method
+      - inline_method
+      - inline_temp
+      - replace_temp_with_query
+      - introduce_explaining_variable
+      - split_temporary_variable
+      - remove_assignments_to_parameters
+      - replace_method_with_method_object
+    organizing_data:
+      - self_encapsulate_field
+      - replace_data_value_with_object
+      - change_value_to_reference
+      - replace_array_with_object
+      - encapsulate_field
+      - encapsulate_collection
+      - replace_type_code_with_class
+    simplifying_conditionals:
+      - decompose_conditional
+      - consolidate_conditional_expression
+      - consolidate_duplicate_conditional_fragments
+      - remove_control_flag
+      - replace_nested_conditional_with_guard_clauses
+      - replace_conditional_with_polymorphism
+      - introduce_null_object
+    moving_features:
+      - move_method
+      - move_field
+      - extract_class
+      - inline_class
+      - hide_delegate
+      - remove_middle_man
+      - introduce_foreign_method
+      - introduce_local_extension
+
+  input_schema:
+    type: object
+    required:
+      - source_file
+      - refactoring_type
+    properties:
+      source_file:
+        type: string
+      refactoring_type:
+        type: string
+        description: Type of refactoring to apply
+      target:
+        type: object
+        properties:
+          symbol:
+            type: string
+          line:
+            type: integer
+          selection:
+            type: object
+            properties:
+              start_line:
+                type: integer
+              end_line:
+                type: integer
+      new_name:
+        type: string
+        description: New name for rename operations
+      destination:
+        type: string
+        description: Destination file for move operations
+      options:
+        type: object
+        properties:
+          preserve_comments:
+            type: boolean
+            default: true
+          update_references:
+            type: boolean
+            default: true
+          add_documentation:
+            type: boolean
+            default: false
+
+  output_schema:
+    type: object
+    properties:
+      success:
+        type: boolean
+      changes:
+        type: array
+        items:
+          type: object
+          properties:
+            file:
+              type: string
+            type:
+              type: string
+              enum: [modify, create, delete, rename]
+            original_content:
+              type: string
+            new_content:
+              type: string
+            diff:
+              type: string
+      affected_files:
+        type: array
+        items:
+          type: string
+      verification:
+        type: object
+        properties:
+          syntax_valid:
+            type: boolean
+          semantics_preserved:
+            type: boolean
+          tests_suggested:
+            type: array
+
+  performance:
+    avg_latency_ms: 3500
+    max_tokens: 32000
+    timeout_seconds: 120
+
+  parallelization:
+    max_concurrent: 15
+    recommended_batch_size: 5
+
+  safety:
+    requires_backup: true
+    supports_preview: true
+    supports_undo: true
+
+  collaboration:
+    receives_from:
+      - refactoring-guru: Execute specific refactoring transformations
+      - technical-debt-coordinator: Apply refactorings to reduce technical debt
+      - code-reviewer: Refactor code smells identified in reviews
+    delegates_to:
+      - syntax-validator: Validate refactored code syntax
+      - test-validator: Ensure tests still pass after refactoring
+      - impact-analyzer: Assess refactoring impact
+    escalates_to:
+      - refactoring-guru: Complex refactorings requiring strategy
+      - full-stack-developer: Refactorings requiring domain knowledge
+    returns_to:
+      - orchestrating-agent: Refactored code with verification status
+    swarm_pattern: pipeline
+    coordinates_with:
+      - test-generator: Ensure tests exist before refactoring
+
+  tags:
+    - transformation
+    - refactoring
+    - code_quality
+    - patterns
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: sonnet
+  per_execution_estimate: 0.03
+  typical_range: [0.01, 0.08]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

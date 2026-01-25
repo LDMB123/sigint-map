@@ -1,0 +1,142 @@
+# Universal Agent Framework - Rate Limiter Guardian
+# Category: Guardians | Tier: Haiku | Parallelization: 1 (Stateful)
+
+agent:
+  id: guardian_rate_limiter
+  name: Rate Limiter Guardian
+  version: 1.0.0
+
+  functional_category: guardian
+  sub_category: rate_limiter
+  model_tier: haiku
+
+  description: |
+    Enforces rate limits and cost budgets for agent executions.
+    Prevents runaway costs and API abuse.
+    Tracks usage metrics and triggers alerts.
+
+  capabilities:
+    - enforce_rate_limits
+    - track_api_usage
+    - manage_cost_budget
+    - throttle_requests
+    - track_token_usage
+    - enforce_concurrency_limits
+    - trigger_alerts
+    - generate_usage_reports
+    - implement_backoff
+    - manage_quotas
+
+  rate_limit_types:
+    request_based:
+      - requests_per_second
+      - requests_per_minute
+      - requests_per_hour
+      - requests_per_day
+    cost_based:
+      - cost_per_hour
+      - cost_per_day
+      - cost_per_task
+      - total_budget
+    token_based:
+      - tokens_per_request
+      - tokens_per_hour
+      - input_tokens_limit
+      - output_tokens_limit
+    concurrency:
+      - max_parallel_agents
+      - max_swarm_size
+      - max_queue_depth
+
+  input_schema:
+    type: object
+    required:
+      - action
+    properties:
+      action:
+        type: string
+        enum:
+          - check_limit
+          - record_usage
+          - get_status
+          - set_limit
+          - reset_counter
+      request_context:
+        type: object
+        properties:
+          agent_id:
+            type: string
+          operation:
+            type: string
+          estimated_cost:
+            type: number
+          estimated_tokens:
+            type: integer
+      limit_config:
+        type: object
+        properties:
+          type:
+            type: string
+          value:
+            type: number
+          window:
+            type: string
+
+  output_schema:
+    type: object
+    properties:
+      allowed:
+        type: boolean
+      current_usage:
+        type: object
+        properties:
+          requests:
+            type: integer
+          cost:
+            type: number
+          tokens:
+            type: integer
+      limits:
+        type: object
+        properties:
+          requests_remaining:
+            type: integer
+          cost_remaining:
+            type: number
+          reset_at:
+            type: string
+      throttle_info:
+        type: object
+        properties:
+          should_throttle:
+            type: boolean
+          retry_after_ms:
+            type: integer
+          backoff_multiplier:
+            type: number
+      alerts:
+        type: array
+        items:
+          type: object
+          properties:
+            type:
+              type: string
+            threshold:
+              type: number
+            current:
+              type: number
+
+  performance:
+    avg_latency_ms: 50
+    max_tokens: 1000
+    timeout_seconds: 5
+
+  parallelization:
+    max_concurrent: 1
+    stateful: true
+
+  tags:
+    - guardian
+    - rate_limiting
+    - cost_control
+    - quotas

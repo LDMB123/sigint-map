@@ -1,0 +1,366 @@
+================================================================================
+BUNDLE OPTIMIZATION - QUICK REFERENCE
+================================================================================
+
+This quick reference shows exact file locations and line numbers for each
+optimization opportunity. Use this to quickly navigate to the code.
+
+================================================================================
+OPTIMIZATION #1: VERIFY TEST FILE EXCLUSION (HIGH PRIORITY)
+================================================================================
+
+STATUS: Need to verify - check if tests are excluded from production
+
+FILES TO CHECK:
+
+1. File: /tsconfig.json
+   What to look for: "exclude" array with *.test.ts patterns
+   Expected: "exclude": ["**/*.test.ts", "**/*.spec.ts"]
+   
+2. File: /vite.config.ts
+   Lines: 26-30 (optimizeDeps section - should already be good)
+   What to check: Test files not in build
+
+3. Build verification:
+   Command: npm run build
+   Then: Check that no .test.js files appear in .svelte-kit/build/
+
+TEST FILES FOUND IN CODEBASE (12 total):
+- /src/lib/wasm/transform.test.ts
+- /src/lib/wasm/forceSimulation.test.ts
+- /src/lib/stores/data.test.ts
+- /src/lib/utils/scheduler.test.ts
+- /src/lib/utils/shareParser.test.ts
+- /src/lib/utils/popover.test.ts
+- /src/lib/utils/rum.test.ts
+- /src/lib/components/ui/VirtualList.test.ts
+- /src/lib/components/visualizations/LazyVisualization.test.ts
+- /src/lib/db/dexie/queries.test.ts
+- (2 more test files in other directories)
+
+ESTIMATED SAVINGS IF NOT EXCLUDED: 8-12KB gzipped
+
+================================================================================
+OPTIMIZATION #2: LAZY-LOAD WEB-VITALS ATTRIBUTION (MEDIUM PRIORITY)
+================================================================================
+
+FILE: /src/lib/utils/rum.ts
+LINES TO REPLACE: 19-26
+ESTIMATED SAVINGS: 2-3KB gzipped
+IMPLEMENTATION TIME: 2-3 hours
+
+CURRENT CODE (lines 19-26):
+----------
+import { onCLS, onINP, onLCP, onFCP, onTTFB } from 'web-vitals/attribution';
+import type {
+  CLSMetricWithAttribution,
+  INPMetricWithAttribution,
+  LCPMetricWithAttribution,
+  FCPMetricWithAttribution,
+  TTFBMetricWithAttribution,
+} from 'web-vitals/attribution';
+----------
+
+REPLACE WITH:
+----------
+import { onCLS, onINP, onLCP, onFCP, onTTFB } from 'web-vitals';
+import type {
+  CLSMetric,
+  INPMetric,
+  LCPMetric,
+  FCPMetric,
+  TTFBMetric,
+} from 'web-vitals';
+
+// Attribution will be lazy-loaded when needed
+----------
+
+ALSO UPDATE: Lines where the metric types are used to remove "WithAttribution"
+
+FULL DETAILS: See BUNDLE_OPTIMIZATION_IMPLEMENTATION.md Step 2
+
+================================================================================
+OPTIMIZATION #3: ENABLE TERSER CONSOLE REMOVAL (LOW PRIORITY)
+================================================================================
+
+FILE: /vite.config.ts
+LINES TO MODIFY: 31-92 (build section)
+ESTIMATED SAVINGS: 2KB gzipped
+IMPLEMENTATION TIME: 30 minutes
+
+CURRENT CODE (lines 31-32):
+----------
+build: {
+  target: 'es2022',
+----------
+
+ADD AFTER LINE 32:
+----------
+  minify: 'terser',
+  terserOptions: {
+    compress: {
+      drop_console: true,
+      drop_debugger: true,
+    },
+    output: {
+      comments: false,
+    }
+  },
+----------
+
+IMPORTANT: Make sure this is INSIDE the build: { } object
+
+EXACT LOCATION IN FILE:
+- Line 10: export default defineConfig({
+- Line 11: plugins: [...]
+- Line 31: build: {
+- ADD NEW CODE HERE (after line 32)
+- Line 33: rollupOptions: {
+
+FULL DETAILS: See BUNDLE_OPTIMIZATION_IMPLEMENTATION.md Step 3
+
+================================================================================
+OPTIMIZATION #4: MOVE EXAMPLE FILES OUT (LOW PRIORITY)
+================================================================================
+
+EXAMPLE FILES TO MOVE (can lazy-load or move to docs):
+
+1. File: /src/lib/utils/scheduler-examples.ts
+   Size: 16KB (lines 582)
+   Usage: Check if imported anywhere
+
+2. File: /src/lib/utils/speculationRulesExamples.ts
+   Size: ~400 lines
+   Usage: Check if imported anywhere
+
+3. File: /src/lib/utils/shareParser.examples.ts
+   Size: ~200 lines
+   Usage: Check if imported anywhere
+
+4. Directory: /src/lib/components/examples/
+   Multiple component examples
+
+BEFORE MOVING:
+1. Search for imports:
+   grep -r "scheduler-examples" src/ --include="*.ts" --include="*.svelte"
+   grep -r "speculationRulesExamples" src/ --include="*.ts" --include="*.svelte"
+   grep -r "shareParser.examples" src/ --include="*.ts" --include="*.svelte"
+
+2. If no results found, safe to move to /docs/examples/
+
+ADD TO tsconfig.json EXCLUDE:
+"exclude": [
+  "**/*.test.ts",
+  "**/*.example.ts",
+  "**/examples/**",
+  "docs/**"
+]
+
+ESTIMATED SAVINGS: 3-4KB gzipped (if not imported)
+
+FULL DETAILS: See BUNDLE_OPTIMIZATION_IMPLEMENTATION.md Step 4
+
+================================================================================
+OPTIMIZATION #5: ADD D3 MODULE PRELOADING (OPTIONAL)
+================================================================================
+
+LOCATION: D3 loader utility + root layout
+
+PART A - Create preload hook:
+FILE: /src/lib/hooks/preloadD3OnNav.ts (NEW FILE - create it)
+PURPOSE: Listen for route changes and preload D3 modules
+
+CODE TEMPLATE (see implementation guide for full code):
+```typescript
+import { beforeNavigate } from '$app/navigation';
+import { preloadVisualization } from '$lib/utils/d3-loader';
+
+export function setupD3Preloading() {
+  beforeNavigate(({ to }) => {
+    if (!to) return;
+    const route = to.route.id;
+    
+    if (route?.includes('visualizations')) {
+      preloadVisualization('guests');
+      preloadVisualization('transitions');
+      // ... etc
+    }
+  });
+}
+```
+
+PART B - Call from root layout:
+FILE: /src/routes/+layout.svelte
+ADD: import and call to setupD3Preloading() in onMount or at module level
+
+ESTIMATED BENEFIT: 50-100ms faster visualization transitions
+IMPLEMENTATION TIME: 1-2 hours
+RISK LEVEL: Very Low (non-critical enhancement)
+
+FULL DETAILS: See BUNDLE_OPTIMIZATION_IMPLEMENTATION.md Step 5
+
+================================================================================
+KEY FILES FOR QUICK NAVIGATION
+================================================================================
+
+CONFIGURATION FILES:
+- /vite.config.ts (99 lines) - Build configuration
+- /svelte.config.js (24 lines) - Svelte configuration
+- /package.json (79 lines) - Dependencies
+- /tsconfig.json - TypeScript configuration
+
+UTILITIES TO REVIEW:
+- /src/lib/utils/d3-loader.ts (204 lines) - D3 lazy loading
+- /src/lib/utils/d3-utils.ts (278 lines) - Shared D3 utilities
+- /src/lib/utils/rum.ts (812 lines) - Web vitals monitoring [OPTIMIZE]
+
+VISUALIZATION COMPONENTS:
+- /src/lib/components/visualizations/GuestNetwork.svelte - Force simulation
+- /src/lib/components/visualizations/TransitionFlow.svelte - Sankey diagram
+- /src/lib/components/visualizations/LazyVisualization.svelte - Wrapper
+
+ROOT LAYOUT:
+- /src/routes/+layout.svelte (180+ lines) - Application root
+
+WASM MODULES:
+- /src/lib/wasm/forceSimulation.ts (1348 lines) - Force simulation bridge
+
+================================================================================
+BUNDLE SIZE COMPARISON
+================================================================================
+
+CURRENT ESTIMATED:
+- main.js: ~120KB gzipped
+- route chunks: ~200KB gzipped total
+- d3 chunks: ~100KB gzipped total
+- other vendor: ~50KB gzipped
+- TOTAL: ~470KB gzipped
+
+AFTER ALL OPTIMIZATIONS:
+- main.js: ~115KB gzipped (-5KB from web-vitals, terser)
+- route chunks: ~200KB gzipped (no change)
+- d3 chunks: ~100KB gzipped (no change)
+- other vendor: ~30KB gzipped (-8-12KB if tests excluded)
+- TOTAL: ~445KB gzipped (-25KB, ~5% reduction)
+
+MOST IMPACTFUL:
+1. Test file exclusion: 8-12KB (if not already excluded)
+2. web-vitals lazy-load: 2-3KB
+3. terser options: 2KB
+4. example files: 3-4KB
+
+================================================================================
+TERMINAL COMMANDS QUICK REFERENCE
+================================================================================
+
+VERIFY BUILD:
+cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte
+npm run build
+
+CHECK TEST FILES INCLUDED:
+find .svelte-kit/build -name "*.test.js" -o -name "*.test.ts"
+
+ANALYZE BUNDLE SIZE:
+npm install --save-dev webpack-bundle-analyzer
+npm run build -- --analyze
+
+SEARCH FOR IMPORTS:
+grep -r "scheduler-examples" src/ --include="*.ts" --include="*.svelte"
+grep -r "web-vitals/attribution" src/ --include="*.ts" --include="*.svelte"
+
+RUN TYPE CHECK:
+npm run check
+
+RUN LINTER:
+npm run lint
+
+TEST PRODUCTION BUILD LOCALLY:
+npm run build
+npm run preview
+
+================================================================================
+PRIORITY IMPLEMENTATION ORDER
+================================================================================
+
+DAY 1 (2 hours):
+1. Verify test file exclusion (30 min)
+   - Check tsconfig.json
+   - Run build and verify no .test.js files
+   
+2. Enable terser console removal (30 min)
+   - Add terserOptions to vite.config.ts
+   - Test production build
+
+3. Document baseline metrics (30 min)
+   - Record current bundle size
+   - Note Core Web Vitals
+
+DAY 2 (2-3 hours):
+4. Lazy-load web-vitals/attribution (2-3 hours)
+   - Update rum.ts imports
+   - Test metrics still work
+   - Verify build size reduction
+
+OPTIONAL (1-2 hours):
+5. Move example files (1 hour)
+   - Verify not imported
+   - Move to /docs/examples
+   - Update tsconfig exclude
+
+6. Add D3 preloading (1-2 hours)
+   - Create preloadD3OnNav.ts
+   - Call from root layout
+   - Test visualization transitions
+
+================================================================================
+SUCCESS CRITERIA
+================================================================================
+
+After implementation, verify:
+
+1. [ ] Production build succeeds without errors
+2. [ ] No .test.js files in dist output
+3. [ ] Bundle size reduced by 15-25KB gzipped
+4. [ ] All pages load and function normally
+5. [ ] Core Web Vitals maintained (<1.0s LCP, <100ms INP, <0.05 CLS)
+6. [ ] Console no longer shows log/debug/info messages
+7. [ ] RUM still collects all 5 metrics (LCP, INP, CLS, FCP, TTFB)
+8. [ ] D3 visualizations load and render correctly
+9. [ ] No breaking changes in functionality
+10. [ ] All type checking passes (npm run check)
+
+================================================================================
+ROLLBACK INSTRUCTIONS
+================================================================================
+
+If any optimization causes issues:
+
+REVERT SPECIFIC CHANGES:
+git log --oneline (find commit)
+git revert <commit-hash>
+
+OR UNDO SPECIFIC FILE CHANGES:
+git checkout -- /path/to/file
+
+RE-ENABLE FEATURES:
+1. web-vitals: Change import back to /attribution
+2. terser: Remove drop_console from vite.config.ts
+3. example files: Move back to src/lib/
+4. preloading: Remove setupD3Preloading call
+
+REBUILD AND TEST:
+npm run build
+npm run preview
+
+================================================================================
+END OF QUICK REFERENCE
+================================================================================
+
+For complete details and code examples, see:
+- BUNDLE_OPTIMIZATION_REPORT.md (detailed analysis)
+- BUNDLE_OPTIMIZATION_IMPLEMENTATION.md (step-by-step guide)
+- BUNDLE_OPTIMIZATION_SUMMARY.txt (summary)
+
+Questions? Refer to the comprehensive documentation files.
+
+Last Updated: January 23, 2026

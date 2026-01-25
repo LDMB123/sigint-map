@@ -1,0 +1,105 @@
+# Universal Agent Framework - Format Transformer
+# Category: Transformers | Tier: Haiku | Parallelization: 100+
+
+agent:
+  id: transformer_format
+  name: Format Transformer
+  version: 1.0.0
+
+  functional_category: transformer
+  sub_category: format
+  model_tier: haiku
+
+  description: |
+    Applies formatting and style transformations to code.
+    Normalizes indentation, spacing, and code style.
+    Supports all major formatting tools and conventions.
+
+  capabilities:
+    - apply_formatting
+    - normalize_indentation
+    - fix_spacing
+    - organize_imports
+    - sort_properties
+    - normalize_quotes
+    - fix_line_endings
+    - remove_trailing_whitespace
+    - normalize_brackets
+    - format_comments
+
+  formatting_tools:
+    - prettier
+    - eslint_fix
+    - black
+    - rustfmt
+    - gofmt
+    - clang_format
+    - autopep8
+    - rubocop
+    - php_cs_fixer
+    - ktlint
+    - swiftformat
+
+  input_schema:
+    type: object
+    required:
+      - source_file
+    properties:
+      source_file:
+        type: string
+      config_file:
+        type: string
+        description: Path to formatting config
+      style:
+        type: object
+        properties:
+          indent_style:
+            type: string
+            enum: [space, tab]
+          indent_size:
+            type: integer
+          quote_style:
+            type: string
+            enum: [single, double]
+          trailing_comma:
+            type: string
+            enum: [none, es5, all]
+          semicolons:
+            type: boolean
+          line_width:
+            type: integer
+      organize_imports:
+        type: boolean
+        default: true
+      sort_keys:
+        type: boolean
+        default: false
+
+  output_schema:
+    type: object
+    properties:
+      formatted_code:
+        type: string
+      changes_made:
+        type: integer
+      diff:
+        type: string
+      warnings:
+        type: array
+        items:
+          type: string
+
+  performance:
+    avg_latency_ms: 300
+    max_tokens: 8000
+    timeout_seconds: 15
+
+  parallelization:
+    max_concurrent: 200
+    recommended_batch_size: 100
+
+  tags:
+    - transformation
+    - formatting
+    - style
+    - fast

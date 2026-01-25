@@ -1,0 +1,238 @@
+================================================================================
+DMB ALMANAC - ASYNC PATTERN FINDINGS - QUICK REFERENCE
+================================================================================
+
+CRITICAL ISSUES (Fix Immediately)
+================================================================================
+
+1. USER STORE SILENT FAILURES
+   Location: src/lib/stores/dexie.ts:789-796, 883-890, 968-974
+   Severity: HIGH
+   Problem: If database init fails, store silently returns empty, writes don't sync
+   Impact: Silent data loss on user favorites/attended shows
+   Fix Time: 30 min
+   Action: Add initialization status tracking, throw on write if not ready
+
+2. DATA LOADER - NO CANCELLATION
+   Location: src/lib/db/dexie/data-loader.ts:1200-1246
+   Severity: MEDIUM
+   Problem: JSON fetches continue forever if user navigates away
+   Impact: Wasted network/CPU, potential memory exhaustion
+   Fix Time: 45 min
+   Action: Add AbortController with 60s timeout to parallel fetches
+
+3. GLOBAL SEARCH DB RACE
+   Location: src/lib/stores/dexie.ts:1520-1595
+   Severity: MEDIUM
+   Problem: Search runs before database initialized, can fail silently
+   Impact: Search returns no results on fast cold-start typing
+   Fix Time: 20 min
+   Action: Add dbReady flag, wait before first search
+
+4. NAVIGATION ERROR HANDLING
+   Location: src/lib/utils/navigationApi.ts:689
+   Severity: MEDIUM
+   Problem: Promise.all fails entire navigation if data load times out
+   Impact: User sees blank page/spinner indefinitely on slow network
+   Fix Time: 15 min
+   Action: Use Promise.allSettled, allow partial failures
+
+================================================================================
+
+GOOD PATTERNS FOUND (Keep These!)
+================================================================================
+
+✓ TOCTOU Race Prevention (src/lib/services/offlineMutationQueue.ts:447-462)
+  - processingPromise lock prevents concurrent queue processing
+  - Perfect pattern for mutual exclusion
+
+✓ AbortController Timeout (src/lib/wasm/bridge.ts:264-294)
+  - Proper fetch abort with timeout
+  - Correct error detection (AbortError)
+  - Always clears timeout in finally
+
+✓ Stale Request Cleanup (src/lib/wasm/bridge.ts:737-776)
+  - Periodic cleanup of orphaned pending requests (10s interval)
+  - Memory leak prevention for crashed workers
+  - 1.5x timeout safety margin
+
+✓ Database Init Lock (src/lib/stores/dexie.ts:69-108)
+  - Single initialization with promise caching
+  - Allows retry on failure
+  - Prevents race conditions in multi-store setup
+
+✓ Svelte 5 $effect Cleanup (src/lib/hooks/useEventCleanup.svelte.ts:37-46)
+  - Proper cleanup function in $effect return
+  - Automatic unmount cleanup
+
+✓ Search Request Deduplication (src/lib/stores/dexie.ts:1527-1570)
+  - currentSearchId tracking prevents stale results
+  - isDestroyed flag prevents updates after unmount
+
+================================================================================
+
+FINDING SUMMARY BY FILE
+================================================================================
+
+src/lib/stores/dexie.ts
+  - Line 594-595: LOW - Stale .then() closure (anti-pattern, but works)
+  - Line 789-796: HIGH - userAttendedShows silent failure
+  - Line 883-890: HIGH - userFavoriteSongs silent failure
+  - Line 968-974: HIGH - userFavoriteVenues silent failure
+  - Line 1520-1595: MEDIUM - Global search DB race condition
+
+src/lib/db/dexie/data-loader.ts
+  - Line 1200-1246: MEDIUM - No abort on parallel fetches
+
+src/lib/db/dexie/db.ts
+  - Line 481-499: MEDIUM - Concurrent transaction conflicts possible
+
+src/lib/utils/navigationApi.ts
+  - Line 689: MEDIUM - Promise.all without error handling
+
+src/lib/utils/fileHandler.ts
+  - Line 73-78: LOW - No timeout on file access
+
+================================================================================
+
+SEVERITY BREAKDOWN
+================================================================================
+
+CRITICAL/HIGH: 3 issues
+  - All in user data stores
+  - Silent failure pattern
+  - Data loss risk
+  → FIX BEFORE DEPLOYMENT
+
+MEDIUM: 4 issues
+  - Race conditions possible under specific conditions
+  - Network/performance related
+  - Rare in normal usage
+  → FIX THIS WEEK
+
+LOW: 2 issues
+  - Code quality / maintenance
+  - Not actual bugs (code works)
+  - Low impact on users
+  → FIX WHEN TIME PERMITS
+
+================================================================================
+
+TESTING PRIORITY
+================================================================================
+
+MUST TEST:
+  [ ] User store initialization failure handling
+  [ ] Data loader cancellation on navigation
+  [ ] Global search at app cold start
+  [ ] Navigation with slow network data load
+  [ ] Concurrent user mutations (100+ rapid changes)
+
+SHOULD TEST:
+  [ ] File handler timeout
+  [ ] Transaction isolation under load
+  [ ] Memory leaks (10 minute sustained load)
+
+================================================================================
+
+RECOMMENDED READING ORDER
+================================================================================
+
+1. First: ASYNC_DEBUG_REPORT.md (executive summary)
+2. Then: ASYNC_FINDINGS_DETAILED.md (deep technical dive)
+3. Finally: ASYNC_FIXES_CHECKLIST.md (implementation guide)
+
+Each document assumes you've read the previous ones.
+
+================================================================================
+
+QUICK ISSUE DESCRIPTIONS
+================================================================================
+
+Issue #1: User Store Initialization Failures
+  Timeline: DB init starts → getDb().then() → error silently logged
+  Result: Store remains empty, writes succeed but don't trigger liveQuery
+  Users see: Empty favorites/attended shows, changes don't sync
+
+Issue #2: Data Loader No Abort
+  Timeline: Page loads → data fetch starts → user navigates → fetch continues
+  Result: 10+ JSON fetches download unnecessarily, more if user navigates again
+  Users see: Slow app, battery drain, data usage spike on mobile
+
+Issue #3: Global Search DB Race
+  Timeline: App start → store created → user types quickly → DB still init-ing
+  Result: Search query runs before DB ready, crashes or returns empty
+  Users see: Search gives no results when typing during cold start
+
+Issue #4: Navigation Promise.all
+  Timeline: User navigates → data load starts → data load times out at 30s
+  Result: Promise.all rejects, entire operation fails
+  Users see: Blank page/spinner that never recovers (needs manual refresh)
+
+================================================================================
+
+QUESTION CHECKLIST
+================================================================================
+
+After reading, you should be able to answer:
+
+Initialization & Timing
+  [ ] What's the difference between fire-and-forget and error propagation?
+  [ ] Why does early promise resolution not guarantee initialized state?
+  [ ] How does dbInitPromise locking prevent race conditions?
+
+Cancellation & Cleanup
+  [ ] What's the difference between abort() and timeout?
+  [ ] How should fetch() be called with AbortController?
+  [ ] What cleanup should happen in finally blocks?
+
+Concurrency
+  [ ] What's a TOCTOU race condition?
+  [ ] Why is Promise.allSettled() better than Promise.all()?
+  [ ] When should you use Promise.race() vs Promise.all()?
+
+Dexie/IndexedDB
+  [ ] How do Dexie transactions handle concurrent writes?
+  [ ] What's the difference between liveQuery and regular query?
+  [ ] How do user data mutations trigger re-renders?
+
+Svelte 5 Patterns
+  [ ] How does $effect cleanup work?
+  [ ] What's the difference between $state and $derived?
+  [ ] How should async code be handled in $effect?
+
+================================================================================
+
+NEXT STEPS
+================================================================================
+
+1. Read ASYNC_DEBUG_REPORT.md (15 min read)
+2. Review ASYNC_FINDINGS_DETAILED.md for your area (30 min read)
+3. Create tickets in issue tracker for each HIGH/MEDIUM item
+4. Plan 2.75 hour implementation block for all Priority 1/2 fixes
+5. Add tests from ASYNC_FIXES_CHECKLIST.md
+6. Code review using checklist from same file
+7. Deploy with monitoring enabled
+
+ESTIMATED TOTAL TIME: 3-4 hours to implement, 1 hour for testing
+
+================================================================================
+
+CONTACTS & ESCALATION
+================================================================================
+
+Questions about async patterns?
+  → Async Debugging Specialist (this report)
+
+Need to implement fixes?
+  → See ASYNC_FIXES_CHECKLIST.md
+
+Found a different issue?
+  → File bug report with async pattern details
+
+Production issue related to async?
+  → Check ASYNC_DEBUG_REPORT.md severity table first
+  → If CRITICAL/HIGH → escalate immediately
+  → Include relevant line numbers from this reference
+
+================================================================================

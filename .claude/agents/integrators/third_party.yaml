@@ -1,0 +1,199 @@
+# Universal Agent Framework - Third Party Integrator
+# Category: Integrators | Tier: Sonnet | Parallelization: 15+
+
+agent:
+  id: integrator_third_party
+  name: Third Party Integrator
+  version: 1.0.0
+
+  functional_category: integrator
+  sub_category: third_party
+  model_tier: sonnet
+
+  description: |
+    Creates integrations with third-party services and APIs.
+    Handles authentication, rate limiting, and error handling.
+    Supports common services like Stripe, Twilio, AWS, etc.
+
+  capabilities:
+    - integrate_payment_services
+    - integrate_communication_services
+    - integrate_cloud_services
+    - integrate_analytics
+    - integrate_authentication
+    - integrate_storage
+    - integrate_search
+    - integrate_monitoring
+    - integrate_ai_services
+    - integrate_social
+
+  service_categories:
+    payment:
+      - stripe
+      - paypal
+      - square
+      - braintree
+    communication:
+      - twilio
+      - sendgrid
+      - mailgun
+      - slack
+    cloud:
+      - aws
+      - gcp
+      - azure
+      - cloudflare
+    analytics:
+      - segment
+      - mixpanel
+      - amplitude
+      - google_analytics
+    auth:
+      - auth0
+      - okta
+      - firebase_auth
+      - cognito
+    storage:
+      - s3
+      - gcs
+      - cloudinary
+      - uploadcare
+    ai:
+      - openai
+      - anthropic
+      - huggingface
+      - replicate
+
+  input_schema:
+    type: object
+    required:
+      - service
+    properties:
+      service:
+        type: string
+        description: Service to integrate
+      features:
+        type: array
+        items:
+          type: string
+        description: Specific features to implement
+      target_language:
+        type: string
+        default: typescript
+      options:
+        type: object
+        properties:
+          webhook_handling:
+            type: boolean
+            default: true
+          rate_limiting:
+            type: boolean
+            default: true
+          error_handling:
+            type: string
+            enum: [basic, advanced]
+          testing:
+            type: boolean
+            default: true
+
+  output_schema:
+    type: object
+    properties:
+      integration:
+        type: object
+        properties:
+          client:
+            type: string
+          services:
+            type: string
+          webhooks:
+            type: string
+          types:
+            type: string
+      files:
+        type: array
+        items:
+          type: object
+          properties:
+            path:
+              type: string
+            content:
+              type: string
+      configuration:
+        type: object
+        properties:
+          env_vars:
+            type: array
+          secrets:
+            type: array
+      usage_examples:
+        type: array
+      tests:
+        type: string
+
+  performance:
+    avg_latency_ms: 4000
+    max_tokens: 32000
+    timeout_seconds: 120
+
+  parallelization:
+    max_concurrent: 15
+
+  collaboration:
+    receives_from:
+      - api-integration-orchestrator: Third-party service integration
+      - notification-reporter: External notification service integration
+      - full-stack-developer: External service integration requests
+      - devops-engineer: Service integration setup
+    delegates_to:
+      - api-client-integrator: Generate API clients for third-party services
+      - code-generator: Generate integration code
+      - test-generator: Generate integration tests
+      - secret-detector: Validate secrets handling
+    escalates_to:
+      - system-architect: Complex third-party integration architecture
+      - security-engineer: Security concerns with third-party services
+    returns_to:
+      - requesting-agent: Third-party integration with client, tests, and documentation
+    swarm_pattern: pipeline
+
+  tags:
+    - integration
+    - third_party
+    - services
+    - external
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+security:
+  input_validation:
+    enabled: true
+    sanitize_sql: true
+    sanitize_shell: true
+    max_input_size: 10000
+    reject_patterns:
+      - "'; DROP TABLE"
+      - "rm -rf /"
+      - "../"
+      - "<script>"
+
+cost:
+  tier: sonnet
+  per_execution_estimate: 0.03
+  typical_range: [0.01, 0.08]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

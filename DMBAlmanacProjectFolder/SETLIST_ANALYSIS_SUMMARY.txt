@@ -1,0 +1,196 @@
+================================================================================
+DMB ALMANAC - SETLIST DATA COMPLETENESS ANALYSIS
+Analysis Date: 2026-01-23
+================================================================================
+
+EXECUTIVE FINDINGS
+================================================================================
+
+Total Database Shows:           3,455
+Total Scraped Shows:            3,772
+Shows Missing from DB:            317
+
+Shows with Setlist Data (DB):   2,527 (73.1%)
+Shows with Setlist Data (Scraped): 3,126 (82.9%)
+SETLIST DATA GAP:                 599 shows (15.8% of those with setlist data)
+
+Shows with 0 Setlist Entries:     928 (26.9%)
+Setlist Entries in Database:    40,041
+Setlist Entries in Scraped:    ~49,745
+Missing Entries:               ~9,704 (19.5%)
+
+================================================================================
+CRITICAL GAPS BY CATEGORY
+================================================================================
+
+1. FUTURE/RECENT SHOWS (2025-2026)
+   - 2026: 5/5 shows (0%) - ALL missing setlist data
+   - 2025: 91 shows total, only 36 have setlists (39.6%)
+   - Action: Re-run import process for recent shows
+   - Expected gain: ~55+ new setlist entries
+
+2. HISTORICAL GAPS (Pre-1995)
+   - 1991: 0/71 shows (0%) - ZERO setlist data available
+   - 1992: ~56 shows with setlist in scraped data but many missing from DB
+   - 1993: ~159 shows with setlist in scraped data
+   - 1994: ~184 shows with setlist in scraped data
+   - Status: Limited source data; would require archival research
+
+3. PANDEMIC ERA (2020-2021)
+   - 2020: 46 shows, only 11 have setlists (23.9%) - Incomplete
+   - 2021: 74 shows, only 43 have setlists (58.1%) - Incomplete
+   - Reason: Possible data source gaps or import issues
+
+4. UNUSUAL YEARS (2017)
+   - 2017: 107 shows total, only 62 have setlists (57.9%)
+   - 599-show discrepancy suggests import process was incomplete
+
+================================================================================
+SETLIST COVERAGE TREND
+================================================================================
+
+Excellent (95%+):  1998-2019, 2022-2024 periods
+Good (85-95%):     2010-2012, 2007, 2009, 2015-2016
+Incomplete (<85%): 1991-2006, 2017, 2020-2021, 2025-2026
+
+Data Quality Where It Exists:
+✓ NO broken foreign keys
+✓ NO missing song references  
+✓ Consistent song counts (15.85 avg per show)
+✓ All setlist_entries have valid song_id values
+
+================================================================================
+TOP 10 ACTIONABLE ITEMS
+================================================================================
+
+1. [URGENT] Import missing 2025-2026 shows
+   - Scraped data exists: Verify shows.json dates
+   - Estimated songs to add: 600+
+   - Time to implement: 1-2 hours
+
+2. [HIGH] Re-run import script with full debugging
+   - Determine why 599 setlist entries weren't imported
+   - Check import logs for errors or early termination
+   - Verify all 3,772 shows being processed
+
+3. [HIGH] Investigate 2020-2021 coverage gaps
+   - Compare scraped source for these years
+   - Determine if gaps are legitimate or process failures
+   - May need manual data recovery
+
+4. [MEDIUM] Fix 2017 incomplete coverage
+   - Only 62/107 shows have setlist data (57.9%)
+   - Check if source data is available
+   - May indicate scraper issues for that year
+
+5. [MEDIUM] Document 1991-1994 limitations
+   - These years have minimal setlist data in source
+   - Would require manual entry from archives
+   - Consider: Is this a priority given data age?
+
+6. [MEDIUM] Add import monitoring
+   - Create dashboard tracking setlist coverage %
+   - Alert when coverage drops below 95%
+   - Schedule weekly import checks
+
+7. [LOW] Consider historical recovery (1991-1994)
+   - Research alternative sources (archive.org, fan sites)
+   - 1991-1994 are foundational years for DMB
+   - Significant effort; lower priority
+
+8. [LOW] Verify data after future imports
+   - Re-run this analysis after import fixes
+   - Confirm 599 songs have been added
+   - Check 2025-2026 reaches 95%+ coverage
+
+9. [ADMIN] Update import documentation
+   - Document known gaps (1991, 2020-2021)
+   - Document source limitations
+   - Add troubleshooting guide
+
+10. [ADMIN] Archive this analysis
+    - Keep for future reference
+    - Baseline for comparing future data quality
+    - Historical record of project state
+
+================================================================================
+SHOWS MISSING SETLIST DATA BY YEAR
+================================================================================
+
+1991:   71 shows (0% coverage)
+1992:   ~190 shows (incomplete)
+1993:   ~89 shows (incomplete)
+1994:   ~49 shows (incomplete)
+1995:   ~13 shows (incomplete)
+1996:   ~16 shows (incomplete)
+1997:   ~2 shows
+1998:   ~2 shows
+1999:   ~1 show
+2000:   ~1 show
+2001:   ~11 shows
+2002:   ~5 shows
+2003:   ~4 shows
+2004:   ~3 shows
+2005:   ~1 show
+2006:    0 shows (100% complete!)
+2007:   ~6 shows
+2008:   ~2 shows
+2009:   ~3 shows
+2010:   ~2 shows
+2011:   ~2 shows
+2012:   ~5 shows
+2013:   ~13 shows
+2014:    0 shows (100% complete!)
+2015:   ~1 show
+2016:   ~1 show
+2017:   ~45 shows (57.9% coverage issue)
+2018:   ~3 shows
+2019:   ~1 show
+2020:   ~35 shows (23.9% - major gap)
+2021:   ~31 shows (58.1% - major gap)
+2022:   ~2 shows
+2023:   ~1 show
+2024:   ~1 show
+2025:   ~55 shows (39.6% - import lag)
+2026:    5 shows (0% - not yet imported)
+
+================================================================================
+DETAILED EXPORT FILES
+================================================================================
+
+1. SETLIST_COMPLETENESS_ANALYSIS.md
+   - Full analysis with recommendations
+   - Year-by-year breakdown
+   - Root cause analysis
+   - SQL query reference
+
+2. missing_setlist_shows.csv
+   - 928 rows of shows with 0 setlist entries
+   - Show ID, Date, Venue, City, Tour
+   - Can be used for targeted import
+
+3. SETLIST_ANALYSIS_SUMMARY.txt (this file)
+   - Quick reference guide
+   - Action items and priorities
+   - Data summary tables
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+IMMEDIATE (This Week):
+1. Verify shows.json timestamp and completeness
+2. Re-run import process for 2025-2026 shows
+3. Check import logs for errors
+
+SHORT-TERM (This Month):
+1. Investigate 2020-2021 gaps
+2. Analyze 2017 coverage issue
+3. Verify import results
+
+MEDIUM-TERM (This Quarter):
+1. Implement import monitoring
+2. Document source limitations
+3. Plan for historical data recovery
+
+================================================================================

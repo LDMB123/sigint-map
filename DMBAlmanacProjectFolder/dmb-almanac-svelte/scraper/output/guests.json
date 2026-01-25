@@ -1,0 +1,22 @@
+{
+  "scrapedAt": "2026-01-10T12:00:00.000Z",
+  "source": "https://www.dmbalmanac.com",
+  "totalItems": 15,
+  "guests": [
+    {"originalId": "1", "name": "Tim Reynolds", "instruments": ["guitar", "mandolin"], "totalAppearances": 520},
+    {"originalId": "2", "name": "Béla Fleck", "instruments": ["banjo"], "totalAppearances": 85},
+    {"originalId": "3", "name": "Butch Taylor", "instruments": ["keyboards", "accordion"], "totalAppearances": 420},
+    {"originalId": "4", "name": "Rashawn Ross", "instruments": ["trumpet"], "totalAppearances": 380},
+    {"originalId": "5", "name": "Jeff Coffin", "instruments": ["saxophone", "flute"], "totalAppearances": 350},
+    {"originalId": "6", "name": "John D'earth", "instruments": ["trumpet"], "totalAppearances": 45},
+    {"originalId": "7", "name": "Danny Barnes", "instruments": ["banjo", "guitar"], "totalAppearances": 28},
+    {"originalId": "8", "name": "Warren Haynes", "instruments": ["guitar", "vocals"], "totalAppearances": 35},
+    {"originalId": "9", "name": "Trey Anastasio", "instruments": ["guitar"], "totalAppearances": 12},
+    {"originalId": "10", "name": "Robert Randolph", "instruments": ["pedal steel"], "totalAppearances": 18},
+    {"originalId": "11", "name": "Branford Marsalis", "instruments": ["saxophone"], "totalAppearances": 8},
+    {"originalId": "12", "name": "Carlos Santana", "instruments": ["guitar"], "totalAppearances": 5},
+    {"originalId": "13", "name": "John Mayer", "instruments": ["guitar", "vocals"], "totalAppearances": 6},
+    {"originalId": "14", "name": "Derek Trucks", "instruments": ["guitar"], "totalAppearances": 15},
+    {"originalId": "15", "name": "John Popper", "instruments": ["harmonica", "vocals"], "totalAppearances": 22}
+  ]
+}

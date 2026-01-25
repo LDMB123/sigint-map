@@ -1,0 +1,30 @@
+[package]
+name = "dmb-force-simulation"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Force-directed graph simulation with Barnes-Hut optimization"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-mutable-globals", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen.workspace = true
+js-sys.workspace = true
+serde.workspace = true
+serde-wasm-bindgen.workspace = true
+
+[features]
+default = ["console_error_panic_hook"]
+console_error_panic_hook = ["dep:console_error_panic_hook"]
+
+[dependencies.console_error_panic_hook]
+version = "0.1"
+optional = true
+
+[dev-dependencies]
+wasm-bindgen-test.workspace = true

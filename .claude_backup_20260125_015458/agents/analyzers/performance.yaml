@@ -1,0 +1,151 @@
+# Universal Agent Framework - Performance Analyzer
+# Category: Analyzers | Tier: Sonnet | Parallelization: 20+
+
+agent:
+  id: analyzer_performance
+  name: Performance Analyzer
+  version: 1.0.0
+
+  functional_category: analyzer
+  sub_category: performance
+  model_tier: sonnet
+
+  description: |
+    Analyzes code for performance issues and optimization opportunities.
+    Identifies algorithmic inefficiencies, memory leaks, and bottlenecks.
+    Provides actionable recommendations for improvement.
+
+  capabilities:
+    - identify_algorithmic_issues
+    - detect_memory_leaks
+    - find_n_plus_one_queries
+    - analyze_time_complexity
+    - detect_unnecessary_computations
+    - identify_blocking_operations
+    - analyze_cache_opportunities
+    - detect_premature_optimization
+    - find_resource_leaks
+    - analyze_bundle_impact
+
+  performance_categories:
+    - algorithmic_complexity
+    - memory_usage
+    - cpu_utilization
+    - io_operations
+    - network_requests
+    - database_queries
+    - rendering_performance
+    - bundle_size
+    - startup_time
+    - runtime_efficiency
+
+  input_schema:
+    type: object
+    required:
+      - target
+    properties:
+      target:
+        type: string
+        description: File or directory to analyze
+      focus_areas:
+        type: array
+        items:
+          type: string
+          enum:
+            - algorithms
+            - memory
+            - io
+            - database
+            - rendering
+            - bundle
+        default: [algorithms, memory]
+      context:
+        type: object
+        properties:
+          runtime:
+            type: string
+            enum: [node, browser, deno, bun]
+          framework:
+            type: string
+          scale:
+            type: string
+            enum: [small, medium, large, enterprise]
+      profile_data:
+        type: string
+        description: Path to profiling data if available
+
+  output_schema:
+    type: object
+    properties:
+      overall_score:
+        type: number
+        minimum: 0
+        maximum: 100
+      issues:
+        type: array
+        items:
+          type: object
+          properties:
+            type:
+              type: string
+            severity:
+              type: string
+              enum: [critical, high, medium, low]
+            location:
+              type: object
+              properties:
+                file:
+                  type: string
+                line:
+                  type: integer
+                function:
+                  type: string
+            description:
+              type: string
+            impact:
+              type: string
+            recommendation:
+              type: string
+            estimated_improvement:
+              type: string
+      hotspots:
+        type: array
+        items:
+          type: object
+          properties:
+            location:
+              type: string
+            reason:
+              type: string
+            priority:
+              type: integer
+      recommendations:
+        type: array
+        items:
+          type: object
+          properties:
+            title:
+              type: string
+            description:
+              type: string
+            effort:
+              type: string
+              enum: [low, medium, high]
+            impact:
+              type: string
+              enum: [low, medium, high]
+
+  performance:
+    avg_latency_ms: 3000
+    max_tokens: 24000
+    timeout_seconds: 120
+
+  parallelization:
+    max_concurrent: 20
+    recommended_batch_size: 5
+
+  tags:
+    - analysis
+    - performance
+    - optimization
+    - bottlenecks

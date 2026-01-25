@@ -1,0 +1,230 @@
+================================================================================
+PWA AUDIT COMPLETE - DMB ALMANAC
+================================================================================
+
+Report Files Generated:
+1. PWA_AUDIT_REPORT.md (657 lines)
+   - Comprehensive audit of all 10 issues
+   - Line numbers and file paths
+   - Code examples and impacts
+   - Testing notes
+
+2. PWA_ISSUES_SUMMARY.txt (This file + linked)
+   - Quick reference checklist
+   - Priority matrix
+   - Estimated fix time
+   - Pre-deployment checklist
+
+3. CRITICAL_FIXES_GUIDE.md (850+ lines)
+   - Step-by-step implementation guide
+   - Before/after code examples
+   - Testing strategies
+   - Rollout recommendations
+
+================================================================================
+
+CRITICAL FINDINGS
+================================================================================
+
+6 Critical Issues Found:
+1. RUM Manager double-initialization (test pollution)
+2. DataLoader missing cache fallback (data loss risk)
+3. Service Worker cache not versioned semantically (staleness)
+4. Quota exceeded events not visible to UI (poor UX)
+5. VAPID key not validated (silent failures)
+6. Dexie sync schema lacks validation (data corruption)
+
+4 Moderate Issues Found:
+7. SW update lifecycle race condition
+8. Background sync missing retry logic
+9. Navigation preload enabled but unused
+10. Offline fallback page not in precache
+
+================================================================================
+
+TEST ERRORS EXPLAINED
+================================================================================
+
+[RUM] Already initialized
+→ Cause: Issue #1 (double initialization warning in tests)
+→ Fix: Change console.warn to console.debug
+→ Time: 15 minutes
+
+[DataLoader] Failed to fetch /data/venues.json.br
+→ Cause: Issue #2 (no cache fallback when compression fails)
+→ Fix: Add 3-tier fallback (SW cache → IndexedDB → null)
+→ Time: 2 hours
+
+IndexedDB API missing
+→ Cause: jsdom test environment limitation (not PWA bug)
+→ Fix: Add 'fake-indexeddb/auto' to test setup
+→ Time: 15 minutes
+
+================================================================================
+
+PRIORITY IMPLEMENTATION ORDER
+================================================================================
+
+Sprint 1 (Critical - Next 2 weeks):
+- Issue #1: RUM debug logging (15 min) ✓ Easy win
+- Issue #4: Mount StorageQuotaMonitor globally (1 hour)
+- Issue #2: DataLoader cache fallback (2 hours)
+- Issue #5: VAPID key validation (2 hours)
+- Issue #3: Semantic cache versioning (4 hours)
+- Issue #6: Dexie sync validation (6 hours)
+
+Total Sprint 1: ~15 hours
+
+Sprint 2 (Moderate - Following sprint):
+- Issue #7: SW update race condition fix (3 hours)
+- Issue #8: Background sync retry logic (4 hours)
+- Issue #9: Navigation preload usage (1 hour)
+- Issue #10: Offline page verification (30 min)
+
+Total Sprint 2: ~8.5 hours
+
+================================================================================
+
+BEFORE DEPLOYMENT CHECKLIST
+================================================================================
+
+Code Changes:
+- [ ] All 6 critical issues fixed and tested
+- [ ] All 4 moderate issues fixed and tested
+- [ ] Tests passing without stderr warnings
+- [ ] No console.warn for initialization
+
+Manual Testing:
+- [ ] Offline data restoration works
+- [ ] Quota exceeded shows helpful UI
+- [ ] Push notification subscribes correctly
+- [ ] Service Worker updates properly
+- [ ] Background sync retries on failure
+- [ ] Cache versioning is semantic
+
+Infrastructure:
+- [ ] Build system injects __BUILD_VERSION__
+- [ ] Build system injects __BUILD_HASH__
+- [ ] /api/build-info endpoint working
+- [ ] VITE_VAPID_PUBLIC_KEY environment variable set
+
+Monitoring:
+- [ ] RUM initialization count = 1 per page load
+- [ ] Cache hit rates tracked
+- [ ] Sync failure rate monitored
+- [ ] Quota exceeded event frequency observed
+
+================================================================================
+
+FILES REQUIRING MODIFICATIONS
+================================================================================
+
+HIGH PRIORITY (Critical Issues):
+1. src/lib/utils/rum.ts
+   - Line 148: Change console.warn to console.debug
+   
+2. src/lib/db/dexie/data-loader.ts
+   - Lines 295-365: Add cache fallback chain
+   
+3. static/sw.js
+   - Lines 14-18: Update to use injected version
+   - Lines 1116-1149: Semantic version comparison
+   
+4. src/lib/utils/push-notifications.ts
+   - Add validateVAPIDKey() function
+   - Line 153: Call validation before subscribe
+   
+5. src/lib/db/dexie/sync.ts
+   - Add Zod schemas for all entities
+   - Update all transform functions
+
+MEDIUM PRIORITY (Moderate Issues):
+6. src/lib/stores/pwa.ts
+   - Lines 108-132: Fix update race condition
+   
+7. static/sw.js
+   - Lines 1320+: Add background sync retry
+   - Lines 324: Use event.preloadResponse
+   
+8. src/lib/components/pwa/StorageQuotaMonitor.svelte
+   - Ensure mounted globally
+   
+9. src/routes/+layout.svelte
+   - Mount StorageQuotaMonitor globally
+
+INFRASTRUCTURE:
+10. vite.config.ts
+    - Add build version injection plugin
+    - Export BUILD_VERSION, BUILD_HASH
+    
+11. src/routes/api/build-info/+server.ts
+    - Create new endpoint for version info
+    
+12. .env.example
+    - Document VITE_VAPID_PUBLIC_KEY requirement
+
+================================================================================
+
+ESTIMATED EFFORT
+================================================================================
+
+Critical Issues:
+- #1: 15 minutes
+- #2: 2 hours
+- #3: 4 hours
+- #4: 1 hour
+- #5: 2 hours
+- #6: 6 hours
+Total: 15 hours 15 minutes
+
+Moderate Issues:
+- #7: 3 hours
+- #8: 4 hours
+- #9: 1 hour
+- #10: 30 minutes
+Total: 8 hours 30 minutes
+
+Infrastructure & Testing:
+- Build plugin: 2 hours
+- API endpoint: 1 hour
+- Test setup: 1 hour
+- Documentation: 2 hours
+Total: 6 hours
+
+GRAND TOTAL: ~30 hours (~4 days for 1 developer)
+
+================================================================================
+
+RISK ASSESSMENT
+================================================================================
+
+If NOT fixed:
+- Stale cache persists after deployments (user sees old data)
+- DataLoader failures with no fallback (blank page for users)
+- Push notifications silently fail (users think subscribed but aren't)
+- Storage quota exceeded crashes app (poor UX)
+- Sync schema changes undetected (data corruption)
+- Background sync items stuck forever (data not synced)
+
+Risk Level: HIGH
+Recommendation: Fix CRITICAL issues before next production deployment
+
+================================================================================
+
+CONTACT & DOCUMENTATION
+================================================================================
+
+Full Details: See PWA_AUDIT_REPORT.md (657 lines)
+Implementation: See CRITICAL_FIXES_GUIDE.md (850+ lines)
+Quick Ref: See PWA_ISSUES_SUMMARY.txt
+
+Questions: Review the detailed guide files above
+
+================================================================================
+
+Audit Completed: 2026-01-23
+Auditor: PWA Debugging Specialist
+Target: Chromium 143+ / Apple Silicon (M-series)
+Architecture: SvelteKit 2 + Svelte 5 + Dexie.js + IndexedDB
+
+================================================================================

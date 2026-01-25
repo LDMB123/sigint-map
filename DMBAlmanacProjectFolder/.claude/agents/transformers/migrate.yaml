@@ -1,0 +1,140 @@
+# Universal Agent Framework - Migration Transformer
+# Category: Transformers | Tier: Sonnet/Haiku | Parallelization: 50+
+
+agent:
+  id: transformer_migrate
+  name: Migration Transformer
+  version: 1.0.0
+
+  functional_category: transformer
+  sub_category: migrate
+  model_tier: haiku  # Sonnet for complex migrations
+
+  description: |
+    Performs code migrations between API versions, frameworks, and patterns.
+    Handles breaking changes, deprecated APIs, and syntax updates.
+    Supports batch migration for large codebases.
+
+  capabilities:
+    - migrate_api_version
+    - upgrade_framework
+    - convert_syntax
+    - update_deprecated_apis
+    - transform_patterns
+    - migrate_imports
+    - update_configuration
+    - convert_types
+    - migrate_tests
+    - update_build_scripts
+
+  migration_types:
+    api_migrations:
+      - major_version_upgrade
+      - minor_api_changes
+      - deprecated_to_current
+      - breaking_change_adaptation
+    framework_migrations:
+      - react_class_to_hooks
+      - vue_2_to_3
+      - angular_upgrade
+      - express_to_fastify
+      - jest_to_vitest
+    language_migrations:
+      - javascript_to_typescript
+      - commonjs_to_esm
+      - callback_to_promise
+      - promise_to_async_await
+    pattern_migrations:
+      - mvc_to_mvvm
+      - monolith_to_microservice
+      - rest_to_graphql
+      - sql_to_orm
+
+  input_schema:
+    type: object
+    required:
+      - source_file
+      - migration_type
+    properties:
+      source_file:
+        type: string
+      migration_type:
+        type: string
+      from_version:
+        type: string
+      to_version:
+        type: string
+      options:
+        type: object
+        properties:
+          preserve_comments:
+            type: boolean
+            default: true
+          add_migration_comments:
+            type: boolean
+            default: true
+          strict_mode:
+            type: boolean
+            default: false
+          codemods:
+            type: array
+            items:
+              type: string
+
+  output_schema:
+    type: object
+    properties:
+      success:
+        type: boolean
+      migrated_code:
+        type: string
+      changes:
+        type: array
+        items:
+          type: object
+          properties:
+            line:
+              type: integer
+            type:
+              type: string
+            before:
+              type: string
+            after:
+              type: string
+            reason:
+              type: string
+      manual_interventions:
+        type: array
+        items:
+          type: object
+          properties:
+            line:
+              type: integer
+            issue:
+              type: string
+            suggestion:
+              type: string
+      statistics:
+        type: object
+        properties:
+          automated_changes:
+            type: integer
+          manual_required:
+            type: integer
+          confidence:
+            type: number
+
+  performance:
+    avg_latency_ms: 1500
+    max_tokens: 16000
+    timeout_seconds: 60
+
+  parallelization:
+    max_concurrent: 50
+    recommended_batch_size: 20
+
+  tags:
+    - transformation
+    - migration
+    - upgrade
+    - version

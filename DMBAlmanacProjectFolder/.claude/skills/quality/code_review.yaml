@@ -1,0 +1,172 @@
+# Universal Agent Framework - Code Review Skill
+# Category: Quality | Swarm: Fan-Out Validation | Parallelization: High
+
+skill:
+  id: skill_code_review
+  name: Comprehensive Code Review
+  version: 1.0.0
+  category: quality
+
+  description: |
+    Multi-perspective code review combining static analysis,
+    semantic review, security scanning, and style checking.
+    Uses fan-out validation for parallel analysis.
+
+  invocation:
+    command: /review
+    aliases: [code-review, cr]
+
+  parameters:
+    - name: target
+      type: string
+      required: true
+      description: File, directory, or git diff to review
+      examples:
+        - "src/auth/login.ts"
+        - "src/**/*.ts"
+        - "HEAD~3..HEAD"
+
+    - name: depth
+      type: enum
+      values: [quick, standard, deep]
+      default: standard
+      description: Review thoroughness level
+
+    - name: focus
+      type: array
+      items:
+        type: string
+        enum: [security, performance, maintainability, style, testing]
+      default: [security, maintainability]
+      description: Areas to focus on
+
+    - name: auto_fix
+      type: boolean
+      default: false
+      description: Generate fixes for issues
+
+  workflow:
+    swarm_pattern: fan_out_validation
+
+    phases:
+      - name: File Discovery
+        agent: learner_codebase_indexer
+        tier: haiku
+        parallel: false
+        actions:
+          - Parse target (file, glob, git diff)
+          - Discover affected files
+          - Build file list
+        output: file_list
+
+      - name: Static Analysis
+        agents:
+          - validator_syntax
+          - validator_style
+          - analyzer_static
+        tier: haiku
+        parallel: true
+        per_file: true
+        output: static_results
+
+      - name: Semantic Review
+        agents:
+          - analyzer_semantic
+          - analyzer_performance
+        tier: sonnet
+        parallel: true
+        per_file: true
+        condition: depth in [standard, deep]
+        output: semantic_results
+
+      - name: Security Scan
+        agent: guardian_security_scanner
+        tier: sonnet
+        parallel: true
+        per_file: true
+        condition: security in focus
+        output: security_results
+
+      - name: Result Aggregation
+        agent: reporter_summary
+        tier: haiku
+        parallel: false
+        actions:
+          - Aggregate all results
+          - Deduplicate issues
+          - Prioritize by severity
+          - Generate report
+        output: review_report
+
+      - name: Fix Generation
+        agent: transformer_refactor
+        tier: sonnet
+        parallel: false
+        condition: auto_fix == true
+        actions:
+          - Generate fixes for fixable issues
+          - Create diff patches
+        output: proposed_fixes
+
+  outputs:
+    - name: review_report
+      type: object
+      schema:
+        summary:
+          files_reviewed: integer
+          issues_found: integer
+          by_severity: object
+        issues:
+          type: array
+          items:
+            file: string
+            line: integer
+            type: string
+            severity: string
+            message: string
+            suggestion: string
+        metrics:
+          duration_ms: integer
+          cost: number
+
+    - name: proposed_fixes
+      type: array
+      condition: auto_fix == true
+      schema:
+        items:
+          file: string
+          diff: string
+          confidence: number
+
+  cost_model:
+    quick:
+      haiku_calls: 10
+      sonnet_calls: 0
+      estimated_cost: 0.003
+    standard:
+      haiku_calls: 15
+      sonnet_calls: 5
+      estimated_cost: 0.019
+    deep:
+      haiku_calls: 20
+      sonnet_calls: 10
+      estimated_cost: 0.035
+
+  examples:
+    - name: Quick review of single file
+      invocation: /review src/auth/login.ts --depth quick
+      expected:
+        duration_seconds: 5
+        cost: 0.003
+
+    - name: Deep security review
+      invocation: /review src/**/*.ts --depth deep --focus security
+      expected:
+        duration_seconds: 60
+        cost: 0.05
+
+  tags:
+    - code_review
+    - quality
+    - analysis
+    - security

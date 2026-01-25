@@ -1,0 +1,537 @@
+{
+  "scrapedAt": "2026-01-15T06:35:18.896Z",
+  "totalShows": 59,
+  "shows": [
+    {
+      "originalId": "453092236",
+      "date": "2025-01-24",
+      "venueName": "Moon Palace Golf & Spa Resort",
+      "city": "",
+      "state": "",
+      "country": "Mexico",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453092237",
+      "date": "2025-01-24",
+      "venueName": "Moon Palace Golf & Spa Resort",
+      "city": "",
+      "state": "",
+      "country": "Mexico",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453092238",
+      "date": "2025-01-24",
+      "venueName": "Moon Palace Golf & Spa Resort",
+      "city": "",
+      "state": "",
+      "country": "Mexico",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094264",
+      "date": "2025-01-24",
+      "venueName": "Kia Forum",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094265",
+      "date": "2025-01-24",
+      "venueName": "South Hall (Los Angeles Convention Center)",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094303",
+      "date": "2025-01-24",
+      "venueName": "The Barn",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094305",
+      "date": "2025-01-24",
+      "venueName": "[Private Residence]",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094263",
+      "date": "2025-01-24",
+      "venueName": "Fair Grounds Race Course & Slots",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094304",
+      "date": "2025-01-24",
+      "venueName": "White Oak Music Hall",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094250",
+      "date": "2025-01-24",
+      "venueName": "First Ward Park",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094306",
+      "date": "2025-04-27",
+      "venueName": "Preservation Hall",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094307",
+      "date": "2025-04-27",
+      "venueName": "Tipitina's",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094266",
+      "date": "2025-05-24",
+      "venueName": "Bethel Woods Center for the Arts",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094261",
+      "date": "2025-05-24",
+      "venueName": "Harvard University Athletic Complex",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094267",
+      "date": "2025-05-24",
+      "venueName": "Empower Federal Credit Union Amphitheater at Lakeview",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094268",
+      "date": "2025-05-24",
+      "venueName": "Blossom Music Center",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094269",
+      "date": "2025-05-24",
+      "venueName": "Merriweather Post Pavilion",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094270",
+      "date": "2025-05-24",
+      "venueName": "PNC Bank Arts Center",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094254",
+      "date": "2025-05-24",
+      "venueName": "Auditório Ibirapuera",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094255",
+      "date": "2025-05-24",
+      "venueName": "Auditório Ibirapuera",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094271",
+      "date": "2025-06-11",
+      "venueName": "Northwell Health at Jones Beach Theater",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094272",
+      "date": "2025-06-13",
+      "venueName": "Riverbend Music Center",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094273",
+      "date": "2025-06-14",
+      "venueName": "Hollywood Casino Amphitheatre",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094274",
+      "date": "2025-06-20",
+      "venueName": "Credit One Stadium",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094275",
+      "date": "2025-06-21",
+      "venueName": "Credit One Stadium",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094276",
+      "date": "2025-06-24",
+      "venueName": "Coca-Cola Amphitheater",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094277",
+      "date": "2025-06-25",
+      "venueName": "Ameris Bank Amphitheatre",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094278",
+      "date": "2025-06-27",
+      "venueName": "Huntington Bank Pavilion at Northerly Island",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094279",
+      "date": "2025-06-28",
+      "venueName": "Huntington Bank Pavilion at Northerly Island",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094280",
+      "date": "2025-07-08",
+      "venueName": "Budweiser Stage",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094281",
+      "date": "2025-07-09",
+      "venueName": "Pine Knob Music Theatre",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094282",
+      "date": "2025-07-11",
+      "venueName": "Ruoff Music Center",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094283",
+      "date": "2025-07-12",
+      "venueName": "Ruoff Music Center",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094284",
+      "date": "2025-07-15",
+      "venueName": "Allianz Amphitheater at Riverfront",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094285",
+      "date": "2025-07-16",
+      "venueName": "Allianz Amphitheater at Riverfront",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094286",
+      "date": "2025-07-18",
+      "venueName": "Broadview Stage at Saratoga Performing Arts Center",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094287",
+      "date": "2025-07-19",
+      "venueName": "Broadview Stage at Saratoga Performing Arts Center",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094288",
+      "date": "2025-07-22",
+      "venueName": "BankNH Pavilion",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094289",
+      "date": "2025-07-23",
+      "venueName": "BankNH Pavilion",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094290",
+      "date": "2025-07-25",
+      "venueName": "Freedom Mortgage Pavilion",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094291",
+      "date": "2025-07-26",
+      "venueName": "Freedom Mortgage Pavilion",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094298",
+      "date": "2025-08-01",
+      "venueName": "Big Sky Events Arena",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094262",
+      "date": "2025-08-02",
+      "venueName": "Big Sky Events Arena",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094292",
+      "date": "2025-08-22",
+      "venueName": "Kia Forum",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094293",
+      "date": "2025-08-23",
+      "venueName": "Shoreline Amphitheatre at Mountain View",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094294",
+      "date": "2025-08-26",
+      "venueName": "Lake Tahoe Amphitheater at Caesars Republic (Caesars Republic Lake Tahoe)",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094295",
+      "date": "2025-08-29",
+      "venueName": "The Gorge Amphitheatre",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094296",
+      "date": "2025-08-30",
+      "venueName": "The Gorge Amphitheatre",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094297",
+      "date": "2025-08-31",
+      "venueName": "The Gorge Amphitheatre",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094320",
+      "date": "2025-09-13",
+      "venueName": "[Unknown]",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094318",
+      "date": "2025-09-20",
+      "venueName": "Huntington Bank Stadium (University of Minnesota Twin Cities)",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094317",
+      "date": "2025-09-20",
+      "venueName": "Huntington Bank Stadium (University of Minnesota Twin Cities)",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094308",
+      "date": "2025-09-20",
+      "venueName": "Huntington Bank Stadium (University of Minnesota Twin Cities)",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094319",
+      "date": "2025-10-07",
+      "venueName": "Palm Beach Cannes",
+      "city": "",
+      "state": "",
+      "country": "France",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094322",
+      "date": "2025-10-16",
+      "venueName": "The Broadmoor",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2025
+    },
+    {
+      "originalId": "453094309",
+      "date": "2026-01-22",
+      "venueName": "Moon Palace Golf & Spa Resort",
+      "city": "",
+      "state": "",
+      "country": "Mexico",
+      "tourYear": 2026
+    },
+    {
+      "originalId": "453094310",
+      "date": "2026-01-23",
+      "venueName": "Moon Palace Golf & Spa Resort",
+      "city": "",
+      "state": "",
+      "country": "Mexico",
+      "tourYear": 2026
+    },
+    {
+      "originalId": "453094311",
+      "date": "2026-01-24",
+      "venueName": "Moon Palace Golf & Spa Resort",
+      "city": "",
+      "state": "",
+      "country": "Mexico",
+      "tourYear": 2026
+    },
+    {
+      "originalId": "453094323",
+      "date": "2026-05-23",
+      "venueName": "Roger Sherman Baldwin Park",
+      "city": "",
+      "state": "",
+      "country": "USA",
+      "tourYear": 2026
+    }
+  ]
+}

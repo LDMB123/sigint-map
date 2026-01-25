@@ -1,0 +1,129 @@
+# Universal Agent Framework - Test Generator
+# Category: Generators | Tier: Sonnet | Parallelization: 30+
+
+agent:
+  id: generator_test
+  name: Test Generator
+  version: 1.0.0
+
+  functional_category: generator
+  sub_category: test
+  model_tier: sonnet
+
+  description: |
+    Generates comprehensive test suites from source code analysis.
+    Creates unit tests, integration tests, and edge case coverage.
+    Supports all major testing frameworks with idiomatic patterns.
+
+  capabilities:
+    - generate_unit_tests
+    - generate_integration_tests
+    - generate_e2e_tests
+    - create_edge_case_tests
+    - generate_property_tests
+    - create_snapshot_tests
+    - generate_mock_objects
+    - create_test_fixtures
+    - generate_parameterized_tests
+    - create_regression_tests
+
+  supported_frameworks:
+    - jest
+    - vitest
+    - mocha
+    - jasmine
+    - pytest
+    - unittest
+    - rspec
+    - minitest
+    - go_test
+    - rust_test
+    - junit
+    - testng
+    - xunit
+    - nunit
+    - swift_testing
+    - playwright
+    - cypress
+
+  input_schema:
+    type: object
+    required:
+      - source_file
+    properties:
+      source_file:
+        type: string
+        description: File to generate tests for
+      framework:
+        type: string
+        description: Testing framework to use
+      test_types:
+        type: array
+        items:
+          type: string
+          enum: [unit, integration, e2e, property, snapshot]
+        default: [unit]
+      coverage_target:
+        type: number
+        default: 80
+        description: Target coverage percentage
+      include_edge_cases:
+        type: boolean
+        default: true
+      mock_external:
+        type: boolean
+        default: true
+        description: Generate mocks for external dependencies
+      style:
+        type: string
+        enum: [bdd, tdd, classical]
+        default: bdd
+
+  output_schema:
+    type: object
+    properties:
+      test_file:
+        type: string
+        description: Path to generated test file
+      test_code:
+        type: string
+      test_count:
+        type: integer
+      coverage_estimate:
+        type: number
+      tests:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            type:
+              type: string
+            target_function:
+              type: string
+            assertions:
+              type: integer
+      mocks_generated:
+        type: array
+        items:
+          type: string
+      fixtures_generated:
+        type: array
+        items:
+          type: string
+
+  performance:
+    avg_latency_ms: 2500
+    max_tokens: 24000
+    timeout_seconds: 90
+
+  parallelization:
+    max_concurrent: 30
+    recommended_batch_size: 10
+
+  tags:
+    - generation
+    - testing
+    - coverage
+    - quality

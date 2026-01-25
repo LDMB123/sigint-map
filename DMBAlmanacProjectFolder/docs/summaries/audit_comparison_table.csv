@@ -1,0 +1,8 @@
+Table Name,JSON Count,Database Count,Difference,Difference %,Status,Interpretation,Action Required
+shows,3772,3455,-317,-8.4,CRITICAL,Data quality issues in JSON prevent import,YES - Investigate validation rules
+venues,21,2855,2834,13491.7,OK (Curated),JSON has only major venues - database is complete,NO - This is intentional
+songs,50,1240,1190,2380.0,OK (Curated),JSON has top 50 songs - database has all 1240,NO - This is intentional
+guests,15,774,759,5060.0,OK (Curated),JSON has top 15 guests - database has all 774,NO - This is intentional
+tours,N/A,36,N/A,N/A,OK,Auto-generated from show data,NO - This is expected
+setlist_entries,N/A,40041,N/A,N/A,OK,Transactional data - songs per show,NO - This is expected
+guest_appearances,N/A,2014,N/A,N/A,OK,Transactional data - guest appearances,NO - This is expected

@@ -1,0 +1,344 @@
+# PWA Skills Quick Start Guide
+
+**Location**: `/Users/louisherman/ClaudeCodeProjects/.claude/skills/pwa/`
+
+---
+
+## Which Skill Do I Need?
+
+### "My Service Worker won't register"
+→ **`sw-debugging-checklist.md`**
+- Step 2: Diagnose Registration Issues
+- 10 minutes
+- Common fixes: HTTPS check, syntax validation, scope matching
+
+### "Service Worker is registered multiple times"
+→ **`sw-race-condition-fix.md`**
+- Step 1-3: Identify and fix race condition
+- 15 minutes
+- Add synchronous guard flag to store
+
+### "App memory grows over time"
+→ **`sw-memory-leak-detection.md`**
+- Step 2-4: Take heap snapshot and analyze
+- 30 minutes
+- Common fixes: AbortController signals, port cleanup
+
+### "I need offline functionality"
+→ **`offline-queue-pattern.md`**
+- Step 1-4: Setup and integrate
+- 90 minutes
+- Complete implementation with IndexedDB + Background Sync
+
+### "Updates aren't working"
+→ **`sw-debugging-checklist.md`**
+- Step 3: Diagnose Update Issues
+- 10 minutes
+- Fix: Add SW_UPDATED message broadcast
+
+### "Cache is out of date"
+→ **`sw-debugging-checklist.md`**
+- Step 4: Diagnose Cache Issues
+- 15 minutes
+- Fix: Increment CACHE_VERSION, add stale headers
+
+### "Everything is broken, audit the whole PWA"
+→ **`README.md`** then all 4 skills
+- Workflow 4: Complete PWA Diagnostic
+- 120 minutes
+- Comprehensive review and fixes
+
+---
+
+## Quick Reference: Problem → Solution
+
+| Problem | Skill | Section | Fix Time |
+|---------|-------|---------|----------|
+| SW won't register | Checklist | Step 2 | 10min |
+| Multiple registrations | Race Condition | Step 3-4 | 15min |
+| Memory leak | Memory Leak | Step 2-4 | 30min |
+| Update not showing | Checklist | Step 3 | 10min |
+| Stale cache | Checklist | Step 4 | 15min |
+| Offline sync needed | Offline Queue | Step 1-4 | 90min |
+| MessageChannel error | Memory Leak | Step 6 | 10min |
+| No offline page | Checklist | Step 5 | 15min |
+
+---
+
+## By Framework
+
+### SvelteKit (Svelte 5)
+- All skills fully supported
+- Look for `$effect()` and `$state()` examples
+- Use `bind:this` for DOM refs
+
+### React / Next.js
+- All skills supported
+- Look for "Option C: React useEffect pattern"
+- Use `useRef` for DOM refs and `useEffect` for cleanup
+
+### Vue 3
+- Skills partially supported (focus on store patterns)
+- Translate Svelte to Vue 3 composition API
+- Use `ref()` and `watch()` equivalents
+
+### Vanilla JavaScript
+- All core patterns applicable
+- Skip framework-specific examples
+- Focus on raw API usage
+
+---
+
+## 5-Minute Diagnostic
+
+Run this to assess your PWA:
+
+```javascript
+// In browser console
+console.log('=== PWA Diagnostic ===');
+
+// 1. Service Workers
+navigator.serviceWorker?.getRegistrations().then(regs => {
+  console.log(`SWs registered: ${regs.length} (should be 1)`);
+  regs.forEach(r => console.log(`  Scope: ${r.scope}`));
+});
+
+// 2. Cache Storage
+caches.keys().then(names => {
+  console.log(`Caches: ${names.length}`);
+  names.forEach(n => console.log(`  - ${n}`));
+});
+
+// 3. IndexedDB
+indexedDB.databases?.().then(dbs => {
+  console.log(`IndexedDB: ${dbs.length} databases`);
+  dbs.forEach(d => console.log(`  - ${d.name}`));
+});
+
+// 4. Manifest
+fetch('/manifest.json').then(r => r.json()).then(m => {
+  console.log(`Manifest: ${m.name}`);
+  console.log(`  Display: ${m.display}`);
+  console.log(`  Installable: ${m.icons?.length > 0 ? 'Yes' : 'No'}`);
+});
+
+// 5. Offline Status
+console.log(`Online: ${navigator.onLine}`);
+console.log(`=== End Diagnostic ===`);
+```
+
+**If output shows**:
+- SWs registered: 1 ✓ | >1 ✗ (use `sw-race-condition-fix`)
+- Caches: >0 ✓ | 0 ✗ (use `sw-debugging-checklist`)
+- IndexedDB: >0 ✓ (good for offline)
+- Manifest: Present ✓ (use `sw-debugging-checklist` to validate)
+
+---
+
+## Implementation Roadmap
+
+### Week 1: Assess
+- [ ] Run 5-minute diagnostic above
+- [ ] Read `README.md` (15 minutes)
+- [ ] Identify issues using Problem → Solution table
+- [ ] Choose which skills to apply
+
+### Week 2: Fix Issues
+- [ ] Apply `sw-race-condition-fix` if needed (20 min)
+- [ ] Apply `sw-memory-leak-detection` if needed (45 min)
+- [ ] Verify with provided test procedures
+- [ ] Check Lighthouse score (aim 90+)
+
+### Week 3: Add Offline
+- [ ] Follow `offline-queue-pattern` Steps 1-4 (120 min)
+- [ ] Integrate with app layout
+- [ ] Test manual offline scenarios
+- [ ] Verify sync queue works
+
+### Week 4: Production Ready
+- [ ] Run full diagnostic checklist
+- [ ] All tests passing
+- [ ] Lighthouse PWA: 90+
+- [ ] Deploy to staging
+- [ ] Test on real device
+
+---
+
+## Common Copy-Paste Patterns
+
+### Pattern 1: Guard Against Duplicate Registration
+```typescript
+// From: sw-race-condition-fix.md → Step 3
+let initialized = false;
+
+export const pwaStore = {
+  async initialize() {
+    if (initialized) return;  // Guard
+    initialized = true;
+    // ... your code
+  }
+};
+```
+
+### Pattern 2: Event Listener with Cleanup
+```typescript
+// From: sw-memory-leak-detection.md → Step 4
+const controller = new AbortController();
+
+$effect(() => {
+  navigator.serviceWorker.addEventListener('message', handler, {
+    signal: controller.signal  // Cleanup on effect return
+  });
+
+  return () => controller.abort();  // Cleanup function
+});
+```
+
+### Pattern 3: Queue Request for Offline
+```typescript
+// From: offline-queue-pattern.md → Step 3
+const uuid = await queueRequest('/api/data', {
+  method: 'POST',
+  body: { /* ... */ },
+  maxRetries: 3
+});
+```
+
+### Pattern 4: Proper Port Closure
+```typescript
+// From: sw-memory-leak-detection.md → Step 6
+const port = new MessageChannel();
+return new Promise(resolve => {
+  const timeout = setTimeout(() => {
+    port.port1.close();  // Close on timeout
+    resolve(null);
+  }, 2000);
+
+  port.port1.onmessage = () => {
+    port.port1.close();  // Close on success
+    resolve(data);
+  };
+});
+```
+
+---
+
+## Testing Shortcuts
+
+### Test 1: Check for Duplicate Registration (30 seconds)
+```javascript
+// DevTools Console
+navigator.serviceWorker.getRegistrations().then(regs => {
+  alert(`Registrations: ${regs.length} (should be 1)`);
+});
+```
+
+### Test 2: Check Memory Usage (5 minutes)
+```
+DevTools > Memory > Take snapshot
+(interact with app for 2 minutes)
+DevTools > Memory > Take snapshot
+Compare sizes - should be <10MB difference
+```
+
+### Test 3: Test Offline (2 minutes)
+```
+1. DevTools > Network > Offline checkbox
+2. Navigate to a page you visited
+3. Should load from cache
+4. Go online, should work normally
+```
+
+### Test 4: Lighthouse Score (1 minute)
+```
+DevTools > Lighthouse > PWA
+Score should be 90+ (requires HTTPS or localhost)
+```
+
+---
+
+## File Locations
+
+All skills are in one directory:
+```
+/Users/louisherman/ClaudeCodeProjects/.claude/skills/pwa/
+```
+
+No installation needed - add to Claude Code and they're ready to use.
+
+---
+
+## Key Files for Reference
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `README.md` | 354 | Start here - overview and workflows |
+| `sw-debugging-checklist.md` | 606 | Diagnose any SW issue |
+| `sw-race-condition-fix.md` | 593 | Fix duplicate registrations |
+| `sw-memory-leak-detection.md` | 705 | Find and fix memory leaks |
+| `offline-queue-pattern.md` | 1,043 | Build offline functionality |
+
+---
+
+## Most Common Fixes (Copy-Paste Ready)
+
+### Fix #1: Add Guard to PWA Store
+**Location**: Your pwa store/state file (e.g., `src/lib/stores/pwa.ts`)
+**Lines to add**: 3
+**Time**: 5 minutes
+
+See: `sw-race-condition-fix.md` → Step 3 → "Pattern A"
+
+### Fix #2: Add AbortController to Listeners
+**Location**: Your effect/hook with event listeners
+**Lines to change**: 2 per listener
+**Time**: 10 minutes
+
+See: `sw-memory-leak-detection.md` → Step 4 → "Fixed Pattern"
+
+### Fix #3: Close MessageChannel Ports
+**Location**: Any MessageChannel usage
+**Lines to add**: 1 per code path
+**Time**: 5 minutes
+
+See: `sw-memory-leak-detection.md` → Step 6 → "Fixed Pattern"
+
+### Fix #4: Add Network Timeout
+**Location**: Your fetch handler in Service Worker
+**Lines to add**: 5
+**Time**: 10 minutes
+
+See: `sw-debugging-checklist.md` → Step 5 → "Fix: Network Timeout"
+
+---
+
+## When to Ask for Help
+
+✓ **Use these skills if**:
+- Your PWA has a specific issue
+- You want to add offline functionality
+- You need to audit for problems
+- You want best practices
+
+✗ **Ask the PWA Specialist Agent if**:
+- Something doesn't work after following skills
+- You need framework-specific help
+- You hit a blocker
+- You want a custom solution
+
+---
+
+## Next Steps
+
+1. **Bookmark** this file for future reference
+2. **Read** `README.md` (15 minutes)
+3. **Find** your issue in the Problem → Solution table above
+4. **Follow** the indicated skill
+5. **Test** using provided procedures
+6. **Verify** with Lighthouse audit
+
+---
+
+**Last Updated**: January 2025
+**Skills Ready**: Yes ✓
+**Go Build Great PWAs!** 🚀

@@ -1,0 +1,151 @@
+=============================================================================
+DMB ALMANAC DATA VALIDATION SUMMARY
+Generated: 2026-01-23
+=============================================================================
+
+OVERALL HEALTH SCORE: 8.5/10 (Good structure, fixable quality issues)
+
+=============================================================================
+CRITICAL CHECKS (All PASSED)
+=============================================================================
+
+✓ Referential Integrity
+  - Orphan setlist entries: 0
+  - Orphan guest appearances: 0
+  - Invalid song references: 0
+  - Invalid venue references: 0
+  - Invalid show references: 0
+  - Duplicate shows: 0
+
+✓ JSON File Integrity (8/8 files valid)
+  - songs.json: 1,240 records (1.1 MB)
+  - shows.json: 3,454 records (2.1 MB)
+  - setlist-entries.json: 39,949 records (21.1 MB)
+  - guests.json: 1,442 records (421 KB)
+  - guest-appearances.json: 2,011 records (402 KB)
+  - venues.json: 2,855 records (1.1 MB)
+  - song-statistics.json: 767 records (711 KB)
+  - show-details.json: 3,454 records (1.2 MB)
+
+✓ Show Details Consistency
+  - Show details: 3,454 | Shows: 3,454 | Match: 100%
+
+=============================================================================
+WARNING ISSUES (Needs fixing - AUTO-FIX AVAILABLE)
+=============================================================================
+
+⚠ Song Play Count Mismatches: 257 songs (20.7%)
+  Impact: HIGH - Affects rankings, search, statistics
+  Auto-Fix: YES (safe)
+  Top issue: "I'll Back You Up" stored=136, actual=0
+  Recommendation: Execute auto-fix immediately
+
+⚠ Guest Appearance Count Mismatches: 736 guests (51%)
+  Impact: HIGH - Affects guest rankings, leaderboards
+  Auto-Fix: YES (safe)
+  Top issue: Béla Fleck stored=0, actual=65
+  Recommendation: Execute auto-fix immediately
+
+⚠ Band Members in Guest Table: 8 found
+  Impact: MEDIUM - Skews guest statistics
+  Auto-Fix: YES (safe - all have 0 appearances)
+  Who: Boyd Tinsley, Buddy Strong, Carter Beauford, Jeff Coffin,
+       LeRoi Moore, Rashawn Ross, Stefan Lessard, Tim Reynolds
+  Recommendation: Execute auto-fix immediately
+
+⚠ Setlist Position Gaps: 7 shows affected
+  Impact: LOW - Data consistency issue
+  Auto-Fix: YES (safe)
+  Affected: 1992-01-04, 1993-01-02, 1993-01-03, 1999-01-19, 
+            1999-01-27, 2010-11-02, 2020-03-24
+  Recommendation: Execute auto-fix immediately
+
+=============================================================================
+INFO ISSUES (Nice to have - No auto-fix needed)
+=============================================================================
+
+ℹ Shows Without Setlist: 927 shows (26.8%)
+  Period breakdown:
+    - Before 1993: 355 shows
+    - 1993-1994: 303 shows
+    - After 1995: 269 shows
+  Status: Expected for early years, but concerning for recent
+  Recommendation: Review and prioritize scraping recent shows
+
+ℹ Songs with 0 Plays: 86 songs (6.9%)
+  Categories:
+    - Teases/Medleys: ~40 songs
+    - Aborted/Reprise: ~15 songs
+    - Rare/Single shows: ~31 songs
+  Status: Mostly legitimate alternate versions
+  Recommendation: Review classification, consider separation
+
+ℹ Venues with No Shows: 1,423 venues (49.8%)
+  Status: Likely imported future venues or cruise ships
+  Recommendation: Review import source, consider archiving
+
+=============================================================================
+RECOMMENDED ACTIONS (Priority Order)
+=============================================================================
+
+PHASE 1 - CRITICAL FIXES (Execute immediately)
+
+1. Update song play counts
+   Cost: < 1 second
+   Fixes: 257 songs
+   Impact: Rankings and search accuracy
+
+2. Update guest appearance counts
+   Cost: < 1 second
+   Fixes: 736 guests
+   Impact: Guest pages accuracy
+
+3. Remove band members from guests table
+   Cost: < 1 second
+   Fixes: 8 records
+   Impact: Data clarity
+
+4. Fix setlist position gaps
+   Cost: < 1 second
+   Fixes: 7 shows
+   Impact: Data consistency
+
+PHASE 2 - DATA REVIEW (Next session)
+
+1. Review shows without setlist (prioritize recent)
+2. Categorize songs with 0 plays
+3. Audit venue import source
+
+PHASE 3 - VERIFICATION
+
+1. Re-export JSON files
+2. Re-run validation
+3. Compare before/after stats
+
+=============================================================================
+AUTO-FIX SCRIPT LOCATION
+=============================================================================
+
+Full SQL script with all 4 fixes:
+/tmp/validation_report.md
+
+All fixes are:
+- Non-destructive (can be run multiple times safely)
+- Idempotent (running twice = same result)
+- Fast (< 1 second total)
+- Low-risk (only affects computed statistics)
+
+=============================================================================
+DATABASE LOCATION
+=============================================================================
+
+SQLite Database:
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/data/dmb-almanac.db
+
+JSON Exports:
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/static/data/
+
+Detailed Report:
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/VALIDATION_REPORT_2026_01_23.md
+
+=============================================================================

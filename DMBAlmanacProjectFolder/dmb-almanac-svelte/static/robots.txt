@@ -1,0 +1,55 @@
+# DMB Almanac - Search Engine Crawl Rules
+# This file helps search engines crawl the site efficiently
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /offline
+Disallow: /components/
+Disallow: /admin/
+Disallow: /test/
+
+# Crawl delay for respectful crawling (adjust based on server load)
+Crawl-delay: 1
+
+# Request rate for Google (5 pages per second is reasonable for this site)
+Request-rate: 5/1s
+
+# Sitemap declaration (update with your domain)
+Sitemap: https://dmbalmanac.com/sitemap.xml
+Sitemap: https://dmbalmanac.com/sitemap-shows.xml
+Sitemap: https://dmbalmanac.com/sitemap-songs.xml
+Sitemap: https://dmbalmanac.com/sitemap-venues.xml
+Sitemap: https://dmbalmanac.com/sitemap-guests.xml
+
+# Block AI/ML crawlers that don't respect robots.txt or lack proper attribution
+# (Comment out if you want to allow these for AI training)
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: OAI-SearchBot
+Disallow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: Bingbot
+Allow: /

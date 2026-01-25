@@ -1,0 +1,28 @@
+[package]
+name = "dmb-visualize"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Visualization logic offloaded to WASM for DMB Almanac"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen.workspace = true
+js-sys.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde-wasm-bindgen.workspace = true
+ahash.workspace = true
+
+# For random number generation (replacing Math.random)
+getrandom = { version = "0.2", features = ["js"] }
+
+[dev-dependencies]
+wasm-bindgen-test.workspace = true
+
+[package.metadata.wasm-pack.profile.release]
+# Enable wasm-opt optimizations matching other modules
+wasm-opt = ["-Oz", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]

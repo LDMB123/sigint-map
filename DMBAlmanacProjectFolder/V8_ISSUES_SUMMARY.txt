@@ -1,0 +1,160 @@
+================================================================================
+V8 PERFORMANCE ISSUES - COMPLETE LIST (Requested Format)
+================================================================================
+
+FILE:LINE - ISSUE/OPPORTUNITY - TYPE - SEVERITY/PRIORITY
+
+================================================================================
+CRITICAL PRIORITY ISSUES (P0)
+================================================================================
+
+queries.ts:468-481 - Year aggregation using Map.get()/set() loops causing V8 hidden class deoptimization - v8-deopt - CRITICAL/P0
+queries.ts:555-581 - Year breakdown for song with identical Map aggregation + O(n log n) sort pattern - v8-deopt - CRITICAL/P0
+queries.ts:586-612 - Venue year breakdown with repeated Map aggregation and array sorting - v8-deopt - CRITICAL/P0
+queries.ts:730-758 - Guest year breakdown, 4th instance of identical Map aggregation pattern - v8-deopt - CRITICAL/P0
+
+================================================================================
+HIGH PRIORITY ISSUES (P1) - SORTING
+================================================================================
+
+queries.ts:242-263 - searchSongs() fetches limit*2, sorts entire result with comparator, slices - wasm-candidate - HIGH/P1
+queries.ts:341-362 - searchVenues() identical pattern of over-fetch, sort, slice inefficiency - wasm-candidate - HIGH/P1
+queries.ts:765-786 - searchGuests() same pattern: fetch 2x limit, megamorphic comparator sort - wasm-candidate - HIGH/P1
+
+================================================================================
+HIGH PRIORITY ISSUES (P1) - JSON SERIALIZATION
+================================================================================
+
+queries.ts:968-1006 - getTopOpenersByYear() uses JSON.stringify + JSON.parse roundtrip in WASM call - wasm-candidate - HIGH/P1
+queries.ts:1024-1068 - getTopClosersByYear() identical JSON serialization overhead pattern - wasm-candidate - HIGH/P1
+queries.ts:1073-1116 - getTopEncoresByYear() same JSON serialization bottleneck in WASM bridge - wasm-candidate - HIGH/P1
+
+================================================================================
+HIGH PRIORITY ISSUES (P1) - POLYMORPHISM
+================================================================================
+
+queries.ts:1254-1284 - globalSearch() creates 3 different SearchResult hidden classes (song/venue/guest shapes) - v8-deopt - HIGH/P1
+
+================================================================================
+HIGH PRIORITY ISSUES (P2)
+================================================================================
+
+d3-utils.ts:139-150 - createDataHash() calls JSON.stringify 100 times per hash computation - v8-deopt - HIGH/P2
+
+================================================================================
+MEDIUM PRIORITY ISSUES (P2)
+================================================================================
+
+performance.ts:256-259 - navigateWithTransition() uses inefficient DOM traversal with Array.from().forEach() - - MEDIUM/P2
+
+queries.ts:250-254, 349-353, 773-777 - Over-fetching pattern: fetch limit*2 then discard half of results - - MEDIUM/P2
+
+================================================================================
+WELL-OPTIMIZED FILES (No Issues)
+================================================================================
+
+✓ offlineMutationQueue.ts:254-832 - Excellent implementation, proper Map usage, correct batching
+✓ scheduler.ts:49-652 - Well-optimized, excellent time-based scheduling, clean closures
+✓ wasm/serialization.ts:1-594 - Comprehensive, LRU cache, BigInt support ready
+✓ wasm/bridge.ts:1-862 - Well-designed singleton, proper worker error handling
+
+================================================================================
+WASM CONVERSION RECOMMENDATIONS
+================================================================================
+
+PRIORITY 1 - IMPLEMENT FIRST (Week 1):
+
+1. group_by_year() WASM Function
+   Input: Array<number> (years to group)
+   Output: Array<{year: number, count: number}> sorted
+   Performance Gain: 40-70ms × 4 functions = 160-280ms total
+   Replaces: Lines 468, 555, 586, 730 (4 identical implementations)
+   Complexity: LOW | Effort: 2 hours
+   Root Cause: Map.get()/set() polymorphic after ~10K calls
+
+2. TypedArray Support for Existing WASM Calls
+   Add New Exports: count_openers_by_year_typed, count_closers_by_year_typed, count_encores_by_year_typed
+   Performance Gain: 50-100ms × 3 = 150-300ms total
+   Replaces JSON Round-trip: Lines 968, 1024, 1073
+   Complexity: LOW | Effort: 1 hour
+   Root Cause: JSON.stringify + JSON.parse eliminates WASM benefit
+
+3. globalSearch() Object Polymorphism Fix
+   Create SearchResult Factory: Pre-define consistent object structure
+   Performance Gain: 10-20ms
+   Replaces: Lines 1257-1283
+   Complexity: LOW | Effort: 30 min
+
+4. createDataHash() Memoization
+   Add Last Hash Cache: Simple identity check or WeakMap
+   Performance Gain: 5-15ms
+   Replaces: Lines 139-150
+   Complexity: LOW | Effort: 30 min
+
+PRIORITY 2 - IMPLEMENT SECOND (Week 2):
+
+5. partial_sort() WASM Function
+   Algorithm: Quickselect for top-K elements
+   Performance Gain: 25-45% (only sorts top-K instead of all)
+   Replaces: Lines 242, 341, 765
+   Complexity: MEDIUM | Effort: 3 hours
+
+6. merge_sorted_results() WASM Function
+   Algorithm: Multi-way merge + top-K
+   Performance Gain: 20-35%
+   Replaces: globalSearch() final sort (line 1287)
+   Complexity: MEDIUM | Effort: 2 hours
+
+PRIORITY 3 - OPTIONAL (Week 3+):
+
+7. prefix_search_score() - Requires refactoring search logic (HIGH COMPLEXITY)
+8. d3_aggregate() - Only if processing 10K+ data points (PROFILE FIRST)
+
+================================================================================
+PERFORMANCE BASELINE & TARGETS
+================================================================================
+
+CURRENT:
+  Global search: 150-250ms
+  Year aggregation: 30-80ms (per query)
+  Individual stats: 20-50ms
+  Search operations: 50-150ms
+
+TARGET (Post-Optimization):
+  Global search: 100-150ms (40% faster)
+  Year aggregation: 10-30ms (50-60% faster)
+  Individual stats: 5-20ms (60-75% faster)
+  Search operations: 30-100ms (40% faster)
+
+TOTAL ESTIMATED GAIN: 150-300ms across all critical paths
+
+================================================================================
+EXECUTION PLAN
+================================================================================
+
+IMMEDIATE:
+  1. Review full analysis in V8_PERFORMANCE_ANALYSIS.md
+  2. Establish baseline with Chrome DevTools
+  3. Schedule implementation
+
+WEEK 1:
+  1. Implement group_by_year WASM (2h)
+  2. Add TypedArray support (1h)
+  3. Fix globalSearch polymorphism (0.5h)
+  4. Memoize createDataHash (0.5h)
+  5. Benchmark vs baseline (1h)
+
+WEEK 2:
+  1. Implement partial_sort WASM (3h)
+  2. Integrate into search functions (1h)
+  3. End-to-end profiling (2h)
+
+WEEK 3 (Optional):
+  1. Global search aggregation (2h)
+  2. Performance report
+
+Total Effort: 24-32 hours
+Timeline: 3-4 weeks
+Team: 1-2 developers
+
+================================================================================

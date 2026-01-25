@@ -1,0 +1,177 @@
+# Universal Agent Framework - Codebase Indexer
+# Category: Learners | Tier: Sonnet | Parallelization: 30
+
+agent:
+  id: learner_codebase_indexer
+  name: Codebase Indexer
+  version: 1.0.0
+
+  functional_category: learner
+  sub_category: codebase_indexer
+  model_tier: sonnet
+  model_id: claude-sonnet-4-5-20250929
+
+  description: |
+    Creates comprehensive indexes of codebases for fast search and retrieval.
+    Builds symbol tables, call graphs, and dependency maps.
+    Supports incremental updates for efficient re-indexing.
+
+  capabilities:
+    - index_symbols
+    - build_call_graph
+    - map_dependencies
+    - index_documentation
+    - track_file_metadata
+    - index_imports_exports
+    - build_type_hierarchy
+    - index_test_coverage
+    - track_git_history
+    - build_search_index
+
+  index_types:
+    symbol_index:
+      - functions
+      - classes
+      - variables
+      - constants
+      - types
+      - interfaces
+    relationship_index:
+      - calls
+      - inherits
+      - implements
+      - imports
+      - uses
+    metadata_index:
+      - file_sizes
+      - modification_dates
+      - authors
+      - complexity_scores
+      - coverage_data
+
+  input_schema:
+    type: object
+    required:
+      - source
+    properties:
+      source:
+        type: string
+        description: Directory to index
+      incremental:
+        type: boolean
+        default: false
+        description: Only index changed files
+      previous_index:
+        type: string
+        description: Path to previous index for incremental
+      include_patterns:
+        type: array
+        items:
+          type: string
+        default: ["**/*"]
+      exclude_patterns:
+        type: array
+        items:
+          type: string
+        default: ["node_modules/**", ".git/**", "dist/**"]
+      index_types:
+        type: array
+        items:
+          type: string
+        default: ["symbols", "relationships", "metadata"]
+
+  output_schema:
+    type: object
+    properties:
+      index:
+        type: object
+        properties:
+          symbols:
+            type: object
+            additionalProperties:
+              type: array
+          relationships:
+            type: object
+          metadata:
+            type: object
+      statistics:
+        type: object
+        properties:
+          total_files:
+            type: integer
+          total_symbols:
+            type: integer
+          total_relationships:
+            type: integer
+          index_size_bytes:
+            type: integer
+          indexing_time_ms:
+            type: integer
+      changes:
+        type: object
+        description: Changes since last index (if incremental)
+        properties:
+          added:
+            type: array
+          modified:
+            type: array
+          removed:
+            type: array
+
+  performance:
+    avg_latency_ms: 2500  # Per file
+    max_tokens: 4000
+    timeout_seconds: 600  # For full index
+
+  parallelization:
+    max_concurrent: 30
+    can_partition_by_directory: true
+
+  collaboration:
+    receives_from:
+      - full-stack-developer: Initial codebase indexing requests
+      - migration-orchestrator: Re-index after large migrations
+      - feature-delivery-orchestrator: Incremental index updates for new features
+    delegates_to:
+      - semantic-analyzer: Extract semantic relationships between symbols
+      - dependency-analyzer: Build dependency graph
+    provides_context_to:
+      - documentation-generator: Symbol tables for API doc generation
+      - convention-extractor: File samples for convention extraction
+      - code-pattern-matcher: Symbol index for pattern matching
+      - impact-analyzer: Call graph for impact analysis
+      - refactoring-guru: Code structure for refactoring planning
+    returns_to:
+      - orchestrating-agent: Comprehensive codebase index with statistics
+    swarm_pattern: fan-out
+    coordinates_with:
+      - context-builder: Share indexed context for agent coordination
+
+  tags:
+    - learning
+    - indexing
+    - search
+    - symbols
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: sonnet
+  per_execution_estimate: 0.03
+  typical_range: [0.01, 0.08]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

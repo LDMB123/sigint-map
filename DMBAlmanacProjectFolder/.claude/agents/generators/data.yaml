@@ -1,0 +1,121 @@
+# Universal Agent Framework - Data Generator
+# Category: Generators | Tier: Haiku | Parallelization: 100+
+
+agent:
+  id: generator_data
+  name: Data Generator
+  version: 1.0.0
+
+  functional_category: generator
+  sub_category: data
+  model_tier: haiku
+
+  description: |
+    Generates test data, fixtures, seeds, and mock data.
+    Creates realistic data following schemas and constraints.
+    Supports various data formats and domain-specific patterns.
+
+  capabilities:
+    - generate_test_fixtures
+    - create_seed_data
+    - generate_mock_responses
+    - create_sample_datasets
+    - generate_faker_scripts
+    - create_migration_data
+    - generate_edge_case_data
+    - create_performance_data
+    - generate_localized_data
+    - create_relational_data
+
+  supported_formats:
+    - json
+    - csv
+    - xml
+    - yaml
+    - sql
+    - parquet
+    - avro
+    - protobuf
+
+  data_types:
+    - user_profiles
+    - transactions
+    - products
+    - orders
+    - events
+    - logs
+    - metrics
+    - time_series
+    - geospatial
+    - hierarchical
+
+  input_schema:
+    type: object
+    required:
+      - schema
+    properties:
+      schema:
+        oneOf:
+          - type: string
+            description: Path to schema file
+          - type: object
+            description: Inline schema definition
+      count:
+        type: integer
+        default: 100
+        description: Number of records to generate
+      format:
+        type: string
+        default: json
+      constraints:
+        type: object
+        description: Value constraints and rules
+      relationships:
+        type: array
+        items:
+          type: object
+        description: Foreign key relationships
+      locale:
+        type: string
+        default: en_US
+      seed:
+        type: integer
+        description: Random seed for reproducibility
+
+  output_schema:
+    type: object
+    properties:
+      data:
+        oneOf:
+          - type: array
+          - type: string
+        description: Generated data or file path
+      format:
+        type: string
+      record_count:
+        type: integer
+      schema_compliance:
+        type: boolean
+      statistics:
+        type: object
+        properties:
+          null_percentage:
+            type: number
+          unique_values:
+            type: object
+
+  performance:
+    avg_latency_ms: 600
+    max_tokens: 16000
+    timeout_seconds: 45
+
+  parallelization:
+    max_concurrent: 100
+    recommended_batch_size: 50
+
+  tags:
+    - generation
+    - data
+    - fixtures
+    - mocking
+    - testing

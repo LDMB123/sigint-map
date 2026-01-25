@@ -1,0 +1,407 @@
+# Universal Agent Framework - Runtime Telemetry Configuration
+# Tracks agent usage, performance, costs, and collaboration patterns
+
+telemetry:
+  enabled: true
+  version: "1.0.0"
+
+  # Data collection settings
+  collection:
+    # What to track
+    metrics:
+      - agent_invocations
+      - model_tier_usage
+      - performance_metrics
+      - cost_tracking
+      - error_rates
+      - collaboration_patterns
+      - cache_hit_rates
+      - token_usage
+      - latency_distribution
+      - success_rates
+
+    # Sampling for high-volume events
+    sampling:
+      enabled: true
+      default_rate: 1.0  # 100% by default
+
+      by_event_type:
+        agent_invocation: 1.0    # Track all
+        performance_metric: 0.1  # 10% sample
+        debug_log: 0.01          # 1% sample
+
+    # Privacy and security
+    privacy:
+      anonymize_user_data: false  # Local telemetry, no need
+      redact_sensitive_fields:
+        - api_keys
+        - passwords
+        - tokens
+        - secrets
+      retention_days: 90
+
+  # Storage backend
+  storage:
+    type: local_sqlite
+    path: /Users/louisherman/.claude/telemetry/metrics.db
+
+    # Backup and retention
+    backup:
+      enabled: true
+      interval_hours: 24
+      retention_backups: 7
+      path: /Users/louisherman/.claude/telemetry/backups/
+
+    # Rotation policy
+    rotation:
+      enabled: true
+      max_size_mb: 500
+      archive_after_days: 30
+
+  # Real-time monitoring
+  monitoring:
+    # Dashboard configuration
+    dashboard:
+      enabled: true
+      port: 8765
+      host: localhost
+      auto_open_browser: false
+
+    # Alerts
+    alerts:
+      enabled: true
+      channels:
+        - type: log
+          level: warning
+        - type: file
+          path: /Users/louisherman/.claude/telemetry/alerts.log
+
+      rules:
+        - name: high_error_rate
+          condition: error_rate > 0.05  # 5%
+          severity: critical
+          cooldown_minutes: 15
+
+        - name: slow_performance
+          condition: p95_latency_ms > 10000
+          severity: warning
+          cooldown_minutes: 30
+
+        - name: cost_spike
+          condition: hourly_cost > 5.00
+          severity: warning
+          cooldown_minutes: 60
+
+        - name: low_cache_hit_rate
+          condition: cache_hit_rate < 0.80  # 80%
+          severity: info
+          cooldown_minutes: 120
+
+# Metrics definitions
+metrics:
+  # Agent invocation tracking
+  agent_invocations:
+    type: counter
+    labels:
+      - agent_id
+      - agent_name
+      - model_tier
+      - invocation_source  # user | orchestrator | swarm
+      - status  # success | error | timeout
+
+    attributes:
+      - timestamp
+      - duration_ms
+      - input_tokens
+      - output_tokens
+      - cost_usd
+      - error_type
+      - escalated_to
+
+  # Model tier usage distribution
+  model_tier_usage:
+    type: gauge
+    labels:
+      - model_tier  # haiku | sonnet | opus
+
+    metrics:
+      - total_invocations
+      - total_tokens
+      - total_cost_usd
+      - avg_latency_ms
+      - error_rate
+      - percentage_of_total
+
+  # Performance metrics
+  performance_metrics:
+    type: histogram
+    labels:
+      - agent_id
+      - model_tier
+      - operation_type
+
+    buckets_ms: [100, 500, 1000, 2500, 5000, 10000, 30000, 60000]
+
+    metrics:
+      - latency_p50
+      - latency_p95
+      - latency_p99
+      - throughput_per_second
+      - concurrent_executions
+
+  # Cost tracking
+  cost_tracking:
+    type: counter
+    labels:
+      - model_tier
+      - agent_category
+      - workflow_type
+
+    granularity:
+      - per_invocation
+      - per_minute
+      - per_hour
+      - per_day
+      - per_week
+
+    metrics:
+      - input_token_cost
+      - output_token_cost
+      - total_cost
+      - cost_vs_budget
+
+  # Error tracking
+  error_rates:
+    type: counter
+    labels:
+      - agent_id
+      - error_type
+      - model_tier
+      - retry_count
+
+    error_types:
+      - rate_limit_exceeded
+      - timeout
+      - invalid_request
+      - authentication_failed
+      - internal_error
+      - validation_failed
+      - escalation_triggered
+
+  # Collaboration patterns
+  collaboration_patterns:
+    type: counter
+    labels:
+      - from_agent
+      - to_agent
+      - collaboration_type  # delegates_to | escalates_to | receives_from
+      - swarm_pattern
+
+    metrics:
+      - delegation_count
+      - escalation_count
+      - return_count
+      - avg_delegation_depth
+      - collaboration_success_rate
+
+  # Cache performance
+  cache_performance:
+    type: gauge
+    labels:
+      - cache_layer  # L1_routing | L2_context | L3_semantic
+      - cache_type   # result | context | pattern
+
+    metrics:
+      - hit_rate
+      - miss_rate
+      - eviction_rate
+      - avg_lookup_ms
+      - storage_size_mb
+
+  # Token usage
+  token_usage:
+    type: counter
+    labels:
+      - model_tier
+      - token_type  # input | output
+      - agent_category
+
+    metrics:
+      - total_tokens
+      - tokens_per_invocation
+      - context_compression_ratio
+      - token_cost_efficiency  # value / token
+
+# Aggregation rules
+aggregations:
+  # Roll up raw metrics to aggregated views
+  rollup:
+    enabled: true
+
+    intervals:
+      - name: minute
+        seconds: 60
+
+      - name: hour
+        seconds: 3600
+
+      - name: day
+        seconds: 86400
+
+      - name: week
+        seconds: 604800
+
+  # Pre-computed views for dashboards
+  materialized_views:
+    - name: agent_usage_summary
+      query: |
+        SELECT
+          agent_id,
+          agent_name,
+          model_tier,
+          COUNT(*) as invocation_count,
+          AVG(duration_ms) as avg_duration_ms,
+          SUM(input_tokens) as total_input_tokens,
+          SUM(output_tokens) as total_output_tokens,
+          SUM(cost_usd) as total_cost_usd,
+          SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) * 1.0 / COUNT(*) as error_rate
+        FROM agent_invocations
+        GROUP BY agent_id, agent_name, model_tier
+
+      refresh_interval_minutes: 5
+
+    - name: tier_distribution
+      query: |
+        SELECT
+          model_tier,
+          COUNT(*) as invocations,
+          SUM(cost_usd) as total_cost,
+          AVG(duration_ms) as avg_latency,
+          COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () as percentage
+        FROM agent_invocations
+        GROUP BY model_tier
+
+      refresh_interval_minutes: 15
+
+    - name: hourly_cost_trend
+      query: |
+        SELECT
+          datetime(timestamp, 'start of hour') as hour,
+          model_tier,
+          SUM(cost_usd) as cost,
+          COUNT(*) as invocations
+        FROM agent_invocations
+        WHERE timestamp >= datetime('now', '-7 days')
+        GROUP BY hour, model_tier
+        ORDER BY hour DESC
+
+      refresh_interval_minutes: 60
+
+    - name: collaboration_graph
+      query: |
+        SELECT
+          from_agent,
+          to_agent,
+          collaboration_type,
+          COUNT(*) as edge_weight,
+          AVG(success_rate) as avg_success_rate
+        FROM collaboration_patterns
+        GROUP BY from_agent, to_agent, collaboration_type
+
+      refresh_interval_minutes: 30
+
+# Reporting
+reports:
+  enabled: true
+
+  # Scheduled reports
+  schedules:
+    - name: daily_summary
+      interval: daily
+      time: "09:00"
+      format: markdown
+      output_path: /Users/louisherman/.claude/telemetry/reports/daily/
+
+      sections:
+        - agent_usage_top_10
+        - model_tier_distribution
+        - cost_breakdown
+        - error_summary
+        - performance_overview
+
+    - name: weekly_analytics
+      interval: weekly
+      day: monday
+      time: "08:00"
+      format: markdown
+      output_path: /Users/louisherman/.claude/telemetry/reports/weekly/
+
+      sections:
+        - week_over_week_comparison
+        - agent_efficiency_rankings
+        - cost_optimization_opportunities
+        - collaboration_network_analysis
+        - sonnet_first_validation
+
+    - name: monthly_executive
+      interval: monthly
+      day: 1
+      time: "08:00"
+      format: markdown
+      output_path: /Users/louisherman/.claude/telemetry/reports/monthly/
+
+      sections:
+        - executive_summary
+        - cost_vs_budget
+        - roi_analysis
+        - capacity_planning
+        - strategic_recommendations
+
+# Export formats
+export:
+  formats:
+    - name: prometheus
+      enabled: true
+      endpoint: /metrics
+      port: 9090
+
+    - name: json
+      enabled: true
+      path: /Users/louisherman/.claude/telemetry/exports/
+      interval_minutes: 60
+
+    - name: csv
+      enabled: true
+      path: /Users/louisherman/.claude/telemetry/exports/
+      interval_hours: 24
+
+# Validation
+validation:
+  # Sonnet-first strategy validation
+  sonnet_first_compliance:
+    enabled: true
+    target_sonnet_percentage: 0.75  # 75%
+    target_haiku_percentage: 0.20   # 20%
+    target_opus_percentage: 0.05    # 5%
+
+    alert_if_deviation_exceeds: 0.10  # 10% deviation
+
+  # Performance SLOs
+  slos:
+    - metric: p95_latency_ms
+      target: 5000
+      threshold_multiplier: 2.0  # Alert if 2x target
+
+    - metric: error_rate
+      target: 0.02  # 2%
+      threshold_multiplier: 2.5  # Alert if 5%
+
+    - metric: cache_hit_rate
+      target: 0.85  # 85%
+      threshold_multiplier: 0.8  # Alert if below 68%
+
+  # Cost controls
+  cost_controls:
+    daily_budget_usd: 50.00
+    hourly_budget_usd: 5.00
+    alert_at_percentage: 0.80  # 80% of budget

@@ -1,0 +1,133 @@
+# Universal Agent Framework - Summary Reporter
+# Category: Reporters | Tier: Haiku | Parallelization: 50+
+
+agent:
+  id: reporter_summary
+  name: Summary Reporter
+  version: 1.0.0
+
+  functional_category: reporter
+  sub_category: summary
+  model_tier: haiku
+
+  description: |
+    Generates concise summaries of agent results and workflows.
+    Creates executive summaries, changelogs, and status reports.
+    Adapts output format and detail level to audience.
+
+  capabilities:
+    - summarize_results
+    - generate_changelog
+    - create_status_report
+    - summarize_analysis
+    - create_executive_summary
+    - generate_diff_summary
+    - summarize_errors
+    - create_progress_report
+    - generate_release_notes
+    - summarize_metrics
+
+  report_types:
+    executive_summary:
+      audience: leadership
+      detail_level: high_level
+      format: prose
+
+    technical_summary:
+      audience: developers
+      detail_level: detailed
+      format: structured
+
+    changelog:
+      audience: users
+      detail_level: medium
+      format: list
+
+    status_report:
+      audience: team
+      detail_level: medium
+      format: structured
+
+  input_schema:
+    type: object
+    required:
+      - data
+    properties:
+      data:
+        type: object
+        description: Data to summarize
+      report_type:
+        type: string
+        enum:
+          - executive_summary
+          - technical_summary
+          - changelog
+          - status_report
+          - release_notes
+          - error_report
+        default: technical_summary
+      audience:
+        type: string
+        enum: [leadership, developers, users, team]
+      max_length:
+        type: integer
+        description: Maximum summary length in words
+      format:
+        type: string
+        enum: [markdown, html, plain, json]
+        default: markdown
+      include_metrics:
+        type: boolean
+        default: true
+      include_recommendations:
+        type: boolean
+        default: true
+
+  output_schema:
+    type: object
+    properties:
+      summary:
+        type: string
+      sections:
+        type: array
+        items:
+          type: object
+          properties:
+            title:
+              type: string
+            content:
+              type: string
+            priority:
+              type: string
+      highlights:
+        type: array
+        items:
+          type: string
+      metrics:
+        type: object
+      recommendations:
+        type: array
+        items:
+          type: string
+      metadata:
+        type: object
+        properties:
+          word_count:
+            type: integer
+          generated_at:
+            type: string
+
+  performance:
+    avg_latency_ms: 800
+    max_tokens: 8000
+    timeout_seconds: 30
+
+  parallelization:
+    max_concurrent: 50
+    recommended_batch_size: 20
+
+  tags:
+    - reporting
+    - summary
+    - documentation
+    - communication

@@ -1,0 +1,1 @@
+/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/target/wasm32-unknown-unknown/release/dmb_date_utils.wasm: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-date-utils/src/lib.rs

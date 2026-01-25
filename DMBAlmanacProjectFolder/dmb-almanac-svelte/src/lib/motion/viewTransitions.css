@@ -1,0 +1,442 @@
+/**
+ * View Transitions Animation Styles
+ * Chrome 111+ (Enhanced Chrome 143+)
+ *
+ * Comprehensive cross-page view transitions optimized for Apple Silicon
+ * Runs entirely on GPU via Metal backend (ANGLE)
+ * Supports 60fps+ on 120Hz ProMotion displays
+ *
+ * All animations use GPU-composited properties only:
+ * - transform (translate3d, scale, rotate)
+ * - opacity
+ *
+ * NO paint/layout properties to maximize performance
+ * Uses will-change strategically to create GPU layers
+ */
+
+/* ==================== VIEW TRANSITION CONFIGURATION ==================== */
+
+/**
+ * Root transition - enables cross-document transitions
+ * Chrome 143+ provides enhanced lifecycle management
+ */
+@supports (view-transition-name: auto) {
+	::view-transition {
+		/* Allow smooth transitions between document root elements */
+	}
+}
+
+/* ==================== TRANSITION TYPES ==================== */
+
+/**
+ * Fade Transition (Default)
+ * Simple cross-fade between old and new content
+ * Duration: 200ms
+ * Easing: Apple's cubic-bezier for natural motion
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: 200ms;
+	animation-timing-function: var(--ease-apple);
+	will-change: opacity, transform;
+}
+
+/**
+ * Card Transition
+ * Cards scale and fade smoothly
+ * Used for: list items, data cards, blog posts
+ * Duration: 300ms for smooth scale effect
+ */
+::view-transition-old(card) {
+	animation: vt-card-exit 300ms var(--ease-in) forwards;
+	will-change: transform, opacity;
+}
+
+::view-transition-new(card) {
+	animation: vt-card-enter 300ms var(--ease-out) forwards;
+	will-change: transform, opacity;
+}
+
+/**
+ * Hero/Featured Content Transition
+ * Large scale entrance for hero sections
+ * Used for: main content areas, hero images, full-width sections
+ * Duration: 250ms for dramatic entrance
+ */
+::view-transition-old(hero) {
+	animation: vt-hero-exit 250ms var(--ease-in) forwards;
+	will-change: transform, opacity;
+}
+
+::view-transition-new(hero) {
+	animation: vt-hero-enter 250ms var(--ease-out) forwards;
+	will-change: transform, opacity;
+}
+
+/**
+ * Image Transition
+ * Smooth scaling for images
+ * Used for: photos, gallery images, album artwork
+ * Duration: 200ms for quick transitions
+ */
+::view-transition-old(image) {
+	animation: vt-scale-out 200ms var(--ease-in-out) forwards;
+	will-change: transform, opacity;
+}
+
+::view-transition-new(image) {
+	animation: vt-scale-in 200ms var(--ease-in-out) forwards;
+	will-change: transform, opacity;
+}
+
+/**
+ * Visualization Transition
+ * For D3 charts and complex visualizations
+ * Smooth scaling combined with fade
+ * Duration: 300ms for complex chart rendering
+ */
+::view-transition-old(visualization) {
+	animation:
+		vt-fade-out 200ms var(--ease-in) forwards,
+		vt-scale-out 200ms var(--ease-in-out) forwards;
+	will-change: transform, opacity;
+}
+
+::view-transition-new(visualization) {
+	animation:
+		vt-fade-in 200ms var(--ease-out) forwards,
+		vt-scale-in 200ms var(--ease-out) forwards;
+	will-change: transform, opacity;
+}
+
+/**
+ * Header Transition
+ * Subtle movement for header elements
+ * Stays mostly in place with slight slide and fade
+ * Duration: 150ms for quick header animations
+ */
+::view-transition-old(header) {
+	animation:
+		vt-fade-out 150ms var(--ease-in) forwards,
+		vt-slide-up 150ms var(--ease-in-out) forwards;
+	will-change: transform, opacity;
+}
+
+::view-transition-new(header) {
+	animation:
+		vt-fade-in 150ms var(--ease-out) forwards,
+		vt-slide-down 150ms var(--ease-in-out) forwards;
+	will-change: transform, opacity;
+}
+
+/**
+ * Sidebar Transition
+ * Slides in/out from side
+ * Duration: 200ms for side navigation
+ */
+::view-transition-old(sidebar) {
+	animation: vt-slide-out-left 200ms var(--ease-in-out) forwards;
+	will-change: transform, opacity;
+}
+
+::view-transition-new(sidebar) {
+	animation: vt-slide-in-right 200ms var(--ease-in-out) forwards;
+	will-change: transform, opacity;
+}
+
+/* ==================== TRANSITION TYPE VARIANTS ==================== */
+
+/**
+ * Slide-left transition for forward navigation
+ * Applied via data-view-transition="slide-left"
+ * Used when drilling deeper into hierarchical content
+ * Duration: 250ms for fluid forward motion
+ */
+@supports (view-transition-name: auto) {
+	:root[data-view-transition='slide-left']::view-transition-old(root) {
+		animation: vt-slide-out-left 250ms var(--ease-apple) forwards;
+		will-change: transform, opacity;
+	}
+
+	:root[data-view-transition='slide-left']::view-transition-new(root) {
+		animation: vt-slide-in-right 250ms var(--ease-apple) forwards;
+		will-change: transform, opacity;
+	}
+}
+
+/**
+ * Slide-right transition for back navigation
+ * Applied via data-view-transition="slide-right"
+ * Used when navigating back up the hierarchy
+ * Duration: 250ms for smooth back motion
+ */
+@supports (view-transition-name: auto) {
+	:root[data-view-transition='slide-right']::view-transition-old(root) {
+		animation: vt-slide-out-right 250ms var(--ease-apple) forwards;
+		will-change: transform, opacity;
+	}
+
+	:root[data-view-transition='slide-right']::view-transition-new(root) {
+		animation: vt-slide-in-left 250ms var(--ease-apple) forwards;
+		will-change: transform, opacity;
+	}
+}
+
+/**
+ * Zoom-in transition for drilling into details
+ * Applied via data-view-transition="zoom-in"
+ * Used for detail views, card clicks, etc.
+ * Duration: 300ms with exponential easing for dramatic effect
+ */
+@supports (view-transition-name: auto) {
+	:root[data-view-transition='zoom-in']::view-transition-old(root) {
+		animation: vt-zoom-out 300ms var(--ease-out-expo) forwards;
+		will-change: transform, opacity;
+	}
+
+	:root[data-view-transition='zoom-in']::view-transition-new(root) {
+		animation: vt-zoom-in 300ms var(--ease-out-expo) forwards;
+		will-change: transform, opacity;
+	}
+}
+
+/* ==================== KEYFRAME ANIMATIONS ==================== */
+/* All use GPU-composited properties: transform (3D), opacity */
+/* Duration: use CSS custom properties for flexibility */
+
+@keyframes vt-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes vt-fade-out {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes vt-scale-in {
+	from {
+		transform: scale(0.95);
+	}
+	to {
+		transform: scale(1);
+	}
+}
+
+@keyframes vt-scale-out {
+	from {
+		transform: scale(1);
+	}
+	to {
+		transform: scale(0.95);
+	}
+}
+
+@keyframes vt-zoom-in {
+	from {
+		opacity: 0;
+		transform: scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes vt-zoom-out {
+	from {
+		opacity: 1;
+		transform: scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: scale(1.1);
+	}
+}
+
+@keyframes vt-slide-in-right {
+	from {
+		opacity: 0;
+		transform: translateX(30px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes vt-slide-out-left {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(-30px);
+	}
+}
+
+@keyframes vt-slide-in-left {
+	from {
+		opacity: 0;
+		transform: translateX(-30px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes vt-slide-out-right {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(30px);
+	}
+}
+
+@keyframes vt-slide-up {
+	from {
+		transform: translateY(0);
+	}
+	to {
+		transform: translateY(-10px);
+	}
+}
+
+@keyframes vt-slide-down {
+	from {
+		transform: translateY(-10px);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+
+@keyframes vt-card-enter {
+	from {
+		opacity: 0;
+		transform: scale(0.98) translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+@keyframes vt-card-exit {
+	from {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+	to {
+		opacity: 0;
+		transform: scale(0.98) translateY(-10px);
+	}
+}
+
+@keyframes vt-hero-enter {
+	from {
+		opacity: 0;
+		transform: scale(1.05);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes vt-hero-exit {
+	from {
+		opacity: 1;
+		transform: scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+}
+
+/* ==================== CHROMIUM 143+ FEATURES ==================== */
+
+/**
+ * Use document.activeViewTransition for lifecycle management
+ * No need to manually track ViewTransition objects
+ */
+
+/* Disable transitions for specific elements */
+.view-transition-disabled,
+.view-transition-disabled * {
+	view-transition-name: none;
+}
+
+/* Skip view transition for modal/popup overlays */
+[data-view-transition-skip] {
+	view-transition-name: none;
+}
+
+/* Force sync paint during transition (careful - can reduce performance) */
+.view-transition-sync-paint {
+	contain: none;
+}
+
+/* ==================== ACCESSIBILITY ==================== */
+
+/**
+ * Respect prefers-reduced-motion
+ * Disable all view transitions for users who prefer reduced motion
+ */
+@media (prefers-reduced-motion: reduce) {
+	::view-transition-old(*),
+	::view-transition-new(*) {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+	}
+}
+
+/**
+ * Reduced transparency mode (macOS accessibility)
+ * Dim glow effects
+ */
+@media (prefers-reduced-transparency: reduce) {
+	::view-transition-old(*),
+	::view-transition-new(*) {
+		box-shadow: none;
+		filter: none;
+	}
+}
+
+/* ==================== DEBUGGING ==================== */
+
+/**
+ * Uncomment for debugging:
+ * - Visualizes pseudo-elements
+ * - Shows animation timing
+ * - Highlights transition groups
+ */
+
+/*
+::view-transition-old(*),
+::view-transition-new(*) {
+	outline: 2px solid red;
+}
+
+::view-transition-old(*) {
+	background: rgba(255, 0, 0, 0.1);
+}
+
+::view-transition-new(*) {
+	background: rgba(0, 255, 0, 0.1);
+}
+*/

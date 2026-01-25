@@ -1,0 +1,19 @@
+{
+  "status": "EXCELLENT",
+  "passed": 7,
+  "warnings": 0,
+  "issues": 0,
+  "details": {
+    "passed": [
+      "No problematic agent name duplicates",
+      "Only 0 skill duplicates",
+      "175 agents with explicit tier",
+      "All skills use model: inherit",
+      "Context cost: 1082K tokens (good)",
+      "User-level agents: 8 (good)",
+      "No doc files as skills"
+    ],
+    "warnings": [],
+    "issues": []
+  }
+}

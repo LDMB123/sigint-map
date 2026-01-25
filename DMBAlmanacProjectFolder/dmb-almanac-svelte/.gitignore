@@ -1,0 +1,132 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+build/
+.svelte-kit/
+dist/
+.output/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Secrets and credentials
+*.pem
+*.key
+*.cert
+*.crt
+secrets/
+credentials/
+auth.json
+firebase-adminsdk-*.json
+service-account*.json
+google-credentials.json
+aws-credentials.json
+
+# Database files (sensitive data)
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+data/*.db
+data/*.sqlite
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.Spotlight-V100
+.Trashes
+
+# IDE / Editor
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+*.iml
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+
+# TypeScript
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
+# PWA generated files (keep source, ignore generated)
+sw.js.map
+workbox-*.js
+
+# User-generated content (if applicable)
+uploads/
+user-data/
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# Package manager locks (optional - uncomment if needed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# WASM build artifacts
+wasm/*/target/
+wasm/*/pkg/*.wasm
+wasm/*/pkg/*.js
+wasm/*/pkg/package.json
+wasm/*/pkg/.gitignore
+# Keep TypeScript definitions in version control
+!wasm/*/pkg/*.d.ts

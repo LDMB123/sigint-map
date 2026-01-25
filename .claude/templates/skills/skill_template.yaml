@@ -1,0 +1,137 @@
+# Universal Agent Framework - Skill Definition Template
+# Copy and customize this template to create new skills
+
+skill:
+  # Required: Unique identifier
+  id: skill_{name}
+
+  # Required: Human-readable name
+  name: {Skill Name}
+
+  # Required: Semantic version
+  version: 1.0.0
+
+  # Required: Category
+  # Options: quality, migration, analysis, deployment, custom
+  category: {category}
+
+  # Required: Detailed description
+  description: |
+    {Detailed description of what this skill does.
+    Include use cases and when to use it.}
+
+  # Required: Invocation configuration
+  invocation:
+    command: /{command}
+    aliases: [{alias1}, {alias2}]
+
+  # Required: Parameters
+  parameters:
+    - name: target
+      type: string
+      required: true
+      description: Target file or directory
+      examples:
+        - "src/**/*.ts"
+        - "."
+
+    - name: option_1
+      type: enum
+      values: [value1, value2, value3]
+      default: value1
+      description: Description of option
+
+    - name: option_2
+      type: boolean
+      default: false
+      description: Description of boolean option
+
+  # Required: Workflow definition
+  workflow:
+    # Optional: Swarm pattern to use
+    swarm_pattern: fan_out_validation  # or hierarchical_delegation, etc.
+
+    phases:
+      - name: Phase 1 Name
+        agent: agent_id
+        tier: haiku
+        parallel: false
+        actions:
+          - Action 1
+          - Action 2
+        output: phase_1_output
+
+      - name: Phase 2 Name
+        agent: agent_id
+        tier: sonnet
+        parallel: true
+        per_file: true
+        condition: some_condition
+        output: phase_2_output
+
+      - name: Phase 3 Name
+        agent: reporter_summary
+        tier: haiku
+        actions:
+          - Aggregate results
+          - Generate report
+        output: final_report
+
+  # Required: Output definitions
+  outputs:
+    - name: main_output
+      type: object
+      schema:
+        field1: type1
+        field2: type2
+
+    - name: optional_output
+      type: string
+      condition: some_condition
+
+  # Required: Cost model
+  cost_model:
+    minimal:
+      haiku_calls: 5
+      sonnet_calls: 1
+      estimated_cost: 0.005
+
+    standard:
+      haiku_calls: 20
+      sonnet_calls: 5
+      estimated_cost: 0.02
+
+    comprehensive:
+      haiku_calls: 50
+      sonnet_calls: 10
+      opus_calls: 1
+      estimated_cost: 0.06
+
+  # Required: Examples
+  examples:
+    - name: Basic usage
+      invocation: /{command} target
+      expected:
+        duration_seconds: 10
+        cost: 0.01
+
+    - name: Advanced usage
+      invocation: /{command} target --option_1 value2 --option_2
+      expected:
+        duration_seconds: 30
+        cost: 0.05
+
+  # Required: Tags
+  tags:
+    - tag1
+    - tag2
+    - tag3
+
+# Checklist for new skills:
+# [ ] Clear invocation command
+# [ ] Well-defined parameters with types and defaults
+# [ ] Logical workflow phases
+# [ ] Appropriate swarm pattern selected
+# [ ] Accurate cost model
+# [ ] Realistic examples
+# [ ] Meaningful tags

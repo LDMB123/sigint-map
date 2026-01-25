@@ -1,0 +1,169 @@
+# Universal Agent Framework - Documentation Generator
+# Category: Generators | Tier: Sonnet | Parallelization: 30
+
+agent:
+  id: generator_documentation
+  name: Documentation Generator
+  version: 1.0.0
+
+  functional_category: generator
+  sub_category: documentation
+  model_tier: sonnet
+  model_id: claude-sonnet-4-5-20250929
+
+  description: |
+    Generates comprehensive documentation from code analysis.
+    Creates API docs, README files, tutorials, and architecture docs.
+    Supports multiple output formats and documentation standards.
+
+  capabilities:
+    - generate_api_docs
+    - create_readme
+    - generate_tutorials
+    - create_architecture_docs
+    - generate_changelog
+    - create_contributing_guide
+    - generate_inline_docs
+    - create_examples
+    - generate_diagrams_spec
+    - create_quickstart
+
+  supported_formats:
+    - markdown
+    - restructuredtext
+    - asciidoc
+    - html
+    - jsdoc
+    - typedoc
+    - rustdoc
+    - pydoc
+    - godoc
+    - javadoc
+    - openapi
+    - asyncapi
+
+  input_schema:
+    type: object
+    required:
+      - source
+    properties:
+      source:
+        oneOf:
+          - type: string
+            description: File or directory path
+          - type: array
+            items:
+              type: string
+            description: Multiple source paths
+      doc_type:
+        type: string
+        enum:
+          - api_reference
+          - readme
+          - tutorial
+          - architecture
+          - changelog
+          - contributing
+          - quickstart
+          - full_docs
+        default: api_reference
+      format:
+        type: string
+        default: markdown
+      include_examples:
+        type: boolean
+        default: true
+      include_diagrams:
+        type: boolean
+        default: false
+      audience:
+        type: string
+        enum: [developers, end_users, contributors, all]
+        default: developers
+
+  output_schema:
+    type: object
+    properties:
+      documentation:
+        type: string
+      format:
+        type: string
+      sections:
+        type: array
+        items:
+          type: object
+          properties:
+            title:
+              type: string
+            content:
+              type: string
+            order:
+              type: integer
+      metadata:
+        type: object
+        properties:
+          word_count:
+            type: integer
+          sections_count:
+            type: integer
+          examples_count:
+            type: integer
+          links_count:
+            type: integer
+
+  performance:
+    avg_latency_ms: 2500
+    max_tokens: 16000
+    timeout_seconds: 60
+
+  parallelization:
+    max_concurrent: 30
+    recommended_batch_size: 20
+
+  collaboration:
+    receives_from:
+      - full-stack-developer: Documentation generation requests
+      - technical-debt-coordinator: Documentation debt remediation
+      - migration-orchestrator: Documentation updates after migrations
+      - feature-delivery-orchestrator: New feature documentation
+    delegates_to:
+      - codebase-indexer: Extract symbols and structure for docs
+      - convention-extractor: Identify documentation patterns to follow
+    queries:
+      - static-analyzer: Query code structure for API documentation
+      - semantic-analyzer: Extract semantic meaning for documentation
+    returns_to:
+      - orchestrating-agent: Generated documentation with metadata
+    swarm_pattern: pipeline
+    coordinates_with:
+      - code-generator: Ensure code examples in docs are valid
+      - test-generator: Generate example tests for documentation
+
+  tags:
+    - generation
+    - documentation
+    - api
+    - readme
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: sonnet
+  per_execution_estimate: 0.03
+  typical_range: [0.01, 0.08]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

@@ -1,0 +1,211 @@
+# Universal Agent Framework - Parallelization Configuration
+# Controls for concurrent execution and resource management
+
+parallelization:
+  global:
+    # Maximum concurrent agents across all tiers
+    max_total_concurrent: 250
+
+    # Maximum concurrent API calls
+    max_api_calls_per_second: 50
+
+    # Queue configuration
+    max_queue_depth: 1000
+    queue_timeout_seconds: 300
+
+  by_tier:
+    haiku:
+      max_concurrent: 200
+      recommended_batch_size: 100  # Increased from 50 for 20-30% throughput gain
+      min_batch_size: 20
+      max_batch_size: 150
+
+    sonnet:
+      max_concurrent: 30
+      recommended_batch_size: 25  # Increased from 10 for Sonnet-first strategy
+      min_batch_size: 10
+      max_batch_size: 30
+
+    opus:
+      max_concurrent: 5
+      recommended_batch_size: 1
+      min_batch_size: 1
+      max_batch_size: 3
+
+  by_swarm_pattern:
+    fan_out_validation:
+      max_workers: 200
+      partitioning: by_file
+      aggregation: merge_all
+
+    hierarchical_delegation:
+      max_level_2_coordinators: 20
+      max_level_3_workers_per_coordinator: 50
+      max_total_workers: 500
+
+    consensus_building:
+      max_proposers: 5
+      max_evaluators_per_proposal: 5
+      total_evaluations: 25
+
+    progressive_refinement:
+      max_parallel_reviewers: 5
+      sequential_polish: true
+
+    self_healing:
+      max_parallel_hypotheses: 3
+      sequential_fix: true
+
+# Load balancing (Sonnet-First Strategy for Claude Max)
+load_balancing:
+  strategy: quality_first_weighted
+
+  weights:
+    sonnet: 10  # PRIMARY TIER - Prioritize Sonnet for quality
+    haiku: 3    # SPECIALIZED - Only for routing/aggregation/extreme volume
+    opus: 1     # STRATEGIC - Complex orchestration only
+
+  health_check:
+    enabled: true
+    interval_seconds: 30
+    failure_threshold: 3
+    recovery_threshold: 2
+
+# Backpressure handling
+backpressure:
+  enabled: true
+
+  thresholds:
+    warning: 0.7  # 70% capacity
+    critical: 0.9  # 90% capacity
+
+  actions:
+    warning:
+      - reduce_batch_size
+      - increase_delays
+
+    critical:
+      - reject_new_requests
+      - prioritize_existing
+      - alert_operators
+
+# Rate limiting
+rate_limiting:
+  enabled: true
+
+  limits:
+    requests_per_second: 50
+    requests_per_minute: 2000
+    requests_per_hour: 50000
+
+  per_user:
+    requests_per_minute: 100
+    concurrent_tasks: 10
+
+  burst:
+    enabled: true
+    max_burst: 100
+    refill_rate: 10  # per second
+
+# Retry configuration
+retry:
+  default:
+    max_attempts: 3
+    initial_delay_ms: 1000
+    max_delay_ms: 30000
+    backoff_multiplier: 2.0
+
+  by_tier:
+    haiku:
+      max_attempts: 2
+      initial_delay_ms: 500
+
+    sonnet:
+      max_attempts: 3
+      initial_delay_ms: 1000
+
+    opus:
+      max_attempts: 2
+      initial_delay_ms: 2000
+
+  retryable_errors:
+    - rate_limit_exceeded
+    - timeout
+    - temporary_failure
+    - overloaded
+
+  non_retryable_errors:
+    - invalid_request
+    - authentication_failed
+    - quota_exceeded
+
+# Timeout configuration
+timeouts:
+  default:
+    request_timeout_ms: 60000
+    connection_timeout_ms: 5000
+
+  by_tier:
+    haiku:
+      request_timeout_ms: 30000
+
+    sonnet:
+      request_timeout_ms: 120000
+
+    opus:
+      request_timeout_ms: 300000
+
+  by_task_type:
+    validation:
+      timeout_ms: 30000
+
+    generation:
+      timeout_ms: 180000
+
+    analysis:
+      timeout_ms: 120000
+
+    orchestration:
+      timeout_ms: 600000
+
+# Resource pools
+resource_pools:
+  haiku_pool:
+    min_size: 10
+    max_size: 200
+    idle_timeout_seconds: 60
+
+  sonnet_pool:
+    min_size: 5
+    max_size: 30
+    idle_timeout_seconds: 120
+
+  opus_pool:
+    min_size: 1
+    max_size: 5
+    idle_timeout_seconds: 300
+
+# Monitoring
+monitoring:
+  metrics:
+    - active_agents_by_tier
+    - queue_depth
+    - request_latency_p50
+    - request_latency_p95
+    - request_latency_p99
+    - error_rate
+    - throughput_per_second
+    - cost_per_minute
+
+  alerts:
+    high_latency:
+      threshold_ms: 10000
+      channels: [log, slack]
+
+    high_error_rate:
+      threshold_percent: 5
+      channels: [log, slack]
+
+    queue_backup:
+      threshold_depth: 500
+      channels: [log, slack]

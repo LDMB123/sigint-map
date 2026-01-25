@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASM Diagnostic - Static Test</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #1a1a1a;
+            color: #e5e5e5;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 1rem;
+            color: #60a5fa;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .logs {
+            background: #111;
+            padding: 1.5rem;
+            border-radius: 8px;
+            min-height: 400px;
+            overflow-y: auto;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .logs .entry {
+            margin-bottom: 4px;
+        }
+
+        .logs .error {
+            color: #f87171;
+        }
+
+        .logs .success {
+            color: #4ade80;
+        }
+
+        .logs .info {
+            color: #60a5fa;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>WASM Diagnostic - Static Test</h1>
+    <p style="margin-bottom: 1rem; color: #9ca3af;">Bypasses SvelteKit entirely to test WASM loading</p>
+
+    <div class="controls">
+        <button onclick="testWasmLoading()">Test WASM Loading</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <div class="logs" id="logs"></div>
+
+    <script type="module">
+        const logsEl = document.getElementById('logs');
+
+        function log(msg, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `entry ${type}`;
+            entry.textContent = `${new Date().toLocaleTimeString()}: ${msg}`;
+            logsEl.appendChild(entry);
+            logsEl.scrollTop = logsEl.scrollHeight;
+            console.log(msg);
+        }
+
+        window.clearLogs = () => {
+            logsEl.innerHTML = '';
+        };
+
+        window.testWasmLoading = async () => {
+            log('--- WASM Loading Test ---', 'info');
+
+            try {
+                log('Step 1: Importing JS wrapper module...');
+                const module = await import('/wasm/dmb-force-simulation/pkg/dmb_force_simulation.js');
+                log(`Module imported. Keys: ${Object.keys(module).join(', ')}`, 'success');
+
+                log('Step 2: Checking default export...');
+                if (module.default) {
+                    log(`Default export found: ${typeof module.default}`);
+
+                    log('Step 3: Calling default() to initialize WASM...');
+                    try {
+                        await module.default();
+                        log('WASM initialized successfully!', 'success');
+                    } catch (initError) {
+                        log(`Init error: ${initError.message || initError}`, 'error');
+                    }
+                } else {
+                    log('No default export found!', 'error');
+                }
+
+                log('Step 4: Checking WasmSimulation class...');
+                if (module.WasmSimulation) {
+                    log('WasmSimulation class found!', 'success');
+
+                    try {
+                        log('Step 5: Creating simulation instance...');
+                        const sim = new module.WasmSimulation(800, 600);
+                        log(`Simulation created: nodes=${sim.nodeCount()}, links=${sim.linkCount()}`, 'success');
+
+                        log('Step 6: Checking methods...');
+                        log(`  - getAlpha: ${sim.getAlpha()}`);
+                        log(`  - nodeCount: ${sim.nodeCount()}`);
+
+                        log('Cleaning up...');
+                        sim.free();
+                        log('Simulation freed successfully', 'success');
+
+                        log('=== ALL TESTS PASSED ===', 'success');
+                    } catch (simError) {
+                        log(`Simulation error: ${simError.message || simError}`, 'error');
+                    }
+                } else {
+                    log('WasmSimulation class NOT found in module exports!', 'error');
+                }
+            } catch (error) {
+                log(`FATAL ERROR: ${error.message || error}`, 'error');
+                console.error(error);
+            }
+        };
+
+        // Auto-run on load
+        log('Page loaded. Click "Test WASM Loading" to begin.', 'info');
+    </script>
+</body>
+
+</html>

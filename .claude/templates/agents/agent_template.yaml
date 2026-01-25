@@ -1,0 +1,125 @@
+# Universal Agent Framework - Agent Definition Template
+# Copy and customize this template to create new agents
+
+agent:
+  # Required: Unique identifier (snake_case)
+  id: {category}_{name}
+
+  # Required: Human-readable name
+  name: {Name} {Category}
+
+  # Required: Semantic version
+  version: 1.0.0
+
+  # Required: Functional category
+  # Options: validator, generator, analyzer, transformer, orchestrator,
+  #          debugger, learner, reporter, integrator, guardian
+  functional_category: {category}
+
+  # Required: Sub-category within functional category
+  sub_category: {sub_category}
+
+  # Required: Model tier
+  # Options: haiku, sonnet, opus
+  model_tier: {tier}
+
+  # Required: Detailed description of agent capabilities
+  description: |
+    {Detailed description of what this agent does.
+    Include use cases and typical workflows.}
+
+  # Required: List of specific capabilities
+  capabilities:
+    - capability_1
+    - capability_2
+    - capability_3
+    # Add 5-15 specific capabilities
+
+  # Optional: Supported languages/formats/technologies
+  supported_languages:
+    - javascript
+    - typescript
+    - python
+    # Add relevant languages
+
+  # Required: Input schema
+  input_schema:
+    type: object
+    required:
+      - required_field
+    properties:
+      required_field:
+        type: string
+        description: Description of required field
+      optional_field:
+        type: string
+        description: Description of optional field
+        default: default_value
+
+  # Required: Output schema
+  output_schema:
+    type: object
+    properties:
+      result:
+        type: object
+        description: Main result object
+      metadata:
+        type: object
+        properties:
+          duration_ms:
+            type: integer
+          tokens_used:
+            type: integer
+
+  # Required: Performance characteristics
+  performance:
+    avg_latency_ms: 1000
+    max_tokens: 8000
+    timeout_seconds: 60
+
+  # Optional: Cost information
+  cost:
+    tier: {tier}
+    per_execution_estimate: 0.001
+
+  # Required: Parallelization settings
+  parallelization:
+    max_concurrent: 50
+    recommended_batch_size: 20
+    # Optional additional settings
+    supports_streaming: false
+    can_partition_by_file: true
+
+  # Optional: Quality metrics
+  quality_metrics:
+    expected_accuracy: 0.95
+    false_positive_rate: 0.02
+
+  # Optional: Error handling
+  error_handling:
+    retry_on_failure: true
+    max_retries: 2
+    fallback_agent: null
+
+  # Required: Tags for discovery
+  tags:
+    - tag1
+    - tag2
+    - tag3
+
+  # Optional: Examples
+  examples:
+    - name: Example 1
+      input:
+        required_field: example_value
+      output:
+        result: example_result
+
+# Checklist for new agents:
+# [ ] Unique ID following naming convention
+# [ ] Appropriate functional category
+# [ ] Correct model tier selection
+# [ ] Complete input/output schemas
+# [ ] Realistic performance estimates
+# [ ] Meaningful tags for discovery
+# [ ] At least one example

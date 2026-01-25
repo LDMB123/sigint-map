@@ -1,0 +1,146 @@
+# Universal Agent Framework - Third Party Integrator
+# Category: Integrators | Tier: Sonnet | Parallelization: 15+
+
+agent:
+  id: integrator_third_party
+  name: Third Party Integrator
+  version: 1.0.0
+
+  functional_category: integrator
+  sub_category: third_party
+  model_tier: sonnet
+
+  description: |
+    Creates integrations with third-party services and APIs.
+    Handles authentication, rate limiting, and error handling.
+    Supports common services like Stripe, Twilio, AWS, etc.
+
+  capabilities:
+    - integrate_payment_services
+    - integrate_communication_services
+    - integrate_cloud_services
+    - integrate_analytics
+    - integrate_authentication
+    - integrate_storage
+    - integrate_search
+    - integrate_monitoring
+    - integrate_ai_services
+    - integrate_social
+
+  service_categories:
+    payment:
+      - stripe
+      - paypal
+      - square
+      - braintree
+    communication:
+      - twilio
+      - sendgrid
+      - mailgun
+      - slack
+    cloud:
+      - aws
+      - gcp
+      - azure
+      - cloudflare
+    analytics:
+      - segment
+      - mixpanel
+      - amplitude
+      - google_analytics
+    auth:
+      - auth0
+      - okta
+      - firebase_auth
+      - cognito
+    storage:
+      - s3
+      - gcs
+      - cloudinary
+      - uploadcare
+    ai:
+      - openai
+      - anthropic
+      - huggingface
+      - replicate
+
+  input_schema:
+    type: object
+    required:
+      - service
+    properties:
+      service:
+        type: string
+        description: Service to integrate
+      features:
+        type: array
+        items:
+          type: string
+        description: Specific features to implement
+      target_language:
+        type: string
+        default: typescript
+      options:
+        type: object
+        properties:
+          webhook_handling:
+            type: boolean
+            default: true
+          rate_limiting:
+            type: boolean
+            default: true
+          error_handling:
+            type: string
+            enum: [basic, advanced]
+          testing:
+            type: boolean
+            default: true
+
+  output_schema:
+    type: object
+    properties:
+      integration:
+        type: object
+        properties:
+          client:
+            type: string
+          services:
+            type: string
+          webhooks:
+            type: string
+          types:
+            type: string
+      files:
+        type: array
+        items:
+          type: object
+          properties:
+            path:
+              type: string
+            content:
+              type: string
+      configuration:
+        type: object
+        properties:
+          env_vars:
+            type: array
+          secrets:
+            type: array
+      usage_examples:
+        type: array
+      tests:
+        type: string
+
+  performance:
+    avg_latency_ms: 4000
+    max_tokens: 32000
+    timeout_seconds: 120
+
+  parallelization:
+    max_concurrent: 15
+
+  tags:
+    - integration
+    - third_party
+    - services
+    - external

@@ -1,0 +1,120 @@
+# Universal Agent Framework - Notification Reporter
+# Category: Reporters | Tier: Haiku | Parallelization: 100+
+
+agent:
+  id: reporter_notification
+  name: Notification Reporter
+  version: 1.0.0
+
+  functional_category: reporter
+  sub_category: notification
+  model_tier: haiku
+
+  description: |
+    Generates notifications and alerts for various channels.
+    Creates formatted messages for Slack, email, GitHub, etc.
+    Supports severity-based routing and rate limiting.
+
+  capabilities:
+    - generate_slack_message
+    - create_email_notification
+    - generate_github_comment
+    - create_pr_review_comment
+    - generate_issue_update
+    - create_webhook_payload
+    - generate_sms_alert
+    - create_discord_message
+    - generate_teams_notification
+    - create_pagerduty_alert
+
+  notification_types:
+    informational:
+      severity: low
+      channels: [slack, email]
+    warning:
+      severity: medium
+      channels: [slack, email, github]
+    error:
+      severity: high
+      channels: [slack, email, pagerduty]
+    critical:
+      severity: critical
+      channels: [pagerduty, sms, all]
+
+  input_schema:
+    type: object
+    required:
+      - event
+      - channel
+    properties:
+      event:
+        type: object
+        properties:
+          type:
+            type: string
+          severity:
+            type: string
+            enum: [info, warning, error, critical]
+          title:
+            type: string
+          message:
+            type: string
+          data:
+            type: object
+      channel:
+        type: string
+        enum:
+          - slack
+          - email
+          - github_comment
+          - github_pr_review
+          - discord
+          - teams
+          - webhook
+          - pagerduty
+      template:
+        type: string
+        description: Custom template to use
+      mentions:
+        type: array
+        items:
+          type: string
+        description: Users/teams to mention
+
+  output_schema:
+    type: object
+    properties:
+      notification:
+        type: object
+        properties:
+          channel:
+            type: string
+          formatted_message:
+            type: string
+          payload:
+            type: object
+          mentions:
+            type: array
+      metadata:
+        type: object
+        properties:
+          character_count:
+            type: integer
+          has_mentions:
+            type: boolean
+          severity:
+            type: string
+
+  performance:
+    avg_latency_ms: 300
+    max_tokens: 4000
+    timeout_seconds: 15
+
+  parallelization:
+    max_concurrent: 100
+
+  tags:
+    - reporting
+    - notifications
+    - alerts
+    - messaging

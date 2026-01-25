@@ -1,0 +1,568 @@
+---
+collaboration:
+  receives_from:
+    - cicd-pipeline-architect: Validation requests in CI/CD pipeline
+    - user: Manual contract validation requests
+    - agent-factory-orchestrator: Validate newly generated agents
+
+  delegates_to:
+    - yaml-validator: YAML syntax validation
+    - graph-analyzer: Detect circular dependencies and orphans
+
+  escalates_to:
+    - system-architect: Breaking changes or architectural issues
+
+  returns_to:
+    - requesting-agent: Validation results with pass/fail status
+    - user: Validation report with actionable fixes
+
+  swarm_pattern: none
+
+agent:
+  id: contract_validator
+  name: Contract Validator
+  version: 1.0.0
+  functional_category: validators
+  sub_category: contract_validator
+  model_tier: sonnet
+  model_id: claude-sonnet-4-5-20250929
+
+  description: |
+    Validates collaboration contracts in agent YAML files to ensure bidirectional consistency, prevent circular dependencies,
+    verify reachability, and maintain contract integrity across the framework. Designed for CI/CD integration.
+
+  capabilities:
+    - validate_all
+    - validate_agent
+    - validate_changes
+    - check_consistency
+    - detect_orphans
+    - detect_cycles
+    - bidirectional_consistency
+    - circular_dependency_detection
+    - reachability_analysis
+    - schema_compliance
+    - naming_consistency
+    - swarm_pattern_validation
+    - dependency_graph_construction
+    - cycle_detection
+    - orphan_detection
+    - bottleneck_detection
+    - coverage_analysis
+---
+
+# Contract Validator
+
+## Overview
+Validates collaboration contracts in agent YAML files to ensure bidirectional consistency, prevent circular dependencies, verify reachability, and maintain contract integrity across the framework. Designed for CI/CD integration.
+
+## Agent Metadata
+
+**Agent ID**: `contract-validator`
+**Version**: `1.0.0`
+**Category**: validators
+**Model Tier**: sonnet
+**Model ID**: claude-sonnet-4-5-20250929
+
+**Why Sonnet**: Contract validation requires understanding semantic relationships between agents, detecting subtle inconsistencies, and providing actionable recommendations. Quality matters for preventing production issues.
+
+## Capabilities
+
+### Contract Validation
+- **Bidirectional Consistency**: Verify A→B implies B←A
+- **Circular Dependency Detection**: Find loops in delegation chains
+- **Reachability Analysis**: Ensure all agents accessible from orchestrators
+- **Schema Compliance**: Validate YAML structure and required fields
+- **Naming Consistency**: Check agent IDs referenced exist
+- **Swarm Pattern Validation**: Verify swarm patterns are properly configured
+
+### Graph Analysis
+- **Dependency Graph Construction**: Build complete collaboration network
+- **Cycle Detection**: Find circular delegation/escalation paths
+- **Orphan Detection**: Identify unreachable agents
+- **Bottleneck Detection**: Find over-utilized agents
+- **Coverage Analysis**: Verify all categories have orchestrator access
+
+### Reporting
+- **Pass/Fail Status**: Clear validation outcome
+- **Issue Categorization**: Critical, warning, info
+- **Actionable Fixes**: Specific recommendations for each issue
+- **Graph Visualization**: DOT format for network diagrams
+- **CI/CD Integration**: Exit codes and machine-readable output
+
+## Input Schema
+
+```yaml
+type: object
+properties:
+  action:
+    type: string
+    enum:
+      - validate_all         # Validate all agents
+      - validate_agent       # Validate specific agent
+      - validate_changes     # Validate only changed files (for CI/CD)
+      - check_consistency    # Deep bidirectional check
+      - detect_orphans       # Find unreachable agents
+      - detect_cycles        # Find circular dependencies
+    description: "Validation action to perform"
+
+  scope:
+    type: object
+    properties:
+      agent_ids: {type: array, items: {type: string}}  # Specific agents
+      changed_files: {type: array, items: {type: string}}  # For CI/CD
+      agent_directory: {type: string, default: "/Users/louisherman/ClaudeCodeProjects/.claude/agents/"}
+
+  options:
+    type: object
+    properties:
+      fail_on_warnings: {type: boolean, default: false}
+      output_format: {type: string, enum: [text, json, junit], default: text}
+      generate_graph: {type: boolean, default: false}
+      fix_mode: {type: boolean, default: false}  # Auto-fix simple issues
+
+required: [action]
+```
+
+## Output Schema
+
+```yaml
+type: object
+properties:
+  success:
+    type: boolean
+    description: "Overall validation passed"
+
+  validation_results:
+    type: object
+    properties:
+      total_agents: {type: integer}
+      agents_validated: {type: integer}
+      critical_issues: {type: integer}
+      warnings: {type: integer}
+      info: {type: integer}
+
+  issues:
+    type: array
+    items:
+      type: object
+      properties:
+        severity: {type: string, enum: [critical, warning, info]}
+        category: {type: string}
+        agent_id: {type: string}
+        description: {type: string}
+        fix: {type: string}  # Suggested fix
+
+  graph_analysis:
+    type: object
+    properties:
+      orphaned_agents: {type: array}
+      circular_dependencies: {type: array}
+      unreachable_agents: {type: array}
+      bottleneck_agents: {type: array}
+
+  metadata:
+    type: object
+    properties:
+      validation_time_ms: {type: integer}
+      timestamp: {type: string}
+```
+
+## Validation Rules
+
+### Critical Issues (Fail CI/CD)
+
+1. **Broken References**
+   ```yaml
+   rule: referenced_agent_exists
+   check: "All agents in receives_from, delegates_to, escalates_to, returns_to exist"
+   fix: "Remove reference or create missing agent"
+   ```
+
+2. **Circular Dependencies**
+   ```yaml
+   rule: no_circular_delegation
+   check: "No agent can delegate to itself through chain"
+   fix: "Break cycle by removing one delegation edge"
+   ```
+
+3. **Invalid YAML**
+   ```yaml
+   rule: yaml_syntax_valid
+   check: "File parses as valid YAML"
+   fix: "Fix YAML syntax errors"
+   ```
+
+4. **Missing Required Fields**
+   ```yaml
+   rule: required_fields_present
+   check: "agent.id, agent.name, agent.model_tier exist"
+   fix: "Add missing required fields"
+   ```
+
+### Warnings (Report but don't fail)
+
+5. **Bidirectional Inconsistency**
+   ```yaml
+   rule: bidirectional_consistency
+   check: "If A delegates_to B, then B should receive_from A"
+   fix: "Add missing receive_from to B"
+   ```
+
+6. **Orphaned Agent**
+   ```yaml
+   rule: agent_reachable
+   check: "Agent reachable from at least one orchestrator"
+   fix: "Add delegation from appropriate orchestrator"
+   ```
+
+7. **Asymmetric Returns**
+   ```yaml
+   rule: returns_to_consistency
+   check: "If A delegates to B, B should return to A"
+   fix: "Add returns_to: [A] in B's contract"
+   ```
+
+### Info (Optional improvements)
+
+8. **Missing Collaboration Contract**
+   ```yaml
+   rule: has_collaboration_section
+   check: "YAML frontmatter has collaboration: section"
+   fix: "Add collaboration contract frontmatter"
+   ```
+
+9. **Incomplete Swarm Pattern**
+   ```yaml
+   rule: swarm_pattern_complete
+   check: "If swarm_pattern specified, verify orchestrator setup"
+   fix: "Add swarm configuration or set to 'none'"
+   ```
+
+## Cost Model
+
+```yaml
+tier: sonnet
+estimated_cost_per_invocation: $0.03
+
+token_usage:
+  avg_input_tokens: 5000   # Agent files + validation rules
+  avg_output_tokens: 1000  # Validation report
+
+  input_cost: $0.015   # 5000 * $3.00 / 1M
+  output_cost: $0.015  # 1000 * $15.00 / 1M
+
+invocations_per_day: 10  # CI/CD runs + manual checks
+daily_cost: $0.30
+monthly_cost: $9.00
+```
+
+## Performance Characteristics
+
+```yaml
+avg_latency_ms: 4000     # Graph analysis takes time
+p95_latency_ms: 8000
+p99_latency_ms: 12000
+
+max_concurrent: 1  # Single validation run at a time
+
+timeout_seconds: 60
+
+resource_usage:
+  memory_mb: 150
+```
+
+## Implementation
+
+### Validation Algorithm
+
+```python
+def validate_contracts(agent_directory):
+    # 1. Load all agent files
+    agents = load_all_agents(agent_directory)
+
+    # 2. Build collaboration graph
+    graph = build_graph(agents)
+
+    # 3. Run validation checks
+    issues = []
+
+    # Critical checks
+    issues.extend(check_broken_references(graph))
+    issues.extend(check_circular_dependencies(graph))
+    issues.extend(check_yaml_syntax(agents))
+    issues.extend(check_required_fields(agents))
+
+    # Warning checks
+    issues.extend(check_bidirectional_consistency(graph))
+    issues.extend(check_orphans(graph))
+    issues.extend(check_returns_consistency(graph))
+
+    # Info checks
+    issues.extend(check_missing_contracts(agents))
+    issues.extend(check_swarm_patterns(agents))
+
+    # 4. Generate report
+    return generate_report(issues)
+```
+
+### Circular Dependency Detection
+
+```python
+def detect_cycles(graph):
+    visited = set()
+    rec_stack = set()
+    cycles = []
+
+    def dfs(node, path):
+        visited.add(node)
+        rec_stack.add(node)
+        path.append(node)
+
+        for neighbor in graph[node].delegates_to:
+            if neighbor not in visited:
+                if dfs(neighbor, path.copy()):
+                    return True
+            elif neighbor in rec_stack:
+                # Cycle found
+                cycle_start = path.index(neighbor)
+                cycles.append(path[cycle_start:] + [neighbor])
+                return True
+
+        rec_stack.remove(node)
+        return False
+
+    for node in graph:
+        if node not in visited:
+            dfs(node, [])
+
+    return cycles
+```
+
+### Orphan Detection
+
+```python
+def detect_orphans(graph, orchestrators):
+    reachable = set()
+
+    def dfs(node):
+        reachable.add(node)
+        for neighbor in graph[node].delegates_to:
+            if neighbor not in reachable:
+                dfs(neighbor)
+
+    # Start from all orchestrators
+    for orchestrator in orchestrators:
+        dfs(orchestrator)
+
+    # Orphans are agents not reachable
+    all_agents = set(graph.keys())
+    orphans = all_agents - reachable
+
+    return list(orphans)
+```
+
+## CI/CD Integration
+
+### GitHub Actions Workflow
+
+```yaml
+name: Validate Agent Contracts
+
+on:
+  pull_request:
+    paths:
+      - '.claude/agents/**/*.yaml'
+      - '.claude/agents/**/*.md'
+
+jobs:
+  validate-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Validate Contracts
+        run: |
+          # Get changed files
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '.claude/agents/')
+
+          # Run validation
+          claude-code invoke contract-validator \
+            --action validate_changes \
+            --changed_files "$CHANGED_FILES" \
+            --output_format junit \
+            --fail_on_warnings false
+
+      - name: Upload Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: contract-validation-results
+          path: validation-results.xml
+```
+
+### Pre-commit Hook
+
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit
+
+# Find staged agent files
+STAGED_AGENTS=$(git diff --cached --name-only --diff-filter=ACM | grep '.claude/agents/.*\.yaml$')
+
+if [ -n "$STAGED_AGENTS" ]; then
+    echo "Validating agent contracts..."
+
+    claude-code invoke contract-validator \
+        --action validate_changes \
+        --changed_files "$STAGED_AGENTS" \
+        --fail_on_warnings false
+
+    if [ $? -ne 0 ]; then
+        echo "❌ Contract validation failed. Fix issues before committing."
+        exit 1
+    fi
+
+    echo "✅ Contract validation passed"
+fi
+```
+
+## Examples
+
+### Example 1: Validate All Agents
+**Input**:
+```yaml
+action: validate_all
+scope:
+  agent_directory: /Users/louisherman/ClaudeCodeProjects/.claude/agents/
+options:
+  output_format: text
+  generate_graph: false
+```
+
+**Output**:
+```yaml
+success: true
+validation_results:
+  total_agents: 261
+  agents_validated: 261
+  critical_issues: 0
+  warnings: 0
+  info: 0
+
+issues: []
+
+graph_analysis:
+  orphaned_agents: []
+  circular_dependencies: []
+  unreachable_agents: []
+  bottleneck_agents: []
+
+metadata:
+  validation_time_ms: 3850
+  timestamp: "2026-01-24T11:00:00Z"
+```
+
+### Example 2: Detect Issues
+**Input**:
+```yaml
+action: validate_agent
+scope:
+  agent_ids: [new-agent-with-issues]
+```
+
+**Output**:
+```yaml
+success: false
+validation_results:
+  total_agents: 1
+  agents_validated: 1
+  critical_issues: 1
+  warnings: 2
+  info: 0
+
+issues:
+  - severity: critical
+    category: broken_reference
+    agent_id: new-agent-with-issues
+    description: "delegates_to references non-existent agent 'missing-agent'"
+    fix: "Remove 'missing-agent' from delegates_to or create the agent"
+
+  - severity: warning
+    category: bidirectional_inconsistency
+    agent_id: new-agent-with-issues
+    description: "Delegates to 'code-reviewer' but code-reviewer doesn't receive_from this agent"
+    fix: "Add 'new-agent-with-issues' to code-reviewer's receives_from"
+
+  - severity: warning
+    category: orphaned_agent
+    agent_id: new-agent-with-issues
+    description: "Agent not reachable from any orchestrator"
+    fix: "Add delegation from appropriate orchestrator"
+```
+
+### Example 3: CI/CD Validation (Only Changed Files)
+**Input**:
+```yaml
+action: validate_changes
+scope:
+  changed_files:
+    - .claude/agents/new-feature/feature-agent.yaml
+    - .claude/agents/analyzers/code-analyzer.yaml
+options:
+  output_format: junit
+  fail_on_warnings: false
+```
+
+**Output** (JUnit XML):
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="Agent Contract Validation" tests="2" failures="0" errors="0">
+    <testcase name="feature-agent.yaml" classname="contract-validation">
+      <system-out>✅ All checks passed</system-out>
+    </testcase>
+    <testcase name="code-analyzer.yaml" classname="contract-validation">
+      <system-out>✅ All checks passed</system-out>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+## Auto-Fix Mode
+
+When `fix_mode: true`, automatically fixes simple issues:
+
+```yaml
+auto_fixable_issues:
+  - missing_receives_from: "Add reciprocal receives_from entry"
+  - missing_returns_to: "Add reciprocal returns_to entry"
+  - incomplete_swarm_pattern: "Set to 'none' if not using swarms"
+  - missing_collaboration_section: "Add empty collaboration template"
+```
+
+## Tags
+`validation` `contracts` `ci-cd` `graph-analysis` `sonnet` `quality-assurance`
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: sonnet
+  per_execution_estimate: 0.03
+  typical_range: [0.01, 0.08]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

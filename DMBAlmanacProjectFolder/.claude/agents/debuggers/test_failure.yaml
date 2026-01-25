@@ -1,0 +1,158 @@
+# Universal Agent Framework - Test Failure Debugger
+# Category: Debuggers | Tier: Sonnet | Parallelization: 20+
+
+agent:
+  id: debugger_test_failure
+  name: Test Failure Debugger
+  version: 1.0.0
+
+  functional_category: debugger
+  sub_category: test_failure
+  model_tier: sonnet
+
+  description: |
+    Debugs failing tests to identify the cause and suggest fixes.
+    Analyzes test output, assertions, and code changes.
+    Distinguishes between test bugs and code bugs.
+
+  capabilities:
+    - analyze_test_output
+    - identify_failing_assertions
+    - trace_test_execution
+    - compare_expected_vs_actual
+    - detect_flaky_tests
+    - identify_setup_issues
+    - analyze_mock_failures
+    - correlate_with_changes
+    - suggest_test_fixes
+    - suggest_code_fixes
+
+  failure_categories:
+    assertion_failures:
+      - value_mismatch
+      - type_mismatch
+      - missing_property
+      - extra_property
+      - order_mismatch
+    setup_failures:
+      - fixture_error
+      - mock_configuration
+      - database_state
+      - environment_issue
+    timing_failures:
+      - async_timeout
+      - race_condition
+      - order_dependency
+    integration_failures:
+      - api_change
+      - schema_change
+      - service_unavailable
+
+  input_schema:
+    type: object
+    required:
+      - test_output
+    properties:
+      test_output:
+        type: string
+        description: Full test output including failures
+      test_file:
+        type: string
+      source_file:
+        type: string
+        description: File being tested
+      recent_changes:
+        type: string
+        description: Git diff of recent changes
+      test_history:
+        type: array
+        items:
+          type: object
+          properties:
+            run_id:
+              type: string
+            passed:
+              type: boolean
+            timestamp:
+              type: string
+        description: Recent test run history
+
+  output_schema:
+    type: object
+    properties:
+      failing_tests:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            file:
+              type: string
+            line:
+              type: integer
+            failure_type:
+              type: string
+            message:
+              type: string
+            expected:
+              type: string
+            actual:
+              type: string
+      diagnosis:
+        type: object
+        properties:
+          is_flaky:
+            type: boolean
+          is_test_bug:
+            type: boolean
+          is_code_bug:
+            type: boolean
+          root_cause:
+            type: string
+          confidence:
+            type: number
+      fixes:
+        type: object
+        properties:
+          test_fixes:
+            type: array
+            items:
+              type: object
+              properties:
+                test:
+                  type: string
+                fix:
+                  type: string
+                diff:
+                  type: string
+          code_fixes:
+            type: array
+            items:
+              type: object
+              properties:
+                file:
+                  type: string
+                fix:
+                  type: string
+                diff:
+                  type: string
+      recommendations:
+        type: array
+        items:
+          type: string
+
+  performance:
+    avg_latency_ms: 3000
+    max_tokens: 24000
+    timeout_seconds: 120
+
+  parallelization:
+    max_concurrent: 20
+    recommended_batch_size: 10
+
+  tags:
+    - debugging
+    - testing
+    - failures
+    - assertions

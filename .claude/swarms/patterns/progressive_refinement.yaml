@@ -1,0 +1,241 @@
+# Universal Agent Framework - Progressive Refinement Swarm Pattern
+# Pattern: Iterative | Quality: Production-grade | Iterations: 2-5
+
+swarm_pattern:
+  id: progressive_refinement
+  name: Progressive Refinement
+  version: 1.0.0
+
+  description: |
+    Iteratively improves output through draft-review-polish cycles.
+    Each iteration raises quality until threshold is met.
+
+    Ideal for: Code generation, documentation, test creation,
+    content production, complex implementations.
+
+  architecture:
+    drafter:
+      tier: sonnet
+      role: Generate initial draft
+      count: 1
+
+    reviewers:
+      tier: haiku/sonnet
+      role: Critique and suggest improvements
+      count: 3-5
+
+    polisher:
+      tier: sonnet
+      role: Incorporate feedback and refine
+      count: 1
+
+    evaluator:
+      tier: haiku
+      role: Score quality against threshold
+      count: 1
+
+  workflow:
+    iteration_start:
+      name: Quality Check Loop
+      condition: quality_score < threshold AND iterations < max_iterations
+
+    phase_1_draft:
+      name: Generate Draft
+      agent: generator_*
+      tier: sonnet
+      actions:
+        - Generate initial implementation
+        - Include inline documentation
+        - Follow project conventions
+      output: draft_v{iteration}
+      timeout_seconds: 180
+
+    phase_2_review:
+      name: Parallel Review
+      agents:
+        - analyzer_static
+        - analyzer_semantic
+        - validator_style
+        - analyzer_performance
+      tier: haiku/sonnet
+      parallelization:
+        strategy: map
+        count: 4
+      actions:
+        - Analyze draft from specific perspective
+        - Identify issues and improvements
+        - Provide specific suggestions
+      output: review_feedback
+      timeout_seconds: 120
+
+    phase_3_polish:
+      name: Apply Improvements
+      agent: transformer_refactor
+      tier: sonnet
+      actions:
+        - Incorporate all feedback
+        - Resolve conflicting suggestions
+        - Improve based on priorities
+      output: polished_v{iteration}
+      timeout_seconds: 180
+
+    phase_4_evaluate:
+      name: Quality Evaluation
+      agent: reporter_metrics
+      tier: haiku
+      actions:
+        - Score against quality criteria
+        - Calculate improvement delta
+        - Determine if threshold met
+      output: quality_score
+      timeout_seconds: 30
+
+    iteration_end:
+      name: Loop Decision
+      conditions:
+        exit_success: quality_score >= threshold
+        exit_max_iterations: iterations >= max_iterations
+        continue: quality_score < threshold AND iterations < max_iterations
+
+  configuration:
+    quality_threshold:
+      default: 0.85
+      minimum: 0.70
+      maximum: 0.99
+
+    max_iterations:
+      default: 3
+      minimum: 2
+      maximum: 5
+
+    review_perspectives:
+      - correctness
+      - style
+      - performance
+      - security
+      - maintainability
+
+    improvement_tracking:
+      track_delta: true
+      min_improvement_per_iteration: 0.05
+      stagnation_threshold: 2  # iterations without improvement
+
+    quality_criteria:
+      syntax_valid:
+        weight: 0.20
+        required: true
+      tests_pass:
+        weight: 0.25
+        required: true
+      style_compliant:
+        weight: 0.15
+        required: false
+      performance_acceptable:
+        weight: 0.15
+        required: false
+      security_clean:
+        weight: 0.25
+        required: true
+
+  input_schema:
+    type: object
+    required:
+      - task
+    properties:
+      task:
+        type: object
+        properties:
+          type:
+            type: string
+            enum: [code, documentation, test, content]
+          specification:
+            type: object
+          context_files:
+            type: array
+      quality_threshold:
+        type: number
+        default: 0.85
+      max_iterations:
+        type: integer
+        default: 3
+      review_config:
+        type: object
+        properties:
+          perspectives:
+            type: array
+          weights:
+            type: object
+
+  output_schema:
+    type: object
+    properties:
+      final_output:
+        type: string
+      quality_score:
+        type: number
+      iterations_completed:
+        type: integer
+      improvement_history:
+        type: array
+        items:
+          type: object
+          properties:
+            iteration:
+              type: integer
+            score:
+              type: number
+            improvements:
+              type: array
+            feedback_incorporated:
+              type: array
+      review_summary:
+        type: object
+        properties:
+          issues_found:
+            type: integer
+          issues_resolved:
+            type: integer
+          remaining_suggestions:
+            type: array
+
+  cost_model:
+    per_iteration:
+      draft_sonnet: 0.003
+      review_haiku_x4: 0.001
+      polish_sonnet: 0.003
+      evaluate_haiku: 0.00025
+    total_per_iteration: 0.00725
+
+    example_3_iterations:
+      cost: 0.022
+      expected_quality: 0.90
+
+  examples:
+    - name: Generate production-ready API handler
+      input:
+        task:
+          type: code
+          specification: "REST endpoint for user registration"
+        quality_threshold: 0.90
+      expected:
+        iterations: 3
+        final_quality: 0.92
+        cost: 0.022
+
+    - name: Create comprehensive documentation
+      input:
+        task:
+          type: documentation
+          specification: "API documentation for auth module"
+        quality_threshold: 0.85
+      expected:
+        iterations: 2
+        final_quality: 0.88
+        cost: 0.015
+
+  best_practices:
+    - Set realistic quality thresholds
+    - Track improvement stagnation
+    - Prioritize critical feedback
+    - Keep iteration count bounded
+    - Review final output manually for critical systems

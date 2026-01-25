@@ -1,0 +1,170 @@
+# Universal Agent Framework - Swarm Pattern Template
+# Copy and customize this template to create new swarm patterns
+
+swarm_pattern:
+  # Required: Unique identifier
+  id: {pattern_name}
+
+  # Required: Human-readable name
+  name: {Pattern Name}
+
+  # Required: Semantic version
+  version: 1.0.0
+
+  # Required: Detailed description
+  description: |
+    {Detailed description of the swarm pattern.
+    Explain when to use it and what problems it solves.}
+
+  # Required: Architecture definition
+  architecture:
+    coordinator:
+      tier: sonnet  # or opus
+      role: Describe coordinator role
+      count: 1
+
+    workers:
+      tier: haiku
+      role: Describe worker role
+      count: dynamic
+      max_concurrent: 100
+
+    # Optional: Additional roles
+    aggregator:
+      tier: haiku
+      role: Aggregate results
+      count: 1
+
+  # Required: Workflow phases
+  workflow:
+    phase_1_preparation:
+      name: Preparation Phase
+      agent: orchestrator_delegation
+      tier: sonnet
+      actions:
+        - Analyze work scope
+        - Partition tasks
+        - Allocate resources
+      output: work_plan
+      timeout_seconds: 60
+
+    phase_2_execution:
+      name: Parallel Execution
+      agent: worker_agent
+      tier: haiku
+      parallelization:
+        strategy: map  # or cartesian, pipeline
+        max_concurrent: 100
+        batch_size: 20
+      actions:
+        - Execute single task
+        - Return result
+      output: task_results
+      timeout_seconds: 30
+      retry:
+        max_attempts: 2
+        backoff_ms: 1000
+
+    phase_3_aggregation:
+      name: Result Aggregation
+      agent: reporter_summary
+      tier: haiku
+      actions:
+        - Collect all results
+        - Aggregate statistics
+        - Generate report
+      output: final_report
+      timeout_seconds: 30
+
+  # Required: Configuration options
+  configuration:
+    resource_limits:
+      max_workers: 100
+      total_timeout_seconds: 300
+      max_cost: 1.00
+
+    error_handling:
+      on_worker_failure: continue  # or fail_fast, retry
+      failure_threshold: 0.1
+      retry_failed: true
+
+    optimization:
+      prefer_haiku: true
+      batch_similar_tasks: true
+      cache_results: true
+
+  # Required: Input schema
+  input_schema:
+    type: object
+    required:
+      - tasks
+    properties:
+      tasks:
+        type: array
+        items:
+          type: object
+      config:
+        type: object
+
+  # Required: Output schema
+  output_schema:
+    type: object
+    properties:
+      success:
+        type: boolean
+      results:
+        type: array
+      metrics:
+        type: object
+        properties:
+          total_duration_ms:
+            type: integer
+          workers_spawned:
+            type: integer
+          cost_total:
+            type: number
+
+  # Required: Cost model
+  cost_model:
+    coordinator: 0.003
+    per_worker: 0.00025
+    aggregator: 0.00025
+
+    example_100_tasks:
+      calculation: "1 × $0.003 + 100 × $0.00025 + 1 × $0.00025"
+      total: 0.028
+      traditional_comparison: 0.30
+      savings_percent: 90.7
+
+  # Required: Examples
+  examples:
+    - name: Small batch
+      input:
+        task_count: 50
+      expected:
+        workers: 50
+        duration_seconds: 15
+        cost: 0.016
+
+    - name: Large batch
+      input:
+        task_count: 500
+      expected:
+        workers: 500
+        duration_seconds: 30
+        cost: 0.128
+
+  # Required: Best practices
+  best_practices:
+    - Practice 1
+    - Practice 2
+    - Practice 3
+
+# Checklist for new swarm patterns:
+# [ ] Clear problem domain identified
+# [ ] Appropriate tier assignments
+# [ ] Realistic parallelization limits
+# [ ] Complete error handling strategy
+# [ ] Accurate cost model
+# [ ] Meaningful examples
+# [ ] Documented best practices

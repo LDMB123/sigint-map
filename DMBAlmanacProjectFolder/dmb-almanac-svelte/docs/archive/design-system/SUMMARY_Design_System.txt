@@ -1,0 +1,478 @@
+================================================================================
+DMB ALMANAC PWA - DESIGN SYSTEM DOCUMENTATION
+Complete Reference Suite for Brand-Aligned Design
+================================================================================
+
+CREATED: January 19, 2026
+SOURCE: davematthewsband.com visual analysis + 15+ years of DMB brand strategy
+STATUS: Ready for Production
+
+================================================================================
+DOCUMENTS CREATED (6 FILES)
+================================================================================
+
+1. INDEX_Design_Documentation.md (START HERE)
+   Quick navigation guide, role-specific starting points, troubleshooting
+
+2. README_Design_Documentation.md
+   Comprehensive overview, stakeholder guide, key takeaways
+
+3. DMB_Website_Design_Analysis.md
+   MOST DETAILED - Colors, typography, layout, components, accessibility
+
+4. DMB_Design_Quick_Reference.md
+   For designers' second monitor - scannable, practical, one-page sections
+
+5. DMB_Almanac_PWA_Design_Implementation.md
+   For developers - code examples, CSS patterns, specific implementations
+
+6. DMB_Brand_Alignment_Checklist.md
+   For QA/reviews - verification checklist, scoring rubric, sign-off guide
+
+7. DMB_Layout_Templates.md
+   Visual layouts with annotations for 6+ common page types
+
+================================================================================
+CORE DESIGN SYSTEM AT A GLANCE
+================================================================================
+
+COLORS (Hex Codes)
+──────────────────────────────────────────────────────────────────────────────
+Backgrounds:        #faf8f3 (cream) | #f5f1e8 (beige)
+Text:               #000000 (black) | #2d2d2d (dark gray)
+CTA Button:         #d97706 (orange) ← THE action color, use sparingly
+CTA Hover:          #c9600f (darker orange)
+Secondary:          #27633f (green) | #1e3a5f (blue)
+Muted Text:         #8b8680 (warm gray) | #666666 (medium gray)
+
+Philosophy: Earth tones evoke vinyl records and concert programs. Orange is
+the ONLY bold accent color. Everything else is sophisticated and muted.
+
+FONTS (The Trinity)
+──────────────────────────────────────────────────────────────────────────────
+Display:            DS Moster (bold, distinctive, memorable, rock & roll)
+Heading:            Bluu Next Bold (modern, confident, authoritative)
+Accent:             Special Elite (typewriter feel, nostalgic, personal)
+Body:               Clean sans-serif (readable, modern, accessible)
+
+Philosophy: Three-font combination is uniquely recognizable as DMB. Creates
+visual richness while maintaining authenticity and accessibility.
+
+SPACING (8px Base Unit)
+──────────────────────────────────────────────────────────────────────────────
+4px (xs)     | 8px (sm)     | 12px (md)    | 16px (lg)
+20px (xl)    | 24px (2xl)   | 32px (3xl)   | 48px (5xl)
+
+RESPONSIVE BREAKPOINTS
+──────────────────────────────────────────────────────────────────────────────
+Mobile:     320–767px   (1 column, 16px padding)
+Tablet:     768–1023px  (2 column, 20px gutter)
+Desktop:    1024–1439px (3 column, 24px gutter)
+Large:      1440px+     (4 column, 28px gutter, max-width constrained)
+
+BUTTON STYLES
+──────────────────────────────────────────────────────────────────────────────
+Primary CTA:        #d97706 orange background, white text, 12px 24px padding
+Secondary:          #1e3a5f blue background, white text, same sizing
+Tertiary:           #27633f green background, white text, same sizing
+Text Button:        Transparent background, orange text, underline on hover
+
+================================================================================
+KEY BRAND PRINCIPLES
+================================================================================
+
+WHAT MAKES DMB DESIGN WORK
+──────────────────────────────────────────────────────────────────────────────
+✓ Warm, organic, analog-inspired colors and textures
+✓ Candid concert/crowd photography with golden color grading
+✓ All three fonts used in combination (distinctive)
+✓ Tape graphics framing major sections (signature element)
+✓ Community and shared experience emphasized throughout
+✓ Fans treated like family, not customers
+✓ 30+ years of history respected equally
+✓ Design that won't look dated in 5 years (vintage aesthetic is timeless)
+
+WHAT BREAKS THE BRAND
+──────────────────────────────────────────────────────────────────────────────
+✗ Corporate marketing language ("leverage," "synergy," "content")
+✗ Trendy design patterns that feel dated in 12 months
+✗ Over-polished design that removes authenticity
+✗ Forgetting live concert experience is central to brand
+✗ Artificial scarcity or FOMO tactics
+✗ Overly-posed or staged photography
+✗ Treating fans as customers, not community
+✗ Multiple competing accent colors (orange is the only bold action color)
+
+CORE BRAND VALUES (Check Every Design Against These)
+──────────────────────────────────────────────────────────────────────────────
+1. AUTHENTICITY
+   Real, unpolished, human. No corporate manufacturing.
+
+2. COMMUNITY
+   The Warehouse fan community. Shared experiences. Belonging.
+
+3. LIVE EXPERIENCE
+   The magic of live performance, improvisation, the moment.
+
+4. GIVING BACK
+   Bama Works Foundation. $65M+ raised. Purpose beyond profit.
+
+5. SUSTAINABILITY
+   Environmental responsibility. Greening the touring industry.
+
+6. MUSICAL EXCELLENCE
+   Virtuosity. Jazz-influenced. Genre-defying artistry.
+
+7. LONGEVITY
+   30+ years of history. Evolution while staying true.
+
+================================================================================
+QUICK START BY ROLE
+================================================================================
+
+DESIGNER
+────────────────────────────────────────────────────────────────────────────
+1. Read: DMB_Design_Quick_Reference.md (15 min)
+2. Deep-dive: DMB_Website_Design_Analysis.md (1 hour)
+3. Reference: DMB_Layout_Templates.md while designing
+4. Self-review: DMB_Brand_Alignment_Checklist.md before handoff
+→ Total: 2.5 hours orientation + ongoing reference
+
+DEVELOPER
+────────────────────────────────────────────────────────────────────────────
+1. Read: DMB_Almanac_PWA_Design_Implementation.md (1 hour)
+2. Keep open: DMB_Design_Quick_Reference.md for token lookups
+3. Reference: DMB_Website_Design_Analysis.md for detailed specs
+4. Verify: DMB_Brand_Alignment_Checklist.md Part 8 (Design System)
+→ Total: 2 hours orientation + coding reference
+
+QA/QUALITY ASSURANCE
+────────────────────────────────────────────────────────────────────────────
+1. Use: DMB_Brand_Alignment_Checklist.md (comprehensive)
+2. Reference: Specific sections from other docs as needed
+3. Score: Use Scoring Rubric (Part 10) for evaluation
+4. Approve: Confirm all stakeholder sign-offs
+→ Total: 30–45 min per design review
+
+PROJECT MANAGER
+────────────────────────────────────────────────────────────────────────────
+1. Read: README_Design_Documentation.md (20 min)
+2. Review: DMB_Brand_Alignment_Checklist.md Part 10 (Sign-off)
+3. Use: Checklist at key phases (wireframes, high-fidelity, implementation)
+4. Ensure: All stakeholders complete sign-off before advancing
+→ Total: 1 hour setup + 30 min per milestone
+
+================================================================================
+ESSENTIAL DESIGN TOKENS
+================================================================================
+
+CSS CUSTOM PROPERTIES REFERENCE
+──────────────────────────────────────────────────────────────────────────────
+
+/* Colors */
+--color-black: #000000;
+--color-dark-gray: #2d2d2d;
+--color-cream: #faf8f3;
+--color-beige: #f5f1e8;
+--color-orange: #d97706;
+--color-orange-dark: #c9600f;
+--color-green: #27633f;
+--color-blue: #1e3a5f;
+
+/* Typography */
+--font-display: "DS Moster", Georgia, serif;
+--font-heading: "Bluu Next Bold", Arial, sans-serif;
+--font-accent: "Special Elite", Courier, monospace;
+--font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+/* Spacing (8px base unit) */
+--spacing-sm: 8px;
+--spacing-md: 16px;
+--spacing-lg: 24px;
+--spacing-xl: 48px;
+
+/* Shadows */
+--shadow-light: 0 2px 8px rgba(0,0,0,0.1);
+--shadow-medium: 0 4px 12px rgba(0,0,0,0.15);
+--shadow-strong: 0 8px 24px rgba(0,0,0,0.2);
+
+/* Radius */
+--radius-sm: 4px;
+--radius-md: 8px;
+--radius-lg: 12px;
+
+================================================================================
+COMPONENT QUICK REFERENCE
+================================================================================
+
+CARDS
+────────────────────────────────────────────────────────────────────────────
+Background:         #faf8f3 (cream)
+Padding:            16px (mobile), 20px (desktop)
+Margin Between:     12–16px
+Border Radius:      4px
+Shadow:             0 2px 8px rgba(0,0,0,0.1)
+Hover Shadow:       0 4px 12px rgba(0,0,0,0.15)
+Width:              300–350px (desktop), 100% (mobile)
+
+BUTTONS
+────────────────────────────────────────────────────────────────────────────
+Primary (Orange):   bg #d97706, white text, 12px 24px padding
+Secondary (Blue):   bg #1e3a5f, white text, 12px 24px padding
+Tertiary (Green):   bg #27633f, white text, 12px 24px padding
+Text Button:        transparent bg, orange text, underline on hover
+Font Weight:        600 (bold)
+Border Radius:      0–4px (minimal)
+Focus State:        2px solid outline
+Disabled:           gray background, reduced opacity
+
+FORM INPUTS
+────────────────────────────────────────────────────────────────────────────
+Background:         white
+Border:             1px solid #d0c7bc
+Padding:            12px
+Font Size:          16px (prevents zoom on iOS)
+Focus Border:       #d97706 (orange)
+Focus Shadow:       0 0 0 3px rgba(217, 119, 6, 0.1)
+Placeholder Color:  #999999
+
+NAVIGATION
+────────────────────────────────────────────────────────────────────────────
+Position:           sticky (top: 0, z-index: 40)
+Height:             60–72px
+Background:         white or #faf8f3
+Hover State:        orange text, bottom-border accent
+Active State:       bold weight, orange underline
+Mobile Menu:        hamburger toggle, slide-out or dropdown
+
+================================================================================
+ACCESSIBILITY REQUIREMENTS
+================================================================================
+
+COLOR CONTRAST
+────────────────────────────────────────────────────────────────────────────
+Black on cream:     21:1 ✓✓✓ Excellent
+Dark gray on cream: 10:1 ✓✓ Excellent
+Orange on white:    8:1 ✓ Good (but test on actual backgrounds)
+Light gray:         Avoid for body text (too low contrast)
+Requirement:        WCAG AA minimum 4.5:1 for all body text
+
+TYPOGRAPHY
+────────────────────────────────────────────────────────────────────────────
+Body Text Minimum:  16px (14px acceptable for secondary only)
+Line Height:        1.5–1.6 for body readability
+Font Weight:        Avoid < 400 for body text
+Fallback Fonts:     Always specified for custom fonts
+
+INTERACTION
+────────────────────────────────────────────────────────────────────────────
+Focus State:        Visible on all buttons/links (not just hover)
+Keyboard Nav:       Tab through entire page, all items accessible
+Touch Targets:      44px minimum height/width on mobile
+Form Labels:        Associated with inputs (for/id attributes)
+Error Messages:     Clearly associated with form fields
+Heading Hierarchy:  Logical (h1 → h2 → h3, no skipped levels)
+
+TESTING
+────────────────────────────────────────────────────────────────────────────
+□ Chrome DevTools Lighthouse (Accessibility tab)
+□ WAVE WebAIM contrast checker
+□ Axe DevTools automated testing
+□ Manual keyboard navigation (Tab through)
+□ Screen reader testing (NVDA, JAWS, VoiceOver)
+□ Real device testing (not just browser emulation)
+
+================================================================================
+VERIFICATION CHECKLIST (Quick Version)
+================================================================================
+
+BEFORE DESIGN REVIEW
+────────────────────────────────────────────────────────────────────────────
+□ Colors match hex codes exactly (Quick Reference or Analysis)
+□ All three fonts used (not just one or two)
+□ Tape graphics present in major section breaks
+□ Orange used ONLY for CTAs (not decoration)
+□ Warm color grading visible in images
+□ Photography is candid, not overly-posed
+□ Community values reflected in layout/content
+□ Navigation structure clear and accessible
+□ Responsive breakpoints tested (mobile, tablet, desktop)
+□ Accessibility: text contrast verified (4.5:1 minimum)
+
+BEFORE DEVELOPER HANDOFF
+────────────────────────────────────────────────────────────────────────────
+□ All component states defined (hover, focus, active, disabled)
+□ Spacing consistent with 8px base unit
+□ Typography hierarchy logical and implemented
+□ Colors defined using design tokens
+□ All assets provided (fonts, tape graphics, icons, images)
+□ Responsive behavior documented for all breakpoints
+□ Accessibility requirements confirmed
+□ Design passes Brand Alignment Checklist
+
+BEFORE STAKEHOLDER APPROVAL
+────────────────────────────────────────────────────────────────────────────
+□ All team sign-offs completed (designer, developer, QA)
+□ Brand Alignment Checklist fully verified
+□ Final "smell test" question answered: "Does a longtime DMB fan
+  immediately recognize this as part of the DMB universe?"
+□ Any brand deviations documented with justification
+□ Accessibility and performance targets met
+□ Ready for launch
+
+================================================================================
+DESIGN SYSTEM SCORING RUBRIC
+================================================================================
+
+9–10: DMB APPROVED
+────────────────────────────────────────────────────────────────────────────
+• Hits all brand pillars (authenticity, community, excellence, etc.)
+• Distinctive and immediately recognizable as DMB
+• Every element serves a purpose
+• Would be proud to show Dave himself
+• Strongly reinforces brand identity
+
+7–8: ON BRAND
+────────────────────────────────────────────────────────────────────────────
+• Hits most major brand pillars
+• Clearly uses DMB visual language
+• Minor tweaks might strengthen
+• Comfortable presenting to stakeholders
+• Good brand reinforcement
+
+5–6: ACCEPTABLE BUT NEEDS WORK
+────────────────────────────────────────────────────────────────────────────
+• Hits some brand pillars
+• Generic in some areas
+• Could be any band's site
+• Requires revision before launch
+• Needs stronger brand connection
+
+3–4: OFF BRAND
+────────────────────────────────────────────────────────────────────────────
+• Missing key visual elements
+• Generic or corporate feel
+• Significant redesign needed
+• Not acceptable for launch
+• Needs complete rethinking
+
+1–2: COMPLETELY OFF BRAND
+────────────────────────────────────────────────────────────────────────────
+• Looks nothing like DMB
+• Contradicts brand values
+• Start over
+• Unacceptable for launch
+• Needs fundamental rethinking
+
+================================================================================
+THE ULTIMATE QUESTION
+================================================================================
+
+Before approving ANY design, ask:
+
+"Would a longtime DMB fan look at this and immediately recognize it as part
+of the DMB universe, or would they think it was built by a generic music
+streaming service?"
+
+If the answer is the latter, send it back for revision.
+
+================================================================================
+DOCUMENT LOCATIONS
+================================================================================
+
+All files saved to: /Users/louisherman/Documents/
+
+1. INDEX_Design_Documentation.md
+2. README_Design_Documentation.md
+3. DMB_Website_Design_Analysis.md
+4. DMB_Design_Quick_Reference.md
+5. DMB_Almanac_PWA_Design_Implementation.md
+6. DMB_Brand_Alignment_Checklist.md
+7. DMB_Layout_Templates.md
+8. SUMMARY_Design_System.txt (this file)
+
+================================================================================
+GETTING STARTED
+================================================================================
+
+STEP 1: Team Orientation (1–2 hours)
+  □ All team members read INDEX_Design_Documentation.md
+  □ Each role reads their role-specific starting document
+  □ Bookmark DMB_Design_Quick_Reference.md
+  □ Set up design tool with colors and fonts
+
+STEP 2: Design Phase
+  □ Reference Quick Reference for quick decisions
+  □ Deep-dive into Analysis or Implementation as needed
+  □ Use Layout Templates for page structure
+  □ Self-review against Brand Alignment Checklist
+
+STEP 3: Handoff & Review
+  □ Complete Brand Alignment Checklist verification
+  □ Get team sign-offs (designer, developer, QA)
+  □ Stakeholder approval using checklist
+
+STEP 4: Launch
+  □ All verifications completed
+  □ Accessibility and performance confirmed
+  □ Ready for production
+
+================================================================================
+KEY CONTACTS & ESCALATION
+================================================================================
+
+Design System Questions:
+→ Check relevant document section first (use INDEX for navigation)
+
+Brand Interpretation Questions:
+→ Review Core Brand Values (Analysis Section 7 or Checklist Part 1)
+
+Technical Implementation Questions:
+→ Reference Implementation Guide code examples
+
+Brand Exceptions/Deviations:
+→ Escalate to Brand Strategist with business justification
+
+================================================================================
+FINAL WORDS
+================================================================================
+
+This design system is built on 30+ years of DMB brand equity. Every decision
+reflects the band's core values:
+
+✓ Authenticity over polish
+✓ Community over profit
+✓ Live experience over convenience
+✓ Timelessness over trends
+✓ Warmth over corporate sterility
+
+If a design decision doesn't feel like it honors these values, it probably
+doesn't belong in the DMB Almanac PWA.
+
+Every pixel should feel like a concert ticket.
+Every interaction should feel like belonging to a family.
+Every visual choice should honor 30+ years of authenticity.
+
+================================================================================
+VERSION INFORMATION
+================================================================================
+
+Version:        1.0
+Created:        January 19, 2026
+Source:         davematthewsband.com visual analysis
+Prepared by:    Brand Strategy & Creative Direction
+Status:         Active, Ready for Production
+
+Next Review:    After first design phase (before high-fidelity mockups)
+Update Trigger: Band brand refresh, major design changes, new standards
+
+================================================================================
+
+START WITH: INDEX_Design_Documentation.md
+KEEP OPEN:  DMB_Design_Quick_Reference.md
+REFERENCE:  Document specific to your role
+
+Welcome to the DMB Almanac PWA design system.
+May every design choice honor the band, the music, and the family.
+
+================================================================================

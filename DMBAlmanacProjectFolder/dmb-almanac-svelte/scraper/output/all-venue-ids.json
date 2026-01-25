@@ -1,0 +1,545 @@
+{
+  "total": 108,
+  "venues": [
+    {
+      "id": "32163",
+      "name": "[Private Residence]",
+      "city": ""
+    },
+    {
+      "id": "1397",
+      "name": "[Unknown]",
+      "city": ""
+    },
+    {
+      "id": "1690",
+      "name": "[Unknown]",
+      "city": ""
+    },
+    {
+      "id": "1383",
+      "name": "[Unknown]",
+      "city": ""
+    },
+    {
+      "id": "15010",
+      "name": "3TEN Austin City Limits Live",
+      "city": ""
+    },
+    {
+      "id": "1744",
+      "name": "AFAS Live",
+      "city": "[aka Heineken Music Hall]"
+    },
+    {
+      "id": "805",
+      "name": "Akron Civic Theater",
+      "city": ""
+    },
+    {
+      "id": "30079",
+      "name": "Ambler Cabaret",
+      "city": ""
+    },
+    {
+      "id": "1727",
+      "name": "Ameris Bank Amphitheatre",
+      "city": "[aka Verizon Wireless Amphitheatre at Encore Park]"
+    },
+    {
+      "id": "21012",
+      "name": "Anaheim Convention Center",
+      "city": ""
+    },
+    {
+      "id": "818",
+      "name": "APC Studios",
+      "city": ""
+    },
+    {
+      "id": "1392",
+      "name": "Ardmore Music Hall",
+      "city": "[aka 23 East Cabaret, Brownies 23 East]"
+    },
+    {
+      "id": "14996",
+      "name": "Asheville Music Hall",
+      "city": ""
+    },
+    {
+      "id": "1824",
+      "name": "AT&T Stadium",
+      "city": "[aka Cowboys Stadium]"
+    },
+    {
+      "id": "1299",
+      "name": "Athens-Clarke County Fairgrounds",
+      "city": ""
+    },
+    {
+      "id": "832",
+      "name": "Austin Music Hall",
+      "city": ""
+    },
+    {
+      "id": "1536",
+      "name": "B Live",
+      "city": "[aka Whitlow's on Wilson]"
+    },
+    {
+      "id": "1829",
+      "name": "Bader Field",
+      "city": ""
+    },
+    {
+      "id": "31105",
+      "name": "Be Here Now",
+      "city": ""
+    },
+    {
+      "id": "828",
+      "name": "Beard–Eaves–Memorial Coliseum (Auburn University)",
+      "city": ""
+    },
+    {
+      "id": "941",
+      "name": "Belly Up Aspen",
+      "city": "[aka Double Diamond]"
+    },
+    {
+      "id": "847",
+      "name": "Berkeley Community Theater (Berkeley High School)",
+      "city": ""
+    },
+    {
+      "id": "853",
+      "name": "Blind Pig",
+      "city": ""
+    },
+    {
+      "id": "1013",
+      "name": "Bourbon Street Ballroom",
+      "city": "[aka Hammerjacks]"
+    },
+    {
+      "id": "30036",
+      "name": "Broadway Square",
+      "city": ""
+    },
+    {
+      "id": "1294",
+      "name": "C.Y. Stephens Auditorium (Iowa State University of Science and Technology)",
+      "city": ""
+    },
+    {
+      "id": "1573",
+      "name": "Casino",
+      "city": ""
+    },
+    {
+      "id": "1018",
+      "name": "Cellairis Amphitheatre at Lakewood",
+      "city": "[aka Coca-Cola Lakewood Amphitheatre, Lakewood Amphitheatre, HiFi Buys Amphitheatre, Lakewood Amphitheatre, Aaron's Amphitheatre at Lakewood, Lakewood Amphitheatre]"
+    },
+    {
+      "id": "1881",
+      "name": "Centennial Olympic Park",
+      "city": ""
+    },
+    {
+      "id": "1866",
+      "name": "CFG Bank Arena",
+      "city": "[aka 1st Mariner Arena, Royal Farms Arena]"
+    },
+    {
+      "id": "889",
+      "name": "Chameleon Club",
+      "city": ""
+    },
+    {
+      "id": "894",
+      "name": "Chi Phi, Eta Chapter",
+      "city": ""
+    },
+    {
+      "id": "31101",
+      "name": "Coca-Cola Roxy",
+      "city": ""
+    },
+    {
+      "id": "1651",
+      "name": "Columbiahalle",
+      "city": ""
+    },
+    {
+      "id": "1870",
+      "name": "Community College of Aurora",
+      "city": ""
+    },
+    {
+      "id": "30064",
+      "name": "Emory University",
+      "city": ""
+    },
+    {
+      "id": "5908",
+      "name": "Etihad Park (Yas Island)",
+      "city": "[aka du Arena (Yas Island)]"
+    },
+    {
+      "id": "1640",
+      "name": "ExploreAsheville.com Arena (Harrah's Cherokee Center–Asheville)",
+      "city": "[aka Asheville Civic Center Arena, U.S. Cellular Center Arena]"
+    },
+    {
+      "id": "1654",
+      "name": "Festival Theatre (Adelaide Festival Centre)",
+      "city": ""
+    },
+    {
+      "id": "973",
+      "name": "Fox Theatre",
+      "city": ""
+    },
+    {
+      "id": "31122",
+      "name": "Frank Day Field (Randolph-Macon College)",
+      "city": ""
+    },
+    {
+      "id": "978",
+      "name": "Frank Erwin Center (The University of Texas at Austin)",
+      "city": ""
+    },
+    {
+      "id": "985",
+      "name": "Georgia Theatre",
+      "city": ""
+    },
+    {
+      "id": "31133",
+      "name": "Geraldine's (Hotel Van Zandt)",
+      "city": ""
+    },
+    {
+      "id": "13973",
+      "name": "Great Scott",
+      "city": ""
+    },
+    {
+      "id": "1903",
+      "name": "Hayden Homes Amphitheater",
+      "city": "[aka Les Schwab Amphitheater]"
+    },
+    {
+      "id": "1024",
+      "name": "Hoyt Street Bar and Grill",
+      "city": ""
+    },
+    {
+      "id": "1042",
+      "name": "Isleta Amphitheater",
+      "city": "[aka Mesa Del Sol Amphitheater, ABQ Journal Pavilion, The Pavilion]"
+    },
+    {
+      "id": "1020",
+      "name": "James H. Hilton Coliseum (Iowa State University of Science and Technology)",
+      "city": ""
+    },
+    {
+      "id": "815",
+      "name": "Johan Cruijff ArenA",
+      "city": "[aka Amsterdam ArenA]"
+    },
+    {
+      "id": "1053",
+      "name": "Kiva Auditorium",
+      "city": ""
+    },
+    {
+      "id": "1762",
+      "name": "KLRU-TV Studio 6A (The University of Texas at Austin)",
+      "city": ""
+    },
+    {
+      "id": "1537",
+      "name": "Lac de Malsaucy",
+      "city": ""
+    },
+    {
+      "id": "1077",
+      "name": "LeFrak Gymnasium (Amherst College)",
+      "city": ""
+    },
+    {
+      "id": "1080",
+      "name": "Liberty Lunch",
+      "city": ""
+    },
+    {
+      "id": "1511",
+      "name": "Locker Room",
+      "city": ""
+    },
+    {
+      "id": "1598",
+      "name": "Loft",
+      "city": ""
+    },
+    {
+      "id": "1777",
+      "name": "Lotto Arena",
+      "city": ""
+    },
+    {
+      "id": "1900",
+      "name": "Maine Savings Amphitheater",
+      "city": "[aka Darling's Waterfront Pavilion]"
+    },
+    {
+      "id": "1585",
+      "name": "Majesty of the Seas",
+      "city": ""
+    },
+    {
+      "id": "1108",
+      "name": "Masquerade Music Park",
+      "city": ""
+    },
+    {
+      "id": "30080",
+      "name": "Max's Taphouse",
+      "city": "[aka Max's on Broadway]"
+    },
+    {
+      "id": "5912",
+      "name": "Mediolanum Forum",
+      "city": ""
+    },
+    {
+      "id": "1118",
+      "name": "Melkweg",
+      "city": ""
+    },
+    {
+      "id": "1823",
+      "name": "Microsoft Store",
+      "city": ""
+    },
+    {
+      "id": "31092",
+      "name": "Monday Night Brewing–West Midtown",
+      "city": ""
+    },
+    {
+      "id": "30082",
+      "name": "Moody Center (The University of Texas at Austin)",
+      "city": ""
+    },
+    {
+      "id": "1196",
+      "name": "MVP Arena",
+      "city": "[aka Knickerbocker Arena, Pepsi Arena, Times Union Center]"
+    },
+    {
+      "id": "27033",
+      "name": "North Beach",
+      "city": ""
+    },
+    {
+      "id": "1339",
+      "name": "Omni Coliseum",
+      "city": ""
+    },
+    {
+      "id": "1181",
+      "name": "Palace Theatre",
+      "city": ""
+    },
+    {
+      "id": "16991",
+      "name": "Palau dels Esports de Barcelona",
+      "city": ""
+    },
+    {
+      "id": "1650",
+      "name": "Paradiso",
+      "city": ""
+    },
+    {
+      "id": "1538",
+      "name": "Parco Area Militare",
+      "city": ""
+    },
+    {
+      "id": "22023",
+      "name": "Phi Delta Theta, Alabama Beta Chapter",
+      "city": ""
+    },
+    {
+      "id": "1800",
+      "name": "RadioEins",
+      "city": ""
+    },
+    {
+      "id": "1225",
+      "name": "Riverside Park Amphitheater (Riverside Park)",
+      "city": ""
+    },
+    {
+      "id": "1239",
+      "name": "RoXY",
+      "city": ""
+    },
+    {
+      "id": "1214",
+      "name": "SEFCU Arena (State University of New York at Albany)",
+      "city": "[aka Recreation and Convocation Center (State University of New York at Albany)]"
+    },
+    {
+      "id": "1246",
+      "name": "Sigma Alpha Epsilon, Georgia Beta Chapter",
+      "city": ""
+    },
+    {
+      "id": "31118",
+      "name": "Sigma Nu, Mu Chapter",
+      "city": ""
+    },
+    {
+      "id": "31090",
+      "name": "Skyline Theater at the Long Center",
+      "city": ""
+    },
+    {
+      "id": "1273",
+      "name": "South Park Meadows",
+      "city": ""
+    },
+    {
+      "id": "1586",
+      "name": "Sovereign of the Seas",
+      "city": ""
+    },
+    {
+      "id": "814",
+      "name": "Starwood Amphitheatre",
+      "city": "[aka Starwood Amphitheatre, First American Music Center, AmSouth Amphitheatre]"
+    },
+    {
+      "id": "1198",
+      "name": "State Farm Arena",
+      "city": "[aka Philips Arena]"
+    },
+    {
+      "id": "30075",
+      "name": "Stephen Talkhouse",
+      "city": ""
+    },
+    {
+      "id": "1771",
+      "name": "Tempodrom",
+      "city": ""
+    },
+    {
+      "id": "15000",
+      "name": "Terminal West",
+      "city": ""
+    },
+    {
+      "id": "836",
+      "name": "The Backyard Live Oak Amphitheater",
+      "city": ""
+    },
+    {
+      "id": "1316",
+      "name": "The Birchmere",
+      "city": ""
+    },
+    {
+      "id": "1687",
+      "name": "The Meadow (Piedmont Park)",
+      "city": ""
+    },
+    {
+      "id": "1341",
+      "name": "The Palace of Auburn Hills",
+      "city": ""
+    },
+    {
+      "id": "18007",
+      "name": "The Shakedown",
+      "city": ""
+    },
+    {
+      "id": "1348",
+      "name": "The Tabernacle",
+      "city": ""
+    },
+    {
+      "id": "1363",
+      "name": "Tower Records",
+      "city": ""
+    },
+    {
+      "id": "1371",
+      "name": "Turner Field",
+      "city": ""
+    },
+    {
+      "id": "31129",
+      "name": "Uber Eats Music Hall",
+      "city": ""
+    },
+    {
+      "id": "790",
+      "name": "Van Riper's Lake",
+      "city": ""
+    },
+    {
+      "id": "1403",
+      "name": "Variety Playhouse",
+      "city": ""
+    },
+    {
+      "id": "1404",
+      "name": "Varsity Theatre",
+      "city": ""
+    },
+    {
+      "id": "1644",
+      "name": "Waterfront Hall Conference & Concert Centre",
+      "city": ""
+    },
+    {
+      "id": "1552",
+      "name": "White River Amphitheatre",
+      "city": ""
+    },
+    {
+      "id": "1145",
+      "name": "William D. Mullins Memorial Center (University of Massachusetts)",
+      "city": ""
+    },
+    {
+      "id": "999",
+      "name": "William Randolph Hearst Greek Theatre (The University of California, Berkeley)",
+      "city": ""
+    },
+    {
+      "id": "801",
+      "name": "WNNX 99.7 FM \"99X\"",
+      "city": ""
+    },
+    {
+      "id": "1668",
+      "name": "WSTR 94.1 FM \"Star 94 FM\"",
+      "city": ""
+    },
+    {
+      "id": "1607",
+      "name": "Zilker Metropolitan Park",
+      "city": ""
+    }
+  ]
+}

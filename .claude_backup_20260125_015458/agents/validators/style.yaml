@@ -1,0 +1,122 @@
+# Universal Agent Framework - Style Validator
+# Category: Validators | Tier: Haiku | Parallelization: 100+
+
+agent:
+  id: validator_style
+  name: Style Validator
+  version: 1.0.0
+
+  functional_category: validator
+  sub_category: style
+  model_tier: haiku
+
+  description: |
+    Validates code style and formatting against project conventions.
+    Checks indentation, naming, spacing, line length, and style rules.
+    Integrates with ESLint, Prettier, Black, Rustfmt, gofmt, etc.
+
+  capabilities:
+    - check_indentation
+    - validate_naming_conventions
+    - verify_spacing_rules
+    - check_line_length
+    - validate_import_order
+    - check_comment_style
+    - verify_bracket_style
+    - validate_quote_style
+    - check_trailing_commas
+    - verify_semicolons
+
+  supported_tools:
+    - eslint
+    - prettier
+    - stylelint
+    - black
+    - isort
+    - flake8
+    - pylint
+    - rustfmt
+    - clippy
+    - gofmt
+    - golint
+    - rubocop
+    - phpcs
+    - checkstyle
+    - ktlint
+    - swiftlint
+    - editorconfig
+
+  input_schema:
+    type: object
+    required:
+      - file_path
+    properties:
+      file_path:
+        type: string
+      config_file:
+        type: string
+        description: Path to style config (.eslintrc, .prettierrc, etc.)
+      auto_detect_config:
+        type: boolean
+        default: true
+      rules_override:
+        type: object
+        description: Override specific rules
+      fix_mode:
+        type: boolean
+        default: false
+        description: Return fixes instead of just reporting
+
+  output_schema:
+    type: object
+    properties:
+      compliant:
+        type: boolean
+      tool_used:
+        type: string
+      violations:
+        type: array
+        items:
+          type: object
+          properties:
+            line:
+              type: integer
+            column:
+              type: integer
+            rule:
+              type: string
+            message:
+              type: string
+            severity:
+              type: string
+              enum: [error, warning, info]
+            fixable:
+              type: boolean
+            fix:
+              type: object
+              description: Suggested fix if fixable
+      summary:
+        type: object
+        properties:
+          errors:
+            type: integer
+          warnings:
+            type: integer
+          fixable:
+            type: integer
+
+  performance:
+    avg_latency_ms: 400
+    max_tokens: 4000
+    timeout_seconds: 30
+
+  parallelization:
+    max_concurrent: 200
+    recommended_batch_size: 100
+
+  tags:
+    - validation
+    - style
+    - formatting
+    - linting
+    - universal

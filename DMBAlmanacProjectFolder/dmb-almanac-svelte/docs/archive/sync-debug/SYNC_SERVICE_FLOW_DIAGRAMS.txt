@@ -1,0 +1,531 @@
+================================================================================
+DMB PWA SYNC SERVICE - FLOW DIAGRAMS & DATA CORRUPTION VISUALIZATION
+================================================================================
+
+================================================================================
+ISSUE #1: DATA CORRUPTION - showDate Field Transformation
+================================================================================
+
+WHAT HAPPENS NOW (BROKEN):
+──────────────────────────
+
+Server:                   Transformation:              Dexie Storage:
+┌─────────────────────┐  ┌──────────────────────────┐  ┌──────────────────┐
+│ PostgreSQL Show     │  │ sync-service.ts          │  │ IndexedDB Show   │
+│                     │  │ Lines 415-423            │  │                  │
+│ {                   │  │                          │  │ {                │
+│   id: 123           │  │ item.showDate = "2024..." │  │   id: 123        │
+│   showDate: "2024..." ─→ delete showDate           │  │   date: "2024..." ← WRONG FIELD!
+│   venue: "Madison"  │  │ create date field        │  │   venue: "Madison"
+│ }                   │  │                          │  │ }                │
+└─────────────────────┘  └──────────────────────────┘  └──────────────────┘
+
+Later in Application:
+┌──────────────────────────────────────────────────────────────────────┐
+│ Component Code:                                                       │
+│   const show = await dexieDb.shows.get(123);                         │
+│   console.log(show.showDate);  ← undefined! (field doesn't exist)   │
+│   console.log(show.date);      ← "2024-..." (wrong field exists)    │
+│                                                                       │
+│ Result: Show display broken, sorting broken, filtering broken        │
+└──────────────────────────────────────────────────────────────────────┘
+
+WHAT SHOULD HAPPEN (FIXED):
+───────────────────────────
+
+Server:                   Transformation:              Dexie Storage:
+┌─────────────────────┐  ┌──────────────────────────┐  ┌──────────────────┐
+│ PostgreSQL Show     │  │ sync-service.ts          │  │ IndexedDB Show   │
+│                     │  │ Lines 415-423 (FIXED)    │  │                  │
+│ {                   │  │                          │  │ {                │
+│   id: 123           │  │ item.showDate = "2024..." │  │   id: 123        │
+│   showDate: "2024..." ─→ keep showDate field       │  │   showDate: "2024..." ← CORRECT!
+│   venue: "Madison"  │  │ (no delete, no rename)   │  │   venue: "Madison"
+│ }                   │  │                          │  │ }                │
+└─────────────────────┘  └──────────────────────────┘  └──────────────────┘
+
+Later in Application:
+┌──────────────────────────────────────────────────────────────────────┐
+│ Component Code:                                                       │
+│   const show = await dexieDb.shows.get(123);                         │
+│   console.log(show.showDate);  ← "2024-..." ✓ CORRECT               │
+│                                                                       │
+│ Result: Show displays correctly, sorting works, filtering works      │
+└──────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+ISSUE #2 & #3: BROKEN FULL SYNC - Pagination & API Usage
+================================================================================
+
+CURRENT FLOW (BROKEN):
+──────────────────────
+
+User Initiates Sync
+       ↓
+performFullSync()
+       ↓
+    Loop: syncEntity('shows', 'shows')
+       ↓
+    ┌─────────────────────────────────────────────┐
+    │ Batch Processing                            │
+    │                                             │
+    │ Iteration 1:                                │
+    │  • offset=0, limit=100                      │
+    │  • Call: trpcClient.sync.shows({...})       │
+    │  • Response: { data: [100 items], ... }     │
+    │  • Check: if (!response?.data?.length)      │
+    │    → FALSE (has 100 items)                  │
+    │  • Store 100 items ✓                        │
+    │  • offset += 100 → 100                      │
+    │                                             │
+    │ Iteration 2:                                │
+    │  • offset=100, limit=100                    │
+    │  • Network timeout!                         │
+    │  • Response: undefined (or error object)    │
+    │  • Check: if (!response?.data?.length)      │
+    │    → TRUE (response is undefined)           │
+    │  • break → EXIT LOOP ❌ SILENT EXIT         │
+    │  • Stats: "Synced 100/3000 shows"           │
+    │  • Status: "Sync Complete!" ❌ WRONG        │
+    │                                             │
+    │ Iteration 3+: Never executed                │
+    └─────────────────────────────────────────────┘
+       ↓
+  Return Stats (partial!)
+       ↓
+  User Sees: "Sync Complete" - but only 100/3000 items synced!
+
+
+FIXED FLOW:
+───────────
+
+User Initiates Sync
+       ↓
+performFullSync()
+       ↓
+    Loop: syncEntity('shows', 'shows')
+       ↓
+    ┌─────────────────────────────────────────────┐
+    │ Batch Processing (with validation)          │
+    │                                             │
+    │ Iteration 1:                                │
+    │  • offset=0, limit=100                      │
+    │  • Call: await trpcClient.sync.shows({...}) │
+    │  • Response: { data: [100 items], ... }     │
+    │  • Check: if (!response?.data?.length)      │
+    │    → FALSE (has 100 items)                  │
+    │  • Check: Validate structure ✓             │
+    │  • Store 100 items ✓                        │
+    │  • offset += 100 → 100                      │
+    │                                             │
+    │ Iteration 2:                                │
+    │  • offset=100, limit=100                    │
+    │  • Network timeout!                         │
+    │  • Response: undefined                      │
+    │  • Check: if (!response?.data?.length)      │
+    │    → TRUE (response is undefined)           │
+    │  • Check: Validate structure                │
+    │    → FAIL! Response is undefined            │
+    │  • throw new Error("Invalid response...")   │
+    │  • catch block → retry with backoff         │
+    │                                             │
+    │ Retry Iteration 2:                          │
+    │  • Network back up!                         │
+    │  • Response: { data: [100 items], ... }     │
+    │  • Check: Validate structure ✓             │
+    │  • Store 100 items ✓                        │
+    │  • Continue paginating...                   │
+    └─────────────────────────────────────────────┘
+       ↓
+  Complete all pages
+       ↓
+  Return Stats (complete!)
+       ↓
+  User Sees: "Synced 3000/3000 shows" ✓
+
+
+================================================================================
+ISSUE #4: BROKEN MUTATIONS - OFFLINE ACTIONS NEVER SYNC
+================================================================================
+
+CURRENT FLOW (BROKEN):
+──────────────────────
+
+User Action (Offline)
+       ↓
+    [ ] Add to Favorites
+       ↓
+queueOptimisticUpdate()
+       ↓
+    Store in pendingActions:
+    {
+      type: 'ADD_FAVORITE',
+      payload: { showId: 123 },
+      status: 'pending'
+    }
+       ↓
+[Network comes back online]
+       ↓
+processPendingQueue()
+       ↓
+  For each pending action:
+       ↓
+    executeAction({
+      type: 'ADD_FAVORITE',
+      payload: { showId: 123 }
+    })
+       ↓
+    procedures['ADD_FAVORITE']()
+       ↓
+    ┌────────────────────────────────────┐
+    │ const endpoint =                    │
+    │   this.trpc?.favorites?.add         │
+    │                                    │
+    │ if (!endpoint?.mutate) {            │ ← WRONG CHECK
+    │   throw Error(                      │
+    │     "mutate not available"          │
+    │   )                                 │
+    │ }                                   │
+    │                                    │
+    │ return endpoint.mutate(payload)     │ ← WRONG METHOD
+    └────────────────────────────────────┘
+       ↓
+    Error Thrown:
+    "Invalid tRPC endpoint: favorites.add.mutate not available"
+       ↓
+    Mark action as 'failed'
+       ↓
+    pendingActions: { status: 'failed', error: "mutate not available" }
+       ↓
+    User Sees: Nothing (action silently failed)
+       ↓
+    Result: Favorite was NOT added to server!
+
+
+FIXED FLOW:
+───────────
+
+User Action (Offline)
+       ↓
+    [ ] Add to Favorites
+       ↓
+queueOptimisticUpdate()
+       ↓
+    Store in pendingActions:
+    {
+      type: 'ADD_FAVORITE',
+      payload: { showId: 123 },
+      status: 'pending'
+    }
+       ↓
+[Network comes back online]
+       ↓
+processPendingQueue()
+       ↓
+  For each pending action:
+       ↓
+    executeAction({
+      type: 'ADD_FAVORITE',
+      payload: { showId: 123 }
+    })
+       ↓
+    procedures['ADD_FAVORITE']()
+       ↓
+    ┌────────────────────────────────────┐
+    │ const endpoint =                    │
+    │   this.trpc?.favorites?.add         │
+    │                                    │
+    │ if (!endpoint) {                    │ ← CORRECT CHECK
+    │   throw Error(                      │
+    │     "endpoint not available"        │
+    │   )                                 │
+    │ }                                   │
+    │                                    │
+    │ return endpoint(payload)            │ ← DIRECT CALL
+    └────────────────────────────────────┘
+       ↓
+    tRPC Call:
+    POST /api/trpc/favorites.add
+    with payload: { showId: 123 }
+       ↓
+    Server Response: { success: true, favoriteId: 456 }
+       ↓
+    Mark action as 'completed'
+       ↓
+    pendingActions: { status: 'completed', completedAt: ... }
+       ↓
+    User Sees: Favorite added ✓
+       ↓
+    Result: Favorite WAS added to server! ✓
+
+
+================================================================================
+TRPC CLIENT API DIFFERENCES
+================================================================================
+
+Vanilla Client (used by sync-service):
+┌────────────────────────────────────────┐
+│ createTRPCClient<AppRouter>({...})     │
+│                                        │
+│ // Queries - DIRECT CALL               │
+│ const result = await                   │
+│   trpcClient.sync.shows({               │
+│     limit: 100,                        │
+│     offset: 0                          │
+│   });                                  │
+│                                        │
+│ // Mutations - DIRECT CALL             │
+│ const result = await                   │
+│   trpcClient.favorites.add({            │
+│     showId: 123                        │
+│   });                                  │
+└────────────────────────────────────────┘
+
+React Client (used in components):
+┌────────────────────────────────────────┐
+│ createTRPCReact<AppRouter>({...})      │
+│                                        │
+│ // Queries - VIA HOOKS                 │
+│ const { data } = trpc.sync.shows       │
+│   .useQuery({ limit: 100, offset: 0 }) │
+│                                        │
+│ // Queries - VIA MUTATE HOOK           │
+│ const { mutate } =                     │
+│   trpc.favorites.add.useMutation()     │
+│   mutate({ showId: 123 })              │
+│                                        │
+│ // Direct Call to Query (rare):        │
+│ const result = await                   │
+│   trpc.sync.shows.query({              │
+│     limit: 100,                        │
+│     offset: 0                          │
+│   });                                  │
+└────────────────────────────────────────┘
+
+Sync Service (using vanilla client):
+┌────────────────────────────────────────┐
+│ // CORRECT USAGE:                      │
+│                                        │
+│ // Query:                              │
+│ const response = await                 │
+│   this.trpc.sync.shows({                │
+│     limit: 100,                        │
+│     offset: 0                          │
+│   });                                  │
+│                                        │
+│ // Mutation:                           │
+│ const result = await                   │
+│   this.trpc.favorites.add(payload);     │
+│                                        │
+│ // WRONG (don't do this):              │
+│ // - .query() wrapper                  │
+│ // - .mutate() wrapper                 │
+│ // - React hooks                       │
+└────────────────────────────────────────┘
+
+
+================================================================================
+ERROR HANDLING COMPARISON
+================================================================================
+
+CURRENT (BROKEN):
+─────────────────
+
+Error on Batch 2:
+  ↓
+Batch 1: Success (100 items) ✓
+Batch 2: Error response → break ❌ SILENT EXIT
+Batch 3+: Never requested
+
+Result: 100/3000 items synced
+Status: "Sync Complete" ← LIE
+
+errorCount: 0 (never incremented)
+Retry: Not triggered
+User: Sees success, data is incomplete
+
+
+FIXED:
+──────
+
+Error on Batch 2:
+  ↓
+Batch 1: Success (100 items) ✓
+Batch 2: Error response → validate → throw ✓
+Batch 3+: Skipped due to error
+
+Result: Error caught
+Status: "Sync Failed: Invalid response"
+Next: Retry with backoff (exponential)
+
+errorCount: 1 (incremented)
+Retry: Triggered in catch block
+Batch 2 Retry: Succeeds
+Batch 3+: Continues
+Final: 3000/3000 items synced
+Status: "Sync Complete" ✓
+User: Sees success, data is complete
+
+
+================================================================================
+DATA FLOW - SHOWS WITH MULTIPLE ISSUES
+================================================================================
+
+CURRENT (ALL BUGS):
+──────────────────
+
+PostgreSQL (Server):
+  id: 123
+  showDate: "2024-08-17"
+  venue: "Madison Square Garden"
+
+       ↓ [ISSUE #2: .query() check (backwards but works)]
+
+Vanilla Client:
+  trpcClient.sync.shows({...})
+
+       ↓ [ISSUE #3: No validation on empty response]
+
+if (!response?.data?.length) {
+  break;  // Could be silent error exit
+}
+
+       ↓ [ISSUE #1: Transform showDate → date and delete showDate]
+
+Transformation (WRONG):
+  {
+    id: 123,
+    date: "2024-08-17",      ← WRONG FIELD
+    venue: "Madison Square Garden"
+    // showDate: DELETED!
+  }
+
+       ↓
+
+Dexie Storage (CORRUPTED):
+  id: 123
+  date: "2024-08-17"         ← WRONG (schema expects showDate)
+  venue: "Madison Square Garden"
+
+       ↓
+
+Component Query:
+  show = dexieDb.shows.get(123)
+  console.log(show.showDate)  → undefined ❌
+  console.log(show.date)      → "2024-08-17" (WRONG FIELD)
+
+Result: BROKEN DATA
+
+
+FIXED (ALL CORRECTED):
+──────────────────────
+
+PostgreSQL (Server):
+  id: 123
+  showDate: "2024-08-17"
+  venue: "Madison Square Garden"
+
+       ↓ [ISSUE #2 FIXED: Direct call, no .query()]
+
+Vanilla Client:
+  await trpcClient.sync.shows({...})
+
+       ↓ [ISSUE #3 FIXED: Validate response structure]
+
+if (!response?.data?.length) {
+  if (!response || !('data' in response)) {
+    throw Error("Invalid response");
+  }
+  break;
+}
+
+       ↓ [ISSUE #1 FIXED: Keep showDate as-is]
+
+Transformation (CORRECT):
+  {
+    id: 123,
+    showDate: "2024-08-17",   ← CORRECT FIELD
+    venue: "Madison Square Garden"
+  }
+
+       ↓
+
+Dexie Storage (CORRECT):
+  id: 123
+  showDate: "2024-08-17"      ← CORRECT ✓
+  venue: "Madison Square Garden"
+
+       ↓
+
+Component Query:
+  show = dexieDb.shows.get(123)
+  console.log(show.showDate)  → "2024-08-17" ✓
+  console.log(show.date)      → undefined
+
+Result: CORRECT DATA ✓
+
+
+================================================================================
+SYNC STATE MACHINE
+================================================================================
+
+CURRENT (WITH BUGS):
+────────────────────
+
+┌──────────┐
+│   IDLE   │
+└────┬─────┘
+     │ manualSync()
+     ↓
+┌──────────────┐
+│   SYNCING    │
+└──────────────┘
+     ↑
+     │ (no pagination validation)
+     │ (broken mutation calls)
+     │
+     ├─→ ❌ SILENT FAILURE
+     │   (empty response accepted)
+     │   (back to IDLE with incomplete data)
+     │
+     ├─→ ❌ EXCEPTION
+     │   (mutation .mutate() not found)
+     │   (ERROR state)
+     │
+     └─→ ✓ COMPLETE
+         (back to IDLE)
+
+
+FIXED (PROPER STATES):
+──────────────────────
+
+┌──────────┐
+│   IDLE   │
+└────┬─────┘
+     │ manualSync()
+     ↓
+┌──────────────┐
+│   SYNCING    │ (queryies: full or incremental)
+└──────────────┘
+     ↑
+     │ (validates responses)
+     │ (retries on error)
+     │
+     ├─→ ❌ ERROR
+     │   (invalid response caught)
+     │   (with retry mechanism)
+     │   (exponential backoff)
+     │   (ERROR → retry → SYNCING → IDLE)
+     │
+     ├─→ PROCESSING_QUEUE
+     │   (process pending mutations)
+     │   (mutations now work correctly)
+     │   (each mutation awaited)
+     │
+     └─→ ✓ IDLE
+         (all data synced)
+         (all mutations processed)
+         (complete and verified)
+
+
+================================================================================

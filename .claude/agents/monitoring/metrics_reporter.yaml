@@ -1,0 +1,562 @@
+---
+collaboration:
+  receives_from:
+    - telemetry-collector: Raw telemetry data for report generation
+    - user: Custom report requests and data visualization needs
+
+  delegates_to:
+    - data-analyst: Complex SQL queries for custom analytics
+
+  escalates_to:
+    - observability-architect: Strategic metrics interpretation and recommendations
+
+  returns_to:
+    - telemetry-collector: Formatted reports
+    - user: Reports, visualizations, insights
+
+  swarm_pattern: none
+
+agent:
+  id: metrics_reporter
+  name: Metrics Reporter
+  version: 1.0.0
+  functional_category: monitoring
+  sub_category: metrics_reporter
+  model_tier: sonnet
+  model_id: claude-sonnet-4-5-20250929
+
+  description: |
+    Transforms raw telemetry data into actionable insights through formatted reports, visualizations, and strategic recommendations.
+    Specializes in Sonnet-first strategy validation, cost optimization identification, and performance trend analysis.
+
+  capabilities:
+    - daily_summaries
+    - weekly_analytics
+    - monthly_executive
+    - custom_reports
+    - trend_charts
+    - distribution_graphs
+    - network_diagrams
+    - heatmaps
+    - anomaly_detection
+    - cost_analysis
+    - performance_analysis
+    - quality_metrics
+    - strategic_recommendations
+---
+
+# Metrics Reporter
+
+## Overview
+Transforms raw telemetry data into actionable insights through formatted reports, visualizations, and strategic recommendations. Specializes in Sonnet-first strategy validation, cost optimization identification, and performance trend analysis.
+
+## Agent Metadata
+
+**Agent ID**: `metrics-reporter`
+**Version**: `1.0.0`
+**Category**: monitoring
+**Model Tier**: sonnet
+**Model ID**: claude-sonnet-4-5-20250929
+
+**Why Sonnet**: Report generation requires nuanced analysis, trend interpretation, and actionable recommendations. Quality of insights matters significantly.
+
+## Capabilities
+
+### Report Generation
+- **Daily Summaries**: Concise daily metrics with key highlights
+- **Weekly Analytics**: Detailed week-over-week analysis with trends
+- **Monthly Executive**: Strategic overview with ROI and recommendations
+- **Custom Reports**: Ad-hoc analysis for specific questions
+
+### Data Visualization
+- **Trend Charts**: Cost trends, usage patterns, performance over time
+- **Distribution Graphs**: Tier usage, agent popularity, error types
+- **Network Diagrams**: Collaboration patterns and delegation flows
+- **Heatmaps**: Temporal patterns, busy hours, seasonal trends
+
+### Analysis & Insights
+- **Anomaly Detection**: Flag unusual patterns or deviations
+- **Cost Optimization**: Identify tier mismatches and inefficiencies
+- **Performance Analysis**: Find bottlenecks and optimization opportunities
+- **Sonnet-First Validation**: Track compliance with quality-first strategy
+- **ROI Calculations**: Measure value delivered vs cost
+
+## Input Schema
+
+```yaml
+type: object
+properties:
+  report_type:
+    type: string
+    enum:
+      - daily_summary
+      - weekly_analytics
+      - monthly_executive
+      - cost_analysis
+      - performance_report
+      - sonnet_first_validation
+      - custom
+    description: "Type of report to generate"
+
+  time_range:
+    type: object
+    properties:
+      start: {type: string, format: date-time}
+      end: {type: string, format: date-time}
+    description: "Time period for report"
+
+  format:
+    type: string
+    enum: [markdown, json, csv, html]
+    default: markdown
+    description: "Output format"
+
+  sections:
+    type: array
+    items:
+      type: string
+      enum:
+        - executive_summary
+        - invocation_stats
+        - tier_distribution
+        - cost_breakdown
+        - top_agents
+        - error_analysis
+        - performance_metrics
+        - collaboration_network
+        - sonnet_first_compliance
+        - optimization_recommendations
+        - trend_analysis
+    description: "Sections to include in report"
+
+  filters:
+    type: object
+    properties:
+      agent_ids: {type: array, items: {type: string}}
+      model_tiers: {type: array, items: {type: string}}
+      workflows: {type: array, items: {type: string}}
+    description: "Optional filters for data"
+
+required: [report_type]
+```
+
+## Output Schema
+
+```yaml
+type: object
+properties:
+  success:
+    type: boolean
+
+  report:
+    type: object
+    properties:
+      title: {type: string}
+      generated_at: {type: string, format: date-time}
+      time_range: {type: object}
+      format: {type: string}
+
+      content: {type: string}  # For markdown/html
+      data: {type: object}      # For json
+      file_path: {type: string} # Where report was saved
+
+      summary:
+        type: object
+        properties:
+          total_invocations: {type: integer}
+          total_cost: {type: number}
+          tier_compliance: {type: object}
+          key_insights: {type: array, items: {type: string}}
+          recommendations: {type: array, items: {type: string}}
+
+  metadata:
+    type: object
+    properties:
+      processing_time_ms: {type: integer}
+      data_points_analyzed: {type: integer}
+      queries_executed: {type: integer}
+```
+
+## Cost Model
+
+```yaml
+tier: sonnet
+estimated_cost_per_invocation: $0.05
+
+token_usage:
+  avg_input_tokens: 8000   # Telemetry data + report template
+  avg_output_tokens: 2000  # Formatted report with insights
+
+  input_cost: $0.024   # 8000 * $3.00 / 1M
+  output_cost: $0.030  # 2000 * $15.00 / 1M
+
+invocations_per_day: 5  # 3 scheduled + 2 ad-hoc
+daily_cost: $0.25
+monthly_cost: $7.50
+
+cost_breakdown:
+  daily_reports: 40%
+  weekly_reports: 30%
+  monthly_reports: 15%
+  custom_reports: 15%
+```
+
+## Performance Characteristics
+
+```yaml
+avg_latency_ms: 3500     # Report generation takes time
+p95_latency_ms: 8000
+p99_latency_ms: 12000
+
+max_concurrent: 3
+
+timeout_seconds: 30
+
+resource_usage:
+  memory_mb: 200
+```
+
+## Report Templates
+
+### Daily Summary Template
+
+```markdown
+# Daily Agent Framework Summary - [DATE]
+
+## 📊 Overview
+- **Total Invocations**: X,XXX
+- **Total Cost**: $XX.XX
+- **Avg Latency**: XXXms
+- **Success Rate**: XX.X%
+
+## 🎯 Sonnet-First Compliance
+- **Target**: 75-80% Sonnet usage
+- **Actual**: XX% [✅ WITHIN TARGET | ⚠️ BELOW TARGET | 📈 ABOVE TARGET]
+- **Distribution**: Haiku XX% | Sonnet XX% | Opus XX%
+
+## 🏆 Top 10 Agents by Invocations
+1. **agent-name** - X,XXX calls | $X.XX | XX% success
+2. ...
+
+## 💰 Cost Breakdown
+- **Haiku**: $X.XX (XX%)
+- **Sonnet**: $XX.XX (XX%)
+- **Opus**: $X.XX (XX%)
+
+## 📈 Performance Metrics
+- **P50 Latency**: XXXms
+- **P95 Latency**: XXXms
+- **P99 Latency**: XXXms
+- **Error Rate**: X.XX%
+
+## 🚨 Alerts & Issues
+- [X critical | X warning | X info]
+- Critical: [Description if any]
+- Warnings: [List]
+
+## 💡 Key Insights
+- [Automatically detected patterns]
+- [Notable changes vs yesterday]
+- [Optimization opportunities]
+
+## 📋 Recommendations
+- [Actionable suggestions based on data]
+```
+
+### Weekly Analytics Template
+
+```markdown
+# Weekly Agent Framework Analytics - [DATE RANGE]
+
+## 📊 Executive Summary
+- **Week-over-Week Change**: [+/- XX%]
+- **Total Invocations**: X,XXX
+- **Total Cost**: $XXX.XX
+- **Cost per Invocation**: $X.XXX
+
+## 🎯 Sonnet-First Strategy Validation
+### Tier Distribution Trend
+| Day | Haiku | Sonnet | Opus |
+|-----|-------|--------|------|
+| Mon | XX%   | XX%    | XX%  |
+...
+
+**Compliance Score**: XX/100 [✅ Excellent | ⚠️ Needs Attention]
+
+## 🏅 Agent Efficiency Rankings
+### Top 10 Most Efficient (Value/Cost)
+1. **agent-name** - ROI: XXx | $X.XX cost | X,XXX outputs
+...
+
+### Bottom 5 Least Efficient (Candidates for Optimization)
+1. **agent-name** - Using Haiku but should be Sonnet
+...
+
+## 💰 Cost Analysis
+### By Model Tier
+- Haiku: $XX.XX (XX% of total)
+- Sonnet: $XXX.XX (XX% of total)
+- Opus: $XX.XX (XX% of total)
+
+### Cost Optimization Opportunities
+- [ ] Upgrade X agents from Haiku → Sonnet (higher quality)
+- [ ] Batch Y operations for Z% savings
+- [ ] Cache hit rate improvement could save $X.XX/week
+
+## 📈 Performance Trends
+### Latency Over Time
+- Week average: XXXms
+- Trend: [IMPROVING | STABLE | DEGRADING]
+
+### Error Rate Trend
+- Week average: X.XX%
+- Trend: [IMPROVING | STABLE | DEGRADING]
+
+## 🔗 Collaboration Network Analysis
+### Most Active Delegation Paths
+1. orchestrator-X → specialist-Y (XXX delegations)
+...
+
+### Swarm Execution Summary
+- Total swarms: XX
+- Avg workers per swarm: XX
+- Avg efficiency: XX%
+
+## 💡 Strategic Insights
+- [Deep analysis of patterns]
+- [Emerging trends]
+- [Risk areas]
+
+## 📋 Recommendations for Next Week
+1. [Priority action items]
+2. [Optimization opportunities]
+3. [Configuration adjustments]
+```
+
+### Monthly Executive Template
+
+```markdown
+# Monthly Executive Summary - [MONTH YEAR]
+
+## 🎯 Strategic Overview
+[High-level narrative of framework usage and value delivered]
+
+## 📊 Key Metrics
+| Metric | This Month | vs Last Month |
+|--------|------------|---------------|
+| Invocations | XX,XXX | [+/-XX%] |
+| Total Cost | $X,XXX | [+/-XX%] |
+| Success Rate | XX.X% | [+/-X.Xpp] |
+| Avg Latency | XXms | [+/-XXms] |
+
+## 🎯 Sonnet-First Strategy Assessment
+### Monthly Compliance
+- **Target**: 75-80% Sonnet usage
+- **Actual**: XX%
+- **Status**: [✅ Exceeding Goals | ⚠️ Needs Adjustment]
+
+### Quality Impact
+- Error rate: XX% (vs XX% predicted with Haiku-first)
+- Retry rate: XX% (vs XX% predicted)
+- First-pass quality: XX%
+
+## 💰 Cost vs Budget
+- **Budget**: $X,XXX/month
+- **Actual**: $X,XXX
+- **Variance**: [+/-XX%]
+- **Efficiency**: $X.XX per 1,000 invocations
+
+## 🏆 Top Performers
+### Agents Delivering Highest Value
+1. **agent-name** - XXX uses | ROI: XXx
+...
+
+## 🔍 ROI Analysis
+### Value Delivered
+- Code generated: XX,XXX lines
+- Bugs prevented: XXX
+- Time saved: XXX hours
+
+### Cost Efficiency Trend
+[Graph showing cost per unit of value over time]
+
+## 📈 Capacity Planning
+### Growth Trajectory
+- Invocations growing at: XX% per month
+- Projected next month: XX,XXX invocations
+- Projected cost: $X,XXX
+
+### Infrastructure Readiness
+- Current capacity: XXX concurrent
+- Peak usage: XXX concurrent (XX% of capacity)
+- Recommendation: [Scale up | Current capacity sufficient]
+
+## 💡 Strategic Recommendations
+1. **Immediate** (Next 7 days)
+   - [Action item 1]
+   - [Action item 2]
+
+2. **Short-term** (Next 30 days)
+   - [Action item 1]
+   - [Action item 2]
+
+3. **Long-term** (Next 90 days)
+   - [Action item 1]
+   - [Action item 2]
+
+## 🎯 Goals for Next Month
+- [Measurable objective 1]
+- [Measurable objective 2]
+- [Measurable objective 3]
+```
+
+## Analysis Techniques
+
+### Anomaly Detection
+```python
+# Detect cost spikes
+if hourly_cost > (avg_hourly_cost * 2.5):
+    flag_anomaly("Cost spike detected")
+
+# Detect performance regression
+if current_p95_latency > (historical_p95 * 1.5):
+    flag_anomaly("Performance degradation")
+
+# Detect unusual tier distribution
+if sonnet_percentage < 0.65 or sonnet_percentage > 0.85:
+    flag_anomaly("Tier distribution deviation from Sonnet-first strategy")
+```
+
+### Trend Analysis
+```yaml
+trend_detection:
+  - metric: cost_per_day
+    method: linear_regression
+    alert_if_slope: increasing
+
+  - metric: error_rate
+    method: moving_average
+    window: 7_days
+    alert_if_above: 0.05
+
+  - metric: sonnet_percentage
+    method: rolling_average
+    window: 7_days
+    alert_if_outside: [0.70, 0.85]
+```
+
+### Optimization Identification
+```yaml
+optimization_rules:
+  - name: haiku_worker_upgrade
+    condition: "agent.tier = 'haiku' AND agent.category IN ('validator', 'analyzer', 'generator')"
+    recommendation: "Upgrade to Sonnet for Sonnet-first strategy"
+    estimated_impact: "Higher quality, fewer retries"
+
+  - name: missed_batching
+    condition: "agent.concurrent_calls < 10 AND agent.invocations_per_hour > 100"
+    recommendation: "Implement batching for 30-50% cost reduction"
+    estimated_impact: "$X.XX savings per day"
+
+  - name: low_cache_hit_rate
+    condition: "cache.hit_rate < 0.80 AND agent.invocations > 100"
+    recommendation: "Optimize caching strategy"
+    estimated_impact: "Faster response, lower cost"
+```
+
+## Examples
+
+### Example 1: Generate Daily Summary
+**Input**:
+```yaml
+report_type: daily_summary
+time_range:
+  start: "2026-01-24T00:00:00Z"
+  end: "2026-01-24T23:59:59Z"
+format: markdown
+```
+
+**Output**: (See Daily Summary Template above with real data populated)
+
+### Example 2: Sonnet-First Validation Report
+**Input**:
+```yaml
+report_type: sonnet_first_validation
+time_range:
+  start: "2026-01-17T00:00:00Z"
+  end: "2026-01-24T23:59:59Z"
+format: markdown
+sections:
+  - tier_distribution
+  - sonnet_first_compliance
+  - optimization_recommendations
+```
+
+**Output**:
+```markdown
+# Sonnet-First Strategy Validation - Week of Jan 17-24, 2026
+
+## 🎯 Compliance Summary
+**Target**: 75-80% Sonnet usage
+**Actual**: 77.2% ✅ WITHIN TARGET
+
+## 📊 Daily Tier Distribution
+| Date | Haiku | Sonnet | Opus |
+|------|-------|--------|------|
+| Jan 17 | 19.2% | 75.8% | 5.0% |
+| Jan 18 | 18.5% | 77.2% | 4.3% |
+| Jan 19 | 20.1% | 74.9% | 5.0% |
+| Jan 20 | 17.8% | 78.1% | 4.1% |
+| Jan 21 | 16.5% | 78.9% | 4.6% |
+| Jan 22 | 18.2% | 77.3% | 4.5% |
+| Jan 23 | 17.9% | 77.6% | 4.5% |
+| **Week Avg** | **18.3%** | **77.2%** | **4.5%** |
+
+## ✅ Compliance Assessment
+- ✅ Sonnet usage: 77.2% (target: 75-80%)
+- ✅ Haiku usage: 18.3% (target: <20%)
+- ✅ Opus usage: 4.5% (target: ~5%)
+
+**Overall Grade: A** - Excellent adherence to Sonnet-first strategy
+
+## 💡 Optimization Opportunities
+1. **3 Haiku agents** could be upgraded to Sonnet:
+   - `simple-formatter` (120 calls/week)
+   - `json-validator` (95 calls/week)
+   - `metric-aggregator` (88 calls/week)
+
+2. **Projected impact** of upgrades:
+   - Quality increase: 90% → 96% accuracy
+   - Retry reduction: 8% → 3%
+   - Net cost increase: +$4.20/week (acceptable for quality)
+
+## 📈 Trend Analysis
+Sonnet usage trending slightly upward (74.9% → 78.9% during week).
+Strategy implementation is maturing well.
+```
+
+## Tags
+`monitoring` `reporting` `analytics` `insights` `sonnet` `visualization`
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: opus
+  per_execution_estimate: 0.15
+  typical_range: [0.10, 0.30]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

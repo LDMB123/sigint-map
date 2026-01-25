@@ -1,0 +1,280 @@
+---
+title: UX Excellence Skills Index
+subtitle: Steve Jobs-Level Obsession with Every Detail
+category: ui-ux
+---
+
+# UX Excellence Skills - Complete Index
+
+This directory contains 6 comprehensive UX excellence skills, each crafted with Steve Jobs-level obsession for perfection. All skills are optimized for **Chromium 143+** on **Apple Silicon M-series with macOS 26.2**.
+
+## The 6 Core Skills
+
+### 1. **Focus Management Excellence** (`focus-management.md`)
+**Keyboard Navigation Perfection**
+
+Master the invisible skeleton of digital accessibility. Learn to create keyboard interfaces so intuitive that users forget they're thinking about navigation.
+
+**Key Topics:**
+- `:focus-visible` intelligent focus indicators
+- Modal focus trapping without escape routes
+- Focus restoration after dismissal
+- Skip links for power users
+- Logical tab order patterns
+- The `inert` attribute for hidden content
+- Roving tabindex patterns for lists/grids
+- Anti-pattern: NO focus loss, NO keyboard traps
+
+**Jobs Philosophy:** "The design is not just what it looks like and feels like. Design is how it works. Without keyboard users, you're designing for a subset of humanity."
+
+---
+
+### 2. **Loading Experience Mastery** (`loading-experience.md`)
+**Perceived Performance as UX**
+
+Never make users stare at blank screens. Learn to create the *illusion* of speed through skeleton screens, progressive loading, and optimistic updates.
+
+**Key Topics:**
+- Content-first loading strategies
+- Skeleton screens that match exact layout
+- Progressive image loading (blur-up technique)
+- Optimistic updates for instant feedback
+- Instant page transitions with View Transitions API
+- Speculation Rules for intelligent prerendering
+- Zero layout shift (CLS = 0 always)
+- Loading indicators that communicate progress
+
+**Jobs Philosophy:** "The most important thing is the user's perception of speed, not the actual speed. If it feels instant, it is instant."
+
+---
+
+### 3. **Error Elegance** (`error-elegance.md`)
+**Graceful Failure Handling**
+
+Errors aren't user failures—they're design opportunities. Learn to prevent, detect, explain, and guide users to recovery with dignity.
+
+**Key Topics:**
+- Real-time inline validation
+- Error messages that guide, never blame
+- Recovery suggestions that solve problems
+- Undo capabilities for destructive actions
+- Offline error state handling
+- Network retry patterns with exponential backoff
+- Form data preservation on error
+- Anti-pattern: NO cryptic errors, NO dead ends
+
+**Jobs Philosophy:** "An error isn't a failure of your product—it's a failure of your UX. Design so beautifully that errors guide users back to success."
+
+---
+
+### 4. **Micro-Interactions Excellence** (`micro-interactions.md`)
+**Details That Delight**
+
+Master the language of interface feedback. Learn that swipes, ripples, and subtle rotations aren't flourishes—they're communication.
+
+**Key Topics:**
+- Button press feedback with ripple effects
+- Toggle animations that feel responsive
+- Pull-to-refresh gestures
+- Swipe-to-action patterns
+- Long-press context menus
+- Material Design ripple effects
+- Success celebrations (confetti sparingly)
+- Anti-pattern: Never gratuitous, always purposeful
+
+**Jobs Philosophy:** "It's the tiny details that elevate ordinary experiences to extraordinary ones. A 200ms animation difference changes how a user feels about your product."
+
+---
+
+### 5. **Responsive Excellence** (`responsive-excellence.md`)
+**Every Viewport Perfected**
+
+Design for the person, not the device. Learn to create experiences that feel native on 375px phones and 1920px monitors alike.
+
+**Key Topics:**
+- Container queries for component-level adaptation
+- Fluid typography with `clamp()`
+- Responsive images with `srcset` and `sizes`
+- Grid and Flexbox responsive patterns
+- Touch vs. pointer adaptation
+- Orientation handling (portrait/landscape)
+- Zero horizontal scroll guarantee
+- Content-driven breakpoints (not device breakpoints)
+
+**Jobs Philosophy:** "Stop designing by breakpoint. Start designing by content. The device doesn't matter—the user's needs matter."
+
+---
+
+### 6. **Native Feel Excellence** (`native-feel.md`)
+**Platform-Authentic Experience**
+
+Web apps that feel born on macOS, not dropped onto it. Learn to respect platform conventions so thoroughly that users forget they're in a browser.
+
+**Key Topics:**
+- System font usage (-apple-system stack)
+- Native scrollbar styling
+- Platform selection behavior
+- Context menu integration
+- Keyboard shortcuts (Cmd+S, Cmd+Z)
+- System color scheme respect
+- Reduced transparency respect
+- Reduced motion respect
+
+**Jobs Philosophy:** "We don't make products that work on a platform. We make products that feel like they belong on a platform. Like they were born there."
+
+---
+
+## Why These 6 Skills?
+
+These skills represent the **essential layers of UX excellence**:
+
+1. **Focus Management** = Accessibility foundation
+2. **Loading Experience** = Performance perception
+3. **Error Elegance** = Reliability trust
+4. **Micro-Interactions** = Delight and feedback
+5. **Responsive Excellence** = Universal usability
+6. **Native Feel** = Platform respect
+
+Together, they create interfaces that:
+- Work for everyone (accessibility + responsiveness)
+- Feel responsive (loading + micro-interactions)
+- Handle problems gracefully (error elegance)
+- Respect user preferences (native feel)
+
+---
+
+## Quality Standards
+
+Each skill includes:
+
+**YAML Frontmatter**
+```yaml
+title: Skill Name
+subtitle: Focus Area
+category: ui-ux
+tags: [relevant, tags]
+target_browsers: ["Chromium 143+"]
+target_platform: "Apple Silicon M-series, macOS 26.2"
+difficulty: advanced
+jobs_philosophy: "Inspirational quote"
+```
+
+**Content Structure**
+- Philosophy overview with Jobs-level obsessions
+- 5-8 core techniques with production-ready code
+- Real-world examples and use cases
+- Anti-patterns to avoid (with explanations)
+- Quality checklists for verification
+- Testing protocols for validation
+- Implementation priority (3 phases)
+- Resources and further reading
+
+**Code Quality**
+- Production-ready JavaScript (ES6+)
+- Modern CSS (Grid, Flexbox, Container Queries)
+- HTML5 semantic markup
+- Accessibility-first approach
+- Performance optimized
+- Mobile-first responsive
+- Cross-browser compatible (Chromium 143+)
+
+---
+
+## How to Use These Skills
+
+### For Design Decisions
+Read the **Philosophy** section to understand the Jobs-level obsessions. These guide design choices.
+
+### For Implementation
+Use the **Core Techniques** sections—they're production-ready code you can adapt immediately.
+
+### For Quality Assurance
+Use the **Quality Checklists**—they're verification frameworks for your implementation.
+
+### For Testing
+Follow the **Testing Protocols**—they provide real-world validation approaches.
+
+### For Teaching
+Share the **Anti-Patterns** section with team members—they're memorable cautionary tales.
+
+---
+
+## Integration with Your UX Workflow
+
+**Discovery Phase**
+- Reference "Philosophy" sections for user research insights
+- Use checklists to audit current experience
+
+**Design Phase**
+- Study code examples for interaction patterns
+- Test assumptions with provided testing protocols
+
+**Implementation Phase**
+- Copy/adapt code snippets directly
+- Follow quality checklists for QA
+
+**Launch Phase**
+- Verify all checklist items before release
+- Run provided testing protocols
+
+---
+
+## Performance Notes
+
+All skills are optimized for:
+- Chromium 143+ (latest rendering engine)
+- Apple Silicon M-series (native ARM architecture)
+- macOS 26.2 (latest system features)
+
+This means:
+- Native CSS features fully supported
+- No polyfills needed
+- Container Queries work natively
+- View Transitions API available
+- System font stack optimized
+
+---
+
+## Philosophy: The Jobs Perspective
+
+Each skill opens with a Steve Jobs-inspired philosophy. These aren't marketing fluff—they represent the **mindset** required to execute at this level:
+
+- **Focus Management**: Invisible perfection
+- **Loading Experience**: Perception over metrics
+- **Error Elegance**: Opportunity disguised as failure
+- **Micro-Interactions**: Communication in milliseconds
+- **Responsive Excellence**: Content first, always
+- **Native Feel**: Born on the platform
+
+---
+
+## Next Steps
+
+1. **Pick one skill** that addresses your current pain point
+2. **Read the Philosophy** to understand the mindset
+3. **Study 2-3 Code Examples** to see the pattern
+4. **Review the Anti-Patterns** to know what to avoid
+5. **Use the Quality Checklist** as your verification framework
+6. **Follow the Testing Protocol** to validate
+
+Then move to the next skill.
+
+---
+
+## The Obsession
+
+These skills represent obsession with:
+- **User dignity**: Never make users feel stupid
+- **Clarity**: Every interaction communicates something
+- **Subtlety**: Excellence is invisible
+- **Platform respect**: Native conventions matter
+- **Accessibility**: Design for all, always
+- **Performance**: Speed is a feature, not a metric
+
+This is not design for awards. This is design for users. This is Steve Jobs-level obsession with their experience.
+
+---
+
+**Target Platform:** Apple Silicon M-series, macOS 26.2, Chromium 143+
+**Difficulty:** Advanced UX Implementation
+**Maintenance:** Updated for 2026 web standards

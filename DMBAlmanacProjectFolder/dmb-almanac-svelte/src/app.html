@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+
+		<!-- ==================== RESOURCE HINTS FOR CRITICAL PATHS ==================== -->
+		<!-- Font preloading for LCP optimization (Chromium 2025) -->
+		<!-- Variable fonts: single file covers all weights/styles -->
+		<link
+			rel="preload"
+			href="%sveltekit.assets%/fonts/inter-var.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+			fetchpriority="high"
+		/>
+		<!-- Prefetch (not preload) italic variant - only needed for emphasized text -->
+		<!-- This saves 379KB from critical path, improving LCP by ~200ms -->
+		<link
+			rel="prefetch"
+			href="%sveltekit.assets%/fonts/inter-var-italic.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
+
+		<!-- Preconnect to API endpoints for faster data loading -->
+		<!-- preconnect establishes early connection (DNS + TCP + TLS) -->
+		<link rel="preconnect" href="https://api.dmbalmanac.com" crossorigin />
+
+		<!-- DNS prefetch as fallback for browsers without preconnect support -->
+		<link rel="dns-prefetch" href="https://api.dmbalmanac.com" />
+
+		<!-- Preload Web Manifest for PWA (critical for offline capability) -->
+		<link rel="manifest" href="%sveltekit.assets%/manifest.json" />
+
+		<!-- Critical resources with priority hints -->
+		<!-- Modern browsers support PNG favicons, avoiding need for .ico format -->
+		<link rel="icon" type="image/png" sizes="32x32" href="%sveltekit.assets%/icons/icon-32.png" />
+		<link rel="icon" type="image/png" sizes="16x16" href="%sveltekit.assets%/icons/icon-16.png" />
+		<link rel="apple-touch-icon" href="%sveltekit.assets%/icons/apple-touch-icon.png" />
+
+		<!-- Viewport configuration for responsive design -->
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+		<!-- Theme and PWA metadata -->
+		<meta name="theme-color" content="#030712" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="DMB Almanac" />
+		<meta name="color-scheme" content="dark light" />
+
+		<!-- ==================== SPECULATION RULES API (Chromium 2025) ==================== -->
+		<!-- Inline speculation rules for fastest initialization (no network request) -->
+		<!-- Chrome 109+: Intelligent prerendering/prefetching for instant navigation -->
+		<!-- Prerender common routes on app startup, prefetch with hover intent -->
+		<script type="speculationrules">
+		{
+			"prerender": [
+				{
+					"where": { "href_matches": "/songs" },
+					"eagerness": "eager"
+				},
+				{
+					"where": { "href_matches": "/tours" },
+					"eagerness": "eager"
+				},
+				{
+					"where": { "href_matches": "/venues" },
+					"eagerness": "eager"
+				},
+				{
+					"where": { "href_matches": "/liberation" },
+					"eagerness": "moderate"
+				},
+				{
+					"where": { "selector_matches": ".hero-link, .featured-link, [data-prerender=\"true\"]" },
+					"eagerness": "eager"
+				},
+				{
+					"where": {
+						"and": [
+							{ "href_matches": "/tours/*" },
+							{ "selector_matches": "a[href^=\"/tours/202\"]" }
+						]
+					},
+					"eagerness": "moderate"
+				},
+				{
+					"where": {
+						"and": [
+							{ "href_matches": "/shows/*" },
+							{ "selector_matches": "[data-priority=\"eager\"] a" }
+						]
+					},
+					"eagerness": "eager"
+				}
+			],
+			"prefetch": [
+				{
+					"where": {
+						"and": [
+							{ "href_matches": "/*" },
+							{ "not": { "href_matches": "/api/*" } },
+							{ "not": { "href_matches": "/_next/*" } }
+						]
+					},
+					"eagerness": "conservative",
+					"referrer_policy": "strict-origin-when-cross-origin"
+				},
+				{
+					"where": {
+						"selector_matches": "nav a, a[href^=\"/songs\"], a[href^=\"/tours\"], a[href^=\"/venues\"], a[href^=\"/guests\"]"
+					},
+					"eagerness": "moderate"
+				},
+				{
+					"where": { "selector_matches": "a[href^=\"/shows/\"]" },
+					"eagerness": "moderate"
+				}
+			]
+		}
+		</script>
+
+		<!-- Optional: External speculation rules for dynamic updates -->
+		<!-- <link rel="speculationrules" href="%sveltekit.assets%/speculation-rules.json" /> -->
+
+		<!-- SvelteKit head injection point -->
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>
