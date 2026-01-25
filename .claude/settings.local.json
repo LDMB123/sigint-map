@@ -163,7 +163,9 @@
       "Skill(debug)",
       "Skill(debug:*)",
       "Bash(npm ls:*)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(git branch:*)",
+      "Bash(npx depcheck:*)"
     ],
     "deny": []
   }
