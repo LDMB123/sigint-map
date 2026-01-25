@@ -110,7 +110,7 @@ def main():
     # Find all agent files
     user_agents_dir = Path.home() / '.claude/agents'
     project_dirs = [
-        Path('/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents')
+        Path('/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents')
     ]
 
     agents = []

@@ -37,7 +37,7 @@ class AgentValidator:
     def _check_agent_files(self):
         """Verify all agent files are parseable."""
         user_agents = Path.home() / '.claude/agents'
-        project_agents = Path('/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents')
+        project_agents = Path('/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents')
 
         total = 0
         failed = 0

@@ -963,12 +963,12 @@ For each class implementation:
 ## File Location Reference
 
 **TypeScript Interface Files:**
-- Primary: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/advanced-modules.ts` (976 lines)
-- Types: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/types.ts` (413 lines)
-- Bridge: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/bridge.ts` (Main wrapper)
-- Transform: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/transform.ts` (WASM integration)
-- Search: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/search.ts` (WASM-accelerated search)
-- Queries: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/queries.ts` (WASM-accelerated queries)
+- Primary: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/wasm/advanced-modules.ts` (976 lines)
+- Types: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/wasm/types.ts` (413 lines)
+- Bridge: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/wasm/bridge.ts` (Main wrapper)
+- Transform: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/wasm/transform.ts` (WASM integration)
+- Search: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/wasm/search.ts` (WASM-accelerated search)
+- Queries: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/wasm/queries.ts` (WASM-accelerated queries)
 
 **Expected Rust Module Paths:**
 - TfIdfIndex, SetlistSimilarityEngine, RarityEngine: `$wasm/dmb-transform/pkg`

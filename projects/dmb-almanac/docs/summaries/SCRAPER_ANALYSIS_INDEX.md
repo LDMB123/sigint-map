@@ -1,7 +1,7 @@
 # DMB Almanac Scraper Analysis - Complete Index
 
 **Analysis Date:** January 23, 2026
-**Codebase Location:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/`
+**Codebase Location:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/`
 
 ---
 
@@ -288,7 +288,7 @@ All analysis documents:
 
 Scraper codebase:
 ```
-/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
 └── dmb-almanac-svelte/scraper/src/scrapers/
     ├── shows.ts                         (2,800+ shows)
     ├── songs.ts                         (200+ songs)
@@ -344,5 +344,5 @@ All analysis documents provide specific guidance for implementation.
 ---
 
 **Generated:** January 23, 2026
-**Scraper Location:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/`
+**Scraper Location:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/`
 **Analysis Scope:** 13 existing scrapers, 4 missing scrapers, 10 page types, 100K+ data points

@@ -90,7 +90,7 @@ This folder contains comprehensive documentation for the DMBAlmanac releases scr
 
 ### "I need to review the code"
 1. Read: `RELEASES_SCRAPER_CODE_REFERENCE.md`
-2. View: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/releases.ts`
+2. View: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/releases.ts`
 
 ### "I encountered an issue"
 1. Check: `RELEASES_SCRAPER_QUICKSTART.md` - Troubleshooting section
@@ -109,7 +109,7 @@ This folder contains comprehensive documentation for the DMBAlmanac releases scr
 
 **How to run**:
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper
 npm run test:releases    # Test (5-10 seconds)
 npm run scrape:releases  # Full scrape (10-20 minutes)
 ```
@@ -136,7 +136,7 @@ npm run scrape:releases  # Full scrape (10-20 minutes)
 ├── RELEASES_SCRAPER_CODE_REFERENCE.md            (code reference)
 └── RELEASES_SCRAPER_REPORT.md                    (status report)
 
-/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/
 ├── src/
 │   ├── scrapers/releases.ts                      (main scraper - 418 lines)
 │   ├── test-releases-scraper.ts                  (test suite - 198 lines)

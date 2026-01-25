@@ -195,7 +195,7 @@ Confidence = 1.0 - variance(signals)
 
 ### TypeScript Interface Layer
 ```
-/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/wasm/
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/wasm/
 ├── advanced-modules.ts (976 lines) ← PRIMARY INTERFACE DEFINITIONS
 ├── types.ts (413 lines) ← TYPE DEFINITIONS
 ├── bridge.ts ← WASM BRIDGE WRAPPER

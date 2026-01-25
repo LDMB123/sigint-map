@@ -127,7 +127,7 @@ The file organization refactor has been completed with all critical gaps address
 
 **Before**:
 - 1,491 references to "dmb-almanac-svelte"
-- Absolute paths: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/`
+- Absolute paths: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/`
 
 **After**:
 - 0 stale references (source files)
@@ -273,7 +273,7 @@ ClaudeCodeProjects/
 ├── test-skill.md
 ├── .claude_backup_20260125_015458/ (6.9MB)
 ├── .claude_backup_skills_20260125_015831/ (284KB)
-└── DMBAlmanacProjectFolder/
+└── projects/dmb-almanac/app/
     └── dmb-almanac-svelte/
         ├── [455 markdown files at root!]
         └── package.json (name: "dmb-almanac-svelte")

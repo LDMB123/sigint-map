@@ -176,7 +176,7 @@ Avg Songs per Show             11.6         ✓
 ### Priority 2: High (This Month)
 
 **[ ] Document JSON file purposes**
-Update `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/CLAUDE.md`:
+Update `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/CLAUDE.md`:
 
 ```
 ## Data Files Reference
@@ -222,7 +222,7 @@ Update `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/CLAUDE.md`
 
 ```
 Project Root:
-/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
 
 Database:
 data/dmb-almanac.db (22 MB SQLite)

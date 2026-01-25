@@ -247,7 +247,7 @@ This structure was created during the file organization refactor on January 25, 
 1. **Root Cleanup**: 9 audit reports moved to `docs/audits/2026-01-audit/`
 2. **Backup Archival**: 2 dated backups moved to `archive/backups/`
 3. **Project Restructure**: Created `projects/` directory
-   - `DMBAlmanacProjectFolder/` → `projects/dmb-almanac/`
+   - `projects/dmb-almanac/app/` → `projects/dmb-almanac/`
    - `gemini-mcp-server/` → `projects/gemini-mcp-server/`
 4. **DMB Cleanup**:
    - `dmb-almanac-svelte/` → `app/`

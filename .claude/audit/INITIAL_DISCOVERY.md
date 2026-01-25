@@ -65,7 +65,7 @@ With nearly 1,000 custom components, coordination is non-trivial:
 
 Found in BOTH:
 - `/Users/louisherman/ClaudeCodeProjects/.claude/skills/sveltekit/`
-- `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/skills/`
+- `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/skills/`
 
 **Question**: Are these intentional duplicates or accidental redundancy?
 
@@ -91,7 +91,7 @@ Found in BOTH:
 - Appears to be general-purpose, cross-project skills
 - Organized by technology (Rust, WASM, SvelteKit, accessibility, CSS, PWA)
 
-**Project-level** (`DMBAlmanacProjectFolder/.claude/`):
+**Project-level** (`projects/dmb-almanac/app/.claude/`):
 - Specific to DMB Almanac project
 - Contains team structures (Rust team, WASM team, SvelteKit team, etc.)
 - 462 agents suggests this is the main "toolkit"

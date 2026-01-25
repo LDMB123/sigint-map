@@ -38,14 +38,14 @@ fi
 echo ""
 
 echo "4. Checking renamed agents exist..."
-if grep -q "dmb-qa-engineer" /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/08-qa-engineer.md; then
+if grep -q "dmb-qa-engineer" /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/08-qa-engineer.md; then
   echo "   ✅ dmb-qa-engineer renamed correctly"
 else
   echo "   ❌ dmb-qa-engineer rename failed"
   exit 1
 fi
 
-if grep -q "dmb-performance-optimizer" /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/07-performance-optimizer.md; then
+if grep -q "dmb-performance-optimizer" /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/07-performance-optimizer.md; then
   echo "   ✅ dmb-performance-optimizer renamed correctly"
 else
   echo "   ❌ dmb-performance-optimizer rename failed"
@@ -54,7 +54,7 @@ fi
 echo ""
 
 echo "5. Checking model name normalization..."
-GEMINI_COUNT=$(grep -r "Gemini 3 Pro" /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/*.md | wc -l)
+GEMINI_COUNT=$(grep -r "Gemini 3 Pro" /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/*.md | wc -l)
 if [ $GEMINI_COUNT -eq 0 ]; then
   echo "   ✅ All 'Gemini 3 Pro' converted to 'gemini-3-pro'"
 else
@@ -64,7 +64,7 @@ fi
 echo ""
 
 echo "6. Checking AGENT_ROSTER.md consistency..."
-ROSTER_GEMINI=$(grep -c "Gemini 3 Pro" /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/AGENT_ROSTER.md)
+ROSTER_GEMINI=$(grep -c "Gemini 3 Pro" /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/AGENT_ROSTER.md)
 if [ $ROSTER_GEMINI -eq 0 ]; then
   echo "   ✅ AGENT_ROSTER.md updated (no old model names)"
 else

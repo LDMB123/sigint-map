@@ -35,7 +35,7 @@ The following commands are interactive Claude Desktop slash commands and must be
 
 #### Project-Scoped Skills Found
 
-**DMB Almanac Project** (`DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/skills/`):
+**DMB Almanac Project** (`projects/dmb-almanac/app/.claude/skills/`):
 - bundle-analyzer.md
 - cache-debug.md
 - dexie-migration-safety.md
@@ -103,7 +103,7 @@ Located in `/Users/louisherman/ClaudeCodeProjects/.claude/skills/`:
 
 #### Agent Definitions Found (100+ agents detected, truncated listing)
 
-**Project Agents** (`DMBAlmanacProjectFolder/.claude/agents/`):
+**Project Agents** (`projects/dmb-almanac/app/.claude/agents/`):
 
 Major categories:
 - **Rust Team** (13 agents): rust-lead-orchestrator, rust-project-architect, rust-semantics-engineer, rust-migration-engineer, rust-build-engineer, rust-async-specialist, rust-safety-auditor, rust-performance-engineer, rust-qa-engineer, rust-debugger, rust-metaprogramming-engineer, rust-parallel-coordinator, rust-documentation-specialist

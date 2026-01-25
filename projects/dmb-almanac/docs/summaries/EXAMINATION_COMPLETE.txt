@@ -69,7 +69,7 @@ STEP 1: READ DOCUMENTATION
 - Technical: RELEASES_SCRAPER_ANALYSIS.md
 
 STEP 2: TEST FIRST (5-10 seconds)
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper
 npm run test:releases
 
 STEP 3: RUN FULL SCRAPER (10-20 minutes)
@@ -248,7 +248,7 @@ QUICK COMMANDS
 ================================================================================
 
 # Enter scraper directory
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper
 
 # Test the scraper (verify it works)
 npm run test:releases

@@ -19,7 +19,7 @@ CRITICAL ISSUES (Fix First):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 1. RARITY.RS - DATE STRING CLONING
-   Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/rarity.rs
+   Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/rarity.rs
    Lines: 220, 223, 229, 240, 242
    Impact: CRITICAL - 150K+ setlist entries × 3-4 clones each = 450K+ allocations
    Problem: show_date cloned in multiple HashMap operations within single loop iteration
@@ -28,7 +28,7 @@ CRITICAL ISSUES (Fix First):
    Effort: 1-2 hours
 
 2. STRING-UTILS - SLUGIFY INEFFICIENCY
-   Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-string-utils/src/lib.rs
+   Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-string-utils/src/lib.rs
    Lines: 4-16
    Impact: HIGH - Hot path for every Song/Venue/Show title
    Problem: 4 sequential allocations (to_lowercase → collect → split/filter → join)
@@ -37,7 +37,7 @@ CRITICAL ISSUES (Fix First):
    Effort: 30 minutes
 
 3. TFIDF_SEARCH.RS - TERM CLONING IN LOOPS
-   Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/tfidf_search.rs
+   Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/tfidf_search.rs
    Lines: 260, 280, 289, 305, 588, 591
    Impact: HIGH - Indexing performance critical for search
    Problem: Same term cloned 3-7x in single index_term() call
@@ -49,7 +49,7 @@ HIGH PRIORITY ISSUES:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 4. SEARCH.RS - CLONED RESULT STRINGS
-   Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/search.rs
+   Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/search.rs
    Lines: 48-50, 60-62, 69-71
    Impact: HIGH - Every search query affected
    Problem: All search results clone title/slug strings unnecessarily
@@ -58,7 +58,7 @@ HIGH PRIORITY ISSUES:
    Effort: 1 hour
 
 5. TFIDF_SEARCH.RS - STEMMING ALWAYS ALLOCATES
-   Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/tfidf_search.rs
+   Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/tfidf_search.rs
    Lines: 130-181
    Impact: HIGH - Called for every indexed word
    Problem: stem() returns String even when word unchanged
@@ -70,7 +70,7 @@ MEDIUM PRIORITY ISSUES:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 6. AGGREGATION.RS - REPEATED CONVERSION PATTERN
-   Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/aggregation.rs
+   Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/aggregation.rs
    Lines: 713-715
    Impact: MEDIUM - Code quality, maintainability
    Problem: Same &str→String HashMap conversion repeated 3x
@@ -78,7 +78,7 @@ MEDIUM PRIORITY ISSUES:
    Effort: 30 minutes
 
 7. SEARCH.RS - DUPLICATE SEARCH FUNCTIONS
-   Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/search.rs
+   Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/search.rs
    Lines: 34-76
    Impact: MEDIUM - Maintainability, binary size
    Problem: search_songs(), search_venues(), search_guests() are 95% identical
@@ -89,7 +89,7 @@ LOW PRIORITY ISSUES:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 8. DATE-UTILS.RS - UNSAFE UNWRAP DOCUMENTATION
-   Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-date-utils/src/lib.rs
+   Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-date-utils/src/lib.rs
    Lines: 373-374
    Impact: LOW - Safety documentation
    Problem: unwrap() on min/max called after empty check, but intent unclear
@@ -97,7 +97,7 @@ LOW PRIORITY ISSUES:
    Effort: 15 minutes
 
 9. ERROR.RS - MISSING CONTEXT PROPAGATION
-   Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/error.rs
+   Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/error.rs
    Impact: LOW - Error debugging
    Problem: TransformError doesn't chain context information
    Fix: Add .with_context() method
@@ -175,27 +175,27 @@ FILES TO MODIFY
 ================================================================================
 
 CRITICAL:
-  → /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/rarity.rs
-  → /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-string-utils/src/lib.rs
-  → /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/tfidf_search.rs
+  → /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/rarity.rs
+  → /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-string-utils/src/lib.rs
+  → /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/tfidf_search.rs
 
 HIGH:
-  → /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/search.rs
+  → /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/search.rs
 
 MEDIUM:
-  → /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/aggregation.rs
+  → /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/aggregation.rs
 
 LOW:
-  → /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-date-utils/src/lib.rs
-  → /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/wasm/dmb-transform/src/error.rs
+  → /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-date-utils/src/lib.rs
+  → /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm/dmb-transform/src/error.rs
 
 ================================================================================
 DETAILED DOCUMENTATION
 ================================================================================
 
 For complete code examples and detailed analysis, see:
-  • /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/wasm-semantics-analysis.md
-  • /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/wasm-improvements-code-examples.md
+  • /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm-semantics-analysis.md
+  • /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/wasm-improvements-code-examples.md
 
 ================================================================================
 VERIFICATION CHECKLIST

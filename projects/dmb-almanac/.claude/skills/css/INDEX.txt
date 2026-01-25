@@ -330,9 +330,9 @@ Each skill includes:
 ## Integration with DMB Almanac
 
 These skills were generalized from:
-- `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/CSS_MODERNIZATION_AUDIT_CHROME143.md`
-- `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/APPLE_SILICON_CSS_AUDIT.md`
-- `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/LOGICAL_PROPERTIES_GUIDE.md`
+- `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/CSS_MODERNIZATION_AUDIT_CHROME143.md`
+- `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/APPLE_SILICON_CSS_AUDIT.md`
+- `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/LOGICAL_PROPERTIES_GUIDE.md`
 
 **Original Project Context:**
 - SvelteKit 2 + Svelte 5

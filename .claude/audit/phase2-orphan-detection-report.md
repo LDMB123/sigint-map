@@ -27,12 +27,12 @@ These agents exist in multiple scopes. The project-scoped version will override 
 
 ### `qa-engineer`
 - **Shadowed File**: `/Users/louisherman/.claude/agents/testing/QA Engineer.md`
-- **Shadowed By**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/08-qa-engineer.md`
+- **Shadowed By**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/08-qa-engineer.md`
 - **Reason**: Project-scoped agent with same name takes precedence
 
 ### `performance-optimizer`
 - **Shadowed File**: `/Users/louisherman/.claude/agents/engineering/Performance Optimizer.md`
-- **Shadowed By**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/07-performance-optimizer.md`
+- **Shadowed By**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/07-performance-optimizer.md`
 - **Reason**: Project-scoped agent with same name takes precedence
 
 ---
@@ -175,19 +175,19 @@ _(... and 232 more. See JSON for full list.)_
 **Count**: 4
 
 ### `modern-css-architect`
-- **File**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/12-modern-css-architect.md`
+- **File**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/12-modern-css-architect.md`
 - **Issue**: Project agent uses YAML frontmatter instead of plain markdown (unlike others)
 
 ### `lint-regression-debugger`
-- **File**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/14-lint-regression-debugger.md`
+- **File**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/14-lint-regression-debugger.md`
 - **Issue**: Project agent uses YAML frontmatter instead of plain markdown (unlike others)
 
 ### `ui-regression-debugger`
-- **File**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/13-ui-regression-debugger.md`
+- **File**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/13-ui-regression-debugger.md`
 - **Issue**: Project agent uses YAML frontmatter instead of plain markdown (unlike others)
 
 ### `semantic-html-engineer`
-- **File**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/11-semantic-html-engineer.md`
+- **File**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/11-semantic-html-engineer.md`
 - **Issue**: Project agent uses YAML frontmatter instead of plain markdown (unlike others)
 
 ---

@@ -385,4 +385,4 @@ three generated documents.
 ================================================================================
 Generated: 2026-01-23
 Analyst: Claude Code Agent (Haiku 4.5)
-Repository: DMB Almanac Svelte (/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/)
+Repository: DMB Almanac Svelte (/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/)

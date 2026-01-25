@@ -219,7 +219,7 @@ To Reach 98%:              4-6 hours (if exploring new pages)
 
 All scrapers located in:
 ```
-/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
 dmb-almanac-svelte/scraper/src/scrapers/
 ```
 

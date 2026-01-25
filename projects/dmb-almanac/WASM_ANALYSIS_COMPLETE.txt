@@ -197,7 +197,7 @@ After All Phases (9+ hours investment):
 FILES CREATED IN THIS ANALYSIS
 ════════════════════════════════════════════════════════════════════════════════
 
-Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
 
 WASM_INTEROP_SUMMARY.txt          ← Start here (5 min read)
 WASM_FINDINGS_MATRIX.txt          ← Quick reference matrix

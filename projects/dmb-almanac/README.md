@@ -5,7 +5,7 @@ A comprehensive Dave Matthews Band concert database PWA.
 ## Structure
 
 ```
-DMBAlmanacProjectFolder/
+projects/dmb-almanac/app/
 └── dmb-almanac-svelte/    # Primary application
 ```
 

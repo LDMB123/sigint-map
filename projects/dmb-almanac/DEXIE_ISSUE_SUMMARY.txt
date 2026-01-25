@@ -269,8 +269,8 @@ After fixing Issues 11-15 (polish):
 DOCUMENTATION REFERENCES
 ================================================================================
 
-Full Audit: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/DEXIE_INDEXEDDB_AUDIT.md
-Quick Fix Guide: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/DEXIE_QUICK_FIX_GUIDE.md
+Full Audit: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/DEXIE_INDEXEDDB_AUDIT.md
+Quick Fix Guide: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/DEXIE_QUICK_FIX_GUIDE.md
 
 Key Schema:
   - IndexedDB Indexes: /src/lib/db/dexie/schema.ts (lines 504-690)

@@ -651,7 +651,7 @@ sveltekit-orchestrator (Opus)
 - Accessibility patterns (WCAG, focus management)
 - General-purpose analyzers/validators
 
-**Project-Level** (`DMBAlmanacProjectFolder/.claude/`):
+**Project-Level** (`projects/dmb-almanac/app/.claude/`):
 - Project-specific agents (DMB domain experts)
 - Project-specific skills (DMB business logic)
 - Customizations of user-level components
@@ -801,7 +801,7 @@ python3 .claude/audit/parse-toolkit.py
 
 # Check scope precedence
 ls -la .claude/agents/*/agent-name.md
-ls -la DMBAlmanacProjectFolder/.claude/agents/*/agent-name.md
+ls -la projects/dmb-almanac/app/.claude/agents/*/agent-name.md
 ```
 
 **Fix**: Rename or delete lower-precedence duplicate

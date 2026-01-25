@@ -47,7 +47,7 @@
 
 **Problem**: Real functional skills duplicated verbatim between:
 - `/Users/louisherman/ClaudeCodeProjects/.claude/skills/` (user-level)
-- `DMBAlmanacProjectFolder/.claude/skills/` (project-level)
+- `projects/dmb-almanac/app/.claude/skills/` (project-level)
 
 **Examples**:
 - Web APIs: `web-locks`, `web-bluetooth`, `web-serial`, `web-usb`, `web-share` (11 total)
@@ -119,8 +119,8 @@ With duplicates removed:
 
 **Pattern**:
 - User-level: `.claude/agents/category/agent-name.md`
-- Project-level (old): `DMBAlmanacProjectFolder/.claude/agents/category/agent-name.md`
-- Project-level (new): `DMBAlmanacProjectFolder/.claude/agents/new-category/agent-name.md`
+- Project-level (old): `projects/dmb-almanac/app/.claude/agents/category/agent-name.md`
+- Project-level (new): `projects/dmb-almanac/app/.claude/agents/new-category/agent-name.md`
 
 **Examples**:
 - `workload-predictor`: in `predictive/` (user), `predictive/` (project), `coordination/` (project)

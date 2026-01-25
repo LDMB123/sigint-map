@@ -260,7 +260,7 @@ Project Planning:
 
 Source Code to Modify:
   → /Users/louisherman/ClaudeCodeProjects/
-     DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/
+     projects/dmb-almanac/app/scraper/src/
      ├── scrapers/tours.ts (primary scraper)
      └── types.ts (type definitions)
 

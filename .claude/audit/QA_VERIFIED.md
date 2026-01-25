@@ -75,14 +75,14 @@ python3 validate-subagents.py
 ### Test 2: Collision Detection Workflow
 ```bash
 grep -r "name: dmb-qa-engineer" \
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/
 ```
 **Result**: ✅ PASS — Successfully detects existing agent
 
 ### Test 3: Model Consistency Check
 ```bash
 grep -c "Gemini 3 Pro" \
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/*.md
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/*.md
 ```
 **Result**: ✅ PASS — Returns 0 (all normalized)
 

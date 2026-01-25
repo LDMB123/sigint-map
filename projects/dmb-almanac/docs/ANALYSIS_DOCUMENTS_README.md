@@ -74,33 +74,33 @@ This directory contains a comprehensive analysis of the TourGuestShows.aspx page
 ### Existing Implementation
 
 **Shows Scraper (PARTIAL guest extraction):**
-- `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/shows.ts`
+- `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/shows.ts`
   - Lines 20-29: BAND_MEMBER_GIDS filter
   - Lines 220-230: Extract guest links from show setlist
   - Lines 298-315: Parse page-level guest appearances
 
 **Guests Scraper (GuestStats.aspx, not TourGuestShows):**
-- `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/guests.ts`
+- `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/guests.ts`
   - Scrapes GuestStats.aspx (WRONG page)
   - Should be supplemented with TourGuestShows.aspx scraper
 
 **Type Definitions (INCOMPLETE):**
-- `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/types.ts`
+- `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/types.ts`
   - Lines 34-38: ScrapedGuestAppearance (missing fields)
   - Lines 178-183: ScrapedGuest (basic only)
 
 **Database Schema:**
-- `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/lib/db/schema.sql`
+- `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/db/schema.sql`
   - Lines 118-149: guest_appearances table (supports per-song data but not populated)
 
 **Output Data (Current):**
-- `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/output/guest-details.json`
+- `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/output/guest-details.json`
   - 1,353 guests with incomplete data
-- `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/output/shows.json`
+- `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/output/shows.json`
   - Guest appearances linked but no dates/venues
 
 **Cache Directory:**
-- `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/cache/`
+- `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/cache/`
   - 6,427 cached HTML files (but NO TourGuestShows pages)
 
 ---

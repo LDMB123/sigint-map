@@ -205,7 +205,7 @@ ClaudeCodeProjects/
 - Status: COMPLETE (commit 90514a1)
 - Actions taken:
   - Created `projects/` directory
-  - Moved `DMBAlmanacProjectFolder/` → `projects/dmb-almanac/`
+  - Moved `projects/dmb-almanac/app/` → `projects/dmb-almanac/`
   - Moved `gemini-mcp-server/` → `projects/gemini-mcp-server/`
 - Verification: `ls -la projects/` shows both projects correctly placed
 
@@ -250,7 +250,7 @@ ClaudeCodeProjects/
 **Checked for old path patterns**:
 ```bash
 # Searched for:
-- "DMBAlmanacProjectFolder" (old project name)
+- "projects/dmb-almanac/app" (old project name)
 - "dmb-almanac-svelte" (old app directory)
 - Old agent category paths
 - Stale import statements

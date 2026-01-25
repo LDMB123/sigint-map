@@ -36,7 +36,7 @@ Test agent
 AGENT
 
 # Check if this would collide
-if grep -r "name: dmb-qa-engineer" /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/ > /dev/null 2>&1; then
+if grep -r "name: dmb-qa-engineer" /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/ > /dev/null 2>&1; then
   echo "   ⚠️  WARNING: Agent 'dmb-qa-engineer' already exists in project scope"
   echo "   ✅ Collision detection works!"
 else

@@ -39,7 +39,7 @@ Replaced all Gemini Pro model references with appropriate Claude models (opus/so
 ## Files Modified
 
 ### Agent Definition Files (15 files)
-All files in `DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/`:
+All files in `projects/dmb-almanac/app/.claude/agents/`:
 
 | File | Old Model | New Model |
 |------|-----------|-----------|
@@ -60,7 +60,7 @@ All files in `DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/`:
 | `14-lint-regression-debugger.md` | gemini-3-pro | haiku |
 
 ### Documentation Files (1 file)
-- `DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/AGENT_ROSTER.md`
+- `projects/dmb-almanac/app/.claude/AGENT_ROSTER.md`
   - Updated agent index table (all 15 rows)
   - Updated agent detail sections (15 sections)
   - Updated overview description

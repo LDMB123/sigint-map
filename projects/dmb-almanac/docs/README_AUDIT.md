@@ -200,19 +200,19 @@ A: Yes, but it depends on effort vs. benefit. See audit_report.txt for options.
 
 **Database Location:**
 ```
-/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
 dmb-almanac-svelte/data/dmb-almanac.db
 ```
 
 **JSON Source:**
 ```
-/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
 dmb-almanac-svelte/scraper/output/
 ```
 
 **Import Script:**
 ```
-/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
 dmb-almanac-svelte/scripts/import-data.ts
 ```
 

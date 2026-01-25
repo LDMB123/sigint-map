@@ -198,7 +198,7 @@ SOURCE FILES REFERENCED
 ================================================================================
 
 TypeScript Interface Layer:
-  /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
     dmb-almanac-svelte/src/lib/wasm/
     ├── advanced-modules.ts (976 lines) ← PRIMARY DEFINITIONS
     ├── types.ts (413 lines)

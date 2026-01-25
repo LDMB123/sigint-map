@@ -2,7 +2,7 @@
 
 **Date**: January 23, 2026
 **Status**: READY TO RUN
-**Scraper Location**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/releases.ts`
+**Scraper Location**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/releases.ts`
 
 ---
 
@@ -255,7 +255,7 @@ Based on analysis:
 
 ### Quick Test (Verify It Works)
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper
 npm run test:releases
 ```
 **Time**: 5-10 seconds
@@ -263,7 +263,7 @@ npm run test:releases
 
 ### Full Scrape
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper
 npm run scrape:releases
 ```
 **Time**: 10-20 minutes
@@ -280,7 +280,7 @@ watch -n 2 'ls -lh scraper/output/releases.json'
 
 ### Import to Database
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app
 npm run import
 ```
 

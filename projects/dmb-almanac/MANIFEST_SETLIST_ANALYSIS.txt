@@ -189,20 +189,20 @@ DATABASE LOCATION
 ================================================================================
 
 SQLite Database:
-  Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+  Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
             dmb-almanac-svelte/data/dmb-almanac.db
   Size: ~22 MB
   Tables: shows, setlist_entries, songs, venues, tours, etc.
 
 Scraped Data:
-  Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+  Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
             dmb-almanac-svelte/scraper/output/shows.json
   Size: ~805 KB
   Format: JSON
   Total shows: 3,772
 
 Analysis Files:
-  Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+  Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
   See file list above
 
 ================================================================================

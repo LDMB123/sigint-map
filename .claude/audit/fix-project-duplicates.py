@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fix duplicates within DMBAlmanacProjectFolder
+Fix duplicates within projects/dmb-almanac/app
 Keep newer category structure, delete old ones
 """
 
@@ -11,7 +11,7 @@ from datetime import datetime
 from collections import defaultdict
 
 root = Path('/Users/louisherman/ClaudeCodeProjects')
-project_dir = root / 'DMBAlmanacProjectFolder/.claude'
+project_dir = root / 'projects/dmb-almanac/app/.claude'
 
 # Parse current state
 print("Parsing current state...")
@@ -31,9 +31,9 @@ shutil.copytree(project_dir, backup_dir, ignore=shutil.ignore_patterns('audit'))
 print(f"✓ Backup created\n")
 
 # Find project-internal duplicates
-# Pattern: same name in different categories within DMBAlmanacProjectFolder
+# Pattern: same name in different categories within projects/dmb-almanac/app
 project_agents = [a for a in data['agents'] if a['scope'] == 'project'
-                 and 'DMBAlmanacProjectFolder' in a['relative_path']
+                 and 'projects/dmb-almanac/app' in a['relative_path']
                  and '.claude_backup' not in a['relative_path']]
 
 # Group by name

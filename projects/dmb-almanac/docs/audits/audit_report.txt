@@ -126,7 +126,7 @@ RECOMMENDATIONS & ACTION ITEMS
 PRIORITY 1 - URGENT (Address within 1 week):
 ---
 [ ] Investigate missing 317 shows
-    - File: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+    - File: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
            dmb-almanac-svelte/scripts/import-data.ts
     - Action: Add logging to track rejected records and reasons
     - Acceptance: Identify why 317 shows aren't imported
@@ -139,7 +139,7 @@ PRIORITY 1 - URGENT (Address within 1 week):
 PRIORITY 2 - HIGH (Address within 2 weeks):
 ---
 [ ] Document JSON file purposes
-    - Update: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+    - Update: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
              CLAUDE.md and add data pipeline documentation
     - Content: Clarify which files are complete vs. curated
     - Include: Expected counts and refresh frequency
@@ -186,14 +186,14 @@ FILE LOCATIONS & TECHNICAL DETAILS
 ================================================================================
 
 Database:
-  Path: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+  Path: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
         dmb-almanac-svelte/data/dmb-almanac.db
   Type: SQLite 3
   Size: ~22 MB
   Mode: WAL (Write-Ahead Logging)
 
 JSON Files:
-  Location: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+  Location: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
             dmb-almanac-svelte/scraper/output/
 
   Core Files:
@@ -203,7 +203,7 @@ JSON Files:
     - guests.json (1.7 KB) - Top 15 guests
 
 Import Script:
-  Path: /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/
+  Path: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/
         dmb-almanac-svelte/scripts/import-data.ts
 
 Related Files to Review:

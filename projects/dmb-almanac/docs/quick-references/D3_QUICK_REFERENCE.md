@@ -427,22 +427,22 @@ Use these commands to find all D3 references:
 
 ```bash
 # Find all d3-axis imports
-grep -r "d3-axis" /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/
+grep -r "d3-axis" /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/
 
 # Find all d3-drag imports
-grep -r "d3-drag" /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/
+grep -r "d3-drag" /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/
 
 # Find all d3Axis usages
-grep -r "d3Axis" /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/
+grep -r "d3Axis" /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/
 
 # Find all d3Drag usages
-grep -r "d3Drag" /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/
+grep -r "d3Drag" /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/
 
 # Find all scaleSqrt usages
-grep -r "scaleSqrt" /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/
+grep -r "scaleSqrt" /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/
 
 # Find all axisTop/axisLeft/axisBottom/axisRight calls
-grep -r "axis(Top\|Left\|Bottom\|Right)" /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/src/
+grep -r "axis(Top\|Left\|Bottom\|Right)" /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/
 ```
 
 ---

@@ -2,7 +2,7 @@
 
 **Status**: READY TO RUN (No data yet)
 **Last Updated**: January 23, 2026
-**Output Location**: `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/output/releases.json`
+**Output Location**: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/output/releases.json`
 
 ---
 
@@ -176,7 +176,7 @@ $("a[href*='ReleaseView.aspx']")
 
 ### TypeScript Interfaces
 
-From `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/types.ts`:
+From `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/types.ts`:
 
 ```typescript
 export interface ScrapedRelease {
@@ -394,7 +394,7 @@ Based on scraper analysis:
 ### Step 1: Test First (Recommended)
 
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper
 npm run test:releases
 ```
 
@@ -497,15 +497,15 @@ If scraper is interrupted:
 
 | Component | Location |
 |-----------|----------|
-| Main scraper | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/scrapers/releases.ts` |
-| Test script | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/test-releases-scraper.ts` |
-| Types | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/types.ts` |
-| Output (when created) | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/output/releases.json` |
-| Checkpoint (when created) | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/cache/checkpoint_releases.json` |
-| HTML Cache | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/cache/html/` |
-| Helper functions | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/utils/helpers.ts` |
-| Cache utilities | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/utils/cache.ts` |
-| Rate limit utils | `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/scraper/src/utils/rate-limit.ts` |
+| Main scraper | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/scrapers/releases.ts` |
+| Test script | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/test-releases-scraper.ts` |
+| Types | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/types.ts` |
+| Output (when created) | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/output/releases.json` |
+| Checkpoint (when created) | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/cache/checkpoint_releases.json` |
+| HTML Cache | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/cache/html/` |
+| Helper functions | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/utils/helpers.ts` |
+| Cache utilities | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/utils/cache.ts` |
+| Rate limit utils | `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/scraper/src/utils/rate-limit.ts` |
 
 ---
 

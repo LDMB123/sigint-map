@@ -1579,79 +1579,79 @@
       },
       {
         "name": "sveltekit-engineer",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/01-sveltekit-engineer.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/01-sveltekit-engineer.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "modern-css-architect",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/12-modern-css-architect.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/12-modern-css-architect.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "caching-specialist",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/04-caching-specialist.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/04-caching-specialist.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "pwa-engineer",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/05-pwa-engineer.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/05-pwa-engineer.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "vite-build-engineer",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/03-vite-build-engineer.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/03-vite-build-engineer.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "lint-regression-debugger",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/14-lint-regression-debugger.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/14-lint-regression-debugger.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "local-first-steward",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/06-local-first-steward.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/06-local-first-steward.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "dmb-performance-optimizer",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/07-performance-optimizer.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/07-performance-optimizer.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "parallel-coordinator",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/10-parallel-coordinator.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/10-parallel-coordinator.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "dmb-qa-engineer",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/08-qa-engineer.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/08-qa-engineer.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "eslint-typescript-steward",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/09-eslint-typescript-steward.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/09-eslint-typescript-steward.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "semantic-html-engineer",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/11-semantic-html-engineer.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/11-semantic-html-engineer.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       },
       {
         "name": "svelte-component-engineer",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/02-svelte-component-engineer.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/02-svelte-component-engineer.md",
         "scope": "project",
         "reason": "Not referenced in any collaboration metadata and has no collaborations defined"
       }
@@ -1659,25 +1659,25 @@
     "format_issues": [
       {
         "name": "modern-css-architect",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/12-modern-css-architect.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/12-modern-css-architect.md",
         "issue": "format_inconsistency",
         "reason": "Project agent uses YAML frontmatter instead of plain markdown (unlike others)"
       },
       {
         "name": "lint-regression-debugger",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/14-lint-regression-debugger.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/14-lint-regression-debugger.md",
         "issue": "format_inconsistency",
         "reason": "Project agent uses YAML frontmatter instead of plain markdown (unlike others)"
       },
       {
         "name": "ui-regression-debugger",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/13-ui-regression-debugger.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/13-ui-regression-debugger.md",
         "issue": "format_inconsistency",
         "reason": "Project agent uses YAML frontmatter instead of plain markdown (unlike others)"
       },
       {
         "name": "semantic-html-engineer",
-        "file_path": "/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/dmb-almanac-svelte/.claude/agents/11-semantic-html-engineer.md",
+        "file_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/.claude/agents/11-semantic-html-engineer.md",
         "issue": "format_inconsistency",
         "reason": "Project agent uses YAML frontmatter instead of plain markdown (unlike others)"
       }

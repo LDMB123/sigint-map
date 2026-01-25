@@ -162,13 +162,13 @@ cat archive/backups/README.md
 ## Chunk 3: Project Directory Restructure (MEDIUM RISK)
 
 ### Objective
-Create projects/ directory and move DMBAlmanacProjectFolder/ and gemini-mcp-server/
+Create projects/ directory and move projects/dmb-almanac/app/ and gemini-mcp-server/
 
 ### Move Operations
 
 | # | From | To | Size | Reason |
 |---|------|-----|------|--------|
-| 3.1 | DMBAlmanacProjectFolder/ | projects/dmb-almanac/ | 2.0GB | Better naming, group projects |
+| 3.1 | projects/dmb-almanac/app/ | projects/dmb-almanac/ | 2.0GB | Better naming, group projects |
 | 3.2 | gemini-mcp-server/ | projects/gemini-mcp-server/ | 116KB | Group all projects together |
 
 ### Update Operations
@@ -185,11 +185,11 @@ Create projects/ directory and move DMBAlmanacProjectFolder/ and gemini-mcp-serv
 mkdir -p projects
 
 # Move projects
-git mv DMBAlmanacProjectFolder projects/dmb-almanac
+git mv projects/dmb-almanac/app projects/dmb-almanac
 git mv gemini-mcp-server projects/gemini-mcp-server
 
 # Check for workflow path references
-grep -r "DMBAlmanacProjectFolder\|gemini-mcp-server" .github/workflows/
+grep -r "projects/dmb-almanac/app\|gemini-mcp-server" .github/workflows/
 
 # Update workflows if needed (using Edit tool)
 
@@ -750,7 +750,7 @@ logs/
 
 **Changes**:
 1. Add "Project Structure" section
-2. Update project paths (DMBAlmanacProjectFolder → projects/dmb-almanac)
+2. Update project paths (projects/dmb-almanac/app → projects/dmb-almanac)
 3. Add "Recent Audits" section linking to docs/audits/
 4. Add "Documentation" section linking to docs/
 

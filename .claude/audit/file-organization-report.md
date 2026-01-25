@@ -199,7 +199,7 @@ The ClaudeCodeProjects repository is well-structured at the agent framework leve
 │   ├── DEPLOYMENT_COMPLETE.txt
 │   └── WORKFLOW_QUICK_REFERENCE.md
 │
-├── DMBAlmanacProjectFolder/ (2.0GB) ⚠️ NEEDS ORGANIZATION
+├── projects/dmb-almanac/app/ (2.0GB) ⚠️ NEEDS ORGANIZATION
 │   ├── ROOT CLUTTER (107 markdown files!) ⚠️
 │   │   ├── A11Y_*.md (10+ accessibility audits)
 │   │   ├── PERFORMANCE_*.md (15+ performance audits)
@@ -375,14 +375,14 @@ import type { Show } from '$lib/types';
 | Root | 9 | Audit reports | → docs/audits/2026-01-audit/ |
 | .claude/ root | 30+ | Framework docs | → .claude/docs/{category}/ |
 | .claude/audit/ | 58 | Analysis files | Keep (well-organized) |
-| DMBAlmanacProjectFolder root | 107 | Project analysis | → app/docs/analysis/{category}/ |
+| projects/dmb-almanac/app root | 107 | Project analysis | → app/docs/analysis/{category}/ |
 | dmb-almanac-svelte/docs/ | - | Architecture docs | Keep (well-organized) |
 
 **Total**: 200+ markdown files across 5 locations → Consolidate to 3 locations
 
 ---
 
-### E. DMBAlmanacProjectFolder Root Clutter (107 Files)
+### E. projects/dmb-almanac/app Root Clutter (107 Files)
 
 **Analysis File Categories**:
 
@@ -549,7 +549,7 @@ import type { Show } from '$lib/types';
 │       └── README.md (restoration guide)
 │
 └── projects/ (NEW - all active projects)
-    ├── dmb-almanac/ (renamed from DMBAlmanacProjectFolder)
+    ├── dmb-almanac/ (renamed from projects/dmb-almanac/app)
     │   ├── app/ (renamed from dmb-almanac-svelte)
     │   │   ├── src/
     │   │   ├── wasm/
@@ -616,7 +616,7 @@ import type { Show } from '$lib/types';
 
 ### High-Risk Operations Detail
 
-**1. DMBAlmanacProjectFolder → projects/dmb-almanac/app/**
+**1. projects/dmb-almanac/app → projects/dmb-almanac/app/**
 
 **Risks**:
 - TypeScript imports may break (`import from '../../../'`)
@@ -754,7 +754,7 @@ ls .claude/agents/documentation/  # Should show 7 files
 |----------|--------|-------|--------|
 | Root markdown files | 9 | 1 (README.md) | -8 ✅ |
 | Backup directories | 3 | 0 (archived) | -3 ✅ |
-| DMBAlmanacProjectFolder root files | 107 | 0 (organized) | -107 ✅ |
+| projects/dmb-almanac/app root files | 107 | 0 (organized) | -107 ✅ |
 | Agent categories | 50 | 49 | -1 (merged) ✅ |
 | Documentation locations | 5+ | 3 | -2+ ✅ |
 | Total files moved | - | 130+ | - ✅ |
