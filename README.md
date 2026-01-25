@@ -1,8 +1,38 @@
+# ClaudeCodeProjects
+
+**Repository**: Universal Agent Framework (UAF) + DMB Almanac + Gemini MCP
+**Health Score**: 99/100 (as of 2026-01-25)
+**Last Updated**: January 25, 2026
+
+---
+
+## Recent Audits
+
+📊 **[January 2026 Audit](./docs/audits/2026-01-audit/)** - Comprehensive UAF audit
+- Health Score: 99/100 (↑ from 92/100)
+- 465 agents validated across 50 categories
+- 4 duplicates removed, 9 agents optimized
+- [View full audit reports →](./docs/audits/)
+
+---
+
+## Projects
+
+- **[DMB Almanac](./DMBAlmanacProjectFolder/)** - Dave Matthews Band concert database PWA
+  - SvelteKit 2 + Svelte 5
+  - 6 Rust WASM modules
+  - SQLite + Dexie.js/IndexedDB
+  - 2,800+ documented shows
+
+- **[Gemini MCP Server](./gemini-mcp-server/)** - Google Gemini API integration via MCP
+
+---
+
 # DMB Almanac WASM Audit - Complete Analysis
 
-**Date:** January 23, 2026  
-**Status:** ✅ Complete audit with 4 implementation specifications  
-**Location:** `/Users/louisherman/ClaudeCodeProjects/`
+**Date:** January 23, 2026
+**Status:** ✅ Complete audit with 4 implementation specifications
+**Location:** `/Users/louisherman/ClaudeCodeProjects/DMBAlmanacProjectFolder/`
 
 ---
 
