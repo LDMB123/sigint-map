@@ -165,7 +165,9 @@
       "Bash(npm ls:*)",
       "Bash(npm view:*)",
       "Bash(git branch:*)",
-      "Bash(npx depcheck:*)"
+      "Bash(npx depcheck:*)",
+      "Bash(git count-objects:*)",
+      "Bash(git gc:*)"
     ],
     "deny": []
   }
