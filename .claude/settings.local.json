@@ -162,7 +162,8 @@
       "Skill(perf-audit:*)",
       "Skill(debug)",
       "Skill(debug:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(npm view:*)"
     ],
     "deny": []
   }
