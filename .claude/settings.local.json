@@ -138,7 +138,9 @@
       "Bash(git rev-list:*)",
       "Bash(npm run test:*)",
       "Bash(for dir in docs/analysis/*/)",
-      "Bash(.claude/scripts/validate-structure.sh:*)"
+      "Bash(.claude/scripts/validate-structure.sh:*)",
+      "Bash(git merge:*)",
+      "Bash(test:*)"
     ],
     "deny": []
   }
