@@ -1,131 +1,124 @@
 # Universal Agent Framework (UAF)
 
-**Function-first agent architecture for maximum parallelization**
+**Version**: 1.0
+**Health Score**: 99/100 (as of 2026-01-25)
+**Total Agents**: 465 across 50 categories
 
-## What is UAF?
+---
 
-UAF organizes AI agents by **what they do** (validators, generators, analyzers) rather than **what technology they know** (rust-engineer, frontend-developer). This enables:
+## Overview
 
-- **Massive Parallelization**: 200+ Haiku workers executing simultaneously
-- **70-95% Cost Savings**: Right model tier for each task
-- **Technology Agnostic**: Same agents work for Rust, JS, Python, Go, etc.
-- **Composable Skills**: Build complex workflows from simple primitives
+The Universal Agent Framework (UAF) is a function-first agent architecture enabling massive parallelization and efficient task decomposition.
 
-## Quick Stats
+**Key Features**:
+- 465 specialized agents organized by function (not technology)
+- 50 functional categories (validators, generators, analyzers, debuggers, etc.)
+- Model tier optimization (Haiku/Sonnet/Opus based on complexity)
+- Parallel execution patterns (swarms, compounds, cascades)
+- Self-healing and self-improving capabilities
 
-| Metric | Value |
-|--------|-------|
-| Agent Categories | 10 functional categories |
-| Total Agents | 50+ ready-to-use |
-| Swarm Patterns | 5 core patterns |
-| Skills | 5+ composable workflows |
-| Max Parallelization | 200+ concurrent workers |
-| Cost Savings | 70-95% vs traditional |
+---
 
-## Functional Categories
+## Quick Start
 
-| Category | Count | Tier | Purpose |
-|----------|-------|------|---------|
-| Validators | 5 | Haiku | Check syntax, schemas, security |
-| Generators | 5 | Sonnet | Create code, tests, docs |
-| Analyzers | 5 | Sonnet | Understand performance, complexity |
-| Transformers | 5 | Sonnet | Refactor, migrate, optimize |
-| Orchestrators | 5 | Opus | Coordinate swarms, workflows |
-| Debuggers | 5 | Sonnet | Fix errors, performance issues |
-| Learners | 5 | Sonnet | Discover patterns, conventions |
-| Reporters | 5 | Haiku | Summarize, visualize, notify |
-| Integrators | 5 | Sonnet | Connect APIs, databases |
-| Guardians | 5 | Sonnet | Enforce security, compliance |
-
-## Swarm Patterns
-
-### Fan-Out Validation
-```
-1 Sonnet → 200 Haiku parallel
-Cost: $0.03 for 100 files (vs $0.30 traditional)
-```
-
-### Hierarchical Delegation
-```
-1 Opus → 20 Sonnet → 500 Haiku
-Scales to 1000+ file migrations
-```
-
-### Consensus Building
-```
-5 Sonnet propose → 25 Haiku evaluate → 1 Opus decides
-High-quality architecture decisions
-```
-
-### Progressive Refinement
-```
-Draft → Review → Polish → Iterate
-Quality threshold: 0.85+
-```
-
-### Self-Healing
-```
-Monitor → Diagnose → Fix → Verify
-Automatic CI/CD recovery
-```
-
-## Usage
-
+### Browse All Agents
 ```bash
-# Code review with parallel validation
-/review src/**/*.ts
-
-# Generate comprehensive tests
-/test-gen src/auth/
-
-# Security audit
-/security-audit --compliance owasp,soc2
-
-# API upgrade migration
-/api-upgrade @tanstack/react-query --from 4.0 --to 5.0
-
-# CI/CD pipeline setup
-/ci-setup --platform github_actions
+cat docs/reference/GLOBAL_INDEX.md
 ```
 
-## Cost Comparison
+### Create a New Agent
+```bash
+cat docs/guides/AGENT_TEMPLATE.md
+```
 
-| Operation | Traditional | UAF Swarm | Savings |
-|-----------|-------------|-----------|---------|
-| Validate 100 files | $0.30 | $0.028 | 90.7% |
-| Code review 50 files | $0.15 | $0.04 | 73.3% |
-| Migrate 1000 files | $3.00 | $0.33 | 89% |
-| Architecture decision | $0.015 | $0.051 | -240%* |
+### Understand the Framework
+```bash
+cat docs/architecture/UAF_FRAMEWORK.md
+```
 
-*Consensus building costs more but delivers higher quality decisions
+---
 
 ## Directory Structure
 
 ```
 .claude/
-├── agents/           # 50+ agents by function
-├── skills/           # Composable workflows
-├── swarms/           # Swarm pattern definitions
-├── config/           # Cost, parallelization settings
-├── templates/        # Create your own agents/skills
-└── docs/             # Getting started, guides
+├── agents/          # 465 agent definitions (50 categories)
+├── commands/        # 95 skill files
+├── skills/          # 34 skill files
+├── docs/            # Documentation (organized by category)
+│   ├── architecture/  # Framework design
+│   ├── reference/     # Indexes and cross-references
+│   └── guides/        # Templates and how-tos
+├── audit/           # Analysis files (58 reports)
+├── config/          # Configuration
+├── scripts/         # Utility scripts
+├── tests/           # Test files
+└── settings.local.json  # Active settings
 ```
 
-## Getting Started
+---
 
-1. Read [`docs/getting_started.md`](docs/getting_started.md)
-2. Try a skill: `/review src/`
-3. Explore agents: `agents/validators/`, `agents/generators/`
-4. Create your own: Copy from `templates/`
+## Documentation
 
-## Design Principles
+All documentation is organized in the [`docs/`](./docs/) directory:
 
-1. **Function over Domain**: Agents defined by WHAT they do
-2. **Parallelization-First**: Every decision optimizes for concurrency
-3. **Cost-Aware**: Right model tier for right task
-4. **Composability**: Skills combine like UNIX pipes
-5. **Technology-Agnostic**: Works for any language/framework
+- **[Architecture](./docs/architecture/)** - Framework design and coordination
+- **[Reference](./docs/reference/)** - Indexes, rosters, cross-references
+- **[Guides](./docs/guides/)** - Templates, workflows, how-tos
 
-## License
+See [`docs/README.md`](./docs/README.md) for complete navigation.
 
-MIT
+---
+
+## Agent Categories (50 total)
+
+**Top 10 by Agent Count**:
+1. validators (80 agents) - Validation specialists
+2. dmb (19 agents) - DMB Almanac-specific
+3. debuggers (18 agents) - Debugging specialists
+4. orchestrators (15 agents) - Workflow orchestration
+5. compound (11 agents) - Multi-agent coordination
+6. devops (10 agents) - Infrastructure/DevOps
+7. caching (10 agents) - Cache strategies
+8. testing (9 agents) - Testing specialists
+9. content (9 agents) - Content creation
+10. ecommerce (8 agents) - E-commerce specialists
+
+[View all 50 categories →](./docs/reference/GLOBAL_INDEX.md)
+
+---
+
+## Health Score: 99/100
+
+**Recent Improvements** (2026-01-25):
+- ✓ Removed 4 duplicate agents
+- ✓ Fixed GitHub token security exposure
+- ✓ Migrated 6 template files to docs/
+- ✓ Optimized 9 agent model tiers for cost efficiency
+- ✓ Organized 30+ documentation files into subdirectories
+
+[View detailed audit →](../docs/audits/2026-01-audit/)
+
+---
+
+## Contributing
+
+1. Review [Agent Template](./docs/guides/AGENT_TEMPLATE.md)
+2. Check [Model Policy](./docs/reference/MODEL_POLICY.md) for tier selection
+3. Add agent to appropriate category in `agents/`
+4. Update [GLOBAL_INDEX.md](./docs/reference/GLOBAL_INDEX.md)
+5. Test agent invocation
+
+---
+
+## Support
+
+- **Documentation**: [docs/](./docs/)
+- **Audits**: [../docs/audits/](../docs/audits/)
+- **Issues**: Repository-specific issue tracking
+
+---
+
+*Universal Agent Framework v1.0*
+*Created: 2026*
+*Last Updated: 2026-01-25*
