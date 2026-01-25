@@ -1,0 +1,77 @@
+{
+  "version": "1.0.0",
+  "created": "2026-01-25T00:00:00Z",
+  "repository": {
+    "name": "ClaudeCodeProjects",
+    "health_score": 100,
+    "commit": "90514a1",
+    "branch": "main"
+  },
+  "file_metrics": {
+    "total_files": 563,
+    "markdown_files": 835,
+    "organized_categories": 30,
+    "documentation_files": {
+      "uaf_docs": 25,
+      "dmb_docs": 71,
+      "dmb_app_docs": 731,
+      "audit_reports": 8
+    }
+  },
+  "uaf_metrics": {
+    "total_agents": 465,
+    "total_skills": 150,
+    "agent_categories": 49,
+    "agent_load_time_ms": null,
+    "yaml_parse_time_ms": null,
+    "validation_time_ms": null,
+    "total_framework_load_ms": null,
+    "note": "Run benchmark.yml to populate UAF performance metrics"
+  },
+  "dmb_almanac_metrics": {
+    "app_directory": "projects/dmb-almanac/app",
+    "package_name": "dmb-almanac",
+    "test_count": 162,
+    "test_pass_rate": 100,
+    "lint_errors": 0,
+    "build_success": true,
+    "build_time_seconds": null,
+    "bundle_size_kb": null,
+    "note": "Run 'npm run build' in app directory to populate build metrics"
+  },
+  "validation_metrics": {
+    "structure_checks_passing": 7,
+    "structure_checks_total": 7,
+    "stale_references": 0,
+    "validation_script": ".claude/scripts/validate-structure.sh"
+  },
+  "ci_cd_metrics": {
+    "active_workflows": 8,
+    "workflow_files": [
+      "structure-validation.yml",
+      "validate-agents.yml",
+      "validate-openapi.yml",
+      "benchmark.yml",
+      "security.yml",
+      "audit-deps.yml",
+      "deploy-docs.yml",
+      "README.md"
+    ]
+  },
+  "thresholds": {
+    "uaf_load_time_max_ms": 5000,
+    "regression_threshold_percent": 20,
+    "health_score_min": 95,
+    "test_pass_rate_min": 95
+  },
+  "enhancement_tracking": {
+    "phase_3_enhancements": {
+      "pre_commit_hooks": true,
+      "ci_validation": true,
+      "master_index": true,
+      "baseline_metrics": true,
+      "completed_date": "2026-01-25"
+    }
+  },
+  "next_update": "Run benchmark.yml on next push to main to capture actual performance data"
+}

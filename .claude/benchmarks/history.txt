@@ -1,0 +1,11 @@
+# Benchmark History Log
+# Format: YYYY-MM-DD HH:MM:SS | Commit | Branch | Load Time (ms) | Notes
+
+# Initial baseline establishment
+2026-01-25 00:00:00 | 90514a1 | main | PENDING | Baseline created, awaiting first benchmark run
+
+# Future entries will be added by benchmark.yml workflow
+# Example:
+# 2026-01-26 10:30:00 | abc1234 | main | 2847 | Normal operation
+# 2026-01-27 14:15:00 | def5678 | feature-x | 3102 | Added 15 new agents
+# 2026-01-28 09:45:00 | ghi9012 | main | 2765 | Optimized YAML parsing

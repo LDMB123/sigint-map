@@ -38,20 +38,25 @@ Google Gemini API integration via Model Context Protocol
 
 ## Documentation
 
+### 📖 **[Master Documentation Index](./docs/INDEX.md)** ✨ NEW
+Complete navigation for all 835+ documentation files across the repository.
+
 ### Getting Started
 - [Project Structure Guide](./docs/PROJECT_STRUCTURE.md) - Repository organization
-- [UAF Framework Overview](./.claude/docs/architecture/UAF_FRAMEWORK.md) - Agent system
+- [UAF Framework Overview](./.claude/docs/UAF_FRAMEWORK.md) - Agent system
 - [Global Agent Index](./.claude/docs/reference/GLOBAL_INDEX.md) - All 465 agents
+- [Development Guide](./.claude/docs/guides/DEVELOPMENT.md) - Git workflow, pre-commit hooks, CI
 
 ### Development
-- [File Organization Report](./.claude/audit/file-organization-report.md)
+- [Metrics & Performance](./.claude/docs/guides/METRICS.md) - Baseline tracking & regression detection
+- [File Organization Report](./.claude/audit/file-organization-completion.md) - 100/100 health score
 - [Skill Library](./.claude/docs/reference/SKILL_CROSS_REFERENCES.md)
 - [Agent Ecosystem](./.claude/docs/reference/AGENT_ECOSYSTEM_INDEX.md)
 
 ### Audits & Analysis
 - [2026-01 Audit Report](./docs/audits/2026-01-audit/) - Complete audit results
 - [Agent Validation](./docs/audits/2026-01-audit/AGENT_VALIDATION_REPORT.md)
-- [DMB Almanac Analysis](./projects/dmb-almanac/app/docs/analysis/) - 563 technical documents
+- [DMB Almanac Analysis](./projects/dmb-almanac/app/docs/) - 731 technical documents
 
 ---
 
