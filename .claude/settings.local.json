@@ -236,7 +236,8 @@
       "Bash(git log:*)",
       "Bash(git status:*)",
       "Bash(npx eslint:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/scripts/monitor-batch3-progress.sh:*)"
     ],
     "deny": []
   }
