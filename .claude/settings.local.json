@@ -231,7 +231,11 @@
       "Bash(do if [ -f \"/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/utils/$f.ts\" ])",
       "Bash(then wc -l \"/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/utils/$f.ts\")",
       "Bash(for f in useLoadingAnnouncements useSearchAnnouncements useFilterAnnouncements viewTransitionNavigation useEventCleanup.svelte navigationSync)",
-      "Bash(do:*)"
+      "Bash(do:*)",
+      "Bash(npx svelte-check:*)",
+      "Bash(git log:*)",
+      "Bash(git status:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": []
   }
