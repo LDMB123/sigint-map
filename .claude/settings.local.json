@@ -237,7 +237,11 @@
       "Bash(git status:*)",
       "Bash(npx eslint:*)",
       "Bash(git check-ignore:*)",
-      "Bash(/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/scripts/monitor-batch3-progress.sh:*)"
+      "Bash(/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/scripts/monitor-batch3-progress.sh:*)",
+      "Bash(while read ts_file)",
+      "Bash(js_file=\"$ts_file%.ts.js\")",
+      "Bash(if [ -f \"$js_file\" ])",
+      "Bash(for ts_file in lib/db/dexie/cache.ts lib/db/dexie/db.ts lib/db/dexie/init.ts lib/db/dexie/query-helpers.ts lib/db/dexie/seed-from-json.ts lib/db/dexie/storage-manager.ts lib/db/dexie/sync.ts lib/db/dexie/transaction-timeout.ts lib/db/dexie/ttl-cache.ts lib/db/dexie/validation/integrity-hooks.ts lib/db/dexie/validation/song-stats-validator.ts lib/db/lazy-dexie.ts lib/db/server/push-subscriptions.ts lib/stores/dexie.ts)"
     ],
     "deny": []
   }
