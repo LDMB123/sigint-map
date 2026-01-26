@@ -226,7 +226,12 @@
       "Bash(xargs du:*)",
       "Bash(time npm run build)",
       "Bash(npx vite-bundle-visualizer --open=false)",
-      "Bash(npx vite-bundle-visualizer:*)"
+      "Bash(npx vite-bundle-visualizer:*)",
+      "Bash(for f in rum speculationRules navigationApi scheduler yieldIfNeeded)",
+      "Bash(do if [ -f \"/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/utils/$f.ts\" ])",
+      "Bash(then wc -l \"/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/utils/$f.ts\")",
+      "Bash(for f in useLoadingAnnouncements useSearchAnnouncements useFilterAnnouncements viewTransitionNavigation useEventCleanup.svelte navigationSync)",
+      "Bash(do:*)"
     ],
     "deny": []
   }
