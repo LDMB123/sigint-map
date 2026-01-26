@@ -235,7 +235,8 @@
       "Bash(npx svelte-check:*)",
       "Bash(git log:*)",
       "Bash(git status:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": []
   }
