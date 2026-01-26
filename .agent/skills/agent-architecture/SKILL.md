@@ -1,0 +1,1 @@
+/Users/louisherman/ClaudeCodeProjects/.claude/skills/agent-architecture/scraper-agent.md

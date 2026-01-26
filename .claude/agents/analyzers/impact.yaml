@@ -8,7 +8,7 @@ agent:
 
   functional_category: analyzer
   sub_category: impact
-  model_tier: sonnet
+  model_tier: haiku
 
   description: |
     Analyzes the impact of code changes across the codebase.

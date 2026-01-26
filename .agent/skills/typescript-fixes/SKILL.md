@@ -1,0 +1,1 @@
+/Users/louisherman/ClaudeCodeProjects/.claude/skills/scraping/typescript-fixes.md

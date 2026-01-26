@@ -8,7 +8,7 @@ agent:
 
   functional_category: guardian
   sub_category: privacy_validator
-  model_tier: sonnet
+  model_tier: opus
 
   description: |
     Validates code for privacy compliance and data protection.

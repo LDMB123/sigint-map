@@ -1,0 +1,482 @@
+{
+  "generated_at": "2026-01-25T21:52:57Z",
+  "summary": {
+    "total_agents": 62,
+    "routed_agents": 14,
+    "orphaned_agents": 62,
+    "phantom_routes": 14,
+    "coverage_rate": 22
+  },
+  "orphaned_by_category": {
+    "integrator": 5,
+    "generator": 5,
+    "learner": 5,
+    "monitoring": 2,
+    "orchestrator": 5,
+    "dmb": 1,
+    "debugger": 5,
+    "transformer": 5,
+    "reporter": 5,
+    "ecommerce": 3,
+    "events": 2,
+    "validator": 5,
+    "workflow": 1,
+    "analyzer": 5,
+    "validators": 1,
+    "guardian": 5,
+    "content": 1,
+    "testing": 1
+  },
+  "orphaned_agents": [
+    {
+      "id": "analyzer_dependency",
+      "name": "Dependency Analyzer",
+      "category": "analyzer",
+      "tier": "sonnet",
+      "file": ".claude/agents/analyzers/dependency.yaml"
+    },
+    {
+      "id": "analyzer_impact",
+      "name": "Impact Analyzer",
+      "category": "analyzer",
+      "tier": "sonnet",
+      "file": ".claude/agents/analyzers/impact.yaml"
+    },
+    {
+      "id": "analyzer_performance",
+      "name": "Performance Analyzer",
+      "category": "analyzer",
+      "tier": "sonnet",
+      "file": ".claude/agents/analyzers/performance_analyzer.yaml"
+    },
+    {
+      "id": "analyzer_semantic",
+      "name": "Semantic Analyzer",
+      "category": "analyzer",
+      "tier": "sonnet",
+      "file": ".claude/agents/analyzers/semantic.yaml"
+    },
+    {
+      "id": "analyzer_static",
+      "name": "Static Analyzer",
+      "category": "analyzer",
+      "tier": "sonnet",
+      "file": ".claude/agents/analyzers/static.yaml"
+    },
+    {
+      "id": "benchmark_framework",
+      "name": "Benchmark Framework",
+      "category": "testing",
+      "tier": "sonnet",
+      "file": ".claude/agents/testing/benchmark_framework.yaml"
+    },
+    {
+      "id": "contract_validator",
+      "name": "Contract Validator",
+      "category": "validators",
+      "tier": "sonnet",
+      "file": ".claude/agents/validators/contract_validator.yaml"
+    },
+    {
+      "id": "debugger_build",
+      "name": "Build Debugger",
+      "category": "debugger",
+      "tier": "sonnet",
+      "file": ".claude/agents/debuggers/build.yaml"
+    },
+    {
+      "id": "debugger_error_diagnosis",
+      "name": "Error Diagnosis Debugger",
+      "category": "debugger",
+      "tier": "sonnet",
+      "file": ".claude/agents/debuggers/error_diagnosis.yaml"
+    },
+    {
+      "id": "debugger_integration",
+      "name": "Integration Debugger",
+      "category": "debugger",
+      "tier": "sonnet",
+      "file": ".claude/agents/debuggers/integration.yaml"
+    },
+    {
+      "id": "debugger_performance",
+      "name": "Performance Debugger",
+      "category": "debugger",
+      "tier": "sonnet",
+      "file": ".claude/agents/debuggers/performance_debugger.yaml"
+    },
+    {
+      "id": "debugger_test_failure",
+      "name": "Test Failure Debugger",
+      "category": "debugger",
+      "tier": "sonnet",
+      "file": ".claude/agents/debuggers/test_failure.yaml"
+    },
+    {
+      "id": "dmb_bustout_predictor",
+      "name": "DMB Bustout Prediction Agent",
+      "category": "dmb",
+      "tier": "sonnet",
+      "file": ".claude/agents/dmb/bustout_predictor.yaml"
+    },
+    {
+      "id": "ecommerce_inventory_sync",
+      "name": "Inventory Sync Agent",
+      "category": "ecommerce",
+      "tier": "sonnet",
+      "file": ".claude/agents/ecommerce/inventory_sync.yaml"
+    },
+    {
+      "id": "ecommerce_order_fulfillment",
+      "name": "Order Fulfillment Agent",
+      "category": "ecommerce",
+      "tier": "sonnet",
+      "file": ".claude/agents/ecommerce/order_fulfillment.yaml"
+    },
+    {
+      "id": "ecommerce_returns_management",
+      "name": "Returns Management Agent",
+      "category": "ecommerce",
+      "tier": "sonnet",
+      "file": ".claude/agents/ecommerce/returns_management.yaml"
+    },
+    {
+      "id": "generator_code",
+      "name": "Code Generator",
+      "category": "generator",
+      "tier": "sonnet",
+      "file": ".claude/agents/generators/code.yaml"
+    },
+    {
+      "id": "generator_config",
+      "name": "Configuration Generator",
+      "category": "generator",
+      "tier": "sonnet",
+      "file": ".claude/agents/generators/config.yaml"
+    },
+    {
+      "id": "generator_data",
+      "name": "Data Generator",
+      "category": "generator",
+      "tier": "sonnet",
+      "file": ".claude/agents/generators/data.yaml"
+    },
+    {
+      "id": "generator_documentation",
+      "name": "Documentation Generator",
+      "category": "generator",
+      "tier": "sonnet",
+      "file": ".claude/agents/generators/documentation.yaml"
+    },
+    {
+      "id": "generator_test",
+      "name": "Test Generator",
+      "category": "generator",
+      "tier": "sonnet",
+      "file": ".claude/agents/generators/test_generator.yaml"
+    },
+    {
+      "id": "guardian_compliance_checker",
+      "name": "Compliance Checker Guardian",
+      "category": "guardian",
+      "tier": "sonnet",
+      "file": ".claude/agents/guardians/compliance_checker.yaml"
+    },
+    {
+      "id": "guardian_privacy_validator",
+      "name": "Privacy Validator Guardian",
+      "category": "guardian",
+      "tier": "sonnet",
+      "file": ".claude/agents/guardians/privacy_validator.yaml"
+    },
+    {
+      "id": "guardian_rate_limiter",
+      "name": "Rate Limiter Guardian",
+      "category": "guardian",
+      "tier": "haiku",
+      "file": ".claude/agents/guardians/rate_limiter.yaml"
+    },
+    {
+      "id": "guardian_secret_detector",
+      "name": "Secret Detector Guardian",
+      "category": "guardian",
+      "tier": "sonnet",
+      "file": ".claude/agents/guardians/secret_detector.yaml"
+    },
+    {
+      "id": "guardian_security_scanner",
+      "name": "Security Scanner Guardian",
+      "category": "guardian",
+      "tier": "sonnet",
+      "file": ".claude/agents/guardians/security_scanner.yaml"
+    },
+    {
+      "id": "integrator_adapter",
+      "name": "Adapter Integrator",
+      "category": "integrator",
+      "tier": "sonnet",
+      "file": ".claude/agents/integrators/adapter.yaml"
+    },
+    {
+      "id": "integrator_api_client",
+      "name": "API Client Integrator",
+      "category": "integrator",
+      "tier": "sonnet",
+      "file": ".claude/agents/integrators/api_client.yaml"
+    },
+    {
+      "id": "integrator_database",
+      "name": "Database Integrator",
+      "category": "integrator",
+      "tier": "sonnet",
+      "file": ".claude/agents/integrators/database.yaml"
+    },
+    {
+      "id": "integrator_message_queue",
+      "name": "Message Queue Integrator",
+      "category": "integrator",
+      "tier": "sonnet",
+      "file": ".claude/agents/integrators/message_queue.yaml"
+    },
+    {
+      "id": "integrator_third_party",
+      "name": "Third Party Integrator",
+      "category": "integrator",
+      "tier": "sonnet",
+      "file": ".claude/agents/integrators/third_party.yaml"
+    },
+    {
+      "id": "learner_codebase_indexer",
+      "name": "Codebase Indexer",
+      "category": "learner",
+      "tier": "sonnet",
+      "file": ".claude/agents/learners/codebase_indexer.yaml"
+    },
+    {
+      "id": "learner_context_builder",
+      "name": "Context Builder",
+      "category": "learner",
+      "tier": "sonnet",
+      "file": ".claude/agents/learners/context_builder.yaml"
+    },
+    {
+      "id": "learner_convention_extractor",
+      "name": "Convention Extractor",
+      "category": "learner",
+      "tier": "sonnet",
+      "file": ".claude/agents/learners/convention_extractor.yaml"
+    },
+    {
+      "id": "learner_domain_modeler",
+      "name": "Domain Modeler",
+      "category": "learner",
+      "tier": "opus",
+      "file": ".claude/agents/learners/domain_modeler.yaml"
+    },
+    {
+      "id": "learner_pattern_miner",
+      "name": "Pattern Miner",
+      "category": "learner",
+      "tier": "sonnet",
+      "file": ".claude/agents/learners/pattern_miner.yaml"
+    },
+    {
+      "id": "metrics_reporter",
+      "name": "Metrics Reporter",
+      "category": "monitoring",
+      "tier": "sonnet",
+      "file": ".claude/agents/monitoring/metrics_reporter.yaml"
+    },
+    {
+      "id": "orchestrator_consensus",
+      "name": "Consensus Orchestrator",
+      "category": "orchestrator",
+      "tier": "opus",
+      "file": ".claude/agents/orchestrators/consensus.yaml"
+    },
+    {
+      "id": "orchestrator_delegation",
+      "name": "Delegation Orchestrator",
+      "category": "orchestrator",
+      "tier": "sonnet",
+      "file": ".claude/agents/orchestrators/delegation.yaml"
+    },
+    {
+      "id": "orchestrator_pipeline",
+      "name": "Pipeline Orchestrator",
+      "category": "orchestrator",
+      "tier": "sonnet",
+      "file": ".claude/agents/orchestrators/pipeline.yaml"
+    },
+    {
+      "id": "orchestrator_swarm",
+      "name": "Swarm Orchestrator",
+      "category": "orchestrator",
+      "tier": "opus",
+      "file": ".claude/agents/orchestrators/swarm.yaml"
+    },
+    {
+      "id": "orchestrator_workflow",
+      "name": "Workflow Orchestrator",
+      "category": "orchestrator",
+      "tier": "sonnet",
+      "file": ".claude/agents/orchestrators/workflow.yaml"
+    },
+    {
+      "id": "production_timeline_coordinator",
+      "name": "Production Timeline Coordinator",
+      "category": "events",
+      "tier": "sonnet",
+      "file": ".claude/agents/events/production_timeline.yaml"
+    },
+    {
+      "id": "reporter_audit_trail",
+      "name": "Audit Trail Reporter",
+      "category": "reporter",
+      "tier": "haiku",
+      "file": ".claude/agents/reporters/audit_trail.yaml"
+    },
+    {
+      "id": "reporter_metrics",
+      "name": "Metrics Reporter",
+      "category": "reporter",
+      "tier": "haiku",
+      "file": ".claude/agents/reporters/metrics.yaml"
+    },
+    {
+      "id": "reporter_notification",
+      "name": "Notification Reporter",
+      "category": "reporter",
+      "tier": "haiku",
+      "file": ".claude/agents/reporters/notification.yaml"
+    },
+    {
+      "id": "reporter_summary",
+      "name": "Summary Reporter",
+      "category": "reporter",
+      "tier": "sonnet",
+      "file": ".claude/agents/reporters/summary.yaml"
+    },
+    {
+      "id": "reporter_visualization",
+      "name": "Visualization Reporter",
+      "category": "reporter",
+      "tier": "sonnet",
+      "file": ".claude/agents/reporters/visualization.yaml"
+    },
+    {
+      "id": "technical_rider_analyzer",
+      "name": "Technical Rider Analyzer",
+      "category": "events",
+      "tier": "sonnet",
+      "file": ".claude/agents/events/technical_rider.yaml"
+    },
+    {
+      "id": "telemetry_collector",
+      "name": "Telemetry Collector",
+      "category": "monitoring",
+      "tier": "haiku",
+      "file": ".claude/agents/monitoring/telemetry_collector.yaml"
+    },
+    {
+      "id": "transformer_format",
+      "name": "Format Transformer",
+      "category": "transformer",
+      "tier": "haiku",
+      "file": ".claude/agents/transformers/format.yaml"
+    },
+    {
+      "id": "transformer_migrate",
+      "name": "Migration Transformer",
+      "category": "transformer",
+      "tier": "sonnet",
+      "file": ".claude/agents/transformers/migrate.yaml"
+    },
+    {
+      "id": "transformer_optimize",
+      "name": "Optimize Transformer",
+      "category": "transformer",
+      "tier": "sonnet",
+      "file": ".claude/agents/transformers/optimize.yaml"
+    },
+    {
+      "id": "transformer_refactor",
+      "name": "Refactor Transformer",
+      "category": "transformer",
+      "tier": "sonnet",
+      "file": ".claude/agents/transformers/refactor.yaml"
+    },
+    {
+      "id": "transformer_translate",
+      "name": "Translate Transformer",
+      "category": "transformer",
+      "tier": "sonnet  # Opus for complex translations",
+      "file": ".claude/agents/transformers/translate.yaml"
+    },
+    {
+      "id": "tutorial_generator",
+      "name": "Tutorial Generator",
+      "category": "content",
+      "tier": "sonnet",
+      "file": ".claude/agents/content/tutorial_generator.yaml"
+    },
+    {
+      "id": "validator_schema",
+      "name": "Schema Validator",
+      "category": "validator",
+      "tier": "haiku",
+      "file": ".claude/agents/validators/schema.yaml"
+    },
+    {
+      "id": "validator_security",
+      "name": "Security Validator",
+      "category": "validator",
+      "tier": "sonnet",
+      "file": ".claude/agents/validators/security.yaml"
+    },
+    {
+      "id": "validator_style",
+      "name": "Style Validator",
+      "category": "validator",
+      "tier": "haiku",
+      "file": ".claude/agents/validators/style.yaml"
+    },
+    {
+      "id": "validator_syntax",
+      "name": "Syntax Validator",
+      "category": "validator",
+      "tier": "haiku",
+      "file": ".claude/agents/validators/syntax.yaml"
+    },
+    {
+      "id": "validator_test",
+      "name": "Test Validator",
+      "category": "validator",
+      "tier": "sonnet",
+      "file": ".claude/agents/validators/test_validator.yaml"
+    },
+    {
+      "id": "workflow_bug_triage",
+      "name": "Bug Triage Workflow",
+      "category": "workflow",
+      "tier": "sonnet",
+      "file": ".claude/agents/workflows/bug_triage.yaml"
+    }
+  ],
+  "phantom_routes": [
+    "devops-engineer",
+    "documentation-engineer",
+    "full-stack-developer",
+    "performance-analyzer",
+    "prisma-schema-architect",
+    "rust-migration-engineer",
+    "rust-performance-engineer",
+    "rust-project-architect",
+    "rust-semantics-engineer",
+    "senior-backend-engineer",
+    "senior-frontend-engineer",
+    "system-architect",
+    "typescript-type-wizard",
+    "vitest-testing-specialist"
+  ]
+}

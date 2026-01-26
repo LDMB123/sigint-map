@@ -1,0 +1,1 @@
+/Users/louisherman/ClaudeCodeProjects/.claude/skills/scraping/light-dark.md

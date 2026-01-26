@@ -6,13 +6,42 @@
 
 import Database from 'better-sqlite3';
 import { createHash } from 'crypto';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 import yaml from 'yaml';
 
-// Load cache configuration
-const cacheConfig = yaml.parse(
-  readFileSync('/Users/louisherman/ClaudeCodeProjects/.claude/config/caching.yaml', 'utf-8')
-);
+// Load cache configuration with portable path
+function loadCacheConfig() {
+  const projectRoot = process.env.CLAUDE_PROJECT_ROOT || process.cwd();
+  const configPath = process.env.CLAUDE_CACHE_CONFIG_PATH ||
+                      join(projectRoot, '.claude', 'config', 'caching.yaml');
+
+  try {
+    if (!existsSync(configPath)) {
+      // Return default config if file doesn't exist
+      return {
+        caching: {
+          l1_routing_cache: { max_size_mb: 50, ttl_seconds: 3600 },
+          l2_context_cache: { max_size_mb: 200, ttl_seconds: 86400, path: ':memory:' },
+          l3_semantic_cache: { max_size_mb: 500, ttl_seconds: 604800, path: ':memory:', similarity: { threshold: 0.85, max_candidates: 100 } }
+        }
+      };
+    }
+    return yaml.parse(readFileSync(configPath, 'utf-8'));
+  } catch (error) {
+    console.warn(`Failed to load cache config from ${configPath}:`, error);
+    // Return default config on error
+    return {
+      caching: {
+        l1_routing_cache: { max_size_mb: 50, ttl_seconds: 3600 },
+        l2_context_cache: { max_size_mb: 200, ttl_seconds: 86400, path: ':memory:' },
+        l3_semantic_cache: { max_size_mb: 500, ttl_seconds: 604800, path: ':memory:', similarity: { threshold: 0.85, max_candidates: 100 } }
+      }
+    };
+  }
+}
+
+const cacheConfig = loadCacheConfig();
 
 interface CacheEntry<T> {
   key: string;
@@ -263,36 +292,49 @@ class L2ContextCache {
    * Get from cache
    */
   get<T>(projectPath: string, itemType: string): T | null {
-    const startTime = performance.now();
-    const key = this.generateKey(projectPath, itemType);
+    try {
+      const startTime = performance.now();
+      const key = this.generateKey(projectPath, itemType);
 
-    const stmt = this.db.prepare(`
-      SELECT value, expires_at, hits
-      FROM l2_cache
-      WHERE key = ?
-    `);
+      const stmt = this.db.prepare(`
+        SELECT value, expires_at, hits
+        FROM l2_cache
+        WHERE key = ?
+      `);
 
-    const row = stmt.get(key) as { value: string; expires_at: number; hits: number } | undefined;
+      const row = stmt.get(key) as { value: string; expires_at: number; hits: number } | undefined;
 
-    const lookupTime = performance.now() - startTime;
-    this.updateLookupTime(lookupTime);
+      const lookupTime = performance.now() - startTime;
+      this.updateLookupTime(lookupTime);
 
-    // Miss if not found or expired
-    if (!row || row.expires_at < Date.now()) {
+      // Miss if not found or expired
+      if (!row || row.expires_at < Date.now()) {
+        this.stats.misses++;
+        this.updateHitRate();
+        if (row) {
+          this.delete(key); // Remove expired
+        }
+        return null;
+      }
+
+      // Hit - update hits
+      this.db.prepare('UPDATE l2_cache SET hits = hits + 1 WHERE key = ?').run(key);
+      this.stats.hits++;
+      this.updateHitRate();
+
+      try {
+        return JSON.parse(row.value) as T;
+      } catch (parseError) {
+        console.warn(`Failed to parse cache value for key ${key}:`, parseError);
+        this.delete(key); // Remove corrupted entry
+        return null;
+      }
+    } catch (error) {
+      console.error('L2 cache get error:', error);
       this.stats.misses++;
       this.updateHitRate();
-      if (row) {
-        this.delete(key); // Remove expired
-      }
       return null;
     }
-
-    // Hit - update hits
-    this.db.prepare('UPDATE l2_cache SET hits = hits + 1 WHERE key = ?').run(key);
-    this.stats.hits++;
-    this.updateHitRate();
-
-    return JSON.parse(row.value) as T;
   }
 
   /**
@@ -304,29 +346,34 @@ class L2ContextCache {
     value: T,
     agentId: string = 'unknown'
   ): void {
-    const key = this.generateKey(projectPath, itemType);
-    const config = cacheConfig.caching.l2_context_cache;
-    const ttlMs = config.ttl_seconds * 1000;
+    try {
+      const key = this.generateKey(projectPath, itemType);
+      const config = cacheConfig.caching.l2_context_cache;
+      const ttlMs = config.ttl_seconds * 1000;
 
-    const valueStr = JSON.stringify(value);
-    const sizeBytes = valueStr.length * 2;
+      const valueStr = JSON.stringify(value);
+      const sizeBytes = valueStr.length * 2;
 
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO l2_cache (key, value, agent_id, created_at, expires_at, hits, size_bytes)
-      VALUES (?, ?, ?, ?, ?, 0, ?)
-    `);
+      const stmt = this.db.prepare(`
+        INSERT OR REPLACE INTO l2_cache (key, value, agent_id, created_at, expires_at, hits, size_bytes)
+        VALUES (?, ?, ?, ?, ?, 0, ?)
+      `);
 
-    stmt.run(
-      key,
-      valueStr,
-      agentId,
-      Date.now(),
-      Date.now() + ttlMs,
-      sizeBytes
-    );
+      stmt.run(
+        key,
+        valueStr,
+        agentId,
+        Date.now(),
+        Date.now() + ttlMs,
+        sizeBytes
+      );
 
-    // Check if we need to evict
-    this.evictIfNecessary();
+      // Check if we need to evict
+      this.evictIfNecessary();
+    } catch (error) {
+      console.error('L2 cache set error:', error);
+      // Fail silently - cache failures shouldn't break the application
+    }
   }
 
   /**

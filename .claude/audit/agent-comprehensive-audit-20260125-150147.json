@@ -1,0 +1,412 @@
+{
+  "timestamp": "20260125-150147",
+  "summary": {
+    "root_yaml_count": 62,
+    "dmb_yaml_count": 50,
+    "markdown_count": 6,
+    "global_count": 0,
+    "duplicate_count": 50,
+    "root_only_count": 12,
+    "dmb_only_count": 0,
+    "unique_agent_count": 62
+  },
+  "duplicates": [
+    {
+      "agent_id": "analyzer_static",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/analyzers/static.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/analyzers/static.yaml"
+    }
+,
+    {
+      "agent_id": "learner_convention_extractor",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/learners/convention_extractor.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/learners/convention_extractor.yaml"
+    }
+,
+    {
+      "agent_id": "generator_data",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/generators/data.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/generators/data.yaml"
+    }
+,
+    {
+      "agent_id": "reporter_audit_trail",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/reporters/audit_trail.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/reporters/audit_trail.yaml"
+    }
+,
+    {
+      "agent_id": "debugger_error_diagnosis",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/debuggers/error_diagnosis.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/debuggers/error_diagnosis.yaml"
+    }
+,
+    {
+      "agent_id": "validator_syntax",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/validators/syntax.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/validators/syntax.yaml"
+    }
+,
+    {
+      "agent_id": "generator_documentation",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/generators/documentation.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/generators/documentation.yaml"
+    }
+,
+    {
+      "agent_id": "guardian_compliance_checker",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/guardians/compliance_checker.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/guardians/compliance_checker.yaml"
+    }
+,
+    {
+      "agent_id": "transformer_translate",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/transformers/translate.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/transformers/translate.yaml"
+    }
+,
+    {
+      "agent_id": "guardian_security_scanner",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/guardians/security_scanner.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/guardians/security_scanner.yaml"
+    }
+,
+    {
+      "agent_id": "validator_security",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/validators/security.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/validators/security.yaml"
+    }
+,
+    {
+      "agent_id": "debugger_performance",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/debuggers/performance_debugger.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/debuggers/performance.yaml"
+    }
+,
+    {
+      "agent_id": "analyzer_semantic",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/analyzers/semantic.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/analyzers/semantic.yaml"
+    }
+,
+    {
+      "agent_id": "integrator_adapter",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/integrators/adapter.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/integrators/adapter.yaml"
+    }
+,
+    {
+      "agent_id": "transformer_migrate",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/transformers/migrate.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/transformers/migrate.yaml"
+    }
+,
+    {
+      "agent_id": "integrator_third_party",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/integrators/third_party.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/integrators/third_party.yaml"
+    }
+,
+    {
+      "agent_id": "learner_context_builder",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/learners/context_builder.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/learners/context_builder.yaml"
+    }
+,
+    {
+      "agent_id": "orchestrator_swarm",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/orchestrators/swarm.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/orchestrators/swarm.yaml"
+    }
+,
+    {
+      "agent_id": "orchestrator_consensus",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/orchestrators/consensus.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/orchestrators/consensus.yaml"
+    }
+,
+    {
+      "agent_id": "generator_config",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/generators/config.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/generators/config.yaml"
+    }
+,
+    {
+      "agent_id": "reporter_summary",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/reporters/summary.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/reporters/summary.yaml"
+    }
+,
+    {
+      "agent_id": "debugger_build",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/debuggers/build.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/debuggers/build.yaml"
+    }
+,
+    {
+      "agent_id": "analyzer_impact",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/analyzers/impact.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/analyzers/impact.yaml"
+    }
+,
+    {
+      "agent_id": "reporter_visualization",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/reporters/visualization.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/reporters/visualization.yaml"
+    }
+,
+    {
+      "agent_id": "integrator_message_queue",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/integrators/message_queue.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/integrators/message_queue.yaml"
+    }
+,
+    {
+      "agent_id": "orchestrator_delegation",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/orchestrators/delegation.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/orchestrators/delegation.yaml"
+    }
+,
+    {
+      "agent_id": "analyzer_performance",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/analyzers/performance_analyzer.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/analyzers/performance.yaml"
+    }
+,
+    {
+      "agent_id": "orchestrator_pipeline",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/orchestrators/pipeline.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/orchestrators/pipeline.yaml"
+    }
+,
+    {
+      "agent_id": "integrator_database",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/integrators/database.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/integrators/database.yaml"
+    }
+,
+    {
+      "agent_id": "guardian_secret_detector",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/guardians/secret_detector.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/guardians/secret_detector.yaml"
+    }
+,
+    {
+      "agent_id": "generator_test",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/generators/test_generator.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/generators/test.yaml"
+    }
+,
+    {
+      "agent_id": "learner_pattern_miner",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/learners/pattern_miner.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/learners/pattern_miner.yaml"
+    }
+,
+    {
+      "agent_id": "validator_style",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/validators/style.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/validators/style.yaml"
+    }
+,
+    {
+      "agent_id": "learner_domain_modeler",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/learners/domain_modeler.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/learners/domain_modeler.yaml"
+    }
+,
+    {
+      "agent_id": "validator_schema",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/validators/schema.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/validators/schema.yaml"
+    }
+,
+    {
+      "agent_id": "analyzer_dependency",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/analyzers/dependency.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/analyzers/dependency.yaml"
+    }
+,
+    {
+      "agent_id": "debugger_integration",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/debuggers/integration.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/debuggers/integration.yaml"
+    }
+,
+    {
+      "agent_id": "validator_test",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/validators/test_validator.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/validators/test.yaml"
+    }
+,
+    {
+      "agent_id": "transformer_refactor",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/transformers/refactor.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/transformers/refactor.yaml"
+    }
+,
+    {
+      "agent_id": "generator_code",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/generators/code.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/generators/code.yaml"
+    }
+,
+    {
+      "agent_id": "transformer_optimize",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/transformers/optimize.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/transformers/optimize.yaml"
+    }
+,
+    {
+      "agent_id": "guardian_privacy_validator",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/guardians/privacy_validator.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/guardians/privacy_validator.yaml"
+    }
+,
+    {
+      "agent_id": "reporter_notification",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/reporters/notification.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/reporters/notification.yaml"
+    }
+,
+    {
+      "agent_id": "guardian_rate_limiter",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/guardians/rate_limiter.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/guardians/rate_limiter.yaml"
+    }
+,
+    {
+      "agent_id": "debugger_test_failure",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/debuggers/test_failure.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/debuggers/test_failure.yaml"
+    }
+,
+    {
+      "agent_id": "integrator_api_client",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/integrators/api_client.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/integrators/api_client.yaml"
+    }
+,
+    {
+      "agent_id": "learner_codebase_indexer",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/learners/codebase_indexer.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/learners/codebase_indexer.yaml"
+    }
+,
+    {
+      "agent_id": "reporter_metrics",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/reporters/metrics.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/reporters/metrics.yaml"
+    }
+,
+    {
+      "agent_id": "orchestrator_workflow",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/orchestrators/workflow.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/orchestrators/workflow.yaml"
+    }
+,
+    {
+      "agent_id": "transformer_format",
+      "root_path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/transformers/format.yaml",
+      "dmb_path": "/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.claude/agents/transformers/format.yaml"
+    }
+
+  ],
+  "root_only": [
+    {
+      "agent_id": "dmb_bustout_predictor",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/dmb/bustout_predictor.yaml"
+    }
+,
+    {
+      "agent_id": "ecommerce_returns_management",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/ecommerce/returns_management.yaml"
+    }
+,
+    {
+      "agent_id": "production_timeline_coordinator",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/events/production_timeline.yaml"
+    }
+,
+    {
+      "agent_id": "benchmark_framework",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/testing/benchmark_framework.yaml"
+    }
+,
+    {
+      "agent_id": "metrics_reporter",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/monitoring/metrics_reporter.yaml"
+    }
+,
+    {
+      "agent_id": "contract_validator",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/validators/contract_validator.yaml"
+    }
+,
+    {
+      "agent_id": "telemetry_collector",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/monitoring/telemetry_collector.yaml"
+    }
+,
+    {
+      "agent_id": "ecommerce_inventory_sync",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/ecommerce/inventory_sync.yaml"
+    }
+,
+    {
+      "agent_id": "ecommerce_order_fulfillment",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/ecommerce/order_fulfillment.yaml"
+    }
+,
+    {
+      "agent_id": "technical_rider_analyzer",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/events/technical_rider.yaml"
+    }
+,
+    {
+      "agent_id": "tutorial_generator",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/content/tutorial_generator.yaml"
+    }
+,
+    {
+      "agent_id": "workflow_bug_triage",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/workflows/bug_triage.yaml"
+    }
+
+  ],
+  "dmb_only": [
+
+  ],
+  "markdown_only": [
+    {
+      "agent_name": "wave-function-optimizer",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/quantum-parallel/wave-function-optimizer.md"
+    }
+,
+    {
+      "agent_name": "superposition-executor",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/quantum-parallel/superposition-executor.md"
+    }
+,
+    {
+      "agent_name": "meta-learner",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/self-improving/meta-learner.md"
+    }
+,
+    {
+      "agent_name": "feedback-loop-optimizer",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/self-improving/feedback-loop-optimizer.md"
+    }
+,
+    {
+      "agent_name": "recursive-optimizer",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/self-improving/recursive-optimizer.md"
+    }
+,
+    {
+      "agent_name": "massive-parallel-coordinator",
+      "path": "/Users/louisherman/ClaudeCodeProjects/.claude/agents/quantum-parallel/massive-parallel-coordinator.md"
+    }
+
+  ]
+}

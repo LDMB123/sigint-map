@@ -8,7 +8,7 @@ agent:
 
   functional_category: analyzer
   sub_category: dependency
-  model_tier: sonnet
+  model_tier: haiku
   model_id: claude-sonnet-4-5-20250929
 
   description: |

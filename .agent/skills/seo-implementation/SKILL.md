@@ -1,0 +1,1 @@
+/Users/louisherman/ClaudeCodeProjects/.claude/skills/chromium-143/seo-implementation.md

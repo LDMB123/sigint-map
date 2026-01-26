@@ -1,0 +1,376 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - production
+        default: production
+      skip_smoke_tests:
+        description: 'Skip smoke tests (emergency deployment only)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '20'
+  RUST_VERSION: 'stable'
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+defaults:
+  run:
+    working-directory: ./app
+
+jobs:
+  # Pre-deployment validation
+  pre-deployment-checks:
+    name: Pre-Deployment Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate deployment conditions
+        run: |
+          # Check if deploying from main branch
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "::error::Production deployments must be from main branch"
+            exit 1
+          fi
+
+          # Check for recent commits (avoid accidental deploys)
+          COMMIT_AGE=$(git log -1 --format=%ct)
+          NOW=$(date +%s)
+          AGE_HOURS=$(( ($NOW - $COMMIT_AGE) / 3600 ))
+
+          if [ $AGE_HOURS -gt 168 ]; then
+            echo "::warning::Deploying commit that is $AGE_HOURS hours old. Consider updating to latest."
+          fi
+
+      - name: Check for breaking changes
+        run: |
+          # Look for migration files or breaking change markers
+          if git log -1 --pretty=%B | grep -i "BREAKING"; then
+            echo "::warning::This commit contains breaking changes. Ensure migration plan is in place."
+          fi
+
+  # Build and deploy to production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-checks]
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://dmbalmanac.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          target: wasm32-unknown-unknown
+          cache: true
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Cache WASM build
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/wasm/target
+            app/wasm/*/pkg
+          key: wasm-production-${{ hashFiles('app/wasm/**/Cargo.toml', 'app/wasm/**/Cargo.lock') }}
+          restore-keys: |
+            wasm-production-
+
+      - name: Install dependencies
+        run: npm ci --production=false
+
+      - name: Validate environment variables
+        run: |
+          bash ../scripts/validate-env.sh production
+
+      - name: Build WASM modules
+        run: npm run wasm:build
+
+      - name: Run final checks
+        run: |
+          npm run check
+          npm run lint
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY_PRODUCTION }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY_PRODUCTION }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT_PRODUCTION }}
+          PUSH_API_KEY: ${{ secrets.PUSH_API_KEY_PRODUCTION }}
+          PUBLIC_SITE_URL: https://dmbalmanac.com
+
+      - name: Deploy to Vercel (Production)
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "production-url=$url" >> $GITHUB_OUTPUT
+          echo "Deployed to: $url"
+
+      - name: Record deployment
+        run: |
+          mkdir -p ../deployments
+          VERSION=$(cat package.json | grep version | head -1 | cut -d '"' -f 4)
+
+          echo "{
+            \"environment\": \"production\",
+            \"url\": \"https://dmbalmanac.com\",
+            \"commit\": \"${{ github.sha }}\",
+            \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+            \"version\": \"$VERSION\",
+            \"deployed_by\": \"${{ github.actor }}\"
+          }" > ../deployments/production-latest.json
+
+          # Also create a versioned record
+          echo "{
+            \"environment\": \"production\",
+            \"url\": \"https://dmbalmanac.com\",
+            \"commit\": \"${{ github.sha }}\",
+            \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+            \"version\": \"$VERSION\",
+            \"deployed_by\": \"${{ github.actor }}\"
+          }" > ../deployments/production-${VERSION}.json
+
+      - name: Upload deployment records
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-records-production
+          path: deployments/
+          retention-days: 90
+
+      - name: Create deployment summary
+        run: |
+          VERSION=$(cat package.json | grep version | head -1 | cut -d '"' -f 4)
+
+          echo "## Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://dmbalmanac.com" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Tag release
+        run: |
+          VERSION=$(cat package.json | grep version | head -1 | cut -d '"' -f 4)
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "v${VERSION}" -m "Release v${VERSION}"
+          git push origin "v${VERSION}"
+
+  # Post-deployment smoke tests
+  smoke-tests:
+    name: Production Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: ${{ !inputs.skip_smoke_tests }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Playwright
+        run: |
+          cd app
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Wait for deployment to propagate
+        run: sleep 60
+
+      - name: Run smoke tests
+        run: |
+          cd app
+          npm run test:e2e -- --grep="@smoke"
+        env:
+          BASE_URL: https://dmbalmanac.com
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-tests
+          path: app/playwright-report/
+          retention-days: 30
+
+  # Production health monitoring
+  health-monitoring:
+    name: Production Health Check
+    runs-on: ubuntu-latest
+    needs: [deploy-production, smoke-tests]
+    if: always()
+    timeout-minutes: 10
+    steps:
+      - name: Wait for CDN propagation
+        run: sleep 120
+
+      - name: Comprehensive health check
+        run: |
+          BASE_URL="https://dmbalmanac.com"
+          ROUTES=("/" "/songs" "/shows" "/visualizations")
+          FAILED=0
+
+          echo "## Production Health Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Route | Status | Response Time |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|---------------|" >> $GITHUB_STEP_SUMMARY
+
+          for route in "${ROUTES[@]}"; do
+            start=$(date +%s%3N)
+            response=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}${route}")
+            end=$(date +%s%3N)
+            duration=$((end - start))
+
+            if [ "$response" = "200" ]; then
+              status="✅"
+            else
+              status="❌"
+              FAILED=1
+            fi
+
+            echo "| $route | $status $response | ${duration}ms |" >> $GITHUB_STEP_SUMMARY
+          done
+
+          if [ $FAILED -eq 1 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** ❌ Health check failed" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** ✅ All routes healthy" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check Service Worker registration
+        run: |
+          # Verify service worker is accessible
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://dmbalmanac.com/service-worker.js")
+
+          if [ "$response" != "200" ]; then
+            echo "::warning::Service Worker not accessible (HTTP $response)"
+          fi
+
+      - name: Monitor error rates
+        run: |
+          # This would integrate with your monitoring service (e.g., Sentry)
+          echo "::notice::Monitor error rates in Sentry dashboard"
+
+  # Performance validation
+  performance-validation:
+    name: Production Performance Check
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.13.x
+
+      - name: Wait for CDN propagation
+        run: sleep 120
+
+      - name: Run Lighthouse on production
+        run: |
+          lhci autorun --config=../lighthouserc.json
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          PRODUCTION_URL: https://dmbalmanac.com
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-production
+          path: .lighthouseci/
+          retention-days: 30
+
+  # Rollback preparation
+  prepare-rollback:
+    name: Prepare Rollback
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get previous deployment
+        run: |
+          # This would query your deployment history
+          # For now, just document the current commit
+          echo "Previous commit: $(git rev-parse HEAD~1)" > rollback-info.txt
+          echo "Current commit: ${{ github.sha }}" >> rollback-info.txt
+          echo "Deployment time: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> rollback-info.txt
+
+      - name: Upload rollback info
+        uses: actions/upload-artifact@v4
+        with:
+          name: rollback-info
+          path: rollback-info.txt
+          retention-days: 7
+
+      - name: Document rollback procedure
+        run: |
+          echo "## Rollback Information" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "If issues are detected, run the rollback workflow:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See ROLLBACK_PROCEDURE.md for detailed instructions." >> $GITHUB_STEP_SUMMARY
+
+  # Notify success
+  notify-success:
+    name: Notify Deployment Success
+    runs-on: ubuntu-latest
+    needs: [health-monitoring, performance-validation]
+    if: success()
+    steps:
+      - name: Send success notification
+        run: |
+          echo "::notice::Production deployment completed successfully!"
+
+          # This is where you'd integrate with Slack, Discord, etc.
+          # curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+          #   -H 'Content-Type: application/json' \
+          #   -d '{"text":"Production deployment successful!"}'

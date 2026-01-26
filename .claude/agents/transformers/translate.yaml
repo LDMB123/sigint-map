@@ -8,7 +8,7 @@ agent:
 
   functional_category: transformer
   sub_category: translate
-  model_tier: sonnet  # Opus for complex translations
+  model_tier: opus
 
   description: |
     Translates code between programming languages.

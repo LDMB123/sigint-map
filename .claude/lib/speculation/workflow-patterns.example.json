@@ -1,0 +1,182 @@
+{
+  "version": "1.0",
+  "description": "Custom workflow patterns for intent prediction",
+  "patterns": [
+    {
+      "id": "custom-component-workflow",
+      "name": "Custom Component Development",
+      "sequence": [
+        "component-create",
+        "add",
+        "test-create",
+        "test-run",
+        "refactor",
+        "docs-generate"
+      ],
+      "contextMatch": ["react", "typescript"],
+      "confidence": 0.85,
+      "frequency": 0.40,
+      "avgStepDelay": 300000,
+      "description": "Custom React component development with styling first"
+    },
+    {
+      "id": "custom-api-tdd",
+      "name": "Test-Driven API Development",
+      "sequence": [
+        "test-create",
+        "function-create",
+        "test-run",
+        "refactor",
+        "integrate",
+        "docs-generate"
+      ],
+      "contextMatch": ["api", "backend", "tdd"],
+      "confidence": 0.82,
+      "frequency": 0.35,
+      "avgStepDelay": 420000,
+      "description": "TDD approach for API endpoint development"
+    },
+    {
+      "id": "custom-rust-wasm-build",
+      "name": "Rust WASM Build Cycle",
+      "sequence": [
+        "function-create",
+        "borrow-fix",
+        "compile-fix",
+        "test-create",
+        "test-run",
+        "optimize"
+      ],
+      "contextMatch": ["rust", "wasm"],
+      "confidence": 0.88,
+      "frequency": 0.25,
+      "avgStepDelay": 480000,
+      "description": "Rust WASM compilation and optimization workflow"
+    },
+    {
+      "id": "custom-prisma-migration",
+      "name": "Prisma Schema Migration",
+      "sequence": [
+        "type-create",
+        "migrate",
+        "test-create",
+        "seed-data",
+        "validate",
+        "docs-generate"
+      ],
+      "contextMatch": ["database", "prisma"],
+      "confidence": 0.90,
+      "frequency": 0.30,
+      "avgStepDelay": 600000,
+      "description": "Database schema migration workflow with Prisma"
+    },
+    {
+      "id": "custom-hotfix-workflow",
+      "name": "Production Hotfix Workflow",
+      "sequence": [
+        "error-fix",
+        "test-create",
+        "test-run",
+        "code-review",
+        "integrate",
+        "deploy"
+      ],
+      "contextMatch": ["hotfix", "production", "critical"],
+      "confidence": 0.92,
+      "frequency": 0.15,
+      "avgStepDelay": 180000,
+      "description": "Critical production hotfix workflow"
+    },
+    {
+      "id": "custom-feature-flag-rollout",
+      "name": "Feature Flag Rollout",
+      "sequence": [
+        "function-create",
+        "test-create",
+        "integrate",
+        "configure",
+        "test-run",
+        "monitor"
+      ],
+      "contextMatch": ["feature-flag", "rollout"],
+      "confidence": 0.80,
+      "frequency": 0.20,
+      "avgStepDelay": 900000,
+      "description": "Progressive feature flag deployment"
+    },
+    {
+      "id": "custom-monorepo-update",
+      "name": "Monorepo Package Update",
+      "sequence": [
+        "update",
+        "test-run",
+        "dependency-install",
+        "test-run",
+        "validate",
+        "docs-generate"
+      ],
+      "contextMatch": ["monorepo", "package"],
+      "confidence": 0.78,
+      "frequency": 0.25,
+      "avgStepDelay": 720000,
+      "description": "Update package across monorepo workspaces"
+    },
+    {
+      "id": "custom-graphql-schema",
+      "name": "GraphQL Schema Development",
+      "sequence": [
+        "type-create",
+        "function-create",
+        "test-create",
+        "integrate",
+        "docs-generate",
+        "validate"
+      ],
+      "contextMatch": ["graphql", "api"],
+      "confidence": 0.84,
+      "frequency": 0.20,
+      "avgStepDelay": 540000,
+      "description": "GraphQL schema and resolver development"
+    },
+    {
+      "id": "custom-ci-pipeline",
+      "name": "CI/CD Pipeline Setup",
+      "sequence": [
+        "configure",
+        "test-create",
+        "validate",
+        "integrate",
+        "test-run",
+        "deploy"
+      ],
+      "contextMatch": ["ci", "cd", "pipeline", "devops"],
+      "confidence": 0.86,
+      "frequency": 0.10,
+      "avgStepDelay": 1200000,
+      "description": "Continuous integration pipeline configuration"
+    },
+    {
+      "id": "custom-performance-tuning",
+      "name": "Performance Optimization Cycle",
+      "sequence": [
+        "analyze",
+        "performance-optimize",
+        "test-run",
+        "validate",
+        "refactor",
+        "test-run"
+      ],
+      "contextMatch": ["performance", "optimization"],
+      "confidence": 0.81,
+      "frequency": 0.30,
+      "avgStepDelay": 600000,
+      "description": "Systematic performance optimization workflow"
+    }
+  ],
+  "metadata": {
+    "total_patterns": 10,
+    "avg_confidence": 0.846,
+    "most_common_context": ["react", "backend", "testing"],
+    "last_updated": "2026-01-25T00:00:00Z"
+  }
+}

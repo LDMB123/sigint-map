@@ -1,0 +1,2250 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "2.0",
+  "generated_at": "2026-01-25T12:00:00Z",
+  "description": "Comprehensive workflow pattern predictions for multi-domain development",
+  "validation": {
+    "target_accuracy": 0.75,
+    "confidence_threshold": 0.70,
+    "total_patterns": 58,
+    "domains_covered": ["rust", "wasm", "svelte", "sveltekit", "security", "optimization", "testing", "database", "pwa"]
+  },
+  "metadata": {
+    "total_patterns": 58,
+    "avg_confidence": 0.81,
+    "highest_confidence": 0.94,
+    "most_common_contexts": ["rust", "wasm", "svelte", "performance", "testing"],
+    "pattern_categories": {
+      "rust_wasm": 12,
+      "frontend_svelte": 10,
+      "optimization": 8,
+      "security": 6,
+      "testing": 7,
+      "database": 5,
+      "deployment": 4,
+      "debugging": 6
+    },
+    "session_context_enabled": true,
+    "learning_rate": 0.05
+  },
+  "patterns": [
+    {
+      "id": "rust-wasm-build-cycle",
+      "name": "Rust WASM Compilation & Optimization",
+      "sequence": [
+        "function-create",
+        "compile-fix",
+        "borrow-fix",
+        "test-create",
+        "test-run",
+        "optimize",
+        "wasm-pack-build"
+      ],
+      "contextMatch": ["rust", "wasm", "compilation"],
+      "triggers": [
+        "create new wasm module",
+        "add rust function",
+        "optimize wasm performance"
+      ],
+      "predictions": [
+        {
+          "next_action": "compile-fix",
+          "confidence": 0.92,
+          "conditions": ["cargo build failed", "type error"],
+          "agent": "rust-semantics-engineer"
+        },
+        {
+          "next_action": "borrow-fix",
+          "confidence": 0.88,
+          "conditions": ["lifetime error", "borrow checker error"],
+          "agent": "rust-borrow-checker-specialist"
+        },
+        {
+          "next_action": "optimize",
+          "confidence": 0.85,
+          "conditions": ["performance target missed", "bundle size > 500KB"],
+          "agent": "rust-performance-engineer"
+        }
+      ],
+      "confidence": 0.90,
+      "frequency": 0.35,
+      "avgStepDelay": 480000,
+      "description": "Complete Rust WASM development cycle from function creation through optimization",
+      "domain": "rust-wasm",
+      "session_context": {
+        "required_files": ["Cargo.toml", "src/lib.rs"],
+        "performance_targets": {
+          "compile_time": "< 3s",
+          "bundle_size": "< 500KB",
+          "runtime": "< 100ms"
+        }
+      }
+    },
+    {
+      "id": "rust-borrow-checker-debugging",
+      "name": "Rust Borrow Checker Error Resolution",
+      "sequence": [
+        "error-analyze",
+        "lifetime-annotate",
+        "clone-or-ref",
+        "test-run",
+        "refactor"
+      ],
+      "contextMatch": ["rust", "borrow", "lifetime", "ownership"],
+      "triggers": [
+        "cannot borrow as mutable",
+        "use of moved value",
+        "lifetime error"
+      ],
+      "predictions": [
+        {
+          "next_action": "lifetime-annotate",
+          "confidence": 0.87,
+          "conditions": ["missing lifetime specifier"],
+          "agent": "rust-semantics-engineer"
+        },
+        {
+          "next_action": "clone-or-ref",
+          "confidence": 0.84,
+          "conditions": ["value moved", "multiple owners needed"],
+          "agent": "rust-borrow-checker-specialist"
+        }
+      ],
+      "confidence": 0.89,
+      "frequency": 0.42,
+      "avgStepDelay": 300000,
+      "description": "Systematic resolution of Rust ownership and borrowing errors",
+      "domain": "rust",
+      "session_context": {
+        "common_patterns": ["Arc<Mutex<T>>", "Rc<RefCell<T>>", "lifetime annotations"],
+        "antipatterns": ["excessive cloning", "Arc everywhere"]
+      }
+    },
+    {
+      "id": "wasm-js-integration",
+      "name": "WASM-JavaScript Integration Workflow",
+      "sequence": [
+        "wasm-bindgen-setup",
+        "type-mapping",
+        "test-create",
+        "benchmark",
+        "optimize",
+        "integration-test"
+      ],
+      "contextMatch": ["wasm", "javascript", "integration", "binding"],
+      "triggers": [
+        "integrate wasm module",
+        "js interop",
+        "wasm-bindgen error"
+      ],
+      "predictions": [
+        {
+          "next_action": "type-mapping",
+          "confidence": 0.91,
+          "conditions": ["JsValue conversion", "serde_wasm_bindgen"],
+          "agent": "wasm-integration-specialist"
+        },
+        {
+          "next_action": "benchmark",
+          "confidence": 0.86,
+          "conditions": ["performance comparison needed"],
+          "agent": "performance-analyzer"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.28,
+      "avgStepDelay": 540000,
+      "description": "Integration of WASM modules with JavaScript runtime",
+      "domain": "wasm",
+      "session_context": {
+        "performance_baseline": "compare against pure JS implementation",
+        "memory_profile": "track heap allocations"
+      }
+    },
+    {
+      "id": "svelte-component-development",
+      "name": "Svelte Component Creation Workflow",
+      "sequence": [
+        "component-create",
+        "props-define",
+        "reactivity-setup",
+        "test-create",
+        "test-run",
+        "style-add",
+        "docs-generate"
+      ],
+      "contextMatch": ["svelte", "component", "frontend"],
+      "triggers": [
+        "create svelte component",
+        "add ui element",
+        "new page"
+      ],
+      "predictions": [
+        {
+          "next_action": "reactivity-setup",
+          "confidence": 0.89,
+          "conditions": ["state management", "$: reactive statement"],
+          "agent": "svelte-reactivity-specialist"
+        },
+        {
+          "next_action": "test-create",
+          "confidence": 0.82,
+          "conditions": ["component logic exists"],
+          "agent": "vitest-testing-specialist"
+        }
+      ],
+      "confidence": 0.87,
+      "frequency": 0.38,
+      "avgStepDelay": 420000,
+      "description": "End-to-end Svelte component development with testing",
+      "domain": "svelte",
+      "session_context": {
+        "test_framework": "vitest + testing-library",
+        "accessibility": "check ARIA labels"
+      }
+    },
+    {
+      "id": "sveltekit-route-creation",
+      "name": "SvelteKit Route & Data Loading",
+      "sequence": [
+        "route-create",
+        "load-function",
+        "server-side-logic",
+        "test-create",
+        "validation",
+        "deploy"
+      ],
+      "contextMatch": ["sveltekit", "route", "ssr", "load"],
+      "triggers": [
+        "create new route",
+        "add page.server.ts",
+        "server-side rendering"
+      ],
+      "predictions": [
+        {
+          "next_action": "load-function",
+          "confidence": 0.93,
+          "conditions": ["data fetching needed"],
+          "agent": "sveltekit-routing-specialist"
+        },
+        {
+          "next_action": "validation",
+          "confidence": 0.85,
+          "conditions": ["form submission", "user input"],
+          "agent": "validation-specialist"
+        }
+      ],
+      "confidence": 0.91,
+      "frequency": 0.30,
+      "avgStepDelay": 600000,
+      "description": "SvelteKit route creation with server-side data loading",
+      "domain": "sveltekit",
+      "session_context": {
+        "ssr_aware": true,
+        "hydration_check": "validate client-server consistency"
+      }
+    },
+    {
+      "id": "performance-optimization-cycle",
+      "name": "Systematic Performance Optimization",
+      "sequence": [
+        "analyze",
+        "profile",
+        "identify-bottleneck",
+        "optimize",
+        "benchmark",
+        "validate",
+        "test-run"
+      ],
+      "contextMatch": ["performance", "optimization", "profiling"],
+      "triggers": [
+        "slow page load",
+        "high ttfb",
+        "poor core web vitals",
+        "optimize performance"
+      ],
+      "predictions": [
+        {
+          "next_action": "profile",
+          "confidence": 0.90,
+          "conditions": ["performance issue identified"],
+          "agent": "performance-analyzer"
+        },
+        {
+          "next_action": "optimize",
+          "confidence": 0.88,
+          "conditions": ["bottleneck identified"],
+          "agent": "performance-optimizer"
+        },
+        {
+          "next_action": "benchmark",
+          "confidence": 0.92,
+          "conditions": ["optimization applied"],
+          "agent": "benchmark-specialist"
+        }
+      ],
+      "confidence": 0.91,
+      "frequency": 0.45,
+      "avgStepDelay": 720000,
+      "description": "Data-driven performance optimization with validation",
+      "domain": "optimization",
+      "session_context": {
+        "metrics": ["LCP", "FID", "CLS", "TTFB", "INP"],
+        "targets": {
+          "LCP": "< 2.5s",
+          "FID": "< 100ms",
+          "CLS": "< 0.1"
+        }
+      }
+    },
+    {
+      "id": "bundle-size-optimization",
+      "name": "Bundle Size Reduction Workflow",
+      "sequence": [
+        "analyze-bundle",
+        "identify-large-deps",
+        "code-split",
+        "tree-shake",
+        "minify",
+        "validate-bundle",
+        "performance-test"
+      ],
+      "contextMatch": ["bundle", "optimization", "vite", "rollup"],
+      "triggers": [
+        "bundle too large",
+        "reduce bundle size",
+        "optimize chunks"
+      ],
+      "predictions": [
+        {
+          "next_action": "code-split",
+          "confidence": 0.89,
+          "conditions": ["large chunks identified"],
+          "agent": "vite-build-engineer"
+        },
+        {
+          "next_action": "tree-shake",
+          "confidence": 0.86,
+          "conditions": ["unused exports detected"],
+          "agent": "bundle-optimizer"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.25,
+      "avgStepDelay": 900000,
+      "description": "Comprehensive bundle size optimization for web apps",
+      "domain": "optimization",
+      "session_context": {
+        "target_size": "< 200KB initial bundle",
+        "tools": ["vite-bundle-visualizer", "rollup-plugin-visualizer"]
+      }
+    },
+    {
+      "id": "security-vulnerability-fix",
+      "name": "Security Issue Resolution",
+      "sequence": [
+        "vulnerability-scan",
+        "impact-assess",
+        "patch-apply",
+        "test-security",
+        "code-review",
+        "deploy"
+      ],
+      "contextMatch": ["security", "vulnerability", "cve", "audit"],
+      "triggers": [
+        "npm audit warning",
+        "security alert",
+        "cve detected",
+        "xss vulnerability"
+      ],
+      "predictions": [
+        {
+          "next_action": "impact-assess",
+          "confidence": 0.94,
+          "conditions": ["vulnerability identified"],
+          "agent": "security-specialist"
+        },
+        {
+          "next_action": "patch-apply",
+          "confidence": 0.91,
+          "conditions": ["patch available"],
+          "agent": "dependency-updater"
+        },
+        {
+          "next_action": "test-security",
+          "confidence": 0.89,
+          "conditions": ["patch applied"],
+          "agent": "security-tester"
+        }
+      ],
+      "confidence": 0.93,
+      "frequency": 0.18,
+      "avgStepDelay": 240000,
+      "description": "Rapid security vulnerability identification and remediation",
+      "domain": "security",
+      "session_context": {
+        "severity_threshold": "medium+",
+        "audit_tools": ["npm audit", "snyk", "dependabot"]
+      }
+    },
+    {
+      "id": "xss-prevention-workflow",
+      "name": "XSS Attack Prevention",
+      "sequence": [
+        "input-sanitize",
+        "escape-output",
+        "csp-configure",
+        "test-xss",
+        "validate",
+        "document"
+      ],
+      "contextMatch": ["security", "xss", "sanitization", "csp"],
+      "triggers": [
+        "user input handling",
+        "html injection risk",
+        "prevent xss"
+      ],
+      "predictions": [
+        {
+          "next_action": "escape-output",
+          "confidence": 0.90,
+          "conditions": ["dynamic html rendering"],
+          "agent": "security-specialist"
+        },
+        {
+          "next_action": "csp-configure",
+          "confidence": 0.87,
+          "conditions": ["content security policy needed"],
+          "agent": "web-security-engineer"
+        }
+      ],
+      "confidence": 0.89,
+      "frequency": 0.22,
+      "avgStepDelay": 360000,
+      "description": "Comprehensive XSS prevention and mitigation",
+      "domain": "security",
+      "session_context": {
+        "sanitization_libs": ["DOMPurify", "validator.js"],
+        "csp_directives": ["script-src", "style-src", "default-src"]
+      }
+    },
+    {
+      "id": "vitest-tdd-workflow",
+      "name": "Test-Driven Development with Vitest",
+      "sequence": [
+        "test-create",
+        "function-create",
+        "test-run",
+        "refactor",
+        "coverage-check",
+        "integrate"
+      ],
+      "contextMatch": ["testing", "tdd", "vitest", "unit-test"],
+      "triggers": [
+        "write unit test",
+        "tdd approach",
+        "test coverage"
+      ],
+      "predictions": [
+        {
+          "next_action": "function-create",
+          "confidence": 0.91,
+          "conditions": ["test written"],
+          "agent": "full-stack-developer"
+        },
+        {
+          "next_action": "refactor",
+          "confidence": 0.86,
+          "conditions": ["tests passing"],
+          "agent": "code-quality-engineer"
+        },
+        {
+          "next_action": "coverage-check",
+          "confidence": 0.84,
+          "conditions": ["feature complete"],
+          "agent": "vitest-testing-specialist"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.40,
+      "avgStepDelay": 300000,
+      "description": "Test-driven development workflow using Vitest",
+      "domain": "testing",
+      "session_context": {
+        "coverage_target": "> 80%",
+        "test_types": ["unit", "integration", "component"]
+      }
+    },
+    {
+      "id": "component-testing-workflow",
+      "name": "Svelte Component Testing",
+      "sequence": [
+        "component-mount",
+        "test-props",
+        "test-events",
+        "test-slots",
+        "accessibility-test",
+        "visual-regression"
+      ],
+      "contextMatch": ["testing", "svelte", "component", "integration"],
+      "triggers": [
+        "test svelte component",
+        "component integration test",
+        "ui testing"
+      ],
+      "predictions": [
+        {
+          "next_action": "test-events",
+          "confidence": 0.88,
+          "conditions": ["interactive component"],
+          "agent": "vitest-testing-specialist"
+        },
+        {
+          "next_action": "accessibility-test",
+          "confidence": 0.82,
+          "conditions": ["user-facing component"],
+          "agent": "accessibility-specialist"
+        }
+      ],
+      "confidence": 0.85,
+      "frequency": 0.33,
+      "avgStepDelay": 420000,
+      "description": "Comprehensive Svelte component testing strategy",
+      "domain": "testing",
+      "session_context": {
+        "testing_library": "@testing-library/svelte",
+        "a11y_tools": ["axe-core", "jest-axe"]
+      }
+    },
+    {
+      "id": "dexie-indexeddb-setup",
+      "name": "Dexie.js IndexedDB Configuration",
+      "sequence": [
+        "schema-define",
+        "version-migrate",
+        "index-create",
+        "test-queries",
+        "optimize-indices",
+        "validate"
+      ],
+      "contextMatch": ["database", "indexeddb", "dexie", "pwa"],
+      "triggers": [
+        "setup indexeddb",
+        "dexie migration",
+        "offline storage"
+      ],
+      "predictions": [
+        {
+          "next_action": "version-migrate",
+          "confidence": 0.90,
+          "conditions": ["schema change"],
+          "agent": "indexeddb-specialist"
+        },
+        {
+          "next_action": "optimize-indices",
+          "confidence": 0.86,
+          "conditions": ["query performance issues"],
+          "agent": "database-optimizer"
+        }
+      ],
+      "confidence": 0.87,
+      "frequency": 0.20,
+      "avgStepDelay": 720000,
+      "description": "IndexedDB setup and optimization with Dexie.js",
+      "domain": "database",
+      "session_context": {
+        "migration_strategy": "versioned schema upgrades",
+        "index_design": "compound indices for complex queries"
+      }
+    },
+    {
+      "id": "indexeddb-debugging",
+      "name": "IndexedDB Transaction Debugging",
+      "sequence": [
+        "error-identify",
+        "transaction-trace",
+        "deadlock-resolve",
+        "quota-check",
+        "test-fix",
+        "document"
+      ],
+      "contextMatch": ["debugging", "indexeddb", "transaction", "error"],
+      "triggers": [
+        "VersionError",
+        "QuotaExceededError",
+        "transaction deadlock",
+        "indexeddb error"
+      ],
+      "predictions": [
+        {
+          "next_action": "transaction-trace",
+          "confidence": 0.89,
+          "conditions": ["transaction error"],
+          "agent": "dmb-indexeddb-debugger"
+        },
+        {
+          "next_action": "quota-check",
+          "confidence": 0.87,
+          "conditions": ["QuotaExceededError"],
+          "agent": "storage-specialist"
+        }
+      ],
+      "confidence": 0.86,
+      "frequency": 0.15,
+      "avgStepDelay": 480000,
+      "description": "Systematic IndexedDB error diagnosis and resolution",
+      "domain": "debugging",
+      "session_context": {
+        "common_errors": ["VersionError", "QuotaExceededError", "AbortError"],
+        "devtools": "Chrome DevTools Application tab"
+      }
+    },
+    {
+      "id": "pwa-service-worker-setup",
+      "name": "Progressive Web App Service Worker",
+      "sequence": [
+        "sw-register",
+        "cache-strategy",
+        "offline-fallback",
+        "update-prompt",
+        "test-offline",
+        "manifest-configure"
+      ],
+      "contextMatch": ["pwa", "service-worker", "offline", "workbox"],
+      "triggers": [
+        "setup pwa",
+        "service worker",
+        "offline support",
+        "cache strategy"
+      ],
+      "predictions": [
+        {
+          "next_action": "cache-strategy",
+          "confidence": 0.92,
+          "conditions": ["sw registered"],
+          "agent": "pwa-specialist"
+        },
+        {
+          "next_action": "offline-fallback",
+          "confidence": 0.88,
+          "conditions": ["cache configured"],
+          "agent": "workbox-serviceworker-expert"
+        }
+      ],
+      "confidence": 0.90,
+      "frequency": 0.25,
+      "avgStepDelay": 840000,
+      "description": "Complete PWA service worker implementation",
+      "domain": "pwa",
+      "session_context": {
+        "cache_strategies": ["NetworkFirst", "CacheFirst", "StaleWhileRevalidate"],
+        "precache_assets": ["index.html", "app.css", "app.js"]
+      }
+    },
+    {
+      "id": "git-workflow-cleanup",
+      "name": "Repository Cleanup & Optimization",
+      "sequence": [
+        "analyze-size",
+        "identify-large-files",
+        "git-gc",
+        "prune-branches",
+        "validate-size",
+        "document"
+      ],
+      "contextMatch": ["git", "cleanup", "optimization", "repository"],
+      "triggers": [
+        "large repository",
+        "git gc",
+        "cleanup repo",
+        "reduce git size"
+      ],
+      "predictions": [
+        {
+          "next_action": "git-gc",
+          "confidence": 0.91,
+          "conditions": ["large pack files"],
+          "agent": "devops-engineer"
+        },
+        {
+          "next_action": "prune-branches",
+          "confidence": 0.85,
+          "conditions": ["many stale branches"],
+          "agent": "git-specialist"
+        }
+      ],
+      "confidence": 0.87,
+      "frequency": 0.12,
+      "avgStepDelay": 600000,
+      "description": "Git repository cleanup and optimization workflow",
+      "domain": "devops",
+      "session_context": {
+        "size_threshold": "> 500MB",
+        "commands": ["git gc --aggressive", "git prune"]
+      }
+    },
+    {
+      "id": "chromium-feature-adoption",
+      "name": "Modern Chromium Feature Implementation",
+      "sequence": [
+        "feature-research",
+        "browser-support-check",
+        "implement",
+        "progressive-enhancement",
+        "test-browsers",
+        "document"
+      ],
+      "contextMatch": ["chromium", "modern-web", "view-transitions", "speculation"],
+      "triggers": [
+        "view transitions api",
+        "speculation rules",
+        "scheduler.yield",
+        "modern chromium features"
+      ],
+      "predictions": [
+        {
+          "next_action": "browser-support-check",
+          "confidence": 0.90,
+          "conditions": ["new api"],
+          "agent": "chromium-browser-expert"
+        },
+        {
+          "next_action": "progressive-enhancement",
+          "confidence": 0.88,
+          "conditions": ["partial browser support"],
+          "agent": "frontend-architect"
+        }
+      ],
+      "confidence": 0.86,
+      "frequency": 0.20,
+      "avgStepDelay": 720000,
+      "description": "Adoption of cutting-edge Chromium browser features",
+      "domain": "optimization",
+      "session_context": {
+        "chromium_version": "143+",
+        "features": ["View Transitions", "Speculation Rules", "scheduler.yield()"]
+      }
+    },
+    {
+      "id": "file-organization-refactor",
+      "name": "Codebase Restructuring Workflow",
+      "sequence": [
+        "analyze-structure",
+        "plan-organization",
+        "move-files",
+        "update-references",
+        "validate-imports",
+        "test-run",
+        "document"
+      ],
+      "contextMatch": ["refactor", "organization", "structure", "cleanup"],
+      "triggers": [
+        "reorganize files",
+        "refactor structure",
+        "cleanup codebase",
+        "move files"
+      ],
+      "predictions": [
+        {
+          "next_action": "update-references",
+          "confidence": 0.93,
+          "conditions": ["files moved"],
+          "agent": "refactoring-specialist"
+        },
+        {
+          "next_action": "validate-imports",
+          "confidence": 0.90,
+          "conditions": ["references updated"],
+          "agent": "typescript-type-wizard"
+        }
+      ],
+      "confidence": 0.89,
+      "frequency": 0.08,
+      "avgStepDelay": 1200000,
+      "description": "Large-scale codebase reorganization with validation",
+      "domain": "refactoring",
+      "session_context": {
+        "update_tools": ["sed", "grep", "ripgrep"],
+        "validation": "ensure no broken imports"
+      }
+    },
+    {
+      "id": "typescript-type-safety",
+      "name": "TypeScript Type System Hardening",
+      "sequence": [
+        "type-define",
+        "strict-mode-enable",
+        "fix-any-types",
+        "add-generics",
+        "test-types",
+        "document"
+      ],
+      "contextMatch": ["typescript", "types", "type-safety", "generics"],
+      "triggers": [
+        "improve type safety",
+        "fix typescript errors",
+        "add generics",
+        "strict mode"
+      ],
+      "predictions": [
+        {
+          "next_action": "fix-any-types",
+          "confidence": 0.88,
+          "conditions": ["any types detected"],
+          "agent": "typescript-type-wizard"
+        },
+        {
+          "next_action": "add-generics",
+          "confidence": 0.85,
+          "conditions": ["reusable components"],
+          "agent": "type-system-specialist"
+        }
+      ],
+      "confidence": 0.86,
+      "frequency": 0.30,
+      "avgStepDelay": 540000,
+      "description": "Comprehensive TypeScript type system improvement",
+      "domain": "typescript",
+      "session_context": {
+        "strict_flags": ["strictNullChecks", "noImplicitAny", "strictFunctionTypes"],
+        "target": "zero any types"
+      }
+    },
+    {
+      "id": "api-endpoint-creation",
+      "name": "RESTful API Endpoint Development",
+      "sequence": [
+        "route-define",
+        "handler-create",
+        "validation-add",
+        "test-create",
+        "error-handling",
+        "docs-generate"
+      ],
+      "contextMatch": ["api", "backend", "rest", "endpoint"],
+      "triggers": [
+        "create api endpoint",
+        "add rest api",
+        "backend route"
+      ],
+      "predictions": [
+        {
+          "next_action": "validation-add",
+          "confidence": 0.90,
+          "conditions": ["user input"],
+          "agent": "backend-engineer"
+        },
+        {
+          "next_action": "error-handling",
+          "confidence": 0.87,
+          "conditions": ["external dependencies"],
+          "agent": "error-handling-specialist"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.35,
+      "avgStepDelay": 480000,
+      "description": "Complete API endpoint development with validation",
+      "domain": "backend",
+      "session_context": {
+        "validation_lib": "zod or joi",
+        "error_format": "consistent error responses"
+      }
+    },
+    {
+      "id": "css-modern-features",
+      "name": "Modern CSS Implementation",
+      "sequence": [
+        "feature-research",
+        "fallback-plan",
+        "implement",
+        "browser-test",
+        "progressive-enhancement",
+        "document"
+      ],
+      "contextMatch": ["css", "modern", "container-queries", "css-if"],
+      "triggers": [
+        "container queries",
+        "css if()",
+        "modern css features",
+        "cascade layers"
+      ],
+      "predictions": [
+        {
+          "next_action": "fallback-plan",
+          "confidence": 0.89,
+          "conditions": ["browser support incomplete"],
+          "agent": "css-modern-specialist"
+        },
+        {
+          "next_action": "progressive-enhancement",
+          "confidence": 0.86,
+          "conditions": ["fallback defined"],
+          "agent": "frontend-architect"
+        }
+      ],
+      "confidence": 0.85,
+      "frequency": 0.22,
+      "avgStepDelay": 600000,
+      "description": "Implementation of cutting-edge CSS features",
+      "domain": "frontend",
+      "session_context": {
+        "features": ["container queries", "CSS if()", "cascade layers", ":has()"],
+        "polyfills": "consider when necessary"
+      }
+    },
+    {
+      "id": "accessibility-audit",
+      "name": "Accessibility Compliance Workflow",
+      "sequence": [
+        "audit-run",
+        "identify-issues",
+        "fix-aria",
+        "keyboard-navigation",
+        "test-screen-reader",
+        "document"
+      ],
+      "contextMatch": ["accessibility", "a11y", "wcag", "aria"],
+      "triggers": [
+        "accessibility audit",
+        "wcag compliance",
+        "a11y issues",
+        "screen reader support"
+      ],
+      "predictions": [
+        {
+          "next_action": "fix-aria",
+          "confidence": 0.91,
+          "conditions": ["aria violations"],
+          "agent": "accessibility-specialist"
+        },
+        {
+          "next_action": "keyboard-navigation",
+          "confidence": 0.88,
+          "conditions": ["interactive elements"],
+          "agent": "ux-engineer"
+        }
+      ],
+      "confidence": 0.89,
+      "frequency": 0.25,
+      "avgStepDelay": 720000,
+      "description": "Comprehensive accessibility compliance audit and fixes",
+      "domain": "frontend",
+      "session_context": {
+        "wcag_level": "AA",
+        "tools": ["axe-core", "lighthouse", "NVDA"]
+      }
+    },
+    {
+      "id": "dependency-update-workflow",
+      "name": "Safe Dependency Updates",
+      "sequence": [
+        "check-updates",
+        "security-audit",
+        "update-patch",
+        "test-run",
+        "update-minor",
+        "test-integration",
+        "document"
+      ],
+      "contextMatch": ["dependencies", "npm", "update", "security"],
+      "triggers": [
+        "update dependencies",
+        "npm update",
+        "security patches",
+        "outdated packages"
+      ],
+      "predictions": [
+        {
+          "next_action": "security-audit",
+          "confidence": 0.93,
+          "conditions": ["updates available"],
+          "agent": "security-specialist"
+        },
+        {
+          "next_action": "test-run",
+          "confidence": 0.90,
+          "conditions": ["updates applied"],
+          "agent": "vitest-testing-specialist"
+        }
+      ],
+      "confidence": 0.91,
+      "frequency": 0.30,
+      "avgStepDelay": 600000,
+      "description": "Safe and systematic dependency update workflow",
+      "domain": "devops",
+      "session_context": {
+        "update_strategy": "patch first, then minor, major separately",
+        "breaking_changes": "review changelogs"
+      }
+    },
+    {
+      "id": "ci-cd-pipeline-setup",
+      "name": "Continuous Integration Pipeline",
+      "sequence": [
+        "workflow-create",
+        "test-job-add",
+        "build-job-add",
+        "deploy-job-add",
+        "cache-configure",
+        "test-pipeline"
+      ],
+      "contextMatch": ["ci", "cd", "github-actions", "pipeline"],
+      "triggers": [
+        "setup ci/cd",
+        "github actions",
+        "pipeline creation",
+        "automate deployment"
+      ],
+      "predictions": [
+        {
+          "next_action": "test-job-add",
+          "confidence": 0.92,
+          "conditions": ["workflow file created"],
+          "agent": "devops-engineer"
+        },
+        {
+          "next_action": "cache-configure",
+          "confidence": 0.87,
+          "conditions": ["build time > 5min"],
+          "agent": "ci-cd-specialist"
+        }
+      ],
+      "confidence": 0.90,
+      "frequency": 0.15,
+      "avgStepDelay": 1200000,
+      "description": "Complete CI/CD pipeline configuration",
+      "domain": "devops",
+      "session_context": {
+        "platforms": ["GitHub Actions", "GitLab CI", "CircleCI"],
+        "cache_paths": ["node_modules", ".cargo", "target"]
+      }
+    },
+    {
+      "id": "error-boundary-implementation",
+      "name": "Error Handling & Recovery",
+      "sequence": [
+        "boundary-create",
+        "error-log",
+        "fallback-ui",
+        "test-errors",
+        "monitoring-setup",
+        "document"
+      ],
+      "contextMatch": ["error", "boundary", "handling", "recovery"],
+      "triggers": [
+        "error boundary",
+        "error handling",
+        "crash recovery",
+        "fallback ui"
+      ],
+      "predictions": [
+        {
+          "next_action": "fallback-ui",
+          "confidence": 0.88,
+          "conditions": ["error caught"],
+          "agent": "frontend-engineer"
+        },
+        {
+          "next_action": "monitoring-setup",
+          "confidence": 0.85,
+          "conditions": ["production app"],
+          "agent": "observability-engineer"
+        }
+      ],
+      "confidence": 0.86,
+      "frequency": 0.20,
+      "avgStepDelay": 540000,
+      "description": "Robust error handling and recovery mechanisms",
+      "domain": "frontend",
+      "session_context": {
+        "error_types": ["network", "runtime", "async"],
+        "monitoring": "Sentry or similar"
+      }
+    },
+    {
+      "id": "virtual-scrolling-optimization",
+      "name": "Virtual Scrolling for Large Lists",
+      "sequence": [
+        "implement-virtual-list",
+        "optimize-render",
+        "test-performance",
+        "handle-dynamic-height",
+        "accessibility-check",
+        "document"
+      ],
+      "contextMatch": ["performance", "virtual-scroll", "large-list", "optimization"],
+      "triggers": [
+        "large list rendering",
+        "virtual scrolling",
+        "thousands of items",
+        "optimize list"
+      ],
+      "predictions": [
+        {
+          "next_action": "optimize-render",
+          "confidence": 0.89,
+          "conditions": ["virtual list implemented"],
+          "agent": "performance-optimizer"
+        },
+        {
+          "next_action": "handle-dynamic-height",
+          "confidence": 0.84,
+          "conditions": ["variable item heights"],
+          "agent": "frontend-specialist"
+        }
+      ],
+      "confidence": 0.87,
+      "frequency": 0.18,
+      "avgStepDelay": 720000,
+      "description": "High-performance virtual scrolling implementation",
+      "domain": "optimization",
+      "session_context": {
+        "item_threshold": "> 1000 items",
+        "libraries": ["svelte-virtual", "react-window"]
+      }
+    },
+    {
+      "id": "code-splitting-strategy",
+      "name": "Dynamic Import & Code Splitting",
+      "sequence": [
+        "analyze-bundle",
+        "identify-split-points",
+        "implement-dynamic-imports",
+        "lazy-load-routes",
+        "test-loading",
+        "optimize-chunks"
+      ],
+      "contextMatch": ["code-splitting", "lazy-loading", "dynamic-import", "optimization"],
+      "triggers": [
+        "code splitting",
+        "lazy load",
+        "dynamic imports",
+        "reduce initial bundle"
+      ],
+      "predictions": [
+        {
+          "next_action": "implement-dynamic-imports",
+          "confidence": 0.90,
+          "conditions": ["split points identified"],
+          "agent": "vite-build-engineer"
+        },
+        {
+          "next_action": "optimize-chunks",
+          "confidence": 0.86,
+          "conditions": ["too many chunks"],
+          "agent": "bundle-optimizer"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.28,
+      "avgStepDelay": 840000,
+      "description": "Strategic code splitting for optimal loading",
+      "domain": "optimization",
+      "session_context": {
+        "chunk_size_target": "50-150KB per chunk",
+        "prefetch": "consider route prefetching"
+      }
+    },
+    {
+      "id": "web-worker-offloading",
+      "name": "Web Worker Task Offloading",
+      "sequence": [
+        "identify-heavy-task",
+        "worker-create",
+        "message-protocol",
+        "test-worker",
+        "error-handling",
+        "fallback-main-thread"
+      ],
+      "contextMatch": ["web-worker", "offloading", "performance", "threading"],
+      "triggers": [
+        "heavy computation",
+        "web worker",
+        "offload processing",
+        "background task"
+      ],
+      "predictions": [
+        {
+          "next_action": "message-protocol",
+          "confidence": 0.88,
+          "conditions": ["worker created"],
+          "agent": "web-worker-specialist"
+        },
+        {
+          "next_action": "fallback-main-thread",
+          "confidence": 0.83,
+          "conditions": ["worker not supported"],
+          "agent": "progressive-enhancement-specialist"
+        }
+      ],
+      "confidence": 0.85,
+      "frequency": 0.15,
+      "avgStepDelay": 900000,
+      "description": "Offload heavy computations to web workers",
+      "domain": "optimization",
+      "session_context": {
+        "use_cases": ["parsing", "encryption", "data processing"],
+        "communication": "structured clone algorithm"
+      }
+    },
+    {
+      "id": "cache-invalidation-strategy",
+      "name": "Cache Invalidation & Updates",
+      "sequence": [
+        "cache-key-design",
+        "invalidation-trigger",
+        "stale-while-revalidate",
+        "test-invalidation",
+        "monitor-hit-rate",
+        "document"
+      ],
+      "contextMatch": ["cache", "invalidation", "stale", "revalidation"],
+      "triggers": [
+        "cache strategy",
+        "cache invalidation",
+        "stale data",
+        "cache update"
+      ],
+      "predictions": [
+        {
+          "next_action": "invalidation-trigger",
+          "confidence": 0.89,
+          "conditions": ["cache keys defined"],
+          "agent": "caching-specialist"
+        },
+        {
+          "next_action": "monitor-hit-rate",
+          "confidence": 0.85,
+          "conditions": ["cache deployed"],
+          "agent": "performance-analyzer"
+        }
+      ],
+      "confidence": 0.87,
+      "frequency": 0.22,
+      "avgStepDelay": 720000,
+      "description": "Effective cache invalidation and update strategies",
+      "domain": "optimization",
+      "session_context": {
+        "strategies": ["TTL", "event-based", "versioning"],
+        "tools": ["Redis", "service worker cache", "CDN"]
+      }
+    },
+    {
+      "id": "responsive-design-implementation",
+      "name": "Responsive Design Workflow",
+      "sequence": [
+        "breakpoint-define",
+        "mobile-first-css",
+        "test-viewports",
+        "touch-optimize",
+        "image-responsive",
+        "test-devices"
+      ],
+      "contextMatch": ["responsive", "mobile", "breakpoints", "viewport"],
+      "triggers": [
+        "responsive design",
+        "mobile optimization",
+        "breakpoints",
+        "viewport sizes"
+      ],
+      "predictions": [
+        {
+          "next_action": "mobile-first-css",
+          "confidence": 0.90,
+          "conditions": ["breakpoints defined"],
+          "agent": "css-specialist"
+        },
+        {
+          "next_action": "image-responsive",
+          "confidence": 0.87,
+          "conditions": ["images present"],
+          "agent": "performance-optimizer"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.32,
+      "avgStepDelay": 600000,
+      "description": "Mobile-first responsive design implementation",
+      "domain": "frontend",
+      "session_context": {
+        "breakpoints": ["mobile: 375px", "tablet: 768px", "desktop: 1024px"],
+        "testing": "Chrome DevTools device mode"
+      }
+    },
+    {
+      "id": "form-validation-workflow",
+      "name": "Form Validation & Error Handling",
+      "sequence": [
+        "schema-define",
+        "client-validation",
+        "server-validation",
+        "error-display",
+        "accessibility-check",
+        "test-validation"
+      ],
+      "contextMatch": ["form", "validation", "input", "error"],
+      "triggers": [
+        "form validation",
+        "user input",
+        "validation schema",
+        "form errors"
+      ],
+      "predictions": [
+        {
+          "next_action": "server-validation",
+          "confidence": 0.92,
+          "conditions": ["client validation done"],
+          "agent": "backend-engineer"
+        },
+        {
+          "next_action": "error-display",
+          "confidence": 0.89,
+          "conditions": ["validation rules defined"],
+          "agent": "ux-engineer"
+        }
+      ],
+      "confidence": 0.90,
+      "frequency": 0.38,
+      "avgStepDelay": 480000,
+      "description": "Comprehensive form validation with UX focus",
+      "domain": "frontend",
+      "session_context": {
+        "validation_libs": ["zod", "yup", "joi"],
+        "ux_principles": ["inline validation", "clear error messages"]
+      }
+    },
+    {
+      "id": "animation-performance-optimization",
+      "name": "Smooth Animation Optimization",
+      "sequence": [
+        "identify-jank",
+        "use-transform",
+        "will-change",
+        "reduce-reflow",
+        "test-60fps",
+        "fallback-prefers-reduced-motion"
+      ],
+      "contextMatch": ["animation", "performance", "60fps", "jank"],
+      "triggers": [
+        "animation jank",
+        "smooth animations",
+        "60fps target",
+        "animation performance"
+      ],
+      "predictions": [
+        {
+          "next_action": "use-transform",
+          "confidence": 0.91,
+          "conditions": ["layout thrashing detected"],
+          "agent": "animation-specialist"
+        },
+        {
+          "next_action": "fallback-prefers-reduced-motion",
+          "confidence": 0.86,
+          "conditions": ["animations implemented"],
+          "agent": "accessibility-specialist"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.24,
+      "avgStepDelay": 600000,
+      "description": "60fps animation performance optimization",
+      "domain": "optimization",
+      "session_context": {
+        "gpu_properties": ["transform", "opacity"],
+        "avoid": ["top", "left", "width", "height"]
+      }
+    },
+    {
+      "id": "image-optimization-workflow",
+      "name": "Image Optimization & Lazy Loading",
+      "sequence": [
+        "format-convert",
+        "compression",
+        "responsive-sizes",
+        "lazy-load",
+        "webp-avif-fallback",
+        "test-lcp"
+      ],
+      "contextMatch": ["image", "optimization", "lazy-load", "webp"],
+      "triggers": [
+        "optimize images",
+        "lazy loading",
+        "image formats",
+        "reduce image size"
+      ],
+      "predictions": [
+        {
+          "next_action": "responsive-sizes",
+          "confidence": 0.89,
+          "conditions": ["images compressed"],
+          "agent": "image-optimizer"
+        },
+        {
+          "next_action": "lazy-load",
+          "confidence": 0.87,
+          "conditions": ["below fold images"],
+          "agent": "performance-optimizer"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.30,
+      "avgStepDelay": 540000,
+      "description": "Complete image optimization pipeline",
+      "domain": "optimization",
+      "session_context": {
+        "formats": ["AVIF", "WebP", "JPEG fallback"],
+        "tools": ["Sharp", "Squoosh", "ImageOptim"]
+      }
+    },
+    {
+      "id": "seo-optimization-workflow",
+      "name": "SEO & Meta Tag Optimization",
+      "sequence": [
+        "meta-tags-add",
+        "structured-data",
+        "sitemap-generate",
+        "robots-txt",
+        "test-seo",
+        "monitor"
+      ],
+      "contextMatch": ["seo", "meta", "structured-data", "sitemap"],
+      "triggers": [
+        "seo optimization",
+        "meta tags",
+        "structured data",
+        "search ranking"
+      ],
+      "predictions": [
+        {
+          "next_action": "structured-data",
+          "confidence": 0.88,
+          "conditions": ["meta tags added"],
+          "agent": "seo-specialist"
+        },
+        {
+          "next_action": "sitemap-generate",
+          "confidence": 0.86,
+          "conditions": ["content structured"],
+          "agent": "seo-engineer"
+        }
+      ],
+      "confidence": 0.86,
+      "frequency": 0.20,
+      "avgStepDelay": 720000,
+      "description": "Comprehensive SEO optimization workflow",
+      "domain": "frontend",
+      "session_context": {
+        "schema_types": ["Article", "WebPage", "Organization"],
+        "testing": "Google Search Console, Rich Results Test"
+      }
+    },
+    {
+      "id": "data-migration-workflow",
+      "name": "Database Migration & Validation",
+      "sequence": [
+        "backup-create",
+        "migration-script",
+        "dry-run",
+        "migrate",
+        "validate-data",
+        "rollback-plan"
+      ],
+      "contextMatch": ["migration", "database", "data", "upgrade"],
+      "triggers": [
+        "database migration",
+        "schema change",
+        "data migration",
+        "upgrade database"
+      ],
+      "predictions": [
+        {
+          "next_action": "dry-run",
+          "confidence": 0.93,
+          "conditions": ["migration script ready"],
+          "agent": "database-migration-specialist"
+        },
+        {
+          "next_action": "validate-data",
+          "confidence": 0.91,
+          "conditions": ["migration executed"],
+          "agent": "data-quality-engineer"
+        }
+      ],
+      "confidence": 0.92,
+      "frequency": 0.15,
+      "avgStepDelay": 1200000,
+      "description": "Safe database migration with validation",
+      "domain": "database",
+      "session_context": {
+        "backup_required": true,
+        "rollback_plan": "always prepare rollback strategy"
+      }
+    },
+    {
+      "id": "monitoring-observability-setup",
+      "name": "Monitoring & Observability Configuration",
+      "sequence": [
+        "metrics-define",
+        "logging-setup",
+        "alerts-configure",
+        "dashboard-create",
+        "test-alerts",
+        "document"
+      ],
+      "contextMatch": ["monitoring", "observability", "metrics", "logging"],
+      "triggers": [
+        "setup monitoring",
+        "observability",
+        "metrics tracking",
+        "logging system"
+      ],
+      "predictions": [
+        {
+          "next_action": "logging-setup",
+          "confidence": 0.90,
+          "conditions": ["metrics defined"],
+          "agent": "observability-engineer"
+        },
+        {
+          "next_action": "alerts-configure",
+          "confidence": 0.88,
+          "conditions": ["logging configured"],
+          "agent": "sre-specialist"
+        }
+      ],
+      "confidence": 0.89,
+      "frequency": 0.18,
+      "avgStepDelay": 1080000,
+      "description": "Comprehensive monitoring and observability setup",
+      "domain": "devops",
+      "session_context": {
+        "tools": ["Datadog", "New Relic", "Grafana", "Prometheus"],
+        "log_levels": ["error", "warn", "info", "debug"]
+      }
+    },
+    {
+      "id": "feature-flag-implementation",
+      "name": "Feature Flag System",
+      "sequence": [
+        "flag-define",
+        "implementation",
+        "rollout-strategy",
+        "monitoring",
+        "gradual-rollout",
+        "cleanup"
+      ],
+      "contextMatch": ["feature-flag", "rollout", "toggle", "ab-test"],
+      "triggers": [
+        "feature flag",
+        "gradual rollout",
+        "toggle feature",
+        "a/b test"
+      ],
+      "predictions": [
+        {
+          "next_action": "rollout-strategy",
+          "confidence": 0.89,
+          "conditions": ["flag implemented"],
+          "agent": "feature-flag-specialist"
+        },
+        {
+          "next_action": "gradual-rollout",
+          "confidence": 0.87,
+          "conditions": ["strategy defined"],
+          "agent": "deployment-engineer"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.22,
+      "avgStepDelay": 900000,
+      "description": "Feature flag system for controlled rollouts",
+      "domain": "devops",
+      "session_context": {
+        "services": ["LaunchDarkly", "Flagsmith", "custom"],
+        "rollout_percentages": ["5%", "25%", "50%", "100%"]
+      }
+    },
+    {
+      "id": "documentation-generation",
+      "name": "Automated Documentation Workflow",
+      "sequence": [
+        "analyze-code",
+        "generate-api-docs",
+        "write-guides",
+        "generate-diagrams",
+        "review",
+        "publish"
+      ],
+      "contextMatch": ["documentation", "docs", "api-docs", "guides"],
+      "triggers": [
+        "generate docs",
+        "api documentation",
+        "write guide",
+        "update documentation"
+      ],
+      "predictions": [
+        {
+          "next_action": "generate-api-docs",
+          "confidence": 0.91,
+          "conditions": ["code analyzed"],
+          "agent": "documentation-engineer"
+        },
+        {
+          "next_action": "generate-diagrams",
+          "confidence": 0.84,
+          "conditions": ["complex architecture"],
+          "agent": "technical-writer"
+        }
+      ],
+      "confidence": 0.87,
+      "frequency": 0.25,
+      "avgStepDelay": 840000,
+      "description": "Automated documentation generation and publishing",
+      "domain": "documentation",
+      "session_context": {
+        "tools": ["TypeDoc", "JSDoc", "Storybook", "Docusaurus"],
+        "formats": ["API reference", "tutorials", "architecture docs"]
+      }
+    },
+    {
+      "id": "state-management-setup",
+      "name": "Application State Management",
+      "sequence": [
+        "assess-complexity",
+        "choose-solution",
+        "store-setup",
+        "actions-define",
+        "test-state",
+        "devtools-configure"
+      ],
+      "contextMatch": ["state", "redux", "zustand", "svelte-store"],
+      "triggers": [
+        "state management",
+        "global state",
+        "store setup",
+        "state library"
+      ],
+      "predictions": [
+        {
+          "next_action": "store-setup",
+          "confidence": 0.90,
+          "conditions": ["solution chosen"],
+          "agent": "state-management-specialist"
+        },
+        {
+          "next_action": "devtools-configure",
+          "confidence": 0.85,
+          "conditions": ["store implemented"],
+          "agent": "frontend-architect"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.28,
+      "avgStepDelay": 720000,
+      "description": "Application-wide state management implementation",
+      "domain": "frontend",
+      "session_context": {
+        "solutions": ["Svelte stores", "Redux", "Zustand", "Jotai"],
+        "patterns": ["actions", "selectors", "middleware"]
+      }
+    },
+    {
+      "id": "graphql-api-development",
+      "name": "GraphQL API Development",
+      "sequence": [
+        "schema-define",
+        "resolver-create",
+        "type-generation",
+        "test-queries",
+        "optimize-n-plus-1",
+        "document"
+      ],
+      "contextMatch": ["graphql", "api", "schema", "resolver"],
+      "triggers": [
+        "graphql api",
+        "create schema",
+        "graphql resolver",
+        "type generation"
+      ],
+      "predictions": [
+        {
+          "next_action": "resolver-create",
+          "confidence": 0.92,
+          "conditions": ["schema defined"],
+          "agent": "graphql-specialist"
+        },
+        {
+          "next_action": "optimize-n-plus-1",
+          "confidence": 0.88,
+          "conditions": ["nested queries"],
+          "agent": "backend-optimizer"
+        }
+      ],
+      "confidence": 0.89,
+      "frequency": 0.20,
+      "avgStepDelay": 840000,
+      "description": "Complete GraphQL API development workflow",
+      "domain": "backend",
+      "session_context": {
+        "tools": ["Apollo Server", "GraphQL Yoga", "Pothos"],
+        "optimization": "DataLoader for batching"
+      }
+    },
+    {
+      "id": "websocket-real-time",
+      "name": "WebSocket Real-Time Communication",
+      "sequence": [
+        "server-setup",
+        "client-connection",
+        "message-protocol",
+        "reconnection-logic",
+        "test-connection",
+        "scale-horizontally"
+      ],
+      "contextMatch": ["websocket", "real-time", "socket", "ws"],
+      "triggers": [
+        "websocket",
+        "real-time updates",
+        "socket connection",
+        "live data"
+      ],
+      "predictions": [
+        {
+          "next_action": "message-protocol",
+          "confidence": 0.89,
+          "conditions": ["connection established"],
+          "agent": "real-time-specialist"
+        },
+        {
+          "next_action": "reconnection-logic",
+          "confidence": 0.87,
+          "conditions": ["production deployment"],
+          "agent": "reliability-engineer"
+        }
+      ],
+      "confidence": 0.87,
+      "frequency": 0.18,
+      "avgStepDelay": 960000,
+      "description": "WebSocket-based real-time communication",
+      "domain": "backend",
+      "session_context": {
+        "libraries": ["Socket.io", "ws", "uWebSockets"],
+        "scaling": "Redis pub/sub for multi-instance"
+      }
+    },
+    {
+      "id": "micro-frontend-integration",
+      "name": "Micro-Frontend Architecture",
+      "sequence": [
+        "architecture-plan",
+        "module-federation",
+        "shared-dependencies",
+        "integration-test",
+        "deployment-strategy",
+        "monitoring"
+      ],
+      "contextMatch": ["micro-frontend", "module-federation", "architecture"],
+      "triggers": [
+        "micro-frontend",
+        "module federation",
+        "federated modules",
+        "independent deployment"
+      ],
+      "predictions": [
+        {
+          "next_action": "shared-dependencies",
+          "confidence": 0.88,
+          "conditions": ["federation configured"],
+          "agent": "micro-frontend-architect"
+        },
+        {
+          "next_action": "deployment-strategy",
+          "confidence": 0.86,
+          "conditions": ["integration complete"],
+          "agent": "devops-architect"
+        }
+      ],
+      "confidence": 0.85,
+      "frequency": 0.10,
+      "avgStepDelay": 1440000,
+      "description": "Micro-frontend architecture implementation",
+      "domain": "architecture",
+      "session_context": {
+        "approach": ["module federation", "web components", "iframe"],
+        "communication": "custom events or shared state"
+      }
+    },
+    {
+      "id": "edge-function-deployment",
+      "name": "Edge Function Development",
+      "sequence": [
+        "function-create",
+        "test-locally",
+        "optimize-cold-start",
+        "deploy-edge",
+        "test-regions",
+        "monitor-latency"
+      ],
+      "contextMatch": ["edge", "function", "serverless", "cloudflare"],
+      "triggers": [
+        "edge function",
+        "cloudflare workers",
+        "vercel edge",
+        "serverless edge"
+      ],
+      "predictions": [
+        {
+          "next_action": "optimize-cold-start",
+          "confidence": 0.87,
+          "conditions": ["function tested"],
+          "agent": "serverless-specialist"
+        },
+        {
+          "next_action": "monitor-latency",
+          "confidence": 0.85,
+          "conditions": ["deployed to edge"],
+          "agent": "performance-analyzer"
+        }
+      ],
+      "confidence": 0.86,
+      "frequency": 0.16,
+      "avgStepDelay": 720000,
+      "description": "Edge function development and deployment",
+      "domain": "backend",
+      "session_context": {
+        "platforms": ["Cloudflare Workers", "Vercel Edge", "Deno Deploy"],
+        "constraints": "limited runtime, no file system"
+      }
+    },
+    {
+      "id": "content-security-policy",
+      "name": "Content Security Policy Implementation",
+      "sequence": [
+        "analyze-resources",
+        "define-policy",
+        "report-only-mode",
+        "fix-violations",
+        "enforce-policy",
+        "monitor"
+      ],
+      "contextMatch": ["csp", "security", "content-security-policy"],
+      "triggers": [
+        "content security policy",
+        "csp implementation",
+        "security headers",
+        "xss prevention"
+      ],
+      "predictions": [
+        {
+          "next_action": "report-only-mode",
+          "confidence": 0.91,
+          "conditions": ["policy defined"],
+          "agent": "security-specialist"
+        },
+        {
+          "next_action": "fix-violations",
+          "confidence": 0.89,
+          "conditions": ["violations reported"],
+          "agent": "web-security-engineer"
+        }
+      ],
+      "confidence": 0.90,
+      "frequency": 0.20,
+      "avgStepDelay": 840000,
+      "description": "CSP implementation for enhanced security",
+      "domain": "security",
+      "session_context": {
+        "directives": ["script-src", "style-src", "img-src", "connect-src"],
+        "approach": "start with report-only, then enforce"
+      }
+    },
+    {
+      "id": "progressive-enhancement",
+      "name": "Progressive Enhancement Strategy",
+      "sequence": [
+        "baseline-html",
+        "enhance-css",
+        "enhance-js",
+        "feature-detection",
+        "test-degradation",
+        "document"
+      ],
+      "contextMatch": ["progressive-enhancement", "baseline", "fallback"],
+      "triggers": [
+        "progressive enhancement",
+        "baseline experience",
+        "graceful degradation",
+        "browser support"
+      ],
+      "predictions": [
+        {
+          "next_action": "feature-detection",
+          "confidence": 0.88,
+          "conditions": ["enhancements added"],
+          "agent": "progressive-enhancement-specialist"
+        },
+        {
+          "next_action": "test-degradation",
+          "confidence": 0.86,
+          "conditions": ["fallbacks defined"],
+          "agent": "cross-browser-tester"
+        }
+      ],
+      "confidence": 0.87,
+      "frequency": 0.24,
+      "avgStepDelay": 720000,
+      "description": "Progressive enhancement from HTML baseline",
+      "domain": "frontend",
+      "session_context": {
+        "principles": ["core functionality without JS", "enhance with CSS", "add JS features"],
+        "testing": "disable JS and test"
+      }
+    },
+    {
+      "id": "internationalization-i18n",
+      "name": "Internationalization (i18n) Setup",
+      "sequence": [
+        "extract-strings",
+        "translation-files",
+        "locale-routing",
+        "date-number-format",
+        "test-translations",
+        "rtl-support"
+      ],
+      "contextMatch": ["i18n", "internationalization", "translation", "locale"],
+      "triggers": [
+        "internationalization",
+        "i18n setup",
+        "multiple languages",
+        "translation support"
+      ],
+      "predictions": [
+        {
+          "next_action": "translation-files",
+          "confidence": 0.90,
+          "conditions": ["strings extracted"],
+          "agent": "i18n-specialist"
+        },
+        {
+          "next_action": "rtl-support",
+          "confidence": 0.84,
+          "conditions": ["RTL language added"],
+          "agent": "frontend-specialist"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.20,
+      "avgStepDelay": 960000,
+      "description": "Complete internationalization implementation",
+      "domain": "frontend",
+      "session_context": {
+        "libraries": ["svelte-i18n", "i18next", "Format.js"],
+        "considerations": ["pluralization", "date/time", "numbers", "RTL"]
+      }
+    },
+    {
+      "id": "rate-limiting-implementation",
+      "name": "API Rate Limiting & Throttling",
+      "sequence": [
+        "define-limits",
+        "implement-middleware",
+        "storage-backend",
+        "test-limits",
+        "monitor-usage",
+        "document"
+      ],
+      "contextMatch": ["rate-limit", "throttle", "api-protection"],
+      "triggers": [
+        "rate limiting",
+        "api throttling",
+        "ddos protection",
+        "usage limits"
+      ],
+      "predictions": [
+        {
+          "next_action": "storage-backend",
+          "confidence": 0.89,
+          "conditions": ["middleware implemented"],
+          "agent": "backend-security-specialist"
+        },
+        {
+          "next_action": "monitor-usage",
+          "confidence": 0.87,
+          "conditions": ["rate limits active"],
+          "agent": "api-monitoring-specialist"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.22,
+      "avgStepDelay": 720000,
+      "description": "API rate limiting and throttling implementation",
+      "domain": "security",
+      "session_context": {
+        "algorithms": ["token bucket", "leaky bucket", "sliding window"],
+        "storage": ["Redis", "in-memory", "database"]
+      }
+    },
+    {
+      "id": "logging-aggregation",
+      "name": "Centralized Logging System",
+      "sequence": [
+        "logger-setup",
+        "structured-logging",
+        "aggregation-configure",
+        "search-indexing",
+        "alerting",
+        "retention-policy"
+      ],
+      "contextMatch": ["logging", "aggregation", "elk", "structured-logs"],
+      "triggers": [
+        "centralized logging",
+        "log aggregation",
+        "elk stack",
+        "structured logging"
+      ],
+      "predictions": [
+        {
+          "next_action": "structured-logging",
+          "confidence": 0.91,
+          "conditions": ["logger configured"],
+          "agent": "logging-specialist"
+        },
+        {
+          "next_action": "search-indexing",
+          "confidence": 0.88,
+          "conditions": ["logs aggregated"],
+          "agent": "observability-engineer"
+        }
+      ],
+      "confidence": 0.89,
+      "frequency": 0.18,
+      "avgStepDelay": 1080000,
+      "description": "Centralized logging with search and alerting",
+      "domain": "devops",
+      "session_context": {
+        "stacks": ["ELK", "Loki+Grafana", "Datadog"],
+        "format": "JSON structured logs"
+      }
+    },
+    {
+      "id": "ab-testing-framework",
+      "name": "A/B Testing Implementation",
+      "sequence": [
+        "experiment-design",
+        "variant-implementation",
+        "tracking-setup",
+        "traffic-split",
+        "analyze-results",
+        "rollout-winner"
+      ],
+      "contextMatch": ["ab-test", "experiment", "variant", "split-test"],
+      "triggers": [
+        "a/b test",
+        "experiment",
+        "split testing",
+        "variant testing"
+      ],
+      "predictions": [
+        {
+          "next_action": "tracking-setup",
+          "confidence": 0.90,
+          "conditions": ["variants implemented"],
+          "agent": "analytics-engineer"
+        },
+        {
+          "next_action": "analyze-results",
+          "confidence": 0.88,
+          "conditions": ["sufficient sample size"],
+          "agent": "data-analyst"
+        }
+      ],
+      "confidence": 0.88,
+      "frequency": 0.20,
+      "avgStepDelay": 1200000,
+      "description": "A/B testing framework for data-driven decisions",
+      "domain": "analytics",
+      "session_context": {
+        "tools": ["Optimizely", "Google Optimize", "custom"],
+        "metrics": ["conversion rate", "engagement", "revenue"]
+      }
+    },
+    {
+      "id": "database-query-optimization",
+      "name": "Database Query Performance Tuning",
+      "sequence": [
+        "identify-slow-queries",
+        "explain-analyze",
+        "add-indices",
+        "query-rewrite",
+        "test-performance",
+        "monitor"
+      ],
+      "contextMatch": ["database", "query", "optimization", "performance"],
+      "triggers": [
+        "slow queries",
+        "database optimization",
+        "query performance",
+        "add index"
+      ],
+      "predictions": [
+        {
+          "next_action": "explain-analyze",
+          "confidence": 0.92,
+          "conditions": ["slow query identified"],
+          "agent": "database-specialist"
+        },
+        {
+          "next_action": "query-rewrite",
+          "confidence": 0.88,
+          "conditions": ["inefficient query plan"],
+          "agent": "sql-optimizer"
+        }
+      ],
+      "confidence": 0.90,
+      "frequency": 0.28,
+      "avgStepDelay": 720000,
+      "description": "Systematic database query optimization",
+      "domain": "database",
+      "session_context": {
+        "tools": ["EXPLAIN ANALYZE", "query planner", "slow query log"],
+        "targets": ["< 100ms for simple queries", "proper index usage"]
+      }
+    },
+    {
+      "id": "container-orchestration",
+      "name": "Container Deployment & Orchestration",
+      "sequence": [
+        "dockerfile-create",
+        "image-optimize",
+        "orchestration-config",
+        "deploy",
+        "health-checks",
+        "auto-scaling"
+      ],
+      "contextMatch": ["docker", "kubernetes", "container", "orchestration"],
+      "triggers": [
+        "containerize",
+        "kubernetes deployment",
+        "docker compose",
+        "container orchestration"
+      ],
+      "predictions": [
+        {
+          "next_action": "image-optimize",
+          "confidence": 0.90,
+          "conditions": ["dockerfile created"],
+          "agent": "docker-specialist"
+        },
+        {
+          "next_action": "health-checks",
+          "confidence": 0.88,
+          "conditions": ["deployed"],
+          "agent": "kubernetes-engineer"
+        }
+      ],
+      "confidence": 0.89,
+      "frequency": 0.22,
+      "avgStepDelay": 1200000,
+      "description": "Container deployment and orchestration workflow",
+      "domain": "devops",
+      "session_context": {
+        "best_practices": ["multi-stage builds", "minimal base images", "health checks"],
+        "orchestration": ["Kubernetes", "Docker Swarm", "ECS"]
+      }
+    },
+    {
+      "id": "performance-regression-testing",
+      "name": "Performance Regression Detection",
+      "sequence": [
+        "baseline-establish",
+        "benchmark-suite",
+        "ci-integration",
+        "regression-detection",
+        "alert-on-degradation",
+        "track-metrics"
+      ],
+      "contextMatch": ["performance", "regression", "benchmark", "ci"],
+      "triggers": [
+        "performance regression",
+        "benchmark tests",
+        "performance ci",
+        "speed monitoring"
+      ],
+      "predictions": [
+        {
+          "next_action": "ci-integration",
+          "confidence": 0.90,
+          "conditions": ["benchmark suite ready"],
+          "agent": "performance-engineer"
+        },
+        {
+          "next_action": "alert-on-degradation",
+          "confidence": 0.88,
+          "conditions": ["thresholds defined"],
+          "agent": "ci-cd-specialist"
+        }
+      ],
+      "confidence": 0.89,
+      "frequency": 0.18,
+      "avgStepDelay": 960000,
+      "description": "Automated performance regression detection in CI",
+      "domain": "testing",
+      "session_context": {
+        "tools": ["Lighthouse CI", "WebPageTest API", "custom benchmarks"],
+        "thresholds": "fail build if > 10% slower"
+      }
+    }
+  ],
+  "session_context_patterns": {
+    "workspace_state": {
+      "last_domain": null,
+      "recent_files": [],
+      "active_patterns": [],
+      "confidence_adjustments": {}
+    },
+    "learning_feedback": {
+      "successful_predictions": 0,
+      "failed_predictions": 0,
+      "accuracy_rate": 0.0,
+      "last_updated": null
+    },
+    "context_boosters": {
+      "cargo_toml_present": {
+        "boost_patterns": ["rust-wasm-build-cycle", "rust-borrow-checker-debugging"],
+        "confidence_multiplier": 1.15
+      },
+      "package_json_present": {
+        "boost_patterns": ["svelte-component-development", "dependency-update-workflow"],
+        "confidence_multiplier": 1.10
+      },
+      "test_files_modified": {
+        "boost_patterns": ["vitest-tdd-workflow", "component-testing-workflow"],
+        "confidence_multiplier": 1.20
+      },
+      "performance_issues": {
+        "boost_patterns": ["performance-optimization-cycle", "bundle-size-optimization"],
+        "confidence_multiplier": 1.25
+      }
+    }
+  },
+  "prediction_engine": {
+    "version": "2.0",
+    "algorithm": "context-aware-bayesian",
+    "features": [
+      "file_type_analysis",
+      "recent_action_history",
+      "git_diff_context",
+      "error_message_parsing",
+      "time_of_day_patterns",
+      "developer_velocity_tracking"
+    ],
+    "confidence_calculation": {
+      "base_confidence": "pattern.confidence",
+      "context_boost": "session_context_patterns.context_boosters",
+      "history_weight": "0.3 * recent_success_rate",
+      "recency_decay": "0.05 per step"
+    }
+  }
+}

@@ -8,7 +8,7 @@ agent:
 
   functional_category: learner
   sub_category: convention_extractor
-  model_tier: sonnet
+  model_tier: haiku
   model_id: claude-sonnet-4-5-20250929
 
   description: |

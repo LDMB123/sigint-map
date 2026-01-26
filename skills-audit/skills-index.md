@@ -1,0 +1,610 @@
+# Codex Skills Index
+
+Total skills: 570
+
+## AI/ML
+
+- `adaptive-context-manager` (355 words) — Haiku-tier agent that dynamically manages context compression based on task needs and token budgets.
+- `agent-analyzer` (360 words) — Haiku worker that performs static analysis on agent definitions to identify optimization opportunities.
+- `agent-loader` (376 words) — Haiku worker that implements lazy loading of agents - only load what's actually needed.
+- `agent-matcher` (241 words) — Sonnet-tier agent that matches tasks to optimal agents based on complexity, domain, and agent capabilities.
+- `agent-prewarmer` (105 words) — Haiku worker that prewarms predicted agents before they're needed. Loads agent definitions and context to eliminate cold start latency.
+- `agent-prompt-auditor` (117 words) — Lightweight Haiku worker for auditing agent prompt quality. Checks for clarity, specificity, output format definitions, and anti-patterns. Use in swarm patterns for parallel prompt validation.
+- `ai-ml-engineer` (241 words) — Expert AI/ML engineer for machine learning models, training pipelines, inference systems, LLM integration, and AI-powered features. Use for implementing ML features, optimizing models, and AI architecture decisions.
+- `ai-product-fusion-agent` (253 words) — Fuses AI/ML engineering with product management to build AI-powered features that actually solve user problems.
+- `ai-video-production-engineer` (287 words) — Expert in AI video generation pipelines using Google Veo, Imagen, RunwayML, and other generative video tools. Specializes in prompt engineering for video, workflow orchestration, and cinematic production quality. Use for Veo, Imagen, RunwayML, AI video prompts, or video generation pipelines.
+- `api-endpoint-mapper` (435 words) — Lightweight Haiku worker for extracting all API routes with methods and handlers. Reports API surface area. Use in swarm patterns for parallel API analysis.
+- `apple-silicon-optimizer` (240 words) — Expert in M-series Apple Silicon optimization for macOS 26.2, including unified memory architecture, GPU/Neural Engine acceleration, power efficiency, and Rosetta 2 compatibility analysis.
+- `aria-pattern-finder` (234 words) — Lightweight Haiku worker for detecting ARIA accessibility issues. Reports missing labels and incorrect role usage. Use in swarm patterns for parallel a11y auditing.
+- `assertion-quality-checker` (231 words) — Lightweight Haiku worker for finding weak or overly broad assertions. Reports low-quality test assertions. Use in swarm patterns for parallel test analysis.
+- `audit-agents` (420 words) — Automated audit of all Claude Code agents and commands. Validates YAML frontmatter, checks for duplicates, verifies model choices, identifies missing descriptions, and generates comprehensive health report.
+- `auth-flow-validator` (115 words) — Lightweight Haiku worker for validating authentication flow patterns. Checks session management, token handling, and auth middleware. Use in swarm patterns for parallel auth auditing.
+- `autoscaling-config-validator` (126 words) — Lightweight Haiku worker for validating autoscaling configurations. Checks HPA, VPA, and cluster autoscaler settings. Use in swarm patterns for parallel scaling validation.
+- `batch-formatter` (209 words) — Lightweight Haiku worker for applying formatting to multiple files. Reports formatting changes for orchestrator review. Use in swarm patterns for parallel formatting.
+- `build-time-profiler` (247 words) — Lightweight Haiku worker for analyzing build performance bottlenecks. Reports slow steps and parallelization opportunities. Use in swarm patterns for parallel build analysis.
+- `bundle-chunk-analyzer` (435 words) — Lightweight Haiku worker for analyzing individual bundle chunks. Reports chunk sizes, dependencies, and optimization opportunities. Use in swarm patterns for parallel bundle analysis.
+- `bundle-entry-analyzer` (237 words) — Lightweight Haiku worker for analyzing bundle entry points and dependencies. Reports duplicate chunks and circular deps. Use in swarm patterns for parallel bundle analysis.
+- `cache-invalidation-checker` (238 words) — Lightweight Haiku worker for detecting cache invalidation issues. Identifies stale cache scenarios, missing invalidation, and cache consistency problems. Use in swarm patterns for parallel cache analysis.
+- `cache-orchestrator` (248 words) — Haiku orchestrator managing predictive caching across the ecosystem for 90%+ cache hit rates.
+- `cascade-optimizer` (373 words) — Haiku-tier agent that optimizes cascade decisions based on historical success rates and cost analysis.
+- `cascade-orchestrator` (351 words) — Haiku-tier orchestrator that manages tier cascading across the agent ecosystem for maximum cost efficiency.
+- `cdn-cache-header-validator` (139 words) — Lightweight Haiku worker for validating CDN cache headers. Checks Cache-Control, ETag, and other caching headers. Use in swarm patterns for parallel CDN validation.
+- `chaos-engineering-specialist` (234 words) — Expert in chaos engineering practices, Chaos Mesh, Litmus, Gremlin, and resilience testing. Proactively finds system weaknesses.
+- `chief-of-staff` (262 words) — Cross-functional orchestrator for complex initiatives spanning multiple domains. Coordinates strategic alignment, removes organizational blockers, and ensures execution across product, engineering, marketing, and operations.
+- `ci-pipeline-validator` (87 words) — Lightweight Haiku worker for validating CI/CD pipeline configurations. Checks GitHub Actions, GitLab CI, and other CI systems. Use in swarm patterns for parallel CI validation.
+- `circuit-breaker-controller` (109 words) — Haiku worker that controls circuit breaker state transitions. Opens circuits for failing agents and manages recovery.
+- `clarifying-questioner` (273 words) — Lightweight Haiku worker for asking targeted clarifying questions. Helps developers articulate problems without providing solutions. Use when understanding is unclear.
+- `closure-leak-detector` (241 words) — Lightweight Haiku worker for detecting closures that retain large references and cause memory leaks. Use in swarm patterns for parallel memory analysis.
+- `cloud-cost-anomaly-detector` (120 words) — Lightweight Haiku worker for detecting cloud cost anomalies. Identifies unexpected spend spikes and resource usage patterns. Use in swarm patterns for parallel cost monitoring.
+- `code-pattern-matcher` (186 words) — Lightweight Haiku worker for finding code patterns using regex. Returns match locations for orchestrator consumption. Use in swarm patterns for parallel pattern search.
+- `codebase-health-monitor` (231 words) — Continuous codebase health monitoring using parallel Haiku workers. Tracks metrics over time, detects regressions, and generates health dashboards.
+- `collective-memory` (376 words) — Haiku-tier agent that maintains shared knowledge across the swarm, enabling agents to learn from each other's experiences.
+- `complexity-calculator` (312 words) — Lightweight Haiku worker for calculating cyclomatic complexity per function. Reports complexity scores and hot spots. Use in swarm patterns for parallel code analysis.
+- `component-prop-validator` (425 words) — Lightweight Haiku worker for finding unused, untyped, or undocumented component props. Reports prop-drilling issues. Use in swarm patterns for parallel component auditing.
+- `context-decompressor` (252 words) — Haiku worker that expands compressed context on-demand when full details are needed.
+- `context-window-analyzer` (121 words) — Lightweight Haiku worker for analyzing context window usage and optimization opportunities. Identifies context bloat and compression candidates. Use in swarm patterns for parallel context analysis.
+- `copywriter` (232 words) — Expert copywriter for persuasive marketing copy, conversion optimization, and compelling brand messaging. Use for landing pages, ad copy, email campaigns, product messaging, and any writing that needs to convert readers into customers.
+- `coreml-optimization-expert` (233 words) — Expert in Core ML model optimization, conversion from PyTorch/TensorFlow/ONNX, quantization strategies, and on-device ML deployment for Apple Silicon and iOS devices. Use for model conversion, ANE optimization, on-device ML performance.
+- `coverage-regression-detector` (141 words) — Lightweight Haiku worker for detecting test coverage regressions. Compares coverage reports and identifies declining areas. Use in swarm patterns for parallel coverage analysis.
+- `creative-director` (232 words) — Senior creative leader overseeing brand campaigns, creative strategy, and visual direction. Specializes in concept development, creative team leadership, and multi-channel campaign orchestration.
+- `creative-event-brainstormer` (236 words) — Expert creative strategist for live event concepts, themes, and experiences. Specializes in event ideation, immersive experiences, fan engagement, and memorable moment creation.
+- `cross-domain-transferer` (327 words) — Sonnet agent that applies knowledge from one domain to solve problems in another domain.
+- `css-modern-specialist` (234 words) — Expert in Chrome 143+ CSS features including if(), @scope, nesting, scroll-driven animations, anchor positioning, and container queries. Implements conditional CSS patterns and identifies CSS-in-JS that can be replaced with native CSS.
+- `css-specificity-checker` (240 words) — Lightweight Haiku worker for detecting CSS specificity problems. Reports selector conflicts and unused styles. Use in swarm patterns for parallel CSS auditing.
+- `cve-dependency-scanner` (122 words) — Lightweight Haiku worker for scanning dependencies for known CVEs. Parses npm audit, Snyk, or Dependabot output. Use in swarm patterns for parallel security scanning.
+- `dead-code-detector` (432 words) — Lightweight Haiku worker for finding unreachable and unused code blocks. Reports dead code for cleanup. Use in swarm patterns for parallel code analysis.
+- `dead-doc-finder` (251 words) — Lightweight Haiku worker for finding documentation referencing non-existent code. Reports stale docs. Use in swarm patterns for parallel documentation analysis.
+- `dependency-conflict-detector` (397 words) — Lightweight Haiku worker for detecting dependency conflicts, version mismatches, and peer dependency issues. Reports potential npm/yarn resolution problems. Use in swarm patterns for parallel dependency analysis.
+- `design-token-validator` (243 words) — Lightweight Haiku worker for validating design token usage. Reports hardcoded values and unused tokens. Use in swarm patterns for parallel design system auditing.
+- `devils-advocate` (230 words) — Expert in challenging solutions, finding weaknesses, stress-testing ideas, identifying edge cases and failure modes. Provides constructive criticism to strengthen decisions before implementation.
+- `devops-engineer` (232 words) — Expert DevOps engineer for CI/CD pipelines, infrastructure as code, containerization, monitoring, and deployment automation. Use for infrastructure setup, deployment issues, and operational excellence.
+- `dmb-brand-dna-expert` (260 words) — Dave Matthews Band brand identity expert for official brand guidelines, visual language, tone of voice, merchandise design, and maintaining brand consistency across all touchpoints. Use for brand-aligned content, design direction, and ensuring authentic DMB voice.
+- `dmb-guest-appearance-checker` (357 words) — Lightweight Haiku worker for validating guest appearance relationships. Filters band members, checks references, and validates counts. Part of parallel-dmb-validation swarm.
+- `dmb-liberation-calculator` (405 words) — Lightweight Haiku worker for validating liberation list calculations. Verifies days since, shows since, and gap rankings. Part of parallel-dmb-validation swarm.
+- `dmb-setlist-validator` (349 words) — Lightweight Haiku worker for validating setlist structure and integrity. Checks positions, song references, set structure, and segues. Part of parallel-dmb-validation swarm.
+- `dmb-song-stats-checker` (309 words) — Lightweight Haiku worker for validating song statistics consistency. Checks play counts, first/last played dates, and slot distributions. Part of parallel-dmb-validation swarm.
+- `docker-container-specialist` (237 words) — Expert in container optimization, Docker Compose, and image management. Specializes in Dockerfile best practices, multi-stage builds, security scanning, and container orchestration.
+- `dockerfile-best-practices` (91 words) — Lightweight Haiku worker for validating Dockerfile best practices. Checks layer optimization, security, and build efficiency. Use in swarm patterns for parallel Docker validation.
+- `dockerfile-linter` (238 words) — Lightweight Haiku worker for checking Dockerfile best practices. Reports Docker configuration issues. Use in swarm patterns for parallel infrastructure analysis.
+- `docstring-checker` (413 words) — Lightweight Haiku worker for finding functions and classes missing documentation. Reports undocumented code. Use in swarm patterns for parallel documentation analysis.
+- `domain-classifier` (393 words) — Haiku worker that classifies tasks by domain to enable accurate agent routing.
+- `e-commerce-analyst` (247 words) — Expert in e-commerce analytics, conversion optimization, and customer behavior analysis. Specializes in GA4, attribution modeling, funnel analysis, and revenue analytics for online stores.
+- `e2e-test-gap-finder` (379 words) — Lightweight Haiku worker for finding missing E2E test coverage. Identifies critical user flows without Playwright/Cypress tests. Use in swarm patterns for parallel test gap analysis.
+- `ecommerce-strategist` (234 words) — Strategic e-commerce leader coordinating multi-channel retail operations. Specializes in platform selection, omnichannel strategy, marketplace expansion, and scaling direct-to-consumer businesses.
+- `email-marketer` (214 words) — Expert email marketer for email campaigns, automation flows, deliverability, and lifecycle marketing. Use for email strategy, writing campaigns, building automations, and improving email performance.
+- `email-marketing-automation-specialist` (239 words) — Expert in email campaign automation and lifecycle marketing. Specializes in Mailchimp, HubSpot, Klaviyo, Braze, drip campaigns, segmentation, and deliverability optimization.
+- `engineering-manager` (269 words) — Engineering team orchestrator that bridges System Architect and individual engineers. Coordinates technical implementation across frontend, backend, DevOps, and security domains.
+- `entanglement-manager` (305 words) — Sonnet agent that manages entangled agent pairs for instant state synchronization.
+- `env-var-auditor` (409 words) — Lightweight Haiku worker for finding undocumented or unused environment variables. Reports env var issues. Use in swarm patterns for parallel infrastructure analysis.
+- `eslint-rule-consistency-checker` (148 words) — Lightweight Haiku worker for checking ESLint rule consistency. Identifies conflicting rules and configuration issues. Use in swarm patterns for parallel lint analysis.
+- `event-listener-auditor` (236 words) — Lightweight Haiku worker for finding event listeners that may leak (missing removeEventListener, anonymous handlers). Use in swarm patterns for parallel memory analysis.
+- `event-loop-blocker-finder` (232 words) — Lightweight Haiku worker for finding Node.js event loop blocking patterns. Identifies synchronous operations, CPU-intensive code, and blocking I/O. Use in swarm patterns for parallel performance analysis.
+- `event-marketing-specialist` (247 words) — Expert in live event marketing, ticket sales strategy, and audience development. Specializes in concert promotion, festival marketing, pre-sale strategies, and event PR campaigns.
+- `fallback-router` (98 words) — Haiku worker that routes requests to fallback agents when circuits are open. Maintains fallback mappings and handles degraded operation.
+- `file-pattern-finder` (171 words) — Lightweight Haiku worker for finding files matching glob patterns. Returns file lists for orchestrator consumption. Use in swarm patterns for parallel file discovery.
+- `finance-ops` (231 words) — Expert finance ops specialist for budgeting, forecasting, financial planning, and startup finance. Use for financial models, budgets, runway analysis, and financial planning.
+- `flaky-test-detector` (240 words) — Lightweight Haiku worker for finding test patterns likely to be flaky. Reports non-deterministic test code. Use in swarm patterns for parallel test analysis.
+- `full-stack-auditor` (232 words) — Orchestrates comprehensive codebase audits using parallel Haiku workers. Correlates findings across security, performance, quality, and accessibility domains for actionable insights.
+- `gap-detector` (382 words) — Haiku worker that analyzes failed routings and task attempts to identify missing agent capabilities in the ecosystem.
+- `gemini-integration-specialist` (252 words) — Deep expertise in Gemini API integration, multimodal prompting, context caching, function calling, and optimization for production applications.
+- `gemini-prompt` (243 words) — Imported from Claude agent gemini-prompt.
+- `gmail-compose` (239 words) — Imported from Claude agent gmail-compose.
+- `google-ai-studio-guide` (244 words) — Navigator for Google AI Studio workflows including project setup, prompt library management, model comparison, and API key management.
+- `google-apis-specialist` (236 words) — Expert in Google Cloud APIs, Workspace APIs, Firebase, Google AI APIs (Gemini, Veo, Imagen), Maps, YouTube, and OAuth integration. Use for Google API integration, authentication, quota management, or Google Cloud services.
+- `google-workspace-productivity-specialist` (232 words) — Master coordinator for Google Workspace integrations including Gmail, Drive, Docs, Sheets, and Slides. Expert in cross-service workflows and productivity automation.
+- `growth-lead` (237 words) — Expert growth lead for growth strategy, experimentation frameworks, and scalable acquisition. Use for growth planning, building growth models, and designing systematic growth approaches.
+- `grpc-proto-validator` (98 words) — Lightweight Haiku worker for validating Protocol Buffer definitions. Checks message types, service definitions, and backwards compatibility. Use in swarm patterns for parallel gRPC auditing.
+- `grpc-service-analyzer` (244 words) — Lightweight Haiku worker for analyzing gRPC service definitions. Reports proto issues and deprecated messages. Use in swarm patterns for parallel gRPC auditing.
+- `gtag-event-validator` (232 words) — Lightweight Haiku worker for validating analytics event tracking. Reports missing events and parameter inconsistencies. Use in swarm patterns for parallel analytics auditing.
+- `hallucination-pattern-detector` (130 words) — Lightweight Haiku worker for detecting potential hallucination patterns in LLM outputs. Identifies confident-sounding false claims and verifies factual assertions. Use in swarm patterns for parallel output validation.
+- `head-of-marketing` (238 words) — Expert marketing leader for strategy, campaigns, brand positioning, and go-to-market planning. Use for marketing strategy, campaign planning, brand messaging, and overall marketing direction.
+- `helm-chart-validator` (80 words) — Lightweight Haiku worker for validating Helm chart templates. Checks values, templates, and Chart.yaml. Use in swarm patterns for parallel Helm validation.
+- `i18n-string-extractor` (331 words) — Lightweight Haiku worker for finding hardcoded strings missing i18n wrappers. Reports untranslated text locations. Use in swarm patterns for parallel i18n auditing.
+- `iam-policy-validator` (111 words) — Lightweight Haiku worker for validating IAM policies. Checks for overly permissive policies, unused permissions, and security best practices. Use in swarm patterns for parallel security scanning.
+- `imagen-creative-specialist` (233 words) — Expert in Google Imagen 3 image generation, editing, style transfer, and prompt engineering for visual content creation.
+- `import-analyzer` (230 words) — Lightweight Haiku worker for analyzing import statements in files. Reports import patterns, counts, and sources. Use in swarm patterns for parallel import analysis.
+- `influencer-marketing-specialist` (249 words) — Expert in influencer partnerships, creator collaborations, and social media advocacy. Specializes in influencer discovery, campaign management, contract negotiation, and performance measurement.
+- `input-sanitization-checker` (110 words) — Lightweight Haiku worker for checking input sanitization and validation. Identifies XSS, injection, and validation gaps. Use in swarm patterns for parallel security scanning.
+- `inventory-manager` (249 words) — Manages inventory synchronization, stock level optimization, fulfillment tracking, and low-stock alerts across all e-commerce platforms.
+- `json-feed-validator` (245 words) — Lightweight Haiku worker for validating JSON/RSS/Atom feeds. Reports malformed entries and encoding issues. Use in swarm patterns for parallel feed validation.
+- `knowledge-distiller` (316 words) — Haiku worker that extracts transferable knowledge patterns from agent expertise.
+- `lazy-orchestrator` (379 words) — Haiku orchestrator implementing lazy loading across the ecosystem for 90% memory reduction.
+- `llm-application-architect` (248 words) — Expert in LLM-powered application design and architecture. Specializes in RAG systems, prompt engineering pipelines, LLM evaluation, guardrails, and agentic patterns with LangChain/LlamaIndex.
+- `llm-cost-optimizer` (156 words) — Lightweight specialist in LLM token usage optimization, caching strategies, model selection for cost efficiency, and usage analytics.
+- `llm-output-validator` (117 words) — Lightweight Haiku worker for validating LLM response quality. Checks format compliance, hallucination indicators, and safety. Use in swarm patterns for parallel output validation.
+- `lockfile-drift-detector` (251 words) — Lightweight Haiku worker for detecting drift between package.json and lockfile. Use in swarm patterns for parallel npm analysis.
+- `memory-snapshot-parser` (108 words) — Lightweight Haiku worker for parsing Chrome DevTools heap snapshots. Identifies memory leaks, retained objects, and allocation patterns. Use in swarm patterns for parallel memory analysis.
+- `ml-monitoring-agent` (191 words) — Expert in ML model monitoring, drift detection, performance tracking, and alerting. Ensures production models maintain quality over time.
+- `mobile-viewport-checker` (449 words) — Lightweight Haiku worker for finding mobile responsiveness issues. Reports unresponsive components and viewport problems. Use in swarm patterns for parallel mobile auditing.
+- `mock-signature-validator` (420 words) — Lightweight Haiku worker for checking that mocks match actual function signatures. Reports signature mismatches. Use in swarm patterns for parallel test validation.
+- `model-config-validator` (127 words) — Lightweight Haiku worker for checking ML model inference parameters. Validates temperature, max_tokens, and other settings. Use in swarm patterns for parallel config validation.
+- `model-cost-estimator` (129 words) — Lightweight Haiku worker for estimating LLM API costs. Calculates token usage and pricing for different models and use cases. Use in swarm patterns for parallel cost analysis.
+- `neural-engine-specialist` (241 words) — Expert in Apple Neural Engine (ANE) optimization for on-device ML inference on M-series chips. Specializes in Core ML, model conversion, ANE-compatible architectures, and real-time ML performance.
+- `npm-security-auditor` (234 words) — Expert in npm security auditing, vulnerability scanning, CVE tracking, dependency risk assessment, supply chain security, SBOM generation, and license compliance.
+- `package-json-script-validator` (146 words) — Lightweight Haiku worker for validating package.json scripts. Checks for missing, broken, or inconsistent npm scripts. Use in swarm patterns for parallel script validation.
+- `package-outdated-checker` (373 words) — Lightweight Haiku worker for checking outdated packages and semver violations. Use in swarm patterns for parallel dependency analysis.
+- `parallel-ai-audit` (162 words) — Imported from Claude agent parallel-ai-audit.
+- `peer-dependency-validator` (270 words) — Lightweight Haiku worker for validating peer dependency requirements and conflicts. Use in swarm patterns for parallel npm validation.
+- `performance-marketer` (250 words) — Expert performance marketer for paid advertising, ROI optimization, ad campaigns, and conversion optimization. Use for paid media strategy, ad creative, audience targeting, and campaign optimization.
+- `performance-regression-detector` (362 words) — Lightweight Haiku worker for detecting performance regressions in code changes. Compares benchmarks, identifies slow patterns, and reports degradation risks. Use in swarm patterns for parallel performance analysis.
+- `performance-tracker` (393 words) — Haiku worker that collects and aggregates agent performance metrics for the recursive improvement system.
+- `permission-auditor` (442 words) — Lightweight Haiku worker for finding overly permissive file and API permissions. Reports security misconfigurations. Use in swarm patterns for parallel security scanning.
+- `print-on-demand-specialist` (239 words) — Expert in POD product design, mockup creation, and fulfillment optimization. Specializes in Printful, Printify, Gooten, and other POD vendors with deep knowledge of design requirements, profit margins, and quality control.
+- `project-context-analyzer` (119 words) — Haiku worker that analyzes project context to predict needed agents. Examines package.json, configs, and structure to determine likely agent usage.
+- `promise-chain-analyzer` (330 words) — Lightweight Haiku worker for analyzing promise chains for unhandled rejections, missing catches, floating promises, and async anti-patterns. Use in swarm patterns for parallel JS analysis.
+- `prompt-optimizer` (235 words) — Haiku-tier agent that analyzes agent definitions and optimizes their prompts for better performance.
+- `prompt-template-validator` (129 words) — Lightweight Haiku worker for validating LLM prompt templates. Checks structure, variable placeholders, and best practices. Use in swarm patterns for parallel prompt validation.
+- `react-hook-linter` (390 words) — Lightweight Haiku worker for detecting React hook violations and dependency issues. Reports missing deps and stale closures. Use in swarm patterns for parallel React auditing.
+- `readme-section-validator` (400 words) — Lightweight Haiku worker for checking README has required sections. Reports missing documentation sections. Use in swarm patterns for parallel documentation validation.
+- `recursive-improvement-orchestrator` (250 words) — Meta-orchestrator that continuously improves the agent ecosystem by tracking performance, optimizing prompts, and propagating successful patterns.
+- `render-perf-checker` (232 words) — Lightweight Haiku worker for finding React re-render issues. Reports missing memo, keys, and performance anti-patterns. Use in swarm patterns for parallel performance analysis.
+- `request-similarity-detector` (99 words) — Haiku worker that detects similar requests for batching. Groups requests by semantic similarity for efficient processing.
+- `resource-manager` (268 words) — Haiku agent that manages system resources for optimal agent loading and execution.
+- `result-distributor` (84 words) — Haiku worker that distributes batch results back to original requesters. Maps batch outputs to individual requests.
+- `runtime-fuser` (226 words) — Haiku worker that identifies agents that should be fused at runtime to eliminate communication overhead.
+- `sast-rule-checker` (110 words) — Lightweight Haiku worker for static application security testing. Checks code patterns for security vulnerabilities. Use in swarm patterns for parallel security analysis.
+- `secret-scanner` (317 words) — Lightweight Haiku worker for finding hardcoded credentials, API keys, tokens, and secrets in code. Reports locations and patterns. Use in swarm patterns for parallel security scanning.
+- `secrets-exposure-scanner` (80 words) — Lightweight Haiku worker for detecting exposed secrets and credentials. Scans code, configs, and environment files. Use in swarm patterns for parallel security scanning.
+- `semantic-hash-generator` (95 words) — Haiku worker that generates semantic hashes for cache keys. Creates similarity-aware cache keys for intelligent cache hits.
+- `service-mesh-config-checker` (122 words) — Lightweight Haiku worker for validating service mesh configurations. Checks Istio, Linkerd, and Consul configs for correctness. Use in swarm patterns for parallel mesh validation.
+- `session-prewarmer` (224 words) — Haiku worker that pre-warms caches at session start based on project context and user patterns.
+- `shadcn-ui-component-developer` (243 words) — Expert in rapid UI development with shadcn/ui, Radix primitives, and Tailwind CSS. Specializes in accessible, customizable component creation and design system integration.
+- `simple-validator` (214 words) — Lightweight Haiku worker for running quick validation checks. Returns pass/fail results for orchestrator consumption. Use in swarm patterns for parallel validation.
+- `snapshot-drift-detector` (145 words) — Lightweight Haiku worker for detecting snapshot test drift. Identifies stale, oversized, or poorly maintained snapshots. Use in swarm patterns for parallel snapshot analysis.
+- `ssr-config-validator` (134 words) — Lightweight Haiku worker for validating SSR/ISR configurations. Checks Next.js, Remix, and other framework SSR settings. Use in swarm patterns for parallel SSR validation.
+- `stigmergic-coordinator` (376 words) — Haiku worker that implements stigmergic coordination - agents leave signals for others, enabling emergent coordination without central orchestration.
+- `superposition-executor` (296 words) — Haiku worker that executes multiple solution paths simultaneously in superposition.
+- `tailwind-config-auditor` (234 words) — Lightweight Haiku worker for validating Tailwind configuration. Reports unused tokens and naming conflicts. Use in swarm patterns for parallel design system auditing.
+- `task-complexity-analyzer` (277 words) — Haiku worker that rapidly analyzes incoming tasks to determine complexity, scope, and resource requirements before routing.
+- `terraform-plan-analyzer` (87 words) — Lightweight Haiku worker for analyzing Terraform plan output. Identifies risky changes and resource modifications. Use in swarm patterns for parallel IaC validation.
+- `test-coverage-gap-finder` (324 words) — Lightweight Haiku worker for finding code paths without tests. Reports coverage gaps and untested functions. Use in swarm patterns for parallel coverage analysis.
+- `test-file-finder` (294 words) — Lightweight Haiku worker for finding test files related to source files. Reports test file locations and coverage gaps. Use in swarm patterns for parallel test discovery.
+- `test-isolation-checker` (149 words) — Lightweight Haiku worker for checking test isolation. Identifies shared state, order dependencies, and test pollution. Use in swarm patterns for parallel test analysis.
+- `tier-cascader` (317 words) — Haiku worker that implements tier cascading - start with cheapest tier, escalate only if needed.
+- `token-economy-orchestrator` (243 words) — Unified orchestrator for token optimization including compression, caching, warming, and cost management. Consolidates 9 optimization agents into single intelligent system.
+- `token-usage-analyzer` (107 words) — Lightweight Haiku worker for analyzing LLM token usage and costs. Identifies optimization opportunities. Use in swarm patterns for parallel usage analysis.
+- `transfer-orchestrator` (312 words) — Sonnet orchestrator enabling zero-shot expertise transfer across all domains for 1.3x speedup.
+- `trpc-router-validator` (96 words) — Lightweight Haiku worker for validating tRPC router definitions. Checks procedure types, input validation, and middleware usage. Use in swarm patterns for parallel tRPC auditing.
+- `type-inconsistency-finder` (248 words) — Lightweight Haiku worker for finding type mismatches and unsafe casts. Reports TypeScript type issues. Use in swarm patterns for parallel type analysis.
+- `typescript-strictness-auditor` (118 words) — Lightweight Haiku worker for auditing TypeScript strictness settings. Checks tsconfig and identifies type safety gaps. Use in swarm patterns for parallel TypeScript analysis.
+- `unused-export-finder` (297 words) — Lightweight Haiku worker for finding exports never imported anywhere. Reports dead exports for cleanup. Use in swarm patterns for parallel dead code detection.
+- `veo-video-generation-specialist` (242 words) — Expert in Google Veo 2 AI video generation, cinematic prompt engineering, motion control, and video production workflows.
+- `video-prompt` (388 words) — Imported from Claude agent video-prompt.
+- `vip-packages-specialist` (248 words) — Expert in creating, pricing, and managing VIP experiences and premium packages for concerts, tours, sports, and live events. Specializes in experience design, fulfillment operations, and package optimization.
+- `xss-pattern-finder` (421 words) — Lightweight Haiku worker for finding XSS vulnerability patterns in frontend code. Reports unsafe DOM manipulation. Use in swarm patterns for parallel security scanning.
+
+## Data/DB
+
+- `api-architect` (259 words) — REST and GraphQL API design specialist complementing tRPC. Expert in API versioning, documentation, rate limiting, authentication patterns, and API-first development. Use for REST API design, GraphQL schema, API documentation, or rate limiting.
+- `api-contract-validator` (319 words) — Lightweight Haiku worker for validating API implementations match their OpenAPI/GraphQL schemas. Reports contract violations and undocumented endpoints. Use in swarm patterns for parallel API validation.
+- `cache-result-adapter` (107 words) — Haiku worker that adapts cached results to match exact query requirements. Transforms cached results for semantic cache hits.
+- `code-reviewer` (248 words) — Expert code reviewer for quality, security, performance, and maintainability. Provides thorough, constructive feedback on pull requests and code changes with actionable improvement suggestions.
+- `cpu-profile-analyzer` (117 words) — Lightweight Haiku worker for analyzing CPU profiling data. Identifies hot paths, long tasks, and optimization opportunities. Use in swarm patterns for parallel performance profiling.
+- `css-container-query-architect` (231 words) — Expert in CSS container queries for component-level responsive design. Uses container-type, container-name, size queries, style queries, and container query units (cqw, cqh, cqi, cqb).
+- `d3-visualization-expert` (231 words) — Expert in interactive data visualization with D3.js and Recharts. Specializes in performant charts, geographic maps, and React integration patterns for data-rich applications. Use for charts, graphs, dashboards, data visualizations, maps, or any SVG-based graphics.
+- `data-analyst` (235 words) — Expert data analyst for SQL queries, reporting, dashboards, and business intelligence. Use for writing SQL, creating reports, building dashboards, and answering data questions.
+- `data-analytics-fusion-agent` (232 words) — Fuses data engineering with analytics to build end-to-end data systems that deliver actionable insights, not just pipelines.
+- `data-scientist` (246 words) — Expert data scientist for statistical analysis, predictive modeling, experimentation, and advanced analytics. Use for statistical analysis, A/B test design, predictive models, and complex data problems.
+- `data-streaming-specialist` (257 words) — Expert in Apache Kafka, event streaming architecture, event sourcing, CQRS, and real-time data pipelines. Use for Kafka setup, event-driven architecture, stream processing, or data pipeline design.
+- `data-type-checker` (111 words) — Lightweight Haiku worker for validating database column types and constraints. Checks type consistency and optimization opportunities. Use in swarm patterns for parallel type validation.
+- `database-architect` (240 words) — Expert in database design, modeling, and architecture. Specializes in schema design, normalization, indexing strategies, partitioning, replication, and multi-database architectures across SQL and NoSQL systems.
+- `database-connection-pool-analyzer` (132 words) — Lightweight Haiku worker for analyzing database connection pool configurations. Checks pool sizes, timeouts, and connection patterns. Use in swarm patterns for parallel DB validation.
+- `database-migration` (234 words) — Imported from Claude agent database-migration.
+- `database-specialist` (262 words) — Beyond Prisma - raw SQL optimization, query tuning, database administration, indexing strategies, and performance analysis. Expert in PostgreSQL internals and database scaling. Use for slow queries, missing indexes, schema optimization, or database performance issues.
+- `db-design` (269 words) — Imported from Claude agent db-design.
+- `db-optimize` (420 words) — Imported from Claude agent db-optimize.
+- `db-transition` (243 words) — Imported from Claude agent db-transition.
+- `dexie-migrate` (237 words) — Imported from Claude agent dexie-migrate.
+- `dexie-migration-checker` (259 words) — Lightweight Haiku worker for validating Dexie version migration safety. Checks version incrementing, breaking changes (PK changes, table removal), upgrade functions, and rollback strategies. Use in swarm patterns for parallel migration validation.
+- `dexie-react-integration-specialist` (244 words) — Expert in integrating Dexie.js with React using modern patterns. Specializes in useLiveQuery, dexie-react-hooks, React Query + Dexie hybrid, optimistic updates, and Suspense integration.
+- `dexie-setup` (240 words) — Imported from Claude agent dexie-setup.
+- `dmb-compound-orchestrator` (231 words) — Coordinates complex multi-agent DMB Almanac workflows including scrape-validate-import pipelines, show analysis requests, and data migration. Implements checkpoint recovery and parallel worker coordination.
+- `dmb-data-validator` (232 words) — Validates scraped data quality and consistency for the DMB Almanac database. Checks setlist entries, dates, duplicates, foreign keys, and generates data quality reports.
+- `dmb-drizzle-unwinder` (288 words) — Extracts and transforms data from Drizzle ORM schemas to Dexie.js-compatible structures. Handles schema translation, query migration, and relationship mapping.
+- `dmb-migration-coordinator` (242 words) — Coordinates end-to-end database migration from server-side ORMs (Drizzle/Prisma) to client-side IndexedDB/Dexie.js. Orchestrates extraction, transformation, loading, and validation.
+- `dmb-prisma-unwinder` (248 words) — Extracts and transforms data from Prisma ORM schemas to Dexie.js-compatible structures. Handles schema.prisma parsing, migration generation, and Prisma Client replacement.
+- `dmb-show-validator` (258 words) — Lightweight Haiku worker for validating show data integrity. Checks dates, venue references, tour references, and duplicates. Part of parallel-dmb-validation swarm.
+- `dmb-sqlite-specialist` (273 words) — SQLite optimization specialist for DMB Almanac. Expert in better-sqlite3, query optimization, indexing strategies, and Apple Silicon memory patterns for the concert database.
+- `dmb-venue-consistency-checker` (318 words) — Lightweight Haiku worker for finding venue duplicates and data issues. Checks name variations, locations, and aliases. Part of parallel-dmb-validation swarm.
+- `dmbalmanac-site-expert` (250 words) — Expert on dmbalmanac.com site structure, database schema, features, navigation, URL patterns, and data organization. Use for understanding how to find information on the site or work with its data.
+- `embedding-dimension-checker` (120 words) — Lightweight Haiku worker for verifying embedding configurations. Checks dimensions, model compatibility, and vector DB settings. Use in swarm patterns for parallel embedding validation.
+- `fine-tuning-config-validator` (154 words) — Lightweight Haiku worker for validating ML fine-tuning configurations. Checks hyperparameters, dataset formats, and training settings. Use in swarm patterns for parallel AI/ML validation.
+- `foreign-key-checker` (102 words) — Lightweight Haiku worker for validating database foreign key relationships. Checks referential integrity and orphan records. Use in swarm patterns for parallel FK validation.
+- `full-stack-fusion-agent` (406 words) — Dynamically fuses frontend, backend, and database expertise into a single coherent agent for end-to-end feature implementation.
+- `google-workflow-automation-specialist` (240 words) — Expert in Google Apps Script, Workspace automation, triggers, add-ons, and cross-service data pipelines for enterprise productivity.
+- `graphql-query-analyzer` (239 words) — Lightweight Haiku worker for detecting GraphQL performance issues. Reports N+1 queries and oversized payloads. Use in swarm patterns for parallel GraphQL auditing.
+- `graphql-schema-checker` (98 words) — Lightweight Haiku worker for validating GraphQL schemas. Checks type definitions, resolver patterns, and query complexity. Use in swarm patterns for parallel GraphQL auditing.
+- `index-usage-analyzer` (103 words) — Lightweight Haiku worker for analyzing database index effectiveness. Identifies unused and missing indexes. Use in swarm patterns for parallel index analysis.
+- `indexeddb-audit` (239 words) — Imported from Claude agent indexeddb-audit.
+- `indexeddb-performance-specialist` (244 words) — Expert in IndexedDB and Dexie.js performance optimization, bulk operations, cursor pagination, and memory management. Use for slow IndexedDB queries, memory issues, bulk operations, or storage quota problems.
+- `indexeddb-schema-validator` (442 words) — Lightweight Haiku worker for validating IndexedDB/Dexie schema definitions. Checks index syntax, primary keys, compound index order, TypeScript alignment, and reserved names. Use in swarm patterns for parallel IndexedDB validation.
+- `metric-schema-checker` (161 words) — Validates metric naming conventions, label cardinality, and metric types for effective monitoring and alerting.
+- `migrate-command` (256 words) — Migrates legacy commands from plain Markdown to modern Skill format with YAML frontmatter. Replaces deprecated $ARGUMENTS syntax with proper argument handling and adds metadata.
+- `migration-risk-scorer` (448 words) — Lightweight Haiku worker for scoring database migration risks. Analyzes migration files for data loss potential, downtime requirements, and rollback complexity. Use in swarm patterns for parallel migration analysis.
+- `migration-specialist` (255 words) — Expert in framework migrations, major version upgrades, breaking changes, and large-scale codebase transformations. Specializes in safe, incremental migrations with minimal disruption. Use for React/Next.js upgrades, dependency updates, or codebase modernization.
+- `ml-data-engineer` (159 words) — Expert in ML feature engineering, data preprocessing, dataset management, and data quality for machine learning. Bridges raw data to model-ready features.
+- `ml-pipeline-orchestrator` (220 words) — Compound orchestrator for end-to-end ML workflows. Coordinates 5 agents from data preparation through model deployment.
+- `mongodb-specialist` (219 words) — Expert in MongoDB database design, aggregation pipelines, indexing strategies, and NoSQL architecture. Specializes in document modeling, sharding, replication, and MongoDB Atlas operations.
+- `n-plus-one-detector` (415 words) — Lightweight Haiku worker for finding N+1 query patterns in ORM code. Reports database query anti-patterns. Use in swarm patterns for parallel performance analysis.
+- `null-safety-analyzer` (106 words) — Lightweight Haiku worker for analyzing database nullability patterns. Identifies nullable columns that shouldn't be and vice versa. Use in swarm patterns for parallel null analysis.
+- `openapi-spec-validator` (102 words) — Lightweight Haiku worker for validating OpenAPI/Swagger specifications. Checks schema validity, endpoint consistency, and documentation completeness. Use in swarm patterns for parallel API validation.
+- `parallel-database` (237 words) — Imported from Claude agent parallel-database.
+- `parallel-indexeddb-audit` (238 words) — Imported from Claude agent parallel-indexeddb-audit.
+- `parallel-migration-check` (229 words) — Imported from Claude agent parallel-migration-check.
+- `parallel-schema-validation` (158 words) — Imported from Claude agent parallel-schema-validation.
+- `prisma-review` (244 words) — Imported from Claude agent prisma-review.
+- `prisma-schema-architect` (263 words) — Expert database architect specializing in Prisma ORM schema design, migrations, query optimization, and PostgreSQL integration. Use for schema design, migration strategies, query optimization, and database architecture decisions.
+- `product-analyst` (233 words) — Expert product analyst for cohort analysis, retention studies, funnel optimization, and conversion metrics. Specializes in actionable insights from product data and AB test interpretation.
+- `python-ml-pipeline-engineer` (268 words) — Expert Python engineer specializing in ML pipelines, data processing, and AI API integrations. Focus on Google AI APIs (Gemini, Veo, Imagen), async workflows, and production Python applications.
+- `query-plan-validator` (119 words) — Lightweight Haiku worker for validating SQL query execution plans. Identifies sequential scans and optimization opportunities. Use in swarm patterns for parallel query analysis.
+- `redis-cache-specialist` (264 words) — Expert in Redis, caching strategies, and in-memory data stores. Specializes in cache architecture, session management, pub/sub, rate limiting, and Redis cluster operations.
+- `redis-setup` (233 words) — Imported from Claude agent redis-setup.
+- `result-predictor` (253 words) — Haiku agent that predicts likely query results and pre-computes them before user asks.
+- `schema-diff-validator` (104 words) — Lightweight Haiku worker for validating database schema changes. Detects breaking changes and migration risks. Use in swarm patterns for parallel schema validation.
+- `schema-pattern-finder` (267 words) — Lightweight Haiku worker for finding database schema references and Prisma patterns. Reports schema usage locations. Use in swarm patterns for parallel schema analysis.
+- `schema-validate` (149 words) — Imported from Claude agent schema-validate.
+- `schema-validation-checker` (436 words) — Lightweight Haiku worker for verifying runtime schemas match type definitions. Reports schema/type mismatches. Use in swarm patterns for parallel schema validation.
+- `seo-meta-checker` (245 words) — Lightweight Haiku worker for validating SEO meta tags and structured data. Reports missing tags and heading hierarchy issues. Use in swarm patterns for parallel SEO auditing.
+- `sheets-query` (238 words) — Imported from Claude agent sheets-query.
+- `sql-injection-detector` (436 words) — Lightweight Haiku worker for finding SQL injection vulnerability patterns. Reports unsafe query construction. Use in swarm patterns for parallel security scanning.
+- `sqlite-data-pipeline-specialist` (239 words) — Expert in SQLite optimization, better-sqlite3 for Node.js, data transformation pipelines, and local database performance. Specializes in efficient data scraping storage and JSON export workflows.
+- `tailwind-v4-specialist` (246 words) — Expert in Tailwind CSS v4 with CSS-first configuration, @theme directive, native CSS nesting, Lightning CSS, and v3 to v4 migration patterns.
+- `training-data-validator` (117 words) — Lightweight Haiku worker for validating ML training dataset format and quality. Checks schema, completeness, and data integrity. Use in swarm patterns for parallel data validation.
+- `trpc-api-architect` (273 words) — Expert in tRPC API design for Next.js applications with React Query integration. Specializes in type-safe API design, subscription patterns, optimistic updates, and end-to-end type safety.
+- `ux-researcher` (251 words) — Expert UX researcher for user interviews, usability testing, research synthesis, and user insights. Use for planning research studies, creating interview guides, and synthesizing user feedback.
+- `vector-database-specialist` (245 words) — Expert in vector storage, semantic search, and RAG infrastructure. Specializes in Pinecone, Weaviate, Qdrant, pgvector, embedding optimization, and hybrid search patterns.
+- `vector-db` (253 words) — Imported from Claude agent vector-db.
+- `vector-store-schema-checker` (113 words) — Lightweight Haiku worker for validating vector store schemas and configurations. Checks embedding dimensions, index types, and metadata schemas. Use in swarm patterns for parallel vector DB validation.
+
+## Debugging
+
+- `async-debugging-specialist` (242 words) — Expert in debugging async JavaScript patterns including promises, async/await, generators, AsyncIterator, AbortController, race conditions, and async context propagation.
+- `blog-writer` (266 words) — Expert blog writer for technical and marketing content creation. Use for creating SEO-optimized blog posts, long-form content, thought leadership articles, and storytelling that drives traffic and engagement.
+- `brand-designer` (283 words) — Expert brand designer for brand identity, visual guidelines, logo systems, and brand assets. Use for brand development, style guides, marketing visuals, and ensuring brand consistency.
+- `changelog` (237 words) — Imported from Claude agent changelog.
+- `chrome-devtools-debugger` (243 words) — Expert Chrome DevTools debugger for performance profiling, memory analysis, network debugging, and CDP automation with Apple Silicon Metal GPU timeline integration.
+- `cli-usability-validator` (194 words) — Validates CLI tool usability including help text, argument handling, error messages, and interactive feedback.
+- `console-devtools-specialist` (241 words) — Expert in Chrome DevTools Console API, logging strategies, structured logging, console-based debugging, and log filtering for effective debugging.
+- `css-debugger` (242 words) — Expert CSS debugger for layout issues, specificity conflicts, cascade problems, animation bugs, and Chrome 143+ CSS feature debugging including if(), @scope, and container queries.
+- `debug` (238 words) — Imported from Claude agent debug.
+- `debug-experience-auditor` (205 words) — Evaluates debugging capabilities including source maps, logging, dev tools integration, and error tracing.
+- `distributed-tracing-specialist` (422 words) — Expert in distributed tracing with Jaeger, Tempo, Zipkin, and OpenTelemetry. Specializes in span propagation, trace analysis, and debugging distributed systems.
+- `dmb-indexeddb-debugger` (247 words) — Deep IndexedDB debugging specialist for DMB Almanac. Expert in transaction deadlocks, VersionError, QuotaExceededError, Dexie.js issues, and Chrome DevTools IndexedDB inspection.
+- `dmb-scraper-debugger` (231 words) — Debugging specialist for DMB Almanac scraper issues. Expert in Playwright/Cheerio debugging, selector troubleshooting, rate limiting, and dmbalmanac.com HTML structure changes.
+- `e2e-test-debug` (442 words) — Imported from Claude agent e2e-test-debug.
+- `error-boundary-specialist` (235 words) — Expert in error boundaries, error handling patterns, graceful degradation, React error boundaries, global error handlers, and error tracking integration (Sentry, LogRocket).
+- `error-debug` (248 words) — Imported from Claude agent error-debug.
+- `error-detector` (213 words) — Lightweight Haiku worker that monitors agent execution for errors, failures, and anomalies. First line of defense in self-healing system.
+- `error-diagnostician` (309 words) — Sonnet-tier agent that performs deep analysis of detected errors, identifying root causes and determining optimal recovery strategies.
+- `error-message-clarity-checker` (217 words) — Ensures error messages are clear, actionable, and help developers quickly understand and resolve issues.
+- `escalation-manager` (393 words) — Sonnet-tier agent that manages error escalation, determining when to involve humans and how to present issues effectively.
+- `esm-cjs-compatibility-debugger` (234 words) — Expert in debugging ESM/CommonJS interoperability issues, module resolution, package.json exports field, conditional exports, and bundler compatibility.
+- `failure-mode-simulator` (212 words) — Analyzes code for failure mode handling, identifying missing error paths, retry logic, and graceful degradation patterns.
+- `failure-rate-monitor` (259 words) — Haiku worker that monitors agent failure rates and triggers circuit breaker states. Tracks error patterns across the ecosystem.
+- `incident-response-engineer` (259 words) — SRE and incident response specialist for debugging production issues, creating runbooks, and implementing reliability improvements. Your go-to for production emergencies and operational excellence.
+- `indexeddb-debugger` (253 words) — Expert in debugging IndexedDB and Dexie.js issues using Chrome DevTools. Specializes in transaction deadlocks, VersionError, QuotaExceededError, ConstraintError, cross-tab sync issues, and SW+IDB interaction debugging.
+- `inp-debug` (246 words) — Imported from Claude agent inp-debug.
+- `javascript-debugger` (246 words) — Expert JavaScript debugger for V8 engine internals, closures, async/await, promises, prototype chains, WeakRef, Symbol debugging, and runtime errors. Use for debugging JavaScript-specific issues beyond Node.js or React.
+- `js-debug` (249 words) — Imported from Claude agent js-debug.
+- `log-format-validator` (203 words) — Validates structured logging consistency, required fields, log levels, and correlation ID propagation across services.
+- `memory-debug` (240 words) — Imported from Claude agent memory-debug.
+- `nodejs-debugger` (233 words) — Expert Node.js debugger for server-side issues, memory leaks, async problems, event loop blocking, process crashes, and performance optimization.
+- `observability-architect` (243 words) — Expert observability architect for OpenTelemetry, metrics/logs/traces strategy, monitoring infrastructure, alerting design, and SLO definition. Use for observability strategy, monitoring setup, or troubleshooting visibility issues.
+- `parallel-debug` (239 words) — Imported from Claude agent parallel-debug.
+- `playwright-debug` (261 words) — Imported from Claude agent playwright-debug.
+- `problem-decomposer` (286 words) — Expert in breaking complex problems into manageable pieces using divide-and-conquer methodology, identifying independent vs dependent subproblems, and creating clear interfaces between components.
+- `qa-engineer` (222 words) — Expert QA engineer for test planning, manual testing, bug reporting, and quality assurance. Use for test planning, writing test cases, bug investigation, and quality processes.
+- `query-debug` (237 words) — Imported from Claude agent query-debug.
+- `react-debugger` (240 words) — Expert React/Next.js debugger for component issues, state management bugs, hydration errors, performance problems, and React DevTools profiling.
+- `react-hydration-checker` (130 words) — Lightweight Haiku worker for detecting React hydration issues. Identifies SSR/CSR mismatches and hydration errors. Use in swarm patterns for parallel React validation.
+- `refactoring-guru` (246 words) — Expert in systematic code improvement using established refactoring patterns from Martin Fowler's catalog. Specializes in identifying code smells and applying safe, incremental transformations that preserve behavior.
+- `rest-endpoint-validator` (256 words) — Lightweight Haiku worker for validating REST API endpoint consistency. Reports status code and error format issues. Use in swarm patterns for parallel API validation.
+- `rubber-duck-debugger` (246 words) — Guided debugging assistant that helps developers think through problems by asking clarifying questions, guiding without giving direct answers, and helping articulate issues clearly.
+- `runtime-error-diagnostician` (244 words) — Expert in diagnosing JavaScript/TypeScript runtime errors, stack trace analysis, error boundary patterns, and systematic error reproduction for React/Next.js applications. Use for cryptic errors, stack traces, unhandled rejections.
+- `scraper-debug` (241 words) — Imported from Claude agent scraper-debug.
+- `self-healing-orchestrator` (373 words) — Meta-orchestrator that coordinates the entire self-healing pipeline, from error detection through recovery and escalation.
+- `senior-backend-engineer` (271 words) — Expert backend engineer for API design, database architecture, server-side logic, and system design. Use for building APIs, optimizing queries, designing schemas, and backend architecture decisions.
+- `senior-frontend-engineer` (271 words) — Expert frontend engineer for React, Vue, TypeScript UI development, component architecture, state management, and performance optimization. Use for building user interfaces, fixing UI bugs, and frontend architecture decisions.
+- `source-map-debugger` (239 words) — Expert in source map debugging, mapping issues, production debugging with source maps, sourceMappingURL, inline source maps, and Sentry integration.
+- `state-management-debugger` (232 words) — Expert state management debugger for Zustand, Redux, React Context, and other state libraries with time-travel debugging, action logging, and state diff analysis.
+- `sw-debug` (249 words) — Imported from Claude agent sw-debug.
+- `technical-product-owner` (242 words) — Expert technical product owner for backlog management, sprint planning, technical requirements, and engineering collaboration. Use for refining backlogs, writing technical specs, and bridging product and engineering.
+- `tour-manager` (243 words) — Expert tour manager for music tours, theatrical productions, and corporate road shows. Specializes in tour routing, logistics, artist management, budget tracking, and day-to-day tour operations.
+- `typescript-type-wizard` (249 words) — Expert in advanced TypeScript patterns, complex generics, type inference optimization, and type system debugging. Specializes in making types work for you, not against you.
+
+## Design/UX/Content
+
+- `api-design` (157 words) — Imported from Claude agent api-design.
+- `content-strategist` (235 words) — Expert content strategist for content planning, editorial calendars, content audits, and comprehensive content marketing programs. Use for strategic content planning, developing content pillars, building scalable content engines, and driving business results through content.
+- `design-lead` (273 words) — Design team orchestrator ensuring design consistency across UX, UI, and brand. Coordinates user research, interaction design, visual design, and motion design for cohesive user experiences.
+- `design-system-setup` (128 words) — Imported from Claude agent design-system-setup.
+- `feature-delivery-orchestrator` (218 words) — Compound orchestrator for end-to-end feature development. Coordinates 8 agents from design through deployment.
+- `growth-hacker` (240 words) — Expert growth hacker for viral loops, unconventional acquisition tactics, and rapid experimentation. Use for finding creative growth hacks, designing referral systems, and rapid user acquisition experiments.
+- `metrics-monitoring-architect` (227 words) — Expert in Prometheus, Grafana, metrics architecture, SLO design, and alerting strategies. Designs comprehensive monitoring systems.
+- `pod-design` (245 words) — Imported from Claude agent pod-design.
+- `technical-documentation-writer` (231 words) — Expert technical writer for API documentation, README files, architecture docs, and developer guides. Creates clear, comprehensive documentation that developers actually want to read.
+
+## DevOps/Infra
+
+- `affiliate-marketing-specialist` (237 words) — Expert in affiliate program development, partner recruitment, and performance-based marketing. Specializes in affiliate network management, commission structures, and affiliate fraud prevention.
+- `agent-template-generator` (253 words) — Sonnet-tier agent that generates complete agent definition files from gap specifications.
+- `amazon-seller-specialist` (237 words) — Expert Amazon marketplace strategist. Specializes in product listings, FBA optimization, PPC advertising, brand registry, and scaling Amazon businesses across multiple marketplaces.
+- `analytics-specialist` (241 words) — Expert analytics specialist for funnel analysis, cohort tracking, conversion optimization, and growth metrics. Use for deep-dive analytics, funnel optimization, and user behavior analysis.
+- `auto-parallelization-detector` (231 words) — Detects task patterns that would benefit from parallel execution and automatically suggests appropriate /parallel-* skills to maximize efficiency.
+- `ci-setup` (415 words) — Imported from Claude agent ci-setup.
+- `cloud-deploy` (238 words) — Imported from Claude agent cloud-deploy.
+- `cloud-platform-architect` (233 words) — Expert in multi-cloud architecture (AWS, GCP, Azure). Specializes in Infrastructure as Code, cloud-native patterns, cost optimization, and hybrid/multi-cloud strategies.
+- `cost-optimization-specialist` (232 words) — Expert in cloud cost analysis, FinOps practices, and resource efficiency. Specializes in AWS/GCP/Azure cost management, reserved instances, spot strategies, and spend optimization.
+- `css-anchor-positioning-specialist` (241 words) — Expert in CSS anchor positioning for tooltips, popovers, dropdowns, and contextual overlays. Uses anchor-name, position-anchor, position-try-fallbacks for Chrome 125+.
+- `css-apple-silicon-optimizer` (238 words) — Expert in CSS performance optimization for Apple Silicon Macs (M1/M2/M3/M4) with GPU-accelerated animations, UMA memory considerations, ProMotion display, and power efficiency.
+- `css-scroll-animation-specialist` (245 words) — Expert in CSS scroll-driven animations, view() timeline, scroll() timeline, animation-range, and scroll-linked effects for Chrome 143+ without JavaScript.
+- `dmb-guest-specialist` (252 words) — Specializes in DMB guest musician tracking, instrument analysis, collaboration patterns, and appearance history across 30+ years of performances.
+- `dmb-tour-optimizer` (241 words) — Optimizes hypothetical DMB tour routes using venue geography, capacity analysis, historical patterns, and regional preferences for strategic tour planning.
+- `docker-setup` (235 words) — Imported from Claude agent docker-setup.
+- `dynamic-pricing` (239 words) — Imported from Claude agent dynamic-pricing.
+- `ecommerce-orchestrator` (234 words) — Coordinates 6 marketplace agents (Amazon, Shopify, Etsy, Social Commerce, POD, E-commerce Strategist) for unified multi-channel e-commerce operations.
+- `etsy-specialist` (242 words) — Expert Etsy marketplace strategist. Specializes in handmade and vintage product optimization, Etsy SEO, shop branding, Star Seller achievement, and scaling creative businesses on Etsy.
+- `event-budget-analyst` (238 words) — Expert in live event financial planning, budget creation, cost tracking, and financial analysis. Specializes in event P&L, vendor negotiations, settlement reconciliation, and tour financial management.
+- `expert-planner` (226 words) — Strategic technical planner specializing in breaking complex projects into phases, identifying dependencies and critical paths, risk assessment, and creating actionable implementation roadmaps.
+- `finops-specialist` (448 words) — Expert in cloud cost optimization, FinOps practices, reserved instances, spot strategies, and cloud spend forecasting. Maximizes cloud ROI.
+- `first-principles-thinker` (254 words) — Expert in breaking problems down to fundamental truths, challenging assumptions, and rebuilding solutions from the ground up using Socratic questioning.
+- `flag-cleanup-detector` (217 words) — Identifies stale feature flags that are ready for removal, reducing code complexity and technical debt.
+- `gitops-agent` (430 words) — Expert in GitOps practices, ArgoCD, Flux, declarative deployments, and infrastructure as code workflows. Implements Git-centric operations.
+- `go-backend-specialist` (231 words) — Expert in Go microservices, APIs, and cloud-native development. Specializes in Gin/Echo frameworks, gRPC, concurrency patterns, and high-performance backend systems.
+- `hr-people-ops` (244 words) — Expert HR/People Ops specialist for hiring, onboarding, culture, policies, and employee experience. Use for HR processes, job descriptions, onboarding programs, and people policies.
+- `i18n-specialist` (237 words) — Expert in internationalization (i18n), localization (l10n), translation management, RTL support, and multi-language application architecture. Use for i18n setup, localization workflows, or multi-language features.
+- `incident-postmortem-conductor` (184 words) — Compound orchestrator for incident analysis and postmortem documentation. Coordinates 5 agents to analyze, document, and prevent recurrence.
+- `k8s-deploy` (282 words) — Imported from Claude agent k8s-deploy.
+- `live-event-producer` (235 words) — Expert live event producer for concerts, festivals, corporate events, and touring productions. Specializes in event planning, vendor coordination, timeline management, and on-site production execution.
+- `microservices-architect` (234 words) — Expert microservices architect for service decomposition, inter-service communication, distributed systems patterns, and service mesh optimization. Use for microservices design, service boundaries, or distributed architecture decisions.
+- `mobile-engineer` (231 words) — Expert mobile engineer for iOS and Android development, React Native, Flutter, and cross-platform mobile architecture. Use for mobile app development, native features, and mobile-specific optimizations.
+- `monorepo-tooling-specialist` (271 words) — Expert in monorepo tooling with Turborepo, Nx, pnpm workspaces, npm workspaces, task caching, remote caching, dependency graphs, and workspace management.
+- `motion-designer` (240 words) — Expert motion designer for UI animations, micro-interactions, video graphics, and animated content. Use for designing animations, transitions, loading states, and motion specifications.
+- `npm-ecosystem-specialist` (273 words) — Expert in npm ecosystem management, package.json optimization, dependency trees, resolution strategies, npm/pnpm/yarn/bun package managers, lockfiles, workspaces, and registry operations.
+- `operations-manager` (237 words) — Expert operations manager for process optimization, workflows, resource planning, and operational efficiency. Use for improving processes, creating SOPs, solving operational bottlenecks, and scaling operations.
+- `parallel-cloud-cost-audit` (158 words) — Imported from Claude agent parallel-cloud-cost-audit.
+- `parallel-docker-build` (256 words) — Imported from Claude agent parallel-docker-build.
+- `platform-engineer` (257 words) — Expert in internal developer platforms, developer experience, self-service infrastructure, and platform tooling. Builds the foundation for engineering productivity.
+- `presale-specialist` (242 words) — Expert in presale strategy, offer management, code distribution, fan club operations, and presale optimization across all major ticketing platforms. Specializes in maximizing presale revenue while building fan loyalty.
+- `pricing-strategist` (243 words) — Provides dynamic pricing recommendations, competitive analysis, margin optimization, and cross-channel pricing strategy for multi-marketplace e-commerce.
+- `pricing-strategy-specialist` (237 words) — Expert in demand-based and dynamic pricing for live events including price optimization, yield management, market analysis, and revenue maximization across primary and secondary ticket markets.
+- `product-manager` (263 words) — Expert product manager for product strategy, roadmaps, feature requirements, and stakeholder alignment. Use for product decisions, writing PRDs, prioritization frameworks, and user story development.
+- `secondary-market-specialist` (231 words) — Expert in secondary ticket markets including StubHub, SeatGeek, Vivid Seats, and official resale platforms. Specializes in pricing strategy, inventory management, market analysis, and buyer/seller optimization.
+- `seo-specialist` (250 words) — Expert SEO specialist for search optimization, keyword strategy, technical SEO, and organic growth. Use for SEO audits, keyword research, content optimization, and improving search rankings.
+- `shopify-specialist` (265 words) — Expert Shopify developer and store strategist. Specializes in store setup, theme customization, app integration, checkout optimization, and Shopify Plus solutions.
+- `short-form-video-strategist` (270 words) — Expert short-form video strategist for TikTok, Instagram Reels, YouTube Shorts, and viral content. Use for video content strategy, scripting hooks, trend analysis, and platform-specific optimization.
+- `skill-recommender` (247 words) — Suggests relevant skills based on task context, user history, and project characteristics to improve workflow efficiency and skill discovery.
+- `social-commerce-specialist` (240 words) — Expert in social media shopping and direct sales. Specializes in Instagram Shopping, Facebook Shops, TikTok Shop, Pinterest Shopping, and live selling strategies across all major social platforms.
+- `social-media-manager` (260 words) — Expert social media manager for multi-platform content strategy, community building, and brand engagement. Use for social content creation, community management, platform growth, and social listening across all major platforms.
+- `swift-metal-performance-engineer` (235 words) — Expert in Metal GPU programming, shader optimization, and high-performance Swift for Apple Silicon. Specializes in GPU compute, real-time graphics, and Metal 4 features on macOS 26.2.
+- `system-architect` (265 words) — Senior system architect for high-level architecture decisions, system design, scalability planning, and technical strategy. Use for architecture reviews, system design discussions, and strategic technical decisions.
+- `task-router` (236 words) — Intelligent task routing agent that analyzes requests and selects optimal specialist agents. Prevents wrong-agent-selection overhead and ensures efficient task delegation.
+- `technical-director` (242 words) — Expert technical director for live events, concerts, theater, and broadcast productions. Specializes in technical system design, crew coordination, safety protocols, and real-time show execution.
+- `ticketmaster-specialist` (244 words) — Expert in Ticketmaster and Live Nation ticketing platforms including TM Host, Archtics, Universe, Presence, Verified Fan, and Platinum dynamic pricing systems.
+- `xcode-build-optimizer` (234 words) — Expert in Xcode 17 build system optimization, Swift compilation performance, dependency management, and CI/CD for Apple platforms on Apple Silicon.
+- `zustand-state-architect` (231 words) — Expert in Zustand state management for React applications. Specializes in store design patterns, persistence strategies, TypeScript integration, and performance optimization.
+
+## Marketing/Growth
+
+- `seo-audit` (254 words) — Imported from Claude agent seo-audit.
+
+## Other
+
+- `a11y-audit` (249 words) — Imported from Claude agent a11y-audit.
+- `agent-factory-orchestrator` (253 words) — Meta-orchestrator that automatically detects capability gaps and generates new agents to fill them, continuously evolving the ecosystem.
+- `agent-validator` (404 words) — Sonnet-tier agent that validates newly generated agents before deployment to ensure quality and consistency.
+- `amazon-listing` (259 words) — Imported from Claude agent amazon-listing.
+- `analytics-setup` (235 words) — Imported from Claude agent analytics-setup.
+- `api-doc` (417 words) — Imported from Claude agent api-doc.
+- `api-evolution-orchestrator` (181 words) — Compound orchestrator for API versioning, deprecation, and evolution. Coordinates 4 agents for safe API changes.
+- `app-slim` (251 words) — Imported from Claude agent app-slim.
+- `autonomous` (239 words) — Imported from Claude agent autonomous.
+- `bundle-audit` (231 words) — Imported from Claude agent bundle-audit.
+- `chaos-scenario-validator` (202 words) — Validates chaos experiment definitions for safety, scope, and proper rollback mechanisms before execution.
+- `chart-create` (247 words) — Imported from Claude agent chart-create.
+- `cleanup` (232 words) — Imported from Claude agent cleanup.
+- `code-simplifier-2` (363 words) — Imported from Claude agent code-simplifier.
+- `commit` (251 words) — Imported from Claude agent commit.
+- `component-create` (282 words) — Imported from Claude agent component-create.
+- `css-modernize` (235 words) — Imported from Claude agent css-modernize.
+- `deps-audit` (251 words) — Imported from Claude agent deps-audit.
+- `deps-sync` (234 words) — Imported from Claude agent deps-sync.
+- `deps-update` (254 words) — Imported from Claude agent deps-update.
+- `dmb-stats` (231 words) — Imported from Claude agent dmb-stats.
+- `doc-generate` (238 words) — Imported from Claude agent doc-generate.
+- `docs-generate` (233 words) — Imported from Claude agent docs-generate.
+- `drive-organize` (246 words) — Imported from Claude agent drive-organize.
+- `env-setup` (417 words) — Imported from Claude agent env-setup.
+- `event-plan` (231 words) — Imported from Claude agent event-plan.
+- `feature-flags` (241 words) — Imported from Claude agent feature-flags.
+- `full-stack-developer` (256 words) — Versatile full-stack developer for end-to-end feature implementation across frontend and backend. Use for features that span the entire stack, rapid prototyping, and when you need holistic technical perspective.
+- `git-cleanup` (239 words) — Imported from Claude agent git-cleanup.
+- `git-workflow` (240 words) — Imported from Claude agent git-workflow.
+- `go-service` (242 words) — Imported from Claude agent go-service.
+- `google-quota` (236 words) — Imported from Claude agent google-quota.
+- `imagen-generate` (244 words) — Imported from Claude agent imagen-generate.
+- `landing-page` (238 words) — Imported from Claude agent landing-page.
+- `liberation-check` (210 words) — Imported from Claude agent liberation-check.
+- `lint-fix` (238 words) — Imported from Claude agent lint-fix.
+- `migrate` (364 words) — Imported from Claude agent migrate.
+- `monitoring-setup` (108 words) — Imported from Claude agent monitoring-setup.
+- `monorepo-setup` (119 words) — Imported from Claude agent monorepo-setup.
+- `npm-audit-fix` (240 words) — Imported from Claude agent npm-audit-fix.
+- `npx-run` (241 words) — Imported from Claude agent npx-run.
+- `onboarding-complexity-analyzer` (255 words) — Measures developer onboarding friction including setup steps, documentation quality, and time-to-first-contribution.
+- `otel-span-validator` (181 words) — Validates OpenTelemetry span configurations, trace context propagation, and instrumentation patterns for comprehensive observability.
+- `parallel-accessibility-audit` (242 words) — Imported from Claude agent parallel-accessibility-audit.
+- `parallel-api-validation` (227 words) — Imported from Claude agent parallel-api-validation.
+- `parallel-apple-silicon-audit` (271 words) — Imported from Claude agent parallel-apple-silicon-audit.
+- `parallel-audit` (436 words) — Imported from Claude agent parallel-audit.
+- `parallel-bundle-analysis` (204 words) — Imported from Claude agent parallel-bundle-analysis.
+- `parallel-css-audit` (259 words) — Imported from Claude agent parallel-css-audit.
+- `parallel-dependency-audit` (215 words) — Imported from Claude agent parallel-dependency-audit.
+- `parallel-dmb-validation` (237 words) — Imported from Claude agent parallel-dmb-validation.
+- `parallel-docs-generation` (262 words) — Imported from Claude agent parallel-docs-generation.
+- `parallel-dx-audit` (151 words) — Imported from Claude agent parallel-dx-audit.
+- `parallel-ecommerce` (234 words) — Imported from Claude agent parallel-ecommerce.
+- `parallel-frontend` (238 words) — Imported from Claude agent parallel-frontend.
+- `parallel-js-audit` (250 words) — Imported from Claude agent parallel-js-audit.
+- `parallel-lint-fix` (209 words) — Imported from Claude agent parallel-lint-fix.
+- `parallel-review` (249 words) — Imported from Claude agent parallel-review.
+- `parallel-ssr-audit` (146 words) — Imported from Claude agent parallel-ssr-audit.
+- `parallel-type-check` (216 words) — Imported from Claude agent parallel-type-check.
+- `parallel-universe-executor` (330 words) — Meta-orchestrator that explores multiple solution paths simultaneously by spawning parallel orchestrator branches, then selects the optimal outcome.
+- `pr-review` (232 words) — Imported from Claude agent pr-review.
+- `predictive-task-router` (236 words) — Opus-tier orchestrator that pre-analyzes tasks and routes them to optimal agents BEFORE execution begins, eliminating wrong-agent-selection overhead.
+- `push-setup` (240 words) — Imported from Claude agent push-setup.
+- `rag-setup` (236 words) — Imported from Claude agent rag-setup.
+- `recursive-depth-executor` (327 words) — Meta-orchestrator that handles arbitrarily complex nested problems by recursively spawning sub-orchestrators until reaching atomic tasks.
+- `refactor` (369 words) — Imported from Claude agent refactor.
+- `responsive` (236 words) — Imported from Claude agent responsive.
+- `review` (248 words) — Imported from Claude agent review.
+- `scaffold` (244 words) — Imported from Claude agent scaffold.
+- `scrape-dmb` (237 words) — Imported from Claude agent scrape-dmb.
+- `shopify-setup` (233 words) — Imported from Claude agent shopify-setup.
+- `speculation-rules` (245 words) — Imported from Claude agent speculation-rules.
+- `speculative-orchestrator` (384 words) — Opus-tier meta-orchestrator that coordinates speculative pre-execution across the ecosystem for near-zero latency responses.
+- `standup` (249 words) — Imported from Claude agent standup.
+- `storybook-setup` (129 words) — Imported from Claude agent storybook-setup.
+- `super-agent-generator` (287 words) — Sonnet agent that generates fused super-agents from multiple base agents at runtime.
+- `technical-debt-coordinator` (216 words) — Compound orchestrator for systematic technical debt reduction. Coordinates 4 agents to identify, prioritize, and eliminate debt.
+- `ticket-buying` (243 words) — Imported from Claude agent ticket-buying.
+- `ticket-scaling` (236 words) — Imported from Claude agent ticket-scaling.
+- `tour-budget` (237 words) — Imported from Claude agent tour-budget.
+- `trpc-generate` (443 words) — Imported from Claude agent trpc-generate.
+- `type-fix` (375 words) — Imported from Claude agent type-fix.
+- `veo-generate` (265 words) — Imported from Claude agent veo-generate.
+- `view-transitions` (250 words) — Imported from Claude agent view-transitions.
+- `vip-packages` (234 words) — Imported from Claude agent vip-packages.
+- `visual-regression` (126 words) — Imported from Claude agent visual-regression.
+- `zustand-setup` (447 words) — Imported from Claude agent zustand-setup.
+
+## PWA/Web
+
+- `accessibility-specialist` (274 words) — A11y expertise for WCAG compliance, screen reader testing, keyboard navigation, and inclusive design. Ensures web applications are usable by everyone regardless of ability.
+- `apple-silicon-browser-optimizer` (240 words) — Bridge between browser agents and Apple Silicon engineering agents. Coordinates WebGPU→Metal optimization, UMA patterns, and cross-agent communication.
+- `axs-platform-specialist` (237 words) — Expert in AEG's AXS ticketing platform including Flash Seats, AXS Mobile ID, premium pricing, venue manifest management, and the complete AXS ecosystem for concerts, sports, and live events.
+- `bundle-size-analyzer` (250 words) — Expert in JavaScript bundle analysis, tree-shaking optimization, code splitting strategies, and dependency auditing for minimal bundle sizes on Chromium 2025. Use when bundle exceeds 200KB, tree-shaking fails, need dependency alternatives, or auditing package bloat.
+- `bundle-treemap-analyzer` (102 words) — Lightweight Haiku worker for analyzing bundle visualization data. Parses webpack-bundle-analyzer or source-map-explorer output to identify bloat. Use in swarm patterns for parallel bundle analysis.
+- `chromium-audit` (234 words) — Imported from Claude agent chromium-audit.
+- `chromium-browser-expert` (260 words) — Expert in Chromium 2025 browser internals, cutting-edge DevTools, rendering pipeline, WebGPU, View Transitions, and modern browser APIs. Chromium-only optimization without legacy fallbacks. Use for View Transitions, Speculation Rules, WebGPU, scheduler APIs, CSS if(), or any Chrome 143+ feature implementation.
+- `chromium-feature-validator` (241 words) — Haiku worker that validates Chrome 143+ feature usage, checks browser compatibility, and ensures graceful degradation patterns are in place.
+- `client-database-migration-specialist` (253 words) — Expert in migrating from server-side databases (Drizzle, Prisma, TypeORM) to client-side IndexedDB/Dexie.js for offline-first architectures. Use for database transitions, schema translation, and sync strategy design.
+- `code-simplifier` (252 words) — Expert in reducing code complexity by leveraging Chromium 2025 native APIs, eliminating JavaScript polyfills, removing unnecessary abstractions, and replacing libraries with browser primitives. Use to remove lodash, moment.js, date-fns, or replace jQuery, tooltip libraries, animation libraries with native APIs.
+- `cross-platform-pwa-specialist` (232 words) — Expert in platform-specific PWA behaviors, iOS limitations/workarounds, Android TWA, Windows PWA packaging, and adaptive feature implementation across desktop and mobile platforms. Use for iOS PWA bugs, Android TWA, Windows Store packaging, or cross-platform PWA issues.
+- `database-migration-specialist` (240 words) — Expert in database migrations, schema evolution, zero-downtime deployments, cross-database migrations, and server-to-client database transitions (Drizzle/Prisma → IndexedDB/Dexie). Specializes in safe migration strategies, data transformation, rollback procedures, and offline-first architecture transitions.
+- `debug-rust-wasm-dexie-pwa` (366 words) — Debug Rust/WASM local-first PWAs using IndexedDB/Dexie on Chromium (Apple Silicon macOS). Use for root-cause analysis, reproductions, service worker/cache issues, IndexedDB migrations, sync conflicts, WASM panics, and performance regressions in these apps.
+- `dependency-checker` (221 words) — Lightweight Haiku worker for checking dependency versions and installation status. Reports version mismatches and missing packages. Use in swarm patterns for parallel dependency auditing.
+- `devtools-mcp-specialist` (250 words) — Expert in Chrome DevTools MCP Server automation, AI-assisted debugging workflows, CDP v0.9.0 patterns, and programmatic browser diagnostics for CI/CD integration.
+- `dexie-database-architect` (231 words) — Expert in Dexie.js 4.x schema design, TypeScript integration, version migrations, and Chromium 143+ optimizations. Use for Dexie schema design, migration strategies, bulk operations, and client-side database architecture.
+- `dmb-chromium-optimizer` (232 words) — Optimizes DMB Almanac PWA for Chromium 143+ features including View Transitions, Speculation Rules, scheduler.yield(), and modern CSS. Specializes in Apple Silicon performance.
+- `dmb-dexie-architect` (240 words) — Dexie.js 4.x schema architect for DMB Almanac. Expert in offline-first database design, version migrations, TypeScript integration, bulk operations, and Chromium 143+ IndexedDB optimizations.
+- `dmb-offline-first-architect` (236 words) — Offline-first PWA architect for DMB Almanac. Expert in Chromium 143+ offline patterns, Background Sync, optimistic updates, conflict resolution, and Apple Silicon M-series optimization for macOS 26.2.
+- `dmb-pwa-debugger` (244 words) — PWA debugging specialist for DMB Almanac. Expert in Service Worker issues, caching problems, offline behavior, installation failures, and IndexedDB sync for the concert database PWA.
+- `dmbalmanac-scraper` (238 words) — Web scraping specialist for extracting data from dmbalmanac.com. Expert in Cheerio/Playwright parsing, rate limiting, error handling, and integration with existing dmb-database infrastructure.
+- `google-labs-creative-guide` (238 words) — Manual workflow guides for Google Labs creative tools without APIs including Stitch, Whisk, Pomelli, NotebookLM, and Flow. NO API AUTOMATION - manual browser workflows only.
+- `indexeddb-storage-specialist` (233 words) — IndexedDB schema design, Dexie.js 4.x patterns, Cache API optimization, Storage Manager API, Storage Buckets API, quota management, relaxed durability, and client-side data synchronization strategies. Use for client-side storage, browser database design, storage quota issues, Dexie.js, or Chromium 143+ storage features.
+- `k8s-manifest-validator` (83 words) — Lightweight Haiku worker for validating Kubernetes manifests. Checks resource limits, security contexts, and best practices. Use in swarm patterns for parallel K8s validation.
+- `lighthouse-score-parser` (105 words) — Lightweight Haiku worker for parsing Lighthouse audit results. Extracts Core Web Vitals, performance scores, and actionable recommendations. Use in swarm patterns for parallel performance analysis.
+- `lighthouse-webvitals-expert` (256 words) — Performance MEASUREMENT specialist for Lighthouse audits, Core Web Vitals metrics (LCP, INP, CLS), performance budgets, and CI integration. Does NOT implement fixes - hands off to performance-optimizer for implementation.
+- `manifest-validator` (441 words) — Lightweight Haiku worker for validating web app manifest files. Reports missing icons and installability issues. Use in swarm patterns for parallel PWA validation.
+- `native-api-analyzer` (272 words) — Haiku worker that analyzes codebase for library usage that can be replaced with native browser APIs in Chrome 143+.
+- `offline-capability-detector` (246 words) — Lightweight Haiku worker for detecting missing offline fallbacks and service worker gaps. Reports offline-first violations. Use in swarm patterns for parallel PWA auditing.
+- `offline-sync-specialist` (248 words) — Background Sync API, Periodic Background Sync, Web Locks API, optimistic updates, conflict resolution strategies, CRDTs, and offline-first data synchronization patterns. Use for offline-first apps, sync conflicts, optimistic updates, or background data sync.
+- `parallel-chromium-audit` (242 words) — Imported from Claude agent parallel-chromium-audit.
+- `parallel-pwa` (258 words) — Imported from Claude agent parallel-pwa.
+- `performance-optimizer` (258 words) — Expert in Chromium 2025 performance optimization using Speculation Rules, View Transitions, scheduler.yield(), Long Animation Frames API, and modern React/Next.js patterns. Use for slow LCP, poor INP, CLS issues, Core Web Vitals optimization, or page speed improvements.
+- `playwright-automation-specialist` (263 words) — Expert in Playwright browser automation, web scraping, selector debugging, and error recovery. Specializes in resilient automation scripts that handle site changes gracefully.
+- `push-notification-specialist` (255 words) — Expert in Web Push Protocol, VAPID keys, notification payloads, permission UX, and re-engagement strategies for PWAs. Specializes in FCM integration and notification scheduling.
+- `pwa-advanced-specialist` (248 words) — Expert in advanced Chrome 143+ PWA capabilities beyond basic installability, including file handling, protocol handlers, share target, launch handler, and cross-platform PWA differences.
+- `pwa-analytics-specialist` (231 words) — PWA-specific metrics tracking including install rates, offline usage, service worker update success, push notification engagement, and custom PWA health dashboards. Use for PWA install tracking, offline analytics, SW update metrics, or push engagement.
+- `pwa-build-specialist` (227 words) — PWA-optimized bundling with VitePWA, next-pwa, code splitting for offline, critical CSS extraction, asset optimization, and service worker build strategies.
+- `pwa-debugger` (236 words) — Expert PWA debugger for service worker issues, caching problems, offline behavior, installation failures, push notifications, and cross-platform PWA debugging.
+- `pwa-devtools-debugger` (233 words) — Chrome DevTools Application panel mastery, Service Worker debugging, Cache inspection, manifest validation, and CDP automation for PWA testing. Use for SW not registering, cache not updating, app not installable, stuck service workers, or debugging offline behavior.
+- `pwa-security-specialist` (265 words) — HTTPS configuration, CSP for PWAs, secure storage, WebAuthn/Passkeys, credential management, permissions, and modern Web Platform security APIs.
+- `pwa-specialist` (246 words) — Expert in Progressive Web App development including Service Workers, caching strategies, offline-first architecture, Web App Manifest, push notifications, and installability requirements.
+- `pwa-testing-specialist` (240 words) — PWA-specific testing expert for offline behavior, service worker mocking, install flows, push notifications, and background sync validation using MSW, Playwright, and Workbox testing utilities.
+- `pwa-web-audio-engineer` (254 words) — Expert in Progressive Web Apps and Web Audio API development. Specializes in real-time audio processing, pitch detection, offline-first architecture, and Safari/iOS compatibility.
+- `python-backend-specialist` (236 words) — Expert in Python web backends, APIs, and automation. Specializes in FastAPI, Django, Flask, async patterns, SQLAlchemy, and production Python applications.
+- `realtime-systems-specialist` (266 words) — Expert in WebSocket architecture, real-time synchronization, live features, and low-latency system design. Use for real-time features, WebSocket servers, collaborative editing, or live data feeds.
+- `ticketing-operations-specialist` (246 words) — Expert in live event ticketing operations, venue manifests, scaling, cross-sections, holds management, and box office operations across all major ticketing platforms.
+- `venue-manifest` (232 words) — Imported from Claude agent venue-manifest.
+- `vitest-testing-specialist` (254 words) — Expert in Vitest testing for modern JavaScript/TypeScript projects. Specializes in component testing, mocking strategies, coverage optimization, and testing complex features like Web Workers and audio processing.
+- `web-designer` (248 words) — Expert web designer specializing in responsive website design, landing pages, user interface design, and conversion-focused layouts. Creates visually compelling, user-friendly web experiences.
+- `web-manifest-expert` (211 words) — Web App Manifest optimization, icon generation pipelines, platform-specific installability, beforeinstallprompt handling, shortcuts, screenshots, and advanced PWA capabilities (share_target, file_handlers, protocol_handlers). Use for manifest.json configuration, PWA icons, app installability, or beforeinstallprompt issues.
+- `web-scrape` (243 words) — Imported from Claude agent web-scrape.
+- `web-scraping-specialist` (245 words) — Expert in web scraping, data extraction, and automation. Specializes in Playwright, Puppeteer, Cheerio, BeautifulSoup, Scrapy, anti-bot bypass, and resilient scraper architecture.
+- `web-speech-specialist` (234 words) — Expert in Web Speech API with contextual biasing, voice UI patterns, speech recognition optimization, and accessibility-focused voice interfaces for Chromium 2025. Use for voice search, speech-to-text features, voice commands, dictation, hands-free interfaces, or accessibility voice input.
+- `webgpu-compute-specialist` (242 words) — Expert in WebGPU stable features including compute shaders, texture swizzle, and canvas acceleration patterns for Chrome 143+.
+- `webpack-config-linter` (238 words) — Lightweight Haiku worker for validating build tool configurations. Reports optimization anti-patterns. Use in swarm patterns for parallel build config validation.
+- `webrtc-setup` (167 words) — Imported from Claude agent webrtc-setup.
+- `workbox-serviceworker-expert` (245 words) — Advanced Workbox 7+ patterns, build tooling integration (Vite, Next.js, webpack), precaching, runtime caching, background sync, and offline strategies. Use for SW configuration, caching strategies, offline-first implementations.
+
+## Performance
+
+- `adaptive-strategy-executor` (296 words) — Meta-orchestrator that monitors execution in real-time and dynamically adjusts strategy, swapping orchestrators and agents based on observed performance.
+- `agent-compiler-orchestrator` (429 words) — Opus-tier meta-orchestrator that compiles agent definitions into optimized fast-path executables for maximum performance.
+- `css-perf-audit` (255 words) — Imported from Claude agent css-perf-audit.
+- `dmb-expert` (257 words) — Dave Matthews Band knowledge expert for band history, members, discography, touring history, musical style, song meanings, and live performance insights. Use for any DMB-related questions, research, multi-decade trend analysis, or complex comparisons across eras.
+- `dmb-setlist-pattern-analyzer` (231 words) — Analyzes DMB setlist patterns, segues, song placement trends, opener/closer frequency, and show structure across 2,800+ documented performances.
+- `dmb-show-analyzer` (234 words) — Performs deep analysis of individual DMB shows including rarity scoring, notable performances, guest appearances, historical context, and release correlation.
+- `emergent-behavior-monitor` (431 words) — Sonnet-tier agent that monitors swarm behavior, identifies emergent patterns, and optimizes swarm dynamics.
+- `fast-path-generator` (412 words) — Sonnet-tier agent that generates optimized fast-paths for common agent execution patterns.
+- `lighthouse` (261 words) — Imported from Claude agent lighthouse.
+- `memory-leak-detective` (244 words) — Expert in detecting and fixing JavaScript memory leaks, heap analysis, event listener cleanup, React component memory patterns, and Chrome DevTools memory profiling. Use when app gets slower over time, heap grows unbounded, event listeners accumulate, or useEffect cleanup needed.
+- `perf-audit` (298 words) — Imported from Claude agent perf-audit.
+- `performance-optimization-orchestrator` (228 words) — Compound orchestrator for comprehensive performance optimization. Coordinates 5 agents to analyze, optimize, and verify performance.
+- `scrum-master` (231 words) — Expert Scrum Master for agile ceremonies, team health, blocker removal, and process improvement. Use for sprint ceremonies, retrospectives, team coaching, and agile process optimization.
+- `ui-designer` (240 words) — Expert UI designer for visual design, component systems, typography, color, and pixel-perfect interfaces. Use for creating visual designs, building design systems, and polishing UI aesthetics.
+- `ux-designer` (253 words) — Expert UX designer for user flows, wireframes, information architecture, and usability optimization. Use for designing user experiences, creating wireframes, and solving usability problems.
+
+## Product/Management
+
+- `agile-project-manager` (279 words) — Expert agile project manager for sprint planning, delivery management, stakeholder communication, and project execution. Use for project planning, managing timelines, tracking delivery, and stakeholder updates.
+- `auto-recovery-agent` (323 words) — Sonnet-tier agent that executes automatic recovery actions based on diagnosis. Can fix code, retry operations, and restore state.
+- `autonomous-project-executor` (313 words) — Meta-orchestrator that decomposes entire projects into phases, spawns appropriate orchestrators for each phase, and coordinates end-to-end delivery without human intervention.
+- `deployment-strategy` (135 words) — Imported from Claude agent deployment-strategy.
+- `fusion-orchestrator` (383 words) — Sonnet orchestrator that manages runtime agent fusion for 1.5x speedup through eliminated overhead.
+- `legal-advisor` (248 words) — Expert legal advisor for contracts, compliance, risk assessment, and startup legal matters. Use for contract review, legal compliance questions, terms of service, and risk evaluation.
+- `presale-strategy` (234 words) — Imported from Claude agent presale-strategy.
+- `production-checklist` (238 words) — Imported from Claude agent production-checklist.
+- `quantum-orchestrator` (356 words) — Sonnet orchestrator implementing quantum-inspired parallelism for 1.5x speedup through superposition and entanglement.
+- `release-manager` (233 words) — Imported from Claude agent release-manager.
+- `similarity-cache-manager` (116 words) — Sonnet agent that manages the semantic similarity cache. Handles cache lookups, storage, and similarity-based retrieval.
+- `swarm-commander` (401 words) — Meta-orchestrator that commands massive parallel swarms of 50+ agents simultaneously, coordinating large-scale operations across the entire agent ecosystem.
+- `technical-program-manager` (239 words) — Expert TPM for cross-team coordination, technical program planning, and complex initiative management. Use for multi-team projects, technical roadmap planning, and coordinating complex cross-functional initiatives.
+
+## Security
+
+- `auth-audit` (315 words) — Imported from Claude agent auth-audit.
+- `cicd-pipeline-architect` (242 words) — Expert in strategic CI/CD pipeline design, DevOps automation, and deployment strategies. Specializes in GitHub Actions, GitLab CI, ArgoCD, GitOps, and pipeline security.
+- `fedcm-identity-specialist` (238 words) — Expert in Federated Credential Management (FedCM) API, identity provider integration, credential sharing security, and third-party iframe authentication for Chrome 143+.
+- `google-oauth` (244 words) — Imported from Claude agent google-oauth.
+- `macos-system-expert` (234 words) — Expert in macOS 26.2 (Sequoia) system APIs, frameworks, security features, and platform integration. Specializes in AppKit/SwiftUI, system services, XPC, notarization, and Apple Silicon-native development. Use for native macOS features, system integration, entitlements.
+- `nextauth-security-specialist` (263 words) — Expert in NextAuth.js authentication configuration, OAuth providers, session management, and security hardening. Specializes in secure, production-ready auth implementations.
+- `npx-automation-specialist` (237 words) — Expert in npx usage patterns, CLI tool execution, create-* templates, scaffolding, npx caching, registry authentication, version specifiers, and script execution patterns.
+- `parallel-security` (240 words) — Imported from Claude agent parallel-security.
+- `performance-security-fusion-agent` (244 words) — Fuses performance optimization with security hardening to achieve fast AND secure applications without trade-offs.
+- `production-readiness-orchestrator` (224 words) — Compound orchestrator that coordinates 12+ agents for comprehensive pre-release validation. Ensures production readiness across security, performance, quality, and reliability.
+- `release-validator` (235 words) — Pre-release validation pipeline that runs comprehensive checks before deployment. Validates tests, bundle sizes, API contracts, security, and performance in parallel.
+- `security-audit` (271 words) — Imported from Claude agent security-audit.
+- `security-devops-fusion-agent` (425 words) — Fuses security engineering with DevOps to implement secure CI/CD pipelines, infrastructure hardening, and security automation.
+- `security-engineer` (254 words) — Expert security engineer for security audits, vulnerability assessment, secure code review, and security architecture. Use for security reviews, implementing auth systems, and identifying vulnerabilities.
+- `security-hardening-orchestrator` (205 words) — Compound orchestrator for comprehensive security hardening. Coordinates 4 agents to audit, fix, and verify security posture.
+
+## Testing/QA
+
+- `alert-coverage-finder` (209 words) — Identifies gaps in alerting coverage for RED/USE metrics, SLO violations, and critical system health indicators.
+- `automation-tester` (285 words) — Expert automation tester for test frameworks, CI/CD integration, and automated test suites. Use for building test automation, writing automated tests, and integrating tests into pipelines.
+- `coverage` (240 words) — Imported from Claude agent coverage.
+- `experiment-analyzer` (243 words) — Expert in statistical analysis of A/B tests, significance testing, confidence intervals, and experiment decision-making. Use for analyzing experiment results, interpreting statistical tests, and making go/no-go recommendations.
+- `experiment-designer` (250 words) — Expert in A/B test design, power analysis, sample size calculation, and experiment setup. Use for designing statistically rigorous experiments, selecting metrics, and planning rollout strategies.
+- `feature-flags-specialist` (238 words) — Expert in feature flag architecture, progressive rollouts, A/B testing infrastructure, and blue-green deployments. Use for feature flag setup, gradual rollouts, or experimentation infrastructure.
+- `flag-coverage-checker` (198 words) — Ensures feature flags have test coverage for both enabled and disabled paths, preventing untested code paths in production.
+- `parallel-test` (240 words) — Imported from Claude agent parallel-test.
+- `parallel-test-generation` (260 words) — Imported from Claude agent parallel-test-generation.
+- `performance-tester` (280 words) — Expert performance tester for load testing, benchmarking, performance analysis, and optimization. Use for load test design, performance benchmarking, and identifying performance bottlenecks.
+- `quality-assurance-architect` (234 words) — Expert in test strategy design, quality metrics, and QA architecture. Specializes in test pyramid design, quality gates, risk-based testing, and building quality-first engineering cultures.
+- `test-coverage-orchestrator` (203 words) — Compound orchestrator for systematic test coverage expansion. Coordinates 4 agents to identify gaps and generate tests.
+- `test-generate` (356 words) — Imported from Claude agent test-generate.
+

@@ -8,7 +8,7 @@ agent:
 
   functional_category: guardian
   sub_category: security_scanner
-  model_tier: sonnet
+  model_tier: opus
 
   description: |
     Comprehensive security scanning for vulnerabilities and threats.

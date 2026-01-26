@@ -8,7 +8,7 @@ agent:
 
   functional_category: reporter
   sub_category: visualization
-  model_tier: sonnet
+  model_tier: haiku
 
   description: |
     Generates visual representations of data and relationships.

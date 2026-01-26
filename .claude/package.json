@@ -1,0 +1,25 @@
+{
+  "name": "@claude/optimization-framework",
+  "version": "1.0.0",
+  "description": "10-50x performance optimization framework for agent ecosystem",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "eslint lib/**/*.ts"
+  },
+  "dependencies": {
+    "@types/node": "^20.0.0",
+    "better-sqlite3": "^12.6.2",
+    "typescript": "^5.7.3",
+    "vitest": "^4.0.18",
+    "yaml": "^2.8.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13"
+  }
+}

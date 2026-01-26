@@ -8,7 +8,7 @@ agent:
 
   functional_category: learner
   sub_category: context_builder
-  model_tier: sonnet
+  model_tier: haiku
 
   description: |
     Builds rich context for other agents to use.

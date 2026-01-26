@@ -8,7 +8,7 @@ agent:
 
   functional_category: guardian
   sub_category: compliance_checker
-  model_tier: sonnet
+  model_tier: opus
 
   description: |
     Checks code and infrastructure for compliance with standards.
