@@ -1,1 +1,0 @@
-/Users/louisherman/ClaudeCodeProjects/.claude/skills/performance/compression-monitor.md

@@ -1,0 +1,573 @@
+================================================================================
+DMB ALMANAC - TEST COVERAGE ANALYSIS EXECUTIVE SUMMARY
+Generated: 2026-01-26
+================================================================================
+
+ANALYSIS SCOPE: /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+1. OVERALL COVERAGE STATUS
+   Current: 15-20% estimated coverage
+   Ratio: 6 files tested out of 165 source files (4%)
+   Status: CRITICALLY LOW - Immediate action required
+
+2. TEST INFRASTRUCTURE
+   - Test Framework: Vitest (unit/component tests)
+   - E2E Framework: Playwright (6 test suites)
+   - Markdown Checklists: 3 (documentation, not executable)
+   - Configuration: vite.config.js includes test aliases and mocks
+
+3. COVERAGE BY TIER
+
+   CRITICAL (P1) - 0% coverage, 67 files:
+   ├─ Database Layer: 0/35 (0%) - Core queries, migrations, caching
+   ├─ WASM Integration: 2/18 (11%) - Module loading, proxies, workers
+   ├─ API Routes: 1/12 (8%) - Push notifications, telemetry, analytics
+   ├─ Security/Errors: 0/10 (0%) - CSRF, sanitization, error handling
+   └─ PWA Features: 0/12 (0%) - Background sync, offline, push manager
+
+   MEDIUM (P2) - Partial coverage, 40 files:
+   ├─ Utilities: 3/40 (7%) - Validation, compression, monitoring
+   └─ Services: 0/8 (0%) - Offline queue, telemetry queue
+
+   LOW (P3) - No coverage, 30 files:
+   ├─ Page Routes: 0/20 (0%) - Server-side handlers
+   └─ Hooks/Actions: 0/10 (0%) - Svelte actions and hooks
+
+================================================================================
+CRITICAL GAPS DETAILED
+================================================================================
+
+1. DATABASE LAYER (MOST CRITICAL)
+   Status: 0% coverage, 35 files, 74,554 total LOC
+
+   Missing Core Functionality:
+   - Database initialization and schema (db.ts, schema.js)
+   - Query execution and optimization (queries.js, query-helpers.ts)
+   - Database migrations with rollback (migrations/*.ts)
+   - Caching layer (cache.ts, ttl-cache.ts)
+   - Encryption integration (encryption.ts - has test but integration untested)
+   - Bulk operations and transactions (bulk-operations.js, transaction-timeout.ts)
+   - Data synchronization (sync.ts, storage-manager.ts)
+   - Validation and integrity (validation/*.ts)
+
+   Risk Assessment:
+   - Data corruption scenarios untested
+   - Migration failures could cause data loss
+   - No test coverage for error recovery
+   - Schema consistency not verified
+   - Encryption/decryption Dexie hooks not tested
+
+2. WASM INTEGRATION (PERFORMANCE CRITICAL)
+   Status: 2/18 (11% - partial), 16 files untested
+
+   Missing Modules:
+   - WASM proxy system (proxy.ts) - Type-safe WASM access
+   - Module loading and initialization (index.js, bridge.ts)
+   - Fallback mechanisms (fallback.js)
+   - Data transformation (transform.js, transform-typed-arrays.js)
+   - Worker thread management (worker.js, wasm-worker-esm.ts)
+   - Search implementation (search.js, queries.js)
+   - Data aggregation (aggregations.js, advanced-modules.js)
+   - Visualization support (visualize.js, serialization.js)
+   - Module validation (validation.js)
+
+   Risk Assessment:
+   - Module loading failures undetected
+   - Fallback to JS implementation untested
+   - Worker communication errors not caught
+   - Large dataset transformations untested
+   - Memory leaks in long-running operations possible
+
+3. API ROUTES (USER-FACING FEATURES)
+   Status: 1/12 (8%), 11 critical endpoints untested
+
+   Untested Endpoints:
+   - POST /api/push-subscribe (push notification signup)
+   - POST /api/push-send (send notifications)
+   - POST /api/push-unsubscribe (notification opt-out)
+   - POST /api/csp-report (security reporting)
+   - POST /api/analytics (user analytics)
+   - POST /api/telemetry/performance (performance metrics)
+   - POST /api/telemetry/business (business analytics)
+   - POST /api/telemetry/errors (error reporting)
+
+   Gap Details:
+   - Error handling in push-subscribe endpoint only has happy path
+   - Missing CSRF validation failure tests
+   - Invalid JSON parsing not tested
+   - Missing Content-Type validation
+   - Database error scenarios not tested
+   - Rate limiting thresholds not verified
+
+   Risk Assessment:
+   - Malformed requests could bypass validation
+   - Error responses not user-friendly
+   - Security vulnerabilities (CSRF) possible
+   - Database errors could expose sensitive information
+
+4. SECURITY & ERROR HANDLING
+   Status: 0/10 (0%), 326-line error handler untested
+
+   Missing Components:
+   - CSRF protection (csrf.js)
+   - HTML sanitization (sanitize.js)
+   - Encryption/decryption (crypto.js)
+   - Error handler utilities (handler.js - 326 lines!)
+   - Error logging (logger.js)
+   - Error type definitions (types.js)
+
+   Missing Tests:
+   - CSRF token validation and failures
+   - XSS attack prevention
+   - Encryption key management
+   - Error classification and routing
+   - User message generation
+   - Retry mechanism with exponential backoff
+   - Global error handler setup
+
+   Risk Assessment:
+   - Security vulnerabilities undetected
+   - User experience degraded during errors
+   - Error logs not validated
+   - Recovery mechanisms untested
+
+5. PWA FEATURES (OFFLINE FUNCTIONALITY)
+   Status: 0/12 (0%), complete offline support untested
+
+   Missing Components:
+   - PWA initialization (index.js)
+   - Background synchronization (background-sync.js)
+   - Push notification manager (push-manager.js)
+   - Push notification state (push-notifications-state.js)
+   - Push client implementation (push-client.js)
+   - Installation handling (install-manager.js)
+   - Custom protocol support (protocol.js)
+   - Web Share API wrapper (web-share.js)
+
+   Risk Assessment:
+   - Offline functionality completely untested
+   - Data sync failures not caught
+   - Push notifications may not work
+   - Service worker state management untested
+   - Installation prompts not tested
+
+================================================================================
+EDGE CASES & ERROR SCENARIOS (80+ UNTESTED)
+================================================================================
+
+Database Layer (18 untested scenarios):
+- Transaction timeouts and cleanup
+- Connection failures and recovery
+- IndexedDB quota exceeded
+- Data corruption and recovery
+- Migration rollback scenarios
+- Concurrent transaction conflicts
+- Large dataset handling (>100k records)
+- Schema version mismatches
+- Memory exhaustion scenarios
+- Invalid state recovery
+
+API Routes (12 untested scenarios):
+- Malformed JSON payloads
+- Missing required headers
+- Rate limiting boundaries
+- Concurrent requests
+- Large payload handling
+- Request timeout scenarios
+- Invalid Content-Type headers
+- Partial response handling
+- 4xx/5xx error responses
+- Service unavailability
+
+WASM Module Interactions (10 untested scenarios):
+- Module loading failures
+- Function not found errors
+- Incorrect parameter types
+- Memory allocation failures
+- Version mismatches
+- Worker initialization failures
+- Message passing errors
+- Fallback mechanism activation
+- Performance degradation detection
+- Long-running operation timeouts
+
+Error & Recovery (15+ untested scenarios):
+- Network timeouts
+- Partial data loads
+- Concurrent operation conflicts
+- Memory pressure situations
+- Browser feature unavailability
+- Automatic retry exhaustion
+- Cache invalidation failures
+- State recovery from errors
+- User notification failures
+- Logging infrastructure failures
+
+================================================================================
+INTEGRATION TEST GAPS (0% COVERAGE)
+================================================================================
+
+Missing Integration Test Suites:
+
+1. Database + Encryption
+   - Encrypted field read/write through Dexie hooks
+   - Sensitive field automatic encryption
+   - Bulk encrypted operations
+   - Migration of encrypted data
+   - Decryption on schema changes
+
+2. API Routes + Database
+   - Push subscription endpoint → storage
+   - Analytics endpoint → aggregation
+   - Telemetry endpoints → queue persistence
+   - Data validation → storage success
+
+3. WASM + Database
+   - WASM queries on indexed data
+   - Large dataset transformations
+   - Worker thread to database sync
+   - Memory-efficient processing verification
+
+4. Offline + API
+   - Offline mutation queue → API sync
+   - Service worker cache → database sync
+   - Background sync → notification trigger
+   - Conflict resolution on reconnect
+
+5. Search + Filtering + Visualization
+   - Query results → virtual list rendering
+   - Filter changes → data refresh
+   - Sort changes → visualization update
+   - Search pagination → scroll position
+
+================================================================================
+ERROR HANDLING COVERAGE BREAKDOWN
+================================================================================
+
+Current: 15% of error scenarios tested
+
+By Category:
+- Database Errors:        0/15 scenarios (0%)
+- Network Errors:         0/12 scenarios (0%)
+- Security Errors:        0/8 scenarios (0%)
+- Application Errors:     5/20 scenarios (25% - only basic)
+- Recovery Mechanisms:    0/10 scenarios (0%)
+
+Missing Error Types:
+- QuotaExceededError (IndexedDB)
+- TransactionAbortedError (Database)
+- ConstraintError (Schema validation)
+- NotFoundError (Data not found)
+- VersionError (DB schema mismatch)
+- InvalidStateError (Invalid operation)
+- Connection Timeout (Network)
+- Certificate Error (HTTPS)
+- CSRF Token Mismatch (Security)
+- Invalid Signature (Encryption)
+
+Missing Recovery Mechanisms:
+- Automatic retry with exponential backoff
+- Fallback to cached data
+- Graceful degradation
+- Cache invalidation
+- State recovery
+- User notification
+- Error aggregation and reporting
+
+================================================================================
+FLAKY/BRITTLE TESTS & TEST QUALITY ISSUES
+================================================================================
+
+Existing Test Issues:
+
+1. Encryption Tests (encryption.test.ts - 567 lines)
+   ⚠ Performance assertions (< 5ms) may fail on slower hardware
+   ⚠ Depends on browser Web Crypto API availability
+   ⚠ Hard-coded encryption format validation regex
+   ⚠ No version compatibility testing
+
+2. WASM Tests (forceSimulation.test.ts)
+   ⚠ Mocks used instead of real WASM modules
+   ⚠ Module loading not tested in real environment
+   ⚠ May fail if WASM modules not built
+   ⚠ No fallback mechanism testing
+
+3. PWA/E2E Tests
+   ⚠ Navigation timing assumptions (may timeout on slow networks)
+   ⚠ Service worker state not deterministic
+   ⚠ localStorage/sessionStorage cleanup unclear
+   ⚠ Race conditions possible in async tests
+
+4. Mock Database Issues
+   ⚠ Duplicated across 3+ test files (queries, data-loader, query-helpers)
+   ⚠ Hard-coded mock return values
+   ⚠ No contract testing between modules
+   ⚠ Changes to mocked modules require manual test updates
+
+5. Test Isolation Issues
+   ⚠ Global error handlers may affect test results
+   ⚠ State not fully reset between test suites
+   ⚠ Shared setup/teardown could mask issues
+
+================================================================================
+DUPLICATE TEST LOGIC INVENTORY
+================================================================================
+
+1. Mock Database Setup (3+ locations)
+   Files:
+   - tests/unit/db/queries.test.js (full mock definition)
+   - tests/unit/db/data-loader.test.js (likely duplicate)
+   - tests/unit/db/query-helpers.test.js (likely duplicate)
+
+   Recommendation: Extract to tests/fixtures/mockDb.js
+
+2. Validation Logic (2+ locations)
+   Files:
+   - /app/src/routes/api/push-subscribe/+server.js (inline validation)
+   - /app/src/lib/utils/validation.js (validation utilities)
+
+   Recommendation: Consolidate in utils/validation.js
+
+3. Component Test Utilities (2 locations)
+   - VirtualList.test.js (inline height calculations)
+   - VirtualList component (actual implementation)
+
+   Recommendation: Extract to shared utilities file
+
+4. Encryption Format Validation
+   - encryption.test.ts (format validation tests)
+   - encryption.ts (likely duplicate validation)
+
+   Recommendation: Single source of truth for format
+
+================================================================================
+E2E TEST ASSESSMENT
+================================================================================
+
+Existing E2E Test Coverage (6 test files):
+
+1. ✓ smoke.spec.js - Basic navigation
+   - Page loads
+   - Route transitions
+   - Navigation elements
+
+2. ✓ navigation.spec.js - Route transitions
+   - Page-to-page navigation
+   - URL changes
+   - Back button behavior
+
+3. ✓ search.spec.js - Search functionality
+   - Search input
+   - Results display
+   - Result navigation
+
+4. ✓ accessibility.spec.js - A11y checks
+   - Axe-core audits
+   - Focus management
+   - Screen reader support
+
+5. ✓ performance.spec.js - Web Vitals
+   - Lighthouse scores
+   - Core Web Vitals (LCP, INP, CLS)
+   - Performance metrics
+
+6. ✓ pwa.spec.js - PWA features
+   - Install prompt
+   - Offline functionality
+   - Service worker registration
+
+Missing E2E Test Scenarios (8 critical flows):
+
+1. Search → Show Details → Setlist View → Mark as Attended
+2. Offline Mode → Make Changes → Go Online → Auto-sync
+3. Install App → Use Offline → Receive Push Notification
+4. Search with Multiple Filters → Save Filter → Load Later
+5. Browse Venues → View Tour Map → Filter by Year Range
+6. Guest Profile Page → View All Appearances → Top Shows
+7. Authentication/Login Flow (if applicable)
+8. Data Import/Export Workflow
+
+Missing Coverage:
+- Multi-step user journeys (not single pages)
+- Data persistence across offline/online transitions
+- Error recovery workflows
+- Concurrent operations and conflicts
+- Browser feature degradation scenarios
+- Large dataset handling
+- Memory usage during extended sessions
+
+================================================================================
+COVERAGE METRICS SUMMARY
+================================================================================
+
+By Category:
+├─ Database:           0/35   (0%)
+├─ WASM:               2/18   (11%)
+├─ API Routes:         1/12   (8%)
+├─ PWA Features:       0/12   (0%)
+├─ Security/Errors:    0/10   (0%)
+├─ Utilities:          3/40   (7%)
+├─ Services:           0/8    (0%)
+├─ Hooks/Actions:      0/10   (0%)
+└─ Page Routes:        0/20   (0%)
+
+Overall: 6/165 (4%)
+
+Estimated Full Coverage:
+- Statements:     15-20%
+- Branches:       5-10%
+- Functions:      10-15%
+- Lines:          15-20%
+
+Coverage Targets:
+- Current:        15-20%
+- Minimum Goal:   80%
+- Ideal Target:   90%+
+
+================================================================================
+TESTING RECOMMENDATIONS SUMMARY
+================================================================================
+
+PRIORITY 1 - Data Integrity & User-Facing APIs (95-105 hours):
+1. Database Layer Tests (40-60h)
+   - Core queries, migrations, transactions
+   - Encryption integration
+   - Error handling and recovery
+
+2. API Route Tests (20-30h)
+   - Error handling, validation, database integration
+   - All 12 API endpoints
+
+3. Error Handling Tests (15-25h)
+   - Error paths, recovery mechanisms
+   - User message generation
+   - Global error handlers
+
+4. Security Tests (10-15h)
+   - CSRF protection, sanitization
+   - Encryption/decryption
+   - Input validation
+
+PRIORITY 2 - Performance & Offline (60-90 hours):
+5. WASM Integration Tests (20-30h)
+   - Module loading, function dispatch, fallbacks
+   - Worker thread management
+   - Large dataset handling
+
+6. PWA Feature Tests (15-25h)
+   - Background sync, push notifications
+   - Offline mutation queue
+   - Service worker state
+
+7. Integration Tests (25-35h)
+   - Cross-module scenarios
+   - Data flow verification
+   - Sync mechanisms
+
+PRIORITY 3 - Polish & Edge Cases (50-70 hours):
+8. Utility Tests (30-40h)
+9. Edge Case Tests (20-30h)
+
+Quick Wins (14 hours):
+- Shared test fixtures (2h)
+- Error scenario additions (5h)
+- Test utility extraction (3h)
+- Integration suite foundation (4h)
+
+================================================================================
+ESTIMATED EFFORT & TIMELINE
+================================================================================
+
+Coverage Goals:
+- 80% Coverage:    150-200 hours (4-5 weeks, 1 developer)
+- 90% Coverage:    220-280 hours (6-7 weeks, 1 developer)
+- 95%+ Coverage:   300-400 hours (8-10 weeks, 1 developer)
+
+Phased Approach (Recommended):
+
+Phase 1: Foundation (Weeks 1-3, ~70 hours)
+├─ Database layer tests
+├─ API route tests
+├─ Error handling tests
+└─ Target: 45-50% coverage
+
+Phase 2: Integration (Weeks 4-6, ~50 hours)
+├─ WASM integration tests
+├─ PWA feature tests
+├─ Integration test suites
+└─ Target: 70-75% coverage
+
+Phase 3: Polish (Weeks 7-8, ~40 hours)
+├─ Utility function tests
+├─ Edge case tests
+├─ Test cleanup & optimization
+└─ Target: 80%+ coverage
+
+Phase 4: Maintenance (Ongoing)
+├─ New feature tests
+├─ Regression testing
+├─ Test optimization
+
+================================================================================
+KEY FILES REQUIRING TESTS
+================================================================================
+
+Critical Files (>200 lines, untested):
+1. /app/src/lib/db/dexie/db.ts - Core database initialization
+2. /app/src/lib/db/dexie/queries.js - Query execution logic
+3. /app/src/lib/errors/handler.js - Error handling (326 lines!)
+4. /app/src/routes/api/push-subscribe/+server.js - API endpoint (227 lines)
+5. /app/src/lib/wasm/proxy.ts - WASM type-safe proxy
+
+High Priority (Security/Validation):
+- /app/src/lib/security/csrf.js
+- /app/src/lib/security/sanitize.js
+- /app/src/lib/utils/validation.js
+- /app/src/lib/db/dexie/schema.js
+
+Medium Priority (Core Features):
+- /app/src/lib/db/dexie/cache.ts
+- /app/src/lib/wasm/transform.js
+- /app/src/lib/pwa/background-sync.js
+- /app/src/routes/api/push-send/+server.js
+
+================================================================================
+NEXT IMMEDIATE ACTIONS
+================================================================================
+
+Week 1:
+□ Create tests/fixtures/mockDb.js for shared database mocks
+□ Create tests/fixtures/setupTests.js for common setup
+□ Add error scenario tests to encryption.test.ts
+□ Document test naming conventions and patterns
+
+Week 2-3:
+□ Begin database layer unit tests
+□ Implement API route error handling tests
+□ Add error handler utility tests
+□ Start integration test infrastructure
+
+Week 4+:
+□ Continue with Phase 1 target of 45-50% coverage
+□ Begin Phase 2 planning
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The DMB Almanac project has significant test coverage gaps (4% of files tested).
+Critical areas including database operations, API endpoints, security, and PWA
+features are completely untested. This represents a HIGH PRIORITY situation that
+requires immediate attention to ensure data integrity and system reliability.
+
+Recommended Action: Implement Phase 1 (Database + API + Errors) to reach 45-50%
+coverage in 3 weeks, establishing solid testing foundation for subsequent work.
+
+Full detailed analysis available in:
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/TEST_COVERAGE_ANALYSIS_2026.md
+
+================================================================================

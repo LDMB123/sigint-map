@@ -1,1 +1,0 @@
-/Users/louisherman/ClaudeCodeProjects/.claude/skills/css/css-patterns.md

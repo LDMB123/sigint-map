@@ -1,1 +1,0 @@
-/Users/louisherman/ClaudeCodeProjects/.claude/skills/deployment/pwa-quick-wins.md

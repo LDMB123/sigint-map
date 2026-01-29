@@ -1,1 +1,0 @@
-/Users/louisherman/ClaudeCodeProjects/.claude/skills/chromium-143/css-modernization-implementation.md

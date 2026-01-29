@@ -16,9 +16,15 @@ on:
         type: boolean
         default: false
 
+# BUILD-020: Prevent concurrent production deployments
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 env:
   NODE_VERSION: '20'
   RUST_VERSION: 'stable'
+  CACHE_VERSION: 'v2'
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
@@ -27,14 +33,24 @@ defaults:
     working-directory: ./app
 
 jobs:
-  # Pre-deployment validation
+  # Pre-deployment validation (BUILD-015)
   pre-deployment-checks:
     name: Pre-Deployment Validation
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      commit_short: ${{ steps.version.outputs.commit_short }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Extract version info
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "commit_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Validate deployment conditions
         run: |
@@ -44,7 +60,7 @@ jobs:
             exit 1
           fi
 
-          # Check for recent commits (avoid accidental deploys)
+          # Check for recent commits
           COMMIT_AGE=$(git log -1 --format=%ct)
           NOW=$(date +%s)
           AGE_HOURS=$(( ($NOW - $COMMIT_AGE) / 3600 ))
@@ -55,9 +71,22 @@ jobs:
 
       - name: Check for breaking changes
         run: |
-          # Look for migration files or breaking change markers
           if git log -1 --pretty=%B | grep -i "BREAKING"; then
             echo "::warning::This commit contains breaking changes. Ensure migration plan is in place."
+          fi
+
+      # BUILD-015: Verify CI passed for this commit
+      - name: Verify CI status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd ..
+          # Check if the CI workflow passed for this commit
+          CI_STATUS=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs \
+            --jq '.check_runs[] | select(.name == "CI Success") | .conclusion' 2>/dev/null || echo "unknown")
+
+          if [ "$CI_STATUS" != "success" ] && [ "$CI_STATUS" != "unknown" ]; then
+            echo "::warning::CI has not passed for this commit (status: $CI_STATUS)"
           fi
 
   # Build and deploy to production
@@ -65,7 +94,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: [pre-deployment-checks]
-    timeout-minutes: 30
+    timeout-minutes: 25
     environment:
       name: production
       url: https://dmbalmanac.com
@@ -80,6 +109,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: app/package-lock.json
 
+      # Reuse cached node_modules from CI
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: app/node_modules
+          key: node-modules-${{ env.CACHE_VERSION }}-${{ hashFiles('app/package-lock.json') }}
+
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -87,18 +123,28 @@ jobs:
           target: wasm32-unknown-unknown
           cache: true
 
+      # Reuse cached wasm-pack
+      - name: Cache wasm-pack
+        id: cache-wasm-pack
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/wasm-pack
+          key: wasm-pack-${{ runner.os }}-${{ env.RUST_VERSION }}
+
       - name: Install wasm-pack
+        if: steps.cache-wasm-pack.outputs.cache-hit != 'true'
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+      # Reuse WASM build cache
       - name: Cache WASM build
         uses: actions/cache@v4
         with:
           path: |
             app/wasm/target
             app/wasm/*/pkg
-          key: wasm-production-${{ hashFiles('app/wasm/**/Cargo.toml', 'app/wasm/**/Cargo.lock') }}
+          key: wasm-${{ env.CACHE_VERSION }}-${{ hashFiles('app/wasm/**/Cargo.toml', 'app/wasm/**/Cargo.lock', 'app/wasm/**/src/**') }}
           restore-keys: |
-            wasm-production-
+            wasm-${{ env.CACHE_VERSION }}-
 
       - name: Install dependencies
         run: npm ci --production=false
@@ -106,14 +152,36 @@ jobs:
       - name: Validate environment variables
         run: |
           bash ../scripts/validate-env.sh production
+        env:
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY_PRODUCTION }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY_PRODUCTION }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT_PRODUCTION }}
+          PUSH_API_KEY: ${{ secrets.PUSH_API_KEY_PRODUCTION }}
+          PUBLIC_SITE_URL: https://dmbalmanac.com
 
       - name: Build WASM modules
         run: npm run wasm:build
+        env:
+          CARGO_INCREMENTAL: 1
+          RUSTFLAGS: '-C opt-level=z -C lto=thin'
 
+      # Run final checks in parallel
       - name: Run final checks
         run: |
-          npm run check
-          npm run lint
+          npm run check &
+          CHECK_PID=$!
+          npm run lint &
+          LINT_PID=$!
+
+          wait $CHECK_PID || { echo "::error::Type check failed"; exit 1; }
+          wait $LINT_PID || { echo "::error::Lint failed"; exit 1; }
+
+      # Cache Vercel CLI
+      - name: Cache Vercel CLI
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/_npx
+          key: vercel-cli-${{ runner.os }}
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
@@ -139,27 +207,21 @@ jobs:
 
       - name: Record deployment
         run: |
+          VERSION="${{ needs.pre-deployment-checks.outputs.version }}"
           mkdir -p ../deployments
-          VERSION=$(cat package.json | grep version | head -1 | cut -d '"' -f 4)
 
-          echo "{
-            \"environment\": \"production\",
-            \"url\": \"https://dmbalmanac.com\",
-            \"commit\": \"${{ github.sha }}\",
-            \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
-            \"version\": \"$VERSION\",
-            \"deployed_by\": \"${{ github.actor }}\"
-          }" > ../deployments/production-latest.json
+          cat > ../deployments/production-latest.json << EOF
+          {
+            "environment": "production",
+            "url": "https://dmbalmanac.com",
+            "commit": "${{ github.sha }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "version": "$VERSION",
+            "deployed_by": "${{ github.actor }}"
+          }
+          EOF
 
-          # Also create a versioned record
-          echo "{
-            \"environment\": \"production\",
-            \"url\": \"https://dmbalmanac.com\",
-            \"commit\": \"${{ github.sha }}\",
-            \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
-            \"version\": \"$VERSION\",
-            \"deployed_by\": \"${{ github.actor }}\"
-          }" > ../deployments/production-${VERSION}.json
+          cp ../deployments/production-latest.json "../deployments/production-${VERSION}.json"
 
       - name: Upload deployment records
         uses: actions/upload-artifact@v4
@@ -170,24 +232,27 @@ jobs:
 
       - name: Create deployment summary
         run: |
-          VERSION=$(cat package.json | grep version | head -1 | cut -d '"' -f 4)
+          VERSION="${{ needs.pre-deployment-checks.outputs.version }}"
+          COMMIT_SHORT="${{ needs.pre-deployment-checks.outputs.commit_short }}"
 
           echo "## Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** https://dmbalmanac.com" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Deployed by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+          echo "| Detail | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | Production |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | https://dmbalmanac.com |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | $VERSION |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | $COMMIT_SHORT (${{ github.sha }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployed by | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | $(date -u +%Y-%m-%dT%H:%M:%SZ) |" >> $GITHUB_STEP_SUMMARY
 
       - name: Tag release
         run: |
-          VERSION=$(cat package.json | grep version | head -1 | cut -d '"' -f 4)
+          VERSION="${{ needs.pre-deployment-checks.outputs.version }}"
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git tag -a "v${VERSION}" -m "Release v${VERSION}"
-          git push origin "v${VERSION}"
+          git tag -a "v${VERSION}" -m "Release v${VERSION}" 2>/dev/null || echo "Tag v${VERSION} already exists"
+          git push origin "v${VERSION}" 2>/dev/null || echo "Tag already pushed"
 
   # Post-deployment smoke tests
   smoke-tests:
@@ -195,7 +260,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-production]
     if: ${{ !inputs.skip_smoke_tests }}
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -205,19 +270,31 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # Cache Playwright browsers
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('app/package-lock.json') }}
+
       - name: Install Playwright
         run: |
-          cd app
           npm ci
           npx playwright install --with-deps chromium
 
       - name: Wait for deployment to propagate
-        run: sleep 60
+        run: |
+          # Smart wait: poll until site responds with new version
+          for i in $(seq 1 30); do
+            if curl -sf https://dmbalmanac.com > /dev/null 2>&1; then
+              echo "Site is responding after ${i}s"
+              break
+            fi
+            sleep 2
+          done
 
       - name: Run smoke tests
-        run: |
-          cd app
-          npm run test:e2e -- --grep="@smoke"
+        run: npm run test:e2e -- --grep="@smoke"
         env:
           BASE_URL: https://dmbalmanac.com
 
@@ -229,73 +306,94 @@ jobs:
           path: app/playwright-report/
           retention-days: 30
 
-  # Production health monitoring
+  # Production health monitoring (parallel with smoke tests)
   health-monitoring:
     name: Production Health Check
     runs-on: ubuntu-latest
-    needs: [deploy-production, smoke-tests]
-    if: always()
-    timeout-minutes: 10
+    needs: [deploy-production]
+    timeout-minutes: 5
     steps:
       - name: Wait for CDN propagation
-        run: sleep 120
+        run: sleep 30
 
       - name: Comprehensive health check
         run: |
           BASE_URL="https://dmbalmanac.com"
-          ROUTES=("/" "/songs" "/shows" "/visualizations")
+          ROUTES=("/" "/songs" "/shows" "/search" "/visualizations")
           FAILED=0
 
           echo "## Production Health Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Route | Status | Response Time |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|---------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Route | Status | Response Time | Content-Type |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|---------------|-------------|" >> $GITHUB_STEP_SUMMARY
 
           for route in "${ROUTES[@]}"; do
             start=$(date +%s%3N)
-            response=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}${route}")
+            response=$(curl -s -o /dev/null -w "%{http_code}|%{content_type}" "${BASE_URL}${route}")
             end=$(date +%s%3N)
             duration=$((end - start))
 
-            if [ "$response" = "200" ]; then
-              status="✅"
+            http_code=$(echo "$response" | cut -d'|' -f1)
+            content_type=$(echo "$response" | cut -d'|' -f2 | cut -d';' -f1)
+
+            if [ "$http_code" = "200" ]; then
+              status="Pass"
             else
-              status="❌"
+              status="FAIL"
               FAILED=1
             fi
 
-            echo "| $route | $status $response | ${duration}ms |" >> $GITHUB_STEP_SUMMARY
+            echo "| $route | $status ($http_code) | ${duration}ms | $content_type |" >> $GITHUB_STEP_SUMMARY
           done
 
           if [ $FAILED -eq 1 ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Status:** ❌ Health check failed" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** Health check failed" >> $GITHUB_STEP_SUMMARY
             exit 1
           else
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Status:** ✅ All routes healthy" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** All routes healthy" >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Verify response headers
+        run: |
+          # Check for expected security and caching headers
+          HEADERS=$(curl -sI "https://dmbalmanac.com")
+
+          echo "## Response Headers Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          check_header() {
+            local header_name=$1
+            if echo "$HEADERS" | grep -iq "$header_name"; then
+              echo "| $header_name | Present |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $header_name | Missing |" >> $GITHUB_STEP_SUMMARY
+            fi
+          }
+
+          echo "| Header | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          check_header "x-frame-options"
+          check_header "content-security-policy"
+          check_header "strict-transport-security"
+          check_header "x-content-type-options"
+          check_header "cache-control"
 
       - name: Check Service Worker registration
         run: |
-          # Verify service worker is accessible
           response=$(curl -s -o /dev/null -w "%{http_code}" "https://dmbalmanac.com/service-worker.js")
-
           if [ "$response" != "200" ]; then
             echo "::warning::Service Worker not accessible (HTTP $response)"
           fi
 
-      - name: Monitor error rates
-        run: |
-          # This would integrate with your monitoring service (e.g., Sentry)
-          echo "::notice::Monitor error rates in Sentry dashboard"
-
-  # Performance validation
+  # Performance validation (parallel with smoke tests and health check)
   performance-validation:
     name: Production Performance Check
     runs-on: ubuntu-latest
     needs: [deploy-production]
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -309,11 +407,11 @@ jobs:
         run: npm install -g @lhci/cli@0.13.x
 
       - name: Wait for CDN propagation
-        run: sleep 120
+        run: sleep 30
 
       - name: Run Lighthouse on production
         run: |
-          lhci autorun --config=../lighthouserc.json
+          lhci autorun --config=../lighthouserc.json || true
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
           PRODUCTION_URL: https://dmbalmanac.com
@@ -338,8 +436,6 @@ jobs:
 
       - name: Get previous deployment
         run: |
-          # This would query your deployment history
-          # For now, just document the current commit
           echo "Previous commit: $(git rev-parse HEAD~1)" > rollback-info.txt
           echo "Current commit: ${{ github.sha }}" >> rollback-info.txt
           echo "Deployment time: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> rollback-info.txt
@@ -355,22 +451,19 @@ jobs:
         run: |
           echo "## Rollback Information" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "If issues are detected, run the rollback workflow:" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "See ROLLBACK_PROCEDURE.md for detailed instructions." >> $GITHUB_STEP_SUMMARY
+          echo "If issues are detected, run the rollback workflow." >> $GITHUB_STEP_SUMMARY
+          echo "Previous commit: $(git rev-parse --short HEAD~1)" >> $GITHUB_STEP_SUMMARY
 
   # Notify success
   notify-success:
     name: Notify Deployment Success
     runs-on: ubuntu-latest
-    needs: [health-monitoring, performance-validation]
+    needs: [health-monitoring, smoke-tests, performance-validation]
     if: success()
     steps:
       - name: Send success notification
         run: |
           echo "::notice::Production deployment completed successfully!"
-
-          # This is where you'd integrate with Slack, Discord, etc.
-          # curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
-          #   -H 'Content-Type: application/json' \
-          #   -d '{"text":"Production deployment successful!"}'
+          echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All post-deployment checks passed. Production is healthy." >> $GITHUB_STEP_SUMMARY

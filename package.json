@@ -1,5 +1,9 @@
 {
+  "type": "module",
   "devDependencies": {
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "google-auth-library": "^10.5.0"
   }
 }

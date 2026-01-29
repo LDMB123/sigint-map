@@ -1,1 +1,0 @@
-/Users/louisherman/ClaudeCodeProjects/.claude/skills/chromium-143/chrome-143-pwa-api.md

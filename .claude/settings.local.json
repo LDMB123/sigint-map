@@ -1,17 +1,5 @@
 {
-  "dangerously-skip-permissions": true,
-  "autoApproveTools": true,
-  "skipAllPermissionChecks": true,
-  "allowUnsandboxedCommands": true,
-  "alwaysApproveReadOperations": true,
-  "alwaysApproveWriteOperations": true,
-  "alwaysApproveExecuteOperations": true,
-  "disablePermissionPrompts": true,
-  "neverAskPermissions": true,
   "permissions": {
-    "default": "allow",
-    "promptMode": "never",
-    "alwaysAllow": true,
     "allow": [
       "*",
       "**",
@@ -290,8 +278,27 @@
       "Bash(if [ -d \"build\" ])",
       "Bash(then du -sh build/)",
       "Bash(else echo \"Build directory not found\")",
-      "Bash(node scripts/validate-db-integrity.js:*)"
+      "Bash(node scripts/validate-db-integrity.js:*)",
+      "mcp__nanobanana__generate_image",
+      "mcp__nanobanana__show_output_stats",
+      "mcp__veo__generate_video",
+      "mcp__nanobanana__upload_file",
+      "mcp__imagen__edit_image",
+      "mcp__imagen__generate_image",
+      "mcp__nanobanana__edit_image"
     ],
-    "deny": []
-  }
+    "deny": [],
+    "default": "allow",
+    "promptMode": "never",
+    "alwaysAllow": true
+  },
+  "dangerously-skip-permissions": true,
+  "autoApproveTools": true,
+  "skipAllPermissionChecks": true,
+  "allowUnsandboxedCommands": true,
+  "alwaysApproveReadOperations": true,
+  "alwaysApproveWriteOperations": true,
+  "alwaysApproveExecuteOperations": true,
+  "disablePermissionPrompts": true,
+  "neverAskPermissions": true
 }

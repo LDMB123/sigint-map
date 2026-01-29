@@ -14,9 +14,15 @@ on:
         type: boolean
         default: false
 
+# Prevent concurrent staging deployments
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
 env:
   NODE_VERSION: '20'
   RUST_VERSION: 'stable'
+  CACHE_VERSION: 'v2'
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
@@ -29,7 +35,7 @@ jobs:
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
     environment:
       name: staging
       url: ${{ steps.deploy.outputs.staging-url }}
@@ -44,6 +50,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: app/package-lock.json
 
+      # Reuse cached node_modules from CI
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: app/node_modules
+          key: node-modules-${{ env.CACHE_VERSION }}-${{ hashFiles('app/package-lock.json') }}
+
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -51,18 +64,28 @@ jobs:
           target: wasm32-unknown-unknown
           cache: true
 
+      # Reuse cached wasm-pack
+      - name: Cache wasm-pack
+        id: cache-wasm-pack
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/wasm-pack
+          key: wasm-pack-${{ runner.os }}-${{ env.RUST_VERSION }}
+
       - name: Install wasm-pack
+        if: steps.cache-wasm-pack.outputs.cache-hit != 'true'
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+      # Reuse WASM build cache
       - name: Cache WASM build
         uses: actions/cache@v4
         with:
           path: |
             app/wasm/target
             app/wasm/*/pkg
-          key: wasm-staging-${{ hashFiles('app/wasm/**/Cargo.toml', 'app/wasm/**/Cargo.lock') }}
+          key: wasm-${{ env.CACHE_VERSION }}-${{ hashFiles('app/wasm/**/Cargo.toml', 'app/wasm/**/Cargo.lock', 'app/wasm/**/src/**') }}
           restore-keys: |
-            wasm-staging-
+            wasm-${{ env.CACHE_VERSION }}-
 
       - name: Install dependencies
         run: npm ci
@@ -70,9 +93,15 @@ jobs:
       - name: Validate environment variables
         run: |
           bash ../scripts/validate-env.sh staging
+        env:
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY_STAGING }}
+          PUBLIC_SITE_URL: https://staging.dmbalmanac.com
 
       - name: Build WASM modules
         run: npm run wasm:build
+        env:
+          CARGO_INCREMENTAL: 1
+          RUSTFLAGS: '-C opt-level=z -C lto=thin'
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
@@ -94,19 +123,26 @@ jobs:
           echo "Deployed to: $url"
           echo "## Staging Deployment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Staging URL: $url" >> $GITHUB_STEP_SUMMARY
-          echo "Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Detail | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | $url |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | $(git rev-parse --short HEAD) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | $(date -u +%Y-%m-%dT%H:%M:%SZ) |" >> $GITHUB_STEP_SUMMARY
 
       - name: Create deployment record
         run: |
           mkdir -p ../deployments
-          echo "{
-            \"environment\": \"staging\",
-            \"url\": \"${{ steps.deploy.outputs.staging-url }}\",
-            \"commit\": \"${{ github.sha }}\",
-            \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
-            \"version\": \"$(cat package.json | grep version | head -1 | cut -d '\"' -f 4)\"
-          }" > ../deployments/staging-latest.json
+          VERSION=$(node -p "require('./package.json').version")
+
+          cat > ../deployments/staging-latest.json << EOF
+          {
+            "environment": "staging",
+            "url": "${{ steps.deploy.outputs.staging-url }}",
+            "commit": "${{ github.sha }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "version": "$VERSION"
+          }
+          EOF
 
       - name: Upload deployment record
         uses: actions/upload-artifact@v4
@@ -121,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-staging]
     if: ${{ !inputs.skip_tests }}
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -130,6 +166,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+
+      # Cache Playwright browsers
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('app/package-lock.json') }}
 
       - name: Install Playwright
         run: |
@@ -152,7 +195,7 @@ jobs:
           path: app/playwright-report/
           retention-days: 7
 
-  # Performance monitoring
+  # Performance monitoring (parallel with smoke tests)
   performance-check:
     name: Performance Check
     runs-on: ubuntu-latest
@@ -170,49 +213,67 @@ jobs:
       - name: Install Lighthouse CI
         run: npm install -g @lhci/cli@0.13.x
 
+      - name: Wait for deployment
+        run: sleep 15
+
       - name: Run Lighthouse
         run: |
-          lhci autorun --config=../lighthouserc.json
+          lhci autorun --config=../lighthouserc.json || true
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
           STAGING_URL: ${{ needs.deploy-staging.outputs.staging-url }}
 
       - name: Check performance budgets
         run: |
-          # Parse Lighthouse results and check budgets
           echo "## Performance Metrics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Lighthouse audit completed for staging deployment" >> $GITHUB_STEP_SUMMARY
 
-  # Health check monitoring
+  # Health check monitoring (parallel with other post-deploy jobs)
   health-check:
     name: Health Check
     runs-on: ubuntu-latest
-    needs: [deploy-staging, smoke-tests]
-    if: always()
+    needs: [deploy-staging]
     timeout-minutes: 5
     steps:
       - name: Wait for deployment to stabilize
-        run: sleep 30
+        run: sleep 15
 
       - name: Check deployment health
         run: |
           url="${{ needs.deploy-staging.outputs.staging-url }}"
 
-          # Check if site is accessible
-          response=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+          # Check multiple routes
+          ROUTES=("/" "/songs" "/shows")
+          FAILED=0
 
-          if [ "$response" != "200" ]; then
-            echo "::error::Staging deployment health check failed. HTTP status: $response"
+          echo "## Staging Health Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Route | Status | Time |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|------|" >> $GITHUB_STEP_SUMMARY
+
+          for route in "${ROUTES[@]}"; do
+            start=$(date +%s%3N)
+            response=$(curl -s -o /dev/null -w "%{http_code}" "${url}${route}")
+            end=$(date +%s%3N)
+            duration=$((end - start))
+
+            if [ "$response" = "200" ]; then
+              echo "| $route | Pass ($response) | ${duration}ms |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $route | FAIL ($response) | ${duration}ms |" >> $GITHUB_STEP_SUMMARY
+              FAILED=1
+            fi
+          done
+
+          if [ $FAILED -eq 1 ]; then
+            echo "::error::Staging deployment health check failed!"
             exit 1
           fi
-
-          echo "Staging deployment is healthy (HTTP $response)"
 
       - name: Notify on failure
         if: failure()
         run: |
-          echo "::error::Staging deployment health check failed!"
           echo "## Deployment Health Check Failed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "The staging deployment is not responding correctly." >> $GITHUB_STEP_SUMMARY

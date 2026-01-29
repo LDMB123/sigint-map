@@ -1,110 +1,70 @@
 # ClaudeCodeProjects
 
-**Repository**: Universal Agent Framework (UAF) + DMB Almanac + Gemini MCP
-**Health Score**: 100/100 ✨
-**Last Updated**: January 25, 2026
-
----
-
-## Recent Audits
-
-📊 **[January 2026 Audit](./docs/audits/2026-01-audit/)** - Comprehensive UAF audit
-- Health Score: 99/100 → **100/100** (↑ from 92/100)
-- 465 agents validated across 49 categories
-- File organization refactor completed
-- All path references updated
-- [View full audit reports →](./docs/audits/)
-
----
+Personal development workspace for multiple projects using Claude Code.
 
 ## Projects
 
-### [DMB Almanac](./projects/dmb-almanac/)
-Dave Matthews Band concert database Progressive Web App
+### 1. [DMB Almanac](projects/dmb-almanac/)
+Progressive Web App for Dave Matthews Band concert database.
+- 2,800+ show database
+- Setlist analysis and statistics
+- Offline-first architecture
+- Chromium 143+ optimizations
 
-**Stack**: SvelteKit 2 • Svelte 5 • TypeScript • Rust WASM
-**Data**: 2,800+ documented shows • 6 WASM modules • SQLite + IndexedDB
-**Features**: Offline-first • Advanced search • Tour visualization • Setlist analysis
+### 2. [Imagen Experiments](projects/imagen-experiments/)
+AI-powered image generation experiments using Google Gemini APIs.
+- Batch generation scripts
+- Prompt engineering
+- Image editing workflows
 
-📖 [WASM Audit Overview](./projects/dmb-almanac/docs/WASM_AUDIT_OVERVIEW.md)
+### 3. [Blaire Unicorn](projects/blaire-unicorn/)
+Web game Progressive Web App.
 
-### [Gemini MCP Server](./projects/gemini-mcp-server/)
-Google Gemini API integration via Model Context Protocol
+### 4. [Emerson Violin PWA](projects/emerson-violin-pwa/)
+Offline-first violin teaching app for children with Red Panda coach.
+- WebAssembly audio processing
+- iPadOS optimized
+- Local-first architecture
 
-**Stack**: TypeScript • Node.js • MCP SDK
-**Features**: Gemini Pro integration • Tool use • Streaming responses
-
----
+### 5. [Gemini MCP Server](projects/gemini-mcp-server/)
+Model Context Protocol server for Google Gemini API integration.
 
 ## Documentation
 
-### 📖 **[Master Documentation Index](./docs/INDEX.md)** ✨ NEW
-Complete navigation for all 835+ documentation files across the repository.
+Organized technical documentation in [`docs/`](docs/):
+- **Audits** - Accessibility, bundle, security, performance analysis
+- **Guides** - Implementation guides and quick references
+- **Archive** - Historical session reports and superseded docs
 
-### Getting Started
-- [Project Structure Guide](./docs/PROJECT_STRUCTURE.md) - Repository organization
-- [UAF Framework Overview](./.claude/docs/UAF_FRAMEWORK.md) - Agent system
-- [Global Agent Index](./.claude/docs/reference/GLOBAL_INDEX.md) - All 465 agents
-- [Development Guide](./.claude/docs/guides/DEVELOPMENT.md) - Git workflow, pre-commit hooks, CI
+## Tools
 
-### Development
-- [Metrics & Performance](./.claude/docs/guides/METRICS.md) - Baseline tracking & regression detection
-- [File Organization Report](./.claude/audit/file-organization-completion.md) - 100/100 health score
-- [Skill Library](./.claude/docs/reference/SKILL_CROSS_REFERENCES.md)
-- [Agent Ecosystem](./.claude/docs/reference/AGENT_ECOSYSTEM_INDEX.md)
+- **Claude Code Skills** - 118 custom skills in `.claude/skills/`
+- **GitHub Workflows** - 6 CI/CD workflows in `.github/workflows/`
 
-### Audits & Analysis
-- [2026-01 Audit Report](./docs/audits/2026-01-audit/) - Complete audit results
-- [Agent Validation](./docs/audits/2026-01-audit/AGENT_VALIDATION_REPORT.md)
-- [DMB Almanac Analysis](./projects/dmb-almanac/app/docs/) - 731 technical documents
-
----
-
-## Repository Structure
+## Structure
 
 ```
 ClaudeCodeProjects/
-├── .claude/              # Universal Agent Framework
-│   ├── agents/           # 465 agents across 49 categories
-│   ├── commands/         # 95 skill commands
-│   ├── docs/             # Framework documentation
-│   └── scripts/          # Automation utilities
-├── .github/              # CI/CD workflows
-├── projects/
-│   ├── dmb-almanac/      # DMB concert database PWA
-│   └── gemini-mcp-server/ # Gemini API integration
-├── docs/
-│   ├── audits/           # Audit history
-│   └── PROJECT_STRUCTURE.md
-└── archive/              # Historical backups
+├── projects/          # All 5 projects
+├── docs/              # Organized documentation
+├── .claude/           # Claude Code configuration & skills
+├── .github/           # GitHub Actions workflows
+└── archive/           # Historical backups
 ```
 
----
+## Getting Started
 
-## Quick Commands
+Each project has its own README with setup instructions. Start by exploring:
+- [`projects/dmb-almanac/`](projects/dmb-almanac/) - Main active project
+- [`docs/`](docs/) - Technical documentation hub
+- [`.claude/skills/`](.claude/skills/) - Available automation skills
 
-```bash
-# DMB Almanac
-cd projects/dmb-almanac/app
-npm install
-npm run dev              # Start dev server
-npm run build           # Production build
-npm run test            # Run tests
+## Organization
 
-# Gemini MCP Server
-cd projects/gemini-mcp-server
-npm install
-npm run build
-```
+This workspace was comprehensively reorganized on 2026-01-29:
+- 95% reduction in root directory clutter
+- All projects properly documented
+- 200+ documentation files organized
+- Professional directory structure
 
----
-
-## License
-
-MIT
-
----
-
-**Repository Health**: 100/100 ✨
-**Organization**: Complete file reorganization (2026-01-25)
-**Files Organized**: 563 analysis documents • 130+ project files • 7 audit reports
+See [`docs/archive/`](docs/archive/) for cleanup history.
