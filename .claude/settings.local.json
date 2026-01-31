@@ -68,7 +68,6 @@
       "Bash(node --check *)",
       "Bash(node -e *)",
       "Bash(node -c *)",
-      "Bash(npx *)",
       "Bash(npx playwright install *)",
       "Bash(npx playwright test *)",
       "Bash(npx svelte-check *)",
@@ -186,7 +185,8 @@
       "Bash(echo $*API_KEY*)",
       "Bash(export ANTHROPIC_API_KEY=*)",
       "Bash(git push --force *)",
-      "Bash(chmod 777 *)"
+      "Bash(chmod 777 *)",
+      "Bash(npx *)"
     ],
     "default": "ask"
   },

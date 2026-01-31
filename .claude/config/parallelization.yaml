@@ -50,6 +50,11 @@ parallelization:
       reservation_timeout_seconds: 30
       fail_fast_if_insufficient_slots: true
 
+      # CRITICAL FIX: Prevent deadlock when circuit opens during spawn
+      coordinator_spawn_timeout_seconds: 60  # Coordinators timeout after 60s waiting
+      cleanup_on_circuit_open: true  # Kill coordinators if circuit opens mid-spawn
+      circuit_aware_spawn: true  # Check circuit state before spawning workers
+
     consensus_building:
       max_proposers: 5
       max_evaluators_per_proposal: 5
