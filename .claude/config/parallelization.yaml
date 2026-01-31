@@ -3,8 +3,10 @@
 
 parallelization:
   global:
-    # Maximum concurrent agents across all tiers
-    max_total_concurrent: 250
+    # Maximum concurrent agents across all tiers (haiku:100 + sonnet:25 + opus:5)
+    max_total_concurrent: 130
+    # Allow burst up to (haiku:150 + sonnet:30 + opus:5)
+    burst_max_total_concurrent: 185
 
     # Maximum concurrent API calls
     max_api_calls_per_second: 50
@@ -15,14 +17,16 @@ parallelization:
 
   by_tier:
     haiku:
-      max_concurrent: 200
-      recommended_batch_size: 100  # Increased from 50 for 20-30% throughput gain
+      max_concurrent: 100
+      burst_max_concurrent: 150  # Allow burst for high-volume periods
+      recommended_batch_size: 50  # Reduced for better stability
       min_batch_size: 20
-      max_batch_size: 150
+      max_batch_size: 75
 
     sonnet:
-      max_concurrent: 30
-      recommended_batch_size: 25  # Increased from 10 for Sonnet-first strategy
+      max_concurrent: 25
+      burst_max_concurrent: 30  # Allow slight burst for critical tasks
+      recommended_batch_size: 15  # Reduced for quality control
       min_batch_size: 10
       max_batch_size: 30
 
@@ -88,6 +92,48 @@ backpressure:
       - reject_new_requests
       - prioritize_existing
       - alert_operators
+
+# Adaptive throttling
+adaptive_throttling:
+  enabled: true
+
+  thresholds:
+    warning: 0.7   # 70% capacity - start gentle throttling
+    critical: 0.85 # 85% capacity - aggressive throttling
+    emergency: 0.95 # 95% capacity - emergency mode
+
+  actions:
+    warning:
+      - reduce_batch_size_by_percent: 20
+      - increase_inter_request_delay_ms: 100
+
+    critical:
+      - reduce_batch_size_by_percent: 40
+      - increase_inter_request_delay_ms: 300
+      - disable_burst_mode: true
+      - prioritize_high_value_tasks: true
+
+    emergency:
+      - reduce_batch_size_by_percent: 60
+      - increase_inter_request_delay_ms: 1000
+      - reject_low_priority_requests: true
+      - enable_exponential_backoff: true
+      - alert_operators: true
+
+  measurement:
+    window_seconds: 60
+    check_interval_seconds: 5
+    metrics:
+      - active_concurrent_agents
+      - queue_depth
+      - error_rate
+      - average_response_time
+
+  recovery:
+    cooldown_seconds: 120
+    gradual_recovery: true
+    recovery_step_percent: 10
+    recovery_interval_seconds: 30
 
 # Rate limiting
 rate_limiting:
@@ -172,12 +218,14 @@ timeouts:
 resource_pools:
   haiku_pool:
     min_size: 10
-    max_size: 200
+    max_size: 100
+    burst_max_size: 150
     idle_timeout_seconds: 60
 
   sonnet_pool:
     min_size: 5
-    max_size: 30
+    max_size: 25
+    burst_max_size: 30
     idle_timeout_seconds: 120
 
   opus_pool:

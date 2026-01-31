@@ -1,0 +1,28 @@
+# COMPRESSED: session-state-imagen.md
+# Original: ~750 bytes (already compressed) | Minimal optimization
+
+status: "90/90 complete, batch 121-150 ready"
+ref: "467634893...jpeg"
+next: "Generate concepts 121-150"
+
+batches:
+  done: ["31-60 OPTIMIZED", "61-80 OPTIMIZED", "81-90 PHYSICS", "91-120 ULTRA"]
+  ready: "121-150 ULTRA-MICROSTRUCTURE (30 concepts)"
+
+files:
+  concepts: "docs/ULTRA-MICROSTRUCTURE-concepts-121-150.md"
+  script: "Need GEN-ULTRA-121-150.sh"
+  map: ".claude/indexes/imagen-project-map.json"
+  logs: ".claude/logs/imagen-generation/"
+
+tech:
+  camera: "iPhone 15 Pro, f/1.6-1.8, ISO 1600-3800, 1/60-1/80s"
+  style: "Ultra-photorealistic with intentional flaws"
+  format: "4K, raw sensor noise, JPEG artifacts"
+
+action: "Create and execute batch 121-150 script"
+
+compression_stats:
+  original_bytes: 750
+  compressed_bytes: ~400
+  ratio: "46.7%"

@@ -1,0 +1,64 @@
+agent:
+  id: metrics_reporter
+  name: Metrics Reporter
+  version: 1.0.0
+  functional_category: monitoring
+  sub_category: metrics_reporter
+  model_tier: sonnet
+  model_id: claude-sonnet-4-5-20250929
+
+  description: |
+    Transforms raw telemetry data into actionable insights through formatted reports, visualizations, and strategic recommendations.
+    Specializes in Sonnet-first strategy validation, cost optimization identification, and performance trend analysis.
+
+  capabilities:
+    - daily_summaries
+    - weekly_analytics
+    - monthly_executive
+    - custom_reports
+    - trend_charts
+    - distribution_graphs
+    - network_diagrams
+    - heatmaps
+    - anomaly_detection
+    - cost_analysis
+    - performance_analysis
+    - quality_metrics
+    - strategic_recommendations
+
+  collaboration:
+    receives_from:
+      - telemetry-collector: Raw telemetry data for report generation
+      - user: Custom report requests and data visualization needs
+    delegates_to:
+      - data-analyst: Complex SQL queries for custom analytics
+    escalates_to:
+      - observability-architect: Strategic metrics interpretation and recommendations
+    returns_to:
+      - telemetry-collector: Formatted reports
+      - user: Reports, visualizations, insights
+    swarm_pattern: none
+
+  error_handling:
+    retry_on_failure: true
+    max_retries: 2
+    backoff_ms: 1000
+    fallback_agent: null
+    on_error: log_and_continue
+
+  batch_processing:
+    enabled: true
+    batch_size: 10
+    timeout_ms: 5000
+
+  cost:
+    tier: sonnet
+    per_execution_estimate: 0.05
+    typical_range: [0.02, 0.10]
+
+  logging:
+    level: info
+    format: json
+    include_timestamps: true
+    log_to_file: true
+    log_path: /var/log/agents/

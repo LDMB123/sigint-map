@@ -1,0 +1,175 @@
+# Universal Agent Framework - Translate Transformer
+# Category: Transformers | Tier: Opus/Opus | Parallelization: 10+
+
+agent:
+  id: transformer_translate
+  name: Translate Transformer
+  version: 1.0.0
+
+  functional_category: transformer
+  sub_category: translate
+  model_tier: opus
+
+  description: |
+    Translates code between programming languages.
+    Preserves semantics while adapting to target language idioms.
+    Handles language-specific patterns and paradigms.
+
+  capabilities:
+    - translate_language
+    - adapt_paradigms
+    - convert_idioms
+    - transform_types
+    - translate_error_handling
+    - convert_concurrency
+    - adapt_collections
+    - translate_patterns
+    - convert_build_systems
+    - adapt_testing
+
+  supported_translations:
+    - python_to_javascript
+    - javascript_to_python
+    - python_to_rust
+    - javascript_to_typescript
+    - java_to_kotlin
+    - java_to_python
+    - ruby_to_python
+    - go_to_rust
+    - cpp_to_rust
+    - swift_to_kotlin
+    - csharp_to_java
+
+  input_schema:
+    type: object
+    required:
+      - source_file
+      - target_language
+    properties:
+      source_file:
+        type: string
+      source_language:
+        type: string
+        description: Override auto-detected source language
+      target_language:
+        type: string
+      options:
+        type: object
+        properties:
+          preserve_comments:
+            type: boolean
+            default: true
+          use_idiomatic_patterns:
+            type: boolean
+            default: true
+          include_type_hints:
+            type: boolean
+            default: true
+          target_version:
+            type: string
+          framework_mappings:
+            type: object
+            description: Map source frameworks to target equivalents
+
+  output_schema:
+    type: object
+    properties:
+      translated_code:
+        type: string
+      target_language:
+        type: string
+      translation_notes:
+        type: array
+        items:
+          type: object
+          properties:
+            original_line:
+              type: integer
+            note:
+              type: string
+            type:
+              type: string
+              enum: [info, warning, manual_review]
+      dependencies:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            version:
+              type: string
+            reason:
+              type: string
+      confidence:
+        type: number
+        minimum: 0
+        maximum: 1
+      manual_interventions:
+        type: array
+        items:
+          type: object
+          properties:
+            line:
+              type: integer
+            issue:
+              type: string
+            suggestion:
+              type: string
+
+  performance:
+    avg_latency_ms: 5000
+    max_tokens: 32000
+    timeout_seconds: 180
+
+  parallelization:
+    max_concurrent: 10
+    recommended_batch_size: 3
+
+  collaboration:
+    receives_from:
+      - migration-orchestrator: Cross-language migration requests
+      - polyglot-integration-orchestrator: Multi-language integration
+      - full-stack-developer: Language porting requests
+    delegates_to:
+      - syntax-validator: Validate translated code syntax
+      - test-generator: Generate tests for translated code
+      - dependency-analyzer: Analyze target language dependencies
+    queries:
+      - convention-extractor: Query target language conventions
+      - pattern-miner: Identify target language patterns
+    escalates_to:
+      - system-architect: Complex paradigm mismatches requiring architectural changes
+      - full-stack-developer: Manual intervention required for unsupported constructs
+    returns_to:
+      - orchestrating-agent: Translated code with notes and confidence score
+    swarm_pattern: pipeline
+
+  tags:
+    - transformation
+    - translation
+    - language
+    - porting
+error_handling:
+  retry_on_failure: true
+  max_retries: 2
+  backoff_ms: 1000
+  fallback_agent: null
+  on_error: log_and_continue
+
+batch_processing:
+  enabled: true
+  batch_size: 10
+  timeout_ms: 5000
+
+cost:
+  tier: opus
+  per_execution_estimate: 0.15
+  typical_range: [0.10, 0.30]
+
+logging:
+  level: info
+  format: json
+  include_timestamps: true
+  log_to_file: true
+  log_path: /var/log/agents/

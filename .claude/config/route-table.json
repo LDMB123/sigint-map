@@ -55,65 +55,65 @@
 
   "routes": {
     "0x0100000000000000": {
-      "agent": "rust-project-architect",
-      "tier": "opus"
+      "agent": "code-generator",
+      "tier": "sonnet"
     },
     "0x0200000000000000": {
-      "agent": "rust-semantics-engineer",
-      "tier": "opus"
+      "agent": "feature-dev:code-reviewer",
+      "tier": "sonnet"
     },
     "0x0300000000000000": {
-      "agent": "rust-migration-engineer",
+      "agent": "migration-agent",
       "tier": "sonnet"
     },
     "0x0400000000000000": {
-      "agent": "rust-performance-engineer",
+      "agent": "performance-profiler",
       "tier": "sonnet"
     },
     "0x0500000000000000": {
-      "agent": "senior-frontend-engineer",
+      "agent": "code-generator",
       "tier": "sonnet"
     },
     "0x0600000000000000": {
-      "agent": "senior-backend-engineer",
+      "agent": "code-generator",
       "tier": "sonnet"
     },
     "0x0700000000000000": {
-      "agent": "prisma-schema-architect",
+      "agent": "code-generator",
       "tier": "sonnet"
     },
     "0x0800000000000000": {
-      "agent": "vitest-testing-specialist",
+      "agent": "test-generator",
       "tier": "sonnet"
     },
     "0x0900000000000000": {
-      "agent": "performance-analyzer",
+      "agent": "performance-auditor",
       "tier": "sonnet"
     },
     "0x0a00000000000000": {
-      "agent": "system-architect",
-      "tier": "opus"
+      "agent": "dependency-analyzer",
+      "tier": "sonnet"
     },
     "0x0b00000000000000": {
-      "agent": "documentation-engineer",
+      "agent": "documentation-writer",
       "tier": "sonnet"
     },
     "0x0c00000000000000": {
-      "agent": "devops-engineer",
+      "agent": "code-generator",
       "tier": "sonnet"
     },
     "0x0d00000000000000": {
-      "agent": "typescript-type-wizard",
+      "agent": "feature-dev:code-reviewer",
       "tier": "sonnet"
     },
     "0x0f00000000000000": {
-      "agent": "full-stack-developer",
+      "agent": "code-generator",
       "tier": "sonnet"
     }
   },
 
   "default_route": {
-    "agent": "full-stack-developer",
+    "agent": "code-generator",
     "tier": "sonnet",
     "confidence": 5
   },
@@ -121,311 +121,263 @@
   "category_routes": {
     "analyzer": {
       "static": {
-        "agent": "analyzer_static",
+        "agent": "dependency-analyzer",
         "tier": "sonnet"
       },
       "dependency": {
-        "agent": "analyzer_dependency",
-        "tier": "haiku"
+        "agent": "dependency-analyzer",
+        "tier": "sonnet"
       },
       "semantic": {
-        "agent": "analyzer_semantic",
+        "agent": "dependency-analyzer",
         "tier": "sonnet"
       },
       "performance": {
-        "agent": "analyzer_performance",
+        "agent": "performance-auditor",
         "tier": "sonnet"
       },
       "impact": {
-        "agent": "analyzer_impact",
+        "agent": "dependency-analyzer",
+        "tier": "sonnet"
+      },
+      "token": {
+        "agent": "token-optimizer",
         "tier": "haiku"
       }
     },
     "debugger": {
       "build": {
-        "agent": "debugger_build",
+        "agent": "error-debugger",
         "tier": "sonnet"
       },
       "error": {
-        "agent": "debugger_error_diagnosis",
+        "agent": "error-debugger",
         "tier": "sonnet"
       },
       "integration": {
-        "agent": "debugger_integration",
+        "agent": "error-debugger",
         "tier": "sonnet"
       },
       "performance": {
-        "agent": "debugger_performance",
+        "agent": "performance-profiler",
         "tier": "sonnet"
       },
       "test": {
-        "agent": "debugger_test_failure",
+        "agent": "error-debugger",
         "tier": "sonnet"
       }
     },
     "generator": {
       "code": {
-        "agent": "generator_code",
+        "agent": "code-generator",
         "tier": "sonnet"
       },
       "config": {
-        "agent": "generator_config",
+        "agent": "code-generator",
         "tier": "sonnet"
       },
       "data": {
-        "agent": "generator_data",
+        "agent": "code-generator",
         "tier": "sonnet"
       },
       "documentation": {
-        "agent": "generator_documentation",
+        "agent": "documentation-writer",
         "tier": "sonnet"
       },
       "test": {
-        "agent": "generator_test",
+        "agent": "test-generator",
         "tier": "sonnet"
       }
     },
     "guardian": {
       "security": {
-        "agent": "guardian_security_scanner",
-        "tier": "opus"
+        "agent": "security-scanner",
+        "tier": "sonnet"
       },
       "compliance": {
-        "agent": "guardian_compliance_checker",
-        "tier": "opus"
+        "agent": "best-practices-enforcer",
+        "tier": "sonnet"
       },
       "secret": {
-        "agent": "guardian_secret_detector",
+        "agent": "security-scanner",
         "tier": "sonnet"
       },
       "rate_limit": {
-        "agent": "guardian_rate_limiter",
-        "tier": "haiku"
+        "agent": "performance-auditor",
+        "tier": "sonnet"
       },
       "privacy": {
-        "agent": "guardian_privacy_validator",
-        "tier": "opus"
+        "agent": "security-scanner",
+        "tier": "sonnet"
       }
     },
     "integrator": {
       "api": {
-        "agent": "integrator_api_client",
+        "agent": "code-generator",
         "tier": "sonnet"
       },
       "database": {
-        "agent": "integrator_database",
+        "agent": "code-generator",
         "tier": "sonnet"
       },
       "message_queue": {
-        "agent": "integrator_message_queue",
+        "agent": "code-generator",
         "tier": "sonnet"
       },
       "third_party": {
-        "agent": "integrator_third_party",
+        "agent": "code-generator",
         "tier": "sonnet"
       },
       "adapter": {
-        "agent": "integrator_adapter",
+        "agent": "migration-agent",
         "tier": "sonnet"
       }
     },
     "learner": {
       "indexer": {
-        "agent": "learner_codebase_indexer",
-        "tier": "haiku"
+        "agent": "dependency-analyzer",
+        "tier": "sonnet"
       },
       "context": {
-        "agent": "learner_context_builder",
-        "tier": "haiku"
+        "agent": "dependency-analyzer",
+        "tier": "sonnet"
       },
       "patterns": {
-        "agent": "learner_pattern_miner",
+        "agent": "feature-dev:code-reviewer",
         "tier": "sonnet"
       },
       "conventions": {
-        "agent": "learner_convention_extractor",
-        "tier": "haiku"
+        "agent": "best-practices-enforcer",
+        "tier": "sonnet"
       },
       "domain": {
-        "agent": "learner_domain_modeler",
-        "tier": "opus"
+        "agent": "dependency-analyzer",
+        "tier": "sonnet"
       }
     },
     "orchestrator": {
       "delegation": {
-        "agent": "orchestrator_delegation",
+        "agent": "feature-dev:code-reviewer",
         "tier": "sonnet"
       },
       "workflow": {
-        "agent": "orchestrator_workflow",
+        "agent": "feature-dev:code-reviewer",
         "tier": "sonnet"
       },
       "pipeline": {
-        "agent": "orchestrator_pipeline",
+        "agent": "feature-dev:code-reviewer",
         "tier": "sonnet"
       },
       "consensus": {
-        "agent": "orchestrator_consensus",
-        "tier": "opus"
+        "agent": "feature-dev:code-reviewer",
+        "tier": "sonnet"
       },
       "swarm": {
-        "agent": "orchestrator_swarm",
-        "tier": "opus"
+        "agent": "feature-dev:code-reviewer",
+        "tier": "sonnet"
       }
     },
     "reporter": {
       "summary": {
-        "agent": "reporter_summary",
-        "tier": "haiku"
+        "agent": "documentation-writer",
+        "tier": "sonnet"
       },
       "metrics": {
-        "agent": "reporter_metrics",
-        "tier": "haiku"
+        "agent": "performance-auditor",
+        "tier": "sonnet"
       },
       "visualization": {
-        "agent": "reporter_visualization",
-        "tier": "haiku"
+        "agent": "documentation-writer",
+        "tier": "sonnet"
       },
       "notification": {
-        "agent": "reporter_notification",
-        "tier": "haiku"
+        "agent": "documentation-writer",
+        "tier": "sonnet"
       },
       "audit": {
-        "agent": "reporter_audit_trail",
-        "tier": "haiku"
+        "agent": "security-scanner",
+        "tier": "sonnet"
       }
     },
     "transformer": {
       "format": {
-        "agent": "transformer_format",
-        "tier": "haiku"
+        "agent": "refactoring-agent",
+        "tier": "sonnet"
       },
       "migrate": {
-        "agent": "transformer_migrate",
+        "agent": "migration-agent",
         "tier": "sonnet"
       },
       "optimize": {
-        "agent": "transformer_optimize",
+        "agent": "performance-profiler",
         "tier": "sonnet"
       },
       "refactor": {
-        "agent": "transformer_refactor",
+        "agent": "refactoring-agent",
         "tier": "sonnet"
       },
       "translate": {
-        "agent": "transformer_translate",
-        "tier": "opus"
+        "agent": "migration-agent",
+        "tier": "sonnet"
       }
     },
     "validator": {
       "schema": {
-        "agent": "validator_schema",
-        "tier": "haiku"
+        "agent": "feature-dev:code-reviewer",
+        "tier": "sonnet"
       },
       "security": {
-        "agent": "validator_security",
+        "agent": "security-scanner",
         "tier": "sonnet"
       },
       "style": {
-        "agent": "validator_style",
-        "tier": "haiku"
+        "agent": "best-practices-enforcer",
+        "tier": "sonnet"
       },
       "syntax": {
-        "agent": "validator_syntax",
-        "tier": "haiku"
+        "agent": "feature-dev:code-reviewer",
+        "tier": "sonnet"
       },
       "test": {
-        "agent": "validator_test",
+        "agent": "test-generator",
         "tier": "sonnet"
       },
       "contract": {
-        "agent": "contract_validator",
+        "agent": "feature-dev:code-reviewer",
         "tier": "sonnet"
       }
     },
     "content": {
       "tutorial": {
-        "agent": "tutorial_generator",
+        "agent": "documentation-writer",
         "tier": "sonnet"
       }
     },
     "testing": {
       "benchmark": {
-        "agent": "benchmark_framework",
+        "agent": "performance-profiler",
         "tier": "sonnet"
       }
     },
     "monitoring": {
       "metrics": {
-        "agent": "metrics_reporter",
-        "tier": "haiku"
+        "agent": "performance-auditor",
+        "tier": "sonnet"
       },
       "telemetry": {
-        "agent": "telemetry_collector",
-        "tier": "haiku"
+        "agent": "performance-auditor",
+        "tier": "sonnet"
       }
     },
     "workflow": {
       "triage": {
-        "agent": "workflow_bug_triage",
+        "agent": "bug-triager",
         "tier": "sonnet"
       }
     },
     "dmb": {
       "predictor": {
-        "agent": "dmb_bustout_predictor",
-        "tier": "sonnet"
-      }
-    },
-    "self-improving": {
-      "recursive": {
-        "agent": "recursive_optimizer",
-        "tier": "sonnet"
-      },
-      "feedback": {
-        "agent": "feedback_loop_optimizer",
-        "tier": "sonnet"
-      },
-      "meta": {
-        "agent": "meta_learner",
-        "tier": "sonnet"
-      }
-    },
-    "quantum-parallel": {
-      "wave": {
-        "agent": "wave_function_optimizer",
-        "tier": "opus"
-      },
-      "massive": {
-        "agent": "massive_parallel_coordinator",
-        "tier": "opus"
-      },
-      "superposition": {
-        "agent": "superposition_executor",
-        "tier": "opus"
-      }
-    },
-    "ecommerce": {
-      "inventory": {
-        "agent": "ecommerce_inventory_sync",
-        "tier": "sonnet"
-      },
-      "orders": {
-        "agent": "ecommerce_order_fulfillment",
-        "tier": "sonnet"
-      },
-      "returns": {
-        "agent": "ecommerce_returns_management",
-        "tier": "sonnet"
-      }
-    },
-    "events": {
-      "timeline": {
-        "agent": "production_timeline_coordinator",
-        "tier": "sonnet"
-      },
-      "rider": {
-        "agent": "technical_rider_analyzer",
+        "agent": "dmb-analyst",
         "tier": "sonnet"
       }
     }

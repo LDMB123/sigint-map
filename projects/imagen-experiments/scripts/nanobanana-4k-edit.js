@@ -21,5 +21,10 @@ await generateImage({
   prompt: editPrompt,
   editImagePath: imagePath,
   imageSize: '4K',  // Force 4K resolution
-  aspectRatio: '1:1'
+  aspectRatio: '1:1',
+  // CRITICAL: Disable prompt rewriting to preserve imperfection constraints
+  ENABLE_PROMPT_REWRITING: false,
+  // Safety settings - minimum blocking for legitimate fashion photography
+  safety_filter_level: 'block_only_high',
+  person_generation: 'allow_adult'
 });

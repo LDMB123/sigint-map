@@ -1,0 +1,345 @@
+================================================================================
+RUNTIME ERROR ANALYSIS - EXECUTIVE SUMMARY
+================================================================================
+
+PROJECT: dmb-almanac (Svelte/Vite app)
+ANALYSIS DATE: 2026-01-29
+STATUS: 40 FAILING TESTS - ROOT CAUSE IDENTIFIED
+
+================================================================================
+QUICK FACTS
+================================================================================
+
+Total Failures: 40 tests
+Files Affected: 3 test files
+Root Cause Type: Missing function implementations + incomplete module
+Severity: CRITICAL - Blocks 100% of error logging test suite
+
+File Breakdown:
+  - tests/unit/errors/logger.test.js: 26 failures
+  - tests/integration/error-logging-integration.test.js: 9 failures
+  - tests/unit/breadcrumb-deduplication.test.js: 5 failures (cascading)
+
+Primary Issues: 2
+  1. Missing module exports: enableVerboseLogging(), getDiagnosticReport()
+  2. Incomplete errorLogger object: Missing 11+ methods + 1 property
+
+Secondary Issues: Multiple
+  - Function signature mismatches (logApiError)
+  - Missing log buffer storage
+  - Missing error handler callbacks
+  - Missing diagnostic reporting
+
+================================================================================
+ROOT CAUSE ANALYSIS
+================================================================================
+
+SOURCE FILE: /projects/dmb-almanac/app/src/lib/errors/logger.js
+
+Current State:
+  - 87 lines of code
+  - Minimal console wrapper implementation
+  - Only 5 methods
+  - No internal state/storage
+  - No error handlers
+  - No exports for helper functions
+
+Expected State:
+  - ~250 lines of code
+  - Full-featured error logging system
+  - 16+ methods
+  - Internal log buffer (max 100 entries)
+  - Error handler callback system
+  - Session ID management
+  - Diagnostic report generation
+  - 2+ exported helper functions
+
+Gap: ~70% of expected implementation is missing
+
+================================================================================
+CRITICAL BLOCKING ISSUES
+================================================================================
+
+ISSUE #1: Module Import Fails
+├─ Missing export: enableVerboseLogging()
+├─ Missing export: getDiagnosticReport()
+├─ Impact: Cannot even load test files
+├─ Blocks: 35 tests (26 + 9 from cascading import failures)
+└─ Severity: 🔴 CRITICAL - Prevents test execution
+
+ISSUE #2: Test Setup Fails
+├─ Missing method: errorLogger.clearLogs()
+├─ Called in: beforeEach hook (line 14, 19, 278)
+├─ Impact: Test isolation broken, cannot clear state between tests
+├─ Blocks: 35 tests (all tests after beforeEach fails)
+└─ Severity: 🔴 CRITICAL - Prevents all test execution
+
+ISSUE #3: Core Functionality Missing
+├─ Missing methods: getLogs(), getErrorLogs(), logAsyncError(), etc. (11 total)
+├─ Missing property: errorHandlers (array)
+├─ Missing methods: onError(), getSessionId(), exportLogs()
+├─ Signature wrong: logApiError() has wrong parameter order
+├─ Impact: Tests cannot execute even if imports/setup worked
+├─ Blocks: 40+ tests (all individual test failures)
+└─ Severity: 🔴 CRITICAL - Missing core functionality
+
+================================================================================
+SPECIFIC FAILING FUNCTIONS
+================================================================================
+
+MISSING METHODS (must implement):
+1. debug(message, context) - Line 27 of tests
+2. fatal(message, error, context) - Line 90 of tests
+3. clearLogs() - Line 14 of tests (BLOCKS SETUP)
+4. getLogs(limit) - Line 28 of tests
+5. getErrorLogs(limit) - Line 173 of tests
+6. logAsyncError(operationName, error, context) - Line 113 of tests
+7. exportLogs() - Line 200 of tests
+8. getSessionId() - Line 209 of tests
+9. onError(handler) - Line 72 of tests
+10. logApiError(endpoint, method, status, error, context) - SIGNATURE WRONG
+11. errorHandlers (property/array) - Lines 15, 20, 279
+
+MISSING EXPORTS (must export):
+1. enableVerboseLogging() - Called line 271 of logger.test.js
+2. getDiagnosticReport() - Called lines 283 (logger.test.js), 61/93 (integration)
+
+================================================================================
+ERROR PATTERNS
+================================================================================
+
+Pattern 1: TypeError: X is not a function
+  Cause: Method doesn't exist on errorLogger object
+  Count: 26 occurrences across test suite
+  Examples:
+    - clearLogs is not a function
+    - getLogs is not a function
+    - debug is not a function
+
+Pattern 2: Cannot import X from module
+  Cause: Function not exported from logger.js
+  Count: 2 critical imports that fail
+  Examples:
+    - Cannot import enableVerboseLogging
+    - Cannot import getDiagnosticReport
+  Effect: Cascades to prevent entire test file execution
+
+Pattern 3: Signature mismatch
+  Function: logApiError()
+  Current: logApiError(endpoint, status, message, context)
+  Expected: logApiError(endpoint, method, status, error, context)
+  Test call: errorLogger.logApiError('/api/songs', 'GET', 500, new Error(...))
+
+Pattern 4: Missing state/storage
+  Cause: No internal log buffer
+  Effect: getLogs() cannot work, exportLogs() has nothing to export
+  Impact: Cascades to 10+ failing tests
+
+================================================================================
+REQUIRED DATA STRUCTURES
+================================================================================
+
+ErrorLog object (stored in buffer):
+{
+  timestamp: Date,
+  level: 'debug' | 'info' | 'warn' | 'error' | 'fatal',
+  message: string,
+  error?: Error,
+  errorName?: string,
+  context?: Record<string, unknown>
+}
+
+DiagnosticReport object (returned by getDiagnosticReport):
+{
+  sessionId: string,
+  timestamp: Date,
+  errorCount: number,
+  warningCount: number,
+  recentErrors: ErrorLog[],
+  userAgent: string,
+  url: string
+}
+
+ErrorHandlerReport object (passed to error handlers):
+{
+  level: string,
+  message: string,
+  errorName?: string,
+  error?: Error,
+  context?: Record<string, unknown>,
+  errorCode?: string,
+  statusCode?: number,
+  timestamp: Date
+}
+
+================================================================================
+IMPLEMENTATION PRIORITY
+================================================================================
+
+🔴 CRITICAL (Must fix to unblock any tests):
+  1. Export enableVerboseLogging() and getDiagnosticReport()
+  2. Implement errorLogger.clearLogs()
+  3. Implement errorLogger.getLogs(limit)
+  4. Implement errorLogger.getSessionId()
+  5. Create internal log buffer storage (_logs array)
+
+🟡 HIGH (Required for most tests to pass):
+  6. Implement errorLogger.debug(), .fatal()
+  7. Implement errorLogger.onError() and errorHandlers property
+  8. Fix logApiError() signature and parameters
+  9. Implement error handler notification system
+
+🟢 MEDIUM (Needed for full test coverage):
+  10. Implement errorLogger.getErrorLogs()
+  11. Implement errorLogger.exportLogs()
+  12. Implement errorLogger.logAsyncError()
+  13. Add AppError integration (error codes, status codes)
+
+================================================================================
+IMPLEMENTATION SCOPE
+================================================================================
+
+Current file: 87 lines
+Required additions: ~160 lines
+Final size: ~250 lines
+
+Complexity: MEDIUM
+  - Simple state management (arrays, strings)
+  - Basic method implementations
+  - Async callback handling
+  - No complex algorithms or data structures
+
+Time estimate: 2-4 hours for complete implementation + testing
+
+Risk level: LOW
+  - No external dependencies added
+  - No architectural changes required
+  - Straightforward method implementations
+  - Tests provide clear specification of expected behavior
+
+================================================================================
+CASCADE FAILURE ANALYSIS
+================================================================================
+
+Failure Chain:
+1. Test file imports logger.js
+2. Import fails because enableVerboseLogging and getDiagnosticReport not exported
+3. Entire test file cannot load
+4. All tests in file marked as failing (26 + 9 = 35 tests)
+5. If imports somehow succeed, beforeEach calls clearLogs()
+6. clearLogs() doesn't exist, fails
+7. All tests in suite fail because setup failed (another 35 tests)
+8. If both import and setup succeeded, individual tests would fail on:
+   - getLogs() calls (10+ tests)
+   - debug() calls (5+ tests)
+   - fatal() calls (4+ tests)
+   - onError() calls (8+ tests)
+   - logAsyncError() calls (2+ tests)
+   - And others...
+
+Total: 40 test failures, but cascading from just 2 primary issues
+
+================================================================================
+SOLUTION APPROACH
+================================================================================
+
+Phase 1: Unblock Imports (5 minutes)
+  - Add 2 function exports
+  - Prevents 35 cascading failures
+
+Phase 2: Unblock Setup (15 minutes)
+  - Implement clearLogs(), getLogs(), getSessionId()
+  - Create log buffer storage
+  - Prevents 35 more cascading failures
+
+Phase 3: Implement Core Methods (45 minutes)
+  - Add 11 missing methods
+  - Fix signature mismatches
+  - Implement error handler system
+
+Phase 4: Testing & Validation (30 minutes)
+  - Run full test suite
+  - Fix any edge cases
+  - Verify all 40 tests pass
+
+Total estimated time: 1.5 - 2 hours
+
+================================================================================
+FILES TO EXAMINE
+================================================================================
+
+Primary:
+  - /projects/dmb-almanac/app/src/lib/errors/logger.js (NEEDS WORK)
+  - /projects/dmb-almanac/app/src/lib/errors/types.js (FOR REFERENCE)
+
+Test Files (specification):
+  - /projects/dmb-almanac/app/tests/unit/errors/logger.test.js
+  - /projects/dmb-almanac/app/tests/integration/error-logging-integration.test.js
+  - /projects/dmb-almanac/app/tests/unit/breadcrumb-deduplication.test.js
+
+Reference:
+  - /projects/dmb-almanac/app/src/lib/monitoring/errors.js (shows integration)
+
+================================================================================
+DETAILED ANALYSIS DOCUMENTS
+================================================================================
+
+For complete details, see these analysis files:
+
+1. RUNTIME_ERROR_ANALYSIS.md
+   - Comprehensive error breakdown by type
+   - Stack trace patterns and analysis
+   - Prevention recommendations
+   - Architecture diagrams
+
+2. MISSING_IMPLEMENTATIONS_SUMMARY.md
+   - Quick reference of missing functions
+   - Test file line mappings
+   - Data structure specifications
+   - Call signature analysis
+
+3. ERROR_MATRIX.md
+   - Detailed failure matrix
+   - Error occurrence counts
+   - Cascade effect analysis
+   - Vitest execution flow
+   - Implementation checklist
+
+4. MISSING_FUNCTIONS_VISUAL.md
+   - Visual reference tables
+   - Dependency trees
+   - Implementation phases with code
+   - Checklist and predictions
+   - Size impact analysis
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The test failures are caused by an incomplete implementation of the error
+logging system. The source module provides only a minimal console wrapper,
+while the tests expect a full-featured error logging system with:
+
+  - In-memory log buffer
+  - Error categorization and filtering
+  - Error handler callbacks
+  - Diagnostic report generation
+  - Session ID tracking
+  - JSON export capability
+
+This is NOT a subtle bug or environmental issue. It's a straightforward
+feature implementation gap where the source module needs ~160 additional
+lines of code to meet the test specifications.
+
+The good news: The implementation is straightforward, low-risk, and tests
+provide clear specifications of expected behavior.
+
+Key files:
+  - Source: /projects/dmb-almanac/app/src/lib/errors/logger.js
+  - Tests: /projects/dmb-almanac/app/tests/unit/errors/logger.test.js
+          /projects/dmb-almanac/app/tests/integration/error-logging-integration.test.js
+
+Recommended action: Implement the missing methods and exports as detailed
+in the analysis documents above.
+
+================================================================================

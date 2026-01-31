@@ -1,0 +1,174 @@
+# Semantic Cache: Pool Editorial Ultra-Microstructure Prompts
+# Generated: 2026-01-30
+# Purpose: Enable semantic similarity matching and result caching
+# Token savings: Avoid re-generation of similar queries within 0.85 similarity threshold
+
+CACHE_CONFIG:
+  semantic_threshold: 0.85
+  max_entries: 50
+  ttl_seconds: 604800  # 7 days (pool editorial batch should be stable)
+  hash_algorithm: "SHA256_semantic"
+
+POOL_EDITORIAL_BATCH:
+
+  PROMPT_1_ROOFTOP:
+    id: "pool-editorial-001"
+    hash: "8a3f2b1e9c7d5f4a_rooftop_golden_scarlet"
+    title: "Rooftop Infinity Pool - Golden Hour - Scarlet Red"
+    query_keywords:
+      - "rooftop pool"
+      - "golden hour"
+      - "infinity edge"
+      - "scarlet red"
+      - "resort cover-up"
+    microstructure_ref: "ULTRA_MICROSTRUCTURE_197_TOKENS"
+    camera_preset: "IPHONE15_PRO_MAX_GOLDEN_HOUR"
+    token_count: 612
+    generation_status: "ready"
+    cached_results:
+      - image_path: null
+      - quality_score: null
+      - generation_time: null
+
+  PROMPT_2_MIDDAY:
+    id: "pool-editorial-002"
+    hash: "7b4c3a2d8f6e1b9h_midday_harsh_ivory"
+    title: "Resort Hotel Pool Deck - Midday Harsh Sun - Ivory White"
+    query_keywords:
+      - "resort pool deck"
+      - "midday harsh sun"
+      - "pool shallow end"
+      - "ivory white"
+      - "structured resort wear"
+    microstructure_ref: "ULTRA_MICROSTRUCTURE_197_TOKENS"
+    camera_preset: "IPHONE15_PRO_MIDDAY_HARSH"
+    token_count: 608
+    generation_status: "ready"
+    cached_results:
+      - image_path: null
+      - quality_score: null
+      - generation_time: null
+
+  PROMPT_3_DUSK:
+    id: "pool-editorial-003"
+    hash: "6c5d4b3a9e7f2g1i_dusk_blue_hour_black"
+    title: "Private Home Pool - Dusk Blue Hour - Black"
+    query_keywords:
+      - "private pool"
+      - "dusk blue hour"
+      - "pool deck edge"
+      - "black resort wear"
+      - "twilight lighting"
+    microstructure_ref: "ULTRA_MICROSTRUCTURE_197_TOKENS"
+    camera_preset: "IPHONE14_PRO_DUSK_BLUE_HOUR"
+    token_count: 615
+    generation_status: "ready"
+    cached_results:
+      - image_path: null
+      - quality_score: null
+      - generation_time: null
+
+# SIMILARITY PATTERNS (enable semantic caching)
+SIMILARITY_PATTERNS:
+
+  # Similar to Prompt 1 (rooftop setting)
+  "rooftop pool photography":
+    base_hash: "8a3f2b1e9c7d5f4a_rooftop_golden_scarlet"
+    similarity: 0.92
+    adaptation_needed: "Minimal (same base microstructure)"
+
+  "penthouse pool editorial":
+    base_hash: "8a3f2b1e9c7d5f4a_rooftop_golden_scarlet"
+    similarity: 0.88
+    adaptation_needed: "Location (replace 'rooftop' with 'penthouse balcony')"
+
+  # Similar to Prompt 2 (midday resort)
+  "resort pool midday photography":
+    base_hash: "7b4c3a2d8f6e1b9h_midday_harsh_ivory"
+    similarity: 0.90
+    adaptation_needed: "Minimal (same microstructure + camera preset)"
+
+  "chlorinated water harsh sun":
+    base_hash: "7b4c3a2d8f6e1b9h_midday_harsh_ivory"
+    similarity: 0.87
+    adaptation_needed: "Clothing (adjust color, not structure)"
+
+  # Similar to Prompt 3 (dusk/twilight)
+  "blue hour pool photography":
+    base_hash: "6c5d4b3a9e7f2g1i_dusk_blue_hour_black"
+    similarity: 0.91
+    adaptation_needed: "Minimal (same blue hour lighting physics)"
+
+  "twilight pool editorial":
+    base_hash: "6c5d4b3a9e7f2g1i_dusk_blue_hour_black"
+    similarity: 0.89
+    adaptation_needed: "Time-of-day (adjust from 7:45pm to 7:30pm, etc.)"
+
+# TOKEN OPTIMIZATION HINTS
+COMPRESSION_RULES:
+  - "All three prompts share identical ULTRA_MICROSTRUCTURE_197_TOKENS block"
+  - "Store microstructure once, reference 3x (saves 391 tokens)"
+  - "Camera presets can be parameterized (iso, aperture, shutter only variables)"
+  - "Fabric descriptions repetitive across prompts (store template, vary color/material)"
+
+# RESULT DEDUPLICATION
+RESULT_CACHE:
+  # After first generation, store: (prompt_hash, image_path, quality_metrics)
+  # Enable: If incoming query has similarity > 0.85 to cached prompt, suggest cached result
+
+  entries: []  # Populated after first generation of each prompt
+
+  deduplication_strategy: "Semantic match only for identical microstructure + camera preset"
+  # Example: Prompt 1 variant with same rooftop + golden hour can use Prompt 1 result
+  #          (no need to regenerate unless clothing/pose significantly different)
+
+# COST ANALYSIS
+COST_PROJECTION:
+  prompt_1_tokens: 612
+  prompt_2_tokens: 608
+  prompt_3_tokens: 615
+  total_prompt_tokens: 1835
+
+  # Assume: Gemini-3-Pro responses average 300 tokens each
+  estimated_response_tokens: 900
+
+  total_generation_tokens: 2735
+
+  # Model pricing (approximate Jan 2025):
+  # - Gemini-3-Pro: $0.10 per 1M input + $0.40 per 1M output
+  # - Haiku fallback: $0.05 per 1M input + $0.15 per 1M output
+
+  cost_sonnet: "$0.0027 per prompt set"  # Using Sonnet tier for image quality
+  cost_haiku_fallback: "$0.0016 per prompt set"  # If budget critical
+
+  recommended_tier: "Gemini-3-Pro (best image quality for photorealism)"
+
+# SESSION STATE MARKERS
+ACTIVE_SESSION:
+  session_id: "nano-banana-pool-editorial-01"
+  background_tasks: [b1e1723, b2c951f, b7840e4, bc6df6b, b90b65d, b1a7214, bb0fc0f, b4a77b2, b580619, b74c4fd]
+  last_updated: "2026-01-30T14:32:00Z"
+  cache_status: "initialized"
+
+# GENERATION QUEUE
+QUEUE:
+  - order: 1
+    prompt_id: "pool-editorial-001"
+    status: "ready"
+    delay_before_execution: "0s"
+
+  - order: 2
+    prompt_id: "pool-editorial-002"
+    status: "queued"
+    delay_before_execution: "120s"  # Rate limiting
+
+  - order: 3
+    prompt_id: "pool-editorial-003"
+    status: "queued"
+    delay_before_execution: "240s"  # Rate limiting
+
+# RECOVERY NOTES
+RECOVERY_SIGNALS:
+  if_generation_fails: "Retry with @POOL_PROMPT_{N} decompression key"
+  if_token_budget_critical: "Switch to HAIKU tier, reduce to Prompt 1 only"
+  if_api_rate_limited: "Extend delay_before_execution to 180s between requests"

@@ -305,7 +305,7 @@ pwa-desktop-integration
 ### Core Skills
 1. **mcp-server-setup.md** - MCP server architecture and initialization
 2. **mcp-client-integration.md** - Client SDK usage and connection management
-3. **mcp-filesystem.md** - Secure file system operations
+3. **Desktop Commander** - Secure file system operations (replaces mcp-filesystem)
 4. **mcp-github.md** - GitHub API integration patterns
 5. **mcp-database.md** - Database operations and query patterns
 6. **mcp-browser.md** - Browser automation via Puppeteer/Playwright
@@ -324,7 +324,7 @@ pwa-desktop-integration
 
 #### Linked TO Security Skills
 - **mcp-security** + **Security: web-security-audit** = Comprehensive security audit
-- **mcp-filesystem** + **Security: web-security-audit** = Path traversal prevention
+- **Desktop Commander** + **Security: web-security-audit** = Path traversal prevention
 - **mcp-database** + **Security: web-security-audit** = SQL injection prevention
 
 #### Linked TO Web APIs Skills
@@ -351,7 +351,7 @@ pwa-desktop-integration
 **Feature Implementation (Choose based on needs):**
 1. mcp-custom-tools (for custom functionality)
 2. mcp-api-gateway (for external API integration)
-3. mcp-filesystem (for file operations)
+3. Desktop Commander (for file operations)
 4. mcp-database (for data access)
 5. mcp-github (for GitHub integration)
 6. mcp-browser (for browser automation)
@@ -363,7 +363,7 @@ pwa-desktop-integration
 mcp-server-setup (Foundation)
 ├─> mcp-custom-tools (add custom tools)
 ├─> mcp-api-gateway (integrate external APIs)
-├─> mcp-filesystem (add file access)
+├─> Desktop Commander (add file access)
 ├─> mcp-database (add data access)
 ├─> mcp-github (add GitHub operations)
 ├─> mcp-browser (add browser automation)
@@ -382,7 +382,7 @@ mcp-client-integration (Client-side)
 |-----------|---------------|-------------|----------|------|
 | Data Access | mcp-database | mcp-security | Query APIs safely | 120min |
 | External APIs | mcp-api-gateway | mcp-security | Public API consumption | 100min |
-| File System | mcp-filesystem | mcp-security | Document processing | 90min |
+| File System | Desktop Commander | mcp-security | Document processing | 90min |
 | GitHub Ops | mcp-github | mcp-security | Repo automation | 110min |
 | Browser Control | mcp-browser | mcp-custom-tools | Web scraping + processing | 150min |
 | Knowledge Mgmt | mcp-memory | mcp-security | Context persistence | 100min |
@@ -397,8 +397,8 @@ mcp-client-integration (Client-side)
 **Part 2 - Feature Specific (choose 2-3, 30-60 min each):**
 - mcp-custom-tools (for extending functionality)
 - mcp-api-gateway (for external API integration)
+- Desktop Commander (for file operations)
 - mcp-database (for data access)
-- mcp-filesystem (for file operations)
 
 **Part 3 - Advanced Patterns (60 min each):**
 - mcp-browser (for automation)
@@ -1624,7 +1624,7 @@ This document is maintained with these frequencies:
 
 **PWA (22):** sw-debugging-checklist, sw-race-condition-fix, sw-memory-leak-detection, offline-queue-pattern, pwa-performance-m-series, pwa-offline-resilience, pwa-badging-notifications, pwa-shortcuts, pwa-protocol-handlers, pwa-share-target, pwa-file-handlers, pwa-desktop-integration, window-controls-overlay, file-handlers, + 8 manifest/reference
 
-**MCP (12):** mcp-server-setup, mcp-client-integration, mcp-filesystem, mcp-github, mcp-database, mcp-browser, mcp-memory, mcp-api-gateway, mcp-custom-tools, mcp-security, + 2 reference
+**MCP (12):** mcp-server-setup, mcp-client-integration, Desktop Commander, mcp-github, mcp-database, mcp-browser, mcp-memory, mcp-api-gateway, mcp-custom-tools, mcp-security, + 2 reference
 
 **DMB (8):** setlist-analysis, rarity-scoring, guest-appearance-tracking, tour-analysis, song-statistics, venue-intelligence, show-rating, liberation-predictor
 

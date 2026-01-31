@@ -323,10 +323,14 @@ const SUBTYPE_PATTERNS: Array<[RegExp, number, number]> = [
 
 /**
  * Calculate complexity score based on request characteristics
+ *
+ * SECURITY: All regex patterns use word boundaries (\b) which are safe from ReDoS
+ * Input is limited to 10000 chars in hashRequest(), providing additional protection
  */
 function calculateComplexity(request: string): number {
   let score = 5; // Base complexity
 
+  // SECURITY: \b word boundaries are safe and don't cause catastrophic backtracking
   // Increase for multiple requirements
   const andCount = (request.match(/\band\b/gi) || []).length;
   score += Math.min(andCount, 3);

@@ -1,0 +1,13 @@
+{
+  "name": "google-image-api-direct",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Direct API implementations for Google Imagen 3 and Gemini 3 Pro image generation",
+  "scripts": {
+    "imagen": "node imagen-direct.js",
+    "gemini": "node gemini-image-direct.js"
+  },
+  "dependencies": {
+    "google-auth-library": "^9.0.0"
+  }
+}

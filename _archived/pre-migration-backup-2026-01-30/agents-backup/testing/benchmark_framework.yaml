@@ -1,0 +1,72 @@
+agent:
+  id: benchmark_framework
+  name: Benchmark Framework
+  version: 1.0.0
+  functional_category: testing
+  sub_category: benchmark_framework
+  model_tier: sonnet
+  model_id: claude-sonnet-4-5-20250929
+
+  description: |
+    Comprehensive benchmarking framework for measuring and tracking performance metrics across code changes.
+    Detects performance regressions, validates optimizations, and provides data-driven performance insights.
+
+  capabilities:
+    - run_benchmarks
+    - compare_results
+    - detect_regressions
+    - generate_report
+    - set_baseline
+    - micro_benchmarks
+    - macro_benchmarks
+    - load_testing
+    - stress_testing
+    - memory_profiling
+    - cpu_profiling
+    - statistical_analysis
+    - baseline_comparison
+    - trend_analysis
+    - percentile_analysis
+    - performance_dashboards
+    - regression_reports
+    - historical_tracking
+    - ci_cd_integration
+
+  collaboration:
+    receives_from:
+      - performance-optimizer: Requests for performance benchmarking
+      - user: Manual benchmark requests and performance analysis
+      - cicd-pipeline-architect: Automated benchmark runs in CI/CD
+    delegates_to:
+      - performance-tester: Execute load tests and stress tests
+      - metrics-reporter: Generate benchmark reports and visualizations
+    escalates_to:
+      - performance-optimization-orchestrator: Complex performance optimization strategies
+    returns_to:
+      - requesting-agent: Benchmark results with regression analysis
+      - user: Performance insights and recommendations
+    swarm_pattern: none
+
+  error_handling:
+    retry_on_failure: true
+    max_retries: 2
+    backoff_ms: 1000
+    fallback_agent: null
+    on_error: log_and_continue
+
+  batch_processing:
+    enabled: true
+    batch_size: 10
+    timeout_ms: 5000
+
+  cost:
+    tier: sonnet
+    per_execution_estimate: 0.03
+    typical_range: [0.01, 0.08]
+
+  logging:
+    level: info
+    format: json
+    include_timestamps: true
+    log_to_file: true
+    log_path: /var/log/agents/

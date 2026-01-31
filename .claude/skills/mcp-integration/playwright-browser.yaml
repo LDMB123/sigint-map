@@ -1,0 +1,398 @@
+---
+name: playwright-browser
+description: Browser automation and web scraping using Playwright MCP server
+tools:
+  - ToolSearch
+  - mcp__playwright__*
+---
+
+# Playwright Browser Automation
+
+Comprehensive browser automation for web scraping, testing, and interaction.
+
+## When to Use
+
+Use Playwright when you need to:
+- Automate browser interactions
+- Scrape dynamic websites (JavaScript-rendered content)
+- Fill and submit web forms
+- Capture screenshots
+- Extract page content
+- Perform automated testing
+
+## Tool Reference
+
+### Navigation & Interaction
+- `browser_navigate` - Go to URL
+- `browser_click` - Click elements
+- `browser_type` - Type text into inputs
+- `browser_fill_form` - Fill form fields
+- `browser_press_key` - Press keyboard keys
+- `browser_select_option` - Select dropdown options
+
+### Content Extraction
+- `browser_snapshot` - Get page state
+- `browser_take_screenshot` - Capture screenshot
+- `browser_evaluate` - Execute JavaScript
+- `browser_console_messages` - Get console logs
+- `browser_network_requests` - Monitor network activity
+
+### Advanced Features
+- `browser_hover` - Hover over elements
+- `browser_drag` - Drag and drop
+- `browser_wait_for` - Wait for conditions
+- `browser_navigate_back` - Navigate back
+- `browser_file_upload` - Upload files
+- `browser_handle_dialog` - Handle alerts/confirms
+- `browser_resize` - Set viewport size
+
+### Session Management
+- `browser_tabs` - Manage tabs
+- `browser_close` - Close browser
+- `browser_install` - Install browser binaries
+- `browser_run_code` - Execute browser code
+
+## Core Workflows
+
+### Workflow 1: Web Scraping
+
+```typescript
+// Navigate to page
+await browser_navigate('https://example.com');
+
+// Wait for content to load
+await browser_wait_for('selector', '#content');
+
+// Extract data
+const data = await browser_evaluate(`
+  Array.from(document.querySelectorAll('.item')).map(item => ({
+    title: item.querySelector('h2').textContent,
+    price: item.querySelector('.price').textContent
+  }))
+`);
+
+// Take screenshot for verification
+await browser_take_screenshot('screenshot.png');
+
+// Close when done
+await browser_close();
+```
+
+### Workflow 2: Form Automation
+
+```typescript
+// Navigate to form
+await browser_navigate('https://example.com/form');
+
+// Fill form fields
+await browser_fill_form({
+  '#name': 'John Doe',
+  '#email': 'john@example.com',
+  '#message': 'Hello from automation'
+});
+
+// Select dropdown
+await browser_select_option('#country', 'USA');
+
+// Submit form
+await browser_click('button[type="submit"]');
+
+// Wait for success message
+await browser_wait_for('text', 'Form submitted successfully');
+```
+
+### Workflow 3: Dynamic Content Monitoring
+
+```typescript
+// Navigate and wait for JavaScript to load
+await browser_navigate('https://dynamic-site.com');
+await browser_wait_for('networkidle');
+
+// Monitor network requests
+const requests = await browser_network_requests();
+const apiCalls = requests.filter(r => r.url.includes('/api/'));
+
+// Check console for errors
+const consoleMessages = await browser_console_messages();
+const errors = consoleMessages.filter(m => m.type === 'error');
+
+// Take snapshot of current state
+const snapshot = await browser_snapshot();
+```
+
+## Advanced Patterns
+
+### Pattern 1: Multi-step Navigation
+
+```typescript
+// Step 1: Login
+await browser_navigate('https://example.com/login');
+await browser_type('#username', 'user');
+await browser_type('#password', 'pass');
+await browser_click('#login-button');
+await browser_wait_for('navigation');
+
+// Step 2: Navigate to dashboard
+await browser_navigate('https://example.com/dashboard');
+await browser_wait_for('selector', '.dashboard-loaded');
+
+// Step 3: Extract data
+const data = await browser_evaluate(`
+  document.querySelector('.user-stats').textContent
+`);
+```
+
+### Pattern 2: Infinite Scroll Handling
+
+```typescript
+await browser_navigate('https://infinite-scroll-site.com');
+
+// Scroll and wait multiple times
+for (let i = 0; i < 5; i++) {
+  await browser_evaluate(`
+    window.scrollTo(0, document.body.scrollHeight)
+  `);
+  await browser_wait_for('timeout', 2000);
+}
+
+// Extract all loaded content
+const items = await browser_evaluate(`
+  Array.from(document.querySelectorAll('.item')).map(el => el.textContent)
+`);
+```
+
+### Pattern 3: Screenshot Comparison
+
+```typescript
+// Take before screenshot
+await browser_navigate('https://example.com');
+await browser_take_screenshot('before.png');
+
+// Perform action
+await browser_click('#toggle-button');
+await browser_wait_for('timeout', 1000);
+
+// Take after screenshot
+await browser_take_screenshot('after.png');
+```
+
+## Selector Strategies
+
+### CSS Selectors (Recommended)
+```typescript
+await browser_click('#submit-button');           // ID
+await browser_click('.btn-primary');             // Class
+await browser_click('button[type="submit"]');    // Attribute
+await browser_click('div > button:first-child'); // Complex
+```
+
+### Text Selectors
+```typescript
+await browser_click('text=Submit');              // Exact text
+await browser_click('text=/Submit/i');           // Regex (case-insensitive)
+```
+
+### XPath (When Needed)
+```typescript
+await browser_click('xpath=//button[@type="submit"]');
+```
+
+## Wait Strategies
+
+### Element-based Waits
+```typescript
+await browser_wait_for('selector', '#element');     // Element exists
+await browser_wait_for('text', 'Success');          // Text appears
+```
+
+### State-based Waits
+```typescript
+await browser_wait_for('networkidle');              // No network activity
+await browser_wait_for('load');                     // Page loaded
+await browser_wait_for('domcontentloaded');         // DOM ready
+```
+
+### Time-based Waits (Use Sparingly)
+```typescript
+await browser_wait_for('timeout', 2000);            // 2 seconds
+```
+
+## Error Handling
+
+### Common Issues
+
+**1. Element Not Found**
+```typescript
+try {
+  await browser_click('#button');
+} catch (error) {
+  if (error.message.includes('not found')) {
+    // Wait and retry
+    await browser_wait_for('selector', '#button', { timeout: 5000 });
+    await browser_click('#button');
+  }
+}
+```
+
+**2. Navigation Timeout**
+```typescript
+try {
+  await browser_navigate('https://slow-site.com', { timeout: 30000 });
+} catch (error) {
+  if (error.message.includes('timeout')) {
+    // Handle timeout
+    console.log('Site took too long to load');
+  }
+}
+```
+
+**3. Dialog Handling**
+```typescript
+// Set up dialog handler before triggering action
+await browser_handle_dialog('accept'); // or 'dismiss'
+await browser_click('#delete-button'); // Triggers confirm dialog
+```
+
+## Performance Optimization
+
+### 1. Reduce Wait Times
+```typescript
+// Bad - unnecessary waits
+await browser_click('#button');
+await browser_wait_for('timeout', 3000);
+
+// Good - wait for specific condition
+await browser_click('#button');
+await browser_wait_for('selector', '#success-message');
+```
+
+### 2. Batch JavaScript Execution
+```typescript
+// Bad - multiple evaluate calls
+const title = await browser_evaluate('document.title');
+const url = await browser_evaluate('window.location.href');
+
+// Good - single evaluate call
+const {title, url} = await browser_evaluate(`({
+  title: document.title,
+  url: window.location.href
+})`);
+```
+
+### 3. Network Optimization
+```typescript
+// Block unnecessary resources
+await browser_evaluate(`
+  // Block images and fonts for faster loading
+  window.performance.setResourceTimingBufferSize(0);
+`);
+```
+
+## Security Considerations
+
+### 1. Credential Management
+**Never hardcode credentials:**
+```typescript
+// Bad
+await browser_type('#password', 'mypassword123');
+
+// Good - use environment variables
+const password = process.env.PASSWORD;
+await browser_type('#password', password);
+```
+
+### 2. Sensitive Data
+- Clear browser cache after sensitive operations
+- Don't log sensitive form data
+- Use headless mode for automation (no UI exposure)
+
+### 3. Rate Limiting
+- Respect robots.txt
+- Add delays between requests
+- Use reasonable timeouts
+
+## Integration with Other Tools
+
+### With Desktop Commander
+```typescript
+// Save scraped data using Desktop Commander
+const data = await browser_evaluate('document.body.innerHTML');
+await write_file('/output/scraped.html', data);
+```
+
+### With PDF Tools
+```typescript
+// Download PDF and process
+await browser_navigate('https://example.com/document.pdf');
+// Wait for download
+// Then use PDF Tools to process
+```
+
+## Browser Configuration
+
+### Viewport Sizes
+```typescript
+// Mobile
+await browser_resize(375, 667);  // iPhone SE
+
+// Tablet
+await browser_resize(768, 1024); // iPad
+
+// Desktop
+await browser_resize(1920, 1080); // Full HD
+```
+
+### User Agents
+```typescript
+await browser_evaluate(`
+  Object.defineProperty(navigator, 'userAgent', {
+    get: () => 'Custom User Agent String'
+  });
+`);
+```
+
+## Debugging
+
+### Enable Verbose Logging
+```typescript
+const requests = await browser_network_requests();
+console.log('Network requests:', requests);
+
+const console_logs = await browser_console_messages();
+console.log('Browser console:', console_logs);
+```
+
+### Visual Debugging
+```typescript
+// Take screenshots at each step
+await browser_navigate(url);
+await browser_take_screenshot('step1-navigate.png');
+
+await browser_click(selector);
+await browser_take_screenshot('step2-click.png');
+```
+
+## Limitations
+
+- Cannot bypass CAPTCHAs (intentional security feature)
+- Some sites detect and block automation
+- JavaScript-heavy SPAs may require complex waits
+- File downloads require special handling
+- Browser must be installed on system
+
+## Best Practices
+
+1. **Always close browser** when done
+2. **Use specific selectors** (IDs over classes)
+3. **Wait for conditions** (not fixed timeouts)
+4. **Handle errors gracefully**
+5. **Test selectors** before full automation
+6. **Respect site ToS** and robots.txt
+7. **Add user-agent** for identification
+8. **Use headless mode** for production
+9. **Clear state** between sessions
+10. **Monitor for changes** (sites update frequently)
+
+---
+
+**Last Updated:** 2026-01-30

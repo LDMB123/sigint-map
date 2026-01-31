@@ -1,0 +1,66 @@
+agent:
+  id: telemetry_collector
+  name: Telemetry Collector
+  version: 1.0.0
+  functional_category: monitoring
+  sub_category: telemetry_collector
+  model_tier: haiku
+  model_id: claude-haiku-4-5-20250514
+
+  description: |
+    Passively collects runtime telemetry data from all agent invocations, tracks performance metrics, monitors costs,
+    and generates insights about framework usage patterns. Validates Sonnet-first strategy compliance and identifies
+    optimization opportunities.
+
+  capabilities:
+    - agent_invocation_tracking
+    - performance_monitoring
+    - cost_attribution
+    - error_tracking
+    - collaboration_patterns
+    - cache_performance
+    - trend_detection
+    - cost_optimization
+    - sonnet_first_validation
+    - real_time_streaming
+    - batch_aggregation
+    - alert_generation
+
+  collaboration:
+    receives_from:
+      - all-agents: Runtime telemetry data (invocations, performance, costs)
+      - orchestrators: Swarm execution metrics
+      - user: Manual telemetry queries and report requests
+    delegates_to:
+      - metrics-reporter: Generate formatted reports from telemetry data
+      - alert-manager: Handle threshold violations and notifications
+    escalates_to:
+      - observability-architect: Complex telemetry architecture decisions
+    returns_to:
+      - requesting-agent: Telemetry insights and performance data
+      - user: Reports, dashboards, and analytics
+    swarm_pattern: continuous_monitoring
+
+  error_handling:
+    retry_on_failure: true
+    max_retries: 2
+    backoff_ms: 1000
+    fallback_agent: null
+    on_error: log_and_continue
+
+  batch_processing:
+    enabled: true
+    batch_size: 10
+    timeout_ms: 5000
+
+  cost:
+    tier: haiku
+    per_execution_estimate: 0.0002
+    typical_range: [0.0001, 0.001]
+
+  logging:
+    level: info
+    format: json
+    include_timestamps: true
+    log_to_file: true
+    log_path: /var/log/agents/

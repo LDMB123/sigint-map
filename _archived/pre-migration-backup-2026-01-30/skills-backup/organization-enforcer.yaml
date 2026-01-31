@@ -1,0 +1,183 @@
+# Organization Enforcement Skill
+# Automatically maintains clean project structure
+
+skill:
+  id: organization_enforcer
+  name: organization-enforcer
+  version: 1.0.0
+  category: maintenance
+
+  description: |
+    Automatically detects and fixes organizational issues.
+    Prevents documentation sprawl and maintains clean structure.
+    Run regularly to keep projects organized.
+
+  invocation:
+    command: /organize
+    aliases: [cleanup, enforce-org]
+
+  parameters:
+    - name: mode
+      type: enum
+      values: [check, fix, report]
+      default: check
+      description: Check for issues, fix them, or generate report
+
+    - name: scope
+      type: enum
+      values: [workspace, projects, all]
+      default: all
+      description: Scope of organization check
+
+  workflow:
+    pattern: sequential_validation
+
+    phases:
+      - name: Scan for Issues
+        agent: learner_codebase_indexer
+        tier: haiku
+        actions:
+          - Find scattered markdown files
+          - Find orphaned scripts
+          - Find duplicate files
+          - Identify misplaced skills/agents
+        output: issues_list
+
+      - name: Categorize Issues
+        agent: analyzer_static
+        tier: haiku
+        actions:
+          - Categorize by severity (critical/warning/info)
+          - Group by location
+          - Identify auto-fixable vs manual
+        output: categorized_issues
+
+      - name: Generate Recommendations
+        agent: transformer_refactor
+        tier: sonnet
+        condition: mode in [check, report]
+        actions:
+          - Create move recommendations
+          - Suggest directory structure
+          - Identify consolidation opportunities
+        output: recommendations
+
+      - name: Auto-Fix Issues
+        agent: transformer_refactor
+        tier: sonnet
+        condition: mode == fix
+        actions:
+          - Move files to correct locations
+          - Create missing directories
+          - Update cross-references
+        output: fixes_applied
+
+      - name: Generate Report
+        agent: reporter_summary
+        tier: haiku
+        actions:
+          - Summarize issues found
+          - List fixes applied (if fix mode)
+          - Provide organization metrics
+        output: organization_report
+
+  rules:
+    workspace_root:
+      allowed:
+        - README.md
+        - LICENSE
+        - .gitignore
+      forbidden:
+        - "*.md (except README.md)"
+        - "*.sh"
+        - "*SUMMARY*.md"
+        - "*COMPLETE*.md"
+
+    project_root:
+      allowed:
+        - README.md
+        - package.json
+        - "*.config.js"
+      max_markdown_files: 3
+      requires:
+        - docs/README.md (if >3 markdown files)
+
+    skills_location:
+      must_be_in:
+        - .claude/skills/
+      forbidden:
+        - projects/*/
+        - docs/
+
+    agents_location:
+      must_be_in:
+        - .claude/agents/
+        - projects/*/.claude/agents/
+      forbidden:
+        - docs/
+        - scripts/
+
+  auto_organization:
+    scatter_threshold: 5  # If >5 docs in root, auto-organize
+    duplicate_detection: true
+    backup_before_move: true
+    create_indexes: true
+
+  directory_templates:
+    project_docs:
+      - docs/
+      - docs/guides/
+      - docs/api/
+      - docs/architecture/
+      - docs/deployment/
+
+    workspace_docs:
+      - docs/
+      - docs/sessions/
+      - docs/reports/
+      - docs/guides/
+
+  prevention:
+    git_hooks:
+      - pre-commit  # Check organization before commit
+
+    scheduled_checks:
+      - daily       # Run organization check daily
+
+    real_time:
+      - on_file_create  # Check when new files created
+      - on_file_move    # Verify moves are correct
+
+  outputs:
+    - name: organization_report
+      type: object
+      schema:
+        issues_found: integer
+        issues_fixed: integer
+        files_moved: integer
+        directories_created: integer
+        recommendations: array
+        organization_score: number  # 0-100
+
+  examples:
+    - name: Check organization
+      invocation: /organize
+      expected:
+        issues_found: 0
+        organization_score: 100
+
+    - name: Auto-fix issues
+      invocation: /organize --mode fix
+      expected:
+        issues_fixed: 10
+        files_moved: 10
+
+    - name: Generate report
+      invocation: /organize --mode report --scope projects
+      expected:
+        report_generated: true
+
+  tags:
+    - maintenance
+    - automation
+    - organization

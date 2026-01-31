@@ -1,0 +1,69 @@
+{
+  "project": "imagen-experiments",
+  "status": "90/90 ultra-photorealistic portraits complete",
+  "reference_image": "467634893...jpeg",
+
+  "batches_completed": [
+    {"range": "31-60", "type": "OPTIMIZED", "status": "complete", "count": 30},
+    {"range": "61-80", "type": "OPTIMIZED", "status": "complete", "count": 20},
+    {"range": "81-90", "type": "PHYSICS", "status": "complete", "count": 10},
+    {"range": "91-120", "type": "ULTRA", "status": "complete", "count": 30}
+  ],
+
+  "batches_ready": [
+    {"range": "121-150", "type": "ULTRA-MICROSTRUCTURE", "status": "concepts_ready", "count": 30}
+  ],
+
+  "concept_files": {
+    "completed": [
+      "docs/OPTIMIZED-concepts-31-60.md",
+      "docs/OPTIMIZED-concepts-61-80.md",
+      "docs/OPTIMIZED-concepts-81-90.md",
+      "docs/ULTRA-MICROSTRUCTURE-concepts-31-60.md",
+      "docs/ULTRA-MICROSTRUCTURE-concepts-61-80.md",
+      "docs/ULTRA-MICROSTRUCTURE-concepts-81-90.md",
+      "docs/ULTRA-MICROSTRUCTURE-concepts-91-120.md"
+    ],
+    "ready_to_generate": [
+      "docs/ULTRA-MICROSTRUCTURE-concepts-121-150.md"
+    ]
+  },
+
+  "generation_scripts": {
+    "completed": [
+      "scripts/GEN-OPTIMIZED-31-60.sh",
+      "scripts/GEN-OPTIMIZED-61-80.sh",
+      "scripts/GEN-PHYSICS-81-90.sh",
+      "scripts/GEN-ULTRA-91-120.sh"
+    ],
+    "next": "scripts/GEN-ULTRA-121-150.sh (needs creation)"
+  },
+
+  "logs_archived": {
+    "location": ".claude/logs/imagen-generation/",
+    "summary": {
+      "optimized-31-60": "93 lines, successful batch",
+      "optimized-61-80": "758 lines, successful batch",
+      "optimized-81-90": "25 lines, successful batch",
+      "physics-81-90": "463 lines, successful batch"
+    }
+  },
+
+  "key_prefixes": {
+    "physics": "docs/PHYSICS-BASED-PREFIX.md",
+    "constraint": "docs/CONSTRAINT-BASED-PREFIX.md",
+    "skin": "docs/ULTRA-MICROSTRUCTURE-SKIN-PREFIX.md"
+  },
+
+  "next_actions": [
+    "Create GEN-ULTRA-121-150.sh script",
+    "Execute batch 121-150 generation",
+    "Monitor quota limits"
+  ],
+
+  "token_optimization": {
+    "applied": "2026-01-30",
+    "methods": ["log_compression", "smart_indexing", "diff_first_editing"],
+    "target_reduction": "125k -> <30k tokens"
+  }
+}

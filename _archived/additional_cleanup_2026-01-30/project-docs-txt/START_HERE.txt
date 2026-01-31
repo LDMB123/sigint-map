@@ -1,0 +1,340 @@
+================================================================================
+RUNTIME ERROR ANALYSIS - START HERE
+================================================================================
+
+40 FAILING TESTS ANALYZED
+Root Cause: Incomplete error logging implementation
+Location: /projects/dmb-almanac/app/src/lib/errors/logger.js
+
+================================================================================
+WHAT TO READ FIRST
+================================================================================
+
+1. QUICK_REFERENCE.md (6 KB, 5 min)
+   - Quick overview
+   - Missing functions list
+   - Implementation checklist
+   ⚠️  START HERE if you want to fix it quickly
+
+2. IMPLEMENTATION_NEEDED.md (6 KB, 10 min)
+   - Exact code to add
+   - Method signatures
+   - Implementation order
+   ⚠️  USE THIS while coding
+
+3. README_ANALYSIS.md (9 KB, 10 min)
+   - Master summary
+   - Document index
+   - How to use the analysis
+
+================================================================================
+WHAT'S BROKEN
+================================================================================
+
+Missing exports (2):
+  ❌ enableVerboseLogging()
+  ❌ getDiagnosticReport()
+
+Missing methods (11):
+  ❌ debug()
+  ❌ fatal()
+  ❌ clearLogs()        ← BLOCKS SETUP
+  ❌ getLogs()          ← BLOCKS TESTS
+  ❌ getErrorLogs()
+  ❌ logAsyncError()
+  ❌ exportLogs()
+  ❌ getSessionId()
+  ❌ onError()
+  ❌ errorHandlers (property)
+  ⚠️ logApiError()      ← WRONG SIGNATURE
+
+Impact: 40 tests fail, 3 test files blocked
+
+================================================================================
+QUICK FIX PLAN
+================================================================================
+
+Phase 1 (5 min):  Add 2 exports
+Phase 2 (15 min): Add clearLogs(), getLogs(), getSessionId()
+Phase 3 (45 min): Add debug(), fatal(), onError(), handlers
+Phase 4 (30 min): Add remaining methods, test
+
+Total: 1.5-2 hours
+
+================================================================================
+WHERE ARE THE ANALYSIS FILES?
+================================================================================
+
+All files in: /Users/louisherman/ClaudeCodeProjects/
+
+Quick Reference:
+  ├─ QUICK_REFERENCE.md          ⭐ START HERE
+  ├─ IMPLEMENTATION_NEEDED.md     ⭐ USE WHILE CODING
+  └─ START_HERE.txt              (you are reading this)
+
+Master Summaries:
+  ├─ README_ANALYSIS.md
+  ├─ ANALYSIS_SUMMARY.txt
+  └─ ANALYSIS_INDEX.md
+
+Technical Analysis:
+  ├─ RUNTIME_ERROR_ANALYSIS.md
+  ├─ MISSING_IMPLEMENTATIONS_SUMMARY.md
+  ├─ ERROR_MATRIX.md
+  └─ MISSING_FUNCTIONS_VISUAL.md
+
+================================================================================
+WHAT FILE DO I EDIT?
+================================================================================
+
+/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/src/lib/errors/logger.js
+
+Currently: 87 lines (minimal wrapper)
+Required:  250 lines (full implementation)
+Add:       160 lines
+
+================================================================================
+TEST COMMANDS
+================================================================================
+
+# Run failing tests
+npm test tests/unit/errors/logger.test.js
+npm test tests/integration/error-logging-integration.test.js
+npm test tests/unit/breadcrumb-deduplication.test.js
+
+# Run all tests
+npm test
+
+# Expected after fix: 40/40 tests passing
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Read: QUICK_REFERENCE.md (5 min)
+2. Read: IMPLEMENTATION_NEEDED.md (10 min)
+3. Code: Add methods to logger.js (90 min)
+4. Test: Verify all 40 tests pass (10 min)
+
+Total: ~2 hours
+
+================================================================================
+DOCUMENT DESCRIPTIONS
+================================================================================
+
+QUICK_REFERENCE.md (6 KB)
+  Quick overview for people in a hurry
+  - TL;DR explanation
+  - Missing functions list
+  - Implementation checklist
+  - Common test patterns
+  Best for: Getting started quickly
+
+IMPLEMENTATION_NEEDED.md (6 KB)
+  Exact code specifications
+  - Code to add section by section
+  - Method signatures
+  - Internal state needed
+  - Implementation order
+  Best for: Using while coding
+
+README_ANALYSIS.md (9 KB)
+  Master summary and navigation
+  - Executive summary
+  - Document map
+  - File locations
+  - Success criteria
+  Best for: Understanding the big picture
+
+ANALYSIS_SUMMARY.txt (12 KB)
+  High-level overview
+  - Quick facts
+  - Root cause analysis
+  - Error patterns
+  - Priority breakdown
+  - Cascade analysis
+  Best for: Executive overview
+
+RUNTIME_ERROR_ANALYSIS.md (12 KB)
+  Deep technical analysis
+  - Stack trace anatomy
+  - Architecture mismatch
+  - Reproduction steps
+  - Prevention recommendations
+  Best for: Understanding system design
+
+MISSING_IMPLEMENTATIONS_SUMMARY.md (6 KB)
+  Problem statement
+  - Files with issues
+  - Test file analysis
+  - Call signature problems
+  - Expected behavior
+  Best for: Understanding requirements
+
+ERROR_MATRIX.md (12 KB)
+  Detailed failure breakdown
+  - Error-by-error analysis
+  - Occurrence counts
+  - Cascade effects
+  - Vitest execution flow
+  Best for: Understanding failure distribution
+
+MISSING_FUNCTIONS_VISUAL.md (14 KB)
+  Visual and tabular reference
+  - Lookup tables
+  - Dependency trees
+  - Visual diagrams
+  - Implementation phases
+  - Phase-by-phase code
+  Best for: Visual learners
+
+ANALYSIS_INDEX.md (10 KB)
+  Navigation and reference guide
+  - Document index
+  - Navigation tips
+  - Document statistics
+  - Next steps
+  Best for: Finding information
+
+================================================================================
+WHICH DOCUMENT FOR MY SITUATION?
+================================================================================
+
+"I want to fix this NOW"
+  → QUICK_REFERENCE.md (5 min)
+  → IMPLEMENTATION_NEEDED.md (10 min)
+  → Start coding
+
+"I want to understand it FIRST"
+  → ANALYSIS_SUMMARY.txt (10 min)
+  → RUNTIME_ERROR_ANALYSIS.md (15 min)
+  → ERROR_MATRIX.md (20 min)
+  → Then code
+
+"I'm a visual person"
+  → MISSING_FUNCTIONS_VISUAL.md (use tables and diagrams)
+  → Implementation phases section
+
+"I'm presenting this to someone"
+  → README_ANALYSIS.md (5 min overview)
+  → ANALYSIS_SUMMARY.txt (executive facts)
+  → MISSING_FUNCTIONS_VISUAL.md (diagrams)
+
+"I'm lost and confused"
+  → START_HERE.txt (you are reading this)
+  → ANALYSIS_INDEX.md (navigation guide)
+  → Pick a document from above
+
+================================================================================
+KEY STATISTICS
+================================================================================
+
+Failing Tests:        40
+Root Causes:          2
+Missing Methods:      11
+Missing Exports:      2
+Lines to Add:         ~160
+Implementation Time:  2-4 hours
+Complexity:           MEDIUM
+Risk Level:           LOW
+
+Test File Breakdown:
+  logger.test.js:                  26 tests
+  error-logging-integration.test.js: 9 tests
+  breadcrumb-deduplication.test.js:  5 tests
+
+================================================================================
+PROBLEM SUMMARY
+================================================================================
+
+The error logging module (/src/lib/errors/logger.js) is incomplete.
+
+Current: Only provides console wrapper (87 lines)
+Expected: Full logging system with storage (250 lines)
+Missing: 2 exports + 11 methods + 1 property + 1 signature fix
+
+Tests expect:
+  - In-memory log buffer
+  - Error categorization
+  - Error handler callbacks
+  - Session tracking
+  - Diagnostic reports
+  - JSON export
+
+All of this is missing from the current implementation.
+
+================================================================================
+SOLUTION SUMMARY
+================================================================================
+
+Add ~160 lines of code to implement missing functionality.
+
+Four implementation phases:
+  1. Add 2 function exports (5 min)
+  2. Add core methods + storage (15 min)
+  3. Add handler system (45 min)
+  4. Test and validate (30 min)
+
+No external dependencies needed.
+Tests provide clear specifications.
+Risk level: LOW
+
+================================================================================
+FILES TO EDIT/READ
+================================================================================
+
+Edit:
+  /projects/dmb-almanac/app/src/lib/errors/logger.js
+
+Read (test files for specification):
+  /projects/dmb-almanac/app/tests/unit/errors/logger.test.js
+  /projects/dmb-almanac/app/tests/integration/error-logging-integration.test.js
+  /projects/dmb-almanac/app/tests/unit/breadcrumb-deduplication.test.js
+
+Analysis files:
+  All in /Users/louisherman/ClaudeCodeProjects/
+
+================================================================================
+START WITH THESE TWO FILES
+================================================================================
+
+1. QUICK_REFERENCE.md
+   - Read first for quick understanding
+   - Lists all missing functions
+   - Shows implementation checklist
+
+2. IMPLEMENTATION_NEEDED.md
+   - Use while coding
+   - Has exact code to add
+   - Shows method signatures
+   - Lists implementation order
+
+Both files are in /Users/louisherman/ClaudeCodeProjects/
+
+================================================================================
+VERIFICATION
+================================================================================
+
+After implementation, verify with:
+
+npm test tests/unit/errors/logger.test.js
+  Expected: 26/26 passing
+
+npm test tests/integration/error-logging-integration.test.js
+  Expected: 9/9 passing
+
+npm test tests/unit/breadcrumb-deduplication.test.js
+  Expected: 5/5 passing
+
+npm test
+  Expected: 40/40 tests passing
+
+================================================================================
+DONE!
+
+You now have everything needed to fix 40 failing tests.
+
+Next step: Read QUICK_REFERENCE.md
+
+Good luck!
+================================================================================

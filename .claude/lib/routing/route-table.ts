@@ -2,11 +2,13 @@
  * Zero-Overhead Router - Route Table
  * Implements O(1) agent lookup with semantic hashing and hot path caching
  * Target: <0.1ms lookup time, <5% re-routing rate
+ *
+ * Security: Path traversal protection, symlink resolution, size limits
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, statSync, realpathSync } from 'fs';
 import { createHash } from 'crypto';
-import { resolve, join } from 'path';
+import { resolve, join, dirname, normalize, extname } from 'path';
 
 /**
  * Semantic hash components (64-bit routing hash)
@@ -35,7 +37,7 @@ interface AgentRoute {
  */
 interface HotPathEntry {
   requestPattern: string;  // Normalized request pattern
-  semanticHash: number;    // Computed hash
+  semanticHash: bigint;    // Computed hash
   agent: string;
   tier: 'opus' | 'sonnet' | 'haiku';
   avgLatency: number;
@@ -62,7 +64,7 @@ interface RouteTableData {
 interface FuzzyMatchResult {
   route: AgentRoute;
   similarity: number;
-  matchedHash: number;
+  matchedHash: bigint;
 }
 
 /**
@@ -75,7 +77,7 @@ interface FuzzyMatchResult {
  * - Sub-millisecond performance
  */
 export class RouteTable {
-  private routeMap: Map<number, AgentRoute>;
+  private routeMap: Map<bigint, AgentRoute>;
   private hotPathCache: Map<string, HotPathEntry>;
   private hotPathLRU: string[];
   private readonly maxCacheSize = 1000;
@@ -85,13 +87,20 @@ export class RouteTable {
   private subtypeMap: Map<string, number>;
   private defaultRoute: AgentRoute;
 
+  // Security configuration
+  private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  private readonly ALLOWED_EXTENSIONS = ['.json'];
+  private readonly allowedDirectories: Set<string>;
+  private readonly projectRoot: string;
+
   private stats = {
     lookups: 0,
     cacheHits: 0,
     cacheMisses: 0,
     fuzzyMatches: 0,
     defaultFallbacks: 0,
-    avgLookupTimeMs: 0
+    avgLookupTimeMs: 0,
+    securityViolations: 0
   };
 
   constructor(routeTablePath?: string) {
@@ -107,14 +116,22 @@ export class RouteTable {
       confidence: 5
     };
 
+    // Security: Sanitize project root (prevent env var injection)
+    this.projectRoot = this.sanitizeProjectRoot();
+
+    // Security: Initialize whitelist of allowed directories
+    this.allowedDirectories = new Set([
+      join(this.projectRoot, '.claude', 'config'),
+      join(this.projectRoot, '.claude', 'lib', 'routing'),
+      join(this.projectRoot, 'config')
+    ]);
+
     // Load pre-compiled routes if path provided
     if (routeTablePath) {
       this.loadRouteTable(routeTablePath);
     } else {
-      // Use environment variable or relative path from project root
-      const projectRoot = process.env.CLAUDE_PROJECT_ROOT || process.cwd();
-      const defaultPath = process.env.CLAUDE_ROUTE_TABLE_PATH ||
-                          join(projectRoot, '.claude', 'config', 'route-table.json');
+      // Use sanitized path (no environment variable for path itself)
+      const defaultPath = join(this.projectRoot, '.claude', 'config', 'route-table.json');
       try {
         this.loadRouteTable(defaultPath);
       } catch (error) {
@@ -125,10 +142,116 @@ export class RouteTable {
   }
 
   /**
-   * Load pre-compiled route table from JSON
+   * Sanitize project root to prevent environment variable injection
+   * Only allows: current working directory or explicitly validated paths
+   */
+  private sanitizeProjectRoot(): string {
+    // Never trust CLAUDE_PROJECT_ROOT from environment - use cwd() only
+    const root = process.cwd();
+
+    // Validate it's a real directory
+    try {
+      const resolved = realpathSync(root);
+      // Ensure it's not a sensitive system directory
+      if (this.isSensitiveSystemPath(resolved)) {
+        throw new Error('Security: Project root cannot be a system directory');
+      }
+      return resolved;
+    } catch (error) {
+      throw new Error(`Security: Invalid project root: ${error}`);
+    }
+  }
+
+  /**
+   * Check if path is a sensitive system directory
+   */
+  private isSensitiveSystemPath(path: string): boolean {
+    const sensitive = ['/etc', '/bin', '/sbin', '/usr/bin', '/usr/sbin', '/root', '/var', '/sys', '/proc'];
+    const normalized = normalize(path).toLowerCase();
+    return sensitive.some(s => normalized === s || normalized.startsWith(s + '/'));
+  }
+
+  /**
+   * Validate path is safe to read
+   * Checks:
+   * 1. Path is within project directory
+   * 2. Extension is whitelisted (.json only)
+   * 3. File size is within limits
+   * 4. Resolves symlinks to prevent directory traversal
+   * 5. Path is in allowed directory whitelist
+   */
+  private validatePath(inputPath: string): string {
+    try {
+      // Step 1: Resolve path relative to project root (prevent relative path attacks)
+      const absolutePath = resolve(this.projectRoot, inputPath);
+
+      // Step 2: Resolve symlinks to real path (prevent symlink attacks)
+      let resolvedPath: string;
+      try {
+        resolvedPath = realpathSync(absolutePath);
+      } catch (error) {
+        throw new Error(`Path does not exist or cannot be resolved: ${inputPath}`);
+      }
+
+      // Step 3: Verify resolved path is still within project root (prevent traversal)
+      if (!resolvedPath.startsWith(this.projectRoot + '/') && resolvedPath !== this.projectRoot) {
+        this.stats.securityViolations++;
+        throw new Error(`Security: Path traversal detected - path outside project: ${inputPath}`);
+      }
+
+      // Step 4: Verify file extension is whitelisted
+      const ext = extname(resolvedPath).toLowerCase();
+      if (!this.ALLOWED_EXTENSIONS.includes(ext)) {
+        this.stats.securityViolations++;
+        throw new Error(`Security: Invalid file extension - only ${this.ALLOWED_EXTENSIONS.join(', ')} allowed: ${ext}`);
+      }
+
+      // Step 5: Check if path is in allowed directories
+      const fileDir = dirname(resolvedPath);
+      let isAllowed = false;
+      for (const allowedDir of this.allowedDirectories) {
+        if (fileDir === allowedDir || fileDir.startsWith(allowedDir + '/')) {
+          isAllowed = true;
+          break;
+        }
+      }
+      if (!isAllowed) {
+        this.stats.securityViolations++;
+        throw new Error(`Security: Path not in allowed directories: ${fileDir}`);
+      }
+
+      // Step 6: Check file size before reading
+      const stats = statSync(resolvedPath);
+      if (stats.size > this.MAX_FILE_SIZE) {
+        this.stats.securityViolations++;
+        throw new Error(`Security: File too large (${stats.size} bytes > ${this.MAX_FILE_SIZE} bytes): ${inputPath}`);
+      }
+
+      // Additional check: ensure it's a regular file, not a device or socket
+      if (!stats.isFile()) {
+        this.stats.securityViolations++;
+        throw new Error(`Security: Path is not a regular file: ${inputPath}`);
+      }
+
+      return resolvedPath;
+    } catch (error) {
+      // Re-throw security errors with additional context
+      if (error instanceof Error) {
+        throw new Error(`Path validation failed: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Load pre-compiled route table from JSON (with security validation)
    */
   private loadRouteTable(path: string): void {
-    const data: RouteTableData = JSON.parse(readFileSync(path, 'utf-8'));
+    // Security: Validate path before reading
+    const validatedPath = this.validatePath(path);
+
+    // Security: Read file with validated path
+    const data: RouteTableData = JSON.parse(readFileSync(validatedPath, 'utf-8'));
 
     // Load domain/action/subtype mappings
     for (const [key, value] of Object.entries(data.domains)) {
@@ -143,7 +266,7 @@ export class RouteTable {
 
     // Load routes into hash map
     for (const [hashStr, route] of Object.entries(data.routes)) {
-      const hash = parseInt(hashStr, 16);
+      const hash = BigInt('0x' + hashStr);
       this.routeMap.set(hash, route);
     }
 
@@ -319,32 +442,42 @@ export class RouteTable {
   }
 
   /**
-   * Pack semantic hash into 64-bit number
+   * Pack semantic hash into 64-bit bigint
+   *
+   * Uses BigInt to avoid JavaScript's 32-bit truncation on bitwise operators.
+   * Standard JS bitwise ops (<<, |, &, >>) coerce operands to signed 32-bit
+   * integers, which silently destroys any bits shifted past position 31.
+   * Layout: [domain:8][complexity:4][action:8][subtype:12][confidence:4][reserved:28]
    */
-  private packHash(hash: SemanticHash): number {
-    // Use bitwise operations for O(1) packing
-    // Layout: [domain:8][complexity:4][action:8][subtype:12][confidence:4][reserved:28]
+  private packHash(hash: SemanticHash): bigint {
+    const domain = BigInt(hash.domain & 0xFF);
+    const complexity = BigInt(hash.complexity & 0x0F);
+    const action = BigInt(hash.action & 0xFF);
+    const subtype = BigInt(hash.subtype & 0xFFF);
+    const confidence = BigInt(hash.confidence & 0x0F);
+    const reserved = BigInt(hash.reserved & 0x0FFFFFFF);
+
     return (
-      (hash.domain << 56) |
-      (hash.complexity << 52) |
-      (hash.action << 44) |
-      (hash.subtype << 32) |
-      (hash.confidence << 28) |
-      hash.reserved
+      (domain << 56n) |
+      (complexity << 52n) |
+      (action << 44n) |
+      (subtype << 32n) |
+      (confidence << 28n) |
+      reserved
     );
   }
 
   /**
-   * Unpack 64-bit hash into components
+   * Unpack 64-bit bigint into components
    */
-  private unpackHash(packed: number): SemanticHash {
+  private unpackHash(packed: bigint): SemanticHash {
     return {
-      domain: (packed >> 56) & 0xFF,
-      complexity: (packed >> 52) & 0x0F,
-      action: (packed >> 44) & 0xFF,
-      subtype: (packed >> 32) & 0xFFF,
-      confidence: (packed >> 28) & 0x0F,
-      reserved: packed & 0x0FFFFFFF
+      domain: Number((packed >> 56n) & 0xFFn),
+      complexity: Number((packed >> 52n) & 0x0Fn),
+      action: Number((packed >> 44n) & 0xFFn),
+      subtype: Number((packed >> 32n) & 0xFFFn),
+      confidence: Number((packed >> 28n) & 0x0Fn),
+      reserved: Number(packed & 0x0FFFFFFFn)
     };
   }
 
@@ -376,8 +509,8 @@ export class RouteTable {
   /**
    * Generate hash variants with wildcards for fuzzy matching
    */
-  private generateHashVariants(hash: SemanticHash): Array<{ hash: number; similarity: number }> {
-    const variants: Array<{ hash: number; similarity: number }> = [];
+  private generateHashVariants(hash: SemanticHash): Array<{ hash: bigint; similarity: number }> {
+    const variants: Array<{ hash: bigint; similarity: number }> = [];
 
     // Variant 1: Match domain + action (ignore subtype)
     variants.push({
@@ -476,7 +609,7 @@ export class RouteTable {
   /**
    * Update hot path cache with new entry
    */
-  private updateHotCache(normalizedRequest: string, hash: number, route: AgentRoute): void {
+  private updateHotCache(normalizedRequest: string, hash: bigint, route: AgentRoute): void {
     // Create or update entry
     const existing = this.hotPathCache.get(normalizedRequest);
     const entry: HotPathEntry = existing || {
@@ -525,7 +658,7 @@ export class RouteTable {
   }
 
   /**
-   * Get routing statistics
+   * Get routing statistics (including security metrics)
    */
   getStats() {
     const hitRate = this.stats.lookups > 0
@@ -536,7 +669,9 @@ export class RouteTable {
       ...this.stats,
       cacheHitRate: hitRate,
       cacheSize: this.hotPathCache.size,
-      routeTableSize: this.routeMap.size
+      routeTableSize: this.routeMap.size,
+      projectRoot: this.projectRoot,
+      allowedDirectoryCount: this.allowedDirectories.size
     };
   }
 
@@ -580,16 +715,31 @@ export class RouteTable {
   }
 
   /**
-   * Export current cache state for persistence
+   * Export current cache state for persistence.
+   *
+   * BigInt values (semanticHash) are serialized as hex strings prefixed with
+   * "0x" so they survive JSON round-tripping. Use importCache() to restore.
    */
-  exportCache(): Record<string, HotPathEntry> {
-    return Object.fromEntries(this.hotPathCache.entries());
+  exportCache(): string {
+    const obj = Object.fromEntries(this.hotPathCache.entries());
+    return JSON.stringify(obj, (_key, value) =>
+      typeof value === 'bigint' ? `0x${value.toString(16)}` : value
+    );
   }
 
   /**
-   * Import cache state from persistence
+   * Import cache state from persistence (JSON string produced by exportCache).
+   *
+   * Hex-string semanticHash values are revived back to BigInt.
    */
-  importCache(cacheData: Record<string, HotPathEntry>): void {
+  importCache(cacheJson: string): void {
+    const cacheData: Record<string, HotPathEntry> = JSON.parse(cacheJson, (_key, value) => {
+      if (typeof value === 'string' && /^0x[0-9a-fA-F]+$/.test(value)) {
+        return BigInt(value);
+      }
+      return value;
+    });
+
     this.hotPathCache.clear();
     this.hotPathLRU = [];
 

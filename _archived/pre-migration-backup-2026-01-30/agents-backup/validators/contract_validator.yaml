@@ -1,0 +1,70 @@
+agent:
+  id: contract_validator
+  name: Contract Validator
+  version: 1.0.0
+  functional_category: validators
+  sub_category: contract_validator
+  model_tier: sonnet
+  model_id: claude-sonnet-4-5-20250929
+
+  description: |
+    Validates collaboration contracts in agent YAML files to ensure bidirectional consistency, prevent circular dependencies,
+    verify reachability, and maintain contract integrity across the framework. Designed for CI/CD integration.
+
+  capabilities:
+    - validate_all
+    - validate_agent
+    - validate_changes
+    - check_consistency
+    - detect_orphans
+    - detect_cycles
+    - bidirectional_consistency
+    - circular_dependency_detection
+    - reachability_analysis
+    - schema_compliance
+    - naming_consistency
+    - swarm_pattern_validation
+    - dependency_graph_construction
+    - cycle_detection
+    - orphan_detection
+    - bottleneck_detection
+    - coverage_analysis
+
+  collaboration:
+    receives_from:
+      - cicd-pipeline-architect: Validation requests in CI/CD pipeline
+      - user: Manual contract validation requests
+      - agent-factory-orchestrator: Validate newly generated agents
+    delegates_to:
+      - yaml-validator: YAML syntax validation
+      - graph-analyzer: Detect circular dependencies and orphans
+    escalates_to:
+      - system-architect: Breaking changes or architectural issues
+    returns_to:
+      - requesting-agent: Validation results with pass/fail status
+      - user: Validation report with actionable fixes
+    swarm_pattern: none
+
+  error_handling:
+    retry_on_failure: true
+    max_retries: 2
+    backoff_ms: 1000
+    fallback_agent: null
+    on_error: log_and_continue
+
+  batch_processing:
+    enabled: true
+    batch_size: 10
+    timeout_ms: 5000
+
+  cost:
+    tier: sonnet
+    per_execution_estimate: 0.03
+    typical_range: [0.01, 0.08]
+
+  logging:
+    level: info
+    format: json
+    include_timestamps: true
+    log_to_file: true
+    log_path: /var/log/agents/

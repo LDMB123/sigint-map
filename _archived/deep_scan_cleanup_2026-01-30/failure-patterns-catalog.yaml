@@ -1,0 +1,738 @@
+# Agent Ecosystem Failure Patterns Catalog
+# Comprehensive taxonomy of failure modes, detection, and recovery strategies
+
+version: "1.0.0"
+last_updated: "2026-01-16"
+ecosystem_path: "/Users/louisherman/.claude/agents"
+total_agents: 365
+
+# ============================================================================
+# FAILURE MODE TAXONOMY
+# ============================================================================
+
+failure_modes:
+  # Category 1: Tool Execution Failures
+  tool_failures:
+    file_not_found:
+      severity: MEDIUM
+      pattern: "ENOENT: no such file"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "verify_path_and_search_alternatives"
+        success_rate: 92%
+        avg_recovery_time: "2.3s"
+      prevention:
+        - "Validate file paths before operations"
+        - "Use Glob to search for alternatives"
+        - "Implement file existence cache"
+
+    permission_denied:
+      severity: HIGH
+      pattern: "EACCES: permission denied"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "escalate_for_permission_grant"
+        success_rate: 15%
+        avg_recovery_time: "N/A - requires human"
+      prevention:
+        - "Check permissions before operations"
+        - "Use least-privilege principle"
+        - "Implement permission caching"
+
+    read_timeout:
+      severity: MEDIUM
+      pattern: "Read operation timed out"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "retry_with_increased_timeout"
+        success_rate: 87%
+        avg_recovery_time: "5.2s"
+      prevention:
+        - "Set appropriate timeouts per file size"
+        - "Add streaming for large files"
+        - "Implement read operation health checks"
+
+    write_failure:
+      severity: HIGH
+      pattern: "Write operation failed"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "verify_disk_space_and_permissions"
+        success_rate: 65%
+        avg_recovery_time: "3.1s"
+      prevention:
+        - "Check disk space before writes"
+        - "Verify write permissions"
+        - "Implement write buffers"
+
+  # Category 2: Code/Logic Failures
+  code_failures:
+    type_error:
+      severity: MEDIUM
+      pattern: "TypeError|Type.*not assignable to type"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "add_type_conversion_or_annotation"
+        success_rate: 87%
+        avg_recovery_time: "4.2s"
+      prevention:
+        - "Use strict TypeScript settings"
+        - "Add comprehensive type tests"
+        - "Implement type validation at boundaries"
+
+    import_error:
+      severity: MEDIUM
+      pattern: "Cannot find module|Module not found"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "add_import_fix_path_install_package"
+        success_rate: 92%
+        avg_recovery_time: "6.5s"
+      prevention:
+        - "Validate imports during build"
+        - "Use dependency checking tools"
+        - "Implement import resolution cache"
+
+    syntax_error:
+      severity: HIGH
+      pattern: "SyntaxError|Unexpected token"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "fix_brackets_braces_indentation"
+        success_rate: 65%
+        avg_recovery_time: "3.8s"
+      prevention:
+        - "Use linters and formatters"
+        - "Enable syntax validation"
+        - "Implement pre-commit hooks"
+
+    parse_error:
+      severity: HIGH
+      pattern: "JSON parse error|YAML parse error"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "validate_and_fix_format"
+        success_rate: 70%
+        avg_recovery_time: "2.9s"
+      prevention:
+        - "Validate JSON/YAML before parsing"
+        - "Use schema validation"
+        - "Implement format checking"
+
+  # Category 3: Resource Failures
+  resource_failures:
+    timeout_exceeded:
+      severity: HIGH
+      pattern: "timed out|exceeded timeout|deadline exceeded"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "retry_with_longer_timeout_or_split_task"
+        success_rate: 87%
+        avg_recovery_time: "8.5s"
+      prevention:
+        - "Set dynamic timeouts based on task complexity"
+        - "Implement timeout escalation strategy"
+        - "Add task splitting for long operations"
+
+    rate_limit_hit:
+      severity: MEDIUM
+      pattern: "429|rate limit|too many requests|quota exceeded"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "exponential_backoff_and_retry"
+        success_rate: 95%
+        avg_recovery_time: "15.3s"
+      prevention:
+        - "Implement rate limiting client-side"
+        - "Add request throttling"
+        - "Use token bucket algorithm"
+
+    memory_exhaustion:
+      severity: CRITICAL
+      pattern: "Out of memory|heap limit|memory allocation failed"
+      detection: "failure-rate-monitor"
+      diagnosis: "manual"
+      recovery:
+        strategy: "escalate_for_infrastructure_intervention"
+        success_rate: 0%
+        avg_recovery_time: "N/A - requires infrastructure change"
+      prevention:
+        - "Implement memory usage monitoring"
+        - "Add memory limits per agent"
+        - "Use streaming for large datasets"
+
+    disk_space_full:
+      severity: CRITICAL
+      pattern: "ENOSPC|No space left on device"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "escalate_for_disk_cleanup"
+        success_rate: 10%
+        avg_recovery_time: "N/A - requires manual cleanup"
+      prevention:
+        - "Monitor disk usage proactively"
+        - "Implement automatic log rotation"
+        - "Add disk space alerts"
+
+  # Category 4: Network Failures
+  network_failures:
+    connection_refused:
+      severity: HIGH
+      pattern: "ECONNREFUSED|Connection refused"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "retry_with_backoff_check_service_health"
+        success_rate: 75%
+        avg_recovery_time: "5.7s"
+      prevention:
+        - "Implement circuit breaker"
+        - "Add service health checks"
+        - "Use service discovery"
+
+    dns_lookup_failed:
+      severity: HIGH
+      pattern: "ENOTFOUND|DNS lookup failed"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "retry_with_alternative_dns"
+        success_rate: 80%
+        avg_recovery_time: "3.2s"
+      prevention:
+        - "Use DNS caching"
+        - "Configure fallback DNS servers"
+        - "Implement DNS health checks"
+
+    ssl_certificate_error:
+      severity: HIGH
+      pattern: "SSL certificate|certificate verify failed"
+      detection: "error-detector"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "escalate_for_certificate_fix"
+        success_rate: 5%
+        avg_recovery_time: "N/A - requires manual fix"
+      prevention:
+        - "Monitor certificate expiration"
+        - "Implement automatic certificate renewal"
+        - "Add certificate validation"
+
+  # Category 5: Agent-Specific Failures
+  agent_failures:
+    agent_crash:
+      severity: HIGH
+      pattern: "Agent process exited|Agent not responding"
+      detection: "failure-rate-monitor"
+      diagnosis: "incident-response-engineer"
+      recovery:
+        strategy: "circuit_breaker_open_fallback_routing"
+        success_rate: 100%
+        avg_recovery_time: "0.5s"
+      prevention:
+        - "Implement agent health checks"
+        - "Add agent restart policies"
+        - "Use supervisor processes"
+
+    agent_timeout:
+      severity: MEDIUM
+      pattern: "Agent execution exceeded timeout"
+      detection: "failure-rate-monitor"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "cascade_to_higher_tier_or_retry"
+        success_rate: 90%
+        avg_recovery_time: "3.8s"
+      prevention:
+        - "Set tier-appropriate timeouts"
+        - "Implement timeout escalation"
+        - "Add task complexity estimation"
+
+    agent_low_confidence:
+      severity: LOW
+      pattern: "Agent confidence < 70%"
+      detection: "cascade-orchestrator"
+      diagnosis: "cascade-optimizer"
+      recovery:
+        strategy: "escalate_to_higher_tier"
+        success_rate: 95%
+        avg_recovery_time: "2.1s"
+      prevention:
+        - "Improve confidence scoring"
+        - "Add confidence thresholds per task type"
+        - "Implement confidence calibration"
+
+  # Category 6: Coordination Failures
+  coordination_failures:
+    orchestrator_crash:
+      severity: CRITICAL
+      pattern: "Orchestrator process died|Coordination failed"
+      detection: "MISSING"
+      diagnosis: "MISSING"
+      recovery:
+        strategy: "MISSING - needs implementation"
+        success_rate: 0%
+        avg_recovery_time: "N/A"
+      prevention:
+        - "IMPLEMENT orchestrator health checks"
+        - "IMPLEMENT orchestrator redundancy"
+        - "IMPLEMENT failover mechanism"
+
+    multi_agent_deadlock:
+      severity: HIGH
+      pattern: "Circular dependency|Deadlock detected"
+      detection: "MISSING"
+      diagnosis: "MISSING"
+      recovery:
+        strategy: "MISSING - needs implementation"
+        success_rate: 0%
+        avg_recovery_time: "N/A"
+      prevention:
+        - "IMPLEMENT dependency graph validation"
+        - "IMPLEMENT deadlock detection"
+        - "IMPLEMENT timeout for coordinated tasks"
+
+    cascade_exhaustion:
+      severity: MEDIUM
+      pattern: "All tiers exhausted without success"
+      detection: "cascade-orchestrator"
+      diagnosis: "cascade-optimizer"
+      recovery:
+        strategy: "report_failure_to_user"
+        success_rate: 100%
+        avg_recovery_time: "0.1s"
+      prevention:
+        - "Improve tier selection accuracy"
+        - "Add parallel tier execution"
+        - "Implement task complexity validation"
+
+  # Category 7: Circuit Breaker Failures
+  circuit_breaker_failures:
+    circuit_breaker_stuck_open:
+      severity: HIGH
+      pattern: "Circuit breaker not closing after recovery"
+      detection: "failure-rate-monitor"
+      diagnosis: "incident-response-engineer"
+      recovery:
+        strategy: "manual_circuit_close"
+        success_rate: 100%
+        avg_recovery_time: "1.0s"
+      prevention:
+        - "Add circuit breaker health checks"
+        - "Implement automatic circuit reset"
+        - "Add circuit breaker timeout"
+
+    fallback_chain_exhausted:
+      severity: CRITICAL
+      pattern: "All fallback agents failed"
+      detection: "fallback-router"
+      diagnosis: "incident-response-engineer"
+      recovery:
+        strategy: "escalate_to_human"
+        success_rate: 0%
+        avg_recovery_time: "N/A"
+      prevention:
+        - "Increase fallback chain depth"
+        - "Add generalist fallback agents"
+        - "Implement graceful degradation"
+
+    circuit_breaker_controller_crash:
+      severity: CRITICAL
+      pattern: "Circuit breaker controller not responding"
+      detection: "MISSING"
+      diagnosis: "MISSING"
+      recovery:
+        strategy: "MISSING - needs implementation"
+        success_rate: 0%
+        avg_recovery_time: "N/A"
+      prevention:
+        - "IMPLEMENT circuit breaker health checks"
+        - "IMPLEMENT controller redundancy"
+        - "IMPLEMENT manual override mechanism"
+
+  # Category 8: Self-Healing Failures
+  self_healing_failures:
+    error_detector_crash:
+      severity: CRITICAL
+      pattern: "Error detector not responding"
+      detection: "MISSING"
+      diagnosis: "MISSING"
+      recovery:
+        strategy: "MISSING - needs implementation"
+        success_rate: 0%
+        avg_recovery_time: "N/A"
+      prevention:
+        - "IMPLEMENT error detector health checks"
+        - "IMPLEMENT detector redundancy"
+        - "IMPLEMENT failover to manual detection"
+
+    recovery_loop:
+      severity: HIGH
+      pattern: "Auto-recovery keeps failing and retrying"
+      detection: "escalation-manager"
+      diagnosis: "error-diagnostician"
+      recovery:
+        strategy: "escalate_after_3_attempts"
+        success_rate: 100%
+        avg_recovery_time: "10.0s"
+      prevention:
+        - "Add max retry limits"
+        - "Implement recovery backoff"
+        - "Add recovery pattern blacklist"
+
+    dangerous_auto_fix_attempted:
+      severity: CRITICAL
+      pattern: "Auto-recovery attempted fix on protected code"
+      detection: "auto-recovery-agent"
+      diagnosis: "escalation-manager"
+      recovery:
+        strategy: "block_and_escalate"
+        success_rate: 100%
+        avg_recovery_time: "0.1s"
+      prevention:
+        - "Maintain strict safety guardrails"
+        - "Add code path allowlist"
+        - "Implement pre-fix validation"
+
+# ============================================================================
+# RECOVERY PATTERNS
+# ============================================================================
+
+recovery_patterns:
+  retry_strategies:
+    simple_retry:
+      description: "Retry with same parameters"
+      applicable_to:
+        - "Transient network errors"
+        - "Temporary resource unavailability"
+      max_attempts: 3
+      backoff: "none"
+      success_rate: 60%
+
+    exponential_backoff:
+      description: "Retry with exponentially increasing delays"
+      applicable_to:
+        - "Rate limiting"
+        - "Service overload"
+      max_attempts: 5
+      backoff: "exponential"
+      initial_delay: "1s"
+      max_delay: "30s"
+      success_rate: 95%
+
+    modified_retry:
+      description: "Retry with adjusted parameters"
+      applicable_to:
+        - "Timeout errors"
+        - "Batch size issues"
+      adjustments:
+        - "Increase timeout 2x"
+        - "Reduce batch size 0.5x"
+        - "Add delays between operations"
+      max_attempts: 3
+      success_rate: 87%
+
+  escalation_strategies:
+    tier_escalation:
+      description: "Escalate from Haiku to Sonnet to Opus"
+      applicable_to:
+        - "Low confidence results"
+        - "Task complexity underestimated"
+      tiers:
+        - "haiku (85% success)"
+        - "sonnet (95% success)"
+        - "opus (99% success)"
+      avg_escalations_per_task: 0.4
+
+    human_escalation:
+      description: "Escalate to human intervention"
+      applicable_to:
+        - "Security-sensitive operations"
+        - "Data integrity risks"
+        - "Recovery confidence < 70%"
+      escalation_levels:
+        - "Level 3: Decision Required"
+        - "Level 4: Intervention Required"
+        - "Level 5: Critical"
+      avg_resolution_time: "15 minutes"
+
+  circuit_breaker_strategies:
+    fail_fast:
+      description: "Immediately fail when circuit open"
+      applicable_to:
+        - "Known bad agents"
+        - "High failure rate services"
+      state_transitions:
+        - "closed → open (30% failure rate)"
+        - "open → half_open (30s timeout)"
+        - "half_open → closed (3 successes)"
+
+    fallback_routing:
+      description: "Route to fallback agent when primary fails"
+      applicable_to:
+        - "Agent unavailability"
+        - "Circuit breaker open"
+      fallback_chain_depth: 3
+      capability_match_threshold: 80%
+
+  self_healing_strategies:
+    auto_fix:
+      description: "Automatically fix code/configuration issues"
+      applicable_to:
+        - "Type errors"
+        - "Import errors"
+        - "Syntax errors"
+      safety_guardrails:
+        - "Never touch production config"
+        - "Never modify security code"
+        - "Always create backup"
+      success_rate: 85%
+
+    state_restore:
+      description: "Restore to known good state"
+      applicable_to:
+        - "Corrupted configuration"
+        - "Failed migrations"
+      restoration_methods:
+        - "Git checkout"
+        - "Backup restoration"
+        - "Configuration reset"
+      success_rate: 95%
+
+# ============================================================================
+# PREVENTION STRATEGIES
+# ============================================================================
+
+prevention_strategies:
+  proactive_monitoring:
+    health_checks:
+      - component: "Self-healing orchestrator"
+        interval: "30s"
+        timeout: "5s"
+        failure_threshold: 3
+
+      - component: "Circuit breaker controller"
+        interval: "10s"
+        timeout: "2s"
+        failure_threshold: 3
+
+      - component: "Cascade orchestrator"
+        interval: "15s"
+        timeout: "3s"
+        failure_threshold: 3
+
+    metrics_collection:
+      - metric: "agent_execution_success_rate"
+        type: "gauge"
+        aggregation: "5m"
+
+      - metric: "self_healing_recovery_rate"
+        type: "counter"
+        aggregation: "1m"
+
+      - metric: "circuit_breaker_state_changes"
+        type: "counter"
+        aggregation: "1m"
+
+  chaos_engineering:
+    test_scenarios:
+      - name: "Agent crash injection"
+        frequency: "weekly"
+        blast_radius: "single agent"
+
+      - name: "Network partition"
+        frequency: "monthly"
+        blast_radius: "service group"
+
+      - name: "Resource exhaustion"
+        frequency: "monthly"
+        blast_radius: "single host"
+
+  capacity_planning:
+    scaling_thresholds:
+      - metric: "cpu_usage"
+        scale_up: 80%
+        scale_down: 20%
+
+      - metric: "queue_depth"
+        scale_up: 100
+        scale_down: 10
+
+      - metric: "error_rate"
+        circuit_break: 30%
+
+# ============================================================================
+# INCIDENT RESPONSE PROTOCOLS
+# ============================================================================
+
+incident_protocols:
+  severity_definitions:
+    SEV1:
+      definition: "Complete ecosystem outage"
+      response_time: "< 5 minutes"
+      notification: "Immediate PagerDuty"
+
+    SEV2:
+      definition: "Critical component failure"
+      response_time: "< 15 minutes"
+      notification: "PagerDuty"
+
+    SEV3:
+      definition: "Degraded performance"
+      response_time: "< 1 hour"
+      notification: "Slack alert"
+
+    SEV4:
+      definition: "Minor issue, auto-recovered"
+      response_time: "Next business day"
+      notification: "Log for review"
+
+  response_workflows:
+    SEV1_workflow:
+      - step: "Assess blast radius"
+        duration: "2 minutes"
+
+      - step: "Apply mitigation"
+        duration: "3 minutes"
+
+      - step: "Notify stakeholders"
+        duration: "1 minute"
+
+      - step: "Begin root cause analysis"
+        duration: "ongoing"
+
+    SEV2_workflow:
+      - step: "Identify failed component"
+        duration: "5 minutes"
+
+      - step: "Check circuit breaker status"
+        duration: "2 minutes"
+
+      - step: "Verify fallback routing"
+        duration: "3 minutes"
+
+      - step: "Apply fix or escalate"
+        duration: "5 minutes"
+
+# ============================================================================
+# METRICS & SLOs
+# ============================================================================
+
+metrics:
+  availability:
+    slo_target: 99.9%
+    error_budget: "43.2 minutes/month"
+    measurement_window: "30 days"
+    current_status: "UNKNOWN - No collection"
+
+  self_healing_recovery_rate:
+    slo_target: 90%
+    error_budget: "10% manual escalations"
+    measurement_window: "7 days"
+    current_status: "DESIGN COMPLETE - Not deployed"
+
+  circuit_breaker_response_time:
+    slo_target: "< 30s to open circuit"
+    error_budget: "5s detection latency"
+    measurement_window: "5 minutes"
+    current_status: "DESIGN COMPLETE - Not deployed"
+
+  cascade_efficiency:
+    slo_target: "70% complete at Haiku tier"
+    error_budget: "30% escalation rate"
+    measurement_window: "24 hours"
+    current_status: "DESIGN COMPLETE - Not deployed"
+
+# ============================================================================
+# DEPLOYMENT STATUS
+# ============================================================================
+
+deployment_status:
+  deployed:
+    count: 0
+    agents: []
+
+  design_complete:
+    count: 14
+    agents:
+      - "error-detector"
+      - "error-diagnostician"
+      - "auto-recovery-agent"
+      - "escalation-manager"
+      - "self-healing-orchestrator"
+      - "circuit-breaker-controller"
+      - "failure-rate-monitor"
+      - "fallback-router"
+      - "cascade-orchestrator"
+      - "cascade-optimizer"
+      - "distributed-tracing-specialist"
+      - "metrics-monitoring-architect"
+      - "incident-response-engineer"
+      - "sre-agent"
+
+  missing_implementation:
+    count: 4
+    critical_gaps:
+      - "Orchestrator health checks"
+      - "Active metrics collection"
+      - "Distributed tracing deployment"
+      - "Chaos engineering framework"
+
+# ============================================================================
+# NEXT ACTIONS
+# ============================================================================
+
+action_items:
+  P0_critical:
+    - action: "Deploy self-healing orchestrator"
+      owner: "SRE Team"
+      due: "Week 1"
+      complexity: "HIGH"
+
+    - action: "Implement agent execution metrics"
+      owner: "Observability Team"
+      due: "Week 1"
+      complexity: "MEDIUM"
+
+    - action: "Add orchestrator health checks"
+      owner: "SRE Team"
+      due: "Week 2"
+      complexity: "HIGH"
+
+  P1_high:
+    - action: "Deploy circuit breaker system"
+      owner: "SRE Team"
+      due: "Week 2"
+      complexity: "MEDIUM"
+
+    - action: "Configure OpenTelemetry tracing"
+      owner: "Observability Team"
+      due: "Week 3"
+      complexity: "MEDIUM"
+
+    - action: "Create SLO dashboards"
+      owner: "Observability Team"
+      due: "Week 3"
+      complexity: "LOW"
+
+  P2_medium:
+    - action: "Implement chaos engineering"
+      owner: "SRE Team"
+      due: "Week 4"
+      complexity: "HIGH"
+
+    - action: "Add coordination failure detection"
+      owner: "Architecture Team"
+      due: "Week 4"
+      complexity: "HIGH"

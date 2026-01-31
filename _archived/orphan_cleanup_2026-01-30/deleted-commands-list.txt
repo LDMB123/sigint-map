@@ -1,0 +1,15 @@
+/Users/louisherman/.claude/commands/debug.md
+/Users/louisherman/.claude/commands/deployment-strategy.md
+/Users/louisherman/.claude/commands/dmb-stats.md
+/Users/louisherman/.claude/commands/error-debug.md
+/Users/louisherman/.claude/commands/liberation-check.md
+/Users/louisherman/.claude/commands/migrate.md
+/Users/louisherman/.claude/commands/parallel-dmb-validation.md
+/Users/louisherman/.claude/commands/perf-audit.md
+/Users/louisherman/.claude/commands/pr-review.md
+/Users/louisherman/.claude/commands/refactor.md
+/Users/louisherman/.claude/commands/review.md
+/Users/louisherman/.claude/commands/scrape-dmb.md
+/Users/louisherman/.claude/commands/scraper-debug.md
+/Users/louisherman/.claude/commands/security-audit.md
+/Users/louisherman/.claude/commands/test-generate.md

@@ -1,0 +1,142 @@
+# Universal Agent Framework - Security Audit Skill
+# Category: Analysis | Swarm: Fan-Out Validation | Critical: Yes
+
+skill:
+  id: skill_security_audit
+  name: security-audit
+  version: 1.0.0
+  category: analysis
+
+  description: |
+    Comprehensive security audit of codebase.
+    Scans for vulnerabilities, secrets, and compliance issues.
+    Uses parallel scanning for fast results.
+
+  invocation:
+    command: /security-audit
+    aliases: [sec-audit, sa]
+
+  parameters:
+    - name: target
+      type: string
+      default: "."
+      description: Directory to audit
+
+    - name: scan_types
+      type: array
+      items:
+        type: string
+        enum: [vulnerabilities, secrets, dependencies, compliance]
+      default: [vulnerabilities, secrets, dependencies]
+
+    - name: compliance_frameworks
+      type: array
+      items:
+        type: string
+        enum: [owasp, soc2, hipaa, gdpr, pci_dss]
+      default: [owasp]
+
+    - name: severity_threshold
+      type: string
+      enum: [critical, high, medium, low]
+      default: medium
+
+    - name: fail_on_findings
+      type: boolean
+      default: true
+      description: Exit with error if issues found
+
+  workflow:
+    swarm_pattern: fan_out_validation
+
+    phases:
+      - name: File Discovery
+        agent: learner_codebase_indexer
+        tier: haiku
+        actions:
+          - Index all source files
+          - Identify configuration files
+          - Find dependency manifests
+        output: file_index
+
+      - name: Vulnerability Scan
+        agent: guardian_security_scanner
+        tier: sonnet
+        parallel: true
+        per_file: true
+        condition: vulnerabilities in scan_types
+        output: vulnerability_results
+
+      - name: Secret Detection
+        agent: guardian_secret_detector
+        tier: haiku
+        parallel: true
+        per_file: true
+        condition: secrets in scan_types
+        output: secret_results
+
+      - name: Dependency Audit
+        agent: analyzer_dependency
+        tier: haiku
+        condition: dependencies in scan_types
+        output: dependency_results
+
+      - name: Compliance Check
+        agent: guardian_compliance_checker
+        tier: sonnet
+        condition: compliance in scan_types
+        output: compliance_results
+
+      - name: Report Generation
+        agent: reporter_summary
+        tier: sonnet
+        actions:
+          - Aggregate all findings
+          - Prioritize by severity
+          - Generate recommendations
+          - Create compliance report
+        output: security_report
+
+  outputs:
+    - name: security_report
+      type: object
+      schema:
+        summary:
+          total_findings: integer
+          by_severity: object
+          risk_score: number
+        vulnerabilities: array
+        secrets_found: array
+        dependency_issues: array
+        compliance_status: object
+        recommendations: array
+
+  cost_model:
+    quick_scan:
+      sonnet_calls: 2
+      haiku_calls: 50
+      estimated_cost: 0.02
+
+    full_audit:
+      sonnet_calls: 10
+      haiku_calls: 500
+      estimated_cost: 0.16
+
+  examples:
+    - name: Quick security check
+      invocation: /security-audit --scan_types vulnerabilities,secrets
+      expected:
+        duration_seconds: 30
+        cost: 0.02
+
+    - name: Full compliance audit
+      invocation: /security-audit --compliance_frameworks owasp,soc2 --severity_threshold low
+      expected:
+        duration_seconds: 120
+        cost: 0.16
+
+  tags:
+    - security
+    - audit
+    - compliance
+    - vulnerabilities
