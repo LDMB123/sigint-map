@@ -1,0 +1,277 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    AGENT ECOSYSTEM STRUCTURAL ANALYSIS                       ║
+║                              2026-01-31                                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ECOSYSTEM OVERVIEW                                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  WORKSPACE                           HOME
+  ─────────────────────────────────  ──────────────────────────────────────
+  Location: .claude/agents/          Location: ~/.claude/agents/
+  Structure: FLAT                    Structure: HYBRID (flat + categorized)
+  Agents: 14                         Agents: 447
+  Directories: 0                     Directories: 62
+  Purpose: Curated subset            Purpose: Comprehensive library
+  Optimization: Token-efficient      Optimization: Feature-complete
+  Scope: Project-specific            Scope: Global defaults
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ OVERLAP ANALYSIS                                                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  ┌────────────────────────────────────────────────────────┐
+  │         HOME (447 agents)                              │
+  │  ┌─────────────────────────────────────────────┐       │
+  │  │  WORKSPACE (14 agents)                      │       │
+  │  │  ┌───────────────────────────────────────┐  │       │
+  │  │  │  IDENTICAL (10 agents)                │  │       │
+  │  │  │  - bug-triager                        │  │       │
+  │  │  │  - code-generator                     │  │       │
+  │  │  │  - dmb-analyst                        │  │       │
+  │  │  │  - documentation-writer               │  │       │
+  │  │  │  - error-debugger                     │  │       │
+  │  │  │  - migration-agent                    │  │       │
+  │  │  │  - performance-profiler               │  │       │
+  │  │  │  - refactoring-agent                  │  │       │
+  │  │  │  - security-scanner                   │  │       │
+  │  │  │  - test-generator                     │  │       │
+  │  │  └───────────────────────────────────────┘  │       │
+  │  │                                              │       │
+  │  │  ┌───────────────────────────────────────┐  │       │
+  │  │  │  VERSION CONFLICTS (4 agents)         │  │       │
+  │  │  │  🔴 token-optimizer (skills missing)  │  │       │
+  │  │  │  🔴 dependency-analyzer (model diff)  │  │       │
+  │  │  │  🟡 best-practices-enforcer (size)    │  │       │
+  │  │  │  🟡 performance-auditor (size)        │  │       │
+  │  │  └───────────────────────────────────────┘  │       │
+  │  └─────────────────────────────────────────────┘       │
+  │                                                         │
+  │  HOME-EXCLUSIVE (433 agents)                           │
+  │  - 30 DMB specialists                                  │
+  │  - 15 browser agents                                   │
+  │  - 15 debug agents                                     │
+  │  - 10 ecommerce agents                                 │
+  │  - 8 design agents                                     │
+  │  - [...]                                               │
+  └────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ VERSION CONFLICT MATRIX                                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  Agent                    │ WS Size │ Home Size │ Diff    │ Conflict Type
+  ─────────────────────────┼─────────┼───────────┼─────────┼────────────────
+  token-optimizer          │  1,730  │   6,116   │  +354%  │ 🔴 SKILLS
+  performance-auditor      │  1,717  │   5,257   │  +306%  │ 🟡 CONTENT
+  best-practices-enforcer  │  1,625  │   3,873   │  +238%  │ 🟡 CONTENT
+  dependency-analyzer      │  1,672  │   1,671   │     0%  │ 🔴 MODEL
+  ─────────────────────────┼─────────┼───────────┼─────────┼────────────────
+  [10 identical agents]    │   ~1,700│   ~1,700  │     0%  │ ✅ NONE
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ MODEL TIER DISTRIBUTION                                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  WORKSPACE (14 agents)              HOME (40 flat agents)
+  
+  Sonnet: ████████████████ 13        Sonnet: ██████████ 20
+  Haiku:  █ 1                        Haiku:  ████████ 15
+  Opus:   0                          Opus:   ██ 5
+  
+  Strategy: Quality-focused          Strategy: Balanced distribution
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ORGANIZATIONAL PATTERN COMPARISON                                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  WORKSPACE (Flat)                   HOME (Hybrid)
+  
+  .claude/agents/                    ~/.claude/agents/
+  ├── agent-1.md                     ├── generic-agent-1.md (×40 flat)
+  ├── agent-2.md                     ├── agent-warming/
+  ├── agent-3.md                     ├── ai-ml/
+  ├── [...]                          ├── browser/ (15 agents)
+  └── agent-14.md                    ├── debug/ (15 agents)
+                                     ├── design/ (8 agents)
+  Pros:                              ├── dmb/ (3 agents) ⚠️
+  ✓ Simple navigation                ├── dmb-*.md (27 flat) ⚠️ FRAGMENTED
+  ✓ No deep nesting                  ├── ecommerce/ (10 agents)
+  ✓ Fast lookups                     ├── [50+ more categories]
+  ✓ Appropriate for 10-20            └── workers/ (15 subdirs)
+  
+  Cons:                              Pros:
+  ✗ Doesn't scale >20                ✓ Scales to 100s of agents
+                                     ✓ Domain grouping
+  Ideal size: 10-20 agents           ✓ Easy to find specialists
+                                     
+                                     Cons:
+                                     ✗ DMB fragmentation (fix needed)
+                                     ✗ Inconsistent rules
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DMB AGENT FRAGMENTATION ISSUE                                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  Current State (FRAGMENTED):
+  
+  ~/.claude/agents/
+  ├── dmb-analyst.md ────────────┐
+  ├── dmb-brand-dna-expert.md    │
+  ├── dmb-chromium-optimizer.md  │
+  ├── [24 more dmb-*.md flat] ───┼─── 27 DMB agents in FLAT
+  ├── dmb/                       │
+  │   ├── live-show-analyzer.md ─┼─── 3 DMB agents in SUBDIR
+  │   ├── setlist-pattern-analyzer.md
+  │   └── tour-route-optimizer.md
+  
+  Total: 30 DMB agents in 2 locations ⚠️
+  
+  Target State (CONSOLIDATED):
+  
+  ~/.claude/agents/
+  ├── dmb/                       
+  │   ├── analyst.md ────────────┐
+  │   ├── brand-dna-expert.md    │
+  │   ├── chromium-optimizer.md  │
+  │   ├── [27 more agents] ──────┼─── ALL 30 DMB agents in dmb/
+  │   └── ...                    │
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ LOADING PRECEDENCE MODEL                                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  When agent name exists in both locations:
+  
+  1. Claude Code checks WORKSPACE first
+     ↓
+     Found? → Load workspace version (optimized, project-specific)
+     ↓
+  2. If not found, check HOME
+     ↓
+     Found? → Load home version (default, comprehensive)
+     ↓
+  3. If not found, error
+  
+  Result: Workspace OVERRIDES home for same-name agents
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ RECOMMENDED RELATIONSHIP                                                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+            ┌──────────────────────────────────────────┐
+            │  HOME: Comprehensive Global Library      │
+            │  - 447 agents across all domains         │
+            │  - Default versions                      │
+            │  - Feature-complete content              │
+            │  - Fallback when workspace missing       │
+            └──────────────────────────────────────────┘
+                            │
+                            │ Provides defaults
+                            ↓
+            ┌──────────────────────────────────────────┐
+            │  WORKSPACE: Curated Project Overrides    │
+            │  - 14 frequently-used agents             │
+            │  - Token-optimized versions              │
+            │  - Project-specific needs                │
+            │  - Takes precedence on conflicts         │
+            └──────────────────────────────────────────┘
+  
+  DO NOT MERGE - maintain as independent layers with different purposes
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ CRITICAL ISSUES SUMMARY                                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  🔴 HIGH PRIORITY (fix immediately)
+  
+  1. token-optimizer.md (home) missing skills declaration
+     Impact: Agent can't use 3 skills (token-budget-monitor, 
+             context-compressor, cache-warmer)
+     Fix: Add skills array to home version frontmatter
+     Time: 5 minutes
+  
+  2. dependency-analyzer.md model conflict (workspace: sonnet, home: haiku)
+     Impact: Inconsistent analysis quality between systems
+     Fix: Update home to sonnet
+     Time: 2 minutes
+  
+  🟡 MEDIUM PRIORITY (address soon)
+  
+  3. Home DMB agents fragmented (27 flat + 3 subdir)
+     Impact: Hard to find, inconsistent organization
+     Fix: Consolidate all 30 into dmb/ subdirectory
+     Time: 15 minutes
+  
+  4. No documentation of dual-system relationship
+     Impact: Future users won't understand structure
+     Fix: Create README.md in both locations
+     Time: 25 minutes
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ MIGRATION TIMELINE                                                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  Phase 1: Immediate Fixes           Phase 4: Path Audit
+  ├─ Fix token-optimizer (5m)        ├─ Scan for hardcoded paths (10m)
+  ├─ Fix dependency-analyzer (2m)    ├─ Test precedence (10m)
+  └─ Document curation (10m)         └─ Fix references (10m)
+     [17 minutes total]                 [30 minutes total]
+  
+  Phase 2: Home Reorganization       Phase 5: Documentation
+  ├─ Consolidate DMB agents (15m)    ├─ Update CLAUDE.md (10m)
+  ├─ Create home README (10m)        └─ Create decision tree (15m)
+  └─ Define rules (5m)                  [25 minutes total]
+     [30 minutes total]
+                                     Phase 6: Ongoing Maintenance
+  Phase 3: Version Alignment         ├─ Monthly review (30m/month)
+  ├─ Sync optimizations (5m)         └─ Quarterly audit (2h/quarter)
+  └─ Test both versions (5m)
+     [10 minutes total]              TOTAL: 2-3 hours one-time
+                                             + ongoing maintenance
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ SUCCESS CRITERIA                                                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  Migration successful when all checked:
+  
+  [ ] All 4 version conflicts resolved
+  [ ] 30 DMB agents consolidated into dmb/
+  [ ] README.md created in workspace agents/
+  [ ] README.md created in home agents/
+  [ ] Curation policy documented
+  [ ] No hardcoded path references found
+  [ ] Agent loading precedence verified
+  [ ] Both ecosystems 100% best practices compliant
+  [ ] Workspace CLAUDE.md updated with relationship docs
+  [ ] Decision tree for adding agents created
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ FINAL RECOMMENDATION                                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  ✅ MAINTAIN INDEPENDENCE - do not merge systems
+  
+  Rationale:
+  - Different purposes (curated vs comprehensive)
+  - Different optimization goals (tokens vs features)
+  - Different scales (14 vs 447 agents)
+  - Precedence system works correctly
+  - Merging would lose workspace optimizations
+  
+  Action Items:
+  1. Resolve 4 version conflicts (17 minutes)
+  2. Consolidate home DMB agents (15 minutes)
+  3. Document both systems (35 minutes)
+  4. Audit paths and test (30 minutes)
+  5. Set up maintenance schedule (ongoing)
+  
+  Total Time: 2-3 hours
+  Risk Level: LOW (all changes reversible)
+  Expected Outcome: Clean dual-system architecture with clear documentation
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  End of Visual Summary - See detailed reports for complete analysis          ║
+╚══════════════════════════════════════════════════════════════════════════════╝

@@ -1,0 +1,15 @@
+Agent,Workspace_Size,Home_Size,Size_Diff_Pct,Conflict_Type,Model_WS,Model_Home,Tools_WS,Tools_Home,Skills_WS,Skills_Home,Severity
+best-practices-enforcer,1625,3873,238.2,CONTENT,sonnet,sonnet,8,8,3,3,MEDIUM
+bug-triager,1513,1513,0.0,NONE,sonnet,sonnet,4,4,0,0,NONE
+code-generator,1628,1628,0.0,NONE,sonnet,sonnet,5,5,0,0,NONE
+dependency-analyzer,1672,1671,-0.1,MODEL,sonnet,haiku,4,4,0,0,HIGH
+dmb-analyst,1993,1993,0.0,NONE,sonnet,sonnet,5,5,1,1,NONE
+documentation-writer,1572,1572,0.0,NONE,sonnet,sonnet,4,4,0,0,NONE
+error-debugger,1857,1857,0.0,NONE,sonnet,sonnet,4,4,0,0,NONE
+migration-agent,1599,1599,0.0,NONE,sonnet,sonnet,5,5,0,0,NONE
+performance-auditor,1717,5257,306.2,CONTENT,sonnet,sonnet,6,6,2,2,MEDIUM
+performance-profiler,1811,1811,0.0,NONE,sonnet,sonnet,4,4,0,0,NONE
+refactoring-agent,1774,1774,0.0,NONE,sonnet,sonnet,5,5,0,0,NONE
+security-scanner,1689,1689,0.0,NONE,sonnet,sonnet,4,4,0,0,NONE
+test-generator,1714,1714,0.0,NONE,sonnet,sonnet,5,5,0,0,NONE
+token-optimizer,1730,6116,353.5,CONTENT+SKILLS,haiku,haiku,7,4,3,0,HIGH

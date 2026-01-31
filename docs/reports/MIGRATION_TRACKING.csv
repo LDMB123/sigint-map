@@ -1,0 +1,52 @@
+Agent,Current Model,Current Size,Target Model,Target Size,Migration Type,Priority,Risk,Effort,Phase,Status
+performance-profiler,sonnet,1811,MERGE,N/A,Consolidation,HIGH,Low,Medium,1,Pending
+performance-auditor,sonnet,5257,MERGE,N/A,Consolidation,HIGH,Low,Medium,1,Pending
+performance-analyzer,N/A,N/A,haiku,3500,New Agent,HIGH,Low,Medium,1,Pending
+bug-triager,sonnet,1513,haiku,1513,Tier Downgrade,HIGH,Low,Quick,1,Pending
+dependency-analyzer,haiku,1671,haiku,1671,No Change,N/A,None,N/A,N/A,Complete
+token-optimizer,haiku,6269,haiku,2000,Context Extract,MEDIUM,Low,Quick,2,Pending
+best-practices-enforcer,sonnet,3873,sonnet,3000,Context Extract,LOW,Low,Quick,2,Pending
+documentation-writer,sonnet,1572,haiku,1572,Tier Downgrade,MEDIUM,Medium,Quick,2,Pending
+refactoring-agent,sonnet,1774,haiku,1774,Tier Downgrade,MEDIUM,Medium,Quick,2,Pending
+code-generator,sonnet,1628,sonnet,1628,No Change,N/A,None,N/A,N/A,Complete
+error-debugger,sonnet,1857,sonnet,1857,No Change,N/A,None,N/A,N/A,Complete
+dmb-analyst,sonnet,1993,sonnet,1993,No Change,N/A,None,N/A,N/A,Complete
+migration-agent,sonnet,1599,sonnet,1599,No Change,N/A,None,N/A,N/A,Complete
+security-scanner,sonnet,1689,sonnet,1689,Clarify Only,MEDIUM,None,Quick,1,Pending
+test-generator,sonnet,1714,sonnet,1714,No Change,N/A,None,N/A,N/A,Complete
+
+Route Table Change,Current,Target,Type,Priority,Risk,Effort,Phase,Status,Notes
+Version,1.1.0,1.2.0,Upgrade,HIGH,Low,Medium,1,Pending,Bump version
+Remove Rust routes,Yes,No,Cleanup,HIGH,Low,Quick,1,Pending,borrow + lifetime
+Remove Leptos routes,Yes,No,Cleanup,HIGH,Low,Quick,1,Pending,leptos-ssr
+Remove tRPC routes,Yes,No,Cleanup,HIGH,Low,Quick,1,Pending,trpc subtype
+Remove orchestrator,Yes,No,Cleanup,MEDIUM,Low,Quick,2,Pending,5 unused routes
+Add Dexie domain,No,Yes,Enhancement,HIGH,Low,Quick,1,Pending,DMB Almanac
+Add PWA domain,No,Yes,Enhancement,HIGH,Low,Quick,1,Pending,DMB Almanac
+Add Workbox domain,No,Yes,Enhancement,HIGH,Low,Quick,1,Pending,DMB Almanac
+Fix security route,refactor,audit,Correction,HIGH,Low,Quick,1,Pending,Action mismatch
+Consolidate perf routes,3 routes,1 route,Simplification,HIGH,Low,Quick,1,Pending,All to performance-analyzer
+
+Supporting Files,Current,Target,Type,Priority,Risk,Effort,Phase,Status,Notes
+token-optimizer-strategies.md,No,Yes,Extract,MEDIUM,Low,Quick,2,Pending,4KB examples
+performance-examples.md,No,Yes,Extract,LOW,Low,Quick,2,Pending,2KB examples (in merged agent)
+best-practices-examples.md,No,Yes,Extract,LOW,Low,Quick,2,Pending,1KB examples
+
+Standardization Change,Current State,Target State,Type,Priority,Risk,Effort,Phase,Status,Notes
+Returns clause,Partial,All agents,Description,MEDIUM,None,Quick,1,Pending,Add to 14 agents
+Tool ordering,Mixed,Alphabetical,Consistency,LOW,None,Quick,1,Pending,Reorder all
+Description format,Good,Excellent,Clarity,MEDIUM,None,Quick,1,Pending,Routing improvement
+
+Summary Stats,Before,After,Change,Percent,,,,,
+Total Agents,14,12,-2,-14%,,,,,
+Sonnet Agents,12,6,-6,-50%,,,,,
+Haiku Agents,2,6,+4,+200%,,,,,
+Total Context (KB),37,29,-8,-22%,,,,,
+Avg Agent Size (KB),2.6,2.4,-0.2,-8%,,,,,
+Route Count,~60,~50,-10,-17%,,,,,
+Cost Index,100,55,-45,-45%,,,,,
+
+Phase,Tasks,Effort,Impact,Risk,Timeline,Success Criteria,,,
+1,Haiku migrations + consolidation + routes,6-8h,High,Low,Week 1,"Routing ≥95%, Quality ≥90%, Tokens -15%",,,
+2,Context extraction + category cleanup,3-4h,Medium,Low,Week 2-3,"Haiku ≥40%, Avg size <3KB",,,
+3,Monitoring + iteration,Ongoing,Long-term,Low,Monthly,Routing >95% sustained,,,

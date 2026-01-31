@@ -48,3 +48,12 @@ imagen-experiments/
 ├── output/         # Generated images
 └── docs/           # Documentation and reports
 ```
+
+## Report Writing Standards
+
+When writing reports:
+- Use bullet points, not paragraphs
+- No introductions or conclusions
+- Technical shorthand allowed (e.g., "impl" for implementation)
+- Omit articles (a, the) where meaning is clear
+- No filler phrases ("it's important to note that...")

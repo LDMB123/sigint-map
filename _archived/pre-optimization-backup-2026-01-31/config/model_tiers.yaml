@@ -1,0 +1,191 @@
+# Universal Agent Framework - Model Tier Configuration
+# Defines cost, latency, and selection criteria for each model tier
+
+model_tiers:
+  haiku:
+    model_id: claude-haiku-4-5-20250514
+    description: "Fast, cheap, parallelizable - ideal for volume tasks"
+
+    characteristics:
+      cost_per_1m_input_tokens: 0.25
+      cost_per_1m_output_tokens: 1.25
+      avg_latency_ms: 800
+      max_context_tokens: 200000
+      max_output_tokens: 4096
+
+    best_for:
+      - Syntax validation
+      - Style checking
+      - Simple transformations
+      - Data validation
+      - Parallel batch processing
+      - Quick queries
+      - Metrics collection
+      - Notification formatting
+
+    avoid_for:
+      - Complex reasoning
+      - Architectural decisions
+      - Security analysis
+      - Multi-step planning
+      - Creative code generation
+
+    selection_criteria:
+      - Task is well-defined and repeatable
+      - Output format is structured
+      - No deep reasoning required
+      - Can tolerate 5-10% error rate with validation
+      - Parallelization gain > 10x justifies use
+
+    parallelization:
+      max_concurrent: 200
+      recommended_batch_size: 50
+      optimal_for_swarms: true
+
+  sonnet:
+    model_id: claude-sonnet-4-5-20250929
+    description: "PRIMARY TIER for Claude Max - high quality, generous usage limits"
+
+    characteristics:
+      cost_per_1m_input_tokens: 3.00
+      cost_per_1m_output_tokens: 15.00
+      avg_latency_ms: 2500
+      max_context_tokens: 200000
+      max_output_tokens: 8192
+
+    best_for:
+      - Code generation
+      - Code review
+      - Bug diagnosis
+      - Security scanning
+      - Performance analysis
+      - Refactoring
+      - API design
+      - Documentation writing
+      - Integration implementation
+
+    avoid_for:
+      - Simple validation (use Haiku)
+      - Strategic decisions (use Opus)
+      - Tasks that can be parallelized with Haiku
+
+    selection_criteria:
+      - Moderate complexity reasoning required
+      - Domain expertise needed
+      - Output quality matters significantly
+      - Error cost is moderate to high
+      - Balance of speed and quality needed
+
+    parallelization:
+      max_concurrent: 30
+      recommended_batch_size: 10
+      optimal_for_specialists: true
+
+  opus:
+    model_id: claude-opus-4-5-20251101
+    description: "Highest quality - for strategic decisions and complex tasks"
+
+    characteristics:
+      cost_per_1m_input_tokens: 15.00
+      cost_per_1m_output_tokens: 75.00
+      avg_latency_ms: 8000
+      max_context_tokens: 200000
+      max_output_tokens: 32768
+
+    best_for:
+      - System architecture design
+      - Technology selection
+      - Complex refactoring strategy
+      - Migration planning
+      - Security threat modeling
+      - Orchestrating large swarms
+      - Consensus arbitration
+      - High-stakes bug fixes
+      - Domain modeling
+
+    avoid_for:
+      - Simple tasks (wasteful)
+      - Parallelizable work (use Haiku swarm)
+      - Standard code generation (use Sonnet)
+
+    selection_criteria:
+      - Task impacts many downstream decisions
+      - Error cost exceeds $1000 in developer time
+      - Requires synthesizing 100k+ tokens of context
+      - Strategic guidance for 50+ agents needed
+      - Highest quality output is critical
+
+    parallelization:
+      max_concurrent: 5
+      recommended_batch_size: 1
+      optimal_for_orchestration: true
+
+# Cost comparison examples
+cost_examples:
+  validate_100_files:
+    all_sonnet: 0.30  # 100 × $0.003
+    haiku_swarm: 0.025  # 100 × $0.00025
+    savings: 91.7%
+
+  code_review_50_files:
+    traditional: 0.15  # 50 × $0.003
+    swarm: 0.04  # 1 Sonnet coord + 50 Haiku
+    savings: 73.3%
+
+  architecture_decision:
+    single_opus: 0.015
+    consensus_swarm: 0.051  # 2 Opus + 5 Sonnet + 25 Haiku
+    value: "Higher quality decision"
+
+# Tier selection algorithm (Sonnet-First Strategy for Claude Max)
+tier_selection:
+  algorithm: quality_optimized_claude_max
+  strategy: sonnet_first
+
+  rules:
+    - name: default_to_sonnet
+      condition: task.type IN ["validation", "generation", "analysis", "transformation", "review"]
+      action: use_sonnet
+      rationale: "Claude Max subscribers get generous Sonnet limits - prioritize quality"
+
+    - name: use_haiku_for_simple_routing
+      condition: task.type == "routing" OR task.type == "aggregation" OR task.type == "formatting"
+      action: use_haiku
+      rationale: "Simple coordination tasks don't need reasoning power"
+
+    - name: use_haiku_for_extreme_parallelization
+      condition: task.file_count > 500 AND task.type == "validation"
+      action: use_haiku
+      rationale: "Extreme volume tasks benefit from 200 concurrent vs 30"
+
+    - name: use_opus_for_orchestration
+      condition: task.requires_orchestration AND task.agent_count > 20
+      action: use_opus
+      rationale: "Complex coordination needs highest reasoning"
+
+    - name: escalate_sonnet_to_opus
+      condition: task.retry_count > 2 AND task.tier == "sonnet"
+      action: escalate_to_opus
+      rationale: "Sonnet failed - need Opus-level reasoning"
+
+    - name: never_start_with_haiku
+      condition: task.tier == "haiku" AND task.type NOT IN ["routing", "aggregation", "formatting"]
+      action: escalate_to_sonnet
+      rationale: "Sonnet-first strategy - avoid Haiku for actual work"
+
+# Quality thresholds by tier
+quality_thresholds:
+  haiku:
+    expected_accuracy: 0.90
+    acceptable_for_validation: true
+    requires_review: true
+
+  sonnet:
+    expected_accuracy: 0.95
+    acceptable_for_production: true
+    requires_review: false
+
+  opus:
+    expected_accuracy: 0.99
+    acceptable_for_critical: true
+    requires_review: false

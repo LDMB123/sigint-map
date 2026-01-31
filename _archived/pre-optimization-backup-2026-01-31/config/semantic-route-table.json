@@ -1,0 +1,567 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "generated": "2026-01-25T06:00:00Z",
+  "description": "Semantic hash routing table mapping task patterns to optimal agents",
+  "documentation": {
+    "purpose": "Maps semantic hashes (task characteristics) to specialized agents for optimal task routing",
+    "hash_format": "domain:action:complexity:context",
+    "tier_explanation": {
+      "haiku": "Fast, cost-effective for simple tasks ($0.001-0.01)",
+      "sonnet": "Balanced performance for complex tasks ($0.01-0.08)",
+      "opus": "Maximum capability for critical tasks ($0.10-0.30)"
+    },
+    "pattern_matching": "Supports exact match, wildcard (*), and fuzzy matching"
+  },
+  "agents": {
+    "self-improving": {
+      "recursive-optimizer": {
+        "name": "recursive-optimizer",
+        "tier": "sonnet",
+        "model": "opus",
+        "category": "self-improving",
+        "type": "optimizer",
+        "improvement_rate": "5-10% per session",
+        "capabilities": [
+          "performance_self_analysis",
+          "strategy_evolution",
+          "prompt_self_improvement",
+          "architecture_self_modification"
+        ],
+        "domains": ["optimization", "performance", "self_improvement", "recursion"],
+        "action_types": ["analyze", "optimize", "evolve", "improve", "tune"],
+        "complexity_levels": ["medium", "high", "expert"],
+        "cost_estimate": "$0.03-0.08"
+      },
+      "feedback-loop-optimizer": {
+        "name": "feedback-loop-optimizer",
+        "tier": "haiku",
+        "model": "sonnet",
+        "category": "self-improving",
+        "type": "optimizer",
+        "improvement_compounding": "exponential",
+        "capabilities": [
+          "multi_level_feedback_system",
+          "automatic_ab_testing",
+          "gradient_based_optimization",
+          "reinforcement_learning"
+        ],
+        "domains": ["feedback", "learning", "optimization", "continuous_improvement"],
+        "action_types": ["feedback", "test", "learn", "adapt", "compound"],
+        "complexity_levels": ["low", "medium", "high"],
+        "cost_estimate": "$0.001-0.01"
+      },
+      "meta-learner": {
+        "name": "meta-learner",
+        "tier": "sonnet",
+        "model": "sonnet",
+        "category": "self-improving",
+        "type": "learner",
+        "learning_acceleration": "2-5x faster adaptation",
+        "capabilities": [
+          "learning_strategy_library",
+          "transfer_learning_optimization",
+          "few_shot_learning_enhancement",
+          "curriculum_learning"
+        ],
+        "domains": ["learning", "transfer_learning", "meta_learning", "adaptation"],
+        "action_types": ["learn", "transfer", "adapt", "curriculum", "strategy"],
+        "complexity_levels": ["medium", "high", "expert"],
+        "cost_estimate": "$0.01-0.08"
+      }
+    },
+    "quantum-parallel": {
+      "wave-function-optimizer": {
+        "name": "wave-function-optimizer",
+        "tier": "sonnet",
+        "model": "sonnet",
+        "category": "quantum-parallel",
+        "type": "optimizer",
+        "global_optimization": true,
+        "capabilities": [
+          "wave_function_propagation",
+          "multi_objective_optimization",
+          "adaptive_wave_packet",
+          "quantum_annealing_simulation"
+        ],
+        "domains": ["optimization", "quantum", "parallel", "global_search"],
+        "action_types": ["optimize", "search", "explore", "anneal", "propagate"],
+        "complexity_levels": ["high", "expert"],
+        "cost_estimate": "$0.01-0.08"
+      },
+      "massive-parallel-coordinator": {
+        "name": "massive-parallel-coordinator",
+        "tier": "sonnet",
+        "model": "opus",
+        "category": "quantum-parallel",
+        "type": "coordinator",
+        "parallelism": "100-1000x simultaneous operations",
+        "capabilities": [
+          "worker_pool_management",
+          "dynamic_load_balancing",
+          "hierarchical_parallel_execution",
+          "pipeline_parallelism"
+        ],
+        "domains": ["coordination", "parallelism", "throughput", "distributed"],
+        "action_types": ["coordinate", "parallelize", "distribute", "balance", "pipeline"],
+        "complexity_levels": ["high", "expert"],
+        "cost_estimate": "$0.10-0.30"
+      },
+      "superposition-executor": {
+        "name": "superposition-executor",
+        "tier": "sonnet",
+        "model": "sonnet",
+        "category": "quantum-parallel",
+        "type": "executor",
+        "parallelism": "10-100x simultaneous branches",
+        "capabilities": [
+          "superposition_state_management",
+          "quantum_interference_optimization",
+          "entanglement_correlation",
+          "quantum_tunneling"
+        ],
+        "domains": ["execution", "quantum", "parallel", "superposition"],
+        "action_types": ["execute", "branch", "collapse", "interfere", "entangle"],
+        "complexity_levels": ["medium", "high", "expert"],
+        "cost_estimate": "$0.01-0.08"
+      }
+    }
+  },
+  "routes": {
+    "optimization": {
+      "optimization:analyze:high:performance": {
+        "agent": "recursive-optimizer",
+        "tier": "sonnet",
+        "confidence": 0.95,
+        "reason": "Self-analysis and recursive optimization of performance"
+      },
+      "optimization:improve:medium:prompt": {
+        "agent": "recursive-optimizer",
+        "tier": "sonnet",
+        "confidence": 0.90,
+        "reason": "Prompt self-improvement and optimization"
+      },
+      "optimization:evolve:high:strategy": {
+        "agent": "recursive-optimizer",
+        "tier": "sonnet",
+        "confidence": 0.92,
+        "reason": "Strategy evolution and genetic algorithms"
+      },
+      "optimization:search:high:global": {
+        "agent": "wave-function-optimizer",
+        "tier": "sonnet",
+        "confidence": 0.93,
+        "reason": "Global optimization avoiding local minima"
+      },
+      "optimization:search:expert:quantum": {
+        "agent": "wave-function-optimizer",
+        "tier": "sonnet",
+        "confidence": 0.96,
+        "reason": "Quantum annealing and wave function optimization"
+      },
+      "optimization:optimize:high:multi_objective": {
+        "agent": "wave-function-optimizer",
+        "tier": "sonnet",
+        "confidence": 0.91,
+        "reason": "Multi-objective optimization with Pareto front"
+      },
+      "optimization:*:*:*": {
+        "agent": "recursive-optimizer",
+        "tier": "sonnet",
+        "confidence": 0.75,
+        "reason": "General optimization fallback"
+      }
+    },
+    "learning": {
+      "learning:learn:medium:transfer": {
+        "agent": "meta-learner",
+        "tier": "sonnet",
+        "confidence": 0.94,
+        "reason": "Transfer learning and domain adaptation"
+      },
+      "learning:learn:low:few_shot": {
+        "agent": "meta-learner",
+        "tier": "sonnet",
+        "confidence": 0.92,
+        "reason": "Few-shot learning enhancement"
+      },
+      "learning:adapt:medium:strategy": {
+        "agent": "meta-learner",
+        "tier": "sonnet",
+        "confidence": 0.90,
+        "reason": "Learning strategy adaptation"
+      },
+      "learning:curriculum:medium:*": {
+        "agent": "meta-learner",
+        "tier": "sonnet",
+        "confidence": 0.89,
+        "reason": "Curriculum design and progressive learning"
+      },
+      "learning:feedback:low:continuous": {
+        "agent": "feedback-loop-optimizer",
+        "tier": "haiku",
+        "confidence": 0.93,
+        "reason": "Continuous feedback and improvement loops"
+      },
+      "learning:*:*:*": {
+        "agent": "meta-learner",
+        "tier": "sonnet",
+        "confidence": 0.70,
+        "reason": "General learning tasks"
+      }
+    },
+    "feedback": {
+      "feedback:test:medium:ab": {
+        "agent": "feedback-loop-optimizer",
+        "tier": "haiku",
+        "confidence": 0.95,
+        "reason": "Automatic A/B testing and experimentation"
+      },
+      "feedback:optimize:low:gradient": {
+        "agent": "feedback-loop-optimizer",
+        "tier": "haiku",
+        "confidence": 0.92,
+        "reason": "Gradient-based optimization with feedback"
+      },
+      "feedback:compound:medium:improvement": {
+        "agent": "feedback-loop-optimizer",
+        "tier": "haiku",
+        "confidence": 0.93,
+        "reason": "Exponential compounding improvements"
+      },
+      "feedback:adapt:low:reinforcement": {
+        "agent": "feedback-loop-optimizer",
+        "tier": "haiku",
+        "confidence": 0.91,
+        "reason": "Reinforcement learning and reward-based adaptation"
+      },
+      "feedback:*:*:*": {
+        "agent": "feedback-loop-optimizer",
+        "tier": "haiku",
+        "confidence": 0.80,
+        "reason": "General feedback loop tasks"
+      }
+    },
+    "parallel": {
+      "parallel:coordinate:high:massive": {
+        "agent": "massive-parallel-coordinator",
+        "tier": "sonnet",
+        "confidence": 0.96,
+        "reason": "Massive parallelism (100-1000x workers)"
+      },
+      "parallel:distribute:high:load_balance": {
+        "agent": "massive-parallel-coordinator",
+        "tier": "sonnet",
+        "confidence": 0.94,
+        "reason": "Dynamic load balancing across workers"
+      },
+      "parallel:pipeline:medium:hierarchical": {
+        "agent": "massive-parallel-coordinator",
+        "tier": "sonnet",
+        "confidence": 0.92,
+        "reason": "Hierarchical pipeline execution"
+      },
+      "parallel:execute:medium:superposition": {
+        "agent": "superposition-executor",
+        "tier": "sonnet",
+        "confidence": 0.95,
+        "reason": "Superposition execution of multiple branches"
+      },
+      "parallel:branch:medium:quantum": {
+        "agent": "superposition-executor",
+        "tier": "sonnet",
+        "confidence": 0.93,
+        "reason": "Quantum-inspired branch execution"
+      },
+      "parallel:optimize:high:interference": {
+        "agent": "superposition-executor",
+        "tier": "sonnet",
+        "confidence": 0.91,
+        "reason": "Quantum interference optimization"
+      },
+      "parallel:*:high:*": {
+        "agent": "massive-parallel-coordinator",
+        "tier": "sonnet",
+        "confidence": 0.75,
+        "reason": "High-complexity parallel tasks"
+      },
+      "parallel:*:*:*": {
+        "agent": "superposition-executor",
+        "tier": "sonnet",
+        "confidence": 0.70,
+        "reason": "General parallel execution"
+      }
+    },
+    "execution": {
+      "execution:execute:medium:superposition": {
+        "agent": "superposition-executor",
+        "tier": "sonnet",
+        "confidence": 0.94,
+        "reason": "Superposition state execution"
+      },
+      "execution:collapse:medium:best": {
+        "agent": "superposition-executor",
+        "tier": "sonnet",
+        "confidence": 0.92,
+        "reason": "Collapse to best solution from branches"
+      },
+      "execution:entangle:high:correlated": {
+        "agent": "superposition-executor",
+        "tier": "sonnet",
+        "confidence": 0.90,
+        "reason": "Entangled execution of correlated tasks"
+      },
+      "execution:*:*:*": {
+        "agent": "superposition-executor",
+        "tier": "sonnet",
+        "confidence": 0.65,
+        "reason": "General execution tasks"
+      }
+    },
+    "performance": {
+      "performance:analyze:high:self": {
+        "agent": "recursive-optimizer",
+        "tier": "sonnet",
+        "confidence": 0.96,
+        "reason": "Self-analysis and performance optimization"
+      },
+      "performance:improve:medium:architecture": {
+        "agent": "recursive-optimizer",
+        "tier": "sonnet",
+        "confidence": 0.93,
+        "reason": "Architecture self-modification"
+      },
+      "performance:track:low:metrics": {
+        "agent": "feedback-loop-optimizer",
+        "tier": "haiku",
+        "confidence": 0.88,
+        "reason": "Performance metrics tracking and feedback"
+      },
+      "performance:*:*:*": {
+        "agent": "recursive-optimizer",
+        "tier": "sonnet",
+        "confidence": 0.75,
+        "reason": "General performance tasks"
+      }
+    },
+    "coordination": {
+      "coordination:coordinate:high:distributed": {
+        "agent": "massive-parallel-coordinator",
+        "tier": "sonnet",
+        "confidence": 0.95,
+        "reason": "Distributed system coordination"
+      },
+      "coordination:balance:medium:load": {
+        "agent": "massive-parallel-coordinator",
+        "tier": "sonnet",
+        "confidence": 0.93,
+        "reason": "Load balancing coordination"
+      },
+      "coordination:orchestrate:high:hierarchical": {
+        "agent": "massive-parallel-coordinator",
+        "tier": "sonnet",
+        "confidence": 0.92,
+        "reason": "Hierarchical orchestration"
+      },
+      "coordination:*:*:*": {
+        "agent": "massive-parallel-coordinator",
+        "tier": "sonnet",
+        "confidence": 0.80,
+        "reason": "General coordination tasks"
+      }
+    }
+  },
+  "fuzzy_patterns": {
+    "description": "Fuzzy matching patterns for semantic similarity",
+    "patterns": [
+      {
+        "keywords": ["optimize", "improve", "enhance", "tune", "refine"],
+        "domain": "optimization",
+        "suggested_agents": ["recursive-optimizer", "wave-function-optimizer", "feedback-loop-optimizer"],
+        "confidence_threshold": 0.70
+      },
+      {
+        "keywords": ["learn", "train", "adapt", "transfer", "meta"],
+        "domain": "learning",
+        "suggested_agents": ["meta-learner", "feedback-loop-optimizer"],
+        "confidence_threshold": 0.75
+      },
+      {
+        "keywords": ["feedback", "loop", "iterate", "compound", "reinforce"],
+        "domain": "feedback",
+        "suggested_agents": ["feedback-loop-optimizer", "recursive-optimizer"],
+        "confidence_threshold": 0.75
+      },
+      {
+        "keywords": ["parallel", "concurrent", "distribute", "coordinate", "swarm"],
+        "domain": "parallel",
+        "suggested_agents": ["massive-parallel-coordinator", "superposition-executor"],
+        "confidence_threshold": 0.70
+      },
+      {
+        "keywords": ["execute", "branch", "superposition", "quantum", "collapse"],
+        "domain": "execution",
+        "suggested_agents": ["superposition-executor", "wave-function-optimizer"],
+        "confidence_threshold": 0.75
+      },
+      {
+        "keywords": ["search", "explore", "global", "anneal", "wave"],
+        "domain": "optimization",
+        "suggested_agents": ["wave-function-optimizer", "superposition-executor"],
+        "confidence_threshold": 0.80
+      },
+      {
+        "keywords": ["performance", "analyze", "profile", "monitor", "track"],
+        "domain": "performance",
+        "suggested_agents": ["recursive-optimizer", "feedback-loop-optimizer"],
+        "confidence_threshold": 0.75
+      },
+      {
+        "keywords": ["strategy", "evolve", "genetic", "mutation", "crossover"],
+        "domain": "optimization",
+        "suggested_agents": ["recursive-optimizer", "meta-learner"],
+        "confidence_threshold": 0.80
+      },
+      {
+        "keywords": ["curriculum", "progressive", "scaffold", "few-shot"],
+        "domain": "learning",
+        "suggested_agents": ["meta-learner"],
+        "confidence_threshold": 0.85
+      },
+      {
+        "keywords": ["test", "ab", "experiment", "variant", "hypothesis"],
+        "domain": "feedback",
+        "suggested_agents": ["feedback-loop-optimizer"],
+        "confidence_threshold": 0.85
+      }
+    ]
+  },
+  "complexity_mapping": {
+    "description": "Maps complexity indicators to appropriate tiers",
+    "low": {
+      "indicators": ["simple", "basic", "quick", "fast", "single"],
+      "preferred_tier": "haiku",
+      "agents": ["feedback-loop-optimizer"]
+    },
+    "medium": {
+      "indicators": ["moderate", "standard", "typical", "balanced"],
+      "preferred_tier": "sonnet",
+      "agents": ["recursive-optimizer", "meta-learner", "superposition-executor", "wave-function-optimizer"]
+    },
+    "high": {
+      "indicators": ["complex", "advanced", "sophisticated", "intricate"],
+      "preferred_tier": "sonnet",
+      "agents": ["recursive-optimizer", "wave-function-optimizer", "massive-parallel-coordinator", "superposition-executor"]
+    },
+    "expert": {
+      "indicators": ["expert", "critical", "massive", "global", "quantum"],
+      "preferred_tier": "opus",
+      "agents": ["recursive-optimizer", "massive-parallel-coordinator", "wave-function-optimizer"]
+    }
+  },
+  "context_patterns": {
+    "description": "Context-specific routing patterns",
+    "self_improvement": {
+      "agents": ["recursive-optimizer", "feedback-loop-optimizer", "meta-learner"],
+      "use_cases": ["improve own performance", "learn to learn better", "compound improvements"]
+    },
+    "quantum_inspired": {
+      "agents": ["wave-function-optimizer", "superposition-executor"],
+      "use_cases": ["global optimization", "parallel exploration", "quantum algorithms"]
+    },
+    "massive_scale": {
+      "agents": ["massive-parallel-coordinator", "superposition-executor"],
+      "use_cases": ["100+ parallel workers", "distributed systems", "high throughput"]
+    },
+    "continuous_learning": {
+      "agents": ["feedback-loop-optimizer", "meta-learner"],
+      "use_cases": ["online learning", "adaptive systems", "feedback loops"]
+    },
+    "global_search": {
+      "agents": ["wave-function-optimizer", "superposition-executor"],
+      "use_cases": ["avoid local minima", "explore solution space", "multi-objective"]
+    }
+  },
+  "routing_algorithm": {
+    "description": "Algorithm for semantic hash matching",
+    "steps": [
+      "1. Parse task into domain:action:complexity:context components",
+      "2. Check exact match in routes table",
+      "3. If no exact match, try wildcard patterns (e.g., domain:action:*:*)",
+      "4. If still no match, apply fuzzy matching using keywords",
+      "5. Filter by complexity level to select appropriate tier",
+      "6. Consider context patterns for final selection",
+      "7. Return agent with highest confidence score",
+      "8. If confidence < 0.60, escalate to human review"
+    ],
+    "confidence_thresholds": {
+      "high": 0.90,
+      "medium": 0.75,
+      "low": 0.60,
+      "escalate": 0.60
+    }
+  },
+  "integration_examples": [
+    {
+      "task": "Optimize ML model performance recursively",
+      "hash": "optimization:analyze:high:performance",
+      "matched_route": "optimization:analyze:high:performance",
+      "selected_agent": "recursive-optimizer",
+      "confidence": 0.95,
+      "tier": "sonnet"
+    },
+    {
+      "task": "Learn new domain from few examples",
+      "hash": "learning:learn:low:few_shot",
+      "matched_route": "learning:learn:low:few_shot",
+      "selected_agent": "meta-learner",
+      "confidence": 0.92,
+      "tier": "sonnet"
+    },
+    {
+      "task": "Coordinate 500 parallel workers",
+      "hash": "parallel:coordinate:high:massive",
+      "matched_route": "parallel:coordinate:high:massive",
+      "selected_agent": "massive-parallel-coordinator",
+      "confidence": 0.96,
+      "tier": "sonnet"
+    },
+    {
+      "task": "Execute multiple solution branches simultaneously",
+      "hash": "parallel:execute:medium:superposition",
+      "matched_route": "parallel:execute:medium:superposition",
+      "selected_agent": "superposition-executor",
+      "confidence": 0.95,
+      "tier": "sonnet"
+    },
+    {
+      "task": "Set up A/B testing feedback loop",
+      "hash": "feedback:test:medium:ab",
+      "matched_route": "feedback:test:medium:ab",
+      "selected_agent": "feedback-loop-optimizer",
+      "confidence": 0.95,
+      "tier": "haiku"
+    },
+    {
+      "task": "Find global optimum avoiding local minima",
+      "hash": "optimization:search:high:global",
+      "matched_route": "optimization:search:high:global",
+      "selected_agent": "wave-function-optimizer",
+      "confidence": 0.93,
+      "tier": "sonnet"
+    }
+  ],
+  "metadata": {
+    "total_agents": 6,
+    "total_routes": 50,
+    "fuzzy_patterns": 10,
+    "domains_covered": ["optimization", "learning", "feedback", "parallel", "execution", "performance", "coordination"],
+    "tier_distribution": {
+      "haiku": 1,
+      "sonnet": 5,
+      "opus": 0
+    },
+    "last_updated": "2026-01-25T06:00:00Z",
+    "schema_version": "1.0.0"
+  }
+}

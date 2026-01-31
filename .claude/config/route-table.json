@@ -1,6 +1,6 @@
 {
-  "version": "1.1.0",
-  "generated_at": "2026-01-30",
+  "version": "1.2.0",
+  "generated_at": "2026-01-31",
   "description": "Pre-compiled routing table for zero-overhead agent selection with optimized specialized routes",
 
   "domains": {
@@ -80,7 +80,7 @@
       "note": "frontend + migrate"
     },
     "0x0600000000000000": {
-      "agent": "feature-dev:code-reviewer",
+      "agent": "best-practices-enforcer",
       "tier": "sonnet",
       "note": "backend + review"
     },
@@ -115,7 +115,7 @@
       "note": "devops + create"
     },
     "0x0d00000000000000": {
-      "agent": "feature-dev:code-reviewer",
+      "agent": "best-practices-enforcer",
       "tier": "sonnet",
       "note": "typescript + review"
     },
@@ -162,6 +162,10 @@
       "token": {
         "agent": "token-optimizer",
         "tier": "haiku"
+      },
+      "bundle": {
+        "agent": "dependency-analyzer",
+        "tier": "sonnet"
       }
     },
     "debugger": {
@@ -262,7 +266,7 @@
         "tier": "sonnet"
       },
       "patterns": {
-        "agent": "feature-dev:code-reviewer",
+        "agent": "best-practices-enforcer",
         "tier": "sonnet"
       },
       "conventions": {
@@ -276,23 +280,23 @@
     },
     "orchestrator": {
       "delegation": {
-        "agent": "feature-dev:code-reviewer",
+        "agent": "code-generator",
         "tier": "sonnet"
       },
       "workflow": {
-        "agent": "feature-dev:code-reviewer",
+        "agent": "code-generator",
         "tier": "sonnet"
       },
       "pipeline": {
-        "agent": "feature-dev:code-reviewer",
+        "agent": "code-generator",
         "tier": "sonnet"
       },
       "consensus": {
-        "agent": "feature-dev:code-reviewer",
+        "agent": "code-generator",
         "tier": "sonnet"
       },
       "swarm": {
-        "agent": "feature-dev:code-reviewer",
+        "agent": "code-generator",
         "tier": "sonnet"
       }
     },
@@ -342,7 +346,7 @@
     },
     "validator": {
       "schema": {
-        "agent": "feature-dev:code-reviewer",
+        "agent": "best-practices-enforcer",
         "tier": "sonnet"
       },
       "security": {
@@ -354,7 +358,7 @@
         "tier": "sonnet"
       },
       "syntax": {
-        "agent": "feature-dev:code-reviewer",
+        "agent": "best-practices-enforcer",
         "tier": "sonnet"
       },
       "test": {
@@ -362,7 +366,7 @@
         "tier": "sonnet"
       },
       "contract": {
-        "agent": "feature-dev:code-reviewer",
+        "agent": "best-practices-enforcer",
         "tier": "sonnet"
       }
     },

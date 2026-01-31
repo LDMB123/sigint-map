@@ -1,0 +1,113 @@
+AGENT FUNCTIONAL QUALITY & LOADABILITY AUDIT
+===========================================
+Date: 2026-01-31
+Validator: Python 3 + YAML parser
+Scope: 447 agents in ~/.claude/agents/
+
+HEADLINE METRICS
+================
+✓ Loadability:    100% (0 CRITICAL issues)
+✗ Functionality:   78% working (98 HIGH issues)
+⚠ Configuration:   54% optimal (205 MEDIUM issues)
+⚠ Best Practices:  0.9% compliant (569 LOW issues)
+
+ISSUE BREAKDOWN
+===============
+CRITICAL:    0 issues (blocks loading)
+HIGH:       98 issues (breaks functionality)
+MEDIUM:    205 issues (suboptimal config)
+LOW:       569 issues (best practice violations)
+TOTAL:     872 issues across 444 agents
+
+TOP ISSUES BY CATEGORY
+======================
+1. best_practice (508) - Missing "use when", long descriptions, too many tools
+2. invalid_permission (186) - Custom modes: acceptEdits, default, plan, review, code
+3. invalid_tools (98) - WebSearch, WebFetch (do not exist in Claude Code)
+4. model_tier (80) - Opus overuse, Haiku underuse
+
+CLEAN AGENTS (4)
+================
+engineering/clarifying-questioner.md
+fusion/full-stack-fusion-agent.md
+meta-orchestrators/parallel-universe-executor.md
+swarm-intelligence/collective-memory.md
+
+CRITICAL FINDINGS
+=================
+✓ All 447 agents have valid YAML frontmatter
+✓ All required fields present (name, description, tools, model)
+✗ 98 agents (22%) use invalid tools (WebSearch, WebFetch)
+✗ 186 agents (42%) use invalid permission modes
+⚠ 437 agents (98%) missing "use when" guidance
+⚠ 70 agents overuse Opus model (cost inefficiency)
+⚠ 10 agents underuse with Haiku (reliability risk)
+
+REMEDIATION PLAN
+================
+Phase 1 (2 hrs): Automated fixes
+  - Remove invalid tools (98 agents)
+  - Normalize permission modes (186 agents)
+  - Target: 100% functional agents
+
+Phase 2 (1 week): Manual review
+  - Model tier optimization (80 agents)
+  - Cost savings: ~$300/month
+  - Target: 95% optimal config
+
+Phase 3 (1 month): Best practices
+  - Add "use when" guidance (437 agents)
+  - Trim descriptions (61 agents)
+  - Minimize tools (10 agents)
+  - Target: 90% compliance
+
+DELIVERABLES
+============
+1. AGENT_QUALITY_EXECUTIVE_SUMMARY.md - Business-level report
+2. functional-quality-loadability.md - Technical details (30K tokens)
+3. LOADABILITY_AUDIT_INDEX.md - Navigation and reference
+4. fix-invalid-tools.sh - Automated HIGH fix script
+5. fix-permission-modes.sh - Automated MEDIUM fix script
+6. VALIDATION_SUMMARY.txt - This file
+
+NEXT STEPS
+==========
+1. Review executive summary with stakeholders
+2. Execute Phase 1 automated fixes (2 hours)
+3. Validate post-fix state (re-run audit)
+4. Schedule Phase 2 manual reviews
+5. Plan Phase 3 batch documentation updates
+
+VALIDATION TOOLS
+================
+Script: /tmp/validate_all_agents.py
+Usage:  python3 /tmp/validate_all_agents.py
+Output: Regenerates all audit reports
+
+COMPLIANCE TARGET
+=================
+Current:  0.9% fully compliant (4/447)
+Phase 1: 78% functional (fix HIGH issues)
+Phase 2: 95% optimal (fix MEDIUM priority)
+Phase 3: 90% compliant (best practices)
+
+COST IMPACT
+===========
+Current: 70 agents overusing Opus
+Impact:  ~3x cost vs Sonnet per invocation
+Fix:     Downgrade to Sonnet where appropriate
+Savings: ~$300/month estimated
+
+QUALITY BENCHMARKS
+==================
+Clean agent examples show best practices:
+- Concise descriptions with "use when"
+- Minimal tool grants (focused scope)
+- Appropriate model tier selection
+- Valid permission modes only
+- No invalid tool references
+
+Use these 4 agents as templates for improvements.
+
+END OF SUMMARY
+==============

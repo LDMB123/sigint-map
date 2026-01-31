@@ -1,0 +1,26 @@
+Rank,Severity,Category,Issue,Affected Files,Fix Time,Impact,Priority
+1,10,Critical,Custom schema fields in skills,"parallel-agent-validator/SKILL.md, mcp-integration/SKILL.md",30 min,+3%,P0
+2,9,Critical,Missing returns specifications,10 agents,45 min,+2%,P0
+3,8,Critical,Missing concrete examples,11 agents,2 hours,+1.5%,P1
+4,7,High,disable-model-invocation inconsistency,4 skills,5 min,+1.7%,P0
+5,7,High,Tool permission mismatch,token-optimizer,2 min,+0.5%,P0
+6,6,High,Missing edge case documentation,11 agents,1 hour,+0.8%,P1
+7,6,High,Missing output format specs,10 agents,45 min,+1%,P1
+8,5,High,Skill token budget not optimal,2 skills,1 hour,+0.8%,P1
+9,5,High,No opus tier agents,N/A,Future,TBD,P2
+10,4,Medium,Confidence score undocumented,route-table.json,10 min,+0.2%,P2
+11,4,Medium,Overly broad agent scopes,2 agents,Future,TBD,P3
+12,4,Medium,Missing process diagrams,All agents,2 hours,+0.5%,P2
+13,4,Medium,No input validation documented,Agents with Bash,15 min,+0.3%,P2
+14,3,Medium,Skill naming inconsistency,parallel-agent-validator,5 min,+0.1%,P2
+15,3,Medium,Dead example code,token-optimizer,30 min,+0.2%,P2
+16,3,Medium,No success metrics,11 agents,45 min,+0.5%,P2
+17,3,Medium,Missing failure modes,All agents,1 hour,+0.4%,P2
+18,3,Medium,No performance benchmarks,All agents,High effort,+0.3%,P3
+19,2,Low,Inconsistent section naming,Various agents,10 min,+0.1%,P3
+20,2,Low,Missing related agents,All agents,20 min,+0.2%,P3
+21,2,Low,No versioning in agents,All agents,Low effort,+0.1%,P3
+22,2,Low,Missing prerequisites,2 agents,15 min,+0.1%,P3
+23,2,Low,No concurrency docs,All agents,Medium effort,+0.2%,P3
+24,2,Low,Missing skill descriptions,Agents with skills,10 min,+0.1%,P3
+25,2,Low,No rate limiting docs,Agents with APIs,15 min,+0.1%,P3

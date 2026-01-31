@@ -1,0 +1,18 @@
+=== PATH REFERENCE AUDIT ===
+
+## 1. Home agents referencing workspace paths
+/Users/louisherman/.claude/agents/dmbalmanac-site-expert.md:`/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/docs/scraping/DMBALMANAC_HTML_STRUCTURE_REFERENCE.md`
+/Users/louisherman/.claude/agents/dmbalmanac-site-expert.md:- Selector Fixes: `/Users/louisherman/ClaudeCodeProjects/SELECTOR_REMEDIATION_GUIDE.md`
+/Users/louisherman/.claude/agents/dmbalmanac-site-expert.md:- Validation Status: `/Users/louisherman/ClaudeCodeProjects/SELECTOR_VALIDATION_REPORT.md`
+/Users/louisherman/.claude/agents/dmbalmanac-scraper.md:`/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/docs/scraping/DMBALMANAC_HTML_STRUCTURE_REFERENCE.md`
+/Users/louisherman/.claude/agents/dmbalmanac-scraper.md:**Selector Fixes**: `/Users/louisherman/ClaudeCodeProjects/SELECTOR_REMEDIATION_GUIDE.md`
+/Users/louisherman/.claude/agents/dmbalmanac-scraper.md:**Validation Status**: `/Users/louisherman/ClaudeCodeProjects/SELECTOR_VALIDATION_REPORT.md`
+
+## 2. Workspace agents referencing home paths
+NONE FOUND
+
+## 3. Workspace agents with absolute /Users paths
+NONE FOUND
+
+## SUMMARY
+Audit complete. Review above sections for any hardcoded paths.

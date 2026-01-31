@@ -4,6 +4,7 @@ description: >
   Workspace organization enforcement including scattered file detection,
   directory structure validation, auto-fix capabilities, and
   organization scoring for maintaining clean project structure.
+disable-model-invocation: true
 user-invocable: true
 allowed-tools:
   - Read

@@ -3,55 +3,41 @@
 ## Project Overview
 DMB Almanac is a Progressive Web App (PWA) serving as a comprehensive Dave Matthews Band concert database. Built with SvelteKit 2, Svelte 5, SQLite (better-sqlite3), Dexie.js (IndexedDB), and targeting Chromium 143+ on Apple Silicon (macOS Tahoe 26.2).
 
+## Documentation Quick Reference
+
+**Compressed Summaries (80-90% token savings):**
+- **GPU Development**: `.compressed/GPU_COMPUTE_DEVELOPER_GUIDE_SUMMARY.md` (750 tokens vs 7,500)
+- **Rust/Native API**: `.compressed/NATIVE_API_AND_RUST_DEEP_DIVE_2026_SUMMARY.md` (650 tokens vs 6,100)
+- **Modernization Audit**: `.compressed/MODERNIZATION_AUDIT_2026_SUMMARY.md` (450 tokens vs 5,000)
+- **GPU Testing**: `.compressed/GPU_TESTING_GUIDE_SUMMARY.md` (400 tokens vs 4,200)
+- **Rust Migration Plan**: `.compressed/RUST_NATIVE_API_MODERNIZATION_SUMMARY.md` (500 tokens vs 3,900)
+- **Hybrid WebGPU/Rust**: `.compressed/HYBRID_WEBGPU_RUST_20_WEEK_PLAN_SUMMARY.md` (500 tokens vs 3,700)
+- **Accessibility**: `.compressed/ACCESSIBILITY_AUDIT_DMB_ALMANAC_SUMMARY.md` (450 tokens vs 3,400)
+- **Chromium 143**: `.compressed/IMPLEMENTATION_GUIDE_CHROMIUM_143_SUMMARY.md` (450 tokens vs 3,300)
+- **Tier 1 Implementation**: `.compressed/DMB_TIER_1_IMPLEMENTATION_GUIDE_SUMMARY.md` (450 tokens vs 3,250)
+- **Security**: `.compressed/SECURITY_IMPLEMENTATION_GUIDE_SUMMARY.md` (260 tokens vs 3,200)
+
+**Full Documentation**: Organized in `docs/` by category: `gpu/`, `reports/`, `guides/`, `architecture/`, `audits/`
+
 ## Quick Start
 
-### Prerequisites
-- Node.js 20+ (LTS)
-- macOS Tahoe 26.2 / Apple Silicon M-series
-- Chrome/Chromium 143+
+**Prerequisites**: Node.js 20+, macOS 26.2 / Apple Silicon, Chrome 143+
 
-### Install Dependencies
+**Setup & Dev**:
 ```bash
-npm install
+npm install               # Install dependencies
+npx tsx scripts/init-db.ts  # Initialize database
+npm run import            # Import scraped data
+npm run dev               # Start dev server (localhost:5173)
+npm run build             # Production build
+npm run check             # Type check
 ```
 
-### Environment Variables
-No `.env` file required for development. Database path is hardcoded to `data/dmb-almanac.db`.
-
-### Database Setup
+**Scraper**:
 ```bash
-# Initialize empty database with schema
-npx tsx scripts/init-db.ts
-
-# Import scraped data (requires JSON files in scraper/output/)
-npm run import
-```
-
-### Development
-```bash
-npm run dev        # Start dev server on http://localhost:5173
-```
-
-### Production Build
-```bash
-npm run build      # Create production build
-npm run preview    # Preview production build
-```
-
-### Type Check
-```bash
-npm run check      # Svelte type check
-```
-
-### Scraper (Data Collection)
-```bash
-cd scraper
-npm install
-npm run scrape           # Full data scrape
-npm run scrape:venues    # Venues only
-npm run scrape:songs     # Songs only
-npm run scrape:guests    # Guests only
-npm run scrape:shows     # Shows only
+cd scraper && npm install
+npm run scrape            # Full scrape
+npm run scrape:[venues|songs|guests|shows]  # Targeted scrape
 ```
 
 ## Project Structure
@@ -144,26 +130,13 @@ dmb-almanac/app/
 ```
 
 ## Performance Targets (Chromium 143 / Apple Silicon)
-| Metric | Target | Notes |
-|--------|--------|-------|
-| LCP | < 1.0s | SSR + preloading |
-| INP | < 100ms | scheduler.yield() |
-| CLS | < 0.05 | Reserved space |
-| FCP | < 1.0s | SSR |
-| TTFB | < 400ms | SQLite WAL mode |
+LCP <1.0s • INP <100ms • CLS <0.05 • FCP <1.0s • TTFB <400ms
+*See: `.compressed/IMPLEMENTATION_GUIDE_CHROMIUM_143_SUMMARY.md`*
 
 ## Database
 
-### SQLite (Server-side)
-- Location: `data/dmb-almanac.db`
-- Size: ~22MB
-- Tables: venues, songs, tours, shows, setlist_entries, guests, releases, etc.
-- Configuration: WAL mode, foreign keys enabled
-
-### Dexie.js (Client-side)
-- Location: `src/lib/db/dexie/`
-- Used for: User data (favorites, attended shows), offline caching
-- Schema: Mirrors server schema for offline sync
+**SQLite (Server)**: `data/dmb-almanac.db` (22MB, WAL mode, foreign keys enabled)
+**Dexie.js (Client)**: `src/lib/db/dexie/` (user data, offline sync)
 
 ## Gotchas
 
@@ -203,13 +176,9 @@ dmb-almanac/app/
 - scheduler.yield() needs feature flag: chrome://flags/#enable-experimental-web-platform-features
 
 ### Documentation Organization
-- **Project root**: Only CLAUDE.md and README.md (keep clean!)
-- **Analysis docs**: Use `app/docs/analysis/` with subdirectories (errors/, refactoring/, etc.)
-- **Completion reports**: Archive in `app/docs/archive/completion-reports/`
-- **Reference guides**: Place in `app/docs/reference/`
-- **Quick starts**: Move to `app/docs/` or relevant subdirectory
-- **Scraper docs**: Organize in `scraper/docs/` with audit, guides, architecture, completion subdirectories
-- **Scattered markdown**: Run organization hook to detect violations before commit
+- **Project root**: Only CLAUDE.md and README.md
+- **Scattered files**: Run `.claude/scripts/enforce-organization.sh` before commit
+- **All docs**: Organized in `docs/` subdirectories (reports/, guides/, audits/, etc.)
 
 ## Agent System
 
@@ -217,3 +186,12 @@ This project uses 15 specialized Claude Code agents for development tasks. See:
 - `.claude/AGENT_ROSTER.md` - Agent documentation
 - `.claude/SKILLS_LIBRARY.md` - Skills documentation
 - `.claude/agents/` - Individual agent definitions
+
+## Report Writing Standards
+
+When writing reports:
+- Use bullet points, not paragraphs
+- No introductions or conclusions
+- Technical shorthand allowed (e.g., "impl" for implementation)
+- Omit articles (a, the) where meaning is clear
+- No filler phrases ("it's important to note that...")

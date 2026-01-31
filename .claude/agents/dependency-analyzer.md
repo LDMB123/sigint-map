@@ -11,7 +11,7 @@ tools:
   - Grep
   - Glob
   - Bash
-model: haiku
+model: sonnet
 permissionMode: plan
 ---
 

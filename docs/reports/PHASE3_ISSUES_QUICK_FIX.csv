@@ -1,0 +1,6 @@
+Issue Type,Priority,File Path,Current Value,Required Value,Fix Command,Effort
+Filename,HIGH,~/.claude/agents/content/Copywriter.md,Copywriter.md,copywriter.md,"git mv ~/.claude/agents/content/Copywriter.md ~/.claude/agents/content/copywriter.md",1 min
+Name Field,HIGH,~/.claude/agents/ecommerce/e-commerce-strategist.md,ecommerce-strategist,e-commerce-strategist,"Edit line 2: name: e-commerce-strategist",1 min
+Name Field,HIGH,~/.claude/agents/product/product-analyst.md,Product Analyst,product-analyst,"Edit line 2: name: product-analyst",1 min
+Name Field,HIGH,~/.claude/agents/engineering/core-ml-optimization-expert.md,coreml-optimization-expert,core-ml-optimization-expert,"Edit line 2: name: core-ml-optimization-expert",1 min
+Name Field,HIGH,~/.claude/agents/engineering/real-time-systems-specialist.md,realtime-systems-specialist,real-time-systems-specialist,"Edit line 2: name: real-time-systems-specialist",1 min

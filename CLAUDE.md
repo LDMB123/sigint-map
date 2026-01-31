@@ -109,3 +109,12 @@ npm run dev
 - **Skills**: Directory structure with SKILL.md (e.g., `.claude/skills/parallel-agent-validator/SKILL.md`)
 - **Large skills**: Extract detailed algorithms/references to separate files (e.g., `algorithms-reference.md`)
 - **Invalid formats**: No standalone YAML files, no skill files outside `.claude/skills/` directory
+
+## Report Writing Standards
+
+When writing reports:
+- Use bullet points, not paragraphs
+- No introductions or conclusions
+- Technical shorthand allowed (e.g., "impl" for implementation)
+- Omit articles (a, the) where meaning is clear
+- No filler phrases ("it's important to note that...")

@@ -1,0 +1,53 @@
+Current Location,Filename,Size,Category,Target Location,Phase,Priority,Action,Status
+/.claude/,COMPREHENSIVE_TOKEN_OPTIMIZATION_FINAL.md,20K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,TOKEN_ECONOMY_MODULES_INTEGRATION.md,24K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,TOKEN_ECONOMY_ORCHESTRATOR_REPORT.md,16K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,TOKEN_ECONOMY_DOCUMENTATION_INDEX.md,16K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,TOKEN_ECONOMY_EXECUTION_SUMMARY.md,12K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,SESSION_OPTIMIZATION_COMPLETE.md,16K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,SESSION_DEDUPLICATION_OPTIMIZATION.md,12K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,OPTIMIZATION_COMPLETE_SUMMARY.md,12K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,COMPRESSION_AUDIT_LOG.md,12K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,COMPRESSION_REPORT.md,8K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,TOKEN_OPTIMIZATION_INDEX.md,12K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,TOKEN_OPTIMIZATION_REPORT.md,4K,Token Economy Report,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,COMPRESSED_SESSION_STATE.md,12K,Session State,/docs/reports/token-economy/,2,P1,MOVE,PENDING
+/.claude/,CONVERSATION_COMPRESSED_STATE.md,8K,Session State,N/A,1,P0,DELETE,PENDING
+/.claude/,session-state-imagen.md,4K,Session State,N/A,1,P0,DELETE,PENDING
+/.claude/,NANO_BANANA_QUICK_START.md,8K,Guide,/docs/guides/,4,P2,MOVE,PENDING
+/.claude/,NANO_BANANA_TOKEN_OPTIMIZATION.md,8K,Guide,/docs/guides/,4,P2,MOVE,PENDING
+/.claude/,SEMANTIC_CACHE_POOL_EDITORIAL.yaml,8K,Configuration,/.claude/config/,1,P0,MOVE,PENDING
+/.claude/,README.md,4K,Reference,/.claude/,N/A,N/A,KEEP,OK
+/.claude/,ORGANIZATION_STANDARDS.md,8K,Reference,/.claude/,N/A,N/A,KEEP,OK
+/.claude/,SKILLS_QUICK_REFERENCE.md,4K,Reference,/.claude/,N/A,N/A,KEEP,OK
+/.claude/docs/,MCP_OPTIMIZATION_COMPLETE.md,18K,MCP Report,/docs/reports/mcp-integration/,3,P1,MOVE,PENDING
+/.claude/docs/,MCP_PLUGIN_INVENTORY.md,11K,MCP Report,/docs/reports/mcp-integration/,3,P1,MOVE,PENDING
+/.claude/docs/,MCP_SECURITY_GUIDE.md,9K,MCP Report,/docs/reports/mcp-integration/,3,P1,MOVE,PENDING
+/.claude/docs/,OFFICIAL_PLUGINS_INTEGRATION.md,8K,MCP Report,/docs/reports/mcp-integration/,3,P1,MOVE,PENDING
+/.claude/docs/,PLUGIN_INTEGRATION_ISSUES.md,7K,MCP Report,/docs/reports/mcp-integration/,3,P1,MOVE,PENDING
+/.claude/docs/,TASK_SHARING_INTEGRATION.md,10K,MCP Report,/docs/reports/mcp-integration/,3,P1,MOVE,PENDING
+/.claude/docs/,COMPREHENSIVE_INTEGRATION_OPTIMIZATION_REPORT.md,17K,Integration Report,/docs/reports/,3,P1,MOVE,PENDING
+/.claude/docs/,COMPREHENSIVE_FIX_REPORT.md,11K,Fix Report,/docs/reports/,3,P1,MOVE,PENDING
+/.claude/docs/,COMPLETE_FIXES_SUMMARY.md,15K,Fix Report,/docs/reports/,3,P1,MOVE,PENDING
+/.claude/docs/,FINAL_CODE_QUALITY_AND_SECURITY_VERIFICATION.md,16K,Audit Report,/docs/reports/,3,P1,MOVE,PENDING
+/.claude/docs/,FINAL_PERFORMANCE_AND_SECURITY_AUDIT.md,15K,Audit Report,/docs/reports/,3,P1,MOVE,PENDING
+/.claude/docs/,SYSTEMATIC_DEBUGGING_AUDIT.md,18K,Audit Report,/docs/reports/,3,P1,MOVE,PENDING
+/.claude/docs/,VERIFICATION_COMPLETE.md,6K,Verification Report,/docs/reports/,3,P1,MOVE,PENDING
+/.claude/docs/,USAGE_METRICS.md,3K,Metrics Report,/docs/reports/,3,P1,MOVE,PENDING
+/.claude/docs/,OPTIMIZATION_COMPLETE.md,8K,Optimization Report,/docs/reports/,3,P1,MOVE,PENDING
+/.claude/docs/,API_REFERENCE.md,44K,Reference,/docs/reference/,3,P1,MOVE,PENDING
+/.claude/docs/,API_REFERENCE.compressed.md,3K,Reference,/docs/reference/,3,P1,MOVE,PENDING
+/.claude/docs/,SYSTEMATIC_DEBUGGING_AUDIT.compressed.md,2K,Reference,/docs/reference/,3,P1,MOVE,PENDING
+/.claude/docs/,TOKEN_OPTIMIZATION_TOOLS.md,11K,Reference,/docs/reference/,3,P1,MOVE,PENDING
+/.claude/docs/,README.md,3K,Documentation Index,/.claude/docs/,N/A,N/A,KEEP,OK
+/.claude/config/,ROUTE_TABLE_REFACTORING.md,4K,Refactoring Report,/docs/reports/,3,P1,MOVE,PENDING
+/.claude/config/,VALIDATION_REPORT.md,11K,Validation Report,/docs/reports/,3,P1,MOVE,PENDING
+/,_logs/,352B,Orphaned Directory,/.claude/logs/imagen-generation/ or DELETE,5,P2,MOVE or DELETE,PENDING
+/,_archived-configs/,96B,Orphaned Directory,/_archived/configs/,5,P2,MOVE,PENDING
+/,_project-docs/,64B,Orphaned Directory (EMPTY),N/A,1,P0,DELETE,PENDING
+/,archive/,96B,Orphaned Directory,/_archived/,5,P2,MOVE,PENDING
+/.claude/skills/mcp-integration/,SKILL.md,0,Missing File,CREATE,6,P3,CREATE,PENDING
+/.claude/skills/mcp-integration/,desktop-commander.yaml,EXISTING,MCP Config,/.claude/skills/mcp-integration/,N/A,N/A,KEEP,OK
+/.claude/skills/mcp-integration/,mac-automation.yaml,EXISTING,MCP Config,/.claude/skills/mcp-integration/,N/A,N/A,KEEP,OK
+/.claude/skills/mcp-integration/,pdf-tools.yaml,EXISTING,MCP Config,/.claude/skills/mcp-integration/,N/A,N/A,KEEP,OK
+/.claude/skills/mcp-integration/,playwright-browser.yaml,EXISTING,MCP Config,/.claude/skills/mcp-integration/,N/A,N/A,KEEP,OK
