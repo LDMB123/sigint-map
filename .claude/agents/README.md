@@ -1,6 +1,6 @@
 # Workspace Agent Ecosystem
 
-**Total Agents:** 16 (curated subset)
+**Total Agents:** 17 (curated subset)
 **Purpose:** Production-ready agents for active development
 **Optimization:** Token-optimized, high-quality, tested
 
@@ -25,10 +25,13 @@
 **Documentation (1):**
 13. documentation-writer.md
 
+**Tech Stack Specialists (1):**
+14. sveltekit-specialist.md - SvelteKit 2 routing, load functions, form actions
+
 **Project-Specific (3):**
-14. dmb-analyst.md - Concert analysis and statistics
-15. **dmbalmanac-site-expert.md** - Site structure and data organization (NEW)
-16. **dmbalmanac-scraper.md** - Web scraping specialist (NEW)
+15. dmb-analyst.md - Concert analysis and statistics
+16. **dmbalmanac-site-expert.md** - Site structure and data organization
+17. **dmbalmanac-scraper.md** - Web scraping specialist
 
 ## Relationship to HOME Directory
 
