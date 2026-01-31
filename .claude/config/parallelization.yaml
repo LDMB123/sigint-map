@@ -3,10 +3,10 @@
 
 parallelization:
   global:
-    # Maximum concurrent agents across all tiers (haiku:100 + sonnet:25 + opus:5)
-    max_total_concurrent: 130
-    # Allow burst up to (haiku:150 + sonnet:30 + opus:5)
-    burst_max_total_concurrent: 185
+    # Maximum concurrent agents across all tiers (haiku:100 + sonnet:45 + opus:5)
+    max_total_concurrent: 150
+    # Allow burst up to (haiku:150 + sonnet:50 + opus:5)
+    burst_max_total_concurrent: 205
 
     # Maximum concurrent API calls
     max_api_calls_per_second: 50
@@ -24,8 +24,8 @@ parallelization:
       max_batch_size: 75
 
     sonnet:
-      max_concurrent: 25
-      burst_max_concurrent: 30  # Allow slight burst for critical tasks
+      max_concurrent: 45  # INCREASED from 25 for +35% throughput
+      burst_max_concurrent: 50  # INCREASED from 30
       recommended_batch_size: 15  # Reduced for quality control
       min_batch_size: 10
       max_batch_size: 30
@@ -43,9 +43,12 @@ parallelization:
       aggregation: merge_all
 
     hierarchical_delegation:
-      max_level_2_coordinators: 20
-      max_level_3_workers_per_coordinator: 50
-      max_total_workers: 500
+      max_level_2_coordinators: 10  # REDUCED from 20 to prevent deadlock
+      max_level_3_workers_per_coordinator: 15  # REDUCED from 50
+      max_total_workers: 150  # REDUCED from 500 (10 coord × 15 workers = 150)
+      slot_reservation: true  # Reserve slots before spawning coordinators
+      reservation_timeout_seconds: 30
+      fail_fast_if_insufficient_slots: true
 
     consensus_building:
       max_proposers: 5
@@ -92,6 +95,52 @@ backpressure:
       - reject_new_requests
       - prioritize_existing
       - alert_operators
+
+# Circuit Breaker (CRITICAL: Prevents queue overflow)
+circuit_breaker:
+  enabled: true
+
+  # Failure thresholds
+  thresholds:
+    error_rate_percent: 50  # Open circuit if >50% errors
+    consecutive_failures: 5  # Or 5 consecutive failures
+    timeout_rate_percent: 30  # Or >30% timeouts
+    measurement_window_seconds: 60
+
+  # State transitions
+  states:
+    closed:  # Normal operation
+      allow_requests: true
+      track_failures: true
+
+    open:  # Circuit tripped - reject new requests
+      allow_requests: false
+      duration_seconds: 30  # Stay open for 30s
+      fail_fast: true  # Immediately reject without trying
+
+    half_open:  # Testing if service recovered
+      allow_requests: true
+      max_test_requests: 5
+      success_threshold: 3  # Need 3/5 to close circuit
+
+  # Recovery
+  recovery:
+    backoff_strategy: exponential
+    initial_open_duration_seconds: 30
+    max_open_duration_seconds: 300
+    success_threshold_to_close: 3
+
+  # Per-tier circuit breakers
+  per_tier:
+    haiku:
+      enabled: true
+      error_rate_threshold: 60  # More tolerant
+    sonnet:
+      enabled: true
+      error_rate_threshold: 50
+    opus:
+      enabled: true
+      error_rate_threshold: 40  # Less tolerant for expensive tier
 
 # Adaptive throttling
 adaptive_throttling:
@@ -161,6 +210,17 @@ retry:
     max_delay_ms: 30000
     backoff_multiplier: 2.0
 
+  # CRITICAL: Total retry budget across all tiers (prevents infinite loops)
+  global:
+    max_total_attempts_across_tiers: 7  # Max retries including escalations
+    track_escalation_chain: true
+
+  # ADD JITTER to prevent thundering herd
+  jitter:
+    enabled: true
+    type: full_jitter  # Randomize delay between 0 and calculated backoff
+    max_jitter_ms: 5000
+
   by_tier:
     haiku:
       max_attempts: 2
@@ -224,8 +284,8 @@ resource_pools:
 
   sonnet_pool:
     min_size: 5
-    max_size: 25
-    burst_max_size: 30
+    max_size: 45  # INCREASED from 25
+    burst_max_size: 50  # INCREASED from 30
     idle_timeout_seconds: 120
 
   opus_pool:

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "*",
+      "Bash(npm install:*)",
+      "Bash(antigravity-claude-proxy accounts add:*)",
+      "Bash(antigravity-claude-proxy start:*)",
+      "Bash(env)",
+      "Bash(command -v antigravity:*)",
+      "Bash(antigravity:*)",
+      "Bash(brew search:*)",
+      "Bash(npx antigravity-claude-proxy --port 8080)",
+      "Bash(npx antigravity-claude-proxy:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(export HTTPS_PROXY=\"http://127.0.0.1:PORT\")",
+      "Bash(export HTTP_PROXY=\"http://127.0.0.1:PORT\")",
+      "Bash(export NO_PROXY=\"localhost,127.0.0.1\")",
+      "Bash(source:*)"
+    ],
+    "deny": [],
+    "default": "allow"
+  }
+}

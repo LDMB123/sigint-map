@@ -1,24 +1,30 @@
 {
   "permissions": {
     "allow": [
-      "*",
-      "Bash(npm install:*)",
-      "Bash(antigravity-claude-proxy accounts add:*)",
-      "Bash(antigravity-claude-proxy start:*)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Bash(npm install)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npm test *)",
       "Bash(env)",
-      "Bash(command -v antigravity:*)",
-      "Bash(antigravity:*)",
-      "Bash(brew search:*)",
-      "Bash(npx antigravity-claude-proxy --port 8080)",
-      "Bash(npx antigravity-claude-proxy:*)",
-      "Bash(lsof:*)",
-      "Bash(kill:*)",
-      "Bash(export HTTPS_PROXY=\"http://127.0.0.1:PORT\")",
-      "Bash(export HTTP_PROXY=\"http://127.0.0.1:PORT\")",
-      "Bash(export NO_PROXY=\"localhost,127.0.0.1\")",
-      "Bash(source:*)"
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)"
     ],
-    "deny": [],
-    "default": "allow"
-  }
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(defaults write *)",
+      "Bash(echo $*API_KEY*)",
+      "Bash(export *API_KEY*)"
+    ],
+    "default": "ask"
+  },
+  "allowUnsandboxedCommands": false,
+  "alwaysApproveWriteOperations": false
 }

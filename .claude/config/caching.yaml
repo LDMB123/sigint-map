@@ -118,7 +118,7 @@ storage:
       - /Users/louisherman/.claude/cache/l3_semantic.db
 
     connection_pool:
-      max_connections: 10
+      max_connections: 50  # INCREASED from 10 to handle 150 concurrent agents
       idle_timeout_seconds: 300
 
     pragmas:
