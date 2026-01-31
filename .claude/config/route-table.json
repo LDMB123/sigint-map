@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
-  "generated_at": "2025-01-25",
-  "description": "Pre-compiled routing table for zero-overhead agent selection",
+  "version": "1.1.0",
+  "generated_at": "2026-01-30",
+  "description": "Pre-compiled routing table for zero-overhead agent selection with optimized specialized routes",
 
   "domains": {
     "rust": 1,
@@ -56,59 +56,78 @@
   "routes": {
     "0x0100000000000000": {
       "agent": "code-generator",
-      "tier": "sonnet"
+      "tier": "sonnet",
+      "note": "rust + create"
     },
     "0x0200000000000000": {
-      "agent": "feature-dev:code-reviewer",
-      "tier": "sonnet"
+      "agent": "error-debugger",
+      "tier": "sonnet",
+      "note": "wasm + debug"
     },
     "0x0300000000000000": {
-      "agent": "migration-agent",
-      "tier": "sonnet"
+      "agent": "performance-auditor",
+      "tier": "sonnet",
+      "note": "sveltekit + optimize"
     },
     "0x0400000000000000": {
-      "agent": "performance-profiler",
-      "tier": "sonnet"
+      "agent": "security-scanner",
+      "tier": "sonnet",
+      "note": "security + refactor"
     },
     "0x0500000000000000": {
-      "agent": "code-generator",
-      "tier": "sonnet"
+      "agent": "migration-agent",
+      "tier": "sonnet",
+      "note": "frontend + migrate"
     },
     "0x0600000000000000": {
-      "agent": "code-generator",
-      "tier": "sonnet"
+      "agent": "feature-dev:code-reviewer",
+      "tier": "sonnet",
+      "note": "backend + review"
     },
     "0x0700000000000000": {
-      "agent": "code-generator",
-      "tier": "sonnet"
+      "agent": "migration-agent",
+      "tier": "sonnet",
+      "note": "database + migrate"
     },
     "0x0800000000000000": {
       "agent": "test-generator",
-      "tier": "sonnet"
+      "tier": "sonnet",
+      "note": "testing + test"
     },
     "0x0900000000000000": {
       "agent": "performance-auditor",
-      "tier": "sonnet"
+      "tier": "sonnet",
+      "note": "performance + optimize"
     },
     "0x0a00000000000000": {
       "agent": "dependency-analyzer",
-      "tier": "sonnet"
+      "tier": "sonnet",
+      "note": "architecture + analyze"
     },
     "0x0b00000000000000": {
       "agent": "documentation-writer",
-      "tier": "sonnet"
+      "tier": "sonnet",
+      "note": "documentation + document"
     },
     "0x0c00000000000000": {
       "agent": "code-generator",
-      "tier": "sonnet"
+      "tier": "sonnet",
+      "note": "devops + create"
     },
     "0x0d00000000000000": {
       "agent": "feature-dev:code-reviewer",
-      "tier": "sonnet"
+      "tier": "sonnet",
+      "note": "typescript + review"
+    },
+    "0x0e00000000000000": {
+      "agent": "migration-agent",
+      "tier": "sonnet",
+      "note": "prisma + migrate"
     },
     "0x0f00000000000000": {
       "agent": "code-generator",
-      "tier": "sonnet"
+      "tier": "sonnet",
+      "note": "general + create"
     }
   },
 

@@ -165,6 +165,43 @@ dmb-almanac/app/
 - Used for: User data (favorites, attended shows), offline caching
 - Schema: Mirrors server schema for offline sync
 
+## Gotchas
+
+### Svelte 5 Runes
+- ❌ **Don't use** `let` for reactive state: `let count = 0` (won't react)
+- ✅ **Do use** `$state()`: `let count = $state(0)` (reactive)
+- ❌ **Don't use** computed with `$:`: `$: doubled = count * 2` (deprecated)
+- ✅ **Do use** `$derived()`: `let doubled = $derived(count * 2)`
+
+### SQLite WAL Mode
+- Database locks during writes - use batch operations
+- Never run multiple write transactions simultaneously
+- Use `db.transaction()` wrapper for atomic operations
+- WAL file can grow - run `PRAGMA wal_checkpoint(TRUNCATE)` periodically
+
+### Dexie Migrations
+- ✅ **Always increment** version number when changing schema
+- ❌ **Never modify** existing tables in same version
+- ✅ **Add upgrade function** for each version change
+- ❌ **Never change** primary key type after creation
+- Test migrations: delete IndexedDB in DevTools, reload to trigger migration
+
+### Service Worker
+- Changes don't apply until **ALL tabs closed** and reopened
+- Must run `npm run build` to test SW changes (dev mode doesn't use SW)
+- Chrome DevTools > Application > Service Workers > "Update on reload" helps
+- Cache invalidation: increment cache version in `sw.js`
+
+### D3.js with Svelte
+- Don't use D3 for DOM manipulation - use Svelte's reactivity
+- Use D3 for data transformations and scales only
+- Example: `const xScale = d3.scaleLinear()...` ✅, `d3.select().append()` ❌
+
+### Chrome 143+ Features
+- View Transitions only work over HTTPS or localhost
+- Speculation Rules require `<script type="speculationrules">` in HTML
+- scheduler.yield() needs feature flag: chrome://flags/#enable-experimental-web-platform-features
+
 ## Agent System
 
 This project uses 15 specialized Claude Code agents for development tasks. See:

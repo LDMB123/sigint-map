@@ -18,6 +18,8 @@ allowed-tools:
 
 Anticipates which files will be needed and pre-caches them before they're requested, achieving near-zero token overhead on repeated accesses.
 
+**Detailed algorithms:** See [algorithms-reference.md](algorithms-reference.md) for implementation details, examples, and advanced features.
+
 ## Execution Checklist
 
 - [ ] Analyze current task context
