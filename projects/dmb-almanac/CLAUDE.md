@@ -202,6 +202,15 @@ dmb-almanac/app/
 - Speculation Rules require `<script type="speculationrules">` in HTML
 - scheduler.yield() needs feature flag: chrome://flags/#enable-experimental-web-platform-features
 
+### Documentation Organization
+- **Project root**: Only CLAUDE.md and README.md (keep clean!)
+- **Analysis docs**: Use `app/docs/analysis/` with subdirectories (errors/, refactoring/, etc.)
+- **Completion reports**: Archive in `app/docs/archive/completion-reports/`
+- **Reference guides**: Place in `app/docs/reference/`
+- **Quick starts**: Move to `app/docs/` or relevant subdirectory
+- **Scraper docs**: Organize in `scraper/docs/` with audit, guides, architecture, completion subdirectories
+- **Scattered markdown**: Run organization hook to detect violations before commit
+
 ## Agent System
 
 This project uses 15 specialized Claude Code agents for development tasks. See:

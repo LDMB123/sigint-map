@@ -87,7 +87,25 @@ npm run dev
 
 ## Gotchas
 
+### Agent System
 - **Agent parallelization**: Max 130 concurrent (100 haiku + 25 sonnet + 5 opus)
-- **Skills format**: Must use `skill-name/SKILL.md` with YAML frontmatter
+- **Skills format**: Must use `skill-name/SKILL.md` with YAML frontmatter (NOT standalone .md or YAML files)
 - **Route table**: Pre-compiled - regenerate after adding agents
-- **Git status**: Keep clean - move reports to docs/, not workspace root
+- **Agents location**: Must be in `.claude/agents/` (NOT in skills/ or docs/)
+
+### Organization
+- **Workspace root**: Only CLAUDE.md, README.md, LICENSE, .gitignore, package.json allowed
+- **Project roots**: Max 3 markdown files before requiring docs/ directory
+- **Scattered files**: Run `.claude/scripts/enforce-organization.sh` to check
+- **Git commits**: Organization hook blocks commits with scattered files - use `--no-verify` cautiously
+- **Backup files**: Must be in `_archived/` directory, not scattered in project
+
+### Documentation
+- **Reports location**: Always in `docs/reports/`, never workspace or project root
+- **Duplicate files**: Different files can have same name if in different subdirectories (e.g., each project can have its own AUDIT_SUMMARY.md)
+- **Archive vs docs**: `_archived/` for old/obsolete files, `docs/archive/` for historical but relevant documentation
+
+### Skills & Agents
+- **Skills**: Directory structure with SKILL.md (e.g., `.claude/skills/parallel-agent-validator/SKILL.md`)
+- **Large skills**: Extract detailed algorithms/references to separate files (e.g., `algorithms-reference.md`)
+- **Invalid formats**: No standalone YAML files, no skill files outside `.claude/skills/` directory
