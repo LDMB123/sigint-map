@@ -1,3 +1,18 @@
+---
+name: token-optimizer
+description: >
+  Active session token optimization specialist for real-time context compression,
+  cache management, and token budget optimization. Use when token usage is high
+  or approaching limits.
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Bash
+model: haiku
+permissionMode: default
+---
+
 # Token Optimizer Agent
 
 **Role:** Active session token optimization specialist
