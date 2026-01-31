@@ -37,22 +37,24 @@
 
 ## Relationship to HOME Directory
 
-**HOME Location:** `~/.claude/agents/` (447 agents + dmb/ subdirectory)
+**HOME Location:** `~/.claude/agents/` (455+ agents in hierarchical structure)
 
 **Workspace is a CURATED SUBSET:**
-- **Workspace:** 16 production-ready agents (token-optimized, tested)
-- **HOME:** 447 comprehensive library (all available agents)
-- **Shared:** 14 agents exist in both locations
+- **Workspace:** 19 production-ready agents (token-optimized, tested)
+- **HOME:** 455+ comprehensive library (organized in subdirectories)
+- **Shared:** 17 agents exist in both locations
 - **Workspace-only:** 2 dmbalmanac-* agents (path-coupled to workspace project)
 - **HOME-only:** 433 agents including 28 in `dmb/` subdirectory
 
 **Architecture Pattern:**
 ```
 Workspace (.claude/agents/)     HOME (~/.claude/agents/)
-├── 14 shared agents           ├── 14 shared agents (synced from workspace)
-├── 2 workspace-only agents    ├── 433 HOME-only agents
-└── (curated, optimized)       └── dmb/ (28 DMB agents organized by category)
+├── 17 shared agents           ├── 17 shared agents (synced from workspace)
+├── 2 workspace-only agents    ├── 438+ HOME-only agents
+└── (curated, optimized)       └── Hierarchical: dmb/, browser/, debug/, etc.
 ```
+
+**Note:** HOME agent counts are approximate. Use `find ~/.claude/agents -name "*.md" -type f | wc -l` for exact count.
 
 **Conflict Resolution:** Workspace always wins
 - YAML differs → Use workspace version
@@ -64,7 +66,7 @@ Workspace (.claude/agents/)     HOME (~/.claude/agents/)
 - **Workspace → HOME:** Manual sync within 24 hours of workspace changes
 - **HOME → Workspace:** Never auto-sync (workspace is curated subset)
 - **Conflict detection:** Monthly review
-- **Last sync:** 2026-01-31 (4 agents synced)
+- **Last sync:** 2026-01-31 (Phase 1: 4 agents, Phase 2: 3 agents)
 - **Full policy:** `~/.claude/agents/SYNC_POLICY.md`
 
 ## Project-Specific Agents
