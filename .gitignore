@@ -67,6 +67,12 @@ logs/
 **/*.rs.bk
 Cargo.lock
 
+# Scraper outputs and caches (generated data - should not be in git)
+**/output/*.json
+**/cache/*.json
+**/checkpoint*.json
+checkpoint_*.json
+
 # Python
 __pycache__/
 *.py[cod]
