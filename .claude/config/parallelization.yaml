@@ -104,6 +104,7 @@ backpressure:
 # Circuit Breaker (CRITICAL: Prevents queue overflow)
 circuit_breaker:
   enabled: true
+  precedence: global  # P1: Global circuit state applies across all tiers
 
   # Failure thresholds
   thresholds:
@@ -219,6 +220,7 @@ retry:
   global:
     max_total_attempts_across_tiers: 7  # Max retries including escalations
     track_escalation_chain: true
+    precedence: global_budget  # P1: Global budget takes priority over per-tier limits
 
   # ADD JITTER to prevent thundering herd
   jitter:

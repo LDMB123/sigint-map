@@ -120,6 +120,7 @@ storage:
     connection_pool:
       max_connections: 50  # INCREASED from 10 to handle 150 concurrent agents
       idle_timeout_seconds: 300
+      wait_timeout_seconds: 30  # P1: Explicit timeout to prevent indefinite waits
 
     pragmas:
       - journal_mode=WAL
