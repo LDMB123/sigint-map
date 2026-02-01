@@ -1,0 +1,17 @@
+Path,Size_Bytes,Size_Human,Category,Recommended_Action,Destination,Priority,Date_Modified,Reason
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/design/mockups/,11534336,11M,Duplicate_Assets,Archive,_archived/emerson-violin-pwa/design-assets/,P1,2026-01-27,"Complete duplicate of public/assets/mockups/ - 19 identical PNG files"
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/design/legacy/index.old.html,50086,49K,Obsolete_Code,Archive,_archived/emerson-violin-pwa/legacy/,P2,2026-01-27,"Old HTML file replaced by current index.html (3337 lines vs 50 lines)"
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/design/legacy/styles.css,34550,34K,Obsolete_Code,Archive,_archived/emerson-violin-pwa/legacy/,P2,2026-01-25,Legacy styles replaced by src/styles/app.css
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/sw.js,9968,9.7K,Duplicate_File,Delete,N/A,P0,2026-01-28,Exact duplicate of public/sw.js - build artifact in wrong location
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/sw-assets.js,2663,2.6K,Duplicate_File,Delete,N/A,P0,2026-01-28,Exact duplicate of public/sw-assets.js - build artifact in wrong location
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/index.html,172037,168K,Misplaced_File,Move,public/index.html,P0,2026-01-28,"Production HTML should be in public/ or serve as dev entry point, not both"
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/test-results/,45,<1K,Empty_Artifact_Dir,Delete,N/A,P1,2026-01-27,Build artifact directory with only .last-run.json
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/qa/screenshots/,0,0B,Empty_Directory,Delete,N/A,P2,2026-01-26,Empty directory no longer needed
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/wasm/src/wasm/,0,0B,Empty_Directory,Delete,N/A,P2,Unknown,Orphaned empty directory
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/src/components/,0,0B,Empty_Directory,Delete,N/A,P2,Unknown,Empty components directory - may be placeholder
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/_logs/server.log,34786,34K,Old_Logs,Review_Delete,N/A,P3,2026-01-25,5-day-old server log - check if needed then delete
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/_logs/localtunnel.log,710,710B,Old_Logs,Review_Delete,N/A,P3,2026-01-26,5-day-old localtunnel log - check if needed then delete
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/qa/ipados-26_2-issue-log.md,32520,32K,Report_In_Wrong_Location,Move,docs/reports/qa/,P2,2026-01-28,QA report should be in docs/reports/
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/qa/test-plan-ipados26.md,3674,3.6K,Report_In_Wrong_Location,Move,docs/reports/qa/,P2,2026-01-28,Test plan should be in docs/reports/
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/public/assets/mockups/,11534336,11M,Design_Asset_In_Production,Review_Move,design/deployed-mockups/,P3,2026-01-27,"19 mockup PNGs in production build - should these be in public for reference or moved to design/?"
+/Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/node_modules/,513802240,490M,Dependencies,Keep,N/A,N/A,2026-01-25,Standard dependency directory - ignore but noted for space accounting
