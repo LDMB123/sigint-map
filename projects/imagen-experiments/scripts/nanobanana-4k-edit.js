@@ -20,6 +20,7 @@ if (command !== 'edit' || !imagePath || !editPrompt) {
 await generateImage({
   prompt: editPrompt,
   editImagePath: imagePath,
+  referenceImagePaths: [imagePath],  // CRITICAL: Use same image as reference for facial identity preservation
   imageSize: '4K',  // Force 4K resolution
   aspectRatio: '1:1',
   // CRITICAL: Disable prompt rewriting to preserve imperfection constraints
