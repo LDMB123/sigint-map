@@ -1,6 +1,7 @@
 ---
 name: sveltekit-specialist
 description: >
+  Use when working with SvelteKit 2 routing, load functions, form actions, or SSR patterns.
   Expert in SvelteKit 2 file-based routing, load functions, form actions,
   and server-side rendering. Specializes in +page.svelte, +page.server.ts,
   +layout files, and route parameters. Optimized for dmb-almanac project patterns.

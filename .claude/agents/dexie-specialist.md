@@ -1,6 +1,7 @@
 ---
 name: dexie-specialist
 description: >
+  Use when working with Dexie.js schema design, IndexedDB migrations, or client-side database queries.
   Expert in Dexie.js 4.x for IndexedDB, offline-first patterns, and client-side
   database management. Specializes in schema design, migrations, queries, and
   Svelte integration. Optimized for DMB Almanac concert database.

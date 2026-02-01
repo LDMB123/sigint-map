@@ -756,7 +756,15 @@ export async function escalateWithRetry<T>(
   let preservedContext: Record<string, any> | undefined = undefined;
   let hasContext = false;
 
+  // P1: Absolute safety limit to prevent infinite loops (should never be hit if config is correct)
+  const ABSOLUTE_MAX_ESCALATIONS = 10;
+
   while (true) {
+    // P1: Hard-coded safety check independent of configuration
+    if (escalations >= ABSOLUTE_MAX_ESCALATIONS) {
+      console.error(`[ESCALATION SAFETY] Hit absolute escalation limit (${ABSOLUTE_MAX_ESCALATIONS}) - bug suspected in escalation logic or config`);
+      return { result: { success: false, error: 'Absolute escalation limit exceeded' } as ExecutionResult, escalations };
+    }
     const startTime = Date.now();
 
     // Execute with current tier (pass undefined for first attempt, not empty object)

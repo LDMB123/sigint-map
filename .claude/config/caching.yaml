@@ -121,6 +121,8 @@ storage:
       max_connections: 50  # INCREASED from 10 to handle 150 concurrent agents
       idle_timeout_seconds: 300
       wait_timeout_seconds: 30  # P1: Explicit timeout to prevent indefinite waits
+      wait_timeout_behavior: fail  # P1: Fail explicitly when timeout exceeded instead of undefined behavior
+      connection_retry_limit: 0  # P1: No retries on connection timeout to prevent cascading waits
 
     pragmas:
       - journal_mode=WAL

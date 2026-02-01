@@ -38,14 +38,14 @@ parallelization:
 
   by_swarm_pattern:
     fan_out_validation:
-      max_workers: 200
+      max_workers: 145  # FIXED: Reduced from 200 to stay within global limit of 150
       partitioning: by_file
       aggregation: merge_all
 
     hierarchical_delegation:
       max_level_2_coordinators: 10  # REDUCED from 20 to prevent deadlock
-      max_level_3_workers_per_coordinator: 15  # REDUCED from 50
-      max_total_workers: 150  # REDUCED from 500 (10 coord × 15 workers = 150)
+      max_level_3_workers_per_coordinator: 14  # FIXED: Reduced from 15 to prevent oversubscription (10×14+10=150)
+      max_total_workers: 140  # FIXED: Reduced from 150 to account for 10 coordinators (10 coord + 140 workers = 150)
       slot_reservation: true  # Reserve slots before spawning coordinators
       reservation_timeout_seconds: 30
       fail_fast_if_insufficient_slots: true
