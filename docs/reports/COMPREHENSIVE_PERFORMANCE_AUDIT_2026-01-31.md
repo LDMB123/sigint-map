@@ -1,18 +1,18 @@
 # Comprehensive Performance Audit - DMB Almanac
 
-**Date**: 2026-01-31  
-**Scope**: Entire codebase (app, scraper, scripts, configuration)  
-**Target**: 150+ performance optimizations  
+**Date**: 2026-01-31
+**Scope**: Entire codebase (app, scraper, scripts, configuration)
+**Target**: 150+ performance optimizations
 **Status**: COMPLETE - 178 optimizations identified
 
 ---
 
 ## Executive Summary
 
-**Total Optimizations Found**: 178  
-**Critical (High Impact)**: 42  
-**Medium Impact**: 89  
-**Low Impact**: 47  
+**Total Optimizations Found**: 178
+**Critical (High Impact)**: 42
+**Medium Impact**: 89
+**Low Impact**: 47
 
 **Category Breakdown**:
 - Inefficient Loops/Iterations: 38
@@ -44,7 +44,7 @@ for (const result of fetchResults) {
 }
 ```
 
-**Impact**: HIGH - Initial data load is 40-50% slower than optimal  
+**Impact**: HIGH - Initial data load is 40-50% slower than optimal
 **Fix**: Process results with parallel transformations:
 ```javascript
 const fetchResults = await Promise.allSettled(fetchPromises);
@@ -72,7 +72,7 @@ const venues = getVenues().filter(...);  // O(n)
 const tours = getTours().filter(...);    // O(n)
 ```
 
-**Impact**: HIGH - Search latency 4x optimal on large datasets  
+**Impact**: HIGH - Search latency 4x optimal on large datasets
 **Fix**: Combined filtering with early termination:
 ```javascript
 const results = { shows: [], songs: [], venues: [], tours: [] };
@@ -102,7 +102,7 @@ switch (entityName) {
 }
 ```
 
-**Impact**: MEDIUM-HIGH - Unnecessary function allocations during load  
+**Impact**: MEDIUM-HIGH - Unnecessary function allocations during load
 **Fix**: Cache transform functions:
 ```javascript
 const transformers = {
@@ -127,8 +127,8 @@ const data = JSON.parse(readFileSync(SHOW_URLS_FILE, "utf-8"));
 writeFileSync(CHECKPOINT_FILE, JSON.stringify(checkpoint, null, 2), "utf-8");
 ```
 
-**Impact**: HIGH - Scraper throughput limited by blocking I/O  
-**Instances**: 78 occurrences across scraper files  
+**Impact**: HIGH - Scraper throughput limited by blocking I/O
+**Instances**: 78 occurrences across scraper files
 **Fix**: Use async file operations:
 ```javascript
 // Use fs.promises
@@ -151,7 +151,7 @@ for (let i = 0; i < shows.length; i++) {
 }
 ```
 
-**Impact**: HIGH - Validation takes 5-10x longer than necessary  
+**Impact**: HIGH - Validation takes 5-10x longer than necessary
 **Fix**: Add compound indexes and use indexed queries:
 ```sql
 -- In schema
@@ -170,7 +170,7 @@ searchText: `${name} ${city} ${state} ${country}`.toLowerCase()  // line 728
 searchText: `${name} ${instruments.join(' ')}`.toLowerCase()  // line 942
 ```
 
-**Impact**: MEDIUM - Memory churn during data load (40k+ records)  
+**Impact**: MEDIUM - Memory churn during data load (40k+ records)
 **Fix**: Use array join for better performance:
 ```javascript
 searchText: [title, originalArtist].filter(Boolean).join(' ').toLowerCase()
@@ -190,10 +190,10 @@ for (const entry of setlist) {
 }
 ```
 
-**Impact**: MEDIUM - O(n*m) complexity without batching  
+**Impact**: MEDIUM - O(n*m) complexity without batching
 **Fix**: Collect operations and batch:
 ```javascript
-const guestOps = setlist.flatMap(entry => 
+const guestOps = setlist.flatMap(entry =>
   entry.guestNames.map(name => ({ entry, name }))
 );
 // Process batch
@@ -210,7 +210,7 @@ await processBatch(guestOps);
 const data = JSON.parse(text);  // line 315, 426 - no error handling
 ```
 
-**Impact**: CRITICAL - One malformed file crashes entire data load  
+**Impact**: CRITICAL - One malformed file crashes entire data load
 **Fix**: Add error handling:
 ```javascript
 try {
@@ -234,7 +234,7 @@ import * as path from "path";
 // Later uses fs.existsSync, fs.mkdirSync, etc.
 ```
 
-**Impact**: MEDIUM - Blocks event loop during checkpoint operations  
+**Impact**: MEDIUM - Blocks event loop during checkpoint operations
 **Fix**: Use fs/promises:
 ```javascript
 import { readFile, writeFile, mkdir, access } from 'fs/promises';
@@ -251,7 +251,7 @@ const shows = await db.shows.toArray();  // Load all 2000+ shows
 const setlistEntries = await db.setlistEntries.toArray();  // Load all 40k+ entries
 ```
 
-**Impact**: HIGH - 50MB+ memory allocation just for validation  
+**Impact**: HIGH - 50MB+ memory allocation just for validation
 **Fix**: Stream-based validation with cursors:
 ```javascript
 await db.shows.each(show => {
@@ -608,9 +608,9 @@ await db.shows.each(show => {
 
 ## CONCLUSION
 
-**Total Optimizations**: 178  
-**Estimated Performance Gain**: 60-75% improvement in key metrics  
-**Implementation Effort**: 4-6 weeks across 4 phases  
+**Total Optimizations**: 178
+**Estimated Performance Gain**: 60-75% improvement in key metrics
+**Implementation Effort**: 4-6 weeks across 4 phases
 **Risk Level**: LOW (most changes are isolated)
 
 All optimizations documented with file:line references for immediate implementation.

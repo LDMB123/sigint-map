@@ -1,7 +1,7 @@
 # Database Optimization Report
 
-**Generated:** 2026-01-27  
-**Database:** Dexie.js (IndexedDB wrapper)  
+**Generated:** 2026-01-27
+**Database:** Dexie.js (IndexedDB wrapper)
 **Project:** DMB Almanac
 
 ---
@@ -126,10 +126,10 @@ class QueryCache {
     this.cache = new Map();
     this.maxEntries = options.maxEntries ?? DEFAULT_MAX_ENTRIES;
   }
-  
+
   // Standard get with TTL check
   get(key) { ... }
-  
+
   // SWR semantics: returns { data, isStale, needsRevalidation }
   getSWR(key) { ... }
 }

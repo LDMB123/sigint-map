@@ -324,9 +324,9 @@ The module demonstrates defense-in-depth architecture with multiple validation l
 
 ---
 
-**Generated**: 2026-01-30  
-**Test Generator**: Claude Sonnet 4.5  
-**Test Suite Version**: 2.0  
-**Source File**: agent-registry.ts (708 lines)  
-**Test File**: agent-registry.security.test.ts (1,156 lines)  
+**Generated**: 2026-01-30
+**Test Generator**: Claude Sonnet 4.5
+**Test Suite Version**: 2.0
+**Source File**: agent-registry.ts (708 lines)
+**Test File**: agent-registry.security.test.ts (1,156 lines)
 **Test Ratio**: 1.63:1 (comprehensive coverage)

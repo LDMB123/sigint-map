@@ -2,10 +2,10 @@
 
 ## Executive Summary
 
-**Status**: ✅ COMPLETE  
-**Test Coverage**: 100% of identified security controls  
-**Tests Passed**: 60/60  
-**Execution Time**: 2.54s  
+**Status**: ✅ COMPLETE
+**Test Coverage**: 100% of identified security controls
+**Tests Passed**: 60/60
+**Execution Time**: 2.54s
 **Attack Vectors Tested**: 50+
 
 ---
@@ -333,6 +333,6 @@ The agent-registry security test suite provides **comprehensive coverage** of al
 
 **Security Certification**: ✅ APPROVED FOR PRODUCTION
 
-**Last Updated**: 2026-01-30  
-**Test Suite Version**: 2.0  
+**Last Updated**: 2026-01-30
+**Test Suite Version**: 2.0
 **Reviewed By**: Claude Sonnet 4.5 (Test Generator Agent)

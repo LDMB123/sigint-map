@@ -245,7 +245,7 @@ python3 /tmp/validate_agents.py | grep -A5 "your-agent-name"
 ### Target Metrics
 
 - **Immediate (after tools fix):** 95%+ compliance
-- **Short-term (after naming fix):** 98%+ compliance  
+- **Short-term (after naming fix):** 98%+ compliance
 - **Long-term (after routing patterns):** 100% compliance
 
 ---

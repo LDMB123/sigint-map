@@ -298,7 +298,7 @@ tar -tzf ../../_archived/analysis-reports-2026-01-31.tar.gz | head -20
 # rm -rf archive/
 ```
 
-**Keep:** 
+**Keep:**
 ```
 20x-optimization-2026-01-31/  (active reference)
 optimization/                 (active reference)

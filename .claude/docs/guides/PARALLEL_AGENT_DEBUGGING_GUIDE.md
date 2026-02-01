@@ -22,7 +22,7 @@ Agent type 'context-compression-specialist' not found
 **Common invalid names:**
 - `context-compression-specialist` ❌
 - `chrome-devtools-debugger` ❌
-- `performance-debugger` ❌  
+- `performance-debugger` ❌
 - `react-debugger` ❌
 - `css-debugger` ❌
 - `pwa-debugger` ❌
@@ -155,7 +155,7 @@ Look at the Task tool's agent list in the system prompt. The complete list inclu
 
 **General Purpose:**
 - `general-purpose` - For complex multi-step tasks
-- `Explore` - For codebase exploration  
+- `Explore` - For codebase exploration
 - `Plan` - For implementation planning
 - `Bash` - For command execution
 

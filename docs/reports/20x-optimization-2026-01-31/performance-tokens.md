@@ -1,9 +1,9 @@
 # Agent Token Consumption Analysis & Optimization Report
 
-**Date:** 2026-01-31  
-**Scope:** 447 agents in ~/.claude/agents/  
-**Total Tokens:** 918,440  
-**Average per Agent:** 2,054 tokens  
+**Date:** 2026-01-31
+**Scope:** 447 agents in ~/.claude/agents/
+**Total Tokens:** 918,440
+**Average per Agent:** 2,054 tokens
 **Report Generated:** Comprehensive token optimization analysis
 
 ## Executive Summary
@@ -249,7 +249,7 @@ Compression Ratio:    80%
   - Common base: 1,500-2,000 tokens per agent
   - Unique content: 1,000-2,000 tokens per agent
   - Efficiency: 50-60% pattern reuse
-  
+
 - **Database Specialists:** 18 agents
   - Common patterns: Connection, migration, optimization
   - Shared tokens: 800 tokens per agent (26% overhead)

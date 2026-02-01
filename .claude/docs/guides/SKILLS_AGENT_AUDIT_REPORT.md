@@ -28,22 +28,22 @@ The skill references these non-existent agents:
 
 1. `chrome-devtools-debugger` ❌
    - **Should be:** `chromium-browser-expert` ✅
-   
+
 2. `react-debugger` ❌
    - **Should be:** `senior-frontend-engineer` or `react-debugger` if it exists
-   
+
 3. `nodejs-debugger` ❌
    - **Should be:** `nodejs-debugger` if it exists or `senior-backend-engineer`
-   
+
 4. `css-debugger` ❌
    - **Should be:** `senior-frontend-engineer` ✅
-   
+
 5. `pwa-debugger` ❌
    - **Should be:** `pwa-devtools-debugger` ✅
-   
+
 6. `network-debugger` ❌
    - **Should be:** `senior-backend-engineer` ✅
-   
+
 7. `state-management-debugger` ❌
    - **Should be:** `senior-frontend-engineer` ✅
 
@@ -151,7 +151,7 @@ Update `.claude/templates/skills/skill_template.yaml` with:
 ```yaml
 # Valid agent names (update this list regularly):
 # - error-debugger
-# - chromium-browser-expert  
+# - chromium-browser-expert
 # - performance-optimizer
 # - senior-frontend-engineer
 # - security-scanner

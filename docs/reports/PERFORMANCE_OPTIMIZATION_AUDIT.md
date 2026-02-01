@@ -95,23 +95,23 @@
 ```yaml
 circuit_breaker:
   enabled: true
-  
+
   thresholds:
     error_rate_percent: 50
     consecutive_failures: 5
     timeout_rate_percent: 30
     measurement_window_seconds: 60
-  
+
   states:
     closed:  # Normal operation
       allow_requests: true
       track_failures: true
-    
+
     open:  # Circuit tripped
       allow_requests: false
       duration_seconds: 30
       fail_fast: true
-    
+
     half_open:  # Testing recovery
       allow_requests: true
       max_test_requests: 5

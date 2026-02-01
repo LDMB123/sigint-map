@@ -18,12 +18,12 @@ invalidate_cache() {
     local file="$1"
     local agent_id=$(basename "$file" | sed 's/\.[^.]*$//')
     local cache_key="${agent_id}_cache"
-    
+
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cache invalidated for: $agent_id (file: $file)"
-    
+
     # Remove cache files
     rm -f "$CACHE_DIR/$cache_key"*
-    
+
     # Log invalidation
     echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)|$agent_id|$file" >> "$CACHE_DIR/invalidation.log"
 }
@@ -33,7 +33,7 @@ monitor_changes() {
     echo "Monitoring agent files for changes..."
     echo "Press Ctrl+C to stop"
     echo ""
-    
+
     # Use fswatch if available, otherwise fall back to polling
     if command -v fswatch &> /dev/null; then
         fswatch -0 -r "$AGENTS_DIR" | while read -d "" file; do
@@ -45,10 +45,10 @@ monitor_changes() {
         echo "Note: fswatch not installed, using polling mode (slower)"
         echo "Install fswatch for real-time monitoring: brew install fswatch"
         echo ""
-        
+
         # Polling fallback
         declare -A file_checksums
-        
+
         while true; do
             for file in $(find "$AGENTS_DIR" -type f \( -name "*.yaml" -o -name "*.yml" -o -name "*.md" \)); do
                 current_checksum=$(md5 -q "$file" 2>/dev/null || echo "")

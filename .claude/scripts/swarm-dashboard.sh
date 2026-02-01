@@ -37,11 +37,11 @@ echo ""
 for agent_id in "${!AGENTS[@]}"; do
     task="${AGENTS[$agent_id]}"
     output_file="/private/tmp/claude/-Users-louisherman-ClaudeCodeProjects/tasks/${agent_id}.output"
-    
+
     if [ -f "$output_file" ]; then
         size=$(du -h "$output_file" | cut -f1 | tr -d ' ')
         lines=$(wc -l < "$output_file" 2>/dev/null || echo "0")
-        
+
         # Check for completion/error markers
         if tail -100 "$output_file" 2>/dev/null | grep -qi "error\|failed\|exception"; then
             status="❌ ERROR"
@@ -53,7 +53,7 @@ for agent_id in "${!AGENTS[@]}"; do
             status="🔄 RUNNING"
             RUNNING=$((RUNNING + 1))
         fi
-        
+
         printf "%-12s %-50s %s\n" "$status" "$task" "($size, $lines lines)"
     else
         printf "%-12s %-50s %s\n" "⚠️  MISSING" "$task" "(output not found)"

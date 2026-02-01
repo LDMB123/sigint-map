@@ -88,7 +88,7 @@ export async function wasmGlobalSearchAfter(
 ): Promise<SearchResult[]> {
   const cache = getQueryCache();
   const cacheKey = `search:global:${query}:${limit}`;
-  
+
   // ✅ Check cache FIRST, before stringify
   const cached = cache.get<SearchResult[]>(cacheKey);
   if (cached) {
@@ -300,7 +300,7 @@ export function encodeSetlistEntriesBinary(entries: WasmSetlistEntryInput[]): Ar
   const view = new DataView(buffer);
 
   let offset = 0;
-  
+
   // Write entry count
   view.setUint32(offset, entries.length, true);
   offset += 4;
@@ -389,7 +389,7 @@ async function executeWasmMethodAfter(
 ): Promise<void> {
   // ✅ Assume args are already properly formatted
   // (strings pre-serialized from high-level API)
-  
+
   const wasmFn = wasmModule[method] as (...args: unknown[]) => unknown;
   const wasmResult = wasmFn(...args);
 }
@@ -476,7 +476,7 @@ public async callWithSharedBuffer<T>(
 ): Promise<WasmResult<T>> {
   // Only for payloads >100KB
   const jsonSize = JSON.stringify(data).length;
-  
+
   if (jsonSize > 102400 && isSharedArrayBufferSupported()) {
     const buffer = createSharedBuffer(jsonSize);
     if (buffer) {
@@ -484,7 +484,7 @@ public async callWithSharedBuffer<T>(
       const view = new Uint8Array(buffer);
       const encoded = new TextEncoder().encode(JSON.stringify(data));
       view.set(encoded);
-      
+
       // Call WASM with buffer reference
       return this.callWorker<T>(method, [buffer]);
     }
@@ -514,34 +514,34 @@ public async callWithSharedBuffer<T>(
 
 function testCacheCollisionFix() {
   const opts = {};
-  
+
   const arr1 = [{a: 1}, {b: 2}];
   const arr2 = [{c: 3}, {d: 4}];
-  
+
   const key1 = getCacheKeyAfter(arr1, opts);
   const key2 = getCacheKeyAfter(arr2, opts);
-  
+
   console.assert(key1 !== key2, 'ERROR: Cache keys should be unique!');
-  
+
   const s1 = serializeForWasmAfter(arr1);
   const s2 = serializeForWasmAfter(arr2);
-  
+
   console.assert(s1 !== s2, 'ERROR: Serialized strings should be different!');
   console.assert(JSON.parse(s1)[0].a === 1, 'ERROR: First array should preserve data!');
   console.assert(JSON.parse(s2)[0].c === 3, 'ERROR: Second array should preserve data!');
-  
+
   console.log('✅ Cache collision fix test passed!');
 }
 
 function testTextEncoderCaching() {
   const str = 'Hello, World!';
-  
+
   const start = performance.now();
   for (let i = 0; i < 1000; i++) {
     encodeStringAfter(str);
   }
   const time = performance.now() - start;
-  
+
   console.log(`✅ 1000 encodeString calls: ${time.toFixed(2)}ms`);
   console.assert(time < 50, 'ERROR: Encoding should be fast with cached instances!');
 }
@@ -559,19 +559,19 @@ function testCacheMissPatterns() {
   const cache = new Map();
   const data = [{id: 1}, {id: 2}];
   const key = 'test-key';
-  
+
   cache.set(key, data);
-  
+
   // First call - cache hit
   const cached = cache.get(key);
   stringifyCount = 0;
-  
+
   if (cached) {
     // Should NOT stringify here
     console.log('Cache hit - stringify count:', stringifyCount);
     console.assert(stringifyCount === 0, 'ERROR: Should not stringify on cache hit!');
   }
-  
+
   console.log('✅ Cache miss pattern test passed!');
 }
 

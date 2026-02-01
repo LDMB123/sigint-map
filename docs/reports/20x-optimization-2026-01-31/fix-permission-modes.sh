@@ -44,16 +44,16 @@ TOTAL_FIXED=0
 
 for old_mode in "${!MODE_MAP[@]}"; do
     new_mode="${MODE_MAP[$old_mode]}"
-    
+
     # Find and count
     COUNT=$(grep -r "permissionMode: $old_mode" "$AGENTS_DIR" --include="*.md" | wc -l || echo "0")
-    
+
     if [ "$COUNT" -gt 0 ]; then
         echo "  Found $COUNT agents with permissionMode: $old_mode"
-        
+
         # Fix (macOS-compatible find)
         find "$AGENTS_DIR" -name "*.md" -type f -exec sed -i '' "s/permissionMode: $old_mode/permissionMode: $new_mode/g" {} +
-        
+
         TOTAL_FIXED=$((TOTAL_FIXED + COUNT))
     fi
 done

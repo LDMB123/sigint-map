@@ -1,8 +1,8 @@
 # Agent Ecosystem Error Handling & Functional Quality Analysis
 
-**Date**: 2026-01-31  
-**Scope**: 447 agents in `~/.claude/agents/`  
-**Sample Size**: 30 agents (deep analysis) + 254 agents (pattern matching)  
+**Date**: 2026-01-31
+**Scope**: 447 agents in `~/.claude/agents/`
+**Sample Size**: 30 agents (deep analysis) + 254 agents (pattern matching)
 **Focus**: Error handling, failure modes, edge cases, recovery patterns
 
 ---
@@ -68,13 +68,13 @@ recovery_strategies:
       backoff: exponential
       initial_delay: 1s
       max_delay: 30s
-  
+
   safety_guardrails:
     never_auto_fix:
       - production_configuration
       - database_schemas
       - authentication_security_code
-    
+
     require_confirmation:
       - changes_to_5_plus_files
       - changes_over_50_lines
@@ -171,12 +171,12 @@ quality_criteria:
     - Plain language, no jargon
     - Specific about what went wrong
     - Includes relevant context
-  
+
   actionability:
     - Suggests how to fix
     - Points to documentation
     - Includes relevant values
-  
+
   consistency:
     - Consistent format across codebase
     - Error codes where appropriate
@@ -214,14 +214,14 @@ states:
     transitions:
       - to: "open"
         condition: "failure_rate > 30% for 5 samples"
-  
+
   open:
     description: "Requests blocked"
     timeout: "30 seconds"
     transitions:
       - to: "half_open"
         condition: "timeout elapsed"
-  
+
   half_open:
     description: "Testing recovery"
     allowed_requests: 3
@@ -481,18 +481,18 @@ try {
 ```yaml
 error_message_standard:
   template: "[CATEGORY] [SPECIFIC_ERROR]: [CONTEXT] → [ACTION]"
-  
+
   examples:
     - "AUTH INVALID_TOKEN: Token expired at 2026-01-31 10:30 → Re-authenticate with /login"
     - "DB CONSTRAINT_VIOLATION: Duplicate email 'user@example.com' → Use different email or recover existing account"
     - "VALIDATION MISSING_FIELD: Required field 'age' is null → Provide age value between 0-120"
-  
+
   required_fields:
     - category: Error type (AUTH, DB, VALIDATION, NETWORK, etc.)
     - specific_error: Exact error name
     - context: Relevant values (sanitized, no secrets)
     - action: What user/developer should do
-  
+
   optional_fields:
     - error_code: Numeric code for i18n/lookup
     - documentation_url: Link to docs for this error
@@ -593,7 +593,7 @@ error_message_standard:
 
 **1. Add Escalation Paths to All Non-Worker Agents**
 - Target: 220 agents (Sonnet/Opus)
-- Format: 
+- Format:
   ```yaml
   escalates_to:
     - [agent-name]: [trigger condition]
@@ -680,7 +680,7 @@ quality_scores:
   validators: 6/10 (good)
   production_resilience: 9/10 (excellent)
   generic_engineers: 5/10 (fair)
-  
+
 gaps:
   missing_escalation: 393/447 (88%)
   missing_failure_modes: 304/447 (68%)
@@ -835,7 +835,7 @@ The agent ecosystem has **strong foundations** in error handling with specialize
 
 ---
 
-**Report Generated**: 2026-01-31  
-**Analyst**: Error Debugger Agent  
-**Sample Size**: 30 deep analysis + 254 pattern matching  
+**Report Generated**: 2026-01-31
+**Analyst**: Error Debugger Agent
+**Sample Size**: 30 deep analysis + 254 pattern matching
 **Coverage**: 447 total agents

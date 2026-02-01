@@ -25,17 +25,19 @@ cd projects/dmb-almanac/
 ## Agent System
 
 This workspace uses:
-- **12 reusable skills** in `.claude/skills/`
+- **14 reusable skills** in `.claude/skills/`
 - **Parallelization config** supporting 130 concurrent agents (burst: 185)
 - **Route table** for zero-overhead agent selection
-- **MCP integrations** for desktop automation
+- **MCP servers** (Claude Code only): gemini, puppeteer, github, filesystem, fetch, memory, sqlite
+  - Note: Desktop Chat (claude.ai) uses separate MCP config and may have 0 servers
+  - MCP servers are configured in `~/.claude.json` under `mcpServers`
 
 ## Architecture
 
 ```
 ClaudeCodeProjects/
 ├── .claude/              # Shared agent infrastructure
-│   ├── skills/          # 12 reusable skills
+│   ├── skills/          # 14 reusable skills
 │   ├── config/          # Parallelization, routing, caching
 │   ├── scripts/         # Validation and audit scripts
 │   └── templates/       # Agent and skill templates

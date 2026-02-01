@@ -74,9 +74,9 @@ errorLogger.onError(handler);
 **Test Expectation** (line 270-273):
 ```javascript
 describe('enableVerboseLogging', () => {
-	it('should not throw', () => {
-		expect(() => enableVerboseLogging()).not.toThrow();
-	});
+    it('should not throw', () => {
+        expect(() => enableVerboseLogging()).not.toThrow();
+    });
 });
 ```
 
@@ -97,16 +97,16 @@ describe('enableVerboseLogging', () => {
 **Test Expectation** (lines 283-303):
 ```javascript
 describe('getDiagnosticReport', () => {
-	it('should return a diagnostic object', () => {
-		const report = getDiagnosticReport();
-		expect(report).toHaveProperty('sessionId');
-		expect(report).toHaveProperty('timestamp');
-		expect(report).toHaveProperty('errorCount');
-		expect(report).toHaveProperty('warningCount');
-		expect(report).toHaveProperty('recentErrors');
-		expect(report).toHaveProperty('userAgent');
-		expect(report).toHaveProperty('url');
-	});
+    it('should return a diagnostic object', () => {
+        const report = getDiagnosticReport();
+        expect(report).toHaveProperty('sessionId');
+        expect(report).toHaveProperty('timestamp');
+        expect(report).toHaveProperty('errorCount');
+        expect(report).toHaveProperty('warningCount');
+        expect(report).toHaveProperty('recentErrors');
+        expect(report).toHaveProperty('userAgent');
+        expect(report).toHaveProperty('url');
+    });
 });
 ```
 

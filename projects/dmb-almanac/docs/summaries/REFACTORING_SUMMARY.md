@@ -63,7 +63,7 @@ GRAND TOTAL ............................ 1,538 lines of duplication
 └─────────────────────────────────────────────────────────────────────────┘
 
   1. Selector Fallback Chain .......... -150 lines | 4-6 hours
-  2. Query Helper Extensions .......... -126 lines | 3-4 hours  
+  2. Query Helper Extensions .......... -126 lines | 3-4 hours
   3. PWA Feature Detector ............. -120 lines | 4-5 hours
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      QUICK WIN TOTAL .................. -396 lines in ~2 days
@@ -129,7 +129,7 @@ GRAND TOTAL ............................ 1,538 lines of duplication
   ├── Day 2-3: PageParser base class
   └── Day 4-5: Migrate 3-4 pilot scrapers + testing
 
-  WEEK 9 - PWA REFACTORING  
+  WEEK 9 - PWA REFACTORING
   ├── Day 1-2: PWA Feature Detector
   └── Day 3-5: BackgroundQueue abstraction
 

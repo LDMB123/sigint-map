@@ -55,7 +55,7 @@ export class WasmFunctionAccessor {
   }
 
   extractYearsTyped(json: string): WasmTypedArrayReturn | undefined {
-    const fn = (this.module as Record<string, unknown>)['extractYearsTyped'] as 
+    const fn = (this.module as Record<string, unknown>)['extractYearsTyped'] as
       ((json: string) => WasmTypedArrayReturn) | undefined;
     return fn ? fn(json) : undefined;
   }
@@ -80,7 +80,7 @@ export function createWasmProxy(module) {
     get(target, prop) {
       const fn = target[prop];
       if (typeof fn !== 'function') return undefined;
-      
+
       return (...args) => {
         try {
           return fn(...args);
@@ -109,7 +109,7 @@ const result = wasm.extractYearsTyped(json); // Auto-wrapped with error handling
    // OLD
    import { WasmFunctionAccessor } from '$lib/types/wasm-helpers';
    const accessor = new WasmFunctionAccessor(module);
-   
+
    // NEW
    import { createWasmProxy } from '$lib/wasm/proxy-simple';
    const wasm = createWasmProxy(module);
@@ -166,12 +166,12 @@ export function processInChunks(
   processor,
   options = {}
 ) {
-  const { 
-    chunkSize = 10, 
+  const {
+    chunkSize = 10,
     priority = 'user-visible',
-    onProgress 
+    onProgress
   } = options;
-  
+
   // TypeScript infers:
   // - items is T[]
   // - processor is (item: T, index: number) => void | Promise<void>
@@ -232,20 +232,20 @@ if (!isValidEmail(email)) {
 ```html
 <!-- Native constraint validation -->
 <form id="subscription-form">
-  <input 
-    type="email" 
+  <input
+    type="email"
     name="email"
     required
     title="Please enter a valid email address"
   >
-  
-  <input 
+
+  <input
     type="url"
     name="website"
     pattern="https://.*"
     title="Must be HTTPS URL"
   >
-  
+
   <button type="submit">Subscribe</button>
 </form>
 
@@ -253,7 +253,7 @@ if (!isValidEmail(email)) {
   // No type guards needed!
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    
+
     // Browser validates automatically
     if (form.checkValidity()) {
       const formData = new FormData(form);
@@ -279,7 +279,7 @@ export function isUUID(value: unknown): value is string {
 
 **After:**
 ```html
-<input 
+<input
   type="text"
   pattern="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
   title="Must be a valid UUID"
@@ -294,7 +294,7 @@ export function isUUID(value: unknown): value is string {
 export function isValidPushSubscription(data: unknown): data is PushSubscriptionRequest {
   if (!isObject(data)) return false;
   if (!isHttpsUrl(data.endpoint)) return false;
-  
+
   // Complex domain validation
   try {
     const url = new URL(data.endpoint);
@@ -434,7 +434,7 @@ export interface DexieShow {
   rarityIndex: number | null;
   songCount: number;
   year: number;
-  
+
   // Optional embedded data
   venue?: EmbeddedVenue;
   tour?: EmbeddedTour;
@@ -476,7 +476,7 @@ function ShowCard({ show }: { show: DexieShowWithDetails }) {
 function ShowCard({ show }: { show: DexieShow }) {
   // Assert at component boundary
   assertEmbeddedData(show);
-  
+
   // Now TypeScript knows show.venue and show.tour exist
   return <div>{show.venue.name}</div>;
 }

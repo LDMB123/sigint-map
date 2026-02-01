@@ -1,6 +1,6 @@
 # DMB Almanac Performance Report
 
-**Generated:** 2026-01-27  
+**Generated:** 2026-01-27
 **Analysis Tool:** Claude Code Performance Analyzer
 
 ---

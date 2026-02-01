@@ -88,11 +88,11 @@ class AgentExecutor {
 
   validateInput(input, validationConfig) {
     const inputStr = JSON.stringify(input);
-    
+
     if (validationConfig.max_input_size && inputStr.length > validationConfig.max_input_size) {
       throw new Error('Input exceeds max size');
     }
-    
+
     if (validationConfig.reject_patterns) {
       for (const pattern of validationConfig.reject_patterns) {
         if (inputStr.includes(pattern)) {
@@ -157,8 +157,8 @@ class AgentExecutor {
   getMetrics() {
     return {
       ...this.metrics,
-      avgLatency: this.metrics.totalExecutions > 0 
-        ? this.metrics.totalLatency / this.metrics.totalExecutions 
+      avgLatency: this.metrics.totalExecutions > 0
+        ? this.metrics.totalLatency / this.metrics.totalExecutions
         : 0,
       successRate: this.metrics.totalExecutions > 0
         ? (this.metrics.successCount / this.metrics.totalExecutions * 100).toFixed(2)
@@ -172,9 +172,9 @@ class AgentExecutor {
       level,
       message
     };
-    
+
     console.log(JSON.stringify(logEntry));
-    
+
     // Append to log file
     try {
       fs.appendFileSync(this.logPath, JSON.stringify(logEntry) + '\n');
@@ -200,7 +200,7 @@ if (typeof module !== 'undefined' && module.exports) {
 // CLI usage
 if (require.main === module) {
   const executor = new AgentExecutor();
-  
+
   console.log('Agent Execution Wrapper - Telemetry Integration Active');
   console.log('=======================================================');
   console.log('Metrics:', executor.getMetrics());

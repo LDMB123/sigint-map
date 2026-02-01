@@ -495,11 +495,11 @@ If any phase fails:
  */
 
 export default async function init() {
-	return undefined;
+    return undefined;
 }
 
 export function version(): string {
-	return 'mock-1.0.0';
+    return 'mock-1.0.0';
 }
 ```
 
@@ -515,7 +515,7 @@ export function version(): string {
  * @returns {Promise<undefined>}
  */
 export default async function init() {
-	return undefined;
+    return undefined;
 }
 
 /**
@@ -523,7 +523,7 @@ export default async function init() {
  * @returns {string}
  */
 export function version() {
-	return 'mock-1.0.0';
+    return 'mock-1.0.0';
 }
 ```
 

@@ -70,7 +70,7 @@ describe('Tier Consistency', () => {
           // opus model -> opus/sonnet tier (high capability)
           // sonnet model -> sonnet tier (medium capability)
           // haiku model -> haiku tier (fast, simple)
-          
+
           if (agent.model === 'opus') {
             expect(['opus', 'sonnet']).toContain(agent.tier);
           } else if (agent.model === 'haiku') {
@@ -90,12 +90,12 @@ describe('Tier Consistency', () => {
       Object.values(agents).forEach((category: any) => {
         Object.values(category).forEach((agent: any) => {
           const complexityLevels = agent.complexity_levels || [];
-          
+
           // If agent handles expert-level tasks, should use opus or sonnet
           if (complexityLevels.includes('expert')) {
             expect(['opus', 'sonnet']).toContain(agent.tier);
           }
-          
+
           // If agent only handles low complexity, haiku is appropriate
           if (complexityLevels.length === 1 && complexityLevels[0] === 'low') {
             expect(['haiku', 'sonnet']).toContain(agent.tier);
@@ -121,7 +121,7 @@ describe('Tier Consistency', () => {
 
       // Should have some distribution across tiers
       expect(tierCounts.sonnet).toBeGreaterThan(0);
-      
+
       // Total should match expected agent count
       const total = tierCounts.opus + tierCounts.sonnet + tierCounts.haiku;
       expect(total).toBeGreaterThan(0);
@@ -195,12 +195,12 @@ describe('Tier Consistency', () => {
           const parts = pattern.split(':');
           if (parts.length >= 3) {
             const complexity = parts[2];
-            
+
             // High/expert complexity should use sonnet or opus
             if (['high', 'expert'].includes(complexity)) {
               expect(tierRank[route.tier as keyof typeof tierRank]).toBeGreaterThanOrEqual(2);
             }
-            
+
             // Low complexity can use any tier, but haiku is most efficient
             if (complexity === 'low') {
               expect(['haiku', 'sonnet']).toContain(route.tier);
@@ -262,12 +262,12 @@ describe('Tier Consistency', () => {
       }
 
       const mapping = routeConfig.complexity_mapping;
-      
+
       Object.entries(mapping).forEach(([level, config]: [string, any]) => {
         if (config.agents) {
           expect(Array.isArray(config.agents)).toBe(true);
           expect(config.agents.length).toBeGreaterThan(0);
-          
+
           // All agents should be strings
           config.agents.forEach((agent: any) => {
             expect(typeof agent).toBe('string');
@@ -316,11 +316,11 @@ describe('Tier Consistency', () => {
       ];
 
       const routes = similarRequests.map(req => routeTable.route(req));
-      
+
       // Should use same or similar tiers for similar requests
       const tiers = routes.map(r => r.tier);
       const uniqueTiers = new Set(tiers);
-      
+
       // Allow some variation, but not wildly different
       expect(uniqueTiers.size).toBeLessThanOrEqual(2);
     });
@@ -337,7 +337,7 @@ describe('Tier Consistency', () => {
       requests.forEach(({ text, maxTierRank, minTierRank }) => {
         const route = routeTable.route(text);
         const rank = tierRank[route.tier];
-        
+
         if (maxTierRank !== undefined) {
           expect(rank).toBeLessThanOrEqual(maxTierRank);
         }
@@ -362,12 +362,12 @@ describe('Tier Consistency', () => {
             // Parse cost range
             const costStr = agent.cost_estimate.replace('$', '');
             const [minCost, maxCost] = costStr.split('-').map((s: string) => parseFloat(s));
-            
+
             // Haiku should be cheapest
             if (agent.tier === 'haiku') {
               expect(maxCost).toBeLessThan(0.02);
             }
-            
+
             // Opus should be most expensive
             if (agent.tier === 'opus') {
               expect(minCost).toBeGreaterThan(0.08);
@@ -384,7 +384,7 @@ describe('Tier Consistency', () => {
       }
 
       const tierDocs = routeConfig.documentation.tier_explanation;
-      
+
       expect(tierDocs.haiku).toBeDefined();
       expect(tierDocs.sonnet).toBeDefined();
       expect(tierDocs.opus).toBeDefined();
@@ -404,18 +404,18 @@ describe('Tier Consistency', () => {
       }
 
       const metadata = routeConfig.metadata;
-      
+
       if (metadata.tier_distribution) {
         const { haiku, sonnet, opus } = metadata.tier_distribution;
-        
+
         expect(typeof haiku).toBe('number');
         expect(typeof sonnet).toBe('number');
         expect(typeof opus).toBe('number');
-        
+
         expect(haiku).toBeGreaterThanOrEqual(0);
         expect(sonnet).toBeGreaterThanOrEqual(0);
         expect(opus).toBeGreaterThanOrEqual(0);
-        
+
         // Total should match total agents
         const total = haiku + sonnet + opus;
         expect(total).toBe(metadata.total_agents);

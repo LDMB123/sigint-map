@@ -182,7 +182,7 @@ The project uses:
 // Optimal manual chunk configuration
 manualChunks: {
   'd3-selection': 'd3-selection',
-  'd3-sankey': 'd3-sankey', 
+  'd3-sankey': 'd3-sankey',
   'd3-force-interactive': ['d3-force', 'd3-drag'],
   'd3-geo': ['d3-geo', 'topojson-client'],
   'dexie': 'dexie'
@@ -203,13 +203,13 @@ build: {
 build: {
   // Enable minification of CSS
   cssMinify: 'lightningcss',
-  
+
   // More aggressive tree-shaking
   treeshake: {
     moduleSideEffects: false,
     propertyReadSideEffects: false
   },
-  
+
   // Source maps only for debugging
   sourcemap: process.env.NODE_ENV === 'development'
 }

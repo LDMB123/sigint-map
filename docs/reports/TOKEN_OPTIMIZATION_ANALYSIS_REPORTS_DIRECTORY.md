@@ -21,7 +21,7 @@ Analyzed 235 reports across 9 subdirectories. Identified **3 major optimization 
 ### Recommended Actions (Priority Order)
 
 1. **Archive superseded reports** (Jan 25-30) → Save 180,000 tokens
-2. **Compress 28 large reports (>20KB)** → Save 145,000 tokens  
+2. **Compress 28 large reports (>20KB)** → Save 145,000 tokens
 3. **Consolidate overlapping indices** → Save 60,000 tokens
 
 ---
@@ -209,7 +209,7 @@ tar -czf _archived/superseded-reports-jan25-30.tar.gz \
 ## Category 4: Historical Subdirectories
 
 **Status:** Analysis-specific directories from completed phases
-**Token Savings:** ~45,000 tokens  
+**Token Savings:** ~45,000 tokens
 **Action:** Evaluate for archival vs compression
 
 ### Evaluation by Directory

@@ -21,16 +21,16 @@ async function restyleWithReference(imagePath, prompt, numberOfImages = 4) {
   console.log('\n🎨 Generating with reference image...');
   console.log(`Reference: ${imagePath}`);
   console.log(`Prompt: ${prompt}`);
-  
+
   const imageBuffer = await fs.readFile(imagePath);
   const base64Image = imageBuffer.toString('base64');
-  
+
   const client = await auth.getClient();
   const accessToken = await client.getAccessToken();
-  
+
   const model = 'imagen-3.0-generate-001';
   const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${model}:predict`;
-  
+
   // Use reference image as style guide
   const requestBody = {
     instances: [
@@ -52,7 +52,7 @@ async function restyleWithReference(imagePath, prompt, numberOfImages = 4) {
       aspectRatio: '1:1',
     },
   };
-  
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -61,22 +61,22 @@ async function restyleWithReference(imagePath, prompt, numberOfImages = 4) {
     },
     body: JSON.stringify(requestBody),
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(`API error: ${response.status} - ${JSON.stringify(error)}`);
   }
-  
+
   const data = await response.json();
   const predictions = data.predictions || [];
-  
+
   for (let i = 0; i < predictions.length; i++) {
     if (predictions[i].bytesBase64Encoded) {
       const imageData = Buffer.from(predictions[i].bytesBase64Encoded, 'base64');
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `restyle_${timestamp}_${i + 1}.png`;
       const filepath = path.join(OUTPUT_DIR, filename);
-      
+
       await fs.writeFile(filepath, imageData);
       console.log(`✅ Saved: ${filepath} (${(imageData.length / 1024).toFixed(1)} KB)`);
     }

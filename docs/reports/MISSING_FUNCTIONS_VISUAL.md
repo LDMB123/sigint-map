@@ -182,21 +182,21 @@ error-logging-integration.test.js (9 tests)
 ```javascript
 // [ ] Add export
 export function enableVerboseLogging() {
-	errorLogger._verbose = true;
+    errorLogger._verbose = true;
 }
 
 // [ ] Add export
 export function getDiagnosticReport() {
-	const logs = errorLogger.getLogs();
-	return {
-		sessionId: errorLogger.getSessionId(),
-		timestamp: new Date(),
-		errorCount: logs.filter(l => l.level === 'error').length,
-		warningCount: logs.filter(l => l.level === 'warn').length,
-		recentErrors: logs.filter(l => ['error', 'fatal'].includes(l.level)),
-		userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'SSR',
-		url: typeof window !== 'undefined' ? window.location.href : 'SSR'
-	};
+    const logs = errorLogger.getLogs();
+    return {
+        sessionId: errorLogger.getSessionId(),
+        timestamp: new Date(),
+        errorCount: logs.filter(l => l.level === 'error').length,
+        warningCount: logs.filter(l => l.level === 'warn').length,
+        recentErrors: logs.filter(l => ['error', 'fatal'].includes(l.level)),
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'SSR',
+        url: typeof window !== 'undefined' ? window.location.href : 'SSR'
+    };
 }
 ```
 
@@ -205,39 +205,39 @@ export function getDiagnosticReport() {
 ```javascript
 // [ ] Add to errorLogger object
 clearLogs() {
-	this._logs = [];
+    this._logs = [];
 },
 
 // [ ] Initialize internal state
 const errorLogger = {
-	_logs: [],
-	_maxLogs: 100,
-	_sessionId: null,
-	_handlers: [],
-	_verbose: false,
+    _logs: [],
+    _maxLogs: 100,
+    _sessionId: null,
+    _handlers: [],
+    _verbose: false,
 
-	// ... existing methods ...
+    // ... existing methods ...
 
-	// [ ] Add missing method
-	getLogs(limit = 50) {
-		return this._logs.slice(-limit);
-	},
+    // [ ] Add missing method
+    getLogs(limit = 50) {
+        return this._logs.slice(-limit);
+    },
 
-	// [ ] Add missing method
-	getSessionId() {
-		if (!this._sessionId) {
-			this._sessionId = `sess-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-		}
-		return this._sessionId;
-	},
+    // [ ] Add missing method
+    getSessionId() {
+        if (!this._sessionId) {
+            this._sessionId = `sess-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+        return this._sessionId;
+    },
 
-	// [ ] Make array accessible
-	get errorHandlers() {
-		return this._handlers;
-	},
-	set errorHandlers(value) {
-		this._handlers = value;
-	}
+    // [ ] Make array accessible
+    get errorHandlers() {
+        return this._handlers;
+    },
+    set errorHandlers(value) {
+        this._handlers = value;
+    }
 };
 ```
 
@@ -246,32 +246,32 @@ const errorLogger = {
 ```javascript
 // [ ] Add to errorLogger
 debug(message, context) {
-	if (!isDev) return;
-	this._addLog('debug', message, null, null, context);
+    if (!isDev) return;
+    this._addLog('debug', message, null, null, context);
 },
 
 // [ ] Add to errorLogger
 fatal(message, error, context) {
-	this._addLog('fatal', message, error, error?.name, context);
-	this._notifyHandlers('fatal', message, error, context);
+    this._addLog('fatal', message, error, error?.name, context);
+    this._notifyHandlers('fatal', message, error, context);
 },
 
 // [ ] Add to errorLogger
 logAsyncError(operationName, error, context) {
-	const err = error instanceof Error ? error : new Error(String(error));
-	this.error(`Async error in ${operationName}`, err, context);
+    const err = error instanceof Error ? error : new Error(String(error));
+    this.error(`Async error in ${operationName}`, err, context);
 },
 
 // [ ] Fix signature in errorLogger
 logApiError(endpoint, method, status, error, context) {
-	const err = error instanceof Error ? error : new Error(String(error));
-	const message = `[API Error] ${endpoint} ${method} ${status}`;
-	this.error(message, err, {
-		...context,
-		endpoint,
-		method,
-		status
-	});
+    const err = error instanceof Error ? error : new Error(String(error));
+    const message = `[API Error] ${endpoint} ${method} ${status}`;
+    this.error(message, err, {
+        ...context,
+        endpoint,
+        method,
+        status
+    });
 }
 ```
 
@@ -280,27 +280,27 @@ logApiError(endpoint, method, status, error, context) {
 ```javascript
 // [ ] Add to errorLogger
 onError(handler) {
-	this._handlers.push(handler);
+    this._handlers.push(handler);
 },
 
 // [ ] Add to errorLogger (private)
 _notifyHandlers(level, message, error, context) {
-	const report = {
-		level,
-		message,
-		errorName: error?.name,
-		error,
-		context,
-		errorCode: error?.code,
-		statusCode: error?.statusCode,
-		timestamp: new Date()
-	};
+    const report = {
+        level,
+        message,
+        errorName: error?.name,
+        error,
+        context,
+        errorCode: error?.code,
+        statusCode: error?.statusCode,
+        timestamp: new Date()
+    };
 
-	this._handlers.forEach(handler => {
-		Promise.resolve().then(() => handler(report)).catch(err => {
-			console.error('Error handler failed:', err);
-		});
-	});
+    this._handlers.forEach(handler => {
+        Promise.resolve().then(() => handler(report)).catch(err => {
+            console.error('Error handler failed:', err);
+        });
+    });
 }
 ```
 
@@ -309,37 +309,37 @@ _notifyHandlers(level, message, error, context) {
 ```javascript
 // [ ] Add to errorLogger
 getErrorLogs(limit = 50) {
-	return this._logs
-		.filter(l => ['error', 'fatal'].includes(l.level))
-		.slice(-limit);
+    return this._logs
+        .filter(l => ['error', 'fatal'].includes(l.level))
+        .slice(-limit);
 },
 
 // [ ] Add to errorLogger
 exportLogs() {
-	return JSON.stringify(this._logs);
+    return JSON.stringify(this._logs);
 },
 
 // [ ] Add to errorLogger (private)
 _addLog(level, message, error, errorName, context) {
-	const log = {
-		timestamp: new Date(),
-		level,
-		message,
-		error,
-		errorName: errorName || error?.name,
-		context
-	};
+    const log = {
+        timestamp: new Date(),
+        level,
+        message,
+        error,
+        errorName: errorName || error?.name,
+        context
+    };
 
-	this._logs.push(log);
+    this._logs.push(log);
 
-	// Keep buffer under maxLogs
-	if (this._logs.length > this._maxLogs) {
-		this._logs.shift();
-	}
+    // Keep buffer under maxLogs
+    if (this._logs.length > this._maxLogs) {
+        this._logs.shift();
+    }
 
-	if (['error', 'fatal'].includes(level)) {
-		this._notifyHandlers(level, message, error, context);
-	}
+    if (['error', 'fatal'].includes(level)) {
+        this._notifyHandlers(level, message, error, context);
+    }
 }
 ```
 

@@ -262,7 +262,7 @@ find /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac \
 - RUST_NATIVE_API_MODERNIZATION_SUMMARY.md (4.7 KB)
 - SECURITY_IMPLEMENTATION_GUIDE_SUMMARY.md (1.3 KB)
 
-**Rationale**: 
+**Rationale**:
 - These are cross-project summaries
 - Belong at workspace level for reuse
 - .compressed/ at project root violates org standards
@@ -291,18 +291,18 @@ rmdir .compressed/
 - File organization (25%): 55/100
   - Many scattered reports in code dirs (-30)
   - Docs mostly well-organized (+15)
-  
+
 - Duplication management (25%): 45/100
   - 5 major duplicate sets (-40)
   - Some archived properly (+15)
-  
+
 - Directory structure (20%): 70/100
   - Good separation of app/docs/scraper (-10)
   - 13 empty directories (-20)
-  
+
 - Build artifacts (15%): 85/100
   - Proper .gitignore coverage (+15)
-  
+
 - Documentation placement (15%): 40/100
   - Reports in code dirs (-50)
   - .compressed at wrong level (-10)

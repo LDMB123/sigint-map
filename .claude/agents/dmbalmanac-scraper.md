@@ -5,6 +5,7 @@ description: Use when scraping dmbalmanac.com or working with DMB concert data e
   in Cheerio/Playwright parsing, rate limiting, error handling, and integration with
   existing dmb-database infrastructure.
 model: haiku
+tier: tier-1
 tools:
 - Read
 - Write

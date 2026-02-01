@@ -1,9 +1,9 @@
 # TypeScript Reduction Analysis: DMB Almanac
 
-**Analysis Date:** 2026-01-25  
-**Total TypeScript Files:** 122  
-**Total Lines of Code:** ~60,231  
-**Type Definitions Found:** 684 interfaces/types  
+**Analysis Date:** 2026-01-25
+**Total TypeScript Files:** 122
+**Total Lines of Code:** ~60,231
+**Type Definitions Found:** 684 interfaces/types
 
 ## Executive Summary
 
@@ -272,14 +272,14 @@ export function isUUID(value: unknown): value is string {
 **AFTER (Native HTML Validation):**
 ```html
 <!-- Native constraint validation - no TypeScript needed -->
-<input 
-  type="url" 
-  pattern="https://.*" 
+<input
+  type="url"
+  pattern="https://.*"
   required
   title="Must be HTTPS URL"
 >
 
-<input 
+<input
   type="text"
   pattern="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
   required
@@ -307,7 +307,7 @@ export function isUUID(value: unknown): value is string {
 export function isValidPushSubscription(data: unknown): data is PushSubscriptionRequest {
   if (!isObject(data)) return false;
   if (!isHttpsUrl(data.endpoint)) return false;
-  
+
   // Validate endpoint is from known push service
   try {
     const url = new URL(data.endpoint);
@@ -441,7 +441,7 @@ export interface DexieShow {
   rarityIndex: number | null;
   songCount: number;
   year: number;
-  
+
   // Optional embedded (use Partial<> and Required<> instead of duplicating)
   venue?: EmbeddedVenue;
   tour?: EmbeddedTour;
@@ -483,7 +483,7 @@ export class WasmFunctionAccessor {
   }
 
   extractYearsTyped(json: string): WasmTypedArrayReturn | undefined {
-    const fn = (this.module as Record<string, unknown>)['extractYearsTyped'] as 
+    const fn = (this.module as Record<string, unknown>)['extractYearsTyped'] as
       ((json: string) => WasmTypedArrayReturn) | undefined;
     return fn ? fn(json) : undefined;
   }
@@ -493,7 +493,7 @@ export class WasmFunctionAccessor {
       | ((entriesJson: string, songId: bigint) => WasmTypedArrayReturn) | undefined;
     return fn ? fn(entriesJson, songId) : undefined;
   }
-  
+
   // ... 10 more methods
 }
 ```
@@ -506,7 +506,7 @@ export function createWasmProxy(module) {
     get(target, prop) {
       const fn = target[prop];
       if (typeof fn !== 'function') return undefined;
-      
+
       // Automatically wrap with error handling
       return (...args) => {
         try {
@@ -587,10 +587,10 @@ rm app/src/lib/types/wasm-helpers.ts  # After Proxy migration
 ```html
 <!-- Replace TypeScript guards with native validation -->
 <form id="push-form">
-  <input 
+  <input
     name="endpoint"
-    type="url" 
-    pattern="https://.*" 
+    type="url"
+    pattern="https://.*"
     required
   >
   <button type="submit">Subscribe</button>
@@ -664,7 +664,7 @@ export function isValidEmail(value: unknown): value is string {
 ### ❌ Don't Do This
 ```typescript
 // Complex discriminated union with type guards
-export type LoadState = 
+export type LoadState =
   | { status: 'idle' }
   | { status: 'loading'; progress: number }
   | { status: 'ready'; data: Data };

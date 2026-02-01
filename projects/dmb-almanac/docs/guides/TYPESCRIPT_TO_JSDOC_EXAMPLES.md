@@ -9,10 +9,10 @@
 ### TypeScript (BEFORE)
 ```typescript
 export interface AdaptiveConcurrencyConfig {
-	minConcurrency: number;
-	maxConcurrency: number;
-	targetLatency: number;
-	adjustmentFactor: number;
+    minConcurrency: number;
+    maxConcurrency: number;
+    targetLatency: number;
+    adjustmentFactor: number;
 }
 ```
 
@@ -34,9 +34,9 @@ export interface AdaptiveConcurrencyConfig {
 ### TypeScript (BEFORE)
 ```typescript
 export interface ScrapeOptions {
-	includeHtml?: boolean;
-	cacheTTL?: number;
-	useCache?: boolean;
+    includeHtml?: boolean;
+    cacheTTL?: number;
+    useCache?: boolean;
 }
 ```
 
@@ -59,7 +59,7 @@ export interface ScrapeOptions {
 ### TypeScript (BEFORE)
 ```typescript
 export interface BackgroundScrapeJob {
-	status: 'pending' | 'in-progress' | 'completed' | 'failed';
+    status: 'pending' | 'in-progress' | 'completed' | 'failed';
 }
 ```
 
@@ -82,9 +82,9 @@ export interface BackgroundScrapeJob {
 ### TypeScript (BEFORE)
 ```typescript
 async execute<T>(task: () => Promise<T>): Promise<T> {
-	return new Promise((resolve, reject) => {
-		// implementation
-	});
+    return new Promise((resolve, reject) => {
+        // implementation
+    });
 }
 ```
 
@@ -97,9 +97,9 @@ async execute<T>(task: () => Promise<T>): Promise<T> {
  * @returns {Promise<T>}
  */
 async execute(task) {
-	return new Promise((resolve, reject) => {
-		// implementation
-	});
+    return new Promise((resolve, reject) => {
+        // implementation
+    });
 }
 ```
 
@@ -110,13 +110,13 @@ async execute(task) {
 ### TypeScript (BEFORE)
 ```typescript
 export class AdaptiveConcurrencyPool {
-	private queue: Array<() => Promise<void>> = [];
-	private active = 0;
-	private currentConcurrency: number;
+    private queue: Array<() => Promise<void>> = [];
+    private active = 0;
+    private currentConcurrency: number;
 
-	constructor(config: Partial<AdaptiveConcurrencyConfig> = {}) {
-		this.currentConcurrency = config.minConcurrency ?? 2;
-	}
+    constructor(config: Partial<AdaptiveConcurrencyConfig> = {}) {
+        this.currentConcurrency = config.minConcurrency ?? 2;
+    }
 }
 ```
 
@@ -126,15 +126,15 @@ export class AdaptiveConcurrencyPool {
  * Adaptive concurrency pool
  */
 export class AdaptiveConcurrencyPool {
-	/**
-	 * @param {Partial<AdaptiveConcurrencyConfig>} [config={}] - Pool configuration
-	 */
-	constructor(config = {}) {
-		/** @type {Array<() => Promise<void>>} */
-		this.queue = [];
-		this.active = 0;
-		this.currentConcurrency = config.minConcurrency ?? 2;
-	}
+    /**
+     * @param {Partial<AdaptiveConcurrencyConfig>} [config={}] - Pool configuration
+     */
+    constructor(config = {}) {
+        /** @type {Array<() => Promise<void>>} */
+        this.queue = [];
+        this.active = 0;
+        this.currentConcurrency = config.minConcurrency ?? 2;
+    }
 }
 ```
 
@@ -163,12 +163,12 @@ const cursor = /** @type {IDBCursorWithValue|null} */ (event.target?.result);
 ### TypeScript (BEFORE)
 ```typescript
 async *scrapeUrlsStreaming(
-	urls: string[],
-	options: ScrapeOptions = {}
+    urls: string[],
+    options: ScrapeOptions = {}
 ): AsyncGenerator<ScrapeResult | { error: string; url: string }, void, unknown> {
-	for (const url of urls) {
-		yield result;
-	}
+    for (const url of urls) {
+        yield result;
+    }
 }
 ```
 
@@ -181,9 +181,9 @@ async *scrapeUrlsStreaming(
  * @returns {AsyncGenerator<ScrapeResult|{error: string, url: string}, void, unknown>}
  */
 async *scrapeUrlsStreaming(urls, options = {}) {
-	for (const url of urls) {
-		yield result;
-	}
+    for (const url of urls) {
+        yield result;
+    }
 }
 ```
 
@@ -194,13 +194,13 @@ async *scrapeUrlsStreaming(urls, options = {}) {
 ### TypeScript (BEFORE)
 ```typescript
 export interface BatchResult<T> {
-	successful: T[];
-	failed: Array<{ url: string; error: string }>;
-	metrics: {
-		totalDuration: number;
-		averageLatency: number;
-		totalCredits: number;
-	};
+    successful: T[];
+    failed: Array<{ url: string; error: string }>;
+    metrics: {
+        totalDuration: number;
+        averageLatency: number;
+        totalCredits: number;
+    };
 }
 ```
 
@@ -228,10 +228,10 @@ export interface BatchResult<T> {
 ### TypeScript (BEFORE)
 ```typescript
 async scrapeUrls(
-	urls: string[],
-	options: ScrapeOptions & { cacheTTL?: number; useCache?: boolean } = {}
+    urls: string[],
+    options: ScrapeOptions & { cacheTTL?: number; useCache?: boolean } = {}
 ): Promise<BatchResult> {
-	// implementation
+    // implementation
 }
 ```
 
@@ -244,7 +244,7 @@ async scrapeUrls(
  * @returns {Promise<BatchResult>}
  */
 async scrapeUrls(urls, options = {}) {
-	// implementation
+    // implementation
 }
 ```
 
@@ -257,10 +257,10 @@ async scrapeUrls(urls, options = {}) {
 import { ScrapeOptions, ScrapeResult } from './firecrawl';
 
 export function processScrapeResults(
-	results: ScrapeResult[],
-	options: ScrapeOptions
+    results: ScrapeResult[],
+    options: ScrapeOptions
 ): void {
-	// implementation
+    // implementation
 }
 ```
 
@@ -275,7 +275,7 @@ import { getFirecrawlClient } from './firecrawl.js';
  * @returns {void}
  */
 export function processScrapeResults(results, options) {
-	// implementation
+    // implementation
 }
 ```
 
@@ -288,17 +288,17 @@ export function processScrapeResults(results, options) {
 ### TypeScript (BEFORE)
 ```typescript
 interface BatchProgress {
-	total: number;
-	completed: number;
+    total: number;
+    completed: number;
 }
 
 constructor(
-	config: AdaptiveConcurrencyConfig,
-	options: {
-		onProgress?: (progress: BatchProgress) => void;
-	}
+    config: AdaptiveConcurrencyConfig,
+    options: {
+        onProgress?: (progress: BatchProgress) => void;
+    }
 ) {
-	this.progressCallback = options.onProgress;
+    this.progressCallback = options.onProgress;
 }
 ```
 
@@ -316,7 +316,7 @@ constructor(
  * @param {(progress: BatchProgress) => void} [options.onProgress] - Progress callback
  */
 constructor(config, options) {
-	this.progressCallback = options.onProgress;
+    this.progressCallback = options.onProgress;
 }
 ```
 
@@ -327,30 +327,30 @@ constructor(config, options) {
 ### TypeScript (BEFORE)
 ```typescript
 class FirecrawlCache {
-	private db: IDBDatabase | null = null;
+    private db: IDBDatabase | null = null;
 
-	async get(url: string): Promise<CacheEntry | null> {
-		// implementation
-	}
+    async get(url: string): Promise<CacheEntry | null> {
+        // implementation
+    }
 }
 ```
 
 ### JavaScript + JSDoc (AFTER)
 ```javascript
 export class FirecrawlCache {
-	constructor() {
-		/** @type {IDBDatabase|null} */
-		this.db = null;
-	}
+    constructor() {
+        /** @type {IDBDatabase|null} */
+        this.db = null;
+    }
 
-	/**
-	 * Get cached result by URL
-	 * @param {string} url - URL to lookup
-	 * @returns {Promise<CacheEntry|null>}
-	 */
-	async get(url) {
-		// implementation
-	}
+    /**
+     * Get cached result by URL
+     * @param {string} url - URL to lookup
+     * @returns {Promise<CacheEntry|null>}
+     */
+    async get(url) {
+        // implementation
+    }
 }
 ```
 
@@ -361,10 +361,10 @@ export class FirecrawlCache {
 ### TypeScript (BEFORE)
 ```typescript
 constructor(config: Partial<AdaptiveConcurrencyConfig> = {}) {
-	this.config = {
-		minConcurrency: config.minConcurrency ?? 2,
-		maxConcurrency: config.maxConcurrency ?? 10
-	};
+    this.config = {
+        minConcurrency: config.minConcurrency ?? 2,
+        maxConcurrency: config.maxConcurrency ?? 10
+    };
 }
 ```
 
@@ -374,13 +374,13 @@ constructor(config: Partial<AdaptiveConcurrencyConfig> = {}) {
  * @param {Partial<AdaptiveConcurrencyConfig>} [config={}] - Pool configuration
  */
 constructor(config = {}) {
-	/** @type {AdaptiveConcurrencyConfig} */
-	this.config = {
-		minConcurrency: config.minConcurrency ?? 2,
-		maxConcurrency: config.maxConcurrency ?? 10,
-		targetLatency: config.targetLatency ?? 2000,
-		adjustmentFactor: config.adjustmentFactor ?? 0.3
-	};
+    /** @type {AdaptiveConcurrencyConfig} */
+    this.config = {
+        minConcurrency: config.minConcurrency ?? 2,
+        maxConcurrency: config.maxConcurrency ?? 10,
+        targetLatency: config.targetLatency ?? 2000,
+        adjustmentFactor: config.adjustmentFactor ?? 0.3
+    };
 }
 ```
 
@@ -393,37 +393,37 @@ constructor(config = {}) {
 ### TypeScript (BEFORE)
 ```typescript
 export class AdaptiveConcurrencyPool {
-	private processQueue(): void {
-		// implementation
-	}
+    private processQueue(): void {
+        // implementation
+    }
 
-	private recordLatency(latency: number): void {
-		// implementation
-	}
+    private recordLatency(latency: number): void {
+        // implementation
+    }
 }
 ```
 
 ### JavaScript + JSDoc (AFTER)
 ```javascript
 export class AdaptiveConcurrencyPool {
-	/**
-	 * Process queued tasks
-	 * @private
-	 * @returns {void}
-	 */
-	processQueue() {
-		// implementation
-	}
+    /**
+     * Process queued tasks
+     * @private
+     * @returns {void}
+     */
+    processQueue() {
+        // implementation
+    }
 
-	/**
-	 * Record latency and adjust concurrency
-	 * @private
-	 * @param {number} latency - Request latency (ms)
-	 * @returns {void}
-	 */
-	recordLatency(latency) {
-		// implementation
-	}
+    /**
+     * Record latency and adjust concurrency
+     * @private
+     * @param {number} latency - Request latency (ms)
+     * @returns {void}
+     */
+    recordLatency(latency) {
+        // implementation
+    }
 }
 ```
 
@@ -461,15 +461,15 @@ failed.push({ url, error: error instanceof Error ? error.message : 'Unknown erro
 ### TypeScript (BEFORE)
 ```typescript
 getPoolStats(): {
-	concurrency: number;
-	averageLatency: number;
-	peakConcurrency: number;
+    concurrency: number;
+    averageLatency: number;
+    peakConcurrency: number;
 } {
-	return {
-		concurrency: this.pool.getConcurrency(),
-		averageLatency: this.pool.getAverageLatency(),
-		peakConcurrency: this.pool.getPeakConcurrency()
-	};
+    return {
+        concurrency: this.pool.getConcurrency(),
+        averageLatency: this.pool.getAverageLatency(),
+        peakConcurrency: this.pool.getPeakConcurrency()
+    };
 }
 ```
 
@@ -480,11 +480,11 @@ getPoolStats(): {
  * @returns {{concurrency: number, averageLatency: number, peakConcurrency: number}}
  */
 getPoolStats() {
-	return {
-		concurrency: this.pool.getConcurrency(),
-		averageLatency: this.pool.getAverageLatency(),
-		peakConcurrency: this.pool.getPeakConcurrency()
-	};
+    return {
+        concurrency: this.pool.getConcurrency(),
+        averageLatency: this.pool.getAverageLatency(),
+        peakConcurrency: this.pool.getPeakConcurrency()
+    };
 }
 ```
 
@@ -495,24 +495,24 @@ getPoolStats() {
 ### TypeScript (BEFORE)
 ```typescript
 try {
-	// operation
+    // operation
 } catch (error: any) {
-	failed.push({
-		url,
-		error: error.message || 'Unknown error'
-	});
+    failed.push({
+        url,
+        error: error.message || 'Unknown error'
+    });
 }
 ```
 
 ### JavaScript + JSDoc (AFTER)
 ```javascript
 try {
-	// operation
+    // operation
 } catch (error) {
-	failed.push({
-		url,
-		error: error instanceof Error ? error.message : 'Unknown error'
-	});
+    failed.push({
+        url,
+        error: error instanceof Error ? error.message : 'Unknown error'
+    });
 }
 ```
 
@@ -571,7 +571,7 @@ Both provide **identical** IDE support:
 ```typescript
 const scraper = new OptimizedBatchScraper();
 scraper.scrapeUrls(urls, {
-	useCache: "yes" // ❌ Type error: string not assignable to boolean
+    useCache: "yes" // ❌ Type error: string not assignable to boolean
 });
 ```
 
@@ -579,7 +579,7 @@ scraper.scrapeUrls(urls, {
 ```javascript
 const scraper = new OptimizedBatchScraper();
 scraper.scrapeUrls(urls, {
-	useCache: "yes" // ❌ Type error: string not assignable to boolean
+    useCache: "yes" // ❌ Type error: string not assignable to boolean
 });
 ```
 

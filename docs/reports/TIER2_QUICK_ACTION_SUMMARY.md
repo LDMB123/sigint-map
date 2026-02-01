@@ -10,8 +10,8 @@
 
 ### Action 1: Archive Historical Reports (SAVES 160,650 TOKENS)
 
-**Priority:** CRITICAL  
-**Effort:** 30 minutes  
+**Priority:** CRITICAL
+**Effort:** 30 minutes
 **Impact:** Brings infrastructure from 111% to 30.8% of budget
 
 **What to do:**
@@ -49,8 +49,8 @@ wc -c docs/reports/*.md | tail -1  # Should be ~28K chars = ~7K tokens
 
 ### Action 2: Compress Skill SKILL.md Files (SAVES 11,467 TOKENS)
 
-**Priority:** HIGH  
-**Effort:** 2 hours  
+**Priority:** HIGH
+**Effort:** 2 hours
 **Impact:** Frees 5.7% of budget
 
 **Heaviest 5 skills to compress:**
@@ -89,8 +89,8 @@ wc -c docs/reports/*.md | tail -1  # Should be ~28K chars = ~7K tokens
 
 ### Action 3: Restructure Agent Descriptions (SAVES 6,416 TOKENS)
 
-**Priority:** HIGH  
-**Effort:** 1 hour  
+**Priority:** HIGH
+**Effort:** 1 hour
 **Impact:** Frees 3.2% of budget + standardizes format
 
 **Current format (verbose):**
@@ -125,8 +125,8 @@ capabilities:
 
 ### Action 4: Lazy-Load Skill References (SAVES 2,893 TOKENS)
 
-**Priority:** MEDIUM  
-**Effort:** 1 hour  
+**Priority:** MEDIUM
+**Effort:** 1 hour
 **Impact:** Removes unnecessary pre-loading
 
 **Reference files:** 13 files, 4,821 tokens total

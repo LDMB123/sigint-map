@@ -12,7 +12,7 @@ class RequestDeduplicator {
     this.cache = new Map();
     this.cacheTTL = options.cacheTTL || 5 * 60 * 1000; // 5 minutes default
     this.maxCacheSize = options.maxCacheSize || 1000;
-    
+
     // Start cache cleanup
     this.startCacheCleanup();
   }
@@ -42,7 +42,7 @@ class RequestDeduplicator {
    */
   async executeWithDedup(agentId, input, context, executeFn) {
     const requestKey = this.generateRequestKey(agentId, input, context);
-    
+
     // Check cache first
     const cached = this.getFromCache(requestKey);
     if (cached) {
@@ -52,24 +52,24 @@ class RequestDeduplicator {
         fromCache: true
       };
     }
-    
+
     // Check if request is already in flight
     if (this.pendingRequests.has(requestKey)) {
       console.log(`[DEDUP] Deduplicating concurrent request for ${agentId}`);
       return await this.pendingRequests.get(requestKey);
     }
-    
+
     // Execute new request
     console.log(`[DEDUP] Executing new request for ${agentId}`);
     const requestPromise = this.executeRequest(requestKey, executeFn);
     this.pendingRequests.set(requestKey, requestPromise);
-    
+
     try {
       const result = await requestPromise;
-      
+
       // Cache result
       this.addToCache(requestKey, result);
-      
+
       return {
         ...result,
         fromCache: false
@@ -97,15 +97,15 @@ class RequestDeduplicator {
    */
   getFromCache(key) {
     const entry = this.cache.get(key);
-    
+
     if (!entry) return null;
-    
+
     // Check if expired
     if (Date.now() - entry.timestamp > this.cacheTTL) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return entry.result;
   }
 
@@ -118,7 +118,7 @@ class RequestDeduplicator {
       const oldestKey = this.cache.keys().next().value;
       this.cache.delete(oldestKey);
     }
-    
+
     this.cache.set(key, {
       result,
       timestamp: Date.now()
@@ -132,14 +132,14 @@ class RequestDeduplicator {
     setInterval(() => {
       const now = Date.now();
       let cleaned = 0;
-      
+
       for (const [key, entry] of this.cache.entries()) {
         if (now - entry.timestamp > this.cacheTTL) {
           this.cache.delete(key);
           cleaned++;
         }
       }
-      
+
       if (cleaned > 0) {
         console.log(`[DEDUP] Cleaned ${cleaned} expired cache entries`);
       }
@@ -179,7 +179,7 @@ if (require.main === module) {
     cacheTTL: 5 * 60 * 1000,
     maxCacheSize: 1000
   });
-  
+
   console.log('Request Deduplication Layer - Active');
   console.log('====================================');
   console.log('Features:');

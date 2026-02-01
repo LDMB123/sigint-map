@@ -51,7 +51,7 @@ Task tool with subagent_type: "context-compressor"  ❌ Wrong!
 
 **Error Message:**
 ```
-Failed to parse agent from .claude/agents/token-optimizer.md: 
+Failed to parse agent from .claude/agents/token-optimizer.md:
 Missing required "name" field in frontmatter
 ```
 

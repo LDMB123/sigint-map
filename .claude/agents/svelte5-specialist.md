@@ -12,6 +12,7 @@ tools:
   - Grep
   - Glob
 model: sonnet
+tier: tier-2
 ---
 
 # Svelte 5 Specialist

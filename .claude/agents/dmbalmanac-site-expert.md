@@ -4,6 +4,7 @@ description: Expert on dmbalmanac.com site structure, database schema, features,
   URL patterns, and data organization. Use for understanding how to find information
   on the site or work with its data.
 model: opus
+tier: tier-3
 tools:
 - Read
 - Write

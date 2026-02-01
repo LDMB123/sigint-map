@@ -1,0 +1,318 @@
+================================================================================
+PHASE 17 - DETAILED FILE MANIFEST FOR COMPRESSION
+================================================================================
+
+Generated: 2026-01-31 22:05 UTC
+Scanned: 300+ files across entire workspace
+Categories: Configuration, Documentation, Test Data, Agent Prompts
+
+================================================================================
+CRITICAL TARGETS (Immediate Compression)
+================================================================================
+
+1. /Users/louisherman/ClaudeCodeProjects/.claude/validation/raw-results.json
+   Size: 856 KB | Lines: 30,161 | Tokens: 214,000
+   Type: Validation test data (simulation results)
+   Content: 1,500 test results with metadata
+   Strategy: Index + sample compression (keep 5% representative data)
+   Target Size: 90 KB | Target Tokens: 22,500
+   Savings: 764 KB (85% reduction, 191,500 tokens)
+   Priority: CRITICAL - highest token-to-effort ratio (9,100/min)
+   Notes: Not accessed in active development, pure archive material
+
+2. /Users/louisherman/ClaudeCodeProjects/.claude/agents/dmbalmanac-scraper.md
+   Size: 34 KB | Lines: 1,163 | Tokens: 8,500
+   Type: Agent prompt definition
+   Content: YAML frontmatter + infrastructure knowledge + code examples
+   Compression Breakdown:
+     - Lines 1-18: YAML (keep as-is) - 0% compression
+     - Lines 20-100: Intro (compress 60%) - 1.2 KB savings
+     - Lines 101-500: Infrastructure (move to reference) - 12.5 KB savings
+     - Lines 501-700: Code examples (keep essential) - 4 KB savings
+     - Lines 700+: Historical notes (archive) - 8 KB savings
+   Strategy: Reference extraction + example consolidation
+   Target Size: 10 KB | Target Tokens: 2,500
+   Savings: 24 KB (70% reduction, 6,000 tokens)
+   Priority: HIGH - agent prompt refactoring
+
+3. /Users/louisherman/ClaudeCodeProjects/.claude/agents/dmbalmanac-site-expert.md
+   Size: 26 KB | Lines: 789 | Tokens: 6,500
+   Type: Agent prompt definition
+   Content: Site structure + URL patterns + data model
+   Strategy: Extract URL patterns to separate reference file
+   Target Size: 8 KB | Target Tokens: 2,000
+   Savings: 18 KB (65% reduction, 4,500 tokens)
+   Priority: HIGH - agent prompt refactoring
+
+4. /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/docs/ (All subdirectories)
+   Total .txt Files: 156 unique files
+   Total Size: ~2.1 MB
+   Tokens: 525,000 (if all accessed)
+   Currently Compressed: ~300 KB (14% achieved)
+   Remaining Uncompressed: 1.8 MB (450,000 tokens)
+   Strategy: Bulk compression of summaries and audit reports
+   Target Reduction: 80% (1.44 MB savings, 360,000 tokens)
+   Priority: CRITICAL - largest optimization opportunity
+   
+   Top 10 Largest Files Requiring Compression:
+   
+   a) setlist-sample.txt - 59 KB
+      Type: Test data (sample HTML)
+      Action: ARCHIVE ENTIRELY (not production data)
+      Target: Move to _archived/test-data/setlist-sample.txt
+      Savings: 59 KB (14,750 tokens)
+   
+   b) SUMMARY_Design_System.txt - 24 KB
+      Type: Design system audit summary
+      Content: Verbose explanations of design findings
+      Strategy: Extract key points only (80% compression)
+      Target: 4 KB | Savings: 20 KB (5,000 tokens)
+   
+   c) REACT_DEBUG_DASHBOARD.txt - 22 KB
+      Type: Debugging report
+      Action: Archive (superseded by newer analysis)
+      Savings: 22 KB (5,500 tokens)
+   
+   d) SYNC_SERVICE_FLOW_DIAGRAMS.txt - 21 KB
+      Type: ASCII flow diagrams
+      Strategy: Convert to structured format or archive
+      Target: 4 KB | Savings: 17 KB (4,250 tokens)
+   
+   e) BUNDLE_OPTIMIZATION_EXECUTIVE_SUMMARY.txt - 21 KB
+      Type: Executive summary with repetitive structure
+      Strategy: Extract findings only (80% compression)
+      Target: 3 KB | Savings: 18 KB (4,500 tokens)
+   
+   f) D3_BUNDLE_COMPARISON.txt - 20 KB
+      Type: Bundle analysis comparison
+      Strategy: Compress to structured format (80% compression)
+      Target: 4 KB | Savings: 16 KB (4,000 tokens)
+   
+   g) BUNDLE_VISUAL_BREAKDOWN.txt - 19 KB
+      Type: Visual breakdown text
+      Strategy: Compress to structured format (85% compression)
+      Target: 3 KB | Savings: 16 KB (4,000 tokens)
+   
+   h) WASM_AUDIT_DELIVERABLES.txt - 19 KB
+      Type: Audit deliverables list
+      Strategy: Keep key findings only (85% compression)
+      Target: 3 KB | Savings: 16 KB (4,000 tokens)
+   
+   i) SYNC_SERVICE_ISSUES_SUMMARY.txt - 18 KB
+      Type: Issue summary with details
+      Strategy: Compress to issue list only (85% compression)
+      Target: 3 KB | Savings: 15 KB (3,750 tokens)
+   
+   j) ANALYSIS_OVERVIEW.txt - 17 KB
+      Type: Analysis overview document
+      Strategy: Compress to key findings only (80% compression)
+      Target: 3 KB | Savings: 14 KB (3,500 tokens)
+
+================================================================================
+HIGH-PRIORITY TARGETS (Compress After Critical)
+================================================================================
+
+5. /Users/louisherman/ClaudeCodeProjects/.claude/config/workflow-patterns.json
+   Size: 68 KB | Tokens: 17,000
+   Type: Workflow prediction configuration
+   Content: 58 patterns with metadata, confidence scores
+   Strategy: Keep active patterns only, compress metadata
+   Target Size: 35 KB | Target Tokens: 8,750
+   Savings: 33 KB (48% reduction, 8,250 tokens)
+   Priority: HIGH - relatively easy compression
+
+6. /Users/louisherman/ClaudeCodeProjects/docs/reports/ (5 large .md files)
+   Total Size: 148 KB | Tokens: 37,000
+   Files:
+     - architecture-evolution.md (32 KB)
+     - BEST_PRACTICES_REVIEW.md (32 KB)
+     - performance-tokens.md (28 KB)
+     - performance-redundancy.md (28 KB)
+     - functional-quality-testing.md (28 KB)
+   Strategy: Summary-based compression (reduce verbose explanations)
+   Target Reduction: 60-70% (22,200-25,900 tokens)
+   Priority: MEDIUM - reports can be archived after use
+
+7. /Users/louisherman/ClaudeCodeProjects/docs/reports/ (15 .txt files)
+   Total Size: 280 KB | Tokens: 70,000
+   Type: Plaintext summaries and visual breakdowns
+   Strategy: Convert to structured format, compress 70-75%
+   Target Reduction: 49,000-52,500 tokens
+   Priority: MEDIUM - summaries highly compressible
+
+8. /Users/louisherman/ClaudeCodeProjects/.claude/audit/skills-audit/skills-index.md
+   Size: 104 KB | Tokens: 26,000
+   Type: Skill audit index with repetitive structure
+   Content: List of skills with descriptions and metadata
+   Strategy: Keep active skills only, move inactive to archive
+   Target Size: 25 KB | Target Tokens: 6,250
+   Savings: 79 KB (76% reduction, 19,750 tokens)
+   Priority: HIGH - audit file with repetitive content
+
+9. /Users/louisherman/ClaudeCodeProjects/.claude/agents/dexie-specialist.md
+   Size: 12 KB | Tokens: 3,000
+   Type: Agent prompt
+   Strategy: Remove code examples, keep patterns only
+   Target: 4 KB | Savings: 750 tokens
+   Priority: MEDIUM
+
+10. /Users/louisherman/ClaudeCodeProjects/.claude/agents/svelte5-specialist.md
+    Size: 10 KB | Tokens: 2,500
+    Type: Agent prompt
+    Strategy: Remove verbose explanations, keep API reference
+    Target: 3 KB | Savings: 700 tokens
+    Priority: MEDIUM
+
+11. /Users/louisherman/ClaudeCodeProjects/.claude/agents/sveltekit-specialist.md
+    Size: 6.2 KB | Tokens: 1,550
+    Type: Agent prompt
+    Strategy: Keep API reference only
+    Target: 2 KB | Savings: 500 tokens
+    Priority: LOW
+
+================================================================================
+ORGANIZE/MOVE (No Compression, Structure Only)
+================================================================================
+
+12. /Users/louisherman/ClaudeCodeProjects/projects/imagen-experiments/prompts/ (6 files)
+    Files: dive-bar-concepts-*.md
+    Action: Move to projects/imagen-experiments/docs/prompts/
+    Impact: Organization improvement, no token savings
+
+13. /Users/louisherman/ClaudeCodeProjects/projects/emerson-violin-pwa/qa/ (2 files)
+    Files: test-plan-ipados26.md, ipados-26_2-issue-log.md
+    Action: Move to projects/emerson-violin-pwa/docs/qa/
+    Impact: Organization improvement, no token savings
+
+================================================================================
+DO NOT COMPRESS (Production/Vendor)
+================================================================================
+
+PRODUCTION DATA - NEVER READ INTO SESSION:
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/static/data/
+    - setlist-entries.json (21 MB)
+    - venue-top-songs.json (4.3 MB)
+    - shows.json (2.1 MB)
+    - show-details.json (1.3 MB)
+    - songs.json (1.1 MB)
+    - guests.json (424 KB)
+    - curated-list-items.json (1.1 MB)
+    - this-day-in-history.json (996 KB)
+    - song-stats.json (800 KB)
+    - song-statistics.json (712 KB)
+    - guest-appearances.json (404 KB)
+  Total: 33+ MB (8.25M tokens if read)
+  Status: Use reference pointers only
+
+VENDOR/BUILD:
+  All node_modules/ directories (exclude from all reads)
+  .git/ directory (exclude from all reads)
+  dist/ and build artifacts (exclude from reads)
+
+RUNTIME DATA:
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/coverage/ (coverage-final.json)
+  /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/package-lock.json
+  Status: Exclude from reads
+
+================================================================================
+ARCHIVE MANAGEMENT (75+ Files)
+================================================================================
+
+LOCATION: /Users/louisherman/ClaudeCodeProjects/_archived/
+
+Subdirectories:
+  1. additional_cleanup_2026-01-30/dmb-root-txt/ (12+ .txt files)
+  2. additional_cleanup_2026-01-30/project-docs-txt/ (8+ .txt files)
+  3. deep_scan_cleanup_2026-01-30/ (25+ files)
+  4. abandoned-projects-2026-01-31/ (40+ files)
+
+ACTION: Create archive index file
+  File: /Users/louisherman/ClaudeCodeProjects/_archived/INDEX.md
+  Content: List all archived files with descriptions
+  Result: Never read raw archived files, only reference via index
+
+Estimated Tokens Saved: 50,000+ (by avoiding reads)
+
+================================================================================
+COMPRESSION RATIO REFERENCE TABLE
+================================================================================
+
+File Type              | Current Size | Target Size | Savings | Compression %
+--------------------  | ------------ | ----------- | ------- | --------
+raw-results.json       | 856 KB       | 90 KB       | 766 KB  | 89%
+Agent Prompts (5 files)| 108 KB       | 32 KB       | 76 KB   | 70%
+.txt Summaries (top 10)| 221 KB       | 44 KB       | 177 KB  | 80%
+Config Files (2)       | 160 KB       | 95 KB       | 65 KB   | 41%
+Markdown Reports (5)   | 148 KB       | 50 KB       | 98 KB   | 66%
+Audit Files            | 104 KB       | 26 KB       | 78 KB   | 75%
+
+TOTAL POTENTIAL:       | 1.6 MB       | 337 KB      | 1.26 MB | 79%
+
+================================================================================
+QUICK WIN CHECKLIST
+================================================================================
+
+Quick Win 1: Archive setlist-sample.txt (2 minutes)
+  [ ] Create _archived/test-data/ directory
+  [ ] Move /projects/dmb-almanac/app/scraper/setlist-sample.txt
+  [ ] Savings: 59 KB (14,750 tokens)
+
+Quick Win 2: Compress workflow-patterns.json (15 minutes)
+  [ ] Create workflow-patterns-active.json (keep top 20 patterns)
+  [ ] Delete metadata field (or abbreviate)
+  [ ] Savings: 33 KB (8,250 tokens)
+
+Quick Win 3: Bulk .txt Summary Processing (30 minutes)
+  [ ] Target 15 files in docs/reports/
+  [ ] Each 20 KB → 6 KB target
+  [ ] Savings: ~210 KB (52,500 tokens)
+
+Quick Win 4: Remove Stale Docs (20 minutes)
+  [ ] Audit docs/archive/ for >30 day old files
+  [ ] Archive obsolete files
+  [ ] Savings: 40-80 KB (10,000-20,000 tokens)
+
+TOTAL QUICK WINS: 67 minutes | 342 KB | 85,500 tokens
+
+================================================================================
+PHASE IMPLEMENTATION BREAKDOWN
+================================================================================
+
+PHASE 17.1: Quick Wins (40 minutes)
+  Tasks:
+    1. Archive setlist-sample.txt (5 min)
+    2. Compress workflow-patterns.json (15 min)
+    3. Quick .txt summary compression (20 min)
+  Savings: 37,500 tokens
+  Difficulty: EASY
+
+PHASE 17.2: Large-Scale (300 minutes)
+  Tasks:
+    1. Process all 156 .txt files (120 min)
+    2. Compress agent prompts (60 min)
+    3. Compress documentation reports (60 min)
+    4. Testing/validation (60 min)
+  Savings: 180,000 tokens
+  Difficulty: MEDIUM
+
+PHASE 17.3: Structural (150 minutes)
+  Tasks:
+    1. Compress skills-index.md (45 min)
+    2. Move scattered documentation (30 min)
+    3. Create archive indices (45 min)
+    4. raw-results.json conversion (30 min)
+  Savings: 228,000 tokens
+  Difficulty: MEDIUM-HIGH
+
+PHASE 17.4: Validation (60 minutes)
+  Tasks:
+    1. Verify compression integrity
+    2. Test agent functionality
+    3. Validate all references
+    4. Update documentation/manifest
+  Savings: Verification only
+  Difficulty: EASY
+
+TOTAL: 550 minutes (9.2 hours) | 445,500 tokens
+
+================================================================================

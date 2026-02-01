@@ -66,9 +66,9 @@ describe('Concurrent Limits and Adaptive Throttling', () => {
       for (let i = 0; i < 10; i++) {
         engine.recordExecution('haiku', 100);
       }
-      
+
       engine.recordEscalation('haiku', 'sonnet', 'low-confidence');
-      
+
       const stats = engine.getStatistics();
       expect(stats.escalationRate).toBeLessThan(0.20);
       expect(engine.isWithinTarget()).toBe(true);
@@ -79,7 +79,7 @@ describe('Concurrent Limits and Adaptive Throttling', () => {
       for (let i = 0; i < 5; i++) {
         engine.recordExecution('haiku', 100);
       }
-      
+
       for (let i = 0; i < 5; i++) {
         engine.recordEscalation('haiku', 'sonnet', 'quality-threshold');
       }
@@ -381,7 +381,7 @@ describe('Concurrent Limits and Adaptive Throttling', () => {
 
     it('should have different timeout thresholds per tier', () => {
       const config = engine.getConfig();
-      
+
       expect(config.timeoutMs.haiku).toBeLessThan(config.timeoutMs.sonnet);
       expect(config.timeoutMs.sonnet).toBeLessThan(config.timeoutMs.opus);
     });
@@ -422,13 +422,13 @@ describe('Concurrent Limits and Adaptive Throttling', () => {
       engine.recordEscalation('sonnet', 'opus', 'quality-threshold');
 
       const exported = engine.exportHistory();
-      
+
       const newEngine = new EscalationEngine();
       newEngine.importHistory(exported);
 
       const imported = newEngine.getHistory();
       expect(imported.length).toBe(2);
-      
+
       const stats = newEngine.getStatistics();
       expect(stats.totalEscalations).toBe(2);
     });
@@ -466,7 +466,7 @@ describe('Concurrent Limits and Adaptive Throttling', () => {
       for (let i = 0; i < 20; i++) {
         engine.recordExecution('haiku', 100);
       }
-      
+
       for (let i = 0; i < 8; i++) {
         engine.recordEscalation('haiku', 'sonnet', 'quality-threshold');
       }
@@ -482,7 +482,7 @@ describe('Concurrent Limits and Adaptive Throttling', () => {
     it('should track average escalation overhead', () => {
       engine.recordEscalation('haiku', 'sonnet', 'low-confidence');
       engine.recordExecution('sonnet', 150);
-      
+
       engine.recordEscalation('haiku', 'sonnet', 'quality-threshold');
       engine.recordExecution('sonnet', 200);
 
@@ -497,7 +497,7 @@ describe('Concurrent Limits and Adaptive Throttling', () => {
       engine.recordEscalation('haiku', 'sonnet', 'complexity-mismatch');
 
       const stats = engine.getStatistics();
-      
+
       // High complexity-mismatch rate suggests initial tier selection needs improvement
       expect(stats.escalationsByReason['complexity-mismatch']).toBe(3);
       expect(stats.escalationsByTransition['haiku-to-sonnet']).toBe(3);
@@ -514,7 +514,7 @@ describe('Concurrent Limits and Adaptive Throttling', () => {
       let attemptCount = 0;
       const executor = async (tier: ModelTier, context?: Record<string, any>): Promise<ExecutionResult> => {
         attemptCount++;
-        
+
         // First attempt fails, second succeeds
         if (attemptCount === 1) {
           return createExecutionResult(tier, 'Low quality', {

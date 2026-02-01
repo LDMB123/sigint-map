@@ -67,7 +67,7 @@ npm run lint src/lib/db/dexie/**/*.js
 - Data integrity checks
 - Detailed logging
 
-### Query Helpers  
+### Query Helpers
 - Cached query execution with TTL
 - Top N queries with counts
 - Year-based aggregations
@@ -121,8 +121,8 @@ Consider adding comprehensive JSDoc type annotations to maintain IDE intellisens
 
 ---
 
-**Conversion Date:** January 27, 2026  
-**Status:** ✅ Complete  
-**Files Converted:** 6 of 6  
-**Errors:** 0  
+**Conversion Date:** January 27, 2026
+**Status:** ✅ Complete
+**Files Converted:** 6 of 6
+**Errors:** 0
 **Warnings:** Standard linting only

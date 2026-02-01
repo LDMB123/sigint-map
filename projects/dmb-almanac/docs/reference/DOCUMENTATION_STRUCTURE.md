@@ -1,7 +1,7 @@
 # Documentation Structure Quick Reference
 
-**Location:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/docs/`  
-**Last Updated:** 2026-01-30  
+**Location:** `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/app/docs/`
+**Last Updated:** 2026-01-30
 **Total Files:** 176
 
 ## Directory Overview
@@ -385,6 +385,6 @@ find docs/ -type f \( -name "*.md" -o -name "*.txt" \) | wc -l
 
 ---
 
-**For complete documentation index:** See `docs/README.md`  
-**Organization report:** See `DOCUMENTATION_ORGANIZATION_REPORT.md`  
+**For complete documentation index:** See `docs/README.md`
+**Organization report:** See `DOCUMENTATION_ORGANIZATION_REPORT.md`
 **Date organized:** 2026-01-30

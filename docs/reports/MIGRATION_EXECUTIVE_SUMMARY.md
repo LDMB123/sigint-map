@@ -85,7 +85,7 @@ Haiku Migrations (4-6 agents × 60% reduction):
   • performance-analyzer: 60% cheaper
   • [optional] documentation-writer: 60% cheaper
   • [optional] refactoring-agent: 60% cheaper
-  
+
 Total: 45% cost reduction on migrated agents
 Annual savings: ~$720 (based on current usage)
 ```
@@ -108,7 +108,7 @@ Route table cleanup:
   • Remove 10 unused routes (-17%)
   • Add 3 relevant domains (+5%)
   • Fix 1 misrouted action
-  
+
 Projected improvement: +12% routing clarity
 ```
 

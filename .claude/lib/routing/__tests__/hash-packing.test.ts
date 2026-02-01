@@ -38,10 +38,10 @@ describe('Hash Packing with BigInt', () => {
   describe('64-bit Value Generation', () => {
     it('should generate valid 64-bit BigInt values', () => {
       const hash = hashRequest('Fix borrow checker error');
-      
+
       // Verify it's a BigInt
       expect(typeof hash).toBe('bigint');
-      
+
       // Verify it fits in 64 bits (0 to 2^64 - 1)
       expect(hash).toBeGreaterThanOrEqual(0n);
       expect(hash).toBeLessThan(2n ** 64n);
@@ -67,7 +67,7 @@ describe('Hash Packing with BigInt', () => {
       );
 
       expect(packed).toBeLessThan(2n ** 64n);
-      
+
       const unpacked = unpackHash(packed);
       expect(unpacked.domain).toBe(maxHash.domain);
       expect(unpacked.complexity).toBe(maxHash.complexity);
@@ -97,7 +97,7 @@ describe('Hash Packing with BigInt', () => {
       );
 
       expect(packed).toBe(0n);
-      
+
       const unpacked = unpackHash(packed);
       expect(unpacked.domain).toBe(0);
       expect(unpacked.complexity).toBe(0);
@@ -187,7 +187,7 @@ describe('Hash Packing with BigInt', () => {
 
     it('should isolate fields without interference', () => {
       const packed = 0xAB_C_DE_FED_E_0123456n;
-      
+
       expect(Number((packed >> 56n) & 0xFFn)).toBe(0xAB);
       expect(Number((packed >> 52n) & 0x0Fn)).toBe(0x0C);
       expect(Number((packed >> 44n) & 0xFFn)).toBe(0xDE);
@@ -215,7 +215,7 @@ describe('Hash Packing with BigInt', () => {
           (BigInt(original.confidence) << 28n) |
           BigInt(original.reserved)
         );
-        
+
         const unpacked = unpackHash(packed);
         expect(unpacked).toEqual(original);
       });
@@ -276,7 +276,7 @@ describe('Hash Packing with BigInt', () => {
           (BigInt(unpacked.confidence) << 28n) |
           BigInt(unpacked.reserved)
         );
-        
+
         expect(hash2).toBe(hash1);
       });
     });
@@ -309,7 +309,7 @@ describe('Hash Packing with BigInt', () => {
     it('should handle all zeros', () => {
       const packed = 0n;
       const unpacked = unpackHash(packed);
-      
+
       expect(unpacked.domain).toBe(0);
       expect(unpacked.complexity).toBe(0);
       expect(unpacked.action).toBe(0);
@@ -321,7 +321,7 @@ describe('Hash Packing with BigInt', () => {
     it('should handle all ones (within field sizes)', () => {
       const packed = 0xFFFF_FFFF_FFFF_FFFFn;
       const unpacked = unpackHash(packed);
-      
+
       expect(unpacked.domain).toBe(0xFF);
       expect(unpacked.complexity).toBe(0x0F);
       expect(unpacked.action).toBe(0xFF);
@@ -366,7 +366,7 @@ describe('Hash Packing with BigInt', () => {
           (BigInt(hash.confidence) << 28n) |
           BigInt(hash.reserved)
         );
-        
+
         const unpacked = unpackHash(packed);
         expect(unpacked).toEqual(hash);
       });
@@ -408,7 +408,7 @@ describe('Hash Packing with BigInt', () => {
     it('should produce consistent hashes for same input', () => {
       const request = 'Fix borrow checker error';
       const hashes = Array.from({ length: 100 }, () => hashRequest(request));
-      
+
       const first = hashes[0];
       hashes.forEach(hash => {
         expect(hash).toBe(first);
@@ -426,7 +426,7 @@ describe('Hash Packing with BigInt', () => {
 
       const hashes = requests.map(r => hashRequest(r));
       const uniqueHashes = new Set(hashes.map(h => h.toString()));
-      
+
       expect(uniqueHashes.size).toBe(requests.length);
     });
   });

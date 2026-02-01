@@ -1,7 +1,7 @@
 # Agent Quality & Loadability Executive Summary
 
-**Date:** 2026-01-31  
-**Validation Scope:** 447 agents in `~/.claude/agents/`  
+**Date:** 2026-01-31
+**Validation Scope:** 447 agents in `~/.claude/agents/`
 **Overall Health:** 99.3% loadable (0 CRITICAL), 78% functional issues (HIGH/MEDIUM)
 
 ## Critical Findings
@@ -54,7 +54,7 @@
 
 **Common invalid modes:**
 - `acceptEdits` - 79 occurrences
-- `default` - 41 occurrences  
+- `default` - 41 occurrences
 - `plan` - 23 occurrences
 - `review` - 18 occurrences
 - `code` - 12 occurrences
@@ -190,7 +190,7 @@ description: >
 # Before
 description: Expert in Tailwind CSS v4 with CSS-first configuration
 
-# After  
+# After
 description: >
   Use when migrating to or configuring Tailwind v4. Expert in CSS-first
   configuration, @theme directive, and Lightning CSS optimization.
@@ -280,7 +280,7 @@ permissive, strict, ask, auto
 
 ### Model Tier Guidelines
 - **Haiku:** Simple, focused tasks with clear logic
-- **Sonnet:** Complex analysis, multi-step workflows, code generation  
+- **Sonnet:** Complex analysis, multi-step workflows, code generation
 - **Opus:** Strategic planning, high-level architecture, complex reasoning
 
 ## Related Reports

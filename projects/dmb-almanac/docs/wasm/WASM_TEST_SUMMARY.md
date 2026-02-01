@@ -158,7 +158,7 @@ Standardized performance measurement with warmup runs:
 async function measurePerformance(fn, runs = 5) {
     // Warmup
     await fn();
-    
+
     // Measure multiple runs
     const times = [];
     for (let i = 0; i < runs; i++) {
@@ -166,7 +166,7 @@ async function measurePerformance(fn, runs = 5) {
         await fn();
         times.push(performance.now() - start);
     }
-    
+
     return { min, max, avg, median, p95 };
 }
 ```
@@ -179,12 +179,12 @@ function generateTestData(size) {
         'Ants Marching', 'Warehouse', 'Two Step', '#41',
         'Crash Into Me', 'Satellite', 'Tripping Billies'
     ];
-    
+
     for (let i = 0; i < size; i++) {
         data.years[i] = 1991 + (i % 35);
-        data.songs.push({ 
-            year: 1991 + (i % 35), 
-            song: songNames[i % songNames.length] 
+        data.songs.push({
+            year: 1991 + (i % 35),
+            song: songNames[i % songNames.length]
         });
     }
 }

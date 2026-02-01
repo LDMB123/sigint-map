@@ -31,10 +31,10 @@ Converted Firecrawl optimization implementations from TypeScript to modern JavaS
 **BEFORE (TypeScript):**
 ```typescript
 export interface AdaptiveConcurrencyConfig {
-	minConcurrency: number;
-	maxConcurrency: number;
-	targetLatency: number;
-	adjustmentFactor: number;
+    minConcurrency: number;
+    maxConcurrency: number;
+    targetLatency: number;
+    adjustmentFactor: number;
 }
 ```
 
@@ -54,7 +54,7 @@ export interface AdaptiveConcurrencyConfig {
 **BEFORE (TypeScript):**
 ```typescript
 async execute<T>(task: () => Promise<T>): Promise<T> {
-	// implementation
+    // implementation
 }
 ```
 
@@ -67,7 +67,7 @@ async execute<T>(task: () => Promise<T>): Promise<T> {
  * @returns {Promise<T>}
  */
 async execute(task) {
-	// implementation
+    // implementation
 }
 ```
 
@@ -76,7 +76,7 @@ async execute(task) {
 **BEFORE (TypeScript):**
 ```typescript
 export interface BackgroundScrapeJob {
-	status: 'pending' | 'in-progress' | 'completed' | 'failed';
+    status: 'pending' | 'in-progress' | 'completed' | 'failed';
 }
 ```
 
@@ -97,7 +97,7 @@ export interface BackgroundScrapeJob {
 **BEFORE (TypeScript):**
 ```typescript
 constructor(config: Partial<AdaptiveConcurrencyConfig> = {}) {
-	// implementation
+    // implementation
 }
 ```
 
@@ -107,7 +107,7 @@ constructor(config: Partial<AdaptiveConcurrencyConfig> = {}) {
  * @param {Partial<AdaptiveConcurrencyConfig>} [config={}] - Pool configuration
  */
 constructor(config = {}) {
-	// implementation
+    // implementation
 }
 ```
 
@@ -164,12 +164,12 @@ const cursor = /** @type {IDBCursorWithValue|null} */ (event.target?.result);
  * @returns {Promise<void>}
  */
 async function yieldToMain() {
-	if ('scheduler' in globalThis && 'yield' in globalThis.scheduler) {
-		await globalThis.scheduler.yield();
-	} else {
-		// Fallback to setTimeout (minimal impact)
-		await new Promise(resolve => setTimeout(resolve, 0));
-	}
+    if ('scheduler' in globalThis && 'yield' in globalThis.scheduler) {
+        await globalThis.scheduler.yield();
+    } else {
+        // Fallback to setTimeout (minimal impact)
+        await new Promise(resolve => setTimeout(resolve, 0));
+    }
 }
 ```
 
@@ -188,10 +188,10 @@ async function yieldToMain() {
  * @returns {Promise<T>}
  */
 async function scheduleTask(task, priority = 'user-visible') {
-	if ('scheduler' in globalThis && 'postTask' in globalThis.scheduler) {
-		return globalThis.scheduler.postTask(task, { priority });
-	}
-	return task();
+    if ('scheduler' in globalThis && 'postTask' in globalThis.scheduler) {
+        return globalThis.scheduler.postTask(task, { priority });
+    }
+    return task();
 }
 ```
 
@@ -207,10 +207,10 @@ async function scheduleTask(task, priority = 'user-visible') {
  * @returns {boolean}
  */
 function isInputPending() {
-	if ('scheduler' in navigator && 'isInputPending' in navigator.scheduler) {
-		return navigator.scheduler.isInputPending();
-	}
-	return false;
+    if ('scheduler' in navigator && 'isInputPending' in navigator.scheduler) {
+        return navigator.scheduler.isInputPending();
+    }
+    return false;
 }
 ```
 
@@ -223,22 +223,22 @@ function isInputPending() {
  * @returns {Promise<void>}
  */
 async init() {
-	return new Promise((resolve, reject) => {
-		const request = indexedDB.open(this.dbName, 1);
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(this.dbName, 1);
 
-		request.onsuccess = () => {
-			this.db = request.result;
-			resolve();
-		};
+        request.onsuccess = () => {
+            this.db = request.result;
+            resolve();
+        };
 
-		request.onupgradeneeded = (event) => {
-			const db = /** @type {IDBDatabase} */ (event.target?.result);
-			if (!db.objectStoreNames.contains(this.storeName)) {
-				const store = db.createObjectStore(this.storeName, { keyPath: 'url' });
-				store.createIndex('timestamp', 'timestamp', { unique: false });
-			}
-		};
-	});
+        request.onupgradeneeded = (event) => {
+            const db = /** @type {IDBDatabase} */ (event.target?.result);
+            if (!db.objectStoreNames.contains(this.storeName)) {
+                const store = db.createObjectStore(this.storeName, { keyPath: 'url' });
+                store.createIndex('timestamp', 'timestamp', { unique: false });
+            }
+        };
+    });
 }
 ```
 
@@ -256,16 +256,16 @@ async init() {
  * @returns {Promise<string>} Job ID
  */
 async queueScrape(urls, options = {}) {
-	// ... save to IndexedDB ...
+    // ... save to IndexedDB ...
 
-	// Register background sync if supported
-	if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
-		navigator.serviceWorker.ready
-			.then((registration) => registration.sync.register('firecrawl-scrape'))
-			.catch(console.error);
-	}
+    // Register background sync if supported
+    if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
+        navigator.serviceWorker.ready
+            .then((registration) => registration.sync.register('firecrawl-scrape'))
+            .catch(console.error);
+    }
 
-	return job.id;
+    return job.id;
 }
 ```
 
@@ -285,7 +285,7 @@ const { cacheTTL = 24 * 60 * 60 * 1000, useCache = true, ...scrapeOptions } = op
 ```javascript
 // Generate URL arrays efficiently
 const urls = Array.from({ length: 50 }, (_, i) =>
-	`https://dmbalmanac.com/Shows/ShowInfo.aspx?id=${453056272 + i}`
+    `https://dmbalmanac.com/Shows/ShowInfo.aspx?id=${453056272 + i}`
 );
 ```
 
@@ -298,11 +298,11 @@ const urls = Array.from({ length: 50 }, (_, i) =>
  * @returns {AsyncGenerator<ScrapeResult|{error: string, url: string}, void, unknown>}
  */
 async *scrapeUrlsStreaming(urls, options = {}) {
-	for (const url of urls) {
-		// ... scrape logic ...
-		yield result;
-		await yieldToMain();
-	}
+    for (const url of urls) {
+        // ... scrape logic ...
+        yield result;
+        await yieldToMain();
+    }
 }
 ```
 
@@ -347,7 +347,7 @@ tsc --outDir dist --target ES2022 --module ES2022
 ```typescript
 const scraper = new OptimizedBatchScraper();
 scraper.scrapeUrls(urls, {
-	useCache: "yes" // ❌ Type error: string not assignable to boolean
+    useCache: "yes" // ❌ Type error: string not assignable to boolean
 });
 ```
 
@@ -355,7 +355,7 @@ scraper.scrapeUrls(urls, {
 ```javascript
 const scraper = new OptimizedBatchScraper();
 scraper.scrapeUrls(urls, {
-	useCache: "yes" // ❌ Type error: string not assignable to boolean
+    useCache: "yes" // ❌ Type error: string not assignable to boolean
 });
 ```
 
@@ -396,8 +396,8 @@ const result = await scraper.scrapeUrls(urls); // IDE infers BatchResult
  * @returns {Promise<void>}
  */
 async function processResults(result) {
-	// Full IntelliSense available for `result`
-	console.log(result.metrics.totalCredits);
+    // Full IntelliSense available for `result`
+    console.log(result.metrics.totalCredits);
 }
 ```
 
@@ -435,14 +435,14 @@ All native API usage follows graceful degradation:
  * @returns {Promise<void>}
  */
 async function yieldToMain() {
-	// Try Chromium 87+ scheduler.yield()
-	if ('scheduler' in globalThis && 'yield' in globalThis.scheduler) {
-		await globalThis.scheduler.yield();
-		return;
-	}
+    // Try Chromium 87+ scheduler.yield()
+    if ('scheduler' in globalThis && 'yield' in globalThis.scheduler) {
+        await globalThis.scheduler.yield();
+        return;
+    }
 
-	// Fallback to setTimeout (minimal overhead)
-	await new Promise(resolve => setTimeout(resolve, 0));
+    // Fallback to setTimeout (minimal overhead)
+    await new Promise(resolve => setTimeout(resolve, 0));
 }
 ```
 
@@ -461,8 +461,8 @@ async function yieldToMain() {
 ```javascript
 // Background sync uses E-cores automatically
 const scraper = new OptimizedBatchScraper({
-	minConcurrency: 1,
-	maxConcurrency: 3 // Lower for battery efficiency
+    minConcurrency: 1,
+    maxConcurrency: 3 // Lower for battery efficiency
 });
 ```
 
@@ -472,10 +472,10 @@ const scraper = new OptimizedBatchScraper({
 ```javascript
 // User-initiated scraping uses P-cores
 async function scheduleTask(task, priority = 'user-visible') {
-	if ('scheduler' in globalThis && 'postTask' in globalThis.scheduler) {
-		return globalThis.scheduler.postTask(task, { priority });
-	}
-	return task();
+    if ('scheduler' in globalThis && 'postTask' in globalThis.scheduler) {
+        return globalThis.scheduler.postTask(task, { priority });
+    }
+    return task();
 }
 ```
 

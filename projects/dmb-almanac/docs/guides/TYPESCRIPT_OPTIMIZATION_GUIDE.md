@@ -31,39 +31,39 @@ This guide contains two simple, low-risk optimizations you can implement immedia
 **Before:**
 ```json
 {
-	"extends": "./.svelte-kit/tsconfig.json",
-	"compilerOptions": {
-		"allowJs": true,
-		"checkJs": true,
-		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"resolveJsonModule": true,
-		"skipLibCheck": true,
-		"sourceMap": true,
-		"strict": true,
-		"moduleResolution": "bundler",
-		"target": "ESNext"
-	}
+    "extends": "./.svelte-kit/tsconfig.json",
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "sourceMap": true,
+        "strict": true,
+        "moduleResolution": "bundler",
+        "target": "ESNext"
+    }
 }
 ```
 
 **After:**
 ```json
 {
-	"extends": "./.svelte-kit/tsconfig.json",
-	"compilerOptions": {
-		"allowJs": true,
-		"checkJs": true,
-		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"isolatedModules": true,    // ← Add this line
-		"resolveJsonModule": true,
-		"skipLibCheck": true,
-		"sourceMap": true,
-		"strict": true,
-		"moduleResolution": "bundler",
-		"target": "ESNext"
-	}
+    "extends": "./.svelte-kit/tsconfig.json",
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "isolatedModules": true,    // ← Add this line
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "sourceMap": true,
+        "strict": true,
+        "moduleResolution": "bundler",
+        "target": "ESNext"
+    }
 }
 ```
 
@@ -231,27 +231,27 @@ If you want to catch more errors during development, add these to tsconfig (zero
 
 ```json
 {
-	"extends": "./.svelte-kit/tsconfig.json",
-	"compilerOptions": {
-		"allowJs": true,
-		"checkJs": true,
-		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"isolatedModules": true,
-		"resolveJsonModule": true,
-		"skipLibCheck": true,
-		"sourceMap": true,
-		"strict": true,
-		"moduleResolution": "bundler",
-		"target": "ESNext",
+    "extends": "./.svelte-kit/tsconfig.json",
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "isolatedModules": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "sourceMap": true,
+        "strict": true,
+        "moduleResolution": "bundler",
+        "target": "ESNext",
 
-		// Optional additions (compile-time checks, 0 bytes bundle impact):
-		"noUnusedLocals": true,          // Find unused variables
-		"noUnusedParameters": true,      // Find unused function parameters
-		"noImplicitReturns": true,       // Require explicit returns
-		"noImplicitAny": true,           // Require explicit types (stricter)
-		"exactOptionalPropertyTypes": true  // Strict optional properties
-	}
+        // Optional additions (compile-time checks, 0 bytes bundle impact):
+        "noUnusedLocals": true,          // Find unused variables
+        "noUnusedParameters": true,      // Find unused function parameters
+        "noImplicitReturns": true,       // Require explicit returns
+        "noImplicitAny": true,           // Require explicit types (stricter)
+        "exactOptionalPropertyTypes": true  // Strict optional properties
+    }
 }
 ```
 

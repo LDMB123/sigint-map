@@ -70,7 +70,7 @@
 
 **Cold vs Warm Start**
 - Warm start: 2.543ms (filesystem cache effective)
-- Cold start: 3.055ms 
+- Cold start: 3.055ms
 - Speedup: 1.2x (20% improvement)
 - Implication: OS filesystem cache provides modest benefit
 

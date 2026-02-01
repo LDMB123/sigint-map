@@ -22,7 +22,7 @@ extract_concept() {
     local concept_num=$1
     awk -v num="$concept_num" '
         /^## CONCEPT / {
-            if ($3 == num) { found=1 } 
+            if ($3 == num) { found=1 }
             else if (found) { exit }
         }
         found { print }
@@ -53,21 +53,21 @@ FAILED=0
 
 for concept_num in {91..120}; do
     log_info "Processing CONCEPT $concept_num..."
-    
+
     concept_text=$(extract_concept $concept_num)
     if [ -z "$concept_text" ]; then
         log_error "Could not extract CONCEPT $concept_num"
         ((FAILED++))
         continue
     fi
-    
+
     reference_image=$(get_reference_image $concept_num)
     log_info "Using reference: $(basename "$reference_image")"
-    
+
     if PROMPT_TEXT="$concept_text" && node "$WRAPPER_SCRIPT" edit "$reference_image" "$PROMPT_TEXT"; then
         log_success "CONCEPT $concept_num generated successfully"
         ((SUCCESS++))
-        
+
         latest_image=$(ls -t ~/nanobanana-output/nanobanana_*.png 2>/dev/null | head -1)
         if [ -n "$latest_image" ]; then
             file_size=$(ls -lh "$latest_image" | awk '{print $5}')
@@ -77,7 +77,7 @@ for concept_num in {91..120}; do
         log_error "Failed to generate CONCEPT $concept_num"
         ((FAILED++))
     fi
-    
+
     log_info "Waiting 120s before next generation..."
     sleep 120
 done

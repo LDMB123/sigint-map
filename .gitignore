@@ -8,6 +8,7 @@
 ._*
 .Spotlight-V100
 .Trashes
+.fseventsd
 
 # Node
 node_modules/
@@ -102,15 +103,6 @@ venv/
 Thumbs.db
 Desktop.ini
 
-# TypeScript
-*.tsbuildinfo
-
-# SvelteKit
-.svelte-kit/
-
-# Vite
-.vite/
-
 # Security - Never commit these
 **/secrets.*
 **/credentials.*
@@ -119,6 +111,21 @@ Desktop.ini
 *.pem
 *.crt
 
-# Misc
-.DS_Store
+# Claude infrastructure - local only
 .claude/mcp.json
+.claude/mcp.json.backup*
+.claude/agents_backup_*
+.claude/agents_backup_*/
+.claude/stats-cache.json
+.claude/security_warnings_state_*.json
+.claude/validation/raw-results.json
+
+# Playwright test artifacts
+**/test-results/.playwright-artifacts-*/
+**/playwright-report/
+
+# Coverage data
+**/coverage/coverage-final.json
+
+# Empty db files
+**/data/.gitkeep

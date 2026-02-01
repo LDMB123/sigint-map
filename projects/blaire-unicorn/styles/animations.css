@@ -26,5 +26,5 @@
     animation: float 6s ease-in-out infinite;
 }
 
-/* Sparkle Animation logic could go here if using DOM elements, 
+/* Sparkle Animation logic could go here if using DOM elements,
    but we'll likely use Canvas for performance */

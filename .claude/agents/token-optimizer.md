@@ -11,6 +11,7 @@ tools:
   - Glob
   - Bash
 model: haiku
+tier: tier-1
 permissionMode: default
 skills:
   - token-budget-monitor

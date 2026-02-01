@@ -1,6 +1,6 @@
 /**
  * Agent Validation Test Suite
- * 
+ *
  * Tests agent validation, invalid agent rejection, fallback mechanisms,
  * and routing consistency across the system.
  */
@@ -85,7 +85,7 @@ describe('Agent Validation', () => {
 
       routeTable.addRoute(invalidHash, invalidRoute);
       const retrieved = routeTable.getRoute(invalidHash);
-      
+
       // Should either reject empty agent or fallback to default
       if (retrieved) {
         expect(retrieved.agent).toBeTruthy();
@@ -127,7 +127,7 @@ describe('Agent Validation', () => {
 
     it('should validate agent name format', () => {
       const route = routeTable.route('test');
-      
+
       // Agent names should be kebab-case
       expect(route.agent).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
     });
@@ -164,10 +164,10 @@ describe('Agent Validation', () => {
 
     it('should use fuzzy matching before falling back to default', () => {
       routeTable.clearCache();
-      
+
       // Request that should fuzzy match to Rust domain
       const route = routeTable.route('Help with lifetime annotations in my code');
-      
+
       const stats = routeTable.getStats();
       // Should either fuzzy match or fall back
       expect(stats.fuzzyMatches + stats.defaultFallbacks).toBeGreaterThan(0);
@@ -189,7 +189,7 @@ describe('Agent Validation', () => {
     it('should cascade through fallback hierarchy', () => {
       // Test fallback order: exact match -> fuzzy match -> default
       routeTable.clearCache();
-      
+
       const unknownRoute = routeTable.route('xyzabc123 unknown pattern');
       expect(unknownRoute.agent).toBe('full-stack-developer');
       expect(unknownRoute.tier).toBe('sonnet');
@@ -201,7 +201,7 @@ describe('Agent Validation', () => {
       // RouteTable should handle missing or invalid files gracefully
       const invalidPath = '/nonexistent/route-table.json';
       const table = new RouteTable(invalidPath);
-      
+
       const route = table.route('test');
       expect(route).toBeDefined();
       expect(route.agent).toBeTruthy();
@@ -238,7 +238,7 @@ describe('Agent Validation', () => {
         confidence: 0x0D,
         reserved: 0
       };
-      
+
       routeTable.addRoute(customHash, {
         agent: 'custom-agent',
         tier: 'opus',
@@ -254,7 +254,7 @@ describe('Agent Validation', () => {
     it('should handle empty agent directory', () => {
       // Create a route table with minimal/empty configuration
       const emptyTable = new RouteTable();
-      
+
       const route = emptyTable.route('any request');
       expect(route).toBeDefined();
       expect(route.agent).toBeTruthy();
@@ -262,7 +262,7 @@ describe('Agent Validation', () => {
 
     it('should validate agent availability', () => {
       const route = routeTable.route('test request');
-      
+
       // Agent should be a valid string identifier
       expect(typeof route.agent).toBe('string');
       expect(route.agent.length).toBeGreaterThan(0);
@@ -287,7 +287,7 @@ describe('Agent Validation', () => {
 
       routeTable.addRoute(hash, minimalRoute);
       const retrieved = routeTable.getRoute(hash);
-      
+
       expect(retrieved).toBeDefined();
       expect(retrieved?.agent).toBe('minimal-agent');
       expect(retrieved?.tier).toBe('sonnet');
@@ -323,10 +323,10 @@ describe('Agent Validation', () => {
 
     it('should maintain tier consistency for cached routes', () => {
       const request = 'fix borrow checker error';
-      
+
       const route1 = routeTable.route(request);
       const route2 = routeTable.route(request); // Cached
-      
+
       expect(route1.tier).toBe(route2.tier);
       expect(route1.agent).toBe(route2.agent);
     });
@@ -388,16 +388,16 @@ describe('Agent Validation', () => {
 
       expect(hash.domain).toBeGreaterThanOrEqual(0);
       expect(hash.domain).toBeLessThanOrEqual(0xFF);
-      
+
       expect(hash.complexity).toBeGreaterThanOrEqual(0);
       expect(hash.complexity).toBeLessThanOrEqual(0x0F);
-      
+
       expect(hash.action).toBeGreaterThanOrEqual(0);
       expect(hash.action).toBeLessThanOrEqual(0xFF);
-      
+
       expect(hash.subtype).toBeGreaterThanOrEqual(0);
       expect(hash.subtype).toBeLessThanOrEqual(0xFFF);
-      
+
       expect(hash.confidence).toBeGreaterThanOrEqual(0);
       expect(hash.confidence).toBeLessThanOrEqual(0x0F);
     });
@@ -420,7 +420,7 @@ describe('Agent Validation', () => {
 
       routeTable.addRoute(hash, route);
       const retrieved = routeTable.getRoute(hash);
-      
+
       expect(retrieved?.agent).toBe(longName);
     });
   });
@@ -428,10 +428,10 @@ describe('Agent Validation', () => {
   describe('Cross-validation', () => {
     it('should maintain consistency between route and cache', () => {
       const request = 'fix typescript error';
-      
+
       const route1 = routeTable.route(request);
       const cacheEntry = routeTable.getCacheEntry(request);
-      
+
       expect(cacheEntry).toBeDefined();
       expect(cacheEntry?.agent).toBe(route1.agent);
       expect(cacheEntry?.tier).toBe(route1.tier);
@@ -449,11 +449,11 @@ describe('Agent Validation', () => {
     it('should validate export/import preserves routes', () => {
       const request = 'test request';
       const route1 = routeTable.route(request);
-      
+
       const exported = routeTable.exportCache();
       routeTable.clearCache();
       routeTable.importCache(exported);
-      
+
       const route2 = routeTable.route(request);
       expect(route2.agent).toBe(route1.agent);
       expect(route2.tier).toBe(route1.tier);

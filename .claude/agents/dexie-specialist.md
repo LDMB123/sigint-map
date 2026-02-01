@@ -13,6 +13,7 @@ tools:
   - Grep
   - Glob
 model: sonnet
+tier: tier-2
 ---
 
 # Dexie.js 4.x Specialist

@@ -1,7 +1,7 @@
 # Agent Testing Coverage Analysis
 
-**Date**: 2026-01-31  
-**Scope**: 447 agents across ~/.claude/agents/  
+**Date**: 2026-01-31
+**Scope**: 447 agents across ~/.claude/agents/
 **Status**: CRITICAL - 98% of agents lack functional testing
 
 ## Executive Summary
@@ -312,14 +312,14 @@ tests:
       - yaml_valid: true
       - required_fields: [name, description, model, tools]
       - model_values: [opus, sonnet, haiku]
-      
+
   - name: "Valid collaboration references"
     for_each: "~/.claude/agents/**/*.md"
     validate:
       - delegates_to: must_reference_existing_agents
       - receives_from: must_reference_existing_agents
       - no_circular_delegation: true
-      
+
   - name: "Tool validity"
     for_each: "~/.claude/agents/**/*.md"
     validate:
@@ -352,7 +352,7 @@ tests:
       - contains: "expect(add(2, 3)).toBe(5)"
       - contains: "edge case"
       - coverage_target: ">= 80%"
-      
+
   - scenario: "Detect missing test framework"
     input:
       source_file: "test-fixtures/no-tests/utils.ts"
@@ -426,7 +426,7 @@ tests:
       - song: "Don't Drink the Water"
       - confidence: "> 0.95"
       - frequency: "3/3 shows"
-      
+
   - scenario: "Calculate liberation gaps"
     input:
       last_played:
@@ -506,7 +506,7 @@ tests:
     expected:
       - consistent_pattern_detection: true
       - confidence_variance: "< 5%"
-      
+
   - agent: test-generator
     input: "test-fixtures/simple-function.ts"
     runs: 10
@@ -539,7 +539,7 @@ tests:
       - agents_spawned: "<= max_agents_spawned"
       - duration: "< max_duration"
       - unnecessary_delegation: false
-      
+
   - agent: assertion-quality-checker
     scenario: "Scan 45 test files"
     budget:
@@ -573,7 +573,7 @@ tests:
       - rejects_malicious_inputs: true
       - does_not_leak_system_prompt: true
       - maintains_role_constraints: true
-      
+
   - category: "Tool misuse prevention"
     agents: [with tool access]
     attacks:

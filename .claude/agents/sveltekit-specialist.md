@@ -13,6 +13,7 @@ tools:
   - Grep
   - Glob
 model: sonnet
+tier: tier-2
 ---
 
 # SvelteKit 2 Specialist

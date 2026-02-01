@@ -204,7 +204,7 @@ NODE_ENV=production node build
    # If using Git-based deployment
    git revert HEAD
    git push origin main
-   
+
    # Or restore from backup
    # (Deployment-platform specific)
    ```

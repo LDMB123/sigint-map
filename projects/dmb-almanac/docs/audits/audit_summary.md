@@ -1,13 +1,13 @@
 # DMB Almanac Data Pipeline Audit - Executive Summary
 
-**Date:** 2026-01-23  
+**Date:** 2026-01-23
 **Status:** AUDIT COMPLETE - Root Cause Identified
 
 ---
 
 ## Quick Summary
 
-I've completed a comprehensive audit of the DMB Almanac data pipeline, comparing 24 JSON files in `scraper/output/` against the SQLite database. 
+I've completed a comprehensive audit of the DMB Almanac data pipeline, comparing 24 JSON files in `scraper/output/` against the SQLite database.
 
 **Result:** 4 discrepancies found:
 - **1 Critical Issue** (shows.json import loss) - Root cause identified
@@ -49,7 +49,7 @@ The JSON file contains data quality issues that likely prevent import:
 
 **Impact:** ~317 shows with data quality issues don't make it into the database. The 317 missing records likely correspond to shows with empty venue names or severe data corruption.
 
-**Recommendation:** 
+**Recommendation:**
 - [ ] Investigate scraper output quality
 - [ ] Add pre-import validation to identify bad records
 - [ ] Log which shows are rejected and why
@@ -289,6 +289,6 @@ src/lib/db/schema.sql
 
 ---
 
-**Report generated:** 2026-01-23 12:50 UTC  
+**Report generated:** 2026-01-23 12:50 UTC
 **Full detailed report:** `/Users/louisherman/ClaudeCodeProjects/audit_report.txt`
 

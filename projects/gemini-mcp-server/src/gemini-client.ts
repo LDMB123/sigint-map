@@ -82,14 +82,14 @@ export class GeminiClient {
     config?: GenerateContentConfig
   ): Promise<{ text: string; usageMetadata?: unknown }> {
     await this.checkRateLimit();
-    
+
     try {
       const response = await this.ai.models.generateContent({
         model,
         contents,
         config,
       });
-      
+
       return {
         text: response.text ?? "",
         usageMetadata: response.usageMetadata,
@@ -111,14 +111,14 @@ export class GeminiClient {
     config?: EmbedContentConfig
   ): Promise<{ embeddings: number[][] }> {
     await this.checkRateLimit();
-    
+
     const textsArray = Array.isArray(contents) ? contents : [contents];
     const response = await this.ai.models.embedContent({
       model,
       contents: textsArray,
       config,
     });
-    
+
     return {
       embeddings: response.embeddings?.map((e) => e.values ?? []) ?? [],
     };
@@ -129,12 +129,12 @@ export class GeminiClient {
     contents: string | Content[]
   ): Promise<{ totalTokens: number }> {
     await this.checkRateLimit();
-    
+
     const response = await this.ai.models.countTokens({
       model,
       contents,
     });
-    
+
     return {
       totalTokens: response.totalTokens ?? 0,
     };

@@ -1001,183 +1001,183 @@ import { GPUDeviceManager } from './device.js';
  * WebGPU sum aggregation
  */
 export class GPUSum {
-	/** @type {GPUDevice | null} */
-	device = null;
+    /** @type {GPUDevice | null} */
+    device = null;
 
-	/** @type {GPUComputePipeline | null} */
-	pipeline = null;
+    /** @type {GPUComputePipeline | null} */
+    pipeline = null;
 
-	/** @type {string} */
-	shaderCode = null;
+    /** @type {string} */
+    shaderCode = null;
 
-	/** @type {boolean} */
-	initialized = false;
+    /** @type {boolean} */
+    initialized = false;
 
-	/**
-	 * Initialize GPU pipeline
-	 * @returns {Promise<void>}
-	 */
-	async init() {
-		if (this.initialized) {
-			return;
-		}
+    /**
+     * Initialize GPU pipeline
+     * @returns {Promise<void>}
+     */
+    async init() {
+        if (this.initialized) {
+            return;
+        }
 
-		try {
-			console.info('[GPU Sum] Initializing pipeline...');
+        try {
+            console.info('[GPU Sum] Initializing pipeline...');
 
-			// Get GPU device from singleton manager
-			const { device } = await GPUDeviceManager.getDevice();
-			this.device = device;
+            // Get GPU device from singleton manager
+            const { device } = await GPUDeviceManager.getDevice();
+            this.device = device;
 
-			// Load WGSL shader from static file
-			this.shaderCode = await this._loadShader();
+            // Load WGSL shader from static file
+            this.shaderCode = await this._loadShader();
 
-			// Create shader module
-			const shaderModule = device.createShaderModule({
-				code: this.shaderCode,
-				label: 'sum-shader'
-			});
+            // Create shader module
+            const shaderModule = device.createShaderModule({
+                code: this.shaderCode,
+                label: 'sum-shader'
+            });
 
-			// Create compute pipeline
-			this.pipeline = device.createComputePipeline({
-				label: 'sum-pipeline',
-				layout: 'auto',
-				compute: {
-					module: shaderModule,
-					entryPoint: 'compute_sum'
-				}
-			});
+            // Create compute pipeline
+            this.pipeline = device.createComputePipeline({
+                label: 'sum-pipeline',
+                layout: 'auto',
+                compute: {
+                    module: shaderModule,
+                    entryPoint: 'compute_sum'
+                }
+            });
 
-			this.initialized = true;
-			console.info('[GPU Sum] Pipeline initialized ✅');
-		} catch (e) {
-			console.error('[GPU Sum] Initialization failed:', e);
-			throw new Error(`[GPU Sum] Failed to initialize: ${e.message}`);
-		}
-	}
+            this.initialized = true;
+            console.info('[GPU Sum] Pipeline initialized ✅');
+        } catch (e) {
+            console.error('[GPU Sum] Initialization failed:', e);
+            throw new Error(`[GPU Sum] Failed to initialize: ${e.message}`);
+        }
+    }
 
-	/**
-	 * Load WGSL shader from static file
-	 * @private
-	 * @returns {Promise<string>}
-	 */
-	async _loadShader() {
-		try {
-			const response = await fetch('/shaders/sum.wgsl');
-			if (!response.ok) {
-				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-			}
-			return await response.text();
-		} catch (e) {
-			console.error('[GPU Sum] Shader load failed:', e);
-			throw new Error(`Failed to load shader: ${e.message}`);
-		}
-	}
+    /**
+     * Load WGSL shader from static file
+     * @private
+     * @returns {Promise<string>}
+     */
+    async _loadShader() {
+        try {
+            const response = await fetch('/shaders/sum.wgsl');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return await response.text();
+        } catch (e) {
+            console.error('[GPU Sum] Shader load failed:', e);
+            throw new Error(`Failed to load shader: ${e.message}`);
+        }
+    }
 
-	/**
-	 * Compute sum on GPU
-	 * @param {Uint32Array} values - Array of values to sum
-	 * @returns {Promise<SumResult>}
-	 */
-	async compute(values) {
-		// Ensure pipeline is initialized
-		if (!this.pipeline) {
-			await this.init();
-		}
+    /**
+     * Compute sum on GPU
+     * @param {Uint32Array} values - Array of values to sum
+     * @returns {Promise<SumResult>}
+     */
+    async compute(values) {
+        // Ensure pipeline is initialized
+        if (!this.pipeline) {
+            await this.init();
+        }
 
-		const startTime = performance.now();
+        const startTime = performance.now();
 
-		try {
-			const dataSize = values.length;
+        try {
+            const dataSize = values.length;
 
-			// Create GPU buffers
-			const valuesBuffer = this.device.createBuffer({
-				size: dataSize * 4,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-				label: 'values-buffer'
-			});
+            // Create GPU buffers
+            const valuesBuffer = this.device.createBuffer({
+                size: dataSize * 4,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+                label: 'values-buffer'
+            });
 
-			const resultBuffer = this.device.createBuffer({
-				size: 4, // Single u32
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-				label: 'result-buffer'
-			});
+            const resultBuffer = this.device.createBuffer({
+                size: 4, // Single u32
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+                label: 'result-buffer'
+            });
 
-			// Upload data to GPU
-			this.device.queue.writeBuffer(valuesBuffer, 0, values);
+            // Upload data to GPU
+            this.device.queue.writeBuffer(valuesBuffer, 0, values);
 
-			// Create bind group
-			const bindGroup = this.device.createBindGroup({
-				layout: this.pipeline.getBindGroupLayout(0),
-				entries: [
-					{ binding: 0, resource: { buffer: valuesBuffer } },
-					{ binding: 1, resource: { buffer: resultBuffer } }
-				],
-				label: 'sum-bind-group'
-			});
+            // Create bind group
+            const bindGroup = this.device.createBindGroup({
+                layout: this.pipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: { buffer: valuesBuffer } },
+                    { binding: 1, resource: { buffer: resultBuffer } }
+                ],
+                label: 'sum-bind-group'
+            });
 
-			// Create command encoder
-			const encoder = this.device.createCommandEncoder({
-				label: 'sum-encoder'
-			});
+            // Create command encoder
+            const encoder = this.device.createCommandEncoder({
+                label: 'sum-encoder'
+            });
 
-			// Begin compute pass
-			const pass = encoder.beginComputePass({
-				label: 'sum-pass'
-			});
+            // Begin compute pass
+            const pass = encoder.beginComputePass({
+                label: 'sum-pass'
+            });
 
-			pass.setPipeline(this.pipeline);
-			pass.setBindGroup(0, bindGroup);
+            pass.setPipeline(this.pipeline);
+            pass.setBindGroup(0, bindGroup);
 
-			// Dispatch compute shader
-			const workgroups = Math.ceil(dataSize / 256);
-			pass.dispatchWorkgroups(workgroups);
-			pass.end();
+            // Dispatch compute shader
+            const workgroups = Math.ceil(dataSize / 256);
+            pass.dispatchWorkgroups(workgroups);
+            pass.end();
 
-			// Create staging buffer for readback
-			const stagingBuffer = this.device.createBuffer({
-				size: 4,
-				usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-				label: 'staging-buffer'
-			});
+            // Create staging buffer for readback
+            const stagingBuffer = this.device.createBuffer({
+                size: 4,
+                usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+                label: 'staging-buffer'
+            });
 
-			// Copy result to staging buffer
-			encoder.copyBufferToBuffer(resultBuffer, 0, stagingBuffer, 0, 4);
+            // Copy result to staging buffer
+            encoder.copyBufferToBuffer(resultBuffer, 0, stagingBuffer, 0, 4);
 
-			// Submit GPU commands
-			this.device.queue.submit([encoder.finish()]);
+            // Submit GPU commands
+            this.device.queue.submit([encoder.finish()]);
 
-			// Map and read result
-			await stagingBuffer.mapAsync(GPUMapMode.READ);
-			const resultArray = new Uint32Array(stagingBuffer.getMappedRange());
-			const total = resultArray[0];
-			stagingBuffer.unmap();
+            // Map and read result
+            await stagingBuffer.mapAsync(GPUMapMode.READ);
+            const resultArray = new Uint32Array(stagingBuffer.getMappedRange());
+            const total = resultArray[0];
+            stagingBuffer.unmap();
 
-			// Cleanup
-			valuesBuffer.destroy();
-			resultBuffer.destroy();
-			stagingBuffer.destroy();
+            // Cleanup
+            valuesBuffer.destroy();
+            resultBuffer.destroy();
+            stagingBuffer.destroy();
 
-			const timeMs = performance.now() - startTime;
+            const timeMs = performance.now() - startTime;
 
-			console.info(`[GPU Sum] Computed sum of ${dataSize} values in ${timeMs.toFixed(2)}ms`);
+            console.info(`[GPU Sum] Computed sum of ${dataSize} values in ${timeMs.toFixed(2)}ms`);
 
-			return { total, timeMs };
-		} catch (e) {
-			console.error('[GPU Sum] Compute failed:', e);
-			throw new Error(`GPU sum compute failed: ${e.message}`);
-		}
-	}
+            return { total, timeMs };
+        } catch (e) {
+            console.error('[GPU Sum] Compute failed:', e);
+            throw new Error(`GPU sum compute failed: ${e.message}`);
+        }
+    }
 
-	/**
-	 * Destroy pipeline and release resources
-	 */
-	destroy() {
-		this.pipeline = null;
-		this.device = null;
-		this.initialized = false;
-		console.info('[GPU Sum] Pipeline destroyed');
-	}
+    /**
+     * Destroy pipeline and release resources
+     */
+    destroy() {
+        this.pipeline = null;
+        this.device = null;
+        this.initialized = false;
+        console.info('[GPU Sum] Pipeline destroyed');
+    }
 }
 ```
 
@@ -1219,88 +1219,88 @@ Add method to `/src/lib/gpu/fallback.js`:
 import { GPUSum } from './sum.js';
 
 export class ComputeOrchestrator {
-	static gpuSum = null;
+    static gpuSum = null;
 
-	/**
-	 * Compute sum (3-tier fallback)
-	 * @param {Uint32Array} values - Array of values
-	 * @returns {Promise<ComputeResult>}
-	 */
-	static async computeSum(values) {
-		const startTime = performance.now();
+    /**
+     * Compute sum (3-tier fallback)
+     * @param {Uint32Array} values - Array of values
+     * @returns {Promise<ComputeResult>}
+     */
+    static async computeSum(values) {
+        const startTime = performance.now();
 
-		// Tier 1: WebGPU
-		if (!this.gpuTried && await GPUDeviceManager.isAvailable()) {
-			try {
-				console.info('[Compute] Attempting GPU sum...');
+        // Tier 1: WebGPU
+        if (!this.gpuTried && await GPUDeviceManager.isAvailable()) {
+            try {
+                console.info('[Compute] Attempting GPU sum...');
 
-				if (!this.gpuSum) {
-					this.gpuSum = new GPUSum();
-				}
+                if (!this.gpuSum) {
+                    this.gpuSum = new GPUSum();
+                }
 
-				const gpuResult = await this.gpuSum.compute(values);
-				const timeMs = performance.now() - startTime;
+                const gpuResult = await this.gpuSum.compute(values);
+                const timeMs = performance.now() - startTime;
 
-				ComputeTelemetry.record('computeSum', 'webgpu', timeMs, values.length);
+                ComputeTelemetry.record('computeSum', 'webgpu', timeMs, values.length);
 
-				return {
-					backend: 'webgpu',
-					result: gpuResult.total,
-					timeMs
-				};
-			} catch (e) {
-				console.warn('[Compute] GPU failed, falling back to WASM:', e.message);
-				this.gpuTried = true;
-			}
-		}
+                return {
+                    backend: 'webgpu',
+                    result: gpuResult.total,
+                    timeMs
+                };
+            } catch (e) {
+                console.warn('[Compute] GPU failed, falling back to WASM:', e.message);
+                this.gpuTried = true;
+            }
+        }
 
-		// Tier 2: WASM
-		if (!this.wasmTried && await WasmRuntime.isAvailable()) {
-			try {
-				console.info('[Compute] Attempting WASM sum...');
+        // Tier 2: WASM
+        if (!this.wasmTried && await WasmRuntime.isAvailable()) {
+            try {
+                console.info('[Compute] Attempting WASM sum...');
 
-				if (!this.wasmModule) {
-					this.wasmModule = await WasmRuntime.load();
-				}
+                if (!this.wasmModule) {
+                    this.wasmModule = await WasmRuntime.load();
+                }
 
-				const result = this.wasmModule.compute_sum(values);
-				const timeMs = performance.now() - startTime;
+                const result = this.wasmModule.compute_sum(values);
+                const timeMs = performance.now() - startTime;
 
-				ComputeTelemetry.record('computeSum', 'wasm', timeMs, values.length);
+                ComputeTelemetry.record('computeSum', 'wasm', timeMs, values.length);
 
-				return {
-					backend: 'wasm',
-					result,
-					timeMs
-				};
-			} catch (e) {
-				console.warn('[Compute] WASM failed, falling back to JS:', e.message);
-				this.wasmTried = true;
-			}
-		}
+                return {
+                    backend: 'wasm',
+                    result,
+                    timeMs
+                };
+            } catch (e) {
+                console.warn('[Compute] WASM failed, falling back to JS:', e.message);
+                this.wasmTried = true;
+            }
+        }
 
-		// Tier 3: JavaScript
-		console.info('[Compute] Using JavaScript sum');
-		const result = this.computeSumJS(values);
-		const timeMs = performance.now() - startTime;
+        // Tier 3: JavaScript
+        console.info('[Compute] Using JavaScript sum');
+        const result = this.computeSumJS(values);
+        const timeMs = performance.now() - startTime;
 
-		ComputeTelemetry.record('computeSum', 'javascript', timeMs, values.length);
+        ComputeTelemetry.record('computeSum', 'javascript', timeMs, values.length);
 
-		return {
-			backend: 'javascript',
-			result,
-			timeMs
-		};
-	}
+        return {
+            backend: 'javascript',
+            result,
+            timeMs
+        };
+    }
 
-	/**
-	 * JavaScript fallback implementation
-	 * @param {Uint32Array} values
-	 * @returns {number}
-	 */
-	static computeSumJS(values) {
-		return values.reduce((sum, val) => sum + val, 0);
-	}
+    /**
+     * JavaScript fallback implementation
+     * @param {Uint32Array} values
+     * @returns {number}
+     */
+    static computeSumJS(values) {
+        return values.reduce((sum, val) => sum + val, 0);
+    }
 }
 ```
 
@@ -1360,7 +1360,7 @@ device.queue.writeBuffer(gpuBuffer, 0, cpuArray);  // Copy on discrete GPU, zero
 
 // After compute
 const stagingBuffer = device.createBuffer({
-	usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+    usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
 });
 encoder.copyBufferToBuffer(resultBuffer, 0, stagingBuffer, 0, size);
 device.queue.submit([encoder.finish()]);
@@ -1380,49 +1380,49 @@ The code above is already optimized for UMA. The key is that on Apple Silicon:
 
 ```javascript
 export class GPUHistogramOptimized {
-	// Reuse buffers across multiple compute calls
-	inputBuffer = null;
-	outputBuffer = null;
-	stagingBuffer = null;
+    // Reuse buffers across multiple compute calls
+    inputBuffer = null;
+    outputBuffer = null;
+    stagingBuffer = null;
 
-	async compute(yearData) {
-		// Resize buffers only if needed
-		const dataSize = yearData.length * 4;
+    async compute(yearData) {
+        // Resize buffers only if needed
+        const dataSize = yearData.length * 4;
 
-		if (!this.inputBuffer || this.inputBuffer.size < dataSize) {
-			this.inputBuffer?.destroy();
-			this.inputBuffer = this.device.createBuffer({
-				size: dataSize,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-			});
-		}
+        if (!this.inputBuffer || this.inputBuffer.size < dataSize) {
+            this.inputBuffer?.destroy();
+            this.inputBuffer = this.device.createBuffer({
+                size: dataSize,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+            });
+        }
 
-		// Upload data (zero-copy on UMA)
-		this.device.queue.writeBuffer(this.inputBuffer, 0, yearData);
+        // Upload data (zero-copy on UMA)
+        this.device.queue.writeBuffer(this.inputBuffer, 0, yearData);
 
-		// ... compute ...
+        // ... compute ...
 
-		// Reuse staging buffer
-		if (!this.stagingBuffer) {
-			this.stagingBuffer = this.device.createBuffer({
-				size: 35 * 4,
-				usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-			});
-		}
+        // Reuse staging buffer
+        if (!this.stagingBuffer) {
+            this.stagingBuffer = this.device.createBuffer({
+                size: 35 * 4,
+                usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+            });
+        }
 
-		// Read result
-		await this.stagingBuffer.mapAsync(GPUMapMode.READ);
-		const result = new Uint32Array(this.stagingBuffer.getMappedRange()).slice();
-		this.stagingBuffer.unmap();
+        // Read result
+        await this.stagingBuffer.mapAsync(GPUMapMode.READ);
+        const result = new Uint32Array(this.stagingBuffer.getMappedRange()).slice();
+        this.stagingBuffer.unmap();
 
-		return result;
-	}
+        return result;
+    }
 
-	destroy() {
-		this.inputBuffer?.destroy();
-		this.outputBuffer?.destroy();
-		this.stagingBuffer?.destroy();
-	}
+    destroy() {
+        this.inputBuffer?.destroy();
+        this.outputBuffer?.destroy();
+        this.stagingBuffer?.destroy();
+    }
 }
 ```
 
@@ -1497,97 +1497,97 @@ pass.dispatchWorkgroups(workgroupsX, workgroupsY);
 ```javascript
 // BAD: Creates/destroys buffers on every call (slow)
 async function compute(data) {
-	const buffer = device.createBuffer({...});  // 1-2ms overhead
-	device.queue.writeBuffer(buffer, 0, data);
-	// ... compute ...
-	buffer.destroy();
+    const buffer = device.createBuffer({...});  // 1-2ms overhead
+    device.queue.writeBuffer(buffer, 0, data);
+    // ... compute ...
+    buffer.destroy();
 }
 ```
 
 **Pattern 1: Singleton Buffers**
 ```javascript
 class OptimizedCompute {
-	static sharedBuffer = null;
-	static maxSize = 0;
+    static sharedBuffer = null;
+    static maxSize = 0;
 
-	static async compute(data) {
-		const requiredSize = data.length * 4;
+    static async compute(data) {
+        const requiredSize = data.length * 4;
 
-		// Resize only if needed
-		if (!this.sharedBuffer || requiredSize > this.maxSize) {
-			this.sharedBuffer?.destroy();
-			this.maxSize = Math.max(requiredSize, this.maxSize * 1.5); // Grow 50%
-			this.sharedBuffer = device.createBuffer({
-				size: this.maxSize,
-				usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-			});
-		}
+        // Resize only if needed
+        if (!this.sharedBuffer || requiredSize > this.maxSize) {
+            this.sharedBuffer?.destroy();
+            this.maxSize = Math.max(requiredSize, this.maxSize * 1.5); // Grow 50%
+            this.sharedBuffer = device.createBuffer({
+                size: this.maxSize,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+            });
+        }
 
-		device.queue.writeBuffer(this.sharedBuffer, 0, data);
-		// ... compute ...
-	}
+        device.queue.writeBuffer(this.sharedBuffer, 0, data);
+        // ... compute ...
+    }
 }
 ```
 
 **Pattern 2: Buffer Pools**
 ```javascript
 class BufferPool {
-	static pools = new Map(); // Map<size, GPUBuffer[]>
+    static pools = new Map(); // Map<size, GPUBuffer[]>
 
-	static acquire(size) {
-		const pool = this.pools.get(size) || [];
+    static acquire(size) {
+        const pool = this.pools.get(size) || [];
 
-		if (pool.length > 0) {
-			return pool.pop(); // Reuse existing buffer
-		}
+        if (pool.length > 0) {
+            return pool.pop(); // Reuse existing buffer
+        }
 
-		// Create new buffer
-		return device.createBuffer({
-			size,
-			usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-		});
-	}
+        // Create new buffer
+        return device.createBuffer({
+            size,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+    }
 
-	static release(buffer, size) {
-		const pool = this.pools.get(size) || [];
-		pool.push(buffer);
-		this.pools.set(size, pool);
-	}
+    static release(buffer, size) {
+        const pool = this.pools.get(size) || [];
+        pool.push(buffer);
+        this.pools.set(size, pool);
+    }
 }
 
 // Usage
 async function compute(data) {
-	const buffer = BufferPool.acquire(data.length * 4);
-	device.queue.writeBuffer(buffer, 0, data);
-	// ... compute ...
-	BufferPool.release(buffer, data.length * 4);
+    const buffer = BufferPool.acquire(data.length * 4);
+    device.queue.writeBuffer(buffer, 0, data);
+    // ... compute ...
+    BufferPool.release(buffer, data.length * 4);
 }
 ```
 
 **Pattern 3: Persistent Staging Buffers**
 ```javascript
 class PersistentCompute {
-	stagingBuffer = null;
+    stagingBuffer = null;
 
-	async compute(data) {
-		// Create staging buffer once
-		if (!this.stagingBuffer) {
-			this.stagingBuffer = device.createBuffer({
-				size: 1024 * 4, // Fixed size for results
-				usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-				mappedAtCreation: false
-			});
-		}
+    async compute(data) {
+        // Create staging buffer once
+        if (!this.stagingBuffer) {
+            this.stagingBuffer = device.createBuffer({
+                size: 1024 * 4, // Fixed size for results
+                usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+                mappedAtCreation: false
+            });
+        }
 
-		// ... compute ...
+        // ... compute ...
 
-		// Reuse staging buffer for readback
-		await this.stagingBuffer.mapAsync(GPUMapMode.READ);
-		const result = new Uint32Array(this.stagingBuffer.getMappedRange()).slice();
-		this.stagingBuffer.unmap();
+        // Reuse staging buffer for readback
+        await this.stagingBuffer.mapAsync(GPUMapMode.READ);
+        const result = new Uint32Array(this.stagingBuffer.getMappedRange()).slice();
+        this.stagingBuffer.unmap();
 
-		return result;
-	}
+        return result;
+    }
 }
 ```
 
@@ -1752,12 +1752,12 @@ const size = Math.ceil(arrayLength * 4 / 4) * 4; // Round up to multiple of 4
 
 // Ensure all bindings match shader
 const bindGroup = device.createBindGroup({
-	layout: pipeline.getBindGroupLayout(0),
-	entries: [
-		{ binding: 0, resource: { buffer: buffer0 } }, // Must match @binding(0)
-		{ binding: 1, resource: { buffer: buffer1 } }, // Must match @binding(1)
-		// Don't skip bindings!
-	]
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+        { binding: 0, resource: { buffer: buffer0 } }, // Must match @binding(0)
+        { binding: 1, resource: { buffer: buffer1 } }, // Must match @binding(1)
+        // Don't skip bindings!
+    ]
 });
 ```
 
@@ -1775,9 +1775,9 @@ const bindGroup = device.createBindGroup({
 1. **Enable validation layers:**
 ```javascript
 const device = await adapter.requestDevice({
-	requiredFeatures: [],
-	requiredLimits: {},
-	// No validation mode in WebGPU yet, but errors log to console
+    requiredFeatures: [],
+    requiredLimits: {},
+    // No validation mode in WebGPU yet, but errors log to console
 });
 ```
 
@@ -1884,36 +1884,36 @@ import { ComputeTelemetry } from '$lib/gpu/telemetry.js';
 let dashboard = null;
 
 onMount(() => {
-	// Update every 2 seconds
-	const interval = setInterval(() => {
-		dashboard = ComputeTelemetry.getDashboardData();
-	}, 2000);
+    // Update every 2 seconds
+    const interval = setInterval(() => {
+        dashboard = ComputeTelemetry.getDashboardData();
+    }, 2000);
 
-	return () => clearInterval(interval);
+    return () => clearInterval(interval);
 });
 </script>
 
 {#if dashboard}
-	<div class="dashboard">
-		<h2>Compute Performance</h2>
+    <div class="dashboard">
+        <h2>Compute Performance</h2>
 
-		<h3>Backend Usage</h3>
-		<ul>
-			<li>GPU: {dashboard.usage.webgpu || 0}%</li>
-			<li>WASM: {dashboard.usage.wasm || 0}%</li>
-			<li>JavaScript: {dashboard.usage.javascript || 0}%</li>
-		</ul>
+        <h3>Backend Usage</h3>
+        <ul>
+            <li>GPU: {dashboard.usage.webgpu || 0}%</li>
+            <li>WASM: {dashboard.usage.wasm || 0}%</li>
+            <li>JavaScript: {dashboard.usage.javascript || 0}%</li>
+        </ul>
 
-		<h3>Performance (P50 Latency)</h3>
-		<ul>
-			<li>GPU: {dashboard.p50.webgpu?.toFixed(2) || 'N/A'}ms</li>
-			<li>WASM: {dashboard.p50.wasm?.toFixed(2) || 'N/A'}ms</li>
-			<li>JavaScript: {dashboard.p50.javascript?.toFixed(2) || 'N/A'}ms</li>
-		</ul>
+        <h3>Performance (P50 Latency)</h3>
+        <ul>
+            <li>GPU: {dashboard.p50.webgpu?.toFixed(2) || 'N/A'}ms</li>
+            <li>WASM: {dashboard.p50.wasm?.toFixed(2) || 'N/A'}ms</li>
+            <li>JavaScript: {dashboard.p50.javascript?.toFixed(2) || 'N/A'}ms</li>
+        </ul>
 
-		<h3>Speedup</h3>
-		<p>{dashboard.summary.avgSpeedup}x faster than JavaScript</p>
-	</div>
+        <h3>Speedup</h3>
+        <p>{dashboard.summary.avgSpeedup}x faster than JavaScript</p>
+    </div>
 {/if}
 ```
 
@@ -1926,59 +1926,59 @@ onMount(() => {
 **Pattern 1: Try-Catch with Fallback**
 ```javascript
 async function safeGPUCompute(data) {
-	try {
-		const result = await gpuHistogram.compute(data);
-		return { success: true, result, backend: 'gpu' };
-	} catch (error) {
-		console.warn('GPU compute failed:', error);
+    try {
+        const result = await gpuHistogram.compute(data);
+        return { success: true, result, backend: 'gpu' };
+    } catch (error) {
+        console.warn('GPU compute failed:', error);
 
-		// Fallback to JavaScript
-		const result = jsCompute(data);
-		return { success: true, result, backend: 'javascript', fallback: true };
-	}
+        // Fallback to JavaScript
+        const result = jsCompute(data);
+        return { success: true, result, backend: 'javascript', fallback: true };
+    }
 }
 ```
 
 **Pattern 2: Graceful Degradation**
 ```javascript
 export class ResilientCompute {
-	async compute(data) {
-		const backends = ['gpu', 'wasm', 'javascript'];
+    async compute(data) {
+        const backends = ['gpu', 'wasm', 'javascript'];
 
-		for (const backend of backends) {
-			try {
-				return await this._computeWithBackend(data, backend);
-			} catch (error) {
-				console.warn(`${backend} failed:`, error);
-				continue; // Try next backend
-			}
-		}
+        for (const backend of backends) {
+            try {
+                return await this._computeWithBackend(data, backend);
+            } catch (error) {
+                console.warn(`${backend} failed:`, error);
+                continue; // Try next backend
+            }
+        }
 
-		throw new Error('All compute backends failed');
-	}
+        throw new Error('All compute backends failed');
+    }
 }
 ```
 
 **Pattern 3: User-Friendly Error Messages**
 ```javascript
 try {
-	await gpuHistogram.compute(data);
+    await gpuHistogram.compute(data);
 } catch (error) {
-	let userMessage;
+    let userMessage;
 
-	if (error.message.includes('device lost')) {
-		userMessage = 'GPU connection lost. Please refresh the page.';
-	} else if (error.message.includes('out of memory')) {
-		userMessage = 'Not enough GPU memory. Try reducing dataset size.';
-	} else {
-		userMessage = 'Computation failed. Using fallback method.';
-	}
+    if (error.message.includes('device lost')) {
+        userMessage = 'GPU connection lost. Please refresh the page.';
+    } else if (error.message.includes('out of memory')) {
+        userMessage = 'Not enough GPU memory. Try reducing dataset size.';
+    } else {
+        userMessage = 'Computation failed. Using fallback method.';
+    }
 
-	console.error('GPU Error:', error);
-	showToast(userMessage);
+    console.error('GPU Error:', error);
+    showToast(userMessage);
 
-	// Fallback
-	return jsCompute(data);
+    // Fallback
+    return jsCompute(data);
 }
 ```
 
@@ -1996,29 +1996,29 @@ Creating multiple GPU devices causes:
 **Correct Pattern (GPUDeviceManager):**
 ```javascript
 export class GPUDeviceManager {
-	static instance = null;
-	static initializationPromise = null;
+    static instance = null;
+    static initializationPromise = null;
 
-	static async getDevice() {
-		// Return cached instance
-		if (this.instance) {
-			return this.instance;
-		}
+    static async getDevice() {
+        // Return cached instance
+        if (this.instance) {
+            return this.instance;
+        }
 
-		// Return in-flight promise (prevent concurrent init)
-		if (this.initializationPromise) {
-			return this.initializationPromise;
-		}
+        // Return in-flight promise (prevent concurrent init)
+        if (this.initializationPromise) {
+            return this.initializationPromise;
+        }
 
-		// Initialize once
-		this.initializationPromise = this._initialize();
-		try {
-			this.instance = await this.initializationPromise;
-			return this.instance;
-		} finally {
-			this.initializationPromise = null;
-		}
-	}
+        // Initialize once
+        this.initializationPromise = this._initialize();
+        try {
+            this.instance = await this.initializationPromise;
+            return this.instance;
+        } finally {
+            this.initializationPromise = null;
+        }
+    }
 }
 ```
 
@@ -2026,10 +2026,10 @@ export class GPUDeviceManager {
 ```javascript
 // BAD: New device on every call
 async function compute(data) {
-	const adapter = await navigator.gpu.requestAdapter();
-	const device = await adapter.requestDevice(); // Slow! (1-2 seconds)
-	// ... compute ...
-	device.destroy();
+    const adapter = await navigator.gpu.requestAdapter();
+    const device = await adapter.requestDevice(); // Slow! (1-2 seconds)
+    // ... compute ...
+    device.destroy();
 }
 ```
 
@@ -2040,51 +2040,51 @@ async function compute(data) {
 **Pattern 1: Explicit Cleanup**
 ```javascript
 export class GPUHistogram {
-	buffers = [];
+    buffers = [];
 
-	async compute(data) {
-		const buffer1 = device.createBuffer({...});
-		const buffer2 = device.createBuffer({...});
+    async compute(data) {
+        const buffer1 = device.createBuffer({...});
+        const buffer2 = device.createBuffer({...});
 
-		this.buffers.push(buffer1, buffer2);
+        this.buffers.push(buffer1, buffer2);
 
-		try {
-			// ... compute ...
-		} finally {
-			// Always cleanup, even on error
-			this.cleanup();
-		}
-	}
+        try {
+            // ... compute ...
+        } finally {
+            // Always cleanup, even on error
+            this.cleanup();
+        }
+    }
 
-	cleanup() {
-		for (const buffer of this.buffers) {
-			buffer.destroy();
-		}
-		this.buffers = [];
-	}
+    cleanup() {
+        for (const buffer of this.buffers) {
+            buffer.destroy();
+        }
+        this.buffers = [];
+    }
 }
 ```
 
 **Pattern 2: RAII (Resource Acquisition Is Initialization)**
 ```javascript
 class BufferScope {
-	constructor(device, size) {
-		this.buffer = device.createBuffer({ size, usage: GPUBufferUsage.STORAGE });
-	}
+    constructor(device, size) {
+        this.buffer = device.createBuffer({ size, usage: GPUBufferUsage.STORAGE });
+    }
 
-	use(callback) {
-		try {
-			return callback(this.buffer);
-		} finally {
-			this.buffer.destroy();
-		}
-	}
+    use(callback) {
+        try {
+            return callback(this.buffer);
+        } finally {
+            this.buffer.destroy();
+        }
+    }
 }
 
 // Usage
 await new BufferScope(device, 1024).use(async (buffer) => {
-	device.queue.writeBuffer(buffer, 0, data);
-	// ... compute ...
+    device.queue.writeBuffer(buffer, 0, data);
+    // ... compute ...
 }); // Automatically destroyed after use
 ```
 
@@ -2092,9 +2092,9 @@ await new BufferScope(device, 1024).use(async (buffer) => {
 ```javascript
 // In app initialization
 window.addEventListener('beforeunload', () => {
-	GPUDeviceManager.destroy();
-	gpuHistogram?.destroy();
-	gpuMultiField?.destroy();
+    GPUDeviceManager.destroy();
+    gpuHistogram?.destroy();
+    gpuMultiField?.destroy();
 });
 ```
 
@@ -2105,17 +2105,17 @@ window.addEventListener('beforeunload', () => {
 **Monitoring Memory Usage:**
 ```javascript
 async function getGPUMemoryUsage() {
-	if (!performance.memory) {
-		console.warn('Memory API not available');
-		return null;
-	}
+    if (!performance.memory) {
+        console.warn('Memory API not available');
+        return null;
+    }
 
-	const memoryInfo = performance.memory;
-	return {
-		usedJSHeapSize: (memoryInfo.usedJSHeapSize / 1024 / 1024).toFixed(2) + ' MB',
-		totalJSHeapSize: (memoryInfo.totalJSHeapSize / 1024 / 1024).toFixed(2) + ' MB',
-		jsHeapSizeLimit: (memoryInfo.jsHeapSizeLimit / 1024 / 1024).toFixed(2) + ' MB'
-	};
+    const memoryInfo = performance.memory;
+    return {
+        usedJSHeapSize: (memoryInfo.usedJSHeapSize / 1024 / 1024).toFixed(2) + ' MB',
+        totalJSHeapSize: (memoryInfo.totalJSHeapSize / 1024 / 1024).toFixed(2) + ' MB',
+        jsHeapSizeLimit: (memoryInfo.jsHeapSizeLimit / 1024 / 1024).toFixed(2) + ' MB'
+    };
 }
 
 // Log before/after GPU operation
@@ -2145,11 +2145,11 @@ buffer.unmap(); // Release mapping
 ```javascript
 // If you cache pipelines/shaders, clear on cleanup
 export class GPUCompute {
-	static pipelineCache = new Map();
+    static pipelineCache = new Map();
 
-	static clearCache() {
-		this.pipelineCache.clear();
-	}
+    static clearCache() {
+        this.pipelineCache.clear();
+    }
 }
 
 // Call on app shutdown
@@ -2169,25 +2169,25 @@ GPUCompute.clearCache();
 import { ComputeOrchestrator } from '$lib/gpu/fallback.js';
 
 async function aggregateShowsByYear(shows) {
-	const result = await ComputeOrchestrator.aggregateByYear(shows);
+    const result = await ComputeOrchestrator.aggregateByYear(shows);
 
-	console.log(`Backend: ${result.backend}`);
-	console.log(`Time: ${result.timeMs.toFixed(2)}ms`);
-	console.log(`Results:`, result.result);
+    console.log(`Backend: ${result.backend}`);
+    console.log(`Time: ${result.timeMs.toFixed(2)}ms`);
+    console.log(`Results:`, result.result);
 
-	// Result is a Map<year, count>
-	for (const [year, count] of result.result.entries()) {
-		console.log(`${year}: ${count} shows`);
-	}
+    // Result is a Map<year, count>
+    for (const [year, count] of result.result.entries()) {
+        console.log(`${year}: ${count} shows`);
+    }
 
-	return result;
+    return result;
 }
 
 // Usage
 const shows = [
-	{ date: '1991-05-11' },
-	{ date: '1992-06-15' },
-	{ date: '1991-08-20' }
+    { date: '1991-05-11' },
+    { date: '1992-06-15' },
+    { date: '1991-08-20' }
 ];
 
 const result = await aggregateShowsByYear(shows);
@@ -2212,56 +2212,56 @@ const result = await aggregateShowsByYear(shows);
 import { GPUMultiField } from '$lib/gpu/multi-field.js';
 
 async function analyzeShows(shows) {
-	// Extract fields
-	const years = new Uint32Array(shows.map(s => s.year));
-	const venueIds = new Uint32Array(shows.map(s => s.venueId));
-	const songCounts = new Uint32Array(shows.map(s => s.songCount));
+    // Extract fields
+    const years = new Uint32Array(shows.map(s => s.year));
+    const venueIds = new Uint32Array(shows.map(s => s.venueId));
+    const songCounts = new Uint32Array(shows.map(s => s.songCount));
 
-	// Compute on GPU
-	const multiField = new GPUMultiField();
-	const result = await multiField.compute(years, venueIds, songCounts);
+    // Compute on GPU
+    const multiField = new GPUMultiField();
+    const result = await multiField.compute(years, venueIds, songCounts);
 
-	console.log(`GPU compute: ${result.timeMs.toFixed(2)}ms`);
+    console.log(`GPU compute: ${result.timeMs.toFixed(2)}ms`);
 
-	// Year distribution
-	console.log('\nShows per year:');
-	for (let i = 0; i < result.yearBins.length; i++) {
-		const year = 1991 + i;
-		const count = result.yearBins[i];
-		if (count > 0) {
-			console.log(`  ${year}: ${count} shows`);
-		}
-	}
+    // Year distribution
+    console.log('\nShows per year:');
+    for (let i = 0; i < result.yearBins.length; i++) {
+        const year = 1991 + i;
+        const count = result.yearBins[i];
+        if (count > 0) {
+            console.log(`  ${year}: ${count} shows`);
+        }
+    }
 
-	// Venue analysis
-	console.log('\nTop 5 venues:');
-	const venueCounts = Array.from(result.venueBins)
-		.map((count, id) => ({ id, count }))
-		.filter(v => v.count > 0)
-		.sort((a, b) => b.count - a.count)
-		.slice(0, 5);
+    // Venue analysis
+    console.log('\nTop 5 venues:');
+    const venueCounts = Array.from(result.venueBins)
+        .map((count, id) => ({ id, count }))
+        .filter(v => v.count > 0)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
 
-	for (const venue of venueCounts) {
-		console.log(`  Venue ${venue.id}: ${venue.count} shows`);
-	}
+    for (const venue of venueCounts) {
+        console.log(`  Venue ${venue.id}: ${venue.count} shows`);
+    }
 
-	// Song statistics
-	console.log('\nSong statistics:');
-	console.log(`  Total shows: ${result.songStats.totalShows}`);
-	console.log(`  Total songs: ${result.songStats.totalSongs}`);
-	console.log(`  Average songs per show: ${result.songStats.avgSongs.toFixed(2)}`);
-	console.log(`  Min songs: ${result.songStats.minSongs}`);
-	console.log(`  Max songs: ${result.songStats.maxSongs}`);
+    // Song statistics
+    console.log('\nSong statistics:');
+    console.log(`  Total shows: ${result.songStats.totalShows}`);
+    console.log(`  Total songs: ${result.songStats.totalSongs}`);
+    console.log(`  Average songs per show: ${result.songStats.avgSongs.toFixed(2)}`);
+    console.log(`  Min songs: ${result.songStats.minSongs}`);
+    console.log(`  Max songs: ${result.songStats.maxSongs}`);
 
-	return result;
+    return result;
 }
 
 // Usage
 const shows = [
-	{ year: 1991, venueId: 5, songCount: 20 },
-	{ year: 1992, venueId: 10, songCount: 25 },
-	{ year: 1991, venueId: 5, songCount: 18 },
-	{ year: 2000, venueId: 15, songCount: 30 }
+    { year: 1991, venueId: 5, songCount: 20 },
+    { year: 1992, venueId: 10, songCount: 25 },
+    { year: 1991, venueId: 5, songCount: 18 },
+    { year: 2000, venueId: 15, songCount: 30 }
 ];
 
 await analyzeShows(shows);
@@ -2328,32 +2328,32 @@ wasm-pack build --release --target web --out-dir ../../app/src/lib/wasm/aggregat
 import { WasmRuntime } from '$lib/wasm/loader.js';
 
 async function getMedianSongCount(shows) {
-	// Extract and sort song counts
-	const songCounts = shows.map(s => s.songCount).sort((a, b) => a - b);
-	const values = new Float64Array(songCounts);
+    // Extract and sort song counts
+    const songCounts = shows.map(s => s.songCount).sort((a, b) => a - b);
+    const values = new Float64Array(songCounts);
 
-	// Load WASM module
-	const wasm = await WasmRuntime.load();
+    // Load WASM module
+    const wasm = await WasmRuntime.load();
 
-	// Calculate 50th percentile (median)
-	const median = wasm.calculate_percentile(values, 0.5);
+    // Calculate 50th percentile (median)
+    const median = wasm.calculate_percentile(values, 0.5);
 
-	// Calculate 95th percentile
-	const p95 = wasm.calculate_percentile(values, 0.95);
+    // Calculate 95th percentile
+    const p95 = wasm.calculate_percentile(values, 0.95);
 
-	console.log(`Median songs per show: ${median}`);
-	console.log(`95th percentile: ${p95}`);
+    console.log(`Median songs per show: ${median}`);
+    console.log(`95th percentile: ${p95}`);
 
-	return { median, p95 };
+    return { median, p95 };
 }
 
 // Usage
 const shows = [
-	{ songCount: 20 },
-	{ songCount: 25 },
-	{ songCount: 18 },
-	{ songCount: 30 },
-	{ songCount: 22 }
+    { songCount: 20 },
+    { songCount: 25 },
+    { songCount: 18 },
+    { songCount: 30 },
+    { songCount: 22 }
 ];
 
 await getMedianSongCount(shows);
@@ -2414,10 +2414,10 @@ ls -la src/lib/wasm/aggregations/*.wasm
 ```javascript
 // vite.config.js
 export default {
-	plugins: [
-		wasm(), // vite-plugin-wasm
-		topLevelAwait() // vite-plugin-top-level-await
-	]
+    plugins: [
+        wasm(), // vite-plugin-wasm
+        topLevelAwait() // vite-plugin-top-level-await
+    ]
 };
 ```
 
@@ -2460,15 +2460,15 @@ console.log('JS result:', jsResult);
 // Convert for comparison
 const gpuMap = new Map();
 for (let i = 0; i < gpuResult.bins.length; i++) {
-	const year = 1991 + i;
-	const count = gpuResult.bins[i];
-	if (count > 0) {
-		gpuMap.set(year, count);
-	}
+    const year = 1991 + i;
+    const count = gpuResult.bins[i];
+    if (count > 0) {
+        gpuMap.set(year, count);
+    }
 }
 
 console.log('Maps equal?',
-	JSON.stringify([...gpuMap]) === JSON.stringify([...jsResult]));
+    JSON.stringify([...gpuMap]) === JSON.stringify([...jsResult]));
 ```
 
 4. **Check for race conditions:**
@@ -2503,32 +2503,32 @@ sudo powermetrics --samplers smc | grep -i "GPU"
 2. **Ensure buffer cleanup:**
 ```javascript
 async function compute(data) {
-	const buffers = [];
+    const buffers = [];
 
-	try {
-		const buffer1 = device.createBuffer({...});
-		buffers.push(buffer1);
-		// ... compute ...
-	} finally {
-		// Always cleanup
-		for (const buffer of buffers) {
-			buffer.destroy();
-		}
-	}
+    try {
+        const buffer1 = device.createBuffer({...});
+        buffers.push(buffer1);
+        // ... compute ...
+    } finally {
+        // Always cleanup
+        for (const buffer of buffers) {
+            buffer.destroy();
+        }
+    }
 }
 ```
 
 3. **Reuse pipelines:**
 ```javascript
 export class GPUHistogram {
-	pipeline = null; // Cache pipeline
+    pipeline = null; // Cache pipeline
 
-	async init() {
-		if (this.pipeline) {
-			return; // Don't recreate
-		}
-		// ... create pipeline once ...
-	}
+    async init() {
+        if (this.pipeline) {
+            return; // Don't recreate
+        }
+        // ... create pipeline once ...
+    }
 }
 ```
 
@@ -2556,26 +2556,26 @@ const sizeMB = (sizeBytes / 1024 / 1024).toFixed(2);
 console.log(`Dataset size: ${sizeMB} MB`);
 
 if (sizeBytes > 100 * 1024 * 1024) {
-	console.warn('Dataset very large, consider chunking');
-	// Process in chunks
-	return processInChunks(data, 25000); // 25k items at a time
+    console.warn('Dataset very large, consider chunking');
+    // Process in chunks
+    return processInChunks(data, 25000); // 25k items at a time
 }
 ```
 
 2. **Chunk large datasets:**
 ```javascript
 async function computeLargeDataset(data) {
-	const chunkSize = 25000;
-	const chunks = [];
+    const chunkSize = 25000;
+    const chunks = [];
 
-	for (let i = 0; i < data.length; i += chunkSize) {
-		const chunk = data.slice(i, i + chunkSize);
-		const result = await gpuHistogram.compute(chunk);
-		chunks.push(result);
-	}
+    for (let i = 0; i < data.length; i += chunkSize) {
+        const chunk = data.slice(i, i + chunkSize);
+        const result = await gpuHistogram.compute(chunk);
+        chunks.push(result);
+    }
 
-	// Merge results
-	return mergeHistograms(chunks);
+    // Merge results
+    return mergeHistograms(chunks);
 }
 ```
 
@@ -2583,17 +2583,17 @@ async function computeLargeDataset(data) {
 ```javascript
 // BAD: Concurrent operations (memory accumulation)
 const results = await Promise.all([
-	gpuCompute(data1),
-	gpuCompute(data2),
-	gpuCompute(data3)
+    gpuCompute(data1),
+    gpuCompute(data2),
+    gpuCompute(data3)
 ]);
 
 // GOOD: Sequential with cleanup
 const results = [];
 for (const data of [data1, data2, data3]) {
-	const result = await gpuCompute(data);
-	results.push(result);
-	// Buffers destroyed before next iteration
+    const result = await gpuCompute(data);
+    results.push(result);
+    // Buffers destroyed before next iteration
 }
 ```
 

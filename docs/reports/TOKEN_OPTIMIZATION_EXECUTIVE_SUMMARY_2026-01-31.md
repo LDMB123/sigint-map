@@ -66,7 +66,7 @@ Multiple overlapping index files at root and subdirectory levels covering same c
 **Timeline:** 30 minutes
 **Token savings:** 60,000
 
-**Current indices:** 
+**Current indices:**
 - 5 top-level indices (INDEX.md, ANALYSIS_INDEX.md, etc.)
 - 9 subdirectory indices (20x-optimization/, home-inventory/, etc.)
 - Recommendation: Keep 2 master indices, archive 12 duplicates

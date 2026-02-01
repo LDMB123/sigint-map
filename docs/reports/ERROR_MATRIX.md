@@ -34,28 +34,28 @@ TypeError: errorLogger.clearLogs is not a function
 ```javascript
 // logger.test.js:13-17
 beforeEach(() => {
-	errorLogger.clearLogs();  // ← Line 14: FAILS HERE
-	errorLogger.errorHandlers = [];
-	vi.clearAllMocks();
+    errorLogger.clearLogs();  // ← Line 14: FAILS HERE
+    errorLogger.errorHandlers = [];
+    vi.clearAllMocks();
 });
 
 // logger.test.js:192
 describe('clearLogs', () => {
-	it('should remove all logs', () => {
-		errorLogger.debug('test');
-		errorLogger.info('test');
-		expect(errorLogger.getLogs().length).toBe(2);
+    it('should remove all logs', () => {
+        errorLogger.debug('test');
+        errorLogger.info('test');
+        expect(errorLogger.getLogs().length).toBe(2);
 
-		errorLogger.clearLogs();  // ← FAILS: method doesn't exist
-		expect(errorLogger.getLogs().length).toBe(0);
-	});
+        errorLogger.clearLogs();  // ← FAILS: method doesn't exist
+        expect(errorLogger.getLogs().length).toBe(0);
+    });
 });
 
 // error-logging-integration.test.js:18-22
 beforeEach(() => {
-	errorLogger.clearLogs();  // ← Line 19: FAILS HERE
-	errorLogger.errorHandlers = [];
-	vi.clearAllMocks();
+    errorLogger.clearLogs();  // ← Line 19: FAILS HERE
+    errorLogger.errorHandlers = [];
+    vi.clearAllMocks();
 });
 ```
 
@@ -70,8 +70,8 @@ beforeEach(() => {
 
 ```javascript
 clearLogs() {
-	// Clear the internal log buffer
-	this._logs = [];
+    // Clear the internal log buffer
+    this._logs = [];
 }
 ```
 
@@ -109,10 +109,10 @@ import { errorLogger, enableVerboseLogging, getDiagnosticReport } from '$lib/err
 
 // logger.test.js:270-273
 describe('enableVerboseLogging', () => {
-	it('should not throw', () => {
-		expect(() => enableVerboseLogging()).not.toThrow();
-		//                ↑ Function doesn't exist
-	});
+    it('should not throw', () => {
+        expect(() => enableVerboseLogging()).not.toThrow();
+        //                ↑ Function doesn't exist
+    });
 });
 ```
 
@@ -126,9 +126,9 @@ describe('enableVerboseLogging', () => {
 
 ```javascript
 export function enableVerboseLogging() {
-	// Set verbose logging flag
-	errorLogger._verbose = true;
-	// Optionally log the state change
+    // Set verbose logging flag
+    errorLogger._verbose = true;
+    // Optionally log the state change
 }
 ```
 
@@ -166,47 +166,47 @@ import { errorLogger, enableVerboseLogging, getDiagnosticReport } from '$lib/err
 
 // logger.test.js:276-303
 describe('getDiagnosticReport', () => {
-	beforeEach(() => {
-		errorLogger.clearLogs();
-		errorLogger.errorHandlers = [];
-	});
+    beforeEach(() => {
+        errorLogger.clearLogs();
+        errorLogger.errorHandlers = [];
+    });
 
-	it('should return a diagnostic object', () => {
-		const report = getDiagnosticReport();  // ← Line 283: FAILS
-		expect(report).toHaveProperty('sessionId');
-		expect(report).toHaveProperty('timestamp');
-		expect(report).toHaveProperty('errorCount');
-		expect(report).toHaveProperty('warningCount');
-		expect(report).toHaveProperty('recentErrors');
-		expect(report).toHaveProperty('userAgent');
-		expect(report).toHaveProperty('url');
-	});
+    it('should return a diagnostic object', () => {
+        const report = getDiagnosticReport();  // ← Line 283: FAILS
+        expect(report).toHaveProperty('sessionId');
+        expect(report).toHaveProperty('timestamp');
+        expect(report).toHaveProperty('errorCount');
+        expect(report).toHaveProperty('warningCount');
+        expect(report).toHaveProperty('recentErrors');
+        expect(report).toHaveProperty('userAgent');
+        expect(report).toHaveProperty('url');
+    });
 
-	it('should count errors and warnings correctly', () => {
-		errorLogger.error('err', new Error('e'));
-		errorLogger.warn('w');
-		errorLogger.info('i');
-		errorLogger.error('err2', new Error('e2'));
+    it('should count errors and warnings correctly', () => {
+        errorLogger.error('err', new Error('e'));
+        errorLogger.warn('w');
+        errorLogger.info('i');
+        errorLogger.error('err2', new Error('e2'));
 
-		const report = getDiagnosticReport();  // ← FAILS
-		expect(report.errorCount).toBe(2);  // Only 'error' level
-		expect(report.warningCount).toBe(1);
-	});
+        const report = getDiagnosticReport();  // ← FAILS
+        expect(report.errorCount).toBe(2);  // Only 'error' level
+        expect(report.warningCount).toBe(1);
+    });
 });
 
 // error-logging-integration.test.js:53-66
 it('should capture multiple error types and aggregate in diagnostics', () => {
-	errorLogger.info('App started');
-	errorLogger.warn('Slow query detected');
-	errorLogger.error('Network timeout', new NetworkError('Fetch failed'));
-	errorLogger.error('Database error', new AppError('Index missing', 'DB_ERROR', 500));
-	errorLogger.debug('Retrying...');
+    errorLogger.info('App started');
+    errorLogger.warn('Slow query detected');
+    errorLogger.error('Network timeout', new NetworkError('Fetch failed'));
+    errorLogger.error('Database error', new AppError('Index missing', 'DB_ERROR', 500));
+    errorLogger.debug('Retrying...');
 
-	const report = getDiagnosticReport();  // ← Line 61: FAILS
-	expect(report.errorCount).toBe(2);
-	expect(report.warningCount).toBe(1);
-	expect(report.recentErrors.length).toBe(2);
-	expect(report.recentErrors[0].level).toBe('error');
+    const report = getDiagnosticReport();  // ← Line 61: FAILS
+    expect(report.errorCount).toBe(2);
+    expect(report.warningCount).toBe(1);
+    expect(report.recentErrors.length).toBe(2);
+    expect(report.recentErrors[0].level).toBe('error');
 });
 ```
 
@@ -220,17 +220,17 @@ it('should capture multiple error types and aggregate in diagnostics', () => {
 
 ```javascript
 export function getDiagnosticReport() {
-	const logs = errorLogger.getLogs();
+    const logs = errorLogger.getLogs();
 
-	return {
-		sessionId: errorLogger.getSessionId(),
-		timestamp: new Date(),
-		errorCount: logs.filter(l => l.level === 'error').length,
-		warningCount: logs.filter(l => l.level === 'warn').length,
-		recentErrors: logs.filter(l => ['error', 'fatal'].includes(l.level)),
-		userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'SSR',
-		url: typeof window !== 'undefined' ? window.location.href : 'SSR'
-	};
+    return {
+        sessionId: errorLogger.getSessionId(),
+        timestamp: new Date(),
+        errorCount: logs.filter(l => l.level === 'error').length,
+        warningCount: logs.filter(l => l.level === 'warn').length,
+        recentErrors: logs.filter(l => ['error', 'fatal'].includes(l.level)),
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'SSR',
+        url: typeof window !== 'undefined' ? window.location.href : 'SSR'
+    };
 }
 ```
 
@@ -254,8 +254,8 @@ Requires:
 **Expected Signature**:
 ```javascript
 debug(message, context) {
-	// Log to console.debug in dev mode
-	// Store in log buffer with level: 'debug'
+    // Log to console.debug in dev mode
+    // Store in log buffer with level: 'debug'
 }
 ```
 
@@ -270,9 +270,9 @@ debug(message, context) {
 **Expected Signature**:
 ```javascript
 fatal(message, error, context) {
-	// Log fatal error
-	// Store in log buffer with level: 'fatal'
-	// Fire error handlers
+    // Log fatal error
+    // Store in log buffer with level: 'fatal'
+    // Fire error handlers
 }
 ```
 
@@ -287,8 +287,8 @@ fatal(message, error, context) {
 **Expected Signature**:
 ```javascript
 getLogs(limit = 50) {
-	// Return last N logs (most recent first)
-	// Default limit is 50
+    // Return last N logs (most recent first)
+    // Default limit is 50
 }
 ```
 
@@ -303,8 +303,8 @@ getLogs(limit = 50) {
 **Expected Signature**:
 ```javascript
 getErrorLogs(limit = 50) {
-	// Return only 'error' and 'fatal' level logs
-	// Default limit is 50
+    // Return only 'error' and 'fatal' level logs
+    // Default limit is 50
 }
 ```
 
@@ -319,9 +319,9 @@ getErrorLogs(limit = 50) {
 **Expected Signature**:
 ```javascript
 logAsyncError(operationName, error, context) {
-	// Log async operation failure
-	// Wrap non-Error objects in Error
-	// Message should include operation name
+    // Log async operation failure
+    // Wrap non-Error objects in Error
+    // Message should include operation name
 }
 ```
 
@@ -336,8 +336,8 @@ logAsyncError(operationName, error, context) {
 **Expected Signature**:
 ```javascript
 exportLogs() {
-	// Return valid JSON string of all logs
-	// Must be parseable: JSON.parse(exportLogs())
+    // Return valid JSON string of all logs
+    // Must be parseable: JSON.parse(exportLogs())
 }
 ```
 
@@ -352,9 +352,9 @@ exportLogs() {
 **Expected Signature**:
 ```javascript
 getSessionId() {
-	// Return consistent session ID for this instance
-	// Generated once at initialization
-	// Same across multiple calls
+    // Return consistent session ID for this instance
+    // Generated once at initialization
+    // Same across multiple calls
 }
 ```
 
@@ -369,10 +369,10 @@ getSessionId() {
 **Expected Signature**:
 ```javascript
 onError(handler) {
-	// Register async error handler callback
-	// Called when error() or fatal() is invoked
-	// Receives ErrorHandlerReport object
-	// handler: (report) => Promise<void>
+    // Register async error handler callback
+    // Called when error() or fatal() is invoked
+    // Receives ErrorHandlerReport object
+    // handler: (report) => Promise<void>
 }
 ```
 
@@ -409,8 +409,8 @@ errorLogger.logApiError('/api/songs', 'GET', 500, new Error('Server Error'));
 **Expected Signature**:
 ```javascript
 logApiError(endpoint, method, status, error, context) {
-	// Log with format: "/api/songs GET 500: Server Error"
-	// Store context with { endpoint, method, status }
+    // Log with format: "/api/songs GET 500: Server Error"
+    // Store context with { endpoint, method, status }
 }
 ```
 

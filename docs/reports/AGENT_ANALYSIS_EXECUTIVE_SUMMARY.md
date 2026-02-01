@@ -1,7 +1,7 @@
 # Agent Definition Analysis - Executive Summary
 
-**Date:** 2026-01-30  
-**Scope:** All 447 agent definition files in `~/.claude/agents/`  
+**Date:** 2026-01-30
+**Scope:** All 447 agent definition files in `~/.claude/agents/`
 **Compliance Rate:** 2.9% (13 out of 447 agents)
 
 ---
@@ -186,6 +186,6 @@ Automation scripts:
 
 ---
 
-**Analysis Performed By:** Best Practices Enforcer Agent  
-**Validation Script:** /tmp/validate_agents.py  
+**Analysis Performed By:** Best Practices Enforcer Agent
+**Validation Script:** /tmp/validate_agents.py
 **Contact:** See remediation guide for support options

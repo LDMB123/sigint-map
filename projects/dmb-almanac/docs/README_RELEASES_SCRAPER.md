@@ -101,7 +101,7 @@ This folder contains comprehensive documentation for the DMBAlmanac releases scr
 
 **Status**: READY TO RUN (no data collected yet)
 
-**What it scrapes**: 
+**What it scrapes**:
 - Releases from https://www.dmbalmanac.com/DiscographyList.aspx
 - 40-50 releases
 - 500+ tracks
@@ -195,7 +195,7 @@ npm run scrape:all           # All scrapers including releases
 ✓ Multiple parsing strategies
 ✓ Comprehensive test suite
 
-## Questions? 
+## Questions?
 
 See the appropriate documentation file above for your use case.
 

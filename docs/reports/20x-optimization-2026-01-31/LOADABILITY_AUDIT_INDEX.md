@@ -1,15 +1,15 @@
 # Agent Loadability & Quality Audit Index
 
-**Audit Date:** 2026-01-31  
-**Scope:** 447 agents in `~/.claude/agents/`  
+**Audit Date:** 2026-01-31
+**Scope:** 447 agents in `~/.claude/agents/`
 **Status:** Complete
 
 ## Documents in This Audit
 
 ### Executive Summary
-**File:** `AGENT_QUALITY_EXECUTIVE_SUMMARY.md`  
-**Purpose:** High-level findings, metrics, and remediation plan  
-**Audience:** Project leads, decision makers  
+**File:** `AGENT_QUALITY_EXECUTIVE_SUMMARY.md`
+**Purpose:** High-level findings, metrics, and remediation plan
+**Audience:** Project leads, decision makers
 **Key Metrics:**
 - 0 CRITICAL (100% loadable)
 - 98 HIGH (22% broken)
@@ -17,10 +17,10 @@
 - 569 LOW (127% violations - many agents have multiple)
 
 ### Detailed Report
-**File:** `functional-quality-loadability.md`  
-**Purpose:** Complete issue listing by severity and category  
-**Audience:** Developers, QA engineers  
-**Size:** 30K tokens, 3200+ lines  
+**File:** `functional-quality-loadability.md`
+**Purpose:** Complete issue listing by severity and category
+**Audience:** Developers, QA engineers
+**Size:** 30K tokens, 3200+ lines
 **Contents:**
 - All 872 issues with file paths
 - Category breakdowns
@@ -83,7 +83,7 @@ No agents are blocked from loading. All YAML parses correctly, all required fiel
 
 **Top offenders:**
 - ticketing/* - 4 agents
-- google/* - 5 agents  
+- google/* - 5 agents
 - events/* - 4 agents
 - marketing/* - 4 agents
 - ecommerce/* - 5 agents
@@ -173,18 +173,18 @@ No agents are blocked from loading. All YAML parses correctly, all required fiel
 ## Validation Tools
 
 ### Python Validator
-**Script:** `/tmp/validate_all_agents.py`  
-**Usage:** `python3 /tmp/validate_all_agents.py`  
+**Script:** `/tmp/validate_all_agents.py`
+**Usage:** `python3 /tmp/validate_all_agents.py`
 **Output:** Generates this report + detailed analysis
 
 ### Pre-commit Hook
-**TODO:** Integrate validator into git workflow  
-**Blocks:** Commits with CRITICAL or HIGH issues  
+**TODO:** Integrate validator into git workflow
+**Blocks:** Commits with CRITICAL or HIGH issues
 **Warns:** MEDIUM issues (non-blocking)
 
 ### CI/CD Integration
-**TODO:** GitHub Actions validation  
-**Triggers:** PR with agent changes  
+**TODO:** GitHub Actions validation
+**Triggers:** PR with agent changes
 **Reports:** Issue summary in PR comment
 
 ## Best Practices Reference

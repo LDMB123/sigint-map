@@ -11,6 +11,7 @@ tools:
   - Glob
   - Bash
 model: sonnet
+tier: tier-2
 permissionMode: plan
 skills:
   - token-budget-monitor

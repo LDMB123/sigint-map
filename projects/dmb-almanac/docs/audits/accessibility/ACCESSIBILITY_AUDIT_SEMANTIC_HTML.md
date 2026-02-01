@@ -29,8 +29,8 @@ Found **4 critical semantic HTML issues** where links are used with `type="butto
 **Current Code**:
 ```svelte
 <a href="/" class="home-button" type="button">
-	<svg><!-- icon --></svg>
-	Go Home
+    <svg><!-- icon --></svg>
+    Go Home
 </a>
 ```
 
@@ -43,8 +43,8 @@ Found **4 critical semantic HTML issues** where links are used with `type="butto
 **Recommended Fix**:
 ```svelte
 <a href="/" class="home-button">
-	<svg><!-- icon --></svg>
-	Go Home
+    <svg><!-- icon --></svg>
+    Go Home
 </a>
 ```
 
@@ -61,8 +61,8 @@ Found **4 critical semantic HTML issues** where links are used with `type="butto
 **Current Code**:
 ```svelte
 <a href="/" class="btn btn-secondary">
-	<span class="btn-icon">🏠</span>
-	Go Home
+    <span class="btn-icon">🏠</span>
+    Go Home
 </a>
 ```
 
@@ -99,7 +99,7 @@ These are action buttons (non-navigation), so `<button>` is semantically correct
 **Example**:
 ```svelte
 <button type="button" onclick={handleUpdate} class="update-btn">
-	Update Now
+    Update Now
 </button>
 ```
 

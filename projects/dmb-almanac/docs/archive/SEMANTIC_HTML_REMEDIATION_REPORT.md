@@ -37,8 +37,8 @@ The "Go Home" link was using an `<a>` tag with `type="button"` attribute:
 ```svelte
 <!-- WRONG -->
 <a href="/" class="home-button" type="button">
-	<svg>...</svg>
-	Go Home
+    <svg>...</svg>
+    Go Home
 </a>
 ```
 
@@ -100,14 +100,14 @@ The CSS styling remains unchanged - the link still appears and behaves visually 
 
 ```css
 .home-button {
-	display: inline-flex;
-	align-items: center;
-	gap: var(--space-2, 0.5rem);
-	padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
-	border-radius: var(--radius-md, 0.375rem);
-	background: var(--color-gray-200, #e5e7eb);
-	color: var(--foreground, #1f2937);
-	/* ... rest of button-like styling ... */
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2, 0.5rem);
+    padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+    border-radius: var(--radius-md, 0.375rem);
+    background: var(--color-gray-200, #e5e7eb);
+    color: var(--foreground, #1f2937);
+    /* ... rest of button-like styling ... */
 }
 ```
 

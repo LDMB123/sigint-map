@@ -1,7 +1,7 @@
 #!/bin/bash
 # Launch Commands for Ultra-Microstructure Enhanced Generation
 # Created: 2026-01-29 20:30
-# 
+#
 # These batches are ready to launch after batch 61-80 completes
 
 echo "=== Ultra-Microstructure Enhanced Generation Launch ==="
@@ -42,40 +42,40 @@ if [[ "$choice" == "y" ]]; then
     echo ""
     echo "🚀 Launching BOTH batches in parallel..."
     echo ""
-    
+
     # Launch batch 31-60
     nohup ./GEN-ULTRA-31-60.sh > ultra-31-60.log 2>&1 &
     PID1=$!
     echo "✅ Batch 31-60 launched (PID: $PID1)"
     echo "   Log: ultra-31-60.log"
     echo "   Output: /Users/louisherman/nanobanana-output/ultra-31-60/"
-    
+
     sleep 2
-    
+
     # Launch batch 81-90
     nohup ./GEN-ULTRA-81-90.sh > ultra-81-90.log 2>&1 &
     PID2=$!
     echo "✅ Batch 81-90 launched (PID: $PID2)"
     echo "   Log: ultra-81-90.log"
     echo "   Output: /Users/louisherman/nanobanana-output/ultra-81-90/"
-    
+
     echo ""
     echo "Monitor progress:"
     echo "  tail -f ultra-31-60.log ultra-81-90.log"
-    
+
 else
     echo ""
     echo "🚀 Launching SEQUENTIALLY..."
     echo ""
-    
+
     # Launch batch 31-60 first
     echo "Starting Batch 31-60 (30 concepts)..."
     ./GEN-ULTRA-31-60.sh
-    
+
     echo ""
     echo "Batch 31-60 complete! Starting Batch 81-90 (10 concepts)..."
     ./GEN-ULTRA-81-90.sh
-    
+
     echo ""
     echo "✅ All ultra-microstructure batches complete!"
 fi

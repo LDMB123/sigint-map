@@ -262,7 +262,7 @@ decay_score = e^(-days/365)
             = e^(-347/365)
             = 0.35
 
-Why: A song that's 347 days absent is much more "due" than 
+Why: A song that's 347 days absent is much more "due" than
      a song 100 days absent. But at 1000 days, additional days
      matter less (it's definitely getting played).
 
@@ -275,7 +275,7 @@ Score: 0.74    0.55    0.41    0.30    0.23  ← diminishing returns
 ```
 rank_percentile = P(other_songs < 347 days) = 0.85
 
-Why: 347 days is top 15% (in longest gaps). This ranks 
+Why: 347 days is top 15% (in longest gaps). This ranks
      Pig among the most "overdue" songs. Easier for model
      to learn "songs in top 20% gap are high priority."
 ```
@@ -502,7 +502,7 @@ Why: Maintain class balance in every fold.
 Bad metric: Accuracy
            - Always predicting "not played" = 96% accuracy (useless)
 
-Good metrics: 
+Good metrics:
   - AUC-ROC (0-1, measures discrimination)
   - Logloss (measures probability calibration)
   - Precision@K (of top K predictions, what % are correct)
@@ -589,7 +589,7 @@ Ensemble (0.5*XGB + 0.3*NN + 0.2*Bayes):
 
 ### Interpretation
 
-**AUC-ROC = 0.84**: 
+**AUC-ROC = 0.84**:
 - Model discriminates well (0.50 = random, 1.0 = perfect)
 - 84% probability that song chosen randomly from played songs
   ranks higher than song chosen from unplayed songs

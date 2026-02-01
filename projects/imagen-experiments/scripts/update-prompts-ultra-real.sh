@@ -9,11 +9,11 @@ for file in dive-bar-concepts-31-40.md dive-bar-concepts-41-50.md dive-bar-conce
     if [ -f "$file" ]; then
         # Create backup
         cp "$file" "${file}.backup"
-        
+
         # Process file - add ULTRA_REAL before any line starting with camera specs
         sed -E "s|^(Sony A7|Canon|Nikon|Fuji|iPhone)|${ULTRA_REAL}\1|" "$file" > "${file}.tmp"
         mv "${file}.tmp" "$file"
-        
+
         echo "Updated $file with ultra-photorealism instructions"
     fi
 done

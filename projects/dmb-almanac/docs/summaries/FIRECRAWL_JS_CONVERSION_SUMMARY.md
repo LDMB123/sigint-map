@@ -166,49 +166,49 @@ Production-ready DMB show scraping example
 ### scheduler.yield() Pattern
 ```javascript
 async function yieldToMain() {
-	if ('scheduler' in globalThis && 'yield' in globalThis.scheduler) {
-		await globalThis.scheduler.yield();
-	} else {
-		await new Promise(resolve => setTimeout(resolve, 0));
-	}
+    if ('scheduler' in globalThis && 'yield' in globalThis.scheduler) {
+        await globalThis.scheduler.yield();
+    } else {
+        await new Promise(resolve => setTimeout(resolve, 0));
+    }
 }
 ```
 
 ### scheduler.postTask() Pattern
 ```javascript
 async function scheduleTask(task, priority = 'user-visible') {
-	if ('scheduler' in globalThis && 'postTask' in globalThis.scheduler) {
-		return globalThis.scheduler.postTask(task, { priority });
-	}
-	return task();
+    if ('scheduler' in globalThis && 'postTask' in globalThis.scheduler) {
+        return globalThis.scheduler.postTask(task, { priority });
+    }
+    return task();
 }
 ```
 
 ### IndexedDB Native API Pattern
 ```javascript
 async function initDB(dbName, version) {
-	return new Promise((resolve, reject) => {
-		const request = indexedDB.open(dbName, version);
-		request.onsuccess = () => resolve(request.result);
-		request.onupgradeneeded = (event) => {
-			const db = /** @type {IDBDatabase} */ (event.target?.result);
-			// Create object stores
-		};
-	});
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, version);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+            const db = /** @type {IDBDatabase} */ (event.target?.result);
+            // Create object stores
+        };
+    });
 }
 ```
 
 ### Background Sync Pattern
 ```javascript
 async function queueJob(data) {
-	// Save to IndexedDB
-	await saveToIndexedDB(data);
+    // Save to IndexedDB
+    await saveToIndexedDB(data);
 
-	// Register sync
-	if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
-		const registration = await navigator.serviceWorker.ready;
-		await registration.sync.register('sync-tag');
-	}
+    // Register sync
+    if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.sync.register('sync-tag');
+    }
 }
 ```
 
@@ -246,7 +246,7 @@ const result = await scraper.scrapeUrls(urls);
  * @returns {Promise<void>}
  */
 async function processResults(result) {
-	// Full IntelliSense for `result`
+    // Full IntelliSense for `result`
 }
 ```
 
@@ -306,18 +306,18 @@ await scheduleTask(() => handleUserClick(), 'user-blocking');
 ### jsconfig.json (Enable JavaScript IntelliSense)
 ```json
 {
-	"compilerOptions": {
-		"module": "ES2022",
-		"target": "ES2022",
-		"checkJs": true,
-		"allowJs": true,
-		"baseUrl": ".",
-		"paths": {
-			"$lib/*": ["./src/lib/*"]
-		}
-	},
-	"include": ["src/**/*"],
-	"exclude": ["node_modules"]
+    "compilerOptions": {
+        "module": "ES2022",
+        "target": "ES2022",
+        "checkJs": true,
+        "allowJs": true,
+        "baseUrl": ".",
+        "paths": {
+            "$lib/*": ["./src/lib/*"]
+        }
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules"]
 }
 ```
 

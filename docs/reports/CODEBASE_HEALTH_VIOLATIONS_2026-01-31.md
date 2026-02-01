@@ -1,7 +1,7 @@
 # CODEBASE HEALTH VIOLATIONS - DETAILED BREAKDOWN
 
-**Analysis Date**: 2026-01-31  
-**Total Violations**: 1,231  
+**Analysis Date**: 2026-01-31
+**Total Violations**: 1,231
 **Files Analyzed**: 626
 
 ---
@@ -297,5 +297,5 @@
 
 ---
 
-**Analysis Completed**: 2026-01-31  
+**Analysis Completed**: 2026-01-31
 **Next Analysis**: 2026-02-07 (weekly)

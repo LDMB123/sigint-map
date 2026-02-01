@@ -30,7 +30,7 @@ All P0 security fixes have been successfully implemented and verified. Permissio
 **Status:** ✅ COMPLETE
 
 **Workspace Settings** (`/Users/louisherman/ClaudeCodeProjects/.claude/settings.local.json`):
-- Removed: `"*"`, `"**"`, `"*(*)"`, `"*(/**)"` 
+- Removed: `"*"`, `"**"`, `"*(*)"`, `"*(/**)"`
 - Implemented: Explicit allowlist with 179 safe commands
 - Changed: `"default": "allow"` → `"default": "ask"`
 - Result: Zero wildcard bypass paths remain
@@ -216,7 +216,7 @@ export GEMINI_API_KEY="AIzaSyAfaz9ab1OhqyAxGKrEhFvEqrHtB549as8"
 
 ```javascript
 const stmt = database.prepare(`
-  SELECT * FROM push_subscriptions 
+  SELECT * FROM push_subscriptions
   WHERE endpoint = ?
 `);
 const result = stmt.get(endpoint);  // Parameterized
@@ -260,7 +260,7 @@ const result = stmt.get(endpoint);  // Parameterized
 export function buildCorsHeaders(request, allowedHeaders) {
   const origin = request.headers.get('origin');
   const host = request.headers.get('host');
-  
+
   // Only allow same-origin
   const originUrl = new URL(origin);
   if (originUrl.host === host) {
