@@ -109,16 +109,25 @@ echo "4. Checking for duplicate/similar file names..."
 echo "───────────────────────────────────────────────────────"
 
 # Find common duplicate patterns
+# NOTE: Duplicates across different directories are EXPECTED (each project has own AUDIT_SUMMARY.md, etc.)
+# Only flag if files exist in the SAME directory
 DUPES=$(find . -name "*SUMMARY*.md" -o -name "*COMPLETE*.md" -o -name "*INDEX*.md" 2>/dev/null | \
     xargs -I {} basename {} | sort | uniq -c | awk '$1 > 1 {print $2}')
 
 if [ -z "$DUPES" ]; then
     report_success "No obvious duplicate file patterns"
 else
-    report_warning "Found files with duplicate names:"
-    echo "$DUPES" | while read name; do
-        echo "    - $name appears multiple times"
-    done
+    # This is informational only - duplicates across directories are normal
+    echo -e "${BLUE}ℹ${NC} Found common filename patterns across different directories (expected):"
+    COUNT=$(echo "$DUPES" | wc -l | tr -d ' ')
+    if [ "$COUNT" -gt 10 ]; then
+        echo "    $COUNT common patterns (e.g., AUDIT_SUMMARY.md in multiple projects)"
+        echo "    This is normal - each project has its own documentation"
+    else
+        echo "$DUPES" | while read name; do
+            echo "    - $name appears in multiple directories"
+        done
+    fi
 fi
 
 echo ""
@@ -142,7 +151,8 @@ echo "6. Checking agents organization..."
 echo "───────────────────────────────────────────────────────"
 
 # Check for agents outside .claude/agents/
-STRAY_AGENTS=$(find . \( -name "*agent*.yaml" -o -name "*agent*.md" \) ! -path "*/.claude/agents/*" ! -path "*/node_modules/*" ! -path "*/_archived/*" ! -path "*/.claude/audit/*" ! -path "*/.claude/templates/*" ! -path "*/docs/archive/*" 2>/dev/null)
+# FIX: Exclude docs/plans/ to avoid flagging plan documents as agents
+STRAY_AGENTS=$(find . \( -name "*agent*.yaml" -o -name "*agent*.md" \) ! -path "*/.claude/agents/*" ! -path "*/node_modules/*" ! -path "*/_archived/*" ! -path "*/.claude/audit/*" ! -path "*/.claude/templates/*" ! -path "*/docs/archive/*" ! -path "*/docs/plans/*" 2>/dev/null)
 
 if [ -z "$STRAY_AGENTS" ]; then
     report_success "All agents properly located"
@@ -158,7 +168,8 @@ echo "7. Checking for orphaned backup files..."
 echo "───────────────────────────────────────────────────────"
 
 # Find backup files
-BACKUPS=$(find . -name "*~" -o -name "*.bak" -o -name "*.old" ! -path "*/_archived/*" ! -path "*/node_modules/*" 2>/dev/null)
+# FIX: Explicitly exclude _archived/ and all its subdirectories
+BACKUPS=$(find . \( -name "*~" -o -name "*.bak" -o -name "*.old" \) ! -path "*/_archived/*" ! -path "*/node_modules/*" 2>/dev/null)
 
 if [ -z "$BACKUPS" ]; then
     report_success "No orphaned backup files"
@@ -191,8 +202,9 @@ for PROJECT in projects/*/; do
             report_warning "$PROJECT_NAME: docs/ missing README.md index"
         fi
     else
-        # Count markdown files
-        MD_COUNT=$(find "$PROJECT" -name "*.md" ! -name "README.md" 2>/dev/null | wc -l | tr -d ' ')
+        # Count markdown files (excluding node_modules)
+        # FIX: Exclude node_modules from markdown file counts
+        MD_COUNT=$(find "$PROJECT" -name "*.md" ! -name "README.md" ! -path "*/node_modules/*" 2>/dev/null | wc -l | tr -d ' ')
         if [ "$MD_COUNT" -gt 3 ]; then
             report_warning "$PROJECT_NAME: No docs/ directory but has $MD_COUNT markdown files"
         fi
