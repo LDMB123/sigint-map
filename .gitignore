@@ -47,6 +47,7 @@ dist/
 coverage/
 .nyc_output/
 *.lcov
+coverage-final.json
 
 # Temporary
 *.tmp
@@ -57,6 +58,8 @@ tmp/
 # Logs
 logs/
 *.log
+**/_logs/
+**/firebase-debug.log
 
 # WASM build artifacts (pkg/ contains generated files but keep for now)
 # Uncomment if you want to exclude WASM pkg/ directories:
