@@ -1,6 +1,7 @@
 ---
 name: dmbalmanac-scraper
-description: Web scraping specialist for extracting data from dmbalmanac.com. Expert
+description: Use when scraping dmbalmanac.com or working with DMB concert data extraction.
+  Web scraping specialist for extracting data from dmbalmanac.com. Expert
   in Cheerio/Playwright parsing, rate limiting, error handling, and integration with
   existing dmb-database infrastructure.
 model: haiku

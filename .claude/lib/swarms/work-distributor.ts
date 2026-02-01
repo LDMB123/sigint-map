@@ -6,7 +6,43 @@
  * - Failure handling with retry logic
  * - Progress tracking and ETA calculation
  * - Throughput optimization
+ *
+ * P1 DEPENDENCIES:
+ * - Requires async-mutex package: npm install async-mutex
+ *   (Used to prevent race conditions in stall detection)
  */
+
+// P1: Import mutex for atomic operations
+// NOTE: Requires installation: npm install async-mutex
+// import { Mutex } from 'async-mutex';
+
+/**
+ * Simple mutex implementation (fallback if async-mutex not installed)
+ * For production, replace with: import { Mutex } from 'async-mutex';
+ */
+class SimpleMutex {
+  private locked = false;
+  private queue: Array<() => void> = [];
+
+  async acquire(): Promise<() => void> {
+    return new Promise((resolve) => {
+      if (!this.locked) {
+        this.locked = true;
+        resolve(() => { this.locked = false; this.processQueue(); });
+      } else {
+        this.queue.push(() => {
+          this.locked = true;
+          resolve(() => { this.locked = false; this.processQueue(); });
+        });
+      }
+    });
+  }
+
+  private processQueue() {
+    const next = this.queue.shift();
+    if (next) next();
+  }
+}
 
 /**
  * Subtask that can be distributed to workers
@@ -604,6 +640,10 @@ export class WorkDistributor<T = any, R = any> {
   private progressInterval?: NodeJS.Timeout;
   private processingPromises = new Map<string, Promise<void>>();
 
+  // P1: Mutex for atomic stall detection and reclaim operations
+  // Prevents race condition where stall detection and task completion race
+  private reclaimMutex = new SimpleMutex();
+
   constructor(config: WorkDistributorConfig) {
     this.config = config;
     this.queue = new WorkQueue<T, R>();
@@ -649,19 +689,44 @@ export class WorkDistributor<T = any, R = any> {
   }
 
   /**
-   * Main processing loop
+   * P1: Atomically check for stalled workers and reclaim their work
+   * Prevents race condition where stall detection and completion race:
+   * - Without mutex: Stall detector sees worker busy → worker completes → both reclaim and delete
+   * - With mutex: Operations are serialized, preventing duplicate processing
    */
-  private async processQueue(): Promise<void> {
-    while (!this.queue.isDone() || this.processingPromises.size > 0) {
-      // Check for stalled workers and reclaim their work
+  private async checkAndReclaimStalledWork(): Promise<void> {
+    const release = await this.reclaimMutex.acquire();
+    try {
       const stalledWorkers = this.pool.checkForStalledWorkers();
       for (const workerId of stalledWorkers) {
         const worker = this.pool.getWorkersByHealth().find(w => w.id === workerId);
         if (worker?.currentSubtask) {
-          this.queue.reclaim(worker.currentSubtask.id);
-          this.processingPromises.delete(worker.currentSubtask.id);
+          const subtaskId = worker.currentSubtask.id;
+
+          // Only reclaim if still in processing promises
+          // (worker completion may have already removed it)
+          const promise = this.processingPromises.get(subtaskId);
+          if (promise) {
+            console.log(`[STALL DETECTION] Reclaiming stalled subtask ${subtaskId} from worker ${workerId}`);
+            this.processingPromises.delete(subtaskId);
+            this.queue.reclaim(subtaskId);
+            worker.currentSubtask = undefined;
+          }
         }
       }
+    } finally {
+      release();
+    }
+  }
+
+  /**
+   * Main processing loop
+   */
+  private async processQueue(): Promise<void> {
+    while (!this.queue.isDone() || this.processingPromises.size > 0) {
+      // P1: Check for stalled workers and reclaim their work atomically
+      // Use mutex to prevent race condition with task completion
+      await this.checkAndReclaimStalledWork();
 
       // Assign work to idle workers
       let idleWorker = this.pool.getIdleWorker();
@@ -728,8 +793,14 @@ export class WorkDistributor<T = any, R = any> {
         this.config.onSubtaskFail(subtask.id, err, willRetry);
       }
     } finally {
-      // Remove from processing promises
-      this.processingPromises.delete(subtask.id);
+      // P1: Remove from processing promises atomically
+      // Use mutex to prevent race with stall detection
+      const release = await this.reclaimMutex.acquire();
+      try {
+        this.processingPromises.delete(subtask.id);
+      } finally {
+        release();
+      }
     }
   }
 

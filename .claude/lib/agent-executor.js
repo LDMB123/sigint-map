@@ -19,51 +19,52 @@ class AgentExecutor {
     this.logPath = process.env.AGENT_LOG_PATH || '/tmp/agent-execution.log';
   }
 
-  async executeAgent(agentId, input, context = {}) {
+  async executeAgent(agentId, input, context = {}, globalAttempts = 0) {
     const startTime = Date.now();
     const executionId = this.generateExecutionId();
-    
-    this.log('info', `Starting execution ${executionId} for agent ${agentId}`);
+
+    this.log('info', `Starting execution ${executionId} for agent ${agentId} (global attempt ${globalAttempts})`);
     this.metrics.totalExecutions++;
 
     try {
       // Load agent configuration
       const agentConfig = await this.loadAgentConfig(agentId);
-      
+
       // Validate input
       if (agentConfig.security?.input_validation?.enabled) {
         this.validateInput(input, agentConfig.security.input_validation);
       }
-      
+
       // Execute agent (mock for now)
       const result = await this.runAgent(agentId, input, context, agentConfig);
-      
+
       // Record metrics
       const latency = Date.now() - startTime;
       this.recordSuccess(latency, agentConfig.cost?.per_execution_estimate || 0);
-      
+
       this.log('info', `Execution ${executionId} completed successfully in ${latency}ms`);
-      
+
       return {
         executionId,
         result,
         metadata: {
           latency,
           cost: agentConfig.cost?.per_execution_estimate || 0,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          globalAttempts
         }
       };
-      
+
     } catch (error) {
       this.recordFailure();
       this.log('error', `Execution ${executionId} failed: ${error.message}`);
-      
+
       // Handle error based on agent config
       const agentConfig = await this.loadAgentConfig(agentId);
       if (agentConfig.error_handling?.retry_on_failure) {
-        return this.retryExecution(agentId, input, context, agentConfig);
+        return this.retryExecution(agentId, input, context, agentConfig, globalAttempts);
       }
-      
+
       throw error;
     }
   }
@@ -106,18 +107,39 @@ class AgentExecutor {
     return { status: 'success', output: 'Agent executed successfully' };
   }
 
-  async retryExecution(agentId, input, context, config) {
+  async retryExecution(agentId, input, context, config, globalAttempts = 0) {
+    // P1: Load global retry budget from parallelization config
+    const globalBudget = config.retry?.global?.max_total_attempts_across_tiers || 7;
+
+    // P1: Check global budget BEFORE any retry attempts
+    if (globalAttempts >= globalBudget) {
+      const error = new Error(`Global retry budget exceeded: ${globalAttempts}/${globalBudget} attempts used`);
+      this.log('error', `[RETRY BUDGET] ${error.message} for agent ${agentId}`);
+      throw error;
+    }
+
     // Retry logic with exponential backoff
     let attempts = 0;
-    const maxRetries = config.error_handling.max_retries || 2;
-    
+    const maxRetries = Math.min(
+      config.error_handling.max_retries || 2,
+      globalBudget - globalAttempts  // P1: Never exceed global budget
+    );
+
+    this.log('info', `[RETRY BUDGET] Agent ${agentId} - local max: ${maxRetries}, global remaining: ${globalBudget - globalAttempts}`);
+
     while (attempts < maxRetries) {
       attempts++;
+      const currentGlobalAttempts = globalAttempts + attempts;
+
       try {
         await this.sleep(config.error_handling.backoff_ms * attempts);
-        return await this.executeAgent(agentId, input, context);
+        // P1: Pass incremented global attempts to track budget across recursive calls
+        return await this.executeAgent(agentId, input, context, currentGlobalAttempts);
       } catch (error) {
-        if (attempts >= maxRetries) throw error;
+        if (attempts >= maxRetries) {
+          this.log('error', `[RETRY BUDGET] Agent ${agentId} exhausted retries after ${currentGlobalAttempts} global attempts`);
+          throw error;
+        }
       }
     }
   }
