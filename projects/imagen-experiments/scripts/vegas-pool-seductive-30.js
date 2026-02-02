@@ -209,8 +209,12 @@ async function main() {
   console.log(`Reference: ${path.basename(REFERENCE_IMAGE)}`);
   console.log('');
 
-  const results = [];
+  const results = new Map(); // Use Map to track results by concept name
+  const MAX_RETRIES = 3;
+  const DELAY_MS = 90000; // 90 seconds
 
+  // First pass: attempt all 30 concepts
+  console.log('\n--- INITIAL PASS: All 30 Concepts ---\n');
   for (let i = 0; i < concepts.length; i++) {
     const concept = concepts[i];
     console.log(`\n[${i + 1}/${concepts.length}] ${concept.name}`);
@@ -223,36 +227,87 @@ async function main() {
       conceptName: concept.name,
     });
 
-    results.push({ name: concept.name, ...result });
+    results.set(concept.name, {
+      concept,
+      name: concept.name,
+      ...result,
+      attempts: 1
+    });
 
     if (i < concepts.length - 1) {
-      console.log('   ⏳ 3s...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('   ⏳ 90s...');
+      await new Promise(resolve => setTimeout(resolve, DELAY_MS));
     }
   }
 
-  const successful = results.filter(r => r.success).length;
-  const blocked = results.filter(r => r.error?.includes('SAFETY')).length;
+  // Retry pass: retry failed concepts (BLOCKED or NO_IMAGE)
+  let retryRound = 1;
+  while (retryRound <= MAX_RETRIES) {
+    const failedConcepts = Array.from(results.values()).filter(r =>
+      !r.success && (r.error === 'IMAGE_SAFETY' || r.error === 'IMAGE_PROHIBITED_CONTENT' || r.error === 'NO_IMAGE')
+    );
+
+    if (failedConcepts.length === 0) {
+      console.log('\n✅ All concepts succeeded!');
+      break;
+    }
+
+    console.log(`\n--- RETRY ROUND ${retryRound}/${MAX_RETRIES}: ${failedConcepts.length} Failed Concepts ---\n`);
+
+    for (let i = 0; i < failedConcepts.length; i++) {
+      const failed = failedConcepts[i];
+      console.log(`\n[Retry ${failed.attempts + 1}] ${failed.name} (previous: ${failed.error})`);
+
+      const result = await generateImage({
+        prompt: failed.concept.prompt,
+        aspectRatio: '1:1',
+        imageSize: '4K',
+        referenceImagePaths: [REFERENCE_IMAGE],
+        conceptName: failed.name,
+      });
+
+      results.set(failed.name, {
+        concept: failed.concept,
+        name: failed.name,
+        ...result,
+        attempts: failed.attempts + 1
+      });
+
+      if (i < failedConcepts.length - 1) {
+        console.log('   ⏳ 90s...');
+        await new Promise(resolve => setTimeout(resolve, DELAY_MS));
+      }
+    }
+
+    retryRound++;
+  }
+
+  // Final results
+  const finalResults = Array.from(results.values());
+  const successful = finalResults.filter(r => r.success).length;
+  const blocked = finalResults.filter(r => r.error?.includes('SAFETY') || r.error?.includes('PROHIBITED')).length;
+  const noImage = finalResults.filter(r => r.error === 'NO_IMAGE').length;
 
   console.log('\n' + '='.repeat(80));
-  console.log('RESULTS');
+  console.log('FINAL RESULTS');
   console.log('='.repeat(80));
-  console.log(`Total: ${results.length}`);
-  console.log(`✅ Success: ${successful} (${(successful/results.length*100).toFixed(0)}%)`);
+  console.log(`Total: ${finalResults.length}`);
+  console.log(`✅ Success: ${successful} (${(successful/finalResults.length*100).toFixed(0)}%)`);
   console.log(`🚫 Blocked: ${blocked}`);
+  console.log(`📭 No Image: ${noImage}`);
   console.log('');
 
-  for (const r of results) {
+  for (const r of finalResults) {
     if (r.success) {
       const sizeMB = (r.filesize / (1024 * 1024)).toFixed(2);
-      console.log(`✅ ${r.name} - ${sizeMB}MB`);
+      console.log(`✅ ${r.name} - ${sizeMB}MB (${r.attempts} attempt${r.attempts > 1 ? 's' : ''})`);
     } else {
-      console.log(`❌ ${r.name} - ${r.error}`);
+      console.log(`❌ ${r.name} - ${r.error} (${r.attempts} attempt${r.attempts > 1 ? 's' : ''})`);
     }
   }
 
   const resultsPath = path.join(OUTPUT_DIR, 'vegas-pool-results.json');
-  await fs.writeFile(resultsPath, JSON.stringify(results, null, 2));
+  await fs.writeFile(resultsPath, JSON.stringify(finalResults, null, 2));
   console.log(`\nResults: ${resultsPath}`);
 }
 
