@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 /**
- * Luxury Pool + Haute Couture Lace Fashion + Maximum Physics
+ * Creative Lace Pool Editorial: 30 Avant-Garde Concepts
  *
- * - Daring lace fashion editorial pieces
+ * - Avant-garde lace fusion pool editorial pieces
  * - Luxury pool settings (dayclubs, rooftop pools, resort pools)
- * - Extreme physics without triggering blocks
- * - 30 concepts with photorealistic detail
+ * - Contrast tension material philosophy (hard+soft, structured+fluid, opaque+sheer)
+ * - Maximum experimental physics with photorealistic detail
  */
 
 import { GoogleAuth } from 'google-auth-library';
