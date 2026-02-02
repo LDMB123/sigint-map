@@ -1,0 +1,33 @@
+{
+  "mcpServers": {
+    "google-apis": {
+      "command": "python3",
+      "args": ["google-mcp-server/google_apis_server.py"],
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}",
+        "GOOGLE_CUSTOM_SEARCH_API_KEY": "${GOOGLE_CUSTOM_SEARCH_API_KEY}",
+        "GOOGLE_SEARCH_ENGINE_ID": "${GOOGLE_SEARCH_ENGINE_ID}"
+      },
+      "description": "Google Maps + Custom Search APIs"
+    },
+    "macos-native": {
+      "command": "python3",
+      "args": ["apple-mcp-server/macos_native_server.py"],
+      "description": "Native macOS tools - FREE, no API keys needed!"
+    },
+    "apple-apis": {
+      "command": "python3",
+      "args": ["apple-mcp-server/apple_apis_server.py"],
+      "env": {
+        "APPLE_TEAM_ID": "${APPLE_TEAM_ID}",
+        "APPLE_MAPS_KEY_ID": "${APPLE_MAPS_KEY_ID}",
+        "APPLE_MAPS_PRIVATE_KEY": "${APPLE_MAPS_PRIVATE_KEY}",
+        "APPLE_WEATHER_KEY_ID": "${APPLE_WEATHER_KEY_ID}",
+        "APPLE_WEATHER_PRIVATE_KEY": "${APPLE_WEATHER_PRIVATE_KEY}",
+        "APPLE_MUSIC_KEY_ID": "${APPLE_MUSIC_KEY_ID}",
+        "APPLE_MUSIC_PRIVATE_KEY": "${APPLE_MUSIC_PRIVATE_KEY}"
+      },
+      "description": "Apple Maps, WeatherKit, Apple Music APIs (requires Developer Account)"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "macos-native": {
+      "command": "python3",
+      "args": ["/path/to/apple-mcp-server/macos_native_server.py"],
+      "description": "Native macOS tools - NO API keys needed!"
+    },
+    "apple-apis": {
+      "command": "python3",
+      "args": ["/path/to/apple-mcp-server/apple_apis_server.py"],
+      "env": {
+        "APPLE_TEAM_ID": "${APPLE_TEAM_ID}",
+        "APPLE_MAPS_KEY_ID": "${APPLE_MAPS_KEY_ID}",
+        "APPLE_MAPS_PRIVATE_KEY": "${APPLE_MAPS_PRIVATE_KEY}",
+        "APPLE_WEATHER_KEY_ID": "${APPLE_WEATHER_KEY_ID}",
+        "APPLE_WEATHER_PRIVATE_KEY": "${APPLE_WEATHER_PRIVATE_KEY}",
+        "APPLE_MUSIC_KEY_ID": "${APPLE_MUSIC_KEY_ID}",
+        "APPLE_MUSIC_PRIVATE_KEY": "${APPLE_MUSIC_PRIVATE_KEY}"
+      },
+      "description": "Apple REST APIs (requires Developer Account)"
+    }
+  }
+}

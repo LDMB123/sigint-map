@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "google-apis": {
+      "command": "python3",
+      "args": ["google_apis_server.py"],
+      "cwd": "/path/to/google-mcp-server",
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}",
+        "GOOGLE_CUSTOM_SEARCH_API_KEY": "${GOOGLE_CUSTOM_SEARCH_API_KEY}",
+        "GOOGLE_SEARCH_ENGINE_ID": "${GOOGLE_SEARCH_ENGINE_ID}"
+      }
+    }
+  }
+}
