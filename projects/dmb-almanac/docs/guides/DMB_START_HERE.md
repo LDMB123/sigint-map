@@ -76,10 +76,10 @@ Start with **Task 3: Navigation Preload** (highest impact):
 
 ### Option 2: Review Detailed Plans
 
-Read the comprehensive reports:
-1. Start with `DMB_MODERNIZATION_STATUS_REPORT.md` (15 min read)
-2. Then `DMB_TIER_1_IMPLEMENTATION_GUIDE.md` (30 min read)
-3. Dive deep into `DMB_ALMANAC_COMPREHENSIVE_MODERNIZATION_AUDIT_2026.md` (1 hour read)
+Read the consolidated reports:
+1. Start with `reports/MODERNIZATION_AUDIT_2026.md` - modernization status
+2. Then `reports/STRATEGIC_ROADMAP_2026.md` - project direction
+3. Dive deep into `reports/NATIVE_API_AND_RUST_DEEP_DIVE_2026.md` - native API analysis
 
 ### Option 3: Ask Questions
 

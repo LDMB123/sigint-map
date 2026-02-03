@@ -63,7 +63,7 @@ dmb-almanac/app/
 
 ### Add a database query
 1. Add TypeScript types in `src/lib/types/`
-2. Create query in `src/lib/db/server/queries.ts`
+2. Add server query in `src/routes/[route]/+page.server.ts`
 
 ### Test PWA functionality
 1. Build production: `npm run build && npm run preview`
