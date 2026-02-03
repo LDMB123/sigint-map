@@ -90,7 +90,7 @@ npm run scrape all -- --dry-run           # Preview execution plan
 npm run scrape -- --resume                # Resume from checkpoint
 npm run scrape:validate                   # Scrape with validation
 npm run scrape:import                     # Import after validation
-npm run import                            # Import JSON to SQLite
+npx tsx scripts/import-data.ts             # Import JSON to SQLite
 npm run test:features                     # Run feature tests
 ```
 
@@ -325,7 +325,7 @@ const idPatterns = {
 - Show-level: showId, date, venueName, city, state, rarityIndex
 - Lower rarity index = more rare/unique setlist
 
-## Navigation Utility (`src/utils/navigation.ts`)
+## Navigation Utility (`src/utils/navigation.js`)
 
 ### API
 - `navigateWithRetry(page, url, opts?)` - adaptive navigation with retry, content validation

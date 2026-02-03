@@ -88,7 +88,7 @@ build: { target: 'es2020' }
 ### Vite 6 WASM Import Fix
 - Block comments `/* */` with imports still trigger Vite parse-time analysis
 - Only line comments `//` bypass parser
-- Fixed in: `validation.js`, `advanced-modules.js`, `visualize.js`, `forceSimulation.ts`, `transform.js`
+- Fixed in: `validation.js`, `advanced-modules.js`, `visualize.js`, `forceSimulation.js`, `transform.js`
 ```bash
 # Verify no problematic block comments remain
 grep -Pzo "/\*(?:[^*]|\*(?!/))*import.*wasm.*\*/" src/lib/wasm/*.{js,ts}
@@ -177,7 +177,7 @@ grep -Pzo "/\*(?:[^*]|\*(?!/))*import.*wasm.*\*/" src/lib/wasm/*.{js,ts}
 
 ### ES Module Worker Pattern
 ```javascript
-// wasm-worker-esm.ts
+// wasm-worker-esm.js
 import init, { AlmanacDataStore } from '/wasm/dmb-transform/pkg/dmb_transform.js';
 // Messages: 'init' -> initializeWasm(), 'call' -> executeMethod(), 'free' -> clear()
 ```

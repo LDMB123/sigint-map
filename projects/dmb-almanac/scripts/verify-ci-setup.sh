@@ -93,7 +93,7 @@ check_file ".github/workflows/deploy-preview.yml" "Preview deployment workflow"
 check_file ".github/workflows/deploy-staging.yml" "Staging deployment workflow"
 check_file ".github/workflows/deploy-production.yml" "Production deployment workflow"
 check_file ".github/workflows/rollback.yml" "Rollback workflow"
-check_file ".github/README.md" "GitHub workflows documentation"
+# .github/README.md removed during project consolidation
 
 echo ""
 check_file "scripts/validate-env.sh" "Environment validation script"
@@ -102,14 +102,11 @@ check_file "scripts/setup-ci.sh" "Setup script"
 
 echo ""
 check_file "lighthouserc.json" "Lighthouse CI config"
-check_file "app/playwright.config.ts" "Playwright config"
-check_file "app/tests/e2e/smoke.spec.ts" "Smoke tests"
+check_file "app/playwright.config.js" "Playwright config"
+check_file "app/tests/e2e/smoke.spec.js" "Smoke tests"
 
 echo ""
-check_file "CI_CD_GUIDE.md" "CI/CD Guide"
-check_file "DEPLOYMENT_CHECKLIST.md" "Deployment Checklist"
-check_file "ROLLBACK_PROCEDURE.md" "Rollback Procedure"
-check_file "CI_CD_IMPLEMENTATION_SUMMARY.md" "Implementation Summary"
+# CI/CD docs consolidated into docs/ during project cleanup
 
 # Check script executability
 echo ""
@@ -282,7 +279,7 @@ if [ $ERRORS -eq 0 ] && [ $WARNINGS -eq 0 ]; then
     log_success "All checks passed! CI/CD is ready to use."
     echo ""
     log_info "Next steps:"
-    echo "  1. Configure GitHub Secrets (see CI_CD_GUIDE.md)"
+    echo "  1. Configure GitHub Secrets"
     echo "  2. Create a test PR to verify CI workflow"
     echo "  3. Deploy to staging"
     echo ""
@@ -292,7 +289,7 @@ elif [ $ERRORS -eq 0 ]; then
     echo ""
     log_info "Next steps:"
     echo "  1. Address warnings (optional)"
-    echo "  2. Configure GitHub Secrets (see CI_CD_GUIDE.md)"
+    echo "  2. Configure GitHub Secrets"
     echo "  3. Create a test PR to verify CI workflow"
     echo ""
     exit 0

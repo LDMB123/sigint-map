@@ -22,7 +22,7 @@ Full docs: `docs/INDEX.md` - guides, reports, audits, gpu, wasm, scraping
 
 ```bash
 npm install               # Install dependencies
-npm run import            # Import scraped data
+npx tsx scripts/import-data.ts  # Import scraped data
 npm run dev               # Start dev server (localhost:5173)
 npm run build             # Production build
 npm run check             # Type check
@@ -58,12 +58,12 @@ dmb-almanac/app/
 
 ### Add a new route
 1. Create `src/routes/[route]/+page.svelte`
-2. Add `+page.server.ts` for server data loading
+2. Add `+page.server.js` for server data loading
 3. Add navigation link in layout
 
 ### Add a database query
 1. Add TypeScript types in `src/lib/types/`
-2. Add server query in `src/routes/[route]/+page.server.ts`
+2. Add server query in `src/routes/[route]/+page.server.js`
 
 ### Test PWA functionality
 1. Build production: `npm run build && npm run preview`

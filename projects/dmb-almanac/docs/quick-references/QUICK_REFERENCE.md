@@ -111,18 +111,18 @@ scraper/
 - `d3-drag` (3KB) - REMOVE, unused
 
 ### Removal: d3-axis
-- Create `/src/lib/utils/native-axis.ts` with `createAxisTop()`, `createAxisLeft()`, `createAxisBottom()`, `createAxisRight()`
+- Create `/src/lib/utils/native-axis.js` with `createAxisTop()`, `createAxisLeft()`, `createAxisBottom()`, `createAxisRight()`
 - Update imports in: SongHeatmap.svelte, GapTimeline.svelte, RarityScorecard.svelte
-- Remove `loadD3Axis()` from `d3-loader.ts`
+- Remove `loadD3Axis()` from `d3-utils.js`
 - Remove `d3-axis` and `@types/d3-axis` from package.json
 
 ### Removal: d3-drag
-- Remove `loadD3Drag()` from `d3-loader.ts`
+- Remove `loadD3Drag()` from `d3-utils.js`
 - Remove from 'guests' preload case in `preloadVisualization()`
 - Remove `d3-drag` and `@types/d3-drag` from package.json
 
 ### Replacement: scaleSqrt
-- In `force-simulation.worker.ts`: replace `scaleSqrt` import with inline:
+- In `force-simulation.worker.js` (planned): replace `scaleSqrt` import with inline:
 ```typescript
 const createSqrtScale = (value: number, maxValue: number, rangeMin: number, rangeMax: number): number => {
   if (maxValue === 0) return rangeMin;
@@ -133,12 +133,12 @@ const createSqrtScale = (value: number, maxValue: number, rangeMin: number, rang
 
 ### Bundle Impact
 - Savings: ~11.5KB gzipped (8.8% reduction)
-- New code overhead: ~300 bytes (native-axis.ts + createSqrtScale)
+- New code overhead: ~300 bytes (native-axis.js + createSqrtScale)
 
 ### Implementation Order
 1. Remove d3-drag (10 min)
 2. Replace scaleSqrt (10 min)
-3. Create native-axis.ts (5 min)
+3. Create native-axis.js (5 min)
 4. Replace d3-axis in SongHeatmap (20 min)
 5. Replace d3-axis in GapTimeline (20 min)
 6. Replace d3-axis in RarityScorecard (20 min)

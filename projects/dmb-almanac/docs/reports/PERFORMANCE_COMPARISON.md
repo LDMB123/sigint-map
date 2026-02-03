@@ -41,16 +41,16 @@
 
 ## Code Changes
 
-### sync.ts
+### sync.js
 - `YIELD_BATCH_SIZE`: 250 -> 50
 - Max blocking: 250ms -> 50ms, yields: 160 -> 800
 
-### data-loader.ts
+### data-loader.js
 - `DEFAULT_CONFIG.batchSize`: 2000 -> 500
 - Transactions: 50 -> 200, INP: 180ms -> 45ms
 - Load time: 8.0s -> 10.2s (+28%, acceptable for 75% INP improvement)
 
-### telemetryQueue.ts
+### telemetryQueue.js
 - Added `TELEMETRY_YIELD_INTERVAL = 50`
 - Max blocking: 500ms -> 50ms, yields: 0 -> 10
 

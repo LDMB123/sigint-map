@@ -116,7 +116,7 @@ await db.userAttendedShows.add(show);
 
 ### Adding Encrypted Fields
 ```typescript
-// 1. Add to SENSITIVE_FIELDS_SCHEMA in encryption.ts
+// 1. Add to SENSITIVE_FIELDS_SCHEMA in encryption.js
 SENSITIVE_FIELDS_SCHEMA = { myTable: ['secretField'] }
 
 // 2. Configure hooks

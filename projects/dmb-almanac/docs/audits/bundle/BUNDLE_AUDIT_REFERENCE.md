@@ -151,7 +151,7 @@ function manualChunks(id) {
 - ~200ms faster perceived load
 
 ## Dexie Lazy-Load Details
-- Used by 4+ files: `db/dexie/queries.js`, `db/dexie/db.ts`, `stores/dexie.ts`, route loads
+- Used by 4+ files: `db/dexie/queries.js`, `db/dexie/db.js`, `stores/dexie.js`, route loads
 - `stores/dexie.js` (~8 KB) auto-inits on app load -- defer to first data access
 - `db/dexie/cache.js` (~3 KB) TTL cleanup runs eagerly -- lazy-load timer
 - `db/dexie/validation/` (~5 KB) validated on startup -- defer to first write
@@ -199,7 +199,7 @@ npx source-map-explorer 'build/client/_app/immutable/chunks/*.js' --html report.
 - `app/src/lib/utils/native-scales.js` -- native d3-scale replacement
 - `app/src/lib/utils/native-axis.js` -- native d3-axis replacement, has duplicates
 - `app/src/lib/utils/format.js` -- canonical formatting functions
-- `app/src/lib/stores/dexie.ts` -- Dexie store wrapper (eager init)
+- `app/src/lib/stores/dexie.js` -- Dexie store wrapper (eager init)
 - `app/src/lib/db/dexie/queries.js` -- DB query interface
 - `app/src/routes/+layout.svelte` -- PWA/monitoring eager loads
 - `app/src/routes/visualizations/+page.svelte` -- prefetch target

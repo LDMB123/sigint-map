@@ -125,9 +125,9 @@
   - <1ms render overhead
 
 ### Hooks (at `app/src/lib/hooks/`)
-- `useSearchAnnouncements.ts`: announceLoading(query), announceResults(query, results), announceEmpty(query), announceError(msg)
-- `useFilterAnnouncements.ts`: announceFilterApplied(name, count), announceFilterRemoved(name), announceFilterCleared()
-- `useLoadingAnnouncements.ts`: announceLoadingStart(ctx), announceLoadingComplete(count, ctx), announceLoadingProgress(pct, ctx)
+- `useSearchAnnouncements.js`: announceLoading(query), announceResults(query, results), announceEmpty(query), announceError(msg)
+- `useFilterAnnouncements.js`: announceFilterApplied(name, count), announceFilterRemoved(name), announceFilterCleared()
+- `useLoadingAnnouncements.js`: announceLoadingStart(ctx), announceLoadingComplete(count, ctx), announceLoadingProgress(pct, ctx)
 
 ### Priority Guide
 - `polite`: search results, filters, loading, status updates

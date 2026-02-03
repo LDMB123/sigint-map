@@ -223,9 +223,9 @@ const features = {
 
 ## Files to Delete After Migration
 
-- `/lib/actions/scroll.ts` (361 lines) - use CSS scroll timeline
-- `/lib/actions/anchor.ts` (184 lines) - use CSS anchor positioning
-- `/lib/utils/anchorPositioning.ts` (74 lines) - use native CSS
+- `/lib/actions/scroll.js` (361 lines) - use CSS scroll timeline
+- `/lib/actions/anchor.js` (184 lines) - use CSS anchor positioning
+- `/lib/utils/anchorPositioning.js` (74 lines) - use native CSS
 
 ## Find Patterns to Replace
 
@@ -246,7 +246,7 @@ CSS.supports('animation-timeline: scroll()')
 
 ## Project Files Modified
 
-- `/lib/pwa/install-manager.ts` - IntersectionObserver
-- `/lib/utils/navigationApi.ts` - removed scroll listener
+- `/lib/pwa/install-manager.js` - IntersectionObserver
+- `/lib/utils/navigationApi.js` - removed scroll listener
 - `/lib/components/ui/VirtualList.svelte` - kept (required)
 - `/lib/motion/scroll-animations.css` - 639 lines of patterns

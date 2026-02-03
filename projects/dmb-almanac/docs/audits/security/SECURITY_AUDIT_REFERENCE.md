@@ -38,7 +38,7 @@
   - Fix: gate localhost exemption on `NODE_ENV === 'development'`
 
 - **LOW-04**: SQL `UPDATE` uses string concatenation for field names
-  - Location: `/src/lib/db/server/push-subscriptions.ts:214-218`
+  - Location: `/src/lib/db/server/push-subscriptions.js:214-218`
   - Field names hardcoded (safe), values parameterized
   - Fix: add `ALLOWED_FIELDS` Set whitelist for defense-in-depth
 

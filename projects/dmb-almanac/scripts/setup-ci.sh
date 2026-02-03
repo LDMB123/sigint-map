@@ -324,9 +324,7 @@ echo "  • Enable 2FA on GitHub and Vercel accounts"
 echo ""
 
 log_info "Documentation:"
-echo "  • CI/CD Guide: CI_CD_GUIDE.md"
-echo "  • Deployment Checklist: DEPLOYMENT_CHECKLIST.md"
-echo "  • Rollback Procedure: ROLLBACK_PROCEDURE.md"
+echo "  • See docs/ directory for CI/CD guides and procedures"
 echo ""
 
 if [ -d ".secrets" ]; then
