@@ -383,7 +383,7 @@ jobs:
 
       - name: Check Service Worker registration
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" "https://dmbalmanac.com/service-worker.js")
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://dmbalmanac.com/sw.js")
           if [ "$response" != "200" ]; then
             echo "::warning::Service Worker not accessible (HTTP $response)"
           fi
