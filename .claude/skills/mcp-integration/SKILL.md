@@ -52,7 +52,7 @@ MCP extension integration for desktop automation, file processing, browser contr
 - Always use **absolute paths** (e.g., `/Users/name/file.csv`)
 - Use `verbose_timing: true` for process debugging
 - Clean up processes with `kill_process`
-- Desktop Commander config: `allowedDirectories: ["/Users/louisherman"]`
+- Desktop Commander config: `allowedDirectories` set in `~/.claude.json`
 
 ## Supporting Files
 

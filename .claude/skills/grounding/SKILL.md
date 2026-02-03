@@ -5,6 +5,13 @@ description: >
   Uses MCP servers (google-apis, macos-native) to fetch real-world context
   for grounding AI prompts with actual weather, lighting, and location data.
 user-invocable: true
+allowed-tools:
+  - Read
+  - Grep
+  - Glob
+  - WebFetch
+  - WebSearch
+disable-model-invocation: false
 ---
 
 # Grounding Skill

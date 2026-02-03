@@ -109,7 +109,7 @@ Use Desktop Commander when you need to:
 
 ```json
 {
-  "allowedDirectories": ["/Users/louisherman"],
+  "allowedDirectories": ["$HOME"],  // Set actual path in ~/.claude.json
   "fileReadLineLimit": 1000,
   "fileWriteLineLimit": 50,
   "defaultShell": "zsh",
