@@ -43,7 +43,7 @@
 
 ## Critical Finding: d3-scale/d3-axis Not Fully Migrated
 - Native replacements exist: `native-scales.js`, `native-axis.js`
-- `d3-loader.js` lines 289, 304 still have `import('d3-scale')`, `import('d3-axis')`
+- `d3-utils.js` lines 289, 304 still have `import('d3-scale')`, `import('d3-axis')`
 - 5 visualization components still reference d3-scale via dynamic imports
 - Components: GapTimeline, RarityScorecard, GuestNetwork, TourMap, TransitionFlow
 - **Potential savings: 16.0 KB gzip if fully migrated**
@@ -59,7 +59,7 @@
 - Uses crypto.subtle, structuredClone, Compression Streams, View Transitions
 
 ## Lazy Loading Status (100% coverage)
-- D3 libraries: 6/6 lazy via `d3-loader.js` with moduleCache
+- D3 libraries: 6/6 lazy via `d3-utils.js` with moduleCache
 - WASM modules: 7/7 lazy
 - PWA components: 17+ lazy
 - Visualizations: 6/6 lazy
@@ -67,7 +67,7 @@
 
 ## D3 Loader Pattern
 ```javascript
-// src/lib/utils/d3-loader.js
+// src/lib/utils/d3-utils.js
 export async function loadD3Selection() {
   if (moduleCache.has('d3-selection')) return moduleCache.get('d3-selection');
   const module = await import('d3-selection');
@@ -120,7 +120,7 @@ function manualChunks(id) {
 ### P0: High Impact (18 KB gzip)
 | Action | Files | Savings | Effort |
 |--------|-------|---------|--------|
-| Complete d3-scale/d3-axis native migration | d3-loader.js, 5 viz components | 16.0 KB | 4-6 hrs |
+| Complete d3-scale/d3-axis native migration | d3-utils.js, 5 viz components | 16.0 KB | 4-6 hrs |
 | Remove duplicate formatDate/formatNumber | native-axis.js | 2 KB | 15 min |
 
 ### P1: Medium Impact (20 KB gzip, mostly off critical path)
@@ -130,7 +130,7 @@ function manualChunks(id) {
 | Lazy-load PWA components after 5s idle | +layout.svelte | 8 KB off critical path | 2 hrs |
 | Defer RUM/monitoring after FCP | +layout.svelte | 3-4 KB | 1 hr |
 | Remove unused axis variants | native-axis.js | 3-5 KB | 30 min |
-| Audit d3-loader dead code | d3-loader.js | 1 KB | 15 min |
+| Audit d3-loader dead code | d3-utils.js | 1 KB | 15 min |
 | Audit unused query helpers | db/dexie/queries.js | 5 KB | 1 hr |
 
 ### P2: Low Impact (10 KB gzip)
@@ -146,7 +146,7 @@ function manualChunks(id) {
 - Per-visualization lazy-loadable components (8-12 KB)
 
 ## Prefetch Opportunity
-- `preloadVisualization()` exists in d3-loader.js but not called on hover
+- `preloadVisualization()` exists in d3-utils.js but not called on hover
 - Wire to `on:mouseenter` on visualization nav links
 - ~200ms faster perceived load
 
