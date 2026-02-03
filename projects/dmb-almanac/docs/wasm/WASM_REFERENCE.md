@@ -36,7 +36,7 @@ strip = true
 ```
 
 ### Build Output
-- Source: `wasm-disabled/` (7 Rust modules) + `rust/dmb-aggregations/`
+- Source: `rust/aggregations/` (active WASM module)
 - Built: `static/wasm/` (static assets)
 - Manifest: `static/wasm/manifest.json`
 - Total: 1.69 MB uncompressed, 553 KB Brotli
@@ -79,7 +79,7 @@ static/wasm/<module>/               # Per-module .js + .wasm
 ### Vite 6 Integration
 ```javascript
 // vite.config.js
-resolve: { alias: { '$wasm/dmb-transform/pkg': '/wasm-disabled/dmb-transform/pkg' } }
+// WASM aliases configured per active modules in rust/
 server: { fs: { allow: ['..', 'static'] } }
 optimizeDeps: { exclude: ['$lib/wasm/dmb_aggregations.js'] }
 build: { target: 'es2020' }

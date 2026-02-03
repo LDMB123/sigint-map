@@ -68,30 +68,30 @@
 - High complexity: physics sim, numerical stability, multiple force types, D3 integration
 
 ### P1 - Sankey Layout (1 function, 2 weeks)
-- File: `src/lib/utils/sankey.js` (889 LOC)
+- File: `src/lib/utils/sankeyLayout.js`
 - 80 nodes/150 links: 120-180ms -> 18-30ms (4-7x)
 - Rust: topological sort BFS O(V+E), iterative position optimization
 
 ### P1 - Search Ranking (3 functions, 1 week)
-- File: `src/lib/utils/search.js`
+- File: `src/lib/utils/search.js` (planned)
 - `computeRelevanceScore()` 2.5ms->0.6ms (4x)
 - `fuzzyMatch()` 1.8ms->0.5ms (3.5x)
 - `rankSearchResults()` 5.2ms->1.8ms (2.9x)
 - Combined: 9.5ms -> 2.9ms (3.3x)
 
 ### P2 - String Processing (4 functions, 3 days)
-- File: `src/lib/utils/string-utils.js`
+- File: `src/lib/utils/string-utils.js` (planned)
 - `slugify()` 0.12ms->0.02ms (6x), `normalizeWhitespace()` 0.08ms->0.015ms (5.3x)
 - `truncateText()` 0.15ms->0.025ms (6x), `escapeHTML()` 0.05ms->0.015ms (3.3x)
 - Batch 1K strings: 400ms -> 78ms (5.1x)
 
 ### P2 - Binary Diff (1 function, 1 week)
-- File: `src/lib/utils/binaryDiff.js` (234 LOC)
+- File: `src/lib/utils/binaryDiff.js` (planned)
 - 1MB comparison: 45-60ms -> 6-9ms (5-10x)
 - Rust: Myers diff O(ND), compact binary format
 
 ### P3 - Cache Hashing (1 function, 2 days)
-- File: `src/lib/utils/cache.js`
+- File: `src/lib/utils/cache.js` (see `src/lib/db/dexie/cache.js`)
 - SHA-256: 3-5ms -> 0.3-0.6ms (5-10x)
 - Rust: sha2 crate, batch processing
 

@@ -194,7 +194,7 @@ npx source-map-explorer 'build/client/_app/immutable/chunks/*.js' --html report.
 ## Key File Paths
 - `app/vite.config.js` -- build config, chunk splitting
 - `app/package.json` -- deps, sideEffects
-- `app/src/lib/utils/d3-loader.js` -- D3 lazy loading (still imports d3-scale/d3-axis)
+- `app/src/lib/utils/d3-utils.js` -- D3 shared viz utilities
 - `app/src/lib/utils/d3-utils.js` -- shared viz utilities
 - `app/src/lib/utils/native-scales.js` -- native d3-scale replacement
 - `app/src/lib/utils/native-axis.js` -- native d3-axis replacement, has duplicates
