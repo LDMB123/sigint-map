@@ -1,365 +1,367 @@
-# Tour Statistics - Quick Reference Card
+# DMB Almanac - Consolidated Quick Reference
 
-**Print-friendly reference for developers implementing enhancements**
+## Scraper
 
----
+### Active Scrapers (13 total)
+- `shows.ts` - ShowSetlist.aspx - 2,800+ shows, setlists, guests, soundcheck
+- `songs.ts` - SongStats.aspx - 200+ songs, play counts, first/last played
+- `song-stats.ts` - SongStats.aspx (enhanced) - slot breakdown, durations, segues, liberation
+- `venues.ts` - VenueStats.aspx - 500+ venues, city/state/country
+- `venue-stats.ts` - VenueStats.aspx (enhanced) - capacity, previous names, top songs
+- `guests.ts` - GuestStats.aspx - 100+ guests, instruments, appearances
+- `tours.ts` - TourShowInfo.aspx - 83 tours, show/venue counts, top songs
+- `releases.ts` - ReleaseView.aspx - 150+ releases, track listings
+- `rarity.ts` - ShowRarity.aspx - rarity index per tour
+- `liberation.ts` - Liberation.aspx - gap tracking, last played dates
+- `history.ts` - ThisDayinHistory.aspx - 366 calendar days
+- `lists.ts` - ListView.aspx - 40+ curated lists
+- Coverage: ~85-90% of available data
 
-## At-a-Glance: What's Missing
+### URL Patterns
+- Shows by year: `/TourShow.aspx?where=YYYY`
+- Show detail: `/ShowSetlist.aspx?id=ID` (alt: `/TourShowSet.aspx?id=ID`)
+- Song list: `/SongSearchResult.aspx`
+- Song detail: `/SongStats.aspx?sid=ID`
+- Venue detail: `/VenueStats.aspx?vid=ID`
+- Guest detail: `/GuestStats.aspx?gid=ID`
+- Guest shows: `/TourGuestShows.aspx?gid=ID`
+- Tour detail: `/TourShowInfo.aspx?tid=ID`
+- Releases: `/DiscographyList.aspx`
+- Release detail: `/ReleaseView.aspx?release=ID`
+- Rarity: `/ShowRarity.aspx`
+- Liberation: `/Liberation.aspx`
+- Lists: `/Lists.aspx`, `/ListView.aspx?id=ID`
+- Calendar: `/ThisDayinHistory.aspx?month=M&day=D`
 
-### By URL
+### Data Formats
+- Dates: ISO 8601 internally (`YYYY-MM-DD`), European dot on site (`DD.MM.YYYY`)
+- Duration: seconds internally, `MM:SS` display
+- IDs: `id=` (show), `sid=` (song), `vid=` (venue), `gid=` (guest), `tid=` (tour), `release=` (release)
 
-```
-TourShow.aspx ──────────────────────────────
-│ Shows | Unknown | Cancelled | Rescheduled | Completion %
-├─ ✅ IMPLEMENTED:  Show count
-├─ ❌ MISSING:      Unknown count
-├─ ❌ MISSING:      Cancelled count
-├─ ❌ MISSING:      Rescheduled count
-└─ ❌ MISSING:      Completion %
+### Rate Limiting
+- Concurrency: 2 concurrent requests
+- Throughput: 5 requests per 10 seconds
+- Delay: 1-3s between requests
+- All HTML cached locally in `scraper/cache/`
+- Cache checked before every request; no rate limiting on cache hits
 
-TourShowInfo.aspx ──────────────────────────
-│ Show list with Date | Venue | City | State | Country | Duration
-├─ ✅ IMPLEMENTED:  Show count
-├─ ❌ MISSING:      Cities visited
-├─ ❌ MISSING:      States visited
-├─ ❌ MISSING:      Countries visited
-├─ ❌ MISSING:      Avg show length
-├─ ❌ MISSING:      Longest show
-├─ ❌ MISSING:      Shortest show
-└─ ❌ MISSING:      Show type breakdown
+### New Scraper Template
+```typescript
+import PQueue from "p-queue";
+import { cacheHtml, getCachedHtml, saveCheckpoint, loadCheckpoint } from "./utils/cache.js";
 
-TourStats.aspx ─────────────────────────────
-│ Statistics page with aggregated metrics
-├─ ✅ IMPLEMENTED:  Song count, totals, avg/show
-├─ ✅ IMPLEMENTED:  Top songs
-├─ ❌ MISSING:      Top opener
-├─ ❌ MISSING:      Top closer
-├─ ❌ MISSING:      Top encore
-├─ ❌ MISSING:      Rarity index
-├─ ❌ MISSING:      Song liberations
-└─ ❌ MISSING:      Setlist variation
-```
-
----
-
-## The 7 Quick Wins (Phase 1)
-
-### 1. Data Quality Metrics
-**Location:** TourShow.aspx overview table
-**Pattern:** Look for row with tour name, count numeric cells
-```javascript
-cells.eq(2).text().trim()  // unknown
-cells.eq(3).text().trim()  // cancelled
-cells.eq(4).text().trim()  // rescheduled
-cells.eq(5).text().trim()  // completion %
-```
-**Time:** 30 min
-
-### 2-4. Geographic Distribution
-**Location:** TourShowInfo.aspx show table
-**Pattern:** Extract from city/state/country columns
-```javascript
-const cities = new Set();
-const states = new Set();
-const countries = new Set();
-$("table tr").each((_, row) => {
-  cities.add(cells.eq(2).text());  // city
-  states.add(cells.eq(3).text());  // state
-  countries.add(cells.eq(4).text());  // country
-});
-cities.size // 15
-```
-**Time:** 45 min
-
-### 5. Top Opener/Closer/Encore
-**Location:** TourStats.aspx section headings
-**Pattern:** Find h3 with position name, next song link
-```javascript
-$("h3").each((_, el) => {
-  if ($(el).text().includes("Opener")) {
-    const song = $(el).nextUntil("h3")
-      .find("a[href*='SongStats']")
-      .first()
-      .text();  // "Warehouse"
+export async function scrapeAllFeatures() {
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  const queue = new PQueue({ concurrency: 2, intervalCap: 5, interval: 10000 });
+  try {
+    const checkpoint = loadCheckpoint("features");
+    const completed = new Set(checkpoint?.completed || []);
+    const allData = checkpoint?.data || [];
+    // process items, checkpoint every 50
+    return allData;
+  } finally {
+    await browser.close();
   }
-});
-```
-**Time:** 30 min
-
-**Subtotal Phase 1: 1.75 hours = 7 new fields**
-
----
-
-## The 7 Core Additions (Phase 2)
-
-### 6. Show Duration Stats
-**Location:** TourShowInfo.aspx table cells
-**Pattern:** Find HH:MM:SS format, parse and aggregate
-```javascript
-const durations = [];
-cells.each((_, cell) => {
-  const match = $(cell).text().match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
-  if (match) {
-    const [,h,m,s] = match.map(Number);
-    durations.push(h*3600 + m*60 + s);
-  }
-});
-const avg = durations.reduce((a,b)=>a+b)/durations.length;
-const max = Math.max(...durations);
-const min = Math.min(...durations);
-```
-**Time:** 90 min
-**Requires:** New HTTP request to TourStats.aspx
-
-### 7. Song Debuts
-**Location:** Cross-reference SongStats first-play dates
-**Pattern:** Match song first-play date to tour date range
-```javascript
-function enrichToursWithDebuts(tours, songs) {
-  songs.forEach(song => {
-    const debutDate = new Date(song.firstPlayedDate);
-    tours.forEach(tour => {
-      if (debutDate >= tour.startDate && debutDate <= tour.endDate) {
-        tour.songsDebuted++;
-        tour.songsDebutDetail.push({
-          songTitle: song.title,
-          debutDate: song.firstPlayedDate
-        });
-      }
-    });
-  });
 }
 ```
-**Time:** 90 min
-**Requires:** Song data with first-play dates
 
-### 8. Show Type Breakdown
-**Location:** TourShowInfo.aspx notes/context
-**Pattern:** Regex match against keywords in row text
-```javascript
-const showTypes = {fullBand:0, solo:0, tv:0, festival:0};
-$("table tr").each((_, row) => {
-  const text = $(row).text().toLowerCase();
-  if (text.includes("television")) showTypes.tv++;
-  else if (text.includes("festival")) showTypes.festival++;
-  else if (text.includes("solo")) showTypes.solo++;
-  else showTypes.fullBand++;
-});
+### Scrape Times (estimated)
+- Shows: 30-60 min | Songs: 10-15 min | Song Stats: 30-45 min
+- Venues: 5-10 min | Venue Stats: 10-15 min | Guests: 2-5 min
+- Tours: 5-10 min | Releases: 5-10 min | Rarity: 5 min
+- Liberation: 1 min | History: 60-90 min | Lists: 10-15 min
+- Full scrape total: ~4-6 hours
+
+### Known Gaps
+- Guest -> show reverse mapping (one-way only: shows -> guests)
+- Song date-by-date performance records (summary stats only)
+- Venue individual show records (count only)
+- Year-by-year statistics (pages accessed but data not preserved)
+
+### Troubleshooting
+- Parser fails: use CSS selectors over regex (`$(".title").text()` > regex)
+- Missing data: implement fallback extraction (primary selector -> alt selector -> regex)
+- 429 errors: reduce concurrency to 1, intervalCap to 3, increase delay
+- Interrupted: just re-run; auto-resumes from checkpoint
+
+### File Structure
 ```
-**Time:** 90 min
-**Note:** Pattern matching, ~85% accuracy
+scraper/
+├── src/scrapers/       # All scraper files + index.ts
+├── src/utils/          # cache.js, rate-limit.js, helpers.js
+├── src/types.ts        # TypeScript interfaces
+├── output/             # JSON output files
+├── cache/              # Cached HTML
+└── checkpoints/        # Scraper progress
+```
 
-### 9. Song Liberations
-**Location:** TourStats.aspx liberation section
-**Pattern:** Find h3 "Liberation", parse next table
-```javascript
-const liberations = [];
-$("h3").each((_, el) => {
-  if ($(el).text().includes("Liberation")) {
-    $(el).nextUntil("h3").find("table tr").each((_, row) => {
-      const cells = $(row).find("td");
-      liberations.push({
-        song: cells.eq(0).text(),
-        days: parseInt(cells.eq(1).text().match(/(\d+)/)[1]),
-        date: cells.eq(2).text()
-      });
+---
+
+## D3 Optimization
+
+### D3 Modules in Use
+- `d3-selection` (8KB) - DOM manipulation
+- `d3-scale` (12KB) - data scaling
+- `d3-sankey` (8KB) - TransitionFlow (keep)
+- `d3-force` (22KB) - GuestNetwork (keep)
+- `d3-geo` (16KB) - TourMap (keep)
+- `d3-transition` (3KB) - animations
+- `d3-axis` (8KB) - REMOVE, replace with native SVG
+- `d3-drag` (3KB) - REMOVE, unused
+
+### Removal: d3-axis
+- Create `/src/lib/utils/native-axis.ts` with `createAxisTop()`, `createAxisLeft()`, `createAxisBottom()`, `createAxisRight()`
+- Update imports in: SongHeatmap.svelte, GapTimeline.svelte, RarityScorecard.svelte
+- Remove `loadD3Axis()` from `d3-loader.ts`
+- Remove `d3-axis` and `@types/d3-axis` from package.json
+
+### Removal: d3-drag
+- Remove `loadD3Drag()` from `d3-loader.ts`
+- Remove from 'guests' preload case in `preloadVisualization()`
+- Remove `d3-drag` and `@types/d3-drag` from package.json
+
+### Replacement: scaleSqrt
+- In `force-simulation.worker.ts`: replace `scaleSqrt` import with inline:
+```typescript
+const createSqrtScale = (value: number, maxValue: number, rangeMin: number, rangeMax: number): number => {
+  if (maxValue === 0) return rangeMin;
+  const t = Math.sqrt(value / maxValue);
+  return rangeMin + t * (rangeMax - rangeMin);
+};
+```
+
+### Bundle Impact
+- Savings: ~11.5KB gzipped (8.8% reduction)
+- New code overhead: ~300 bytes (native-axis.ts + createSqrtScale)
+
+### Implementation Order
+1. Remove d3-drag (10 min)
+2. Replace scaleSqrt (10 min)
+3. Create native-axis.ts (5 min)
+4. Replace d3-axis in SongHeatmap (20 min)
+5. Replace d3-axis in GapTimeline (20 min)
+6. Replace d3-axis in RarityScorecard (20 min)
+7. Remove d3-axis from package.json (5 min)
+8. Verify: `npm run test && npm run check && npm run build`
+
+### D3 + Svelte Rule
+- D3 for data transforms/scales only, not DOM
+- `d3.scaleLinear()` yes, `d3.select().append()` no
+
+---
+
+## PWA
+
+### Quick Win: Periodic Sync
+- Register in `+layout.svelte` after background sync setup:
+```typescript
+if ('serviceWorker' in navigator) {
+  const registration = await navigator.serviceWorker.ready;
+  if ('periodicSync' in registration) {
+    await (registration as any).periodicSync.register('check-data-freshness', {
+      minInterval: 24 * 60 * 60 * 1000
     });
   }
+}
+```
+- Browser: Chrome 80+, Edge 80+, not Safari
+
+### Quick Win: Badging API
+- Show pending offline mutation count on app icon:
+```typescript
+import { setAppBadge, clearAppBadge } from '$lib/utils/appBadge';
+$effect(() => {
+  const pendingCount = offlineMutationQueue.filter(
+    (item) => item.status === 'pending' || item.status === 'retrying'
+  ).length;
+  pendingCount > 0 ? setAppBadge(pendingCount) : clearAppBadge();
 });
 ```
-**Time:** 60 min
+- Browser: Chrome 81+, Edge 81+, Safari 16+ (partial)
 
-### 10. Rarity Index
-**Location:** TourStats.aspx top section
-**Pattern:** Simple regex match
+### Quick Win: File Handle Storage
+- Store `FileSystemFileHandle` from `launchQueue` for save-back
+- Key functions: `storeFileHandle()`, `getFileHandle()`, `saveToOriginalFile()`, `clearFileHandle()`
+- Requires `readwrite` permission (granted on file open)
+- Browser: Chrome 86+, Edge 86+, not Safari
+
+### Quick Win: Window Controls Overlay
+- CSS env vars: `titlebar-area-height`, `titlebar-area-width`
+- `html { padding-top: max(env(safe-area-inset-top), env(titlebar-area-height)); }`
+- Title bar: `position: fixed; -webkit-app-region: drag;`
+- Interactive elements: `-webkit-app-region: no-drag;`
+- Browser: Chrome 85+, Edge 85+, not Safari
+
+### PWA Debugging
 ```javascript
-const match = pageText.match(/rarity.*?(\d+\.?\d*)/i);
-const rarityIndex = parseFloat(match[1]);  // 2.5
+// Periodic sync check
+navigator.serviceWorker.ready.then(reg => {
+  reg.periodicSync.getTags().then(tags => console.log('Sync tags:', tags));
+});
+// Badge test
+navigator.setAppBadge(5);
+navigator.clearAppBadge();
+// Launch queue check
+console.log('launchQueue available:', 'launchQueue' in window);
 ```
-**Time:** 30 min
 
-**Subtotal Phase 2: 4.5 hours = 7 new fields**
+### Service Worker Gotchas
+- Changes apply after ALL tabs closed
+- Build required (no SW in dev mode)
+- Enable "Update on reload" in DevTools for testing
+- Cache invalidation: increment version in `sw.js`
 
 ---
 
-## Interface Changes Required
+## Testing
 
-### ScrapedTourDetailed - Add These Fields:
-
-```typescript
-// Phase 1 additions
-unknownShows?: number;
-cancelledShows?: number;
-rescheduledShows?: number;
-completionPercentage?: number;
-citiesVisited?: number;
-statesVisited?: number;
-countriesVisited?: number;
-topOpener?: string;
-topCloser?: string;
-topEncore?: string;
-
-// Phase 2 additions
-averageShowLength?: number;
-longestShow?: { duration: number; date: string; venue: string };
-shortestShow?: { duration: number; date: string; venue: string };
-songsDebuted?: number;
-songsDebutDetail?: Array<{ songTitle: string; debutDate: string }>;
-showTypeBreakdown?: {
-  fullBand?: number;
-  daveSolo?: number;
-  festival?: number;
-  television?: number;
-  benefit?: number;
-};
-topLiberations?: Array<{ songTitle: string; daysSince: number }>;
-rarityIndex?: number;
+### Commands
+```bash
+npm run check             # Type check
+npm run test              # Run tests
+npm run build             # Production build
+npm run build && npm run preview  # Test PWA
 ```
+
+### PWA Testing
+- Chrome DevTools > Application tab
+- Check: Service Workers, Manifest, Storage
+- Simulate periodic sync in Service Workers panel
+- Go offline, make changes, verify badge appears, go online, verify sync
+
+### D3 Visualization QA
+- SongHeatmap: axes render, x-labels rotated -45deg, y-labels left-aligned
+- GapTimeline: y-axis dates, x-axis numeric, grid alignment
+- RarityScorecard: axes scaled to data
+- GuestNetwork: force sim initializes, node sizes proportional, no overlap
 
 ---
 
-## Code Checklist - Phase 1
+## Performance
 
-- [ ] Add fields to ScrapedTourDetailed interface
-- [ ] Create function `getTourOverviewMetrics(url, year)` to fetch TourShow.aspx
-- [ ] Parse unknown/cancelled/rescheduled/completion from overview
-- [ ] Enhance show extraction to track cities, states, countries
-- [ ] Calculate unique counts at end of parsing
-- [ ] Fetch TourStats.aspx in parseTourPage()
-- [ ] Extract opener/closer/encore from TourStats
-- [ ] Assign all extracted values to tour object
-- [ ] Test with 3-5 sample tours
-- [ ] Verify against live dmbalmanac.com
+### Targets (Chromium 143 / Apple Silicon)
+- LCP < 1.0s | INP < 100ms | CLS < 0.05 | FCP < 1.0s | TTFB < 400ms
 
----
+### Animation Performance (Apple Silicon GPU)
+- Scroll animation: 120fps (8.33ms/frame) on ProMotion
+- Zero CPU usage when GPU-accelerated
+- Always animate `transform`/`opacity`, never `top`/`left`/`position`
 
-## Testing Checklist
-
-### Unit Tests:
-```
-✓ parseTimeToSeconds("1:42:31") === 6151
-✓ parseTimeToSeconds("0:02:05") === 125
-✓ cities.size === 3 (after adding 2 Denver, 1 Boulder)
-✓ rarityIndex === 2.5
-```
-
-### Integration Tests:
-```
-✓ Full tour parsing returns all new fields
-✓ Duration stats are calculated correctly
-✓ Geographic counts match manual count
-✓ Top positions match what's on site
-```
-
-### Manual Verification (3 sample tours):
-```
-Tour: Summer 1998
-- Unknown shows: X ✓
-- Cancelled shows: Y ✓
-- Cities visited: Z ✓
-- Top opener: [Song] ✓
-
-Tour: Summer 2024
-- Unknown shows: A ✓
-- Cancelled shows: B ✓
-- States visited: C ✓
-- Top closer: [Song] ✓
-
-Tour: Europe 2023
-- Countries visited: D ✓
-- Avg show length: E:MM ✓
-- Top encore: [Song] ✓
-```
+### Bundle Size Checks
+- After D3 cleanup: ~11.5KB gzipped savings
+- Popover API, @starting-style, CSS range syntax: 0 bytes (native browser)
 
 ---
 
-## Common Pitfalls to Avoid
+## Chromium 143+ Features
 
-1. **Duration Pattern Match**
-   - ❌ `/\d:\d:\d/` → too broad
-   - ✅ `/^\d{1,2}:\d{2}:\d{2}$/` → specific
+### Already Implemented
+- `<dialog>` elements (PWA modals)
+- Scroll-driven animations (header progress bar)
+- CSS container queries (Card, Table, Pagination)
+- GPU acceleration (all interactive components)
 
-2. **Geographic Data**
-   - ❌ Raw city names (spelling variations)
-   - ✅ Use Set<> to auto-deduplicate
+### @starting-style Animations (15 min)
+```css
+:global(dialog) {
+  opacity: 1; transform: translateY(0);
+  transition: opacity 300ms, transform 300ms, display 300ms allow-discrete;
+}
+@starting-style {
+  :global(dialog[open]) { opacity: 0; transform: translateY(20px); }
+}
+:global(dialog:not([open])) { opacity: 0; transform: translateY(20px); }
+```
+- Chrome 117+, Safari 17.2+, Firefox 123+
 
-3. **Show Type Classification**
-   - ❌ Look for ONLY one keyword per show
-   - ✅ Check multiple patterns, use fallback "other"
+### Popover API (30 min)
+```html
+<button popovertarget="mobile-nav">Menu</button>
+<nav id="mobile-nav" popover="auto">...</nav>
+```
+- Auto light-dismiss, keyboard accessible
+- Chrome 114+, Safari 17.2+, Firefox 125+
+- Check support: `if ('showPopover' in element) element.showPopover();`
 
-4. **Empty Data Handling**
-   - ❌ Assign 0 to optional fields
-   - ✅ Leave undefined if no data found
+### CSS Range Syntax (30 min)
+```css
+/* Old */ @media (min-width: 640px) and (max-width: 1023px) { }
+/* New */ @media (640px <= width < 1024px) { }
+```
+- Chrome 143+, Safari 17.4+, Firefox 128+
 
-5. **HTTP Requests**
-   - ❌ Fetch all pages without caching
-   - ✅ Check cache first, use rate limiting
+### Browser Support Matrix
+| Feature | Chrome | Safari | Firefox | Edge |
+|---------|--------|--------|---------|------|
+| `<dialog>` | 37+ | 15.4+ | 98+ | 79+ |
+| @starting-style | 117+ | 17.2+ | 123+ | 117+ |
+| Popover API | 114+ | 17.2+ | 125+ | 114+ |
+| CSS Anchor Positioning | 125+ | 17.2+ | 126+ | 125+ |
+| CSS Range Syntax | 143+ | 17.4+ | 128+ | 143+ |
+| Scroll-driven Animations | 115+ | 16.0+ | 125+ | 115+ |
+
+### Common Pitfalls
+- @starting-style: must target `dialog[open]`, not bare `dialog`
+- Popover: check `'showPopover' in element` before calling
+- Media range syntax: don't mix old/new syntax in same query
+- Animations: use `transform` not `top`/`left` for GPU acceleration
 
 ---
 
-## Success Metrics
+## Accessibility
 
-### Phase 1 Complete When:
-- [x] 8 new fields extracted across 7 metrics
-- [x] 100% of tours have unknown/cancelled/rescheduled counts
-- [x] 98%+ of tours have geographic data
-- [x] 95%+ of tours have top positions
-- [x] No performance regression (same scrape time ±10%)
-- [x] All tests passing
-- [x] Spot-checked against 5 different tours
+### Popover Tooltips (planned)
+- Use Popover API for D3 visualization tooltips
+- Keyboard navigation: Tab to focus, Escape to dismiss
+- Screen reader: ARIA attributes announced
+- Files: GuestNetwork, SongHeatmap, TourMap, GapTimeline, RarityScorecard
 
-### Coverage Before/After:
+### Testing
 ```
-Before: 8 fields / 26 total = 31%
-After:  16 fields / 26 total = 62%
-Improvement: +31% coverage in 2-3 hours work
+1. Tab through tooltips
+2. Hover to show, Escape to hide
+3. VoiceOver reads tooltip content
+4. Verify ARIA attributes
 ```
 
 ---
 
-## File Locations for Reference
+## Database
 
-| File | Purpose |
-|------|---------|
-| `/Users/louisherman/ClaudeCodeProjects/INVESTIGATION_SUMMARY.md` | Start here - overview |
-| `/Users/louisherman/ClaudeCodeProjects/TOUR_STATISTICS_INVESTIGATION.md` | Detailed analysis |
-| `/Users/louisherman/ClaudeCodeProjects/TOUR_STATS_EXTRACTION_GUIDE.md` | Copy/paste code |
-| `/Users/louisherman/ClaudeCodeProjects/TOUR_STATS_IMPLEMENTATION_ROADMAP.md` | Full implementation plan |
-| `/Users/louisherman/ClaudeCodeProjects/QUICK_REFERENCE.md` | This file |
-| `scraper/src/scrapers/tours.ts` | Existing scraper to modify |
-| `scraper/src/types.ts` | Types to extend |
+### SQLite (Server)
+- `data/dmb-almanac.db` (22MB, WAL mode, foreign keys enabled)
+- Use `db.transaction()` for atomic ops
+- Run `PRAGMA wal_checkpoint(TRUNCATE)` periodically
+- Never run multiple simultaneous write transactions
 
----
-
-## Effort Summary
-
-```
-Phase 1: Quick Wins
-├─ Data Quality:       30 min
-├─ Geography:          45 min
-├─ Opener/Closer/Enc:  30 min
-└─ Subtotal:           105 min (1.75 hours)
-
-Phase 2: Core Analytics
-├─ Durations:          90 min
-├─ Debuts:             90 min
-├─ Show Types:         90 min
-├─ Liberations:        60 min
-├─ Rarity Index:       30 min
-└─ Subtotal:           360 min (6 hours)
-
-TOTAL: 465 minutes = 7.75 hours for +62% coverage gain
-```
+### Dexie.js (Client)
+- `src/lib/db/dexie/` - user data, offline sync
+- Always increment version on schema change
+- Add upgrade function per version
+- Never modify existing tables in same version
+- Test: delete IndexedDB in DevTools, reload
 
 ---
 
-## Questions?
+## Project Structure
+```
+dmb-almanac/app/
+├── src/routes/           # SvelteKit pages
+├── src/lib/
+│   ├── components/       # 67 Svelte components
+│   ├── db/dexie/        # IndexedDB (client)
+│   ├── db/server/       # SQLite (server)
+│   ├── types/           # TypeScript types
+│   └── utils/           # 30+ utilities
+├── static/              # PWA manifest, icons, SW
+├── data/dmb-almanac.db  # 22MB SQLite
+└── scraper/             # dmbalmanac.com scraper
+```
 
-Refer to:
-- **What's available on site:** TOUR_STATISTICS_INVESTIGATION.md
-- **How to extract it:** TOUR_STATS_EXTRACTION_GUIDE.md
-- **How to plan implementation:** TOUR_STATS_IMPLEMENTATION_ROADMAP.md
-- **Quick lookup:** This document (QUICK_REFERENCE.md)
-
-**Investigation completed by:** DMBAlmanac Site Expert
-**Date:** January 23, 2026
+### Svelte 5 Runes Cheatsheet
+- `let count = $state(0)` - reactive state
+- `let doubled = $derived(count * 2)` - computed
+- `$effect(() => { ... })` - side effects
+- `let { shows, onSelect } = $props()` - component props
+- NOT: `let`, `$:`, `$: { ... }` (Svelte 4 syntax)

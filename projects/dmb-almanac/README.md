@@ -1,28 +1,18 @@
-# DMB Almanac Project
+# DMB Almanac
 
-A comprehensive Dave Matthews Band concert database PWA.
-
-## Structure
-
-```
-projects/dmb-almanac/app/
-└── dmb-almanac-svelte/    # Primary application
-```
+Dave Matthews Band concert database PWA. SvelteKit 2, Svelte 5, SQLite, Dexie.js, Chromium 143+.
 
 ## Quick Start
 
 ```bash
-cd dmb-almanac-svelte
+cd app
 npm install
 npm run dev
 ```
 
-## Documentation
+## Structure
 
-All documentation is in `dmb-almanac-svelte/docs/`:
-- `archive/` - Historical audit and analysis documents
-- `reference/` - Database architecture and API references
-
-## Development
-
-See `dmb-almanac-svelte/CLAUDE.md` for the full developer runbook.
+- `app/` - SvelteKit application
+- `app/docs/` - App-level reference docs (compressed)
+- `docs/` - Project documentation (guides, audits, reports)
+- `CLAUDE.md` - Developer runbook

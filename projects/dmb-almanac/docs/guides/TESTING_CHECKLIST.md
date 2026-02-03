@@ -1,364 +1,144 @@
-# DMB Almanac - Testing Checklist
+# Testing Checklist
 
-Use this checklist to verify all fixes are working correctly.
+## Pre-Testing Setup
 
----
-
-## ✅ Pre-Testing Setup
-
-### Environment Configuration
-
+### Environment
 ```bash
 cd app
-
-# 1. Verify .env exists
-[ -f .env ] && echo "✓ .env exists" || echo "✗ Create .env from .env.example"
-
-# 2. Check .env has required variables
-grep -q "VITE_VAPID_PUBLIC_KEY=" .env && echo "✓ VAPID public key set"
-grep -q "VAPID_PRIVATE_KEY=" .env && echo "✓ VAPID private key set"
-grep -q "PUSH_API_KEY=" .env && echo "✓ Push API key set"
-
-# 3. Verify .env is gitignored
-grep -q "^\.env$" .gitignore && echo "✓ .env in .gitignore"
+[ -f .env ] && echo "ok" || echo "Create .env from .env.example"
+grep -q "VITE_VAPID_PUBLIC_KEY=" .env   # VAPID public key
+grep -q "VAPID_PRIVATE_KEY=" .env       # VAPID private key
+grep -q "PUSH_API_KEY=" .env            # Push API key
+grep -q "^\.env$" .gitignore            # .env gitignored
 ```
 
-### Build Verification
-
+### Build
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Run type check
-npm run check
-
-# 3. Build application
-npm run build
-
-# 4. Start dev server
-npm run dev
+npm run check    # type check
+npm run lint     # linting
+npm run test     # unit tests
+npm run build    # production build
 ```
 
----
+## E2E Test Coverage (122 tests)
 
-## 🧪 Manual Testing
+- [ ] **PWA** (22): SW registers/activates, offline works, install prompt, share target, protocol handlers
+- [ ] **Search** (20): results return, debounce works, <100ms render, empty states, screen reader announcements
+- [ ] **Navigation** (25): all pages accessible, detail pages load, back/forward, 404s, speculation rules
+- [ ] **Accessibility** (30): zero axe-core violations, keyboard nav, screen reader labels, touch targets >=44x44px, WCAG AA contrast
+- [ ] **Performance** (25): FCP <1.5s, LCP <2.5s, CLS <0.1, INP <200ms, TTFB <800ms, JS <150KB, CSS <50KB
 
-### 1. PWA Installation Testing
+## Cross-Browser Testing
 
-#### Desktop Chrome/Edge (Supported)
+- [ ] **Chrome 143+ Desktop**: all tests pass, PWA installable, SW active
+- [ ] **Safari 17.2+ Desktop**: core functionality, graceful degradation
+- [ ] **Chrome Mobile**: responsive layout, touch targets, PWA installable
+- [ ] **Safari Mobile/iOS**: install instructions show, touch gestures, viewport correct
 
-- [ ] Open http://localhost:5173 in Chrome
-- [ ] Wait 5 seconds
-- [ ] Scroll down at least 200px
-- [ ] **Expected:** Install banner appears at bottom
-- [ ] Banner shows: "Install DMB Almanac" with Install/Not now buttons
-- [ ] Click "Install" button
-- [ ] **Expected:** Browser install dialog appears
-- [ ] Confirm installation
-- [ ] **Expected:** App installs, icon appears in taskbar/dock
-- [ ] Launch installed app
-- [ ] **Expected:** App opens in standalone window (no browser chrome)
+## PWA Validation
 
-#### Desktop Safari (Not Supported)
+### Installation
+- [ ] Desktop Chrome/Edge: wait 5s + scroll 200px -> install banner -> Install -> standalone window
+- [ ] Mobile Chrome: wait 5s + scroll -> Add to Home Screen -> fullscreen
+- [ ] Mobile Safari: "How to Install" button -> Share -> Add to Home Screen
+- [ ] Dismissal: "Not now" -> `pwa-install-prompt-dismissed` in localStorage -> no reprompt
 
-- [ ] Open http://localhost:5173 in Safari
-- [ ] **Expected:** No install prompt (beforeinstallprompt not supported)
+### Service Worker
+- [ ] DevTools > Application > Service Workers: `/sw.js` registered, activated, scope `/`
+- [ ] Console: `[SW] Cache version: v<version>-<git-hash>` matches package.json
+- [ ] Update: bump version -> rebuild -> refresh -> update banner -> "Update Now" -> reloads
+- [ ] Offline: Network offline -> cached pages load -> "You're offline" banner
 
-#### Mobile Chrome/Android (Supported)
+### Manifest
+- [ ] Valid JSON at /manifest.json, all required fields
+- [ ] Icons include maskable variants, screenshots provided
 
-- [ ] Open site on Android Chrome
-- [ ] Wait 5 seconds and scroll
-- [ ] **Expected:** Install banner appears
-- [ ] Tap "Install"
-- [ ] **Expected:** Add to Home Screen dialog
-- [ ] Confirm
-- [ ] **Expected:** Icon added to home screen
-- [ ] Tap icon
-- [ ] **Expected:** App opens fullscreen
+## Push Notifications
 
-#### Mobile Safari/iOS (Manual Instructions)
+### Subscription
+- [ ] VAPID keys configured, `Notification.requestPermission()` -> "granted"
 
-- [ ] Open site on iPhone Safari
-- [ ] Wait 5 seconds and scroll
-- [ ] **Expected:** Banner shows with "How to Install" button
-- [ ] Tap button
-- [ ] **Expected:** Alert with iOS installation instructions
-- [ ] Follow instructions: Share → Add to Home Screen
-- [ ] **Expected:** App icon added to home screen
-- [ ] Tap icon
-- [ ] **Expected:** App opens
-
-#### Install Prompt Dismissal
-
-- [ ] Dismiss install prompt (click "Not now")
-- [ ] Refresh page
-- [ ] **Expected:** Prompt does not appear
-- [ ] Check localStorage: `pwa-install-prompt-dismissed` should exist
-- [ ] Delete localStorage key
-- [ ] Refresh
-- [ ] **Expected:** Prompt appears again after 5s + scroll
-
----
-
-### 2. Push Notification Testing
-
-#### Subscription Flow
-
-- [ ] With VAPID keys configured, open DevTools Console
-- [ ] Run:
-```javascript
-// Check if push is configured
-console.log('VAPID Public Key:', import.meta.env.VITE_VAPID_PUBLIC_KEY?.slice(0, 20) + '...');
-
-// Request notification permission
-Notification.requestPermission().then(result => {
-  console.log('Permission:', result);
-});
-```
-- [ ] **Expected:** Permission prompt appears
-- [ ] Grant permission
-- [ ] **Expected:** Console shows "Permission: granted"
-
-#### Send Test Push (Server-Side)
-
+### Security
 ```bash
-# In app directory
+# Should succeed (200 OK)
 curl -X POST http://localhost:5173/api/push-send \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_PUSH_API_KEY" \
-  -d '{
-    "title": "Test Notification",
-    "body": "This is a test from DMB Almanac",
-    "subscriptionIds": []
-  }'
-```
+  -d '{"title":"Test","body":"Test","subscriptionIds":[]}'
 
-- [ ] **Expected:** 403 Unauthorized (if API key wrong)
-- [ ] **Expected:** 200 OK (if API key correct)
-- [ ] **Expected:** Notification appears on desktop
-
-#### Security Testing
-
-```bash
-# Test without authentication
+# Should fail (403 Forbidden)
 curl -X POST http://localhost:5173/api/push-send \
   -H "Content-Type: application/json" \
   -d '{"title":"Hack","body":"Test"}'
 ```
 
-- [ ] **Expected:** 403 Forbidden response
-- [ ] Server logs show "Unauthorized push-send attempt"
+## Accessibility
 
----
+- [ ] Color contrast >= 4.5:1 (light ~5.1:1, dark ~7.2:1)
+- [ ] Screen reader: banner announced as "alert", buttons labeled
+- [ ] Keyboard: Tab through interactive elements, Enter activates, Escape clears search
+- [ ] Focus indicators visible, no keyboard traps, skip links present
+- [ ] Heading hierarchy (single h1), ARIA labels, live regions
 
-### 3. Accessibility Testing
+## Performance Validation
 
-#### Color Contrast
+### Lighthouse (Production Build)
+- [ ] Performance >= 90, Accessibility >= 95, Best Practices >= 90, SEO >= 90, PWA installable
 
-- [ ] Inspect any muted text on page (descriptions, metadata)
-- [ ] Use browser DevTools → Accessibility panel
-- [ ] Check contrast ratio
-- [ ] **Expected:** Ratio ≥ 4.5:1 (WCAG AA)
-- [ ] **Light mode:** ~5.1:1 (oklch 0.45 on cream)
-- [ ] **Dark mode:** ~7.2:1 (oklch 0.65 on dark)
+### Bundle Analysis
+- [ ] Initial JS < 150KB, CSS < 50KB, WASM lazy loaded, D3 chunks lazy loaded
 
-#### Screen Reader Testing
+## Security
+- [ ] CSP headers configured, no inline scripts (except allowed), no eval()
+- [ ] No critical dependency vulnerabilities (`npm audit`)
+- [ ] No API keys in code, .env not committed
 
-**NVDA on Windows:**
-```
-1. Start NVDA (Insert+N)
-2. Navigate to http://localhost:5173
-3. Tab through page
-4. Expected: Install prompt is announced
-5. Expected: "Install DMB Almanac" heading read
-6. Expected: Buttons have clear labels ("Install", "Not now")
-```
+## Data Validation
+- [ ] IndexedDB schema migrations work, data seeding successful
+- [ ] All API endpoints functional, error handling correct, loading states show
 
-**VoiceOver on macOS:**
-```
-1. Enable VoiceOver (Cmd+F5)
-2. Navigate to site
-3. VO+Right Arrow through content
-4. Expected: Install banner announced as "alert"
-5. Expected: Button purposes clear
-```
+## CI/CD Pipeline
+- [ ] E2E: all browsers tested, sharded, reports uploaded
+- [ ] Accessibility: axe-core passes, zero violations
+- [ ] Performance: budgets enforced, metrics collected
+- [ ] Lighthouse CI: scores meet targets
 
-#### Keyboard Navigation
+## Deployment
+- [ ] **Pre-deploy**: all CI green, no failing tests, build successful
+- [ ] **Post-deploy**: site loads, SW updates, analytics tracking
+- [ ] **Smoke tests**: home page, search, detail pages, PWA installable
 
-- [ ] Tab to install prompt
-- [ ] **Expected:** Focus visible on "Not now" button
-- [ ] Tab again
-- [ ] **Expected:** Focus moves to "Install" button
-- [ ] Tab again
-- [ ] **Expected:** Focus moves to X close button
-- [ ] Press Enter on "Install"
-- [ ] **Expected:** Browser install dialog opens
+## Manual Testing (Recommended)
 
----
+### User Journeys
+- [ ] First-time: home -> stats -> songs list -> song detail -> search
+- [ ] Returning: install PWA -> home screen -> offline mode -> favorites sync
+- [ ] Power user: advanced search -> visualizations -> statistics -> keyboard nav
 
-### 4. Service Worker Testing
+### Edge Cases
+- [ ] Offline mode, slow 3G, connection recovery
+- [ ] Private/incognito, ad blockers, JS disabled
+- [ ] Small screens (<375px), large (>1920px), landscape/portrait
 
-#### Registration
+## Release
+- [ ] package.json version bumped, CHANGELOG updated
+- [ ] Previous version tagged, rollback procedure tested
+- [ ] Post-release: no new errors, Core Web Vitals stable, user feedback monitored
 
-Open DevTools → Application → Service Workers
-
-- [ ] **Expected:** Service worker registered
-- [ ] URL: `/sw.js`
-- [ ] Status: activated and running
-- [ ] Scope: `/`
-
-#### Cache Version
-
-Check console logs on page load:
-
-- [ ] **Expected:** `[SW] Cache version: v<version>-<git-hash>`
-- [ ] Version matches package.json version
-- [ ] Hash matches git commit (or "dev" in development)
-
-#### Update Flow
+## Quick Reference
 
 ```bash
-# Simulate update
-1. Edit package.json version (e.g., 1.0.0 → 1.0.1)
-2. Rebuild: npm run build
-3. Refresh page
-4. Expected: Console shows new SW waiting
-5. Expected: Update banner appears
-6. Click "Update Now"
-7. Expected: Page reloads with new SW active
+npm run check       # Type check
+npm run lint        # Lint
+npm run test        # Unit tests
+npm run test:e2e    # E2E tests
+npm run build       # Build
+npm run preview     # Preview production (localhost:4173)
 ```
 
-#### Offline Behavior
+## Known Issues
 
-- [ ] Load page while online
-- [ ] DevTools → Network → Offline checkbox
-- [ ] Navigate to cached pages
-- [ ] **Expected:** Pages load from cache
-- [ ] **Expected:** "You're offline - viewing cached content" banner
-
----
-
-### 5. Build & Production Testing
-
-#### Type Safety
-
-```bash
-npm run check
-```
-
-- [ ] **Expected:** No critical type errors
-- [ ] Known remaining errors documented in TYPESCRIPT_QUICK_FIXES.md
-
-#### Production Build
-
-```bash
-npm run build
-ls -lh .svelte-kit/output
-```
-
-- [ ] **Expected:** Build succeeds
-- [ ] **Expected:** Output files created
-- [ ] Check bundle size (should be reasonable)
-
-#### Preview Production Build
-
-```bash
-npm run preview
-```
-
-- [ ] Open http://localhost:4173
-- [ ] Test install prompt
-- [ ] Test service worker
-- [ ] **Expected:** Everything works as in dev mode
-
----
-
-## 🐛 Known Issues & Workarounds
-
-### Issue: Install Prompt Doesn't Appear
-
-**Possible Causes:**
-1. Browser already has app installed → Uninstall app first
-2. Dismissal period active → Clear localStorage `pwa-install-prompt-dismissed`
-3. No HTTPS in production → PWA requires HTTPS (except localhost)
-4. Didn't scroll → Scroll down 200px if `requireScroll={true}`
-5. Visited before 5 seconds → Wait full 5 seconds
-
-### Issue: Push Subscription Fails
-
-**Possible Causes:**
-1. VAPID public key not set → Check import.meta.env.VITE_VAPID_PUBLIC_KEY
-2. Invalid key format → Should be 86+ base64url characters
-3. Service worker not active → Check DevTools Application panel
-4. No HTTPS → Push requires secure context
-
-### Issue: Build Fails
-
-**Possible Causes:**
-1. Node version too old → Requires Node 18+
-2. Missing dependencies → Run `npm install`
-3. Type errors → Run `npm run check` for details
-
----
-
-## 📊 Test Results Template
-
-```markdown
-## Test Results - [Date]
-
-### Environment
-- OS:
-- Browser:
-- Node Version:
-- App Version:
-
-### PWA Installation
-- [ ] Install prompt appears
-- [ ] Installation succeeds
-- [ ] App launches standalone
-
-### Push Notifications
-- [ ] Subscription works
-- [ ] Test push received
-- [ ] Unauthorized access blocked
-
-### Accessibility
-- [ ] Color contrast passes
-- [ ] Screen reader compatible
-- [ ] Keyboard navigation works
-
-### Build
-- [ ] Type check passes
-- [ ] Production build succeeds
-- [ ] Preview works
-
-### Issues Found
-[List any issues encountered]
-
-### Notes
-[Additional observations]
-```
-
----
-
-## ✉️ Reporting Issues
-
-If tests fail:
-
-1. **Check console logs** - Most issues show clear error messages
-2. **Verify environment** - Ensure .env has all required keys
-3. **Clear cache** - Try hard refresh (Ctrl+Shift+R)
-4. **Check DevTools** - Application panel shows SW/Storage state
-5. **Review docs** - See FIXES_APPLIED_SUMMARY.md for expected behavior
-
-For persistent issues:
-- Document exact steps to reproduce
-- Include console error messages
-- Note browser and OS versions
-- Check if issue exists in documentation
-
----
-
-**Status:** Use this checklist after every fix deployment to ensure nothing broke.
-
-**Automation:** Consider converting manual tests to Playwright E2E tests for CI/CD integration.
+- **Install prompt missing**: uninstall app first, clear localStorage dismissal, need HTTPS (except localhost), must scroll 200px + wait 5s
+- **Push fails**: check VAPID key (86+ base64url chars), SW must be active, needs secure context
+- **Build fails**: need Node >=18, run `npm install`, check `npm run check`

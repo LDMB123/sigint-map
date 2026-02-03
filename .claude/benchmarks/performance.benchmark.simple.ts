@@ -8,6 +8,11 @@
  */
 
 import { performance } from 'perf_hooks';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Benchmark scenario configuration
@@ -541,7 +546,7 @@ async function main() {
     // Write results
     const fs = await import('fs/promises');
     await fs.writeFile(
-      '/Users/louisherman/ClaudeCodeProjects/.claude/benchmarks/BENCHMARK_RESULTS.md',
+      path.join(__dirname, 'BENCHMARK_RESULTS.md'),
       summary,
       'utf-8'
     );
@@ -549,7 +554,7 @@ async function main() {
     console.log('\n' + '='.repeat(60));
     console.log('BENCHMARK COMPLETE');
     console.log('='.repeat(60));
-    console.log(`\nResults written to: /Users/louisherman/ClaudeCodeProjects/.claude/benchmarks/BENCHMARK_RESULTS.md`);
+    console.log(`\nResults written to: ${path.join(__dirname, 'BENCHMARK_RESULTS.md')}`);
 
     const allPassed = results.every(r => r.passed);
     console.log(`\nFinal Status: ${allPassed ? '✓ ALL TARGETS MET' : '✗ SOME TARGETS MISSED'}\n`);

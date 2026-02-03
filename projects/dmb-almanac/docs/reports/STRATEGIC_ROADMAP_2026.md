@@ -1,734 +1,158 @@
-# DMB Almanac - Strategic Roadmap 2026
+# Strategic Roadmap 2026
 
-**Date**: January 30, 2026
-**Project Phase**: Production Deployment (Week 8 Complete)
-**Overall Health**: A- (91/100)
-**Status**: Production Ready ✅
+- **Date**: January 30, 2026
+- **Phase**: Production Deployment (Week 8 Complete)
+- **Health**: A- (91/100), Production Ready
 
----
+## Current State
 
-## Executive Summary
+- 3-tier compute: GPU → WASM → JavaScript
+- Full offline-first PWA with service worker
+- IndexedDB via Dexie.js: 17 tables, 45 indexes
+- OWASP security compliance, WCAG 2.1 AA
+- Core Web Vitals: LCP 1.8s, INP 85ms
+- WASM module deployed: 119KB production
+- Test coverage: 97.9% (1,702/1,739 passing)
+- 7 remaining test failures: share API signature mismatch (non-blocking)
+- Build warnings: dynamic/static imports (optimization opportunity)
 
-The DMB Almanac has achieved **production-ready status** with 97.9% test coverage (1,702/1,739 tests passing) and all critical blockers resolved. This roadmap provides a strategic plan for the next 6 months, organized by quarter with skill recommendations and parallel execution strategies.
+## Q1 2026 (Feb-Apr): Production Stabilization
 
-### Current State Snapshot
+### Week 9-10: Deployment & Monitoring
 
-**Technical Achievements**:
-- ✅ 3-tier compute (GPU → WASM → JavaScript)
-- ✅ Full offline-first PWA with service worker
-- ✅ IndexedDB with Dexie.js (17 tables, 45 indexes)
-- ✅ OWASP security compliance
-- ✅ WCAG 2.1 AA accessibility
-- ✅ Core Web Vitals excellence (LCP: 1.8s, INP: 85ms)
-
-**Critical Fixes Deployed**:
-- ✅ WASM module deployment (119KB production module)
-- ✅ Browser API test mocks (Popover, Share, LazyLoad)
-- ✅ Clean production build
-
-**Remaining Work**:
-- ⚠️ 7 test failures (share API signature mismatch, non-blocking)
-- ⚠️ Build warnings (dynamic/static imports, optimization opportunity)
-- 📋 Medium/low priority improvements from audit
-
----
-
-## Q1 2026 (February - April): Production Stabilization
-
-**Theme**: Deploy, monitor, optimize
-
-### Week 9-10: Production Deployment & Monitoring
-
-**Objectives**:
-- Deploy to production with gradual rollout
-- Set up comprehensive monitoring
-- Establish incident response procedures
-
-**Tasks**:
-
-1. **Staging Deployment** (Week 9, Day 1-2)
-   - Deploy to staging environment
-   - Run full validation suite
-   - Mobile device testing (iOS Safari 18+, Android Chrome 143+)
-   - **Skill**: `/deployment-strategy`
-   - **Effort**: 1 day
-
-2. **Production Rollout** (Week 9, Day 3-5)
-   - 10% canary deployment
-   - Monitor error rates, performance metrics
-   - Gradual increase: 25% → 50% → 100%
-   - **Skill**: `/production-checklist`
-   - **Effort**: 3 days
-
-3. **Monitoring Setup** (Week 10, parallel)
-   - Real User Monitoring (RUM) integration
-   - Error tracking (Sentry/similar)
-   - Performance dashboard
-   - Alerting rules (error rate, performance regression)
-   - **Skill**: `/monitoring-setup`
-   - **Effort**: 2 days
-
-4. **CDN Configuration** (Week 10, parallel)
-   - WASM file delivery optimization
-   - Static asset caching strategy
-   - Geographic distribution
-   - **Skill**: `/cloud-deploy`
-   - **Effort**: 1 day
-
-**Deliverables**:
-- Production deployment complete
-- Monitoring dashboard operational
-- Incident response runbook
-- CDN serving all static assets
-
-**KPIs**:
-- 99.9% uptime
-- Error rate <0.1%
-- p95 LCP <2.5s
-- p95 INP <200ms
-
----
+- **Staging** (W9 D1-2): Deploy, run validation suite, mobile testing (iOS Safari 18+, Android Chrome 143+)
+- **Production rollout** (W9 D3-5): 10% canary → 25% → 50% → 100%, monitor error rates
+- **Monitoring** (W10): RUM integration, error tracking (Sentry), perf dashboard, alerting rules
+- **CDN** (W10, parallel): WASM delivery optimization, static asset caching, geo distribution
+- **KPIs**: 99.9% uptime, error rate <0.1%, p95 LCP <2.5s, p95 INP <200ms
 
 ### Week 11-12: Quality Improvements
 
-**Objectives**:
-- Achieve 100% test coverage
-- Resolve build warnings
-- Production logging optimization
-
-**Tasks**:
-
-1. **Fix Remaining Test Failures** (Week 11, Day 1-2)
-   - Fix share API test signatures (7 tests)
-   - Validate all 1,739 tests passing
-   - **Skill**: `/test-generate`
-   - **Effort**: 4 hours
-
-2. **Resolve Build Warnings** (Week 11, Day 3-4)
-   - Refactor `cache.js` to pure dynamic imports
-   - Refactor `db.js` to pure dynamic imports
-   - Update `lazy-dexie.js` import paths
-   - Verify zero Rollup warnings
-   - **Skill**: `/code-simplifier`, `/refactor`
-   - **Effort**: 8 hours
-
-3. **Production Logger Implementation** (Week 12, Day 1-3)
-   - Wrap 881 console statements in production logger
-   - Implement log levels (debug, info, warn, error)
-   - Add structured logging with context
-   - Integrate with monitoring system
-   - **Skill**: Custom implementation (no skill needed)
-   - **Effort**: 12 hours
-
-4. **Component Refactoring** (Week 12, Day 4-5, parallel)
-   - Split large components (>300 lines)
-   - Focus: `GuestNetwork.svelte`, complex visualizations
-   - Improve testability
-   - **Skill**: `/refactor`, `/component-create`
-   - **Effort**: 12 hours
-
-**Deliverables**:
-- 100% test coverage (1,739/1,739)
-- Zero build warnings
-- Production-grade logging
-- Refactored component library
-
-**KPIs**:
-- Test coverage: 100%
-- Build time: <5s (maintain)
-- Code complexity: Reduce by 15%
-
----
+- Fix share API test signatures (7 tests, 4h)
+- Refactor `cache.js`/`db.js`/`lazy-dexie.js` to pure dynamic imports (8h) → zero Rollup warnings
+- Production logger: wrap 881 console statements, log levels (debug/info/warn/error), structured logging (12h)
+- Component refactoring: split >300-line components (GuestNetwork.svelte focus) (12h)
+- **KPIs**: 100% test coverage, build time <5s, complexity -15%
 
 ### Week 13-16: Performance Optimization
 
-**Objectives**:
-- Optimize bundle sizes
-- Improve Core Web Vitals
-- WASM/GPU performance tuning
+- **Bundle** (W13-14, 16h): Split 80KB chunks → route-specific, tree-shake D3, optimize viz lazy loading
+  - Target: total JS <400KB (from 485KB)
+- **WASM perf** (W15, 12h): Optimize Rust aggregation, SIMD for hot paths, benchmark 7 WASM functions
+  - Target: 5-10x vs JS
+- **GPU compute** (W16, 16h): Guest network GPU shaders, histogram pipeline, multi-field aggregation
+  - Target: 10-20x for large datasets
+- **Core Web Vitals** (W15-16, 12h): scheduler.yield() in hot paths, Speculation Rules tuning, CLS space reservation
+  - Target: LCP <2.0s, INP <75ms (p75)
 
-**Tasks**:
-
-1. **Bundle Optimization** (Week 13-14)
-   - Split 80KB chunks into route-specific bundles
-   - Tree-shake unused D3 modules
-   - Optimize visualization lazy loading
-   - **Skills**: `/bundle-audit`, `/app-slim`
-   - **Effort**: 16 hours
-   - **Target**: Total JS <400KB (from 485KB)
-
-2. **WASM Performance Tuning** (Week 15, parallel)
-   - Optimize Rust aggregation algorithms
-   - Implement SIMD operations for hot paths
-   - Benchmark all 7 WASM functions
-   - **Skills**: Rust optimization (manual)
-   - **Effort**: 12 hours
-   - **Target**: 5-10x speedup vs JavaScript
-
-3. **GPU Compute Expansion** (Week 16, parallel)
-   - Add GPU shaders for guest network analysis
-   - Optimize histogram compute pipeline
-   - Add multi-field aggregation GPU support
-   - **Skills**: WebGPU implementation (manual)
-   - **Effort**: 16 hours
-   - **Target**: 10-20x speedup for large datasets
-
-4. **Core Web Vitals Optimization** (Week 15-16)
-   - INP optimization: scheduler.yield() in more hot paths
-   - LCP optimization: Speculation Rules tuning
-   - CLS optimization: Reserve space for dynamic content
-   - **Skills**: `/perf-audit`, `/lighthouse`
-   - **Effort**: 12 hours
-   - **Target**: All metrics green (p75)
-
-**Deliverables**:
-- Optimized bundle sizes
-- Enhanced WASM/GPU performance
-- Top-tier Core Web Vitals
-
-**KPIs**:
-- Bundle size: <400KB total JS
-- LCP p75: <2.0s (from 1.8s)
-- INP p75: <75ms (from 85ms)
-- WASM speedup: 5-10x
-
----
-
-## Q2 2026 (May - July): Feature Expansion
-
-**Theme**: Advanced features, mobile optimization, data expansion
+## Q2 2026 (May-Jul): Feature Expansion
 
 ### Week 17-20: Advanced WASM Modules
 
-**Objectives**:
-- Implement force simulation for guest networks
-- Add graph algorithms for tour connections
-- Expand statistical functions
-
-**Tasks**:
-
-1. **Force-Directed Graph WASM** (Week 17-18)
-   - Rust implementation of force simulation
-   - WebAssembly compilation
-   - JavaScript integration
-   - **Skills**: `/rust-wasm-scaffold`, WASM patterns
-   - **Effort**: 24 hours
-
-2. **Graph Algorithms WASM** (Week 19-20)
-   - Shortest path for tour routing
-   - Connected components for guest networks
-   - Centrality measures for venue importance
-   - **Skills**: Rust graph algorithms
-   - **Effort**: 24 hours
-
-3. **Statistical Functions** (Week 19-20, parallel)
-   - Correlation analysis
-   - Trend detection
-   - Anomaly detection
-   - **Skills**: Rust statistics
-   - **Effort**: 16 hours
-
-**Deliverables**:
-- 3 new WASM modules (force, graph, stats)
-- Enhanced visualizations
-- Advanced analytics features
-
-**KPIs**:
-- WASM modules: 10 total (from 7)
-- Performance: Maintain 5-10x speedup
-- Test coverage: Maintain 100%
-
----
+- **Force-directed graph** (W17-18, 24h): Rust force sim → WASM → JS integration
+- **Graph algorithms** (W19-20, 24h): Shortest path (tour routing), connected components (guest nets), centrality (venue importance)
+- **Statistical functions** (W19-20 parallel, 16h): Correlation, trend detection, anomaly detection
+- **KPIs**: 10 WASM modules total (from 7), maintain 5-10x speedup, 100% test coverage
 
 ### Week 21-24: Mobile Optimization
 
-**Objectives**:
-- iOS Safari optimizations
-- Android Chrome PWA enhancements
-- Touch interaction improvements
-
-**Tasks**:
-
-1. **iOS Safari Optimization** (Week 21-22)
-   - Fix viewport scaling issues
-   - Optimize for Safari 18 features
-   - Test on iPhone 15 Pro (A17 Pro)
-   - **Skills**: `/cross-platform-pwa-specialist`
-   - **Effort**: 20 hours
-
-2. **Android Chrome PWA** (Week 23)
-   - Trusted Web Activity (TWA) packaging
-   - Play Store submission preparation
-   - Android-specific features
-   - **Skills**: `/pwa-specialist`
-   - **Effort**: 12 hours
-
-3. **Touch Interaction Enhancement** (Week 24)
-   - Swipe gestures for navigation
-   - Touch-optimized visualizations
-   - Haptic feedback (where supported)
-   - **Skills**: `/responsive`, UI patterns
-   - **Effort**: 16 hours
-
-**Deliverables**:
-- iOS Safari optimizations complete
-- Android TWA package ready
-- Enhanced touch interactions
-
-**KPIs**:
-- iOS Safari performance: Match Chrome
-- Android install rate: >15%
-- Touch interaction satisfaction: >90%
-
----
+- **iOS Safari** (W21-22, 20h): Viewport scaling fixes, Safari 18 features, iPhone 15 Pro testing
+- **Android Chrome PWA** (W23, 12h): TWA packaging, Play Store submission prep
+- **Touch interactions** (W24, 16h): Swipe gestures, touch-optimized viz, haptic feedback
+- **KPIs**: iOS Safari match Chrome perf, Android install rate >15%, touch satisfaction >90%
 
 ### Week 25-28: Data Expansion
 
-**Objectives**:
-- Expand concert database
-- Add user-contributed data
-- Implement data sync
+- **Database expansion** (W25-26, 24h): Scrape 2,800 → 3,500+ shows, bootleg metadata, venue enrichment
+- **User contributions** (W27, 16h): Show corrections, moderation workflow, validation pipeline
+- **Real-time sync** (W28, 20h): Background sync for offline edits, conflict resolution, multi-device
+- **KPIs**: 3,500+ shows, >100 contributions/month, sync success >99%
 
-**Tasks**:
-
-1. **Database Expansion** (Week 25-26)
-   - Scrape additional shows (2,800 → 3,500+)
-   - Add bootleg metadata
-   - Enrich venue data
-   - **Skills**: `/dmbalmanac-scraper`
-   - **Effort**: 24 hours
-
-2. **User Contributions** (Week 27)
-   - Allow users to submit show corrections
-   - Moderation workflow
-   - Data validation pipeline
-   - **Skills**: Form handling, validation
-   - **Effort**: 16 hours
-
-3. **Real-time Sync** (Week 28)
-   - Background sync for offline edits
-   - Conflict resolution
-   - Multi-device synchronization
-   - **Skills**: `/offline-sync-specialist`
-   - **Effort**: 20 hours
-
-**Deliverables**:
-- Expanded database (3,500+ shows)
-- User contribution system
-- Real-time sync operational
-
-**KPIs**:
-- Database size: 3,500+ shows
-- User contributions: >100/month
-- Sync success rate: >99%
-
----
-
-## Q3 2026 (August - October): Advanced Features
-
-**Theme**: AI/ML integration, collaborative features, desktop PWA
+## Q3 2026 (Aug-Oct): Advanced Features
 
 ### Week 29-32: AI/ML Features
 
-**Objectives**:
-- Implement recommendation engine
-- Add natural language search
-- Predictive analytics
-
-**Tasks**:
-
-1. **Recommendation Engine** (Week 29-30)
-   - Collaborative filtering for similar shows
-   - Content-based recommendations
-   - Personalized discovery
-   - **Skills**: `/ai-ml-engineer`
-   - **Effort**: 24 hours
-
-2. **Natural Language Search** (Week 31)
-   - Query understanding
-   - Semantic search
-   - Voice search integration
-   - **Skills**: `/web-speech-specialist`
-   - **Effort**: 16 hours
-
-3. **Predictive Analytics** (Week 32)
-   - Tour prediction models
-   - Setlist prediction
-   - Liberation likelihood
-   - **Skills**: ML modeling
-   - **Effort**: 20 hours
-
-**Deliverables**:
-- AI recommendation system
-- Natural language search
-- Predictive analytics dashboard
-
-**KPIs**:
-- Recommendation CTR: >25%
-- Search accuracy: >85%
-- Prediction accuracy: >70%
-
----
+- **Recommendation engine** (W29-30, 24h): Collaborative filtering, content-based, personalized discovery
+- **NL search** (W31, 16h): Query understanding, semantic search, voice integration
+- **Predictive analytics** (W32, 20h): Tour prediction, setlist prediction, liberation likelihood
+- **KPIs**: Recommendation CTR >25%, search accuracy >85%, prediction accuracy >70%
 
 ### Week 33-36: Collaborative Features
 
-**Objectives**:
-- User show ratings/reviews
-- Community setlist verification
-- Social sharing enhancements
+- **Ratings & reviews** (W33-34, 24h): User auth, 5-star system, review moderation
+- **Community verification** (W35, 16h): Crowdsourced setlist corrections, voting, trust scores
+- **Social sharing v2** (W36, 12h): Rich link previews, shareable show cards, social media integration
+- **KPIs**: >40% rating shows, verification accuracy >95%, share rate >10%
 
-**Tasks**:
+### Week 37-40: Desktop PWA
 
-1. **Ratings & Reviews** (Week 33-34)
-   - User authentication
-   - Rating system (5-star)
-   - Review moderation
-   - **Skills**: Authentication, user management
-   - **Effort**: 24 hours
+- **Window Controls Overlay** (W37, 12h): Custom titlebar, native app feel, OS integration
+- **Desktop features** (W38-39, 20h): Comprehensive keyboard shortcuts, menu bar, system notifications
+- **Multi-window** (W40, 16h): Detached viz, cross-window state sync, PiP mode
+- **KPIs**: Desktop install >20%, multi-window usage >5%, shortcut adoption >30%
 
-2. **Community Verification** (Week 35)
-   - Crowdsourced setlist corrections
-   - Voting system
-   - Trust score algorithm
-   - **Skills**: Community features
-   - **Effort**: 16 hours
-
-3. **Social Sharing v2** (Week 36)
-   - Rich link previews
-   - Shareable show cards
-   - Social media integration
-   - **Skills**: `/social-media-manager`
-   - **Effort**: 12 hours
-
-**Deliverables**:
-- User rating system
-- Community verification
-- Enhanced social sharing
-
-**KPIs**:
-- User engagement: >40% rating shows
-- Verification accuracy: >95%
-- Share rate: >10% of users
-
----
-
-### Week 37-40: Desktop PWA Enhancements
-
-**Objectives**:
-- Window controls overlay
-- Desktop-specific features
-- Multi-window support
-
-**Tasks**:
-
-1. **Window Controls Overlay** (Week 37)
-   - Custom titlebar
-   - Native app feel
-   - OS integration
-   - **Skills**: `/pwa-advanced-specialist`
-   - **Effort**: 12 hours
-
-2. **Desktop Features** (Week 38-39)
-   - Keyboard shortcuts (comprehensive)
-   - Menu bar integration
-   - System notifications
-   - **Skills**: Desktop PWA patterns
-   - **Effort**: 20 hours
-
-3. **Multi-Window Support** (Week 40)
-   - Detached visualizations
-   - Cross-window state sync
-   - Picture-in-Picture mode
-   - **Skills**: Multi-window patterns
-   - **Effort**: 16 hours
-
-**Deliverables**:
-- Desktop PWA with native feel
-- Comprehensive keyboard shortcuts
-- Multi-window support
-
-**KPIs**:
-- Desktop install rate: >20%
-- Multi-window usage: >5%
-- Keyboard shortcut adoption: >30%
-
----
-
-## Q4 2026 (November - December): Scale & Polish
-
-**Theme**: Performance at scale, internationalization, platform expansion
+## Q4 2026 (Nov-Dec): Scale & Polish
 
 ### Week 41-44: Performance at Scale
 
-**Objectives**:
-- Support 10K+ shows
-- Handle 1M+ setlist entries
-- Optimize for large datasets
-
-**Tasks**:
-
-1. **IndexedDB Sharding** (Week 41-42)
-   - Implement database sharding by year
-   - Lazy loading of shards
-   - Cross-shard query optimization
-   - **Skills**: `/database-architect`
-   - **Effort**: 24 hours
-
-2. **GPU Compute Expansion** (Week 43)
-   - All aggregations on GPU
-   - Batch processing for large queries
-   - Memory optimization
-   - **Skills**: WebGPU optimization
-   - **Effort**: 16 hours
-
-3. **Virtual Scrolling v2** (Week 44)
-   - Infinite scroll with 10K+ items
-   - Optimized rendering
-   - Search within virtualized lists
-   - **Skills**: Performance patterns
-   - **Effort**: 12 hours
-
-**Deliverables**:
-- Sharded database architecture
-- GPU compute for all operations
-- Optimized virtual scrolling
-
-**KPIs**:
-- Database size: Support 10K+ shows
-- Query performance: <100ms for any query
-- Memory usage: <500MB for large datasets
-
----
+- **IndexedDB sharding** (W41-42, 24h): Shard by year, lazy load shards, cross-shard query optimization
+- **GPU compute expansion** (W43, 16h): All aggregations on GPU, batch processing, memory optimization
+- **Virtual scrolling v2** (W44, 12h): Infinite scroll 10K+ items, optimized rendering, search within virtualized lists
+- **KPIs**: Support 10K+ shows, query <100ms, memory <500MB
 
 ### Week 45-48: Internationalization
 
-**Objectives**:
-- Multi-language support
-- Date/time localization
-- RTL language support
+- **i18n** (W45-46, 24h): Translation system, language switching, initial: EN/ES/FR/DE
+- **Localization** (W47, 12h): Date/time/number/currency formatting
+- **RTL support** (W48, 16h): RTL CSS, bidirectional text, RTL visualizations
+- **KPIs**: 4 languages, translation >95% complete, RTL 100% compatible
 
-**Tasks**:
+## Parallel Execution Opportunities
 
-1. **i18n Implementation** (Week 45-46)
-   - Translation system
-   - Language switching
-   - Initial languages: EN, ES, FR, DE
-   - **Skills**: `/i18n-specialist`
-   - **Effort**: 24 hours
-
-2. **Localization** (Week 47)
-   - Date/time formatting
-   - Number formatting
-   - Currency support
-   - **Skills**: i18n patterns
-   - **Effort**: 12 hours
-
-3. **RTL Support** (Week 48)
-   - RTL CSS
-   - Bidirectional text
-   - Right-to-left visualizations
-   - **Skills**: RTL patterns
-   - **Effort**: 16 hours
-
-**Deliverables**:
-- Multi-language support (4 languages)
-- Full localization
-- RTL language support
-
-**KPIs**:
-- Language coverage: 4 languages
-- Translation completeness: >95%
-- RTL compatibility: 100%
-
----
-
-## Skill Deployment Strategy
-
-### Core Skills for Each Phase
-
-**Q1 (Production Stabilization)**:
-- `/deployment-strategy` - Staging/production deployment
-- `/production-checklist` - Pre-launch validation
-- `/monitoring-setup` - Observability
-- `/cloud-deploy` - CDN configuration
-- `/test-generate` - Test completion
-- `/code-simplifier` - Code refactoring
-- `/refactor` - Large-scale refactoring
-- `/bundle-audit` - Bundle optimization
-- `/app-slim` - Application slimming
-- `/perf-audit` - Performance analysis
-- `/lighthouse` - Core Web Vitals
-
-**Q2 (Feature Expansion)**:
-- `/rust-wasm-scaffold` - New WASM modules
-- `/cross-platform-pwa-specialist` - Mobile optimization
-- `/pwa-specialist` - PWA enhancements
-- `/dmbalmanac-scraper` - Data expansion
-- `/offline-sync-specialist` - Real-time sync
-
-**Q3 (Advanced Features)**:
-- `/ai-ml-engineer` - AI/ML integration
-- `/web-speech-specialist` - Voice features
-- `/social-media-manager` - Social features
-- `/pwa-advanced-specialist` - Desktop PWA
-
-**Q4 (Scale & Polish)**:
-- `/database-architect` - Sharding/scale
-- `/i18n-specialist` - Internationalization
-
-### Parallel Execution Opportunities
-
-**Q1 Week 10**: Monitoring + CDN (parallel)
-**Q1 Week 12**: Logger + Component refactor (parallel)
-**Q1 Week 15**: WASM + GPU optimization (parallel)
-**Q2 Week 19-20**: Graph + Stats WASM (parallel)
-**Q3 Week 38-39**: Desktop features (parallel tasks)
-**Q4 Week 43-44**: GPU + Virtual scrolling (parallel)
-
-### Skill Gaps to Fill
-
-**None identified** - Current skill set covers all roadmap requirements.
-
-Optional additions:
-- Advanced Rust optimization specialist
-- WebGPU compute shader specialist
-- ML/AI integration specialist
-
----
+- Q1 W10: Monitoring + CDN
+- Q1 W12: Logger + component refactor
+- Q1 W15: WASM + GPU optimization
+- Q2 W19-20: Graph + stats WASM
+- Q3 W38-39: Desktop features
+- Q4 W43-44: GPU + virtual scrolling
 
 ## Risk Management
 
-### High-Risk Items
+### High Risk
+- **DB sharding** (Q4 W41-42): Data migration complexity → thorough testing, gradual rollout, keep unsharded fallback
+- **AI/ML integration** (Q3 W29-32): Perf overhead, accuracy → client-side inference, server fallback
+- **i18n** (Q4 W45-48): Translation quality, maintenance → professional translation, English-only fallback
 
-1. **Database Sharding** (Q4 Week 41-42)
-   - **Risk**: Data migration complexity
-   - **Mitigation**: Thorough testing, gradual rollout, rollback plan
-   - **Contingency**: Keep unsharded version available
+### Medium Risk
+- **Android TWA** (Q2 W23): Play Store approval → follow guidelines, PWA install fallback
+- **Real-time sync** (Q2 W28): Conflict resolution → last-write-wins with manual override
 
-2. **AI/ML Integration** (Q3 Week 29-32)
-   - **Risk**: Performance overhead, accuracy
-   - **Mitigation**: Client-side inference, model optimization
-   - **Contingency**: Server-side fallback
+## Success Metrics by Quarter
 
-3. **Multi-Language Support** (Q4 Week 45-48)
-   - **Risk**: Translation quality, maintenance burden
-   - **Mitigation**: Professional translation, community contributions
-   - **Contingency**: English-only mode always available
-
-### Medium-Risk Items
-
-1. **Android TWA Packaging** (Q2 Week 23)
-   - **Risk**: Play Store approval
-   - **Mitigation**: Follow guidelines, thorough testing
-   - **Contingency**: PWA install from browser
-
-2. **Real-time Sync** (Q2 Week 28)
-   - **Risk**: Conflict resolution complexity
-   - **Mitigation**: Last-write-wins with manual override
-   - **Contingency**: Manual sync only
-
----
-
-## Success Metrics
-
-### Q1 Targets
-
-- **Availability**: 99.9%
-- **Error Rate**: <0.1%
-- **Test Coverage**: 100%
-- **LCP p95**: <2.0s
-- **INP p95**: <100ms
-
-### Q2 Targets
-
-- **WASM Modules**: 10 total
-- **Mobile Install Rate**: >15%
-- **Database Size**: 3,500+ shows
-- **User Contributions**: >100/month
-
-### Q3 Targets
-
-- **Recommendation CTR**: >25%
-- **Desktop Install Rate**: >20%
-- **User Engagement**: >40% rating shows
-
-### Q4 Targets
-
-- **Database Support**: 10K+ shows
-- **Language Coverage**: 4 languages
-- **Query Performance**: <100ms any query
-
----
+| Metric | Q1 | Q2 | Q3 | Q4 |
+|--------|----|----|----|----|
+| Availability | 99.9% | - | - | - |
+| Error rate | <0.1% | - | - | - |
+| Test coverage | 100% | 100% | 100% | 100% |
+| LCP p95 | <2.0s | - | - | - |
+| INP p95 | <100ms | - | - | - |
+| WASM modules | 7 | 10 | 10 | 10 |
+| Mobile install | - | >15% | - | - |
+| DB shows | - | 3,500+ | 3,500+ | 10K+ |
+| Desktop install | - | - | >20% | >20% |
+| Languages | 1 | 1 | 1 | 4 |
+| Query perf | - | - | - | <100ms |
 
 ## Resource Requirements
 
-### Development Time
-
-**Q1**: 200 hours (5 weeks × 40 hours)
-**Q2**: 240 hours (6 weeks × 40 hours)
-**Q3**: 240 hours (6 weeks × 40 hours)
-**Q4**: 200 hours (5 weeks × 40 hours)
-
-**Total Year**: 880 hours
-
-### Infrastructure
-
-**Q1-Q2**:
-- CDN: ~$50/month
-- Monitoring: ~$25/month
-- Error tracking: ~$25/month
-
-**Q3-Q4**:
-- Database hosting: ~$50/month
-- AI/ML inference: ~$100/month
-- Translation API: ~$25/month
-
-**Total Year**: ~$350/month infrastructure
-
----
+- **Dev time**: Q1 200h, Q2 240h, Q3 240h, Q4 200h = **880h total**
+- **Infra Q1-Q2**: CDN ~$50/mo, monitoring ~$25/mo, error tracking ~$25/mo
+- **Infra Q3-Q4**: +DB hosting ~$50/mo, AI/ML inference ~$100/mo, translation API ~$25/mo
+- **Total**: ~$350/mo infrastructure
 
 ## Checkpoint Reviews
 
-### After Q1 (Week 16)
-- Review production metrics
-- Assess performance against KPIs
-- Adjust Q2 priorities based on user feedback
-
-### After Q2 (Week 28)
-- Review feature adoption
-- Assess mobile performance
-- Adjust Q3 priorities
-
-### After Q3 (Week 40)
-- Review AI/ML effectiveness
-- Assess desktop PWA adoption
-- Adjust Q4 priorities
-
-### Year-End (Week 48)
-- Comprehensive annual review
-- Plan 2027 roadmap
-- Assess strategic direction
-
----
-
-## Conclusion
-
-This strategic roadmap provides a clear path from production deployment (Q1) through advanced features (Q3) to scale and polish (Q4). The plan leverages existing skills, maintains high quality standards, and focuses on user value delivery.
-
-**Key Principles**:
-- ✅ Ship early, iterate often
-- ✅ Maintain 100% test coverage
-- ✅ Performance is a feature
-- ✅ Accessibility is non-negotiable
-- ✅ User feedback drives priorities
-
-**Next Actions**:
-1. Execute Q1 Week 9-10 (production deployment)
-2. Set up monitoring and alerting
-3. Begin Q1 Week 11 quality improvements
-
----
-
-**Roadmap Version**: 1.0
-**Last Updated**: January 30, 2026
-**Next Review**: Week 16 (April 2026)
+- **Week 16** (after Q1): Review prod metrics, assess KPIs, adjust Q2 priorities
+- **Week 28** (after Q2): Review feature adoption, mobile perf, adjust Q3
+- **Week 40** (after Q3): Review AI/ML effectiveness, desktop PWA adoption, adjust Q4
+- **Week 48** (year-end): Comprehensive review, plan 2027

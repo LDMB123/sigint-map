@@ -1,87 +1,33 @@
 # Workspace Agent Ecosystem
 
-**Total Agents:** 19 (curated subset)
-**Purpose:** Production-ready agents for active development
-**Optimization:** Token-optimized, high-quality, tested
+**Total Agents:** 3 (DMB project-specific)
+**Purpose:** Workspace-coupled agents that require project paths
+**Last audit:** 2026-02-01
 
 ## Agent Inventory
 
-**Core Engineering (8):**
-1. best-practices-enforcer.md
-2. bug-triager.md
-3. code-generator.md
-4. error-debugger.md
-5. migration-agent.md
-6. refactoring-agent.md
-7. security-scanner.md
-8. test-generator.md
-
-**Performance & Analysis (4):**
-9. dependency-analyzer.md
-10. performance-auditor.md
-11. performance-profiler.md
-12. token-optimizer.md
-
-**Documentation (1):**
-13. documentation-writer.md
-
-**Tech Stack Specialists (3):**
-14. sveltekit-specialist.md - SvelteKit 2 routing, load functions, form actions
-15. svelte5-specialist.md - Svelte 5 runes, reactivity, component patterns
-16. dexie-specialist.md - Dexie.js 4.x IndexedDB, offline-first, client database
-
-**Project-Specific (3):**
-17. dmb-analyst.md - Concert analysis and statistics
-18. **dmbalmanac-site-expert.md** - Site structure and data organization
-19. **dmbalmanac-scraper.md** - Web scraping specialist
+**DMB Almanac Project (3):**
+1. dmb-analyst.md - Concert analysis and statistics
+2. dmbalmanac-site-expert.md - Site structure and data organization
+3. dmbalmanac-scraper.md - Web scraping specialist
 
 ## Relationship to HOME Directory
 
-**HOME Location:** `~/.claude/agents/` (455+ agents in hierarchical structure)
+**HOME Location:** `~/.claude/agents/` (27 active agents)
 
-**Workspace is a CURATED SUBSET:**
-- **Workspace:** 19 production-ready agents (token-optimized, tested)
-- **HOME:** 455+ comprehensive library (organized in subdirectories)
-- **Shared:** 17 agents exist in both locations
-- **Workspace-only:** 2 dmbalmanac-* agents (path-coupled to workspace project)
-- **HOME-only:** 433 agents including 28 in `dmb/` subdirectory
+**Architecture:**
+- **Workspace:** 3 DMB project-specific agents (path-coupled)
+- **HOME:** 16 general-purpose + 8 DMB domain agents + `dmb/` subdirectory
+- **Archived:** 16 workspace agents moved to `_archived/` (duplicated user-scope agents)
 
-**Architecture Pattern:**
-```
-Workspace (.claude/agents/)     HOME (~/.claude/agents/)
-├── 17 shared agents           ├── 17 shared agents (synced from workspace)
-├── 2 workspace-only agents    ├── 438+ HOME-only agents
-└── (curated, optimized)       └── Hierarchical: dmb/, browser/, debug/, etc.
-```
+**Conflict Resolution:** Workspace always wins for shared agents.
 
-**Note:** HOME agent counts are approximate. Use `find ~/.claude/agents -name "*.md" -type f | wc -l` for exact count.
+## Archived Agents
 
-**Conflict Resolution:** Workspace always wins
-- YAML differs → Use workspace version
-- Content differs → Use workspace version
-- Model tier differs → Use workspace version
-- Size differs → Use workspace version (token-optimized)
+16 agents archived on 2026-02-01 (duplicated user-scope agents with minor YAML differences):
+- best-practices-enforcer, bug-triager, code-generator, dependency-analyzer
+- dexie-specialist, documentation-writer, error-debugger, migration-agent
+- performance-auditor, performance-profiler, refactoring-agent, security-scanner
+- svelte5-specialist, sveltekit-specialist, test-generator, token-optimizer
 
-**Sync Policy:**
-- **Workspace → HOME:** Manual sync within 24 hours of workspace changes
-- **HOME → Workspace:** Never auto-sync (workspace is curated subset)
-- **Conflict detection:** Monthly review
-- **Last sync:** 2026-01-31 (Phase 1: 4 agents, Phase 2: 3 agents)
-- **Full policy:** `~/.claude/agents/SYNC_POLICY.md`
-
-## Project-Specific Agents
-
-**DMB Almanac agents (2):**
-- `dmbalmanac-site-expert.md` - Site structure and data organization
-- `dmbalmanac-scraper.md` - Web scraping specialist for dmbalmanac.com
-
-These agents have hardcoded paths to the dmb-almanac project and must remain in workspace. They were moved from HOME on 2026-01-31 due to path coupling.
-
-## Adding New Agents
-
-1. Create in workspace first (token-optimized)
-2. Test thoroughly
-3. Copy to HOME within 24 hours
-4. Update this README
-
-Last updated: 2026-01-31
+Last updated: 2026-02-01
