@@ -258,10 +258,10 @@ else
 fi
 
 # Check for WASM build output
-if [ -d "app/wasm/dmb-transform/pkg" ]; then
+if [ -d "app/src/lib/wasm/aggregations" ]; then
     log_success "WASM modules appear to be built"
 else
-    log_warning "WASM modules not built (run: cd app && npm run wasm:build)"
+    log_warning "WASM modules not built (run: bash scripts/build-wasm.sh)"
 fi
 
 # Summary

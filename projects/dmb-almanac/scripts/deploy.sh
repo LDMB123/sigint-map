@@ -151,7 +151,7 @@ fi
 
 # Build WASM modules
 log_info "Building WASM modules..."
-npm run wasm:build
+bash scripts/build-wasm.sh
 
 log_success "WASM modules built"
 

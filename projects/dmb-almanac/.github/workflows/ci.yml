@@ -141,10 +141,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            app/wasm
+            rust
+            scripts
             app/package.json
             app/package-lock.json
-            app/scripts
 
       - name: Setup Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -170,19 +170,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            app/wasm/target
-            app/wasm/*/pkg
-          key: wasm-${{ env.CACHE_VERSION }}-${{ hashFiles('app/wasm/**/Cargo.toml', 'app/wasm/**/Cargo.lock', 'app/wasm/**/src/**') }}
+            rust/aggregations/target
+            app/src/lib/wasm/aggregations
+          key: wasm-${{ env.CACHE_VERSION }}-${{ hashFiles('rust/**/Cargo.toml', 'rust/**/Cargo.lock', 'rust/**/src/**') }}
           restore-keys: |
-            wasm-${{ env.CACHE_VERSION }}-${{ hashFiles('app/wasm/**/Cargo.toml', 'app/wasm/**/Cargo.lock') }}
+            wasm-${{ env.CACHE_VERSION }}-${{ hashFiles('rust/**/Cargo.toml', 'rust/**/Cargo.lock') }}
             wasm-${{ env.CACHE_VERSION }}-
 
       - name: Build WASM modules
-        working-directory: ./app
-        run: |
-          # Setup minimal node env for build script
-          npm ci --ignore-scripts
-          npm run wasm:build
+        run: bash scripts/build-wasm.sh
         env:
           CARGO_INCREMENTAL: 1
           RUSTFLAGS: '-C opt-level=z -C lto=thin'
@@ -191,7 +187,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wasm-modules
-          path: app/wasm/*/pkg/
+          path: app/src/lib/wasm/aggregations/
           retention-days: 1
           compression-level: 6
 
@@ -220,7 +216,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: wasm-modules
-          path: app/wasm/
+          path: app/src/lib/wasm/aggregations/
 
       # BUILD-014: Cache Vite build artifacts for faster incremental builds
       - name: Cache Vite build

@@ -81,9 +81,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            app/wasm/target
-            app/wasm/*/pkg
-          key: wasm-${{ env.CACHE_VERSION }}-${{ hashFiles('app/wasm/**/Cargo.toml', 'app/wasm/**/Cargo.lock', 'app/wasm/**/src/**') }}
+            rust/aggregations/target
+            app/src/lib/wasm/aggregations
+          key: wasm-${{ env.CACHE_VERSION }}-${{ hashFiles('rust/**/Cargo.toml', 'rust/**/Cargo.lock', 'rust/**/src/**') }}
           restore-keys: |
             wasm-${{ env.CACHE_VERSION }}-
 
@@ -98,7 +98,7 @@ jobs:
           PUBLIC_SITE_URL: https://staging.dmbalmanac.com
 
       - name: Build WASM modules
-        run: npm run wasm:build
+        run: bash scripts/build-wasm.sh
         env:
           CARGO_INCREMENTAL: 1
           RUSTFLAGS: '-C opt-level=z -C lto=thin'

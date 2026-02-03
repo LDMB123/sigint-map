@@ -108,7 +108,7 @@ jobs:
         run: npm ci
 
       - name: Build WASM modules
-        run: npm run wasm:build
+        run: bash scripts/build-wasm.sh
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest

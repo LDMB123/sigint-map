@@ -52,9 +52,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            app/wasm/target
-            app/wasm/*/pkg
-          key: wasm-preview-${{ hashFiles('app/wasm/**/Cargo.toml', 'app/wasm/**/Cargo.lock') }}
+            rust/aggregations/target
+            app/src/lib/wasm/aggregations
+          key: wasm-preview-${{ hashFiles('rust/**/Cargo.toml', 'rust/**/Cargo.lock') }}
           restore-keys: |
             wasm-preview-
 
@@ -66,7 +66,7 @@ jobs:
           bash ../scripts/validate-env.sh preview
 
       - name: Build WASM modules
-        run: npm run wasm:build
+        run: bash scripts/build-wasm.sh
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
