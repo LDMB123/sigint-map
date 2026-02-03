@@ -7,7 +7,6 @@ Compressed from 7 project-level docs + app-level WASM_REFERENCE.md (415 lines).
 ### Commands
 ```bash
 bash scripts/build-wasm.sh       # Build WASM modules (primary)
-npx tsx scripts/build-wasm.ts   # Unified WASM build script
 npm run prebuild                # Build WASM + compress data
 npm run build                   # Full production build
 ```

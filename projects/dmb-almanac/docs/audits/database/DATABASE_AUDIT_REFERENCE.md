@@ -144,12 +144,9 @@ getStorageEstimate()         // Check quota usage
 ## Debugging Tools
 
 ```javascript
+// Browser console or component:
 import { validateDataIntegrity } from '$db/dexie/validation/data-integrity';
 const results = await validateDataIntegrity();
-```
-
-```bash
-node scripts/validate-db-integrity.js
 ```
 
 ## Scraper Database Integration
