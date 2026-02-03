@@ -122,7 +122,7 @@ jobs:
 
       - name: Run Lighthouse CI
         run: |
-          lhci autorun --config=../lighthouserc.json
+          lhci autorun --config=./.lighthouserc.json
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
           LHCI_BUILD_CONTEXT__CURRENT_BRANCH: ${{ github.head_ref }}

@@ -157,8 +157,8 @@ npm run constraints        # initialize constraints
 ### Feature Flags
 ```javascript
 const ENABLE_NEW_FEATURE = import.meta.env.VITE_ENABLE_NEW_FEATURE === 'true';
-// WASM rollout: src/lib/utils/wasm-config.js
-export const WASM_CONFIG = { enabled: true, rollout: 10, browsers: ['chrome','edge','firefox','safari'] };
+// WASM rollout example (inline configuration):
+const WASM_CONFIG = { enabled: true, rollout: 10, browsers: ['chrome','edge','firefox','safari'] };
 ```
 
 ## Post-Deploy Checklist
