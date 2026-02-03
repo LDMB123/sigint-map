@@ -198,13 +198,14 @@ ComputeTelemetry.export()        // JSON export
 
 ```
 src/lib/gpu/
-  device.ts        # GPUDeviceManager singleton
-  fallback.ts      # ComputeOrchestrator (3-tier)
-  histogram.ts     # GPUHistogram
-  multi-field.ts   # GPUMultiField
-  telemetry.ts     # Performance tracking
-  types.ts         # TypeScript interfaces
-  index.ts         # Public API
+  device.js        # GPUDeviceManager singleton
+  fallback.js      # ComputeOrchestrator (3-tier)
+  histogram.js     # GPUHistogram
+  multi-field.js   # GPUMultiField
+  telemetry.js     # Performance tracking
+  buffer-pool.js   # Buffer reuse pool
+  preload.js       # Shader precompilation
+  index.js         # Public API
 static/shaders/    # histogram.wgsl, multi-field.wgsl
 rust/aggregations/ # WASM fallback (Rust)
 ```

@@ -61,14 +61,14 @@ strip = true
 - `ComputeTelemetry` in `$lib/gpu/telemetry.js` tracks backend usage
 
 ### Static Loader
-1. Build time: `scripts/build-wasm.ts` builds modules -> `static/wasm/`
-2. Runtime: `loaders/static-loader.js` fetches `/wasm/manifest.json`
+1. Build time: `scripts/build-wasm.sh` builds modules -> `static/wasm/`
+2. Runtime: `$lib/wasm/loader.js` fetches `/wasm/manifest.json`
 3. `@vite-ignore` dynamic import bypasses Vite parser
 4. Modules loaded from static assets (no bundler processing)
 
 ### File Structure
 ```
-rust/dmb-aggregations/src/lib.rs    # Aggregation WASM functions
+rust/aggregations/src/lib.rs        # Aggregation WASM functions
 app/src/lib/wasm/loader.js          # WasmRuntime singleton
 app/src/lib/wasm/aggregations/      # Generated WASM output
 app/src/lib/gpu/fallback.js         # 3-tier orchestrator
@@ -246,8 +246,7 @@ const WASM_FILES = ['/wasm/dmb_aggregations_bg.wasm'];
 - Memory leak detected
 - Browser crashes reported
 ```bash
-git checkout src/lib/wasm/bridge.ts vite.config.js
-mv wasm wasm-disabled
+# Disable WASM feature flag and restart
 npm run dev
 ```
 
@@ -255,7 +254,7 @@ npm run dev
 
 ### Commands
 ```bash
-cd rust/dmb-aggregations && cargo clippy --release -- -D warnings && cargo test --release
+cd rust/aggregations && cargo clippy --release -- -D warnings && cargo test --release
 cd app && npm test -- tests/wasm/
 npm test -- tests/wasm/aggregations.integration.test.js
 npm test -- --grep "WASM"
@@ -308,10 +307,7 @@ npm test -- --grep "WASM"
 | visualize.js | 201 | JSDoc types |
 | transform-typed-arrays.js | 134 | JSDoc types |
 
-### Kept in TypeScript
-- `types.ts` - Complex Rust FFI types
-- `bridge.ts` - Advanced generics, singleton
-- `proxy.ts` - Proxy patterns with type inference
+*All WASM modules converted to JS with JSDoc types. Only `loader.js` and `aggregations-wrapper.js` remain in `$lib/wasm/`.*
 
 ## Bundle Impact
 - Main bundle: 580 KB (unchanged, WASM lazy loaded)
