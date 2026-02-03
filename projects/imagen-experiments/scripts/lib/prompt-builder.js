@@ -146,7 +146,7 @@ function getRandomVenue(city = 'austin') {
   return venues[Math.floor(Math.random() * venues.length)];
 }
 
-module.exports = {
+export {
   buildDiveBarPrompt,
   buildBatch,
   getRandomVenue,

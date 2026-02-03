@@ -60,8 +60,8 @@ Auth:
 Instead of 156K tokens in markdown prompts, use the template system:
 
 ```javascript
-const { buildDiveBarPrompt, buildBatch } = require('./lib/prompt-builder');
-const concepts = require('../../prompts/concepts.json');
+import { buildDiveBarPrompt, buildBatch } from './scripts/lib/prompt-builder.js';
+import concepts from './prompts/concepts.json' with { type: 'json' };
 
 // Build single prompt
 const prompt = buildDiveBarPrompt(concepts.concepts[0]);

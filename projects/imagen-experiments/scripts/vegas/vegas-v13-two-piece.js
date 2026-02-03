@@ -20,7 +20,7 @@ import {
   LIGHT_PHYSICS, SKIN_PHYSICS, CAMERA_PHYSICS, GAZE_PHYSICS,
   buildPreamble, buildImperfections, expressions,
   createGenerationEngine,
-} from './lib/physics-engine.js';
+} from '../lib/physics-engine.js';
 
 const OUTPUT_DIR = process.env.OUTPUT_DIR || path.join(process.env.HOME, 'nanobanana-output', 'vegas-v13-two-piece');
 const INPUT_IMAGE = process.argv[2] || '/Users/louisherman/Documents/518355716_10109335899644328_1380496532632646402_n.jpeg';
