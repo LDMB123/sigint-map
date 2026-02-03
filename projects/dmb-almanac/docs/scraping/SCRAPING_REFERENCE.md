@@ -82,16 +82,15 @@ scraper/
 ## CLI Commands
 
 ```bash
-npm run scrape [targets...] [options]    # Or: tsx src/orchestrator.ts [targets...]
-npm run scrape:full                       # Full production scrape (~2 hours)
-npm run scrape:incremental -- --validate --import  # Daily update
-npm run scrape shows -- --year=2024 --validate     # Single year
-npm run scrape all -- --dry-run           # Preview execution plan
-npm run scrape -- --resume                # Resume from checkpoint
-npm run scrape:validate                   # Scrape with validation
-npm run scrape:import                     # Import after validation
-npx tsx scripts/import-data.ts             # Import JSON to SQLite
-npm run test:features                     # Run feature tests
+# All scraper commands use direct tsx invocation (no npm scripts defined)
+cd app/scraper
+npx tsx src/orchestrator.ts [targets...] [options]  # Main entry point
+npx tsx src/orchestrator.ts all                     # Full production scrape (~2 hours)
+npx tsx src/orchestrator.ts all --incremental --validate --import  # Daily update
+npx tsx src/orchestrator.ts shows --year=2024 --validate  # Single year
+npx tsx src/orchestrator.ts all --dry-run            # Preview execution plan
+npx tsx src/orchestrator.ts --resume                 # Resume from checkpoint
+npx tsx scripts/import-data.ts                       # Import JSON to SQLite
 ```
 
 ### Targets
@@ -119,12 +118,12 @@ npm run test:features                     # Run feature tests
 
 ### Per-Scraper Commands
 ```bash
-npm run scrape:shows        npm run scrape:songs
-npm run scrape:tours        npm run scrape:releases
-npm run scrape:song-stats   npm run scrape:venue-stats
-npm run scrape:rarity       npm run scrape:history
-npm run scrape:guest-shows  npm run scrape:all
-npx tsx test-show-parsing-inline.ts  # Quick validation (4 tests)
+# cd app/scraper && npx tsx src/orchestrator.ts <target>
+npx tsx src/orchestrator.ts shows       npx tsx src/orchestrator.ts songs
+npx tsx src/orchestrator.ts tours       npx tsx src/orchestrator.ts releases
+npx tsx src/orchestrator.ts song-stats  npx tsx src/orchestrator.ts venue-stats
+npx tsx src/orchestrator.ts rarity      npx tsx src/orchestrator.ts history
+npx tsx src/orchestrator.ts guest-shows npx tsx src/orchestrator.ts all
 ```
 
 ## P0 Features

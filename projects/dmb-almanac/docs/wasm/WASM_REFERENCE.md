@@ -6,11 +6,10 @@ Compressed from 7 project-level docs + app-level WASM_REFERENCE.md (415 lines).
 
 ### Commands
 ```bash
-npm run wasm:build              # Build all 7 WASM modules
+bash scripts/build-wasm.sh       # Build WASM modules (primary)
+npx tsx scripts/build-wasm.ts   # Unified WASM build script
 npm run prebuild                # Build WASM + compress data
 npm run build                   # Full production build
-npx tsx scripts/build-wasm.ts   # Unified WASM build script
-./scripts/build-wasm.sh         # Shell build script
 ```
 
 ### Rust Toolchain Setup
@@ -285,7 +284,7 @@ npm test -- --grep "WASM"
 
 ## Troubleshooting
 
-- **Cannot find module '/wasm/pkg/module.js'**: Run `npm run wasm:build`
+- **Cannot find module '/wasm/pkg/module.js'**: Run `bash scripts/build-wasm.sh`
 - **WASM slower than JS**: Check dataset size (>100 items needed), verify release build, use TypedArrays
 - **"ESM integration proposal" errors**: Convert block comments to line comments `//`
 - **Worker init fails**: Auto-fallback to direct mode

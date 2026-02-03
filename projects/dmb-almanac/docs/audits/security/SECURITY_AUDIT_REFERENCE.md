@@ -65,7 +65,7 @@
 - `getSigningSecret()`: always returns current
 - `needsRotation()`: checks if >90 days since last rotation
 - Verification: try all active secrets sequentially
-- Rotation script: `npm run rotate:jwt-secret` -- generates 64-byte random, shuffles env vars
+- Rotation script: manual process -- `openssl rand -base64 64` to generate, then update env vars
 
 ## Rate Limiting Implementation
 
@@ -126,7 +126,7 @@
 ```bash
 openssl rand -base64 64              # Generate JWT secret
 npx web-push generate-vapid-keys     # Generate VAPID keys
-npm run rotate:jwt-secret            # Rotate JWT
+# Rotate JWT: update JWT_SECRET_CURRENT/PREVIOUS env vars manually
 npm audit                            # Check vulnerabilities
 git grep -i "api.*key.*=" | grep -v "process.env"  # Scan for secrets
 ```
