@@ -20,14 +20,14 @@ imagen-experiments/
 │   ├── lib/              # Shared modules
 │   │   ├── physics-engine.js   # Physics formulas (shared)
 │   │   ├── grounding.js        # Location grounding
-│   │   └── prompt-builder.js   # Template system (NEW)
+│   │   └── prompt-builder.js   # Template system (experimental)
 │   ├── vegas/            # Vegas series v4-v29 (36 scripts)
 │   ├── nashville/        # Nashville concepts (6 scripts)
 │   ├── batch/            # Shell batch runners (40 scripts)
 │   └── experiments/      # Experimental scripts (22 scripts)
 ├── prompts/
-│   ├── concepts.json     # All 60 concepts as structured data
-│   └── _archived/        # Original markdown prompts
+│   ├── _archived/                    # AUTHORITATIVE: Original 60 detailed prompts
+│   └── concepts-template-examples.json  # Template demo (NOT originals)
 ├── docs/
 │   ├── SESSION-MASTER-2026-02-02.md  # Authoritative session state
 │   ├── KNOWLEDGE_BASE.md             # Physics methodology
@@ -55,19 +55,22 @@ Auth:
 - Set `GOOGLE_APPLICATION_CREDENTIALS` or run `gcloud auth application-default login`
 - Config file: `config/vertex.env` (loaded automatically if present)
 
-## Prompt Template System
+## Prompt Sources
 
-Instead of 156K tokens in markdown prompts, use the template system:
+**Authoritative prompts:** `prompts/_archived/dive-bar-concepts-*.md` (original detailed prompts)
+
+**Template system (experimental):** `scripts/lib/prompt-builder.js` + `prompts/concepts-template-examples.json`
+- Template examples are NEW creative concepts, NOT extracted from originals
+- Use for generating new variations, not for reproducing original prompts
+- Original markdown files remain the source of truth for production generation
 
 ```javascript
-import { buildDiveBarPrompt, buildBatch } from './scripts/lib/prompt-builder.js';
-import concepts from './prompts/concepts.json' with { type: 'json' };
+// For template-based NEW concepts:
+import { buildDiveBarPrompt } from './scripts/lib/prompt-builder.js';
+import examples from './prompts/concepts-template-examples.json' with { type: 'json' };
+const prompt = buildDiveBarPrompt(examples.concepts[0]);
 
-// Build single prompt
-const prompt = buildDiveBarPrompt(concepts.concepts[0]);
-
-// Build batch
-const batch = buildBatch(concepts.concepts.slice(0, 10));
+// For ORIGINAL detailed prompts: read from prompts/_archived/*.md directly
 ```
 
 ## Common Commands
