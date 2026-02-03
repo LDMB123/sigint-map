@@ -218,7 +218,7 @@ jobs:
 
       - name: Run Lighthouse
         run: |
-          lhci autorun --config=./.lighthouserc.json || true
+          lhci autorun --config=./app/.lighthouserc.json || true
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
           STAGING_URL: ${{ needs.deploy-staging.outputs.staging-url }}
