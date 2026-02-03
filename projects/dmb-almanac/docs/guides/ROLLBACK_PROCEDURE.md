@@ -72,7 +72,7 @@ git log --oneline              # find last good commit
 git checkout <commit-sha>
 cd app
 npm ci
-bash scripts/build-wasm.sh
+bash ../scripts/build-wasm.sh
 vercel --prod
 git checkout main              # return after success
 ```
@@ -176,7 +176,7 @@ npx lighthouse https://dmbalmanac.com \
 ### WASM Module Mismatch
 ```bash
 git checkout <rollback-commit>
-cd app && bash scripts/build-wasm.sh && vercel --prod
+cd app && bash ../scripts/build-wasm.sh && vercel --prod
 ```
 - Prevention: include WASM build in rollback workflow
 

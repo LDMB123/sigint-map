@@ -160,7 +160,7 @@ jobs:
           PUBLIC_SITE_URL: https://dmbalmanac.com
 
       - name: Build WASM modules
-        run: bash scripts/build-wasm.sh
+        run: bash ../scripts/build-wasm.sh
         env:
           CARGO_INCREMENTAL: 1
           RUSTFLAGS: '-C opt-level=z -C lto=thin'
