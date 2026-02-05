@@ -56,8 +56,10 @@ This means:
 
 ## Files
 
-**Correct Reference:**
-`/Users/louisherman/ClaudeCodeProjects/projects/imagen-experiments/assets/tinklesherpants_reference.jpeg` (17MB)
+**Correct Reference (archived):**
+`assets/_archived/reference_high_fashion.jpeg` (17MB)
+- Note: `tinklesherpants_reference.jpeg` was a duplicate (identical MD5) and has been deleted.
+  Both files are the same image; `reference_high_fashion.jpeg` is preserved in `assets/_archived/`.
 
 **Validation Outputs:**
 - 400-word test: BLOCKED (no output)

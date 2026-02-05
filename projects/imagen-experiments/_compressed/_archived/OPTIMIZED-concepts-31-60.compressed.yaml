@@ -1,0 +1,20 @@
+# COMPRESSED: OPTIMIZED Concepts 31-60
+# Original: ~77,391 bytes | Strategy: Reference-based
+# Reference: LWMMoms - 374.jpeg
+
+meta:
+  version: "OPTIMIZED (predecessor to ULTRA-MICROSTRUCTURE)"
+  range: 31-60
+  note: "Similar to ULTRA-MICROSTRUCTURE but with standard skin detail, not ultra-microstructure enhancement"
+
+# Shared components similar to ULTRA-MICROSTRUCTURE but simpler skin detail
+skin_detail_standard: "visible skin texture, natural pores, fine lines, slight imperfections"
+
+concepts:
+  31: {bar: "The White Horse", outfit: "emerald green velvet bodycon", camera: {iso: 2800, f: 1.8}}
+  # [32-60 follow same pattern as ULTRA-MICROSTRUCTURE versions]
+
+compression_stats:
+  original_bytes: 77391
+  compressed_bytes: ~3500
+  ratio: "95.5%"

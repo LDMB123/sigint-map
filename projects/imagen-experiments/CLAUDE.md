@@ -12,7 +12,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="path/to/credentials.json"
 node scripts/vegas/vegas-v29-apex.js
 ```
 
-## Project Structure (Token-Optimized)
+## Project Structure
 
 ```
 imagen-experiments/
@@ -21,27 +21,29 @@ imagen-experiments/
 │   │   ├── physics-engine.js   # Physics formulas (shared)
 │   │   ├── grounding.js        # Location grounding
 │   │   └── prompt-builder.js   # Template system (experimental)
-│   ├── vegas/            # Vegas series v4-v29 (36 scripts)
-│   ├── nashville/        # Nashville concepts (6 scripts)
-│   ├── batch/            # Shell batch runners (40 scripts)
-│   └── experiments/      # Experimental scripts (22 scripts)
+│   ├── vegas/            # vegas-v29-apex.js (latest; 39 iterations in _archived/)
+│   ├── nashville/        # 6 Nashville concept scripts
+│   ├── batch/_archived/  # 41 historical batch runners (broken paths)
+│   └── experiments/      # 6 active scripts (14 in _archived/)
 ├── prompts/
 │   ├── _archived/                    # AUTHORITATIVE: Original 60 detailed prompts
 │   └── concepts-template-examples.json  # Template demo (NOT originals)
-├── docs/
-│   ├── SESSION-MASTER-2026-02-02.md  # Authoritative session state
-│   ├── KNOWLEDGE_BASE.md             # Physics methodology
-│   ├── EXPERIMENTS_INDEX.md          # Experiment tracking
-│   └── _archived/                    # Historical only
-└── assets/               # Reference images
+├── docs/                 # 9 active reference docs (historical in _archived/)
+├── _compressed/          # 3 compressed refs + index (stale YAMLs in _archived/)
+└── assets/               # 3 active reference images (5 large in _archived/)
 ```
 
-## Key Reference Docs
+## Key Reference Docs (Session Start)
 
-- **Session state:** `docs/SESSION-MASTER-2026-02-02.md`
+**Essential load (5.1K tokens, 84% savings vs full docs):**
+1. `docs/SESSION-MASTER-2026-02-02.md` - Authoritative session state
+2. `_compressed/docs/PHYSICS-METHODOLOGY.ref.md` - Physics formulas
+3. `_compressed/docs/BOUNDARY-FINDINGS.ref.md` - Safety boundaries
+
+**Full documentation:**
+- **Compression index:** `_compressed/INDEX.md`
 - **Knowledge base:** `docs/KNOWLEDGE_BASE.md`
 - **Experiments:** `docs/EXPERIMENTS_INDEX.md`
-- **Optimization:** `TOKEN-OPTIMIZATION-AGENT-REPORT-2026-02-03.md`
 
 ## Vertex AI Configuration
 
@@ -62,7 +64,6 @@ Auth:
 **Template system (experimental):** `scripts/lib/prompt-builder.js` + `prompts/concepts-template-examples.json`
 - Template examples are NEW creative concepts, NOT extracted from originals
 - Use for generating new variations, not for reproducing original prompts
-- Original markdown files remain the source of truth for production generation
 
 ```javascript
 // For template-based NEW concepts:
@@ -82,13 +83,39 @@ node scripts/vegas/vegas-v29-apex.js
 # Nashville concepts
 node scripts/nashville/nashville-honkytonk-30.js
 
-# Batch shell scripts
-bash scripts/batch/generate-all-30-auto.sh
+# Boundary testing
+node scripts/experiments/generate-daring-boundary-tests.js
 ```
+
+## Compressed Documentation
+
+**Purpose:** Quick session start (5.1K tokens vs 31.9K = 84% savings)
+
+**How to use:**
+- Load compressed refs: `_compressed/docs/*.ref.md`
+- See `_compressed/INDEX.md` for complete list
+- Originals in `docs/` for full detail
+
+**Compressed:** Physics methodology (formulas + tables), boundary findings (safe/blocked lists)
+**Note:** Compression is lossy - preserves actionable info, omits theoretical reasoning.
+
+## Reference Images
+
+**Active (assets/):** `reference_nashville_new.jpeg`, `reference_nashville.jpeg`, `reference_img4945.jpeg`
+**Archived (assets/_archived/):** 5 large images from earlier series (47MB)
+
+## Troubleshooting
+
+**429 Rate Limit:** Scripts auto-retry with 90s backoff, max 10 attempts
+**API Errors (500/502/503):** Auto-retry 3 times with 30s backoff
+**Content Filter Blocks:** Check `_compressed/docs/BOUNDARY-FINDINGS.ref.md`
+- Conservative concepts: 100% success | Moderate: ~71% | Maximum-daring: ~37.5%
 
 ## Gotchas
 
-- **API Quota**: Imagen has rate limits - pace requests appropriately
-- **Credentials**: Must set GOOGLE_APPLICATION_CREDENTIALS env var
-- **Output size**: Generated images are large (4K) - plan storage
-- **Physics engine**: Import from `lib/physics-engine.js` to avoid duplication
+- **API Quota**: Rate limits - scripts auto-pace at 35s intervals
+- **Credentials**: Must set `GOOGLE_APPLICATION_CREDENTIALS` or use `gcloud auth application-default login`
+- **Output size**: 1K images = 1.6-1.9MB PNG, 4K = 21MB
+- **Physics engine**: Import from `scripts/lib/physics-engine.js` to avoid duplication
+- **Skip-if-exists**: Default ON - use `--force` to overwrite existing outputs
+- **Fishnet instant block**: ANY fishnet hosiery triggers IMAGE_SAFETY filter regardless of physics shield

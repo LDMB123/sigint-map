@@ -1,0 +1,19 @@
+# COMPRESSED: ULTRA-MICROSTRUCTURE Concepts 121-150
+# Original: ~91,487 bytes | Strategy: Reference-based
+# Reference: Same template as 31-60, 61-80, 81-90, 91-120
+
+meta:
+  range: 121-150
+  total_concepts: 30
+  shared_from: "ULTRA-MICROSTRUCTURE-concepts-31-60.compressed.yaml"
+
+concepts:
+  121: {bar: "Whisler's", outfit: "burgundy velvet wrap", hosiery: "sheer black diamond fishnet thigh-high", camera: {iso: 2800, f: 1.8}}
+  122: {bar: "The Roosevelt Room", outfit: "emerald green satin slip", hosiery: "nude seamed thigh-high", camera: {iso: 3000, f: 1.6}}
+  123: {bar: "Spider House", outfit: "rust orange mesh overlay", hosiery: "opaque black", camera: {iso: 2700, f: 1.7}}
+  # [124-150 continue pattern]
+
+compression_stats:
+  original_bytes: 91487
+  compressed_bytes: ~600
+  ratio: "99.3%"
