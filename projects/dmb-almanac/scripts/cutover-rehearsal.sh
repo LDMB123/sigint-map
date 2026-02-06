@@ -64,6 +64,9 @@ fi
 echo "[cutover] seed rust static/data from legacy bundle"
 (cd "${RUST_DIR}" && cargo run -p dmb_pipeline -- build-idb --source-dir ../app/static/data --output-dir static/data)
 
+echo "[cutover] validate seeded data manifest includes ANN index files"
+(cd "${RUST_DIR}" && DMB_STATIC_DATA_REQUIRED=1 cargo test -p dmb_app --test manifest_files >/dev/null)
+
 echo "[cutover] build runtime sqlite (${SQLITE_PATH})"
 (cd "${RUST_DIR}" && cargo run -p dmb_pipeline -- build-runtime-db --source-dir static/data --output "${SQLITE_PATH}")
 
