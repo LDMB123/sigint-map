@@ -1,0 +1,5 @@
+[build]
+rustflags = ["-C", "symbol-mangling-version=v0"]
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "symbol-mangling-version=v0", "-C", "target-feature=+simd128"]

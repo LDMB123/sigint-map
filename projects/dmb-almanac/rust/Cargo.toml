@@ -1,5 +1,17 @@
 [workspace]
-members = ["aggregations", "transforms", "graphs"]
+members = [
+  "aggregations",
+  "graphs",
+  "transforms",
+  "wasm-core",
+  "crates/dmb_core",
+  "crates/dmb_idb",
+  "crates/dmb_wasm",
+  "crates/dmb_app",
+  "crates/dmb_server",
+  "crates/dmb_pipeline",
+  "crates/xtask"
+]
 resolver = "2"
 
 # WASM Size Optimization Profile (Workspace-level)
@@ -51,3 +63,7 @@ overflow-checks = false
 # Optimize dependencies for size as well
 [profile.release.package."*"]
 opt-level = "z"
+
+[profile.release-wasm]
+inherits = "release"
+opt-level = 3
