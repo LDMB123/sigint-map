@@ -19,22 +19,16 @@ pub fn calculate_percentile(values: &[f64], percentile: f64) -> f64 {
     }
 
     if percentile <= 0.0 {
-        return *values
-            .iter()
-            .min_by(|a, b| a.partial_cmp(b).unwrap())
-            .unwrap_or(&0.0);
+        return *values.iter().min_by(|a, b| a.total_cmp(b)).unwrap_or(&0.0);
     }
 
     if percentile >= 1.0 {
-        return *values
-            .iter()
-            .max_by(|a, b| a.partial_cmp(b).unwrap())
-            .unwrap_or(&0.0);
+        return *values.iter().max_by(|a, b| a.total_cmp(b)).unwrap_or(&0.0);
     }
 
     // Sort values for percentile calculation
     let mut sorted = values.to_vec();
-    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    sorted.sort_by(|a, b| a.total_cmp(b));
 
     calculate_percentile_sorted(&sorted, percentile)
 }
@@ -107,7 +101,7 @@ pub fn calculate_percentiles(values: &[f64], percentiles: &[f64]) -> js_sys::Arr
 
     // Sort once
     let mut sorted = values.to_vec();
-    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    sorted.sort_by(|a, b| a.total_cmp(b));
 
     // Calculate each percentile
     for &percentile in percentiles {
@@ -134,7 +128,7 @@ pub fn calculate_quartiles(values: &[f64]) -> Result<js_sys::Object, JsValue> {
     }
 
     let mut sorted = values.to_vec();
-    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    sorted.sort_by(|a, b| a.total_cmp(b));
 
     let q1 = calculate_percentile_sorted(&sorted, 0.25);
     let median = calculate_percentile_sorted(&sorted, 0.5);

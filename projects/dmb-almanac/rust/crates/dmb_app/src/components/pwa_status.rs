@@ -1114,7 +1114,8 @@ pub fn PwaStatus() -> impl IntoView {
                                             sw_version_signal.set(Some(version.to_string()));
                                             if let Some(window) = web_sys::window() {
                                                 if let Ok(Some(storage)) = window.local_storage() {
-                                                    let _ = storage.set_item(SW_VERSION_KEY, version);
+                                                    let _ =
+                                                        storage.set_item(SW_VERSION_KEY, version);
                                                 }
                                             }
                                         }

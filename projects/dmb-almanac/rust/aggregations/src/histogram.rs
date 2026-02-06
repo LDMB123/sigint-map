@@ -27,12 +27,12 @@ pub fn aggregate_by_year(years: &[u32]) -> js_sys::Map {
 }
 
 // Pure Rust function for testing
-fn aggregate_by_year_internal(years: &[u32]) -> [u32; 36] {
-    let mut histogram = [0u32; 36]; // 1991-2026 (36 years)
+fn aggregate_by_year_internal(years: &[u32]) -> [u32; 60] {
+    let mut histogram = [0u32; 60]; // 1991-2050 (60 years)
 
     // SIMD-friendly loop (auto-vectorized by Rust compiler with -O3)
     for &year in years {
-        if (1991..=2026).contains(&year) {
+        if (1991..=2050).contains(&year) {
             let bin = (year - 1991) as usize;
             histogram[bin] += 1;
         }
@@ -154,7 +154,7 @@ mod tests {
 
     #[test]
     fn test_aggregate_by_year_out_of_range() {
-        let years = vec![1980, 1991, 2030];
+        let years = vec![1980, 1991, 2051];
         let result = aggregate_by_year_internal(&years);
 
         // Only 1991 should be counted

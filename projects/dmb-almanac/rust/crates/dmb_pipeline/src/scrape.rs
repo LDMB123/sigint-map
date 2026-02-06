@@ -2584,18 +2584,6 @@ fn parse_song_stats_page(html: &str, song_id: i32, song_title: &str) -> Value {
                 warn_missing_field("song_stats", "versionTypes");
             }
         }
-        if let Some(release_counts) = result.get("releaseCounts") {
-            let total_release = release_counts
-                .get("total")
-                .and_then(|v| v.as_i64())
-                .unwrap_or(0);
-            if total_release == 0 {
-                warn_missing_field("song_stats", "releaseCounts");
-                if regex(r"(?i)release").is_match(&body_text) {
-                    warn_missing_field("song_stats", "releaseCounts.total");
-                }
-            }
-        }
         if let Some(slot_breakdown) = result.get("slotBreakdown") {
             if object_all_zero(slot_breakdown) {
                 warn_missing_field("song_stats", "slotBreakdown");

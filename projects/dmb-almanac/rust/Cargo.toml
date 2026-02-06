@@ -1,7 +1,6 @@
 [workspace]
 members = [
   "aggregations",
-  "graphs",
   "transforms",
   "wasm-core",
   "crates/dmb_core",

@@ -18,6 +18,10 @@ struct Cli {
 enum Command {
     BuildManifest,
     BuildAll,
+    BuildHydratePkg {
+        #[arg(long, default_value_t = true)]
+        release: bool,
+    },
     Verify {
         #[arg(long, default_value_t = false)]
         skip_wasm: bool,
@@ -78,6 +82,7 @@ fn main() -> Result<()> {
             build_manifest()?;
             Ok(())
         }
+        Command::BuildHydratePkg { release } => build_hydrate_pkg(release),
         Command::Verify {
             skip_wasm,
             skip_tests,
@@ -148,25 +153,47 @@ fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
     )?;
 
     if !skip_wasm {
-        run_command(
-            "cargo",
-            &[
-                "build",
-                "-p",
-                "dmb_app",
-                "--features",
-                "hydrate",
-                "--target",
-                "wasm32-unknown-unknown",
-            ],
-            &rust_dir,
-            &[],
-        )?;
+        // `cargo build --target wasm32-unknown-unknown` validates compilation, but it does not
+        // produce the JS glue bundle that the SSR server expects to serve for hydration.
+        // `wasm-pack` builds both the WASM and the JS loader into `rust/static/pkg`.
+        build_hydrate_pkg(true)?;
     }
 
     if !skip_tests {
         run_command("cargo", &["test", "--workspace"], &rust_dir, &[])?;
     }
+
+    Ok(())
+}
+
+fn build_hydrate_pkg(release: bool) -> Result<()> {
+    let cwd = std::env::current_dir().context("read current dir")?;
+    let repo_root = if cwd.file_name().and_then(|v| v.to_str()) == Some("rust") {
+        cwd.parent().map(|p| p.to_path_buf()).unwrap_or(cwd.clone())
+    } else {
+        cwd.clone()
+    };
+    let rust_dir = repo_root.join("rust");
+    let app_dir = rust_dir.join("crates/dmb_app");
+
+    let mut args = vec![
+        "build",
+        "--target",
+        "web",
+        "--out-dir",
+        "../../static/pkg",
+        "--out-name",
+        "dmb_app",
+    ];
+    if release {
+        args.push("--release");
+    }
+    args.push("--");
+    args.extend(["--features", "hydrate"]);
+
+    run_command("wasm-pack", &args, &app_dir, &[]).context(
+        "wasm-pack build failed (install wasm-pack and ensure wasm32-unknown-unknown target exists)",
+    )?;
 
     Ok(())
 }

@@ -31,7 +31,6 @@ wasm-pack build --target web --release --out-dir ../../app/src/lib/wasm/aggregat
 ```
 app/src/lib/wasm/aggregations/
 ├── index.js         # JavaScript bindings
-├── index.d.ts       # TypeScript definitions
 ├── index_bg.wasm    # WASM binary (~19KB)
 └── package.json     # NPM package metadata
 ```
