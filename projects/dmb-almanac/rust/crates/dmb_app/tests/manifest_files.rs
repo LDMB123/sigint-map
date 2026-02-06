@@ -38,6 +38,13 @@ fn manifest_includes_ann_index_bin() {
         .unwrap_or_else(|err| panic!("parse {}: {err}", manifest_path.display()));
 
     let names: Vec<_> = manifest.files.iter().map(|f| f.name.as_str()).collect();
+    // ANN index assets are only required when we ship embedding data.
+    // (Today the app supports running with semantic search disabled.)
+    let has_embeddings = names.contains(&"embedding-manifest.json");
+    if !has_embeddings {
+        return;
+    }
+
     assert!(names.contains(&"ann-index.bin"));
 
     let ann_meta_path =
