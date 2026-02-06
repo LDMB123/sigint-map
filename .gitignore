@@ -55,6 +55,8 @@ coverage-final.json
 *.temp
 .cache/
 tmp/
+**/.tmp/
+.tmp_dmb_server.*
 
 # Logs
 logs/
@@ -77,6 +79,17 @@ Cargo.lock
 **/checkpoint*.json
 checkpoint_*.json
 
+# DMB Almanac Rust generated artifacts
+projects/dmb-almanac/rust/static/data/
+projects/dmb-almanac/rust/static/pkg/
+projects/dmb-almanac/rust/data/raw/
+projects/dmb-almanac/rust/data/cache/
+projects/dmb-almanac/rust/data/embedding-input.json
+projects/dmb-almanac/rust/data/scrape-summary.json
+projects/dmb-almanac/rust/data/warnings.json
+projects/dmb-almanac/rust/data/warnings-fixtures.json
+projects/dmb-almanac/rust/data/warnings-summary.json
+
 # Python
 __pycache__/
 *.py[cod]
@@ -91,6 +104,8 @@ venv/
 *.sqlite
 *.sqlite3
 *.db
+*.db-wal
+*.db-shm
 # Exception: Keep DMB Almanac database
 !projects/dmb-almanac/app/data/dmb-almanac.db
 

@@ -1,0 +1,42 @@
+{
+  "name": "DMB Almanac (Rust)",
+  "short_name": "DMB Almanac",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#111827",
+  "description": "Rust-first, offline-first DMB Almanac with WASM + on-device AI.",
+  "orientation": "portrait-primary",
+  "icons": [
+    {"src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ],
+  "share_target": {
+    "action": "/api/share-target",
+    "method": "POST",
+    "enctype": "application/json",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "protocol_handlers": [
+    {"protocol": "web+dmb", "url": "/protocol?url=%s"}
+  ],
+  "file_handlers": [
+    {
+      "action": "/open-file",
+      "accept": {
+        "application/json": [".json"],
+        "text/plain": [".txt"]
+      }
+    }
+  ],
+  "shortcuts": [
+    {"name": "Search", "url": "/search"},
+    {"name": "Stats", "url": "/stats"},
+    {"name": "AI Assistant", "url": "/assistant"}
+  ]
+}

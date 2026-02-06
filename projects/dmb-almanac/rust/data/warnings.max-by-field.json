@@ -1,0 +1,23 @@
+{
+  "shows.id": 0,
+  "shows.date": 0,
+  "shows.venueId": 0,
+  "songs.id": 0,
+  "songs.title": 0,
+  "venues.id": 0,
+  "venues.name": 0,
+  "tours.id": 0,
+  "tours.year": 0,
+  "guests.id": 0,
+  "guests.name": 0,
+  "releases.id": 0,
+  "releases.title": 0,
+  "song_stats.totalPlays": 0,
+  "song_stats.firstPlayedDate": 0,
+  "song_stats.lastPlayedDate": 0,
+  "venue_stats.venueName": 0,
+  "venue_stats.city": 0,
+  "guest_shows.totalAppearances": 0,
+  "lists.id": 0,
+  "lists.title": 0
+}

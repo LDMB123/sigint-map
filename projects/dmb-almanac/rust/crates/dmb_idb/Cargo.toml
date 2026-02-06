@@ -1,0 +1,19 @@
+[package]
+name = "dmb_idb"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+cfg-if = "1.0"
+idb = "0.6"
+js-sys = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["IdbDatabase", "IdbFactory", "IdbOpenDbRequest", "IdbTransaction", "IdbObjectStore", "IdbRequest", "IdbIndex", "IdbKeyRange", "IdbCursorWithValue", "DomException", "Window", "StorageManager", "console"] }
+dmb_core = { path = "../dmb_core" }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
