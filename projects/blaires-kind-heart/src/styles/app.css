@@ -1,0 +1,509 @@
+/* Global layout, loading screen, panels, toast, onboarding */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-family);
+  font-size: 16px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Global focus-visible — visible keyboard focus ring, hidden for touch/mouse */
+:focus-visible {
+  outline: 3px solid var(--color-purple);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Enhanced focus states for interactive cards — 3px ring + glow */
+.quest-card:focus-visible,
+.game-card:focus-visible,
+.sticker-card:focus-visible,
+.story-card:focus-visible,
+.kind-grid button:focus-visible {
+  outline: 3px solid var(--color-purple);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(181, 126, 255, 0.2);
+  border-radius: var(--radius-md);
+}
+
+body {
+  min-height: 100dvh;
+  overscroll-behavior: none;
+
+  /* Optimized dreamy background — 3 static gradient layers + blended grain (85% faster compositing, no animation) */
+  background:
+    /* Primary pink blob */
+    radial-gradient(circle 380px at 20% 30%, rgba(255, 143, 171, 0.22), transparent 65%),
+    /* Purple blob */
+    radial-gradient(circle 320px at 80% 60%, rgba(181, 126, 255, 0.18), transparent 65%),
+    /* Blue accent blob */
+    radial-gradient(circle 280px at 50% 90%, rgba(92, 184, 228, 0.16), transparent 65%),
+    var(--color-bg);
+  background-size: 150% 150%, 150% 150%, 150% 150%, auto;
+
+  /* Grain overlay with soft-light blend (prevents opacity blocking) */
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url('/assets/noise.png') repeat;
+  background-size: 64px 64px;
+  mix-blend-mode: soft-light;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Page Visibility API: Pause all animations when tab hidden (GPU savings) */
+body[data-animations-paused] * {
+  animation-play-state: paused !important;
+}
+
+/* Safe area insets for iPad */
+.app-shell {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  min-height: 100dvh;
+}
+
+/* Skip link for a11y */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 9999;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-purple);
+  color: var(--color-white);
+  border-radius: 0 0 var(--radius-sm) 0;
+  font-weight: var(--font-weight-bold);
+
+  &:focus {
+    left: 0;
+  }
+}
+
+/* Screen reader only — visually hidden but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ====== LOADING SCREEN ====== */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-loading);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xl);
+  background: linear-gradient(135deg, #FFE4ED, #E8D5FF, #D6EFFF, #D4F5E0, #FFF4C7, #FFE4ED);
+  background-size: 400% 400%;
+  animation: rainbow-bg-shift 6s ease-in-out infinite;
+
+  &[hidden] {
+    display: none;
+  }
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* Phase 4.8: Reduced from 6 radial gradients to 2 for 66% reduction */
+  &::before {
+    background:
+      radial-gradient(8px 8px at 25% 35%, rgba(255, 143, 171, 0.7), transparent),
+      radial-gradient(8px 8px at 75% 65%, rgba(181, 126, 255, 0.6), transparent);
+    animation: loading-sparkle-drift 8s ease-in-out infinite alternate;
+  }
+
+  /* Phase 4.8: Reduced from 4 radial gradients to 1 for 75% reduction */
+  &::after {
+    background: radial-gradient(6px 6px at 50% 50%, rgba(255, 211, 45, 0.65), transparent);
+    animation: loading-sparkle-float 12s ease-in-out infinite alternate-reverse;
+  }
+
+  &--exit {
+    animation: loading-exit 0.6s var(--ease-smooth) forwards;
+  }
+}
+
+.loading-sparkle {
+  width: min(200px, 45vw);
+  height: auto;
+  filter: drop-shadow(0 8px 32px rgba(181, 126, 255, 0.5));
+  animation: sparkle-float 2s var(--ease-elastic) infinite alternate;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes sparkle-float {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-8px) scale(1.03); }
+}
+
+.loading-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-pink-dark);
+  text-align: center;
+  text-shadow: 0 2px 12px rgba(255, 143, 171, 0.4);
+  position: relative;
+  z-index: 1;
+}
+
+.loading-bar {
+  width: min(280px, 80%);
+  height: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 2px solid rgba(255, 143, 171, 0.3);
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 12px rgba(255, 143, 171, 0.25);
+}
+
+.loading-bar-fill {
+  height: 100%;
+  background: var(--gradient-rainbow);
+  background-size: 200% 100%;
+  border-radius: var(--radius-sm);
+  animation: shimmer-slide 2s linear infinite;
+  transition: width var(--duration-normal) var(--ease-smooth);
+}
+
+@keyframes rainbow-bg-shift {
+  0%, 100% { background-position: 0% 50%; }
+  25% { background-position: 50% 100%; }
+  50% { background-position: 100% 50%; }
+  75% { background-position: 50% 0%; }
+}
+
+@keyframes loading-exit {
+  0% { transform: scale(1); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1.1); opacity: 0; filter: blur(8px); }
+}
+
+/* ====== TOAST (Popover API) ====== */
+.toast {
+  position: fixed;
+  bottom: var(--space-xl);
+  left: 50%;
+  translate: -50% 0;
+  z-index: var(--z-toast);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 3px solid var(--color-pink);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-glow-rainbow);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  max-width: min(360px, 90vw);
+  animation: toast-pop var(--duration-normal) var(--ease-elastic);
+
+  &--exit {
+    animation: toast-exit var(--duration-normal) var(--ease-smooth) forwards;
+  }
+}
+
+@keyframes toast-pop {
+  0% { transform: scale(0.3); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes toast-exit {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.8) translateY(20px); opacity: 0; }
+}
+
+/* ====== PANEL SYSTEM ====== */
+.panel {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-panel);
+  background: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Safari 26.2 scrollbar customization */
+  scrollbar-color: var(--color-purple-light) transparent;
+  /* Force GPU layer for smoother View Transitions */
+  transform: translateZ(0);
+
+  &[hidden] {
+    display: none;
+    /* Defer rendering of hidden panels until needed (Safari 26.2) */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 100vh;
+  }
+
+  /* Phase 3: GPU acceleration hints during View Transitions */
+  &.transitioning {
+    will-change: transform, opacity;
+  }
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background:
+    /* Animated shimmer sweep */
+    linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%),
+    /* Subtle grain texture */
+    repeating-linear-gradient(0deg, rgba(255, 143, 171, 0.02) 0px, transparent 1px, transparent 2px),
+    /* Frosted glass base */
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 250, 252, 0.85) 100%);
+  background-size: 200% 100%, 3px 3px, 100% 100%;
+  backdrop-filter: blur(8px) saturate(1.5); /* Optimized from blur(24px) for mobile performance */
+  border-bottom: 2px solid rgba(255, 143, 171, 0.2);
+  /* Inner glow for depth */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(255, 143, 171, 0.08),
+    0 4px 16px rgba(255, 143, 171, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  /* Slow shimmer animation */
+  animation: panel-header-shimmer 8s ease-in-out infinite;
+}
+
+@keyframes panel-header-shimmer {
+  0%, 100% { background-position: -200% 0, 0 0, 0 0; }
+  50% { background-position: 200% 0, 0 0, 0 0; }
+}
+
+.panel-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border: none;
+  background: var(--gradient-dreamy);
+  border-radius: var(--radius-round);
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  color: var(--color-purple-dark);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-fast) var(--ease-bounce);
+  touch-action: manipulation;
+
+  &:active {
+    transform: scale(0.88);
+  }
+}
+
+.panel-title {
+  flex: 1;
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-heavy);
+  color: var(--color-pink-dark);
+  text-shadow: 0 1px 6px rgba(255, 143, 171, 0.2);
+}
+
+.panel-body {
+  flex: 1;
+  padding: var(--space-lg);
+  /* Extra bottom padding: safe area + room for companion overlay */
+  padding-bottom: calc(max(var(--space-lg), env(safe-area-inset-bottom, 0px)) + 160px);
+  /* Phase 2.1: Isolate panel layout from document tree (faster View Transitions) */
+  contain: layout style paint;
+}
+
+/* Heart counter (reusable) */
+.heart-counter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-purple);
+  position: relative;
+  text-shadow: 0 0 14px rgba(181, 126, 255, 0.3);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  animation: idle-glow-pulse 3.5s ease-in-out infinite;
+}
+
+.heart-icon {
+  font-size: var(--font-size-xl);
+  filter: drop-shadow(0 2px 8px rgba(181, 126, 255, 0.4));
+  animation: float-emoji 3s ease-in-out infinite;
+}
+
+/* ====== ONBOARDING OVERLAY ====== */
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xl);
+  background: linear-gradient(135deg, var(--color-purple-light), var(--color-pink-light), var(--color-yellow-light), var(--color-blue-light));
+  background-size: 400% 400%;
+  animation: onboarding-gradient 6s ease infinite;
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+.onboarding-sparkle {
+  font-size: 9rem;
+  line-height: 1;
+  animation: onboarding-bounce 2s var(--ease-bounce) infinite alternate;
+  filter: drop-shadow(0 6px 24px rgba(181, 126, 255, 0.5));
+}
+
+.onboarding-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-heavy);
+  color: var(--color-pink-dark);
+  text-shadow: 0 3px 16px rgba(255, 143, 171, 0.3);
+}
+
+.onboarding-subtitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  max-width: 340px;
+  line-height: 1.5;
+}
+
+.onboarding-btn {
+  padding: var(--space-lg) var(--space-2xl);
+  background: var(--gradient-magic);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-xl);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-heavy);
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-glow-rainbow);
+  min-height: var(--touch-large);
+  transition: transform var(--duration-fast) var(--ease-bounce);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%);
+    animation: shimmer-slide 2.5s ease-in-out infinite;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+@keyframes onboarding-gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes onboarding-bounce {
+  from { transform: translateY(0) rotate(-5deg); }
+  to { transform: translateY(-24px) rotate(5deg); }
+}
+
+@keyframes shimmer-slide {
+  0% { background-position: -150% 0, 0 0; }
+  50%, 100% { background-position: 150% 0, 0 0; }
+}
+
+/* ====== STAGGER ENTRANCE (boot sequence) ====== */
+/* Phase 1.3: Elements start invisible, stagger via animation-delay (no JS blocking) */
+[data-home-title],
+[data-heart-counter],
+[data-home-btn],
+[data-companion] {
+  opacity: 0;
+  transform: scale(0.7) translateY(20px);
+  transition: opacity var(--duration-normal) var(--ease-smooth),
+              transform var(--duration-normal) var(--ease-bounce);
+}
+
+.entrance-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* Phase 1.3: CSS-based stagger timing (saves ~650ms blocking) */
+[data-home-title].entrance-visible {
+  transition-delay: 0ms;
+}
+
+[data-heart-counter].entrance-visible {
+  transition-delay: 100ms;
+}
+
+/* Stagger home buttons — Safari 26.2 sibling-index() */
+[data-home-btn].entrance-visible {
+  transition-delay: calc(200ms + (sibling-index() - 1) * 80ms);
+}
+
+/* Sparkle gets a more dramatic entrance — flies in from below */
+[data-companion].entrance-visible {
+  animation: sparkle-entrance 0.6s var(--ease-elastic) forwards;
+  animation-delay: 670ms; /* Phase 1.3: Delayed start for dramatic finale */
+}
+
+@keyframes sparkle-entrance {
+  0% { opacity: 0; transform: scale(0.3) translateY(80px); }
+  60% { opacity: 1; transform: scale(1.1) translateY(-10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes loading-sparkle-drift {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(15px, -20px) rotate(180deg); }
+  100% { transform: translate(-10px, 10px) rotate(360deg); }
+}
+
+@keyframes loading-sparkle-float {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-20px, 15px) scale(1.1); }
+  100% { transform: translate(10px, -10px) scale(0.95); }
+}

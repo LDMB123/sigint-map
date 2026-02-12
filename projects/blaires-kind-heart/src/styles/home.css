@@ -1,0 +1,700 @@
+/* Home hub layout — Imagen background showcased with lighter overlay */
+.home-scene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xl);
+  padding: var(--space-xl) var(--space-lg);
+  min-height: 100dvh;
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 240, 245, 0.4) 0%, rgba(237, 224, 255, 0.35) 50%, rgba(214, 239, 255, 0.4) 100%),
+    url(../assets/illustrations/backgrounds/home-bg.webp) center / cover no-repeat;
+  /* Removed 'fixed' attachment for better paint performance — Safari repaints less */
+  animation: gentle-sway 20s ease-in-out infinite;
+
+  /* ── Layer 1: SIMPLIFIED sparkle field (PERFORMANCE FIX) ── */
+  /* Reduced from 16 to 4 gradients to eliminate catastrophic INP on pointer events */
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      /* Reduced to 4 strategically placed sparkles */
+      radial-gradient(10px 10px at 12% 15%, rgba(255, 183, 197, 0.7), transparent),
+      radial-gradient(11px 11px at 88% 22%, rgba(181, 126, 255, 0.65), transparent),
+      radial-gradient(9px 9px at 30% 65%, rgba(92, 184, 228, 0.6), transparent),
+      radial-gradient(10px 10px at 72% 78%, rgba(255, 143, 171, 0.65), transparent);
+    /* DISABLED ANIMATION FOR PERFORMANCE */
+    /* animation: home-sparkle-drift 8s ease-in-out infinite alternate; */
+  }
+
+  /* ── Layer 2: DISABLED for performance (PERFORMANCE FIX) ── */
+  /* Second layer removed - 24 total animated gradients caused 7088ms INP */
+  &::after {
+    /* Layer 2 disabled - was causing catastrophic rendering performance */
+    content: none;
+  }
+
+  & > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* Sparkle drift — moderate speed with multi-axis movement */
+@keyframes home-sparkle-drift {
+  0% { transform: translateY(0) translateX(0) scale(1) rotate(0deg); opacity: 0.7; }
+  33% { transform: translateY(-20px) translateX(12px) scale(1.06) rotate(1deg); opacity: 0.9; }
+  66% { transform: translateY(-38px) translateX(-8px) scale(1.03) rotate(-1deg); opacity: 0.8; }
+  100% { transform: translateY(-50px) translateX(5px) scale(1.08) rotate(0.5deg); opacity: 0.95; }
+}
+
+/* Sparkle float — slow parallax layer */
+@keyframes home-sparkle-float {
+  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.5; }
+  50% { transform: translateY(-30px) translateX(-15px) scale(1.04); opacity: 0.7; }
+  100% { transform: translateY(-55px) translateX(10px) scale(1.02); opacity: 0.6; }
+}
+
+.home-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  text-align: center;
+}
+
+.home-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-heavy);
+  /* Rainbow gradient text with layered glow */
+  background: linear-gradient(135deg, #FF6B9D 0%, #C97EFF 25%, #4AB0E0 50%, #4DC882 75%, #FFD32D 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: title-entrance 0.8s var(--ease-overshoot) both, title-rainbow 6s linear infinite;
+  /* Multi-layer drop shadow for depth */
+  filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.8))
+          drop-shadow(0 3px 8px rgba(181, 126, 255, 0.45))
+          drop-shadow(0 6px 16px rgba(255, 143, 171, 0.25));
+  /* Subtle text-stroke for crispness */
+  text-stroke: 0.5px rgba(255, 143, 171, 0.15);
+  -webkit-text-stroke: 0.5px rgba(255, 143, 171, 0.15);
+  letter-spacing: 0.02em;
+}
+
+@keyframes title-rainbow {
+  to { background-position: 200% center; }
+}
+
+/* Feature button grid — asymmetric organic flow */
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-lg);
+  width: min(420px, 100%);
+  perspective: 800px;
+  /* Subtle rotation for organic feel */
+  transform-style: preserve-3d;
+
+  & > :nth-child(5) {
+    grid-column: 1 / -1;
+  }
+
+  /* Asymmetric micro-rotations for handcrafted feel */
+  & > :nth-child(1) { transform: rotate(-1.2deg); }
+  & > :nth-child(2) { transform: rotate(0.8deg); }
+  & > :nth-child(3) { transform: rotate(-0.6deg); }
+  & > :nth-child(4) { transform: rotate(1deg); }
+
+  /* Hover resets rotation for clarity */
+  @media (hover: hover) {
+    & > *:hover {
+      transform: rotate(0deg) scale(1.03) translateY(-2px) !important;
+    }
+  }
+}
+
+.home-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-xl) var(--space-md);
+  border: 3px solid transparent;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--duration-fast) var(--ease-bounce),
+              box-shadow var(--duration-fast) var(--ease-smooth);
+  min-height: var(--touch-large);
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  touch-action: manipulation;
+
+  /* Glass-like inner highlight — thicker, more candy-like */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(165deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 35%, transparent 55%);
+    pointer-events: none;
+  }
+
+  /* Shine sweep on every home button */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.45) 50%, transparent 65%);
+    transform: translateX(-150%);
+    animation: btn-shine 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  &:active {
+    transform: scale(0.88) rotateX(6deg) rotateY(-3deg) translateY(3px);
+    box-shadow:
+      0 1px 3px rgba(37, 19, 32, 0.1),
+      inset 0 3px 8px rgba(37, 19, 32, 0.12),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.3);
+    /* Darken on press for tactile depth */
+    filter: brightness(0.92) saturate(1.1);
+    transition-duration: var(--duration-instant);
+  }
+
+  /* Hover state for iPad cursor (when supported) */
+  @media (hover: hover) {
+    &:hover {
+      transform: scale(1.03) translateY(-2px);
+      box-shadow:
+        0 8px 20px rgba(37, 19, 32, 0.12),
+        0 16px 36px -8px rgba(255, 143, 171, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      filter: brightness(1.05) saturate(1.1);
+    }
+  }
+
+  /* Staggered entrance → idle breathe combo with varied scales */
+  &:nth-child(1) {
+    animation: card-entrance 0.5s var(--ease-overshoot) 0.1s both,
+               idle-breathe 4s ease-in-out 0.6s infinite;
+    /* Slightly larger for emphasis */
+    transform: rotate(-1.2deg) scale(1.05);
+
+    & .home-btn-img, & .home-btn-emoji {
+      animation-delay: 0s;
+    }
+  }
+
+  &:nth-child(2) {
+    animation: card-entrance 0.5s var(--ease-overshoot) 0.2s both,
+               idle-breathe 4s ease-in-out 0.9s infinite;
+
+    & .home-btn-img, & .home-btn-emoji {
+      animation-delay: 0.7s;
+    }
+  }
+
+  &:nth-child(3) {
+    animation: card-entrance 0.5s var(--ease-overshoot) 0.3s both,
+               idle-breathe 4s ease-in-out 1.2s infinite;
+    /* Slightly smaller for variety */
+    transform: rotate(-0.6deg) scale(0.98);
+
+    & .home-btn-img, & .home-btn-emoji {
+      animation-delay: 1.4s;
+    }
+  }
+
+  &:nth-child(4) {
+    animation: card-entrance 0.5s var(--ease-overshoot) 0.4s both,
+               idle-breathe 4s ease-in-out 1.5s infinite;
+    /* Larger again for balance */
+    transform: rotate(1deg) scale(1.04);
+
+    & .home-btn-img, & .home-btn-emoji {
+      animation-delay: 2.1s;
+    }
+  }
+
+  &:nth-child(5) {
+    animation: card-entrance 0.5s var(--ease-overshoot) 0.5s both,
+               idle-breathe 4s ease-in-out 1.8s infinite;
+
+    & .home-btn-img, & .home-btn-emoji {
+      animation-delay: 2.8s;
+    }
+  }
+
+  /* Button color variants — candy-button gradients with dramatic colored glow */
+  &--tracker {
+    background: linear-gradient(145deg, #FFE4ED 0%, #FF8FAB 40%, #F06E90 100%);
+    border-color: var(--color-pink-dark);
+    color: var(--color-text);
+    box-shadow:
+      var(--shadow-md),
+      0 6px 24px rgba(255, 143, 171, 0.45),
+      0 12px 32px rgba(255, 107, 157, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  &--quests {
+    background: linear-gradient(145deg, #FFF4C7 0%, #FFD32D 40%, #F0B800 100%);
+    border-color: var(--color-orange);
+    color: var(--color-text);
+    box-shadow:
+      var(--shadow-md),
+      0 6px 24px rgba(255, 211, 45, 0.45),
+      0 12px 32px rgba(255, 171, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  &--stories {
+    background: linear-gradient(145deg, #D6EFFF 0%, #4AB0E0 40%, #2D9AD0 100%);
+    border-color: var(--color-blue-vivid);
+    color: var(--color-text);
+    box-shadow:
+      var(--shadow-md),
+      0 6px 24px rgba(74, 176, 224, 0.45),
+      0 12px 32px rgba(0, 154, 238, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  &--rewards {
+    background: linear-gradient(145deg, #E8D5FF 0%, #B57EFF 40%, #9550F0 100%);
+    border-color: var(--color-purple-dark);
+    color: var(--color-text);
+    box-shadow:
+      var(--shadow-md),
+      0 6px 24px rgba(181, 126, 255, 0.45),
+      0 12px 32px rgba(139, 31, 255, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  &--games {
+    background: linear-gradient(145deg, #FFD4B0 0%, #FF9233 40%, #FF5D00 100%);
+    border-color: var(--color-orange-vivid);
+    color: var(--color-text);
+    box-shadow:
+      var(--shadow-md),
+      0 6px 24px rgba(255, 146, 51, 0.45),
+      0 12px 32px rgba(255, 93, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  /* Progress "My Week!" button — garden green */
+  &--progress {
+    background: linear-gradient(145deg, #D4F5E0 0%, #4DC882 40%, #00C260 100%);
+    border-color: var(--color-green-vivid);
+    color: var(--color-text);
+    box-shadow:
+      var(--shadow-md),
+      0 6px 24px rgba(77, 200, 130, 0.45),
+      0 12px 32px rgba(0, 194, 96, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  /* Show Mom! button — shimmer highlight */
+  &--show-mom {
+    background: linear-gradient(145deg, #FFE4ED 0%, #FF8FAB 40%, #FF2D72 100%);
+    border-color: var(--color-pink-dark);
+    color: var(--color-text);
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+      var(--shadow-md),
+      0 6px 24px rgba(255, 45, 114, 0.4),
+      0 12px 32px rgba(233, 30, 99, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%);
+      animation: shimmer-slide 3s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes card-entrance {
+  from { transform: scale(0.3) rotate(-8deg); opacity: 0; }
+  60% { transform: scale(1.08) rotate(2deg); opacity: 1; }
+  to { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* Imagen-generated button illustration */
+.home-btn-img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.18))
+          drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+  animation: float-emoji 4s var(--ease-bounce) infinite;
+  pointer-events: none;
+}
+
+/* Legacy emoji fallback (if image fails to load) */
+.home-btn-emoji {
+  font-size: var(--font-size-4xl);
+  line-height: 1;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.18))
+          drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+  animation: float-emoji 4s var(--ease-bounce) infinite;
+}
+
+.home-btn-label {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-heavy);
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.4);
+}
+
+/* Special bottom row — My Week + Show Mom side by side */
+.home-special-row {
+  display: flex;
+  gap: var(--space-lg);
+  width: min(420px, 100%);
+  animation: card-entrance 0.5s var(--ease-overshoot) 0.6s both;
+
+  & .home-btn {
+    flex: 1;
+    flex-direction: row;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+  }
+
+  & .home-btn-img {
+    width: 52px;
+    height: 52px;
+  }
+
+  & .home-btn-emoji {
+    font-size: 2.5rem;
+  }
+
+  & .home-btn-label {
+    font-size: var(--font-size-md);
+  }
+}
+
+/* Streak display — fiery glow with warm pulse, frosted glass */
+.home-streak {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 244, 199, 0.6));
+  backdrop-filter: blur(6px) saturate(1.2); /* Optimized from blur(12px) for mobile performance */
+  border: 2px solid rgba(255, 146, 51, 0.3);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    var(--shadow-md),
+    0 0 20px rgba(255, 146, 51, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-heavy);
+  color: var(--color-orange-vivid);
+  animation: idle-glow-warm 4s ease-in-out infinite;
+}
+
+.streak-icon {
+  font-size: 1.8rem;
+  animation: flame-flicker 1s ease-in-out infinite alternate;
+  filter: drop-shadow(0 2px 8px rgba(255, 146, 51, 0.6));
+}
+
+@keyframes flame-flicker {
+  from { transform: scale(1) rotate(-5deg); filter: drop-shadow(0 2px 8px rgba(255, 146, 51, 0.6)); }
+  to { transform: scale(1.25) rotate(5deg); filter: drop-shadow(0 4px 16px rgba(255, 93, 0, 0.8)); }
+}
+
+/* Sparkle the Unicorn companion — 240px hero on home */
+.companion {
+  position: fixed;
+  bottom: var(--space-md);
+  right: var(--space-md);
+  left: auto;
+  transform: none;
+  z-index: 5;
+  width: 140px;
+  height: 140px;
+  filter: drop-shadow(0 12px 40px rgba(181, 126, 255, 0.6));
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  /* Emoji fallback when no image child */
+  font-size: 7rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--duration-fast) var(--ease-elastic);
+  animation: companion-float 3s ease-in-out infinite;
+
+  /* Inner purple glow aura */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -24px;
+    border-radius: var(--radius-round);
+    background: radial-gradient(
+      circle,
+      rgba(181, 126, 255, 0.4) 0%,
+      rgba(255, 143, 171, 0.25) 35%,
+      rgba(255, 211, 45, 0.1) 60%,
+      transparent 75%
+    );
+    animation: companion-aura 3s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Outer rainbow shimmer ring */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -32px;
+    border-radius: var(--radius-round);
+    border: 3px solid transparent;
+    background:
+      radial-gradient(circle, transparent 60%, rgba(181, 126, 255, 0.15) 100%),
+      conic-gradient(
+        from 0deg,
+        rgba(255, 143, 171, 0.4),
+        rgba(255, 211, 45, 0.3),
+        rgba(94, 201, 139, 0.3),
+        rgba(92, 184, 228, 0.4),
+        rgba(181, 126, 255, 0.4),
+        rgba(255, 143, 171, 0.4)
+      );
+    background-clip: padding-box, border-box;
+    -webkit-background-clip: padding-box, border-box;
+    animation: companion-ring-spin 8s linear infinite;
+    pointer-events: none;
+    z-index: -2;
+    opacity: 0.7;
+  }
+
+  /* Magnetic hover effect (Safari cursor) */
+  @media (hover: hover) {
+    &:hover {
+      transform: scale(1.08) translateY(-8px);
+      filter: drop-shadow(0 16px 48px rgba(181, 126, 255, 0.7))
+              brightness(1.1);
+
+      &::before {
+        transform: scale(1.15);
+        opacity: 1;
+      }
+
+      &::after {
+        transform: scale(1.1) rotate(45deg);
+        opacity: 0.9;
+      }
+    }
+  }
+
+  &:active {
+    transform: scale(0.82) translateY(2px);
+    filter: drop-shadow(0 8px 24px rgba(181, 126, 255, 0.5));
+    transition-duration: var(--duration-instant);
+  }
+
+  & img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  /* Hide emoji text when image is present */
+  &:has(img) {
+    font-size: 0;
+  }
+
+  /* Expression variants — applied by Rust */
+  &--excited {
+    animation: companion-float 1.5s ease-in-out infinite;
+    filter: drop-shadow(0 12px 40px rgba(181, 126, 255, 0.8));
+
+    &::before {
+      animation: companion-aura 1.5s ease-in-out infinite;
+      opacity: 1;
+    }
+  }
+
+  &--dancing {
+    animation: companion-dance 1s var(--ease-elastic) infinite;
+  }
+
+  &--sleepy {
+    animation: companion-float 5s ease-in-out infinite;
+    filter: drop-shadow(0 12px 40px rgba(92, 184, 228, 0.4));
+    opacity: 0.85;
+  }
+
+  &--cheering {
+    animation: companion-cheer 0.8s var(--ease-bounce) infinite;
+  }
+}
+
+@keyframes companion-aura {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes companion-ring-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes companion-dance {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-8deg) scale(1.05); }
+  50% { transform: rotate(0deg) scale(0.95); }
+  75% { transform: rotate(8deg) scale(1.05); }
+}
+
+@keyframes companion-cheer {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-20px) scale(1.1); }
+  60% { transform: translateY(-5px) scale(1.02); }
+}
+
+/* Shrink on panels (not home) — smaller but still magical */
+.panel .companion {
+  width: 120px;
+  height: 120px;
+  font-size: 4rem;
+  bottom: var(--space-md);
+  left: auto;
+  right: var(--space-md);
+  transform: none;
+
+  &::before {
+    inset: -20px;
+  }
+
+  &::after {
+    inset: -30px;
+  }
+}
+
+.companion-bubble {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 3px solid var(--color-purple);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md), 0 0 16px rgba(181, 126, 255, 0.35);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  white-space: normal;
+  max-width: 260px;
+  overflow-wrap: break-word;
+  text-align: center;
+  animation: bubble-in var(--duration-normal) var(--ease-elastic), rainbow-border 4s linear infinite;
+
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: -8px;
+    right: 16px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid var(--color-purple);
+  }
+
+  /* Typewriter cursor after text */
+  &--typing::after {
+    content: "|";
+    animation: blink-cursor 0.7s step-end infinite;
+    color: var(--color-purple);
+    margin-left: 2px;
+  }
+}
+
+@keyframes bubble-in {
+  from { transform: scale(0.3) translateY(12px); opacity: 0; }
+  50% { transform: scale(1.1) translateY(-2px); opacity: 1; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Staggered entrance (boot sequence) — flat selectors for data-* attributes */
+[data-home-title],
+[data-heart-counter],
+[data-home-btn],
+[data-companion] {
+  opacity: 0;
+  transform: scale(0.7) translateY(20px);
+  transition: opacity var(--duration-normal) var(--ease-smooth),
+              transform var(--duration-normal) var(--ease-bounce);
+}
+
+.entrance-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* Sparkle gets a more dramatic entrance — flies in from below */
+[data-companion].entrance-visible {
+  animation: sparkle-entrance 0.6s var(--ease-elastic) forwards;
+}
+
+/* ── Responsive: narrow phones ── */
+@media (max-width: 375px) {
+  .home-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .home-special-row {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .companion {
+    width: 100px;
+    height: 100px;
+    font-size: 5rem;
+  }
+}
+
+/* ── Responsive: iPad landscape / wider viewports ── */
+@media (min-width: 1024px) {
+  .home-grid {
+    width: min(600px, 90%);
+  }
+
+  .home-special-row {
+    width: min(600px, 90%);
+  }
+
+  .home-scene {
+    padding-block: var(--space-2xl);
+  }
+}

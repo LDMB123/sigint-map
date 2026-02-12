@@ -1,0 +1,350 @@
+/* Daily quests panel — golden sparkle background */
+#panel-quests .panel-body {
+  background:
+    url('../assets/illustrations/backgrounds/quests-bg.webp') center / cover no-repeat,
+    linear-gradient(180deg, rgba(255, 245, 208, 0.85) 0%, rgba(255, 224, 230, 0.75) 100%);
+}
+
+/* ====== Keyframes (top-level only) ====== */
+
+@keyframes quest-entrance {
+  from { transform: translateX(-20px) scale(0.9) rotateX(10deg); opacity: 0; }
+  to { transform: translateX(0) scale(1) rotateX(0deg); opacity: 1; }
+}
+
+@keyframes quest-stamp-pop {
+  0% { transform: translateY(-50%) rotate(-12deg) scale(0); }
+  60% { transform: translateY(-50%) rotate(-12deg) scale(1.2); }
+  100% { transform: translateY(-50%) rotate(-12deg) scale(1); }
+}
+
+@keyframes quest-timer-glow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 159, 67, 0.3)); }
+  50% { filter: drop-shadow(0 0 16px rgba(255, 159, 67, 0.5)); }
+}
+
+@keyframes check-pop {
+  from { transform: scale(0) rotate(-45deg); }
+  50% { transform: scale(1.3) rotate(10deg); }
+  to { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes bonus-gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes quests-done-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+/* ====== Quest List ====== */
+
+.quests-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  perspective: 800px;
+}
+
+/* ====== Loading Skeletons ====== */
+
+.quest-skeleton {
+  padding: var(--space-lg);
+}
+
+.skeleton-quest-card {
+  height: 120px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-alt);
+}
+
+/* ====== Quest Card ====== */
+
+.quest-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  /* Parchment scroll texture */
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 24px, rgba(200, 180, 160, 0.04) 24px, rgba(200, 180, 160, 0.04) 25px),
+    linear-gradient(135deg, #FFF8F0, #FFF4E6, #FFFAF5);
+  border: 2px solid rgba(255, 159, 67, 0.3);
+  border-radius: var(--radius-xl);
+  /* Multi-layer 3D lifted shadow with color tint */
+  box-shadow:
+    0 1px 2px rgba(45, 27, 48, 0.05),
+    0 4px 12px rgba(45, 27, 48, 0.08),
+    0 8px 24px -4px rgba(255, 211, 45, 0.12),
+    0 14px 32px -6px rgba(45, 27, 48, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-bounce),
+              box-shadow var(--duration-fast) var(--ease-smooth),
+              border-color var(--duration-fast) var(--ease-smooth);
+  position: relative;
+  overflow: hidden;
+  animation: quest-entrance 0.5s var(--ease-overshoot) both;
+  min-height: var(--touch-comfortable);
+  touch-action: manipulation;
+  transform-style: preserve-3d;
+  transform: translateZ(0);
+
+  /* Glossy top highlight — gives cards that polished 3D candy look */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(170deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.12) 30%, transparent 55%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Safari 26.2 sibling-index() */
+  animation-delay: calc(sibling-index() * 0.1s);
+
+  &:active {
+    /* Satisfying press-down: shrink + tilt forward + flatten shadow */
+    transform: scale(0.95) rotateX(3deg) translateY(2px);
+    box-shadow:
+      0 1px 3px rgba(45, 27, 48, 0.1),
+      inset 0 2px 6px rgba(45, 27, 48, 0.06);
+    transition-duration: var(--duration-instant);
+
+    .quest-emoji {
+      transform: scale(1.25) rotate(-5deg) translateY(-2px);
+      filter: drop-shadow(0 4px 14px rgba(45, 27, 48, 0.2))
+              drop-shadow(0 0 18px rgba(255, 211, 45, 0.4));
+    }
+  }
+
+  /* ─── Done state — glossy glass celebration ─── */
+  &--done {
+    position: relative;
+    border-color: var(--color-green);
+    background:
+      linear-gradient(135deg, var(--color-green-light) 0%, rgba(212, 245, 224, 0.9) 100%);
+    box-shadow:
+      0 2px 4px rgba(45, 27, 48, 0.05),
+      0 6px 16px rgba(94, 201, 139, 0.18),
+      0 12px 28px rgba(94, 201, 139, 0.1),
+      0 0 20px rgba(94, 201, 139, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(6px) saturate(1.2); /* Optimized from blur(8px) for mobile performance */
+
+    &::before {
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.2) 30%, transparent 50%);
+    }
+
+    &::after {
+      content: "\2705";
+      position: absolute;
+      top: 50%;
+      right: var(--space-md);
+      transform: translateY(-50%) rotate(-12deg);
+      font-size: 2rem;
+      filter: drop-shadow(0 2px 8px rgba(255, 211, 45, 0.5));
+      animation: quest-stamp-pop var(--duration-normal) var(--ease-elastic) both;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    &:active {
+      transform: scale(0.95) rotateX(3deg) translateY(2px);
+      box-shadow:
+        0 1px 3px rgba(94, 201, 139, 0.15),
+        inset 0 2px 6px rgba(50, 160, 100, 0.1);
+    }
+
+    .quest-title {
+      color: var(--color-green-vivid);
+    }
+
+    .quest-desc {
+      color: var(--color-green);
+    }
+
+    .quest-emoji {
+      filter: drop-shadow(0 2px 8px rgba(94, 201, 139, 0.2))
+              drop-shadow(0 0 14px rgba(0, 210, 106, 0.25));
+    }
+  }
+}
+
+/* ─── Quest emoji ─── */
+
+.quest-emoji {
+  font-size: var(--font-size-3xl);
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(45, 27, 48, 0.14))
+          drop-shadow(0 0 12px rgba(255, 211, 45, 0.15));
+  transition: transform var(--duration-fast) var(--ease-elastic),
+              filter var(--duration-fast) var(--ease-smooth);
+  position: relative;
+  z-index: 2;
+}
+
+/* ─── Quest content ─── */
+
+.quest-content {
+  flex: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.quest-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-xs);
+  color: var(--color-text);
+}
+
+.quest-desc {
+  font-size: var(--font-size-md);
+  color: var(--color-text-light);
+  line-height: 1.4;
+}
+
+/* ─── Quest timer progress arc ─── */
+
+.quest-timer {
+  animation: quest-timer-glow 3s ease-in-out infinite;
+}
+
+/* ─── Checkmark circle ─── */
+
+.quest-check {
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border-radius: var(--radius-round);
+  border: 3px solid var(--color-yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  transition: all var(--duration-fast) var(--ease-bounce);
+  position: relative;
+  z-index: 2;
+  /* Empty state subtle inner shadow for depth */
+  box-shadow:
+    inset 0 2px 4px rgba(45, 27, 48, 0.06),
+    0 1px 3px rgba(255, 211, 45, 0.15);
+  background: var(--color-surface);
+
+  &--done {
+    background: var(--gradient-magic);
+    border-color: var(--color-green);
+    color: var(--color-white);
+    box-shadow:
+      0 2px 6px rgba(94, 201, 139, 0.3),
+      0 0 16px rgba(94, 201, 139, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    animation: check-pop 0.4s var(--ease-elastic);
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border-radius: inherit;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.5) 0%, transparent 45%);
+      pointer-events: none;
+    }
+  }
+}
+
+/* ─── Bonus banner — rainbow glow ─── */
+
+.quests-bonus {
+  text-align: center;
+  padding: var(--space-xl);
+  background: linear-gradient(135deg, var(--color-yellow-light), var(--color-purple-light), var(--color-pink-light));
+  background-size: 300% 300%;
+  animation: bonus-gradient 4s ease infinite;
+  border-radius: var(--radius-xl);
+  margin-top: var(--space-xl);
+  /* Multi-layer rainbow glow */
+  box-shadow:
+    var(--shadow-glow-rainbow),
+    0 4px 16px rgba(45, 27, 48, 0.08),
+    0 10px 30px rgba(181, 126, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  border: 3px solid rgba(255, 211, 45, 0.4);
+  position: relative;
+  overflow: hidden;
+  /* Frosted glass effect */
+  backdrop-filter: blur(4px) saturate(1.1); /* Optimized from blur(6px) for mobile performance */
+
+  /* Glossy top highlight */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(170deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.1) 35%, transparent 55%);
+    pointer-events: none;
+  }
+}
+
+.quests-bonus-emoji {
+  font-size: 4rem;
+  display: block;
+  filter: drop-shadow(0 4px 16px rgba(255, 211, 45, 0.5))
+          drop-shadow(0 0 24px rgba(255, 211, 45, 0.25));
+  animation: celebration-bounce 1.5s var(--ease-bounce) infinite alternate;
+  position: relative;
+}
+
+.quests-bonus-text {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-heavy);
+  margin-top: var(--space-md);
+  color: var(--color-pink-dark);
+  text-shadow: 0 2px 8px rgba(255, 143, 171, 0.25);
+  position: relative;
+}
+
+/* ─── All quests complete state ─── */
+
+.quests-body--all-done {
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255, 211, 45, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+    animation: quests-done-pulse 3s ease-in-out infinite;
+  }
+}
+
+.quests-complete {
+  text-align: center;
+  padding: var(--space-2xl);
+  position: relative;
+}
+
+.quests-complete-emoji {
+  font-size: 5rem;
+  display: block;
+  margin-bottom: var(--space-md);
+  animation: celebration-bounce 1s var(--ease-elastic) infinite alternate;
+  filter: drop-shadow(0 4px 20px rgba(255, 211, 45, 0.5))
+          drop-shadow(0 0 32px rgba(255, 143, 171, 0.3))
+          drop-shadow(0 0 48px rgba(181, 126, 255, 0.15));
+}
+
+.quests-complete-text {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-heavy);
+  color: var(--color-pink-dark);
+  text-shadow:
+    0 2px 12px rgba(255, 143, 171, 0.3),
+    0 0 24px rgba(181, 126, 255, 0.15);
+}
