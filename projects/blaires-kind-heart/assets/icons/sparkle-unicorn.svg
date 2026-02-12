@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFB7C5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E6D4F5;stop-opacity:1" />
+    </linearGradient>
+    <filter id="softBlur">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+    </filter>
+    <radialGradient id="heartGlow">
+      <stop offset="0%" style="stop-color:#FFB8D4;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#FFB8D4;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background with gradient -->
+  <rect width="512" height="512" fill="url(#bgGradient)"/>
+
+  <!-- Main content group with soft blur effect -->
+  <g filter="url(#softBlur)">
+
+    <!-- UNICORN BODY -->
+    <circle cx="256" cy="296" r="90" fill="#C896DC" stroke="#AB6EC8" stroke-width="3"/>
+
+    <!-- UNICORN HEAD -->
+    <circle cx="256" cy="178" r="70" fill="#DCC4F0" stroke="#BE8CD2" stroke-width="3"/>
+
+    <!-- MANE (3 puffs on top) -->
+    <circle cx="190" cy="85" r="22" fill="#EBA0D2" stroke="#D270B8" stroke-width="2"/>
+    <circle cx="256" cy="68" r="24" fill="#EBA0D2" stroke="#D270B8" stroke-width="2"/>
+    <circle cx="322" cy="85" r="22" fill="#EBA0D2" stroke="#D270B8" stroke-width="2"/>
+
+    <!-- HORN (golden triangle with sparkles) -->
+    <defs>
+      <linearGradient id="hornGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" style="stop-color:#FFCE64;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#FFE8A0;stop-opacity:1" />
+      </linearGradient>
+    </defs>
+    <polygon points="256,108 240,60 272,60" fill="url(#hornGradient)" stroke="#F0B840" stroke-width="2"/>
+
+    <!-- Horn sparkles -->
+    <circle cx="244" cy="88" r="6" fill="#FFF564"/>
+    <circle cx="268" cy="88" r="6" fill="#FFF564"/>
+    <circle cx="242" cy="62" r="5" fill="#FFFF96"/>
+    <circle cx="270" cy="62" r="5" fill="#FFFF96"/>
+
+    <!-- EYES -->
+    <!-- Left eye white -->
+    <circle cx="230" cy="160" r="15" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1"/>
+    <!-- Right eye white -->
+    <circle cx="282" cy="160" r="15" fill="#FFFFFF" stroke="#E0E0E0" stroke-width="1"/>
+
+    <!-- Pupils (looking slightly to sides and down) -->
+    <circle cx="235" cy="165" r="8" fill="#7864B4"/>
+    <circle cx="287" cy="165" r="8" fill="#7864B4"/>
+
+    <!-- Eye highlights/sparkles -->
+    <circle cx="225" cy="150" r="4" fill="#FFFFFF"/>
+    <circle cx="277" cy="150" r="4" fill="#FFFFFF"/>
+
+    <!-- SMILE (curved line) -->
+    <path d="M 230 200 Q 256 215 282 200"
+          fill="none" stroke="#B47CB4" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- HEART (glowing pink heart on body) -->
+    <!-- Heart left bump -->
+    <circle cx="215" cy="280" r="28" fill="#FF6EA0" stroke="#F04D84" stroke-width="2"/>
+    <!-- Heart right bump -->
+    <circle cx="297" cy="280" r="28" fill="#FF6EA0" stroke="#F04D84" stroke-width="2"/>
+    <!-- Heart bottom point -->
+    <polygon points="256,330 212,295 300,295" fill="#FF6EA0" stroke="#F04D84" stroke-width="2"/>
+
+    <!-- Heart glow effect -->
+    <circle cx="215" cy="280" r="38" fill="url(#heartGlow)"/>
+    <circle cx="297" cy="280" r="38" fill="url(#heartGlow)"/>
+
+  </g>
+</svg>

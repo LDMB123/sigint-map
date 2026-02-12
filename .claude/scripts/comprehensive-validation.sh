@@ -4,6 +4,8 @@
 
 set -e
 
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+
 echo "=========================================="
 echo "UAF COMPREHENSIVE VALIDATION"
 echo "=========================================="
@@ -21,7 +23,7 @@ NC='\033[0m' # No Color
 # Test 1: YAML Syntax Validation
 echo "TEST 1: YAML Syntax Validation"
 echo "-------------------------------------------"
-YAML_FILES=$(find /Users/louisherman/ClaudeCodeProjects/.claude/agents -name "*.yaml")
+YAML_FILES=$(find $PROJECT_ROOT/.claude/agents -name "*.yaml")
 YAML_COUNT=0
 YAML_ERRORS=0
 
@@ -44,7 +46,7 @@ echo ""
 # Test 2: No "orchestrator_testing" Corruption
 echo "TEST 2: Corruption Check (orchestrator_testing)"
 echo "-------------------------------------------"
-CORRUPTED=$(grep -r "orchestrator_testing" /Users/louisherman/ClaudeCodeProjects/.claude/agents --include="*.yaml" --include="*.md" | wc -l | tr -d ' ')
+CORRUPTED=$(grep -r "orchestrator_testing" $PROJECT_ROOT/.claude/agents --include="*.yaml" --include="*.md" | wc -l | tr -d ' ')
 
 if [ "$CORRUPTED" -eq 0 ]; then
     echo -e "${GREEN}✓${NC} No 'orchestrator_testing' corruption found"
@@ -57,8 +59,8 @@ echo ""
 # Test 3: Collaboration Contracts Present
 echo "TEST 3: Collaboration Contracts"
 echo "-------------------------------------------"
-TOTAL_AGENTS=$(find /Users/louisherman/ClaudeCodeProjects/.claude/agents -name "*.yaml" -o -name "*.md" | wc -l | tr -d ' ')
-WITH_CONTRACTS=$(grep -l "^collaboration:" /Users/louisherman/ClaudeCodeProjects/.claude/agents/**/*.{yaml,md} 2>/dev/null | wc -l | tr -d ' ')
+TOTAL_AGENTS=$(find $PROJECT_ROOT/.claude/agents -name "*.yaml" -o -name "*.md" | wc -l | tr -d ' ')
+WITH_CONTRACTS=$(grep -l "^collaboration:" $PROJECT_ROOT/.claude/agents/**/*.{yaml,md} 2>/dev/null | wc -l | tr -d ' ')
 MISSING=$((TOTAL_AGENTS - WITH_CONTRACTS))
 
 if [ $MISSING -eq 0 ]; then
@@ -75,7 +77,7 @@ echo "-------------------------------------------"
 REQUIRED_FIELDS=("agent.id" "agent.name" "agent.model_tier" "agent.version")
 MISSING_FIELDS=0
 
-for file in $(find /Users/louisherman/ClaudeCodeProjects/.claude/agents -name "*.yaml"); do
+for file in $(find $PROJECT_ROOT/.claude/agents -name "*.yaml"); do
     for field in "${REQUIRED_FIELDS[@]}"; do
         if ! grep -q "$field:" "$file"; then
             echo -e "${RED}✗${NC} Missing $field in $file"
@@ -93,7 +95,7 @@ echo ""
 # Test 5: Model Tier Validation
 echo "TEST 5: Model Tier Validation"
 echo "-------------------------------------------"
-INVALID_TIERS=$(grep -h "model_tier:" /Users/louisherman/ClaudeCodeProjects/.claude/agents/**/*.yaml 2>/dev/null | grep -v -E "(haiku|sonnet|opus)" | wc -l | tr -d ' ')
+INVALID_TIERS=$(grep -h "model_tier:" $PROJECT_ROOT/.claude/agents/**/*.yaml 2>/dev/null | grep -v -E "(haiku|sonnet|opus)" | wc -l | tr -d ' ')
 
 if [ "$INVALID_TIERS" -eq 0 ]; then
     echo -e "${GREEN}✓${NC} All model tiers are valid (haiku/sonnet/opus)"
@@ -106,7 +108,7 @@ echo ""
 # Test 6: Agent ID Uniqueness
 echo "TEST 6: Agent ID Uniqueness"
 echo "-------------------------------------------"
-DUPLICATE_IDS=$(grep -h "^  id:" /Users/louisherman/ClaudeCodeProjects/.claude/agents/**/*.yaml 2>/dev/null | sort | uniq -d | wc -l | tr -d ' ')
+DUPLICATE_IDS=$(grep -h "^  id:" $PROJECT_ROOT/.claude/agents/**/*.yaml 2>/dev/null | sort | uniq -d | wc -l | tr -d ' ')
 
 if [ "$DUPLICATE_IDS" -eq 0 ]; then
     echo -e "${GREEN}✓${NC} All agent IDs are unique"
@@ -126,8 +128,8 @@ echo ""
 # Test 8: Telemetry Database Check
 echo "TEST 8: Telemetry Infrastructure"
 echo "-------------------------------------------"
-if [ -f "/Users/louisherman/.claude/telemetry/metrics.db" ]; then
-    TABLES=$(sqlite3 /Users/louisherman/.claude/telemetry/metrics.db ".tables" 2>/dev/null | wc -w | tr -d ' ')
+if [ -f "$HOME/.claude/telemetry/metrics.db" ]; then
+    TABLES=$(sqlite3 $HOME/.claude/telemetry/metrics.db ".tables" 2>/dev/null | wc -w | tr -d ' ')
     if [ "$TABLES" -ge 9 ]; then
         echo -e "${GREEN}✓${NC} Telemetry database exists with $TABLES tables"
     else
@@ -143,14 +145,14 @@ echo ""
 # Test 9: Caching Infrastructure Check
 echo "TEST 9: Caching Infrastructure"
 echo "-------------------------------------------"
-if [ -f "/Users/louisherman/ClaudeCodeProjects/.claude/config/caching.yaml" ]; then
+if [ -f "$PROJECT_ROOT/.claude/config/caching.yaml" ]; then
     echo -e "${GREEN}✓${NC} Caching configuration exists"
 else
     echo -e "${RED}✗${NC} Caching configuration missing"
     ERRORS=$((ERRORS + 1))
 fi
 
-if [ -f "/Users/louisherman/ClaudeCodeProjects/.claude/lib/cache-manager.ts" ]; then
+if [ -f "$PROJECT_ROOT/.claude/lib/cache-manager.ts" ]; then
     echo -e "${GREEN}✓${NC} Cache manager implementation exists"
 else
     echo -e "${RED}✗${NC} Cache manager implementation missing"
@@ -161,7 +163,7 @@ echo ""
 # Test 10: Documentation Check
 echo "TEST 10: Documentation Presence"
 echo "-------------------------------------------"
-README_COUNT=$(find /Users/louisherman/ClaudeCodeProjects/.claude/agents -name "README.md" | wc -l | tr -d ' ')
+README_COUNT=$(find $PROJECT_ROOT/.claude/agents -name "README.md" | wc -l | tr -d ' ')
 
 if [ "$README_COUNT" -ge 10 ]; then
     echo -e "${GREEN}✓${NC} Found $README_COUNT category README files"
@@ -174,8 +176,8 @@ echo ""
 # Test 11: Test Suite Check
 echo "TEST 11: Test Suite Deployment"
 echo "-------------------------------------------"
-if [ -d "/Users/louisherman/ClaudeCodeProjects/.claude/tests" ]; then
-    TEST_FILES=$(find /Users/louisherman/ClaudeCodeProjects/.claude/tests -name "*.test.ts" | wc -l | tr -d ' ')
+if [ -d "$PROJECT_ROOT/.claude/tests" ]; then
+    TEST_FILES=$(find $PROJECT_ROOT/.claude/tests -name "*.test.ts" | wc -l | tr -d ' ')
     if [ "$TEST_FILES" -ge 5 ]; then
         echo -e "${GREEN}✓${NC} Test suite deployed with $TEST_FILES test files"
     else
@@ -191,8 +193,8 @@ echo ""
 # Test 12: OpenAPI Specifications Check
 echo "TEST 12: OpenAPI Specifications"
 echo "-------------------------------------------"
-if [ -d "/Users/louisherman/ClaudeCodeProjects/.claude/api" ]; then
-    OPENAPI_FILES=$(find /Users/louisherman/ClaudeCodeProjects/.claude/api -name "*.openapi.yaml" -o -name "openapi.yaml" | wc -l | tr -d ' ')
+if [ -d "$PROJECT_ROOT/.claude/api" ]; then
+    OPENAPI_FILES=$(find $PROJECT_ROOT/.claude/api -name "*.openapi.yaml" -o -name "openapi.yaml" | wc -l | tr -d ' ')
     if [ "$OPENAPI_FILES" -ge 5 ]; then
         echo -e "${GREEN}✓${NC} Found $OPENAPI_FILES OpenAPI specification files"
     else

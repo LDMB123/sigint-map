@@ -1,0 +1,449 @@
+/* ── Mom Mode — PIN overlay + Dashboard ── */
+/* Elegant, warm, adult-oriented — clean lines with soft palette */
+
+@keyframes mom-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mom-slide-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes mom-pin-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.mom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(45, 27, 48, 0.55);
+  backdrop-filter: blur(8px) saturate(1.2); /* Optimized from blur(12px) for mobile performance */
+  animation: mom-fade-in var(--duration-normal) var(--ease-smooth);
+}
+
+/* ── PIN Card ── */
+
+.mom-pin-card {
+  background: linear-gradient(160deg, var(--color-surface) 0%, var(--color-pink-light) 100%);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl) var(--space-xl);
+  max-width: 360px;
+  width: 90%;
+  text-align: center;
+  box-shadow:
+    var(--shadow-lg),
+    0 0 40px rgba(181, 126, 255, 0.1);
+  animation: mom-slide-up 0.4s var(--ease-overshoot);
+  border: 1px solid rgba(181, 126, 255, 0.1);
+}
+
+.mom-pin-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-purple-dark);
+  margin: 0 0 var(--space-xl);
+  letter-spacing: -0.01em;
+}
+
+/* PIN Dots — large, clear visual feedback */
+.mom-pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.mom-pin-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-round);
+  background: var(--color-purple-light);
+  border: 2px solid rgba(181, 126, 255, 0.3);
+  transition:
+    background var(--duration-fast) var(--ease-smooth),
+    transform var(--duration-fast) var(--ease-bounce),
+    box-shadow var(--duration-fast) var(--ease-smooth);
+
+  &--filled {
+    background: linear-gradient(135deg, var(--color-purple) 0%, var(--color-purple-vivid) 100%);
+    border-color: var(--color-purple);
+    transform: scale(1.15);
+    box-shadow: 0 0 12px rgba(155, 48, 255, 0.35);
+  }
+}
+
+/* Number Pad — large, friendly digits */
+.mom-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  max-width: 300px;
+  margin: 0 auto var(--space-lg);
+}
+
+.mom-numpad-btn {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  padding: var(--space-md);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-purple-dark);
+  cursor: pointer;
+  min-height: var(--touch-large);
+  min-width: var(--touch-large);
+  transition:
+    background var(--duration-fast) var(--ease-smooth),
+    transform var(--duration-fast) var(--ease-bounce),
+    box-shadow var(--duration-fast) var(--ease-smooth);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    background: linear-gradient(135deg, var(--color-purple-light) 0%, var(--color-purple) 100%);
+    color: var(--color-white);
+    transform: scale(0.92);
+    box-shadow: 0 2px 8px rgba(181, 126, 255, 0.3);
+  }
+
+  &--del {
+    background: var(--color-pink-light);
+    color: var(--color-pink-dark);
+    font-size: var(--font-size-xl);
+
+    &:active {
+      background: var(--color-pink);
+      color: var(--color-white);
+    }
+  }
+}
+
+.mom-numpad-spacer {
+  /* empty cell */
+}
+
+.mom-pin-error {
+  color: var(--color-red);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  margin: var(--space-sm) 0;
+  animation: mom-pin-shake 0.4s var(--ease-elastic);
+}
+
+.mom-cancel-btn {
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-xl);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-light);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  min-height: var(--touch-min);
+  transition: color var(--duration-fast), background var(--duration-fast);
+
+  &:active {
+    background: rgba(45, 27, 48, 0.06);
+    color: var(--color-text);
+  }
+}
+
+/* ── Dashboard ── */
+
+.mom-dashboard-card {
+  background: linear-gradient(160deg, var(--color-surface) 0%, var(--color-purple-light) 100%);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  max-width: 460px;
+  width: 95%;
+  max-height: 85vh;
+  overflow-y: auto;
+  /* Safari 26.2 scrollbar customization */
+  scrollbar-color: var(--color-purple-light) transparent;
+  box-shadow:
+    var(--shadow-lg),
+    0 0 40px rgba(181, 126, 255, 0.1);
+  animation: mom-slide-up 0.4s var(--ease-overshoot);
+  border: 1px solid rgba(181, 126, 255, 0.1);
+}
+
+.mom-dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid rgba(181, 126, 255, 0.1);
+}
+
+.mom-dashboard-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-purple-dark);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.mom-close-btn {
+  font-size: var(--font-size-xl);
+  border: none;
+  background: transparent;
+  color: var(--color-text-light);
+  cursor: pointer;
+  padding: var(--space-sm);
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-round);
+  transition: background var(--duration-fast), color var(--duration-fast);
+
+  &:active {
+    background: rgba(45, 27, 48, 0.06);
+    color: var(--color-text);
+  }
+}
+
+.mom-week-label {
+  color: var(--color-purple);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin: 0 0 var(--space-lg);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.mom-section-title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-purple-dark);
+  margin: var(--space-lg) 0 var(--space-md);
+  letter-spacing: -0.005em;
+}
+
+/* ── Goal Cards — clear, easy to tap ── */
+.mom-goals-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.mom-goal-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(181, 126, 255, 0.08);
+  transition: box-shadow var(--duration-fast) var(--ease-smooth);
+
+  &:has(.mom-goal-toggle--on) {
+    border-color: rgba(94, 201, 139, 0.2);
+    box-shadow:
+      var(--shadow-sm),
+      0 2px 12px rgba(94, 201, 139, 0.1);
+  }
+}
+
+.mom-goal-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.mom-goal-emoji {
+  font-size: var(--font-size-xl);
+  line-height: 1;
+}
+
+.mom-goal-label {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-purple-dark);
+  font-size: var(--font-size-md);
+}
+
+.mom-goal-desc {
+  color: var(--color-text-light);
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--space-md);
+  line-height: 1.4;
+}
+
+/* Slider Row — generous tap targets */
+.mom-slider-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.mom-slider-btn {
+  font-size: var(--font-size-lg);
+  border: none;
+  border-radius: var(--radius-round);
+  width: var(--touch-comfortable);
+  height: var(--touch-comfortable);
+  background: var(--color-purple-light);
+  color: var(--color-purple-dark);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background var(--duration-fast) var(--ease-smooth),
+    transform var(--duration-fast) var(--ease-bounce);
+
+  &:active {
+    background: var(--color-purple);
+    color: var(--color-white);
+    transform: scale(0.9);
+  }
+}
+
+.mom-slider-value {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-heavy);
+  color: var(--color-purple-dark);
+  min-width: 4rem;
+  text-align: center;
+}
+
+/* Goal Toggle — clear on/off state */
+.mom-goal-toggle {
+  width: 100%;
+  padding: var(--space-md);
+  border: 2px solid var(--color-purple-light);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition:
+    all var(--duration-fast) var(--ease-smooth);
+  font-size: var(--font-size-md);
+  min-height: var(--touch-min);
+
+  &--off {
+    background: var(--color-surface-raised);
+    color: var(--color-text-light);
+    border-color: var(--color-purple-light);
+
+    &:active {
+      background: var(--color-purple-light);
+    }
+  }
+
+  &--on {
+    background: linear-gradient(135deg, var(--color-green-light) 0%, rgba(94, 201, 139, 0.3) 100%);
+    color: var(--color-green-vivid);
+    border-color: var(--color-green);
+    box-shadow: 0 0 0 2px rgba(0, 210, 106, 0.1);
+
+    &:active {
+      background: var(--color-green-light);
+    }
+  }
+}
+
+/* Mom's Note */
+.mom-note-section {
+  margin-top: var(--space-lg);
+}
+
+.mom-note-input {
+  width: 100%;
+  border: 2px solid var(--color-purple-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  font-size: var(--font-size-md);
+  font-family: inherit;
+  /* Safari 26.2 field-sizing: auto-grow textarea without JS */
+  field-sizing: content;
+  min-height: 3lh; /* at least 3 lines */
+  max-height: 12lh; /* cap at 12 lines, then scroll */
+  resize: vertical;
+  box-sizing: border-box;
+  color: var(--color-text);
+  background: var(--color-surface);
+  transition:
+    border-color var(--duration-fast),
+    box-shadow var(--duration-fast);
+  line-height: 1.5;
+
+  &::placeholder {
+    color: var(--color-text-light);
+    opacity: 0.7;
+  }
+
+  &:focus {
+    border-color: var(--color-purple);
+    outline: none;
+    box-shadow:
+      0 0 0 3px rgba(181, 126, 255, 0.15),
+      var(--shadow-sm);
+
+    &:not(:focus-visible) {
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-purple);
+    outline-offset: 2px;
+  }
+}
+
+/* Save Button — prominent, satisfying to press */
+.mom-save-btn {
+  margin-top: var(--space-lg);
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-purple-dark) 0%, var(--color-purple-vivid) 100%);
+  color: var(--color-white);
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  box-shadow:
+    var(--shadow-glow-purple),
+    0 4px 12px rgba(123, 63, 191, 0.3);
+  transition:
+    transform var(--duration-fast) var(--ease-bounce),
+    box-shadow var(--duration-fast);
+  min-height: var(--touch-comfortable);
+  letter-spacing: 0.01em;
+
+  &:active {
+    transform: scale(0.96);
+    box-shadow:
+      0 0 12px rgba(181, 126, 255, 0.3),
+      0 2px 6px rgba(123, 63, 191, 0.2);
+  }
+
+  /* Saved confirmation flash */
+  &--saved {
+    background: linear-gradient(135deg, var(--color-green) 0%, var(--color-green-vivid) 100%);
+    box-shadow:
+      0 0 20px rgba(0, 210, 106, 0.3),
+      0 4px 12px rgba(94, 201, 139, 0.3);
+  }
+}

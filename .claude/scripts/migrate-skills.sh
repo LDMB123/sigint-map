@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-PROJECT_ROOT="/Users/louisherman/ClaudeCodeProjects"
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SKILLS_DIR="$PROJECT_ROOT/.claude/skills"
 AUDIT_FILE=$(ls -t "$PROJECT_ROOT/.claude/audit/skills-inventory-"*.json | head -1)
 TEMPLATE_FILE="$PROJECT_ROOT/.claude/docs/guides/SKILL_TEMPLATE.md"

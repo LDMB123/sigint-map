@@ -654,9 +654,7 @@ fn with_warning_lock<T>(f: impl FnOnce() -> T) -> T {
 
 fn object_all_zero(value: &Value) -> bool {
     match value {
-        Value::Object(map) => map
-            .values()
-            .all(|entry| entry.as_i64().map_or(false, |value| value == 0)),
+        Value::Object(map) => map.values().all(|entry| entry.as_i64() == Some(0)),
         _ => false,
     }
 }
@@ -1455,8 +1453,12 @@ fn parse_venue_page_html(html: &str, url: &str) -> Result<Option<Venue>> {
 
     let total_shows = regex(r"Total Shows?:\s*(\d+)")
         .captures(&body_text)
-        .and_then(|cap| cap.get(1))
-        .and_then(|m| m.as_str().parse::<i32>().ok());
+        .and_then(|cap| cap.get(1).map(|m| m.as_str()))
+        .and_then(|raw| {
+            // Optional field: warn on parse failure, but don't warn if it's absent.
+            let value = parse_i32_or_warn(Some(raw), "venue", "totalShows");
+            (value > 0).then_some(value)
+        });
 
     let country_code =
         if country.eq_ignore_ascii_case("usa") || country.eq_ignore_ascii_case("united states") {
@@ -1553,10 +1555,16 @@ fn parse_song_page(client: &ScrapeClient, url: &str) -> Result<Option<Song>> {
 
     let body_text = document.root_element().text().collect::<Vec<_>>().join(" ");
     warn_if_empty_text("song", "body", &body_text);
-    let total_performances = regex(r"(\d+)\s+(?:times?|performances?|shows?)")
-        .captures(&body_text)
-        .and_then(|cap| cap.get(1))
-        .and_then(|m| m.as_str().parse::<i32>().ok());
+    let total_performances = {
+        let value = parse_i32_or_warn(
+            regex(r"(\d+)\s+(?:times?|performances?|shows?)")
+                .captures(&body_text)
+                .and_then(|cap| cap.get(1).map(|m| m.as_str())),
+            "song",
+            "totalPerformances",
+        );
+        (value > 0).then_some(value)
+    };
     let last_played_date = regex(r"last(?:\s+played)?[:\s]+([A-Za-z]+\s+\d{1,2},?\s+\d{4})")
         .captures(&body_text)
         .and_then(|cap| cap.get(1))
@@ -1646,13 +1654,16 @@ fn parse_guest_page(client: &ScrapeClient, url: &str) -> Result<Option<Guest>> {
 
     let body_text = document.root_element().text().collect::<Vec<_>>().join(" ");
     warn_if_empty_text("guest", "body", &body_text);
-    let total_appearances = regex(r"(\d+)\s+(?:appearances?|shows?)")
-        .captures(&body_text)
-        .and_then(|cap| cap.get(1))
-        .and_then(|m| m.as_str().parse::<i32>().ok());
-    if total_appearances.is_none() {
-        warn_missing_field("guest", "totalAppearances");
-    }
+    let total_appearances = {
+        let value = parse_i32_or_warn(
+            regex(r"(\d+)\s+(?:appearances?|shows?)")
+                .captures(&body_text)
+                .and_then(|cap| cap.get(1).map(|m| m.as_str())),
+            "guest",
+            "totalAppearances",
+        );
+        (value > 0).then_some(value)
+    };
 
     let search_text = build_search_text(&[&name]);
 
@@ -2936,51 +2947,56 @@ fn parse_plays_by_year(document: &Html) -> Vec<Value> {
         }
         for row in table.select(&row_selector) {
             let row_text = normalize_whitespace(&row.text().collect::<String>());
-            let year = regex(r"\\b(19\\d{2}|20[0-2]\\d)\\b")
-                .captures(&row_text)
-                .and_then(|cap| cap.get(1))
-                .and_then(|m| m.as_str().parse::<i64>().ok());
-            if let Some(year) = year {
-                let row_without_year = row_text.replace(&year.to_string(), " ");
-                let count = parse_i64_or_warn(
-                    regex(r"(\\d+)\\s*(?:times?|plays?|performances?)?")
-                        .captures(&row_without_year)
-                        .and_then(|cap| cap.get(1).map(|m| m.as_str())),
-                    "song_stats.plays_by_year",
-                    "count",
-                );
-                let count = if count == 0 {
-                    if let Some(td_sel) = selector_or_warn("td", "td") {
-                        let mut numbers: Vec<i64> = row
-                            .select(&td_sel)
-                            .filter_map(|cell| {
-                                let text = normalize_whitespace(&cell.text().collect::<String>());
-                                text.parse::<i64>().ok()
-                            })
-                            .collect();
-                        numbers.retain(|value| *value != year);
-                        numbers.into_iter().max().unwrap_or_else(|| {
-                            warn_missing_field("song_stats.plays_by_year", "count");
-                            0
+            let year = parse_i64_or_warn(
+                regex(r"\\b(19\\d{2}|20[0-2]\\d)\\b")
+                    .captures(&row_text)
+                    .and_then(|cap| cap.get(1).map(|m| m.as_str())),
+                "song_stats.plays_by_year",
+                "year",
+            );
+            if year == 0 {
+                continue;
+            }
+
+            let row_without_year = row_text.replace(&year.to_string(), " ");
+            let count = parse_i64_or_warn(
+                regex(r"(\\d+)\\s*(?:times?|plays?|performances?)?")
+                    .captures(&row_without_year)
+                    .and_then(|cap| cap.get(1).map(|m| m.as_str())),
+                "song_stats.plays_by_year",
+                "count",
+            );
+            let count = if count == 0 {
+                if let Some(td_sel) = selector_or_warn("td", "td") {
+                    let mut numbers: Vec<i64> = row
+                        .select(&td_sel)
+                        .filter_map(|cell| {
+                            let text = normalize_whitespace(&cell.text().collect::<String>());
+                            text.parse::<i64>().ok()
                         })
-                    } else {
+                        .collect();
+                    numbers.retain(|value| *value != year);
+                    numbers.into_iter().max().unwrap_or_else(|| {
                         warn_missing_field("song_stats.plays_by_year", "count");
                         0
-                    }
+                    })
                 } else {
-                    count
-                };
-                if count == 0 {
-                    tracing::warn!(
-                        year,
-                        row = row_text.as_str(),
-                        "plays_by_year row missing count"
-                    );
                     warn_missing_field("song_stats.plays_by_year", "count");
+                    0
                 }
-                if count > 0 {
-                    plays.insert(year, count);
-                }
+            } else {
+                count
+            };
+            if count == 0 {
+                tracing::warn!(
+                    year,
+                    row = row_text.as_str(),
+                    "plays_by_year row missing count"
+                );
+                warn_missing_field("song_stats.plays_by_year", "count");
+            }
+            if count > 0 {
+                plays.insert(year, count);
             }
         }
     }
@@ -3910,13 +3926,7 @@ fn parse_venue_show_history(document: &Html) -> Vec<Value> {
             warn_missing_field("venue_stats.show_history", "date");
         }
         let date = parsed_date.unwrap_or_else(|| date_text.clone());
-        let year = date
-            .get(0..4)
-            .and_then(|s| s.parse::<i64>().ok())
-            .unwrap_or_else(|| {
-                warn_missing_field("venue_stats.show_history", "year");
-                0
-            });
+        let year = parse_i64_or_warn(date.get(0..4), "venue_stats.show_history", "year");
         let mut song_count = 0;
         if let Some(td_sel) = selector_or_warn("td", "td") {
             for cell in row.select(&td_sel) {

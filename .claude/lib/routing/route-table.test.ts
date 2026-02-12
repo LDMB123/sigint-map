@@ -3,6 +3,7 @@
  * Validates O(1) lookup performance, caching, and fuzzy matching
  */
 
+import path from 'path';
 import { RouteTable, SemanticHash } from './route-table';
 
 describe('RouteTable', () => {
@@ -320,7 +321,7 @@ describe('RouteTable', () => {
 
 describe('RouteTable Integration', () => {
   it('should load from custom route table path', () => {
-    const customPath = '/Users/louisherman/ClaudeCodeProjects/.claude/config/route-table.json';
+    const customPath = path.resolve(__dirname, '../../config/route-table.json');
     const table = new RouteTable(customPath);
 
     const stats = table.getStats();

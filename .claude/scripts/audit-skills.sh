@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-PROJECT_ROOT="/Users/louisherman/ClaudeCodeProjects"
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUTPUT_DIR="$PROJECT_ROOT/.claude/audit"
 OUTPUT_FILE="$OUTPUT_DIR/skills-inventory-$(date +%Y%m%d-%H%M%S).json"
 

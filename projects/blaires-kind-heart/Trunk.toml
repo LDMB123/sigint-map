@@ -1,0 +1,22 @@
+[build]
+filehash = false
+public_url = "/"
+inject_scripts = false
+no_sri = true
+minify = "always"
+
+# Phase 4.1: Generate asset manifest before WASM compilation
+[[hooks]]
+stage = "pre_build"
+command = "bash"
+command_arguments = [".trunk/asset-manifest.sh"]
+
+# [wasm-opt] - Disabled due to SIMD feature flag complexity
+# Rust-generated WASM uses multiple modern features (SIMD, bulk-memory, tail-call)
+# that require extensive wasm-opt configuration. Skipping optimization for now.
+# TODO: Investigate comprehensive feature flag requirements or accept 774KB WASM
+
+[serve]
+disable_csp = true
+no_autoreload = true
+headers = { "Cross-Origin-Resource-Policy" = "same-origin", "Permissions-Policy" = "microphone=(), camera=(), geolocation=(), payment=()" }

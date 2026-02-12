@@ -1,0 +1,593 @@
+openapi: 3.1.0
+info:
+  title: DMB Almanac API
+  version: 1.0.0
+  description: Task-driven public API plus telemetry endpoints for DMB Almanac.
+servers:
+  - url: https://dmbalmanac.com/api/v1
+    description: Public read API (v1)
+  - url: https://dmbalmanac.com/api
+    description: Telemetry + utility endpoints
+  - url: http://localhost:5173/api
+    description: Local dev (telemetry)
+tags:
+  - name: public
+    description: Public read endpoints (future)
+  - name: telemetry
+    description: Performance, analytics, and error telemetry
+paths:
+  /shows:
+    get:
+      summary: List shows
+      tags: [public]
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: cursor
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Show list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedShowList"
+  /shows/{id}:
+    get:
+      summary: Get show summary
+      tags: [public]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Show summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShowSummaryResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /shows/{id}/setlist:
+    get:
+      summary: Get show setlist
+      tags: [public]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Setlist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetlistResponse"
+  /songs:
+    get:
+      summary: List songs
+      tags: [public]
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: cursor
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Song list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedSongList"
+  /songs/{slug}:
+    get:
+      summary: Get song summary
+      tags: [public]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Song summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SongSummaryResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /songs/{slug}/history:
+    get:
+      summary: Get song performance history
+      tags: [public]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Song history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SongHistoryResponse"
+  /venues:
+    get:
+      summary: List venues
+      tags: [public]
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: cursor
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Venue list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedVenueList"
+  /venues/{id}:
+    get:
+      summary: Get venue summary
+      tags: [public]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Venue summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VenueSummaryResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /search:
+    get:
+      summary: Multi-type search
+      tags: [public]
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+  /health:
+    get:
+      summary: Health check
+      tags: [telemetry]
+      responses:
+        "200":
+          description: Health response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /analytics:
+    get:
+      summary: Analytics endpoint health
+      tags: [telemetry]
+      responses:
+        "200":
+          description: Analytics health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsHealthResponse"
+    post:
+      summary: Submit Web Vitals metrics
+      tags: [telemetry]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsPayload"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetryResponse"
+  /telemetry/performance:
+    post:
+      summary: Submit performance batch
+      tags: [telemetry]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TelemetryPayload"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetryResponse"
+  /telemetry/performance-metrics:
+    post:
+      summary: Submit field performance metrics
+      tags: [telemetry]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TelemetryPayload"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetryResponse"
+  /telemetry/errors:
+    post:
+      summary: Submit error batch
+      tags: [telemetry]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TelemetryPayload"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetryResponse"
+  /telemetry/business:
+    post:
+      summary: Submit business events
+      tags: [telemetry]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TelemetryPayload"
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetryResponse"
+  /csp-report:
+    post:
+      summary: CSP violation reports
+      tags: [telemetry]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetryResponse"
+  /share-target:
+    post:
+      summary: PWA share target ingestion
+      tags: [telemetry]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetryResponse"
+components:
+  schemas:
+    Pagination:
+      type: object
+      properties:
+        nextCursor:
+          type: string
+          nullable: true
+        hasMore:
+          type: boolean
+    ShowSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+        venue:
+          type: string
+        tour:
+          type: string
+          nullable: true
+        summary:
+          $ref: "#/components/schemas/SummaryStrip"
+    SongSummary:
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        summary:
+          $ref: "#/components/schemas/SummaryStrip"
+    VenueSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        summary:
+          $ref: "#/components/schemas/SummaryStrip"
+    SummaryStrip:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SummaryItem"
+    SummaryItem:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          oneOf:
+            - type: string
+            - type: number
+        meta:
+          type: string
+          nullable: true
+    PaginatedShowList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShowSummary"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        requestId:
+          type: string
+    PaginatedSongList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SongSummary"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        requestId:
+          type: string
+    PaginatedVenueList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/VenueSummary"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+        requestId:
+          type: string
+    ShowSummaryResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ShowSummary"
+        requestId:
+          type: string
+    SongSummaryResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SongSummary"
+        requestId:
+          type: string
+    VenueSummaryResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/VenueSummary"
+        requestId:
+          type: string
+    SetlistResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              song:
+                type: string
+              position:
+                type: integer
+              set:
+                type: string
+              durationSeconds:
+                type: integer
+                nullable: true
+        requestId:
+          type: string
+    SongHistoryResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              showId:
+                type: integer
+              date:
+                type: string
+              venue:
+                type: string
+        requestId:
+          type: string
+    SearchResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            shows:
+              type: array
+              items:
+                $ref: "#/components/schemas/ShowSummary"
+            songs:
+              type: array
+              items:
+                $ref: "#/components/schemas/SongSummary"
+            venues:
+              type: array
+              items:
+                $ref: "#/components/schemas/VenueSummary"
+        requestId:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+            requestId:
+              type: string
+    HealthResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+        requestId:
+          type: string
+    AnalyticsHealthResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+            supportedMetrics:
+              type: array
+              items:
+                type: string
+        requestId:
+          type: string
+    AnalyticsPayload:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: number
+        rating:
+          type: string
+        url:
+          type: string
+      required: [name, value]
+    TelemetryPayload:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+      required: [items]
+    TelemetryResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            success:
+              type: boolean
+        requestId:
+          type: string

@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-PROJECT_ROOT="/Users/louisherman/ClaudeCodeProjects"
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUTPUT_DIR="$PROJECT_ROOT/.claude/audit"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 OUTPUT_FILE="$OUTPUT_DIR/agent-comprehensive-audit-$TIMESTAMP.json"

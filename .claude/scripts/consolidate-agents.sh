@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-PROJECT_ROOT="/Users/louisherman/ClaudeCodeProjects"
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_AGENTS="$PROJECT_ROOT/.claude/agents"
 DMB_AGENTS="$PROJECT_ROOT/projects/dmb-almanac/.claude/agents"
 TEMPLATE="$PROJECT_ROOT/.claude/templates/agents/agent_template.yaml"

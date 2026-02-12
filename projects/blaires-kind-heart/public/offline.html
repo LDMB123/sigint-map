@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none';">
+  <title>Blaire's Kind Heart - Offline</title>
+  <style>
+    :root {
+      --pink: #FFB7C5;
+      --purple: #C9A0DC;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--pink), var(--purple));
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #4A3728;
+      padding: 2rem;
+      text-align: center;
+    }
+    .offline-card {
+      background: white;
+      border-radius: 24px;
+      padding: 3rem 2rem;
+      max-width: 400px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    .offline-emoji { font-size: 4rem; margin-bottom: 1rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    p { font-size: 1.1rem; opacity: 0.8; line-height: 1.5; }
+    .retry-btn {
+      margin-top: 1.5rem;
+      padding: 0.875rem 2rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 16px;
+      background: var(--pink);
+      color: #4A3728;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-card">
+    <div class="offline-emoji">&#x1F984;&#x1F4AD;</div>
+    <h1>Oops! No Internet</h1>
+    <p>The unicorns are resting right now. Try again in a little bit!</p>
+    <button class="retry-btn" onclick="location.reload()">Try Again</button>
+  </div>
+</body>
+</html>

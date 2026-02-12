@@ -1,269 +1,55 @@
-# 🎯 DMB Almanac Modernization - START HERE
+# DMB Almanac (Rust-First Offline PWA) - Start Here
 
-**Quick Summary:** Your PWA is already **A+ grade (95/100)**. I've identified 14 hours of quick wins worth -30KB bundle + 300ms faster.
+Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 
----
+This repo is a local-only, offline-first PWA built with Rust (Leptos SSR + WASM hydration). The current workflow is Rust-first; the old UI code is intentionally removed.
 
-## 📊 What I Found
+## Fast Path (Recommended)
 
-### The Good (Exceptional!) ✅
+Run the full green gate (Rust verify + data release + server + E2E subset):
 
-- **18 modern Chrome 143+ APIs** in use
-- **Zero legacy dependencies** (no jQuery/lodash/moment.js)
-- **Svelte 5 throughout** (380 rune usages)
-- **Production-grade PWA** (2,520-line service worker)
-- **Minimal bundle** (only 6 dependencies, ~85KB)
-
-### The Gaps ⚠️
-
-- **0% test coverage** (0 test files for 69,446 lines of code)
-- **Navigation preload enabled but not used** (wasting 50-100ms/navigation)
-- **27,000 lines of over-abstraction** (wrapping simple browser APIs)
-
----
-
-## 🚀 Quick Wins (14 hours work)
-
-| Task | Time | Impact | Risk |
-|------|------|--------|------|
-| Simplify format.js | 2h | -2KB | LOW |
-| Inline safeStorage.js | 1.5h | -3KB | LOW |
-| **Use navigation preload** | **4h** | **-50-100ms** | **LOW** |
-| Bundle optimization | 3.5h | -16KB, -300ms TTI | LOW |
-| **Pre-compute DB stats** | **3h** | **98% faster** | **LOW** |
-
-**Total: 14 hours → -30KB bundle, -300ms TTI, 98% faster stats**
-
----
-
-## 📁 Documents Created
-
-### Main Reports
-
-1. **DMB_ALMANAC_COMPREHENSIVE_MODERNIZATION_AUDIT_2026.md** ⭐
-   - 15 sections, 1,000+ lines
-   - Complete analysis of entire codebase
-   - All recommendations with time/impact estimates
-
-2. **DMB_TIER_1_IMPLEMENTATION_GUIDE.md** 🔧
-   - Step-by-step implementation instructions
-   - Code examples for every task
-   - Validation checklists
-
-3. **DMB_MODERNIZATION_STATUS_REPORT.md** 📋
-   - Summary of findings
-   - What changed during analysis
-   - Ready-to-execute task list
-
-4. **THIS FILE** 👈
-   - Quick reference
-   - Where to start
-
----
-
-## 🎯 Recommended Next Steps
-
-### Option 1: Implement Quick Wins (Recommended)
-
-Start with **Task 3: Navigation Preload** (highest impact):
-- 4 hours work
-- 50-100ms faster navigation
-- Just 10 lines of code added to service worker
-
-**Then** do Task 5: Database Pre-compute
-- 3 hours work
-- Stats queries: 180ms → 3ms (98% faster)
-
-### Option 2: Review Detailed Plans
-
-Read the consolidated reports:
-1. Start with `reports/MODERNIZATION_AUDIT_2026.md` - modernization status
-2. Then `reports/STRATEGIC_ROADMAP_2026.md` - project direction
-3. Dive deep into `reports/NATIVE_API_AND_RUST_DEEP_DIVE_2026.md` - native API analysis
-
-### Option 3: Ask Questions
-
-- Clarify any recommendation
-- Discuss alternative approaches
-- Request focus on specific area
-
----
-
-## 🔍 Key Insights
-
-### 1. Your Code Wraps Simple Browser APIs
-
-**Example:**
-```javascript
-// CURRENT: 570 lines of event listener wrappers
-addEventListenerWithCleanup(element, 'click', handler);
-
-// NATIVE (Chrome 143+): Use AbortController directly
-const controller = new AbortController();
-element.addEventListener('click', handler, { signal: controller.signal });
-controller.abort(); // cleanup
-```
-
-**Impact:** Removing these wrappers = -27,000 lines, cleaner code
-
-### 2. Navigation Preload Is Enabled But Not Used
-
-**Current State:**
-```javascript
-// sw.js line ~100 - ENABLED
-self.registration.navigationPreload.enable();
-
-// sw.js fetch handler - NOT CONSUMED ❌
-self.addEventListener('fetch', (event) => {
-  // event.preloadResponse is ignored!
-});
-```
-
-**Fix:** Use `event.preloadResponse` (10 lines of code)
-**Impact:** 50-100ms faster navigation
-
-### 3. Database Stats Use Full Table Scans
-
-**Current:**
-```javascript
-// Scans all 1,200 songs every time (180ms)
-await db.songs.each((song) => {
-  if (song.isCover) covers++;
-});
-```
-
-**Solution:** Pre-compute during sync, store in `syncMeta`
-**Impact:** 180ms → 3ms (98% faster)
-
----
-
-## 📈 Expected Results
-
-### Before
-- Main bundle: 130KB gzip
-- TTI: 2.5s
-- Navigation (cold): 200-300ms
-- Stats query: 180ms
-
-### After Tier 1
-- Main bundle: 114KB gzip **(-12%)**
-- TTI: 2.2s **(-12%)**
-- Navigation (cold): 100-200ms **(-50%)**
-- Stats query: 3ms **(-98%)**
-
----
-
-## ⚠️ Most Critical Gap
-
-**Zero test coverage** for:
-- 2,564-line queries.js (54 exported functions)
-- 2,520-line service worker
-- All PWA functionality
-- All database operations
-
-**Recommendation:** Add tests before major refactoring (Tier 2+)
-
----
-
-## 🎨 CSS Modernization Opportunities
-
-Your CSS is already excellent (Chrome 143+ features throughout), but:
-
-### CSS `if()` Could Replace 500+ Lines
-
-**Current:** 4 separate variant classes per component
-```css
-.button-primary { /* ... */ }
-.button-secondary { /* ... */ }
-.button-outline { /* ... */ }
-.button-ghost { /* ... */ }
-```
-
-**With CSS `if()` (Chrome 143+):**
-```css
-.button {
-  background: if(
-    style(--variant: primary), var(--gradient-primary),
-    if(style(--variant: secondary), var(--gradient-secondary), transparent)
-  );
-}
-```
-
-**Impact:** -500 lines CSS, easier maintenance
-
----
-
-## 💡 Quick Tips
-
-### If You Only Do 3 Things:
-
-1. ✅ **Use navigation preload** (4h, -50-100ms)
-2. ✅ **Pre-compute DB stats** (3h, 98% faster)
-3. ✅ **Add test coverage** (start small, high ROI)
-
-### If You Have Questions:
-
-- "Should I start with performance or code quality?"
-  - **Performance:** Tasks 3, 5 (7 hours, massive impact)
-  - **Code quality:** Tasks 1, 2 (3.5 hours, cleaner code)
-
-- "Is this safe to implement?"
-  - **Yes!** All tasks have:
-    - Low risk (backward compatible)
-    - Fallback mechanisms
-    - Independent (can rollback separately)
-    - Clear validation steps
-
-- "What about testing?"
-  - **Critical gap** but separate workstream
-  - Recommend: Add tests BEFORE Tier 2 refactoring
-  - Start with queries.js and service worker
-
----
-
-## 🛠️ Tools & Commands
-
-### Measure Bundle Size
 ```bash
-npm run build
-ls -lh .svelte-kit/output/client/_app/immutable/chunks/
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac
+bash scripts/cutover-rehearsal.sh
 ```
 
-### Run Performance Audit
+If this is green, the core offline + SW update flows are working end-to-end.
+
+## Key Commands
+
+Run the Rust server:
+
 ```bash
-npx lighthouse http://localhost:5173 --view
+cd rust
+cargo run -p dmb_server
 ```
 
-### Find Usage Patterns
+Run Rust-only E2E tests (against a running server):
+
 ```bash
-grep -r "formatNumber" src/
-grep -r "safeGetItem" src/
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/e2e
+BASE_URL=http://127.0.0.1:3000 npm run test:e2e
 ```
 
-### Check Test Coverage
+Rebuild runtime SQLite and validate strict parity:
+
 ```bash
-npm run test
-# Currently: 0 test files
+cd rust
+cargo run -p xtask -- data-release --sqlite ../data/dmb-almanac.db
 ```
 
----
+## Repo Layout (What To Read First)
 
-## 📞 Next Steps
+- App UI (SSR + hydration): `rust/crates/dmb_app/`
+- Server: `rust/crates/dmb_server/`
+- IndexedDB schema + client: `rust/crates/dmb_idb/`
+- Pipeline (scrape/export/validate/parity): `rust/crates/dmb_pipeline/`
+- WASM compute: `rust/crates/dmb_wasm/`
+- Static data bundle: `rust/static/data/`
 
-I'm ready to:
-- ✅ Implement any/all Tier 1 tasks
-- ✅ Answer questions about recommendations
-- ✅ Create additional documentation
-- ✅ Write tests for critical paths
-- ✅ Focus on specific area you prioritize
+## Operational Docs
 
-**Just tell me what you'd like me to do next!**
-
----
-
-**Current Status:** ✅ Analysis Complete, Implementation Ready
-**Grade:** A+ (95/100)
-**Recommendation:** Execute Tier 1 (14 hours, massive ROI)
-**Timeline:** 1 week
-
-**All documents ready. Ready to execute. Your call! 🚀**
+- Deployment + verification: `docs/guides/DEPLOYMENT_REFERENCE.md`
+- Cutover gates + staging strategy: `docs/ops/CUTOVER_RUNBOOK.md`
+- Rollback guidance (Rust builds): `docs/ops/ROLLBACK_RUNBOOK.md`
+- Scrape pipeline reference: `docs/scraping/SCRAPING_REFERENCE.md`

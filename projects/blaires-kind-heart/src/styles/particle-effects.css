@@ -1,0 +1,305 @@
+/* ═══════════════════════════════════════════════════════════════
+   Advanced Particle Effects — Pure CSS
+   Celebration bursts, ambient sparkles, magical auras
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ====== CELEBRATION BURST — radial particle explosion ====== */
+.celebration-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.celebration-particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: particle-burst 1.2s var(--ease-smooth) forwards;
+}
+
+/* Create variety with CSS custom properties */
+.celebration-particle:nth-child(1) {
+  background: var(--color-pink);
+  --angle: 0deg;
+  --distance: 120px;
+  animation-delay: 0s;
+}
+
+.celebration-particle:nth-child(2) {
+  background: var(--color-purple);
+  --angle: 45deg;
+  --distance: 100px;
+  animation-delay: 0.05s;
+}
+
+.celebration-particle:nth-child(3) {
+  background: var(--color-yellow);
+  --angle: 90deg;
+  --distance: 130px;
+  animation-delay: 0.1s;
+}
+
+.celebration-particle:nth-child(4) {
+  background: var(--color-blue);
+  --angle: 135deg;
+  --distance: 110px;
+  animation-delay: 0.15s;
+}
+
+.celebration-particle:nth-child(5) {
+  background: var(--color-green);
+  --angle: 180deg;
+  --distance: 125px;
+  animation-delay: 0.2s;
+}
+
+.celebration-particle:nth-child(6) {
+  background: var(--color-orange);
+  --angle: 225deg;
+  --distance: 105px;
+  animation-delay: 0.25s;
+}
+
+.celebration-particle:nth-child(7) {
+  background: var(--color-pink-vivid);
+  --angle: 270deg;
+  --distance: 115px;
+  animation-delay: 0.3s;
+}
+
+.celebration-particle:nth-child(8) {
+  background: var(--color-purple-vivid);
+  --angle: 315deg;
+  --distance: 135px;
+  animation-delay: 0.35s;
+}
+
+@keyframes particle-burst {
+  0% {
+    opacity: 1;
+    transform: translate(
+      calc(cos(var(--angle)) * 0px),
+      calc(sin(var(--angle)) * 0px)
+    ) scale(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(
+      calc(cos(var(--angle)) * var(--distance)),
+      calc(sin(var(--angle)) * var(--distance))
+    ) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(
+      calc(cos(var(--angle)) * calc(var(--distance) * 1.5)),
+      calc(sin(var(--angle)) * calc(var(--distance) * 1.5))
+    ) scale(0.3);
+  }
+}
+
+/* ====== FLOATING HEARTS — ambient love particles ====== */
+.floating-hearts-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.floating-heart {
+  position: absolute;
+  bottom: -40px;
+  font-size: 1.5rem;
+  opacity: 0;
+  animation: heart-float 4s ease-in forwards;
+  filter: drop-shadow(0 2px 8px rgba(255, 143, 171, 0.4));
+}
+
+/* Randomize horizontal position — Safari 26.2 sibling-index() */
+.floating-heart {
+  left: calc(10% + (sibling-index() - 1) * 20%);
+  animation-delay: calc((sibling-index() - 1) * 0.8s);
+}
+
+@keyframes heart-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-100px) scale(1.2) rotate(10deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-50vh) scale(1) rotate(-5deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100vh) scale(0.3) rotate(20deg);
+  }
+}
+
+/* ====== SPARKLE TRAIL — cursor/touch trail effect ====== */
+.sparkle-trail {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  z-index: 9998;
+  animation: sparkle-trail-fade 0.8s ease-out forwards;
+}
+
+.sparkle-trail::before,
+.sparkle-trail::after {
+  content: "✨";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.sparkle-trail::after {
+  animation: sparkle-rotate 0.8s linear forwards;
+}
+
+@keyframes sparkle-trail-fade {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+}
+
+@keyframes sparkle-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(180deg);
+  }
+}
+
+/* ====== MAGIC AURA — pulsing glow around interactive elements ====== */
+.magic-aura {
+  position: relative;
+}
+
+.magic-aura::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle,
+    rgba(181, 126, 255, 0.3) 0%,
+    rgba(255, 143, 171, 0.2) 40%,
+    transparent 70%
+  );
+  animation: aura-pulse 2s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes aura-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.15);
+  }
+}
+
+/* ====== STAR RAIN — falling stars background effect ====== */
+.star-rain-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.falling-star {
+  position: absolute;
+  top: -5%;
+  width: 3px;
+  height: 3px;
+  background: radial-gradient(circle, rgba(255, 211, 45, 1), rgba(255, 211, 45, 0.3));
+  border-radius: 50%;
+  opacity: 0;
+  animation: star-fall 3s linear infinite;
+  box-shadow: 0 0 6px rgba(255, 211, 45, 0.8);
+}
+
+/* Stagger stars across screen — Safari 26.2 sibling-index() + random() */
+.falling-star {
+  left: calc(5% + (sibling-index() - 1) * 15%);
+  animation-delay: calc((sibling-index() - 1) * 0.6s);
+  animation-duration: calc(2.5s + random(0s, 0.7s));
+}
+
+@keyframes star-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) scale(0);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(10vh) translateX(15px) scale(1.2);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(110vh) translateX(50px) scale(0.3);
+  }
+}
+
+/* ====== RIPPLE RINGS — expanding circles on tap ====== */
+.ripple-ring {
+  position: absolute;
+  border: 3px solid rgba(197, 163, 255, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: ripple-expand 1s ease-out forwards;
+}
+
+@keyframes ripple-expand {
+  from {
+    width: 0;
+    height: 0;
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  to {
+    width: 200px;
+    height: 200px;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* ====== REDUCED MOTION ====== */
+@media (prefers-reduced-motion: reduce) {
+  .celebration-particle,
+  .floating-heart,
+  .sparkle-trail,
+  .magic-aura::before,
+  .falling-star,
+  .ripple-ring {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+}

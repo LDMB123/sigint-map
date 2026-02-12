@@ -13,7 +13,7 @@ CYAN='\033[0;36m'
 MAGENTA='\033[0;35m'
 NC='\033[0m'
 
-PROJECT_ROOT="/Users/louisherman/ClaudeCodeProjects"
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_AGENTS="$PROJECT_ROOT/.claude/agents"
 ROUTE_TABLE="$PROJECT_ROOT/.claude/config/route-table.json"
 

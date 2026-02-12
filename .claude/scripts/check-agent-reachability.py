@@ -15,7 +15,7 @@ from pathlib import Path
 from collections import defaultdict, deque
 import json
 
-AGENTS_DIR = Path("/Users/louisherman/ClaudeCodeProjects/.claude/agents")
+AGENTS_DIR = Path(__file__).resolve().parent.parent / "agents"
 
 
 def build_delegation_graph():

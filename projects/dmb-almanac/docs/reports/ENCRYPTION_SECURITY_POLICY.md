@@ -74,7 +74,7 @@
 ### Code Security
 - Input: `JSON.stringify()` validation before encrypt
 - Output: `isEncryptedValue()` checks prefix/structure, `parseEncryptedValue()` validates format
-- TypeScript generics: `encryptValue<T>(value: T): Promise<string>`, `decryptValue<T>(value: string): Promise<T>`
+- Generic typing via JSDoc templates: `encryptValue(value)` / `decryptValue(value)`
 
 ### Operational Security
 - Fail closed: encryption/decryption failures throw errors, no plaintext fallback
@@ -106,7 +106,7 @@
 ## Developer Guide
 
 ### Usage
-```typescript
+```js
 await initializeEncryption();        // Once on app startup
 setupEncryptionHooks(db);            // Automatic transparent encryption
 
@@ -115,7 +115,7 @@ await db.userAttendedShows.add(show);
 ```
 
 ### Adding Encrypted Fields
-```typescript
+```js
 // 1. Add to SENSITIVE_FIELDS_SCHEMA in encryption.js
 SENSITIVE_FIELDS_SCHEMA = { myTable: ['secretField'] }
 
@@ -126,7 +126,7 @@ encryptionSetup.configure([
 ```
 
 ### Verification
-```typescript
+```js
 const health = await checkEncryptionHealth();
 const stats = getEncryptionStats();
 const results = await verifyAllEncryption(db);

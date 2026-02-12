@@ -1,143 +1,54 @@
-# Security Audit Reference - DMB Almanac
+# Security Reference (Rust-First Local PWA)
 
-## Overall Rating: MEDIUM | Maturity: LEVEL 3 (ADVANCED)
+Scope: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 
-## Findings Summary
+This project is currently local-only (not publicly deployed). The main security focus is preventing "bricked client" states from stale caches, keeping the Service Worker update path deterministic, and avoiding unsafe server endpoints if/when it is exposed beyond localhost.
 
-### MEDIUM Severity
+## Current Server Surface Area
 
-- **MEDIUM-01**: JWT secret has no rotation mechanism
-  - Location: `/src/routes/api/push-send/+server.js:120`
-  - Legacy API key fallback still active
-  - Compromised secret = indefinite unauthorized push access
-  - Fix: multi-secret JWT verification with 7-day grace period, 90-day rotation schedule
+The Rust server is `rust/crates/dmb_server` (Axum + Leptos SSR). It exposes:
 
-- **MEDIUM-02**: In-memory rate limit store exhaustion risk
-  - Location: `/src/hooks.server.js:122-175`
-  - 5000-entry cap, 30s cleanup interval
-  - IP rotation attacks can fill store, evict entries via LRU
-  - Fix: Redis/Upstash in production, threshold-triggered cleanup at 90% capacity
+- Health: `GET /api/health`, `GET /api/ai-health`
+- Diagnostics: `GET /api/data-parity`
+- Telemetry (local logging): `POST /api/analytics`, `POST /api/telemetry/*`, `POST /api/csp-report`
+- Share target (local echo): `POST /api/share-target`
+- Sitemaps: `GET /sitemap*.xml`
 
-- **MEDIUM-03**: File upload size validated after memory allocation
-  - Location: `/src/routes/api/share-target/+server.js:28-61`
-  - 100 concurrent 10MB uploads = 1GB memory consumption
-  - Fix: Content-Length pre-check, streaming validation, 5MB adapter body limit
+## Cache Safety (Prevents Stale-Bundle Loops)
 
-### LOW Severity
+`rust/crates/dmb_server/src/main.rs` adds a cache-control middleware to avoid browser HTTP caching serving old JS/WASM/data:
 
-- **LOW-01**: `cookie` package CVE-2024-47764 (out-of-bounds chars in names/paths)
-  - No dynamic cookie names from user input, risk minimal
-  - Monitor for SvelteKit update, set up Dependabot
+- `no-cache` on `/sw.js`, `/pkg/*`, `/app.css`, `/webgpu*.js`, `/data/*`, `/manifest.json`
+- `no-store` on HTML responses (and `Vary: Accept`)
 
-- **LOW-02**: CSP nonces generated but not applied to inline scripts
-  - `event.locals.cspNonce` set, `nonce-${nonce}` in CSP header
-  - Nonces not observed in Svelte component templates
-  - Fix: expose via `+layout.server.js`, apply `nonce={cspNonce}` to inline scripts
+This is intentional: the Service Worker + CacheStorage should be the primary cache, not the HTTP cache.
 
-- **LOW-03**: HTTPS redirect allows localhost regardless of NODE_ENV
-  - Fix: gate localhost exemption on `NODE_ENV === 'development'`
+## Cross-Origin Isolation (COOP/COEP)
 
-- **LOW-04**: SQL `UPDATE` uses string concatenation for field names
-  - Location: `/src/lib/db/server/push-subscriptions.js:214-218`
-  - Field names hardcoded (safe), values parameterized
-  - Fix: add `ALLOWED_FIELDS` Set whitelist for defense-in-depth
+For `SharedArrayBuffer` and worker SIMD/threads, `dmb_server` can set COOP/COEP:
 
-- **LOW-05**: Error messages may leak stack traces if NODE_ENV unset
-  - Fix: fail-secure -- treat anything except `development` as production
+- Enabled by default.
+- Disable with `DMB_COOP_COEP=0` or `DMB_COOP_COEP=false`.
 
-## Security Controls (Working)
+## Request IDs and Observability
 
-- CSRF: double-submit cookie, constant-time comparison, SameSite=Strict
-- CSP: `default-src 'self'`, no `unsafe-inline` in production, `frame-ancestors 'none'`
-- Input validation: type guards, length limits, URL protocol allowlist, base64url/UUID validation
-- HTML sanitization: whitelist-based tags, all attributes stripped, URL sanitization
-- JWT: HMAC-SHA256, constant-time signature comparison, expiration enforcement
-- Database: parameterized queries throughout, WAL mode
-- Rate limiting: sliding window, per-endpoint configs, IP extraction with proxy headers
-- Security headers: HSTS (1yr), X-Frame-Options DENY, nosniff, strict referrer
-- Path traversal: blocks `../`, encoded traversal, null bytes, control chars
-- Service Worker: no eval, versioned caches, network-first for API routes
+`dmb_server` sets and propagates `x-request-id` (tower-http layers) and uses structured tracing logs.
 
-## JWT Key Rotation Implementation
+## Local-Only Warnings (Before Any Public Exposure)
 
-- Env vars: `JWT_SECRET_CURRENT`, `JWT_SECRET_PREVIOUS`, `JWT_SECRET_ROTATION_DATE`
-- `getActiveSecrets()`: returns current + previous (if within 7-day grace period)
-- `getSigningSecret()`: always returns current
-- `needsRotation()`: checks if >90 days since last rotation
-- Verification: try all active secrets sequentially
-- Rotation script: manual process -- `openssl rand -base64 64` to generate, then update env vars
+The current telemetry/share-target handlers accept arbitrary JSON and log it. Before exposing the server beyond localhost, add:
 
-## Rate Limiting Implementation
+- Request body size limits for JSON endpoints.
+- Input validation and explicit schemas for telemetry payloads.
+- CORS policy decisions (currently unspecified here, because local-only).
+- Rate limiting (if you add any expensive endpoints).
+- CSP header policy (there is a CSP report endpoint, but this doc does not claim CSP is currently enforced via headers).
 
-- Redis `RedisRateLimiter`: sliding window via sorted sets, pipeline for atomic ops, fail-open on Redis error
-- Memory `MemoryRateLimiter`: fixed window, 5000-entry cap (dev only)
-- Factory: `createRateLimiter()` -- Redis in production, memory in dev
-- Rate limit configs:
-  - Search: 30 req/min
-  - API: 100 req/min
-  - Page: 200 req/min
-  - File upload: 5 req/hour
-
-## File Upload Security
-
-- `validateRequestSize()`: Content-Length pre-check before body read
-- `readFileWithSizeLimit()`: streaming read with cumulative size tracking, abort on exceed
-- SvelteKit adapter: `bodyParser.sizeLimit: '5mb'`
-- Share target: 5MB per file, multipart/form-data
-
-## Error Handling Pattern
-
-- `sanitizeError()`: fail-secure, `NODE_ENV !== 'development'` treated as production
-- Generic messages by error code in production
-- `logError()`: full stack trace server-side always
-- `createErrorResponse()`: logs full details, returns sanitized response
-
-## Security Test Patterns
-
-- SQL injection: test malicious endpoints, SQL wildcards in WHERE
-- XSS: 7 payload vectors including script tags, event handlers, protocol vectors
-- Rate limiting: enforce limits, concurrent request correctness
-- Test files: `security-csrf.test.js` (100+ tests), `security-jwt.test.js` (60+ tests)
-
-## OWASP Top 10 2021 Coverage
-
-- A01 Broken Access Control: PROTECTED (JWT, CSRF, rate limiting)
-- A02 Cryptographic Failures: PROTECTED (HTTPS, HSTS, secure cookies)
-- A03 Injection: PROTECTED (parameterized queries, input validation, sanitization)
-- A04 Insecure Design: PROTECTED (defense-in-depth, fail-secure)
-- A05 Security Misconfiguration: PARTIAL (CSP nonces not fully utilized)
-- A06 Vulnerable Components: PARTIAL (1 LOW dep vuln)
-- A07 Auth Failures: PROTECTED
-- A08 Data Integrity: PROTECTED (no CDN deps)
-- A09 Logging Failures: PROTECTED
-- A10 SSRF: PROTECTED (URL allowlist)
-
-## Immediate Actions
-
-- [ ] Rotate VAPID keys and JWT secrets from defaults
-- [ ] Verify no secrets in git history: `git log -S "VAPID_PRIVATE_KEY"`
-- [ ] Update SvelteKit (fixes cookie vuln)
-- [ ] Set up Dependabot
-- [ ] Implement Redis rate limiting for production
-- [ ] Remove legacy API key fallback (deadline: 2026-02-26)
-
-## Quick Commands
+## Quick Verification
 
 ```bash
-openssl rand -base64 64              # Generate JWT secret
-npx web-push generate-vapid-keys     # Generate VAPID keys
-# Rotate JWT: update JWT_SECRET_CURRENT/PREVIOUS env vars manually
-npm audit                            # Check vulnerabilities
-git grep -i "api.*key.*=" | grep -v "process.env"  # Scan for secrets
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac
+bash scripts/cutover-rehearsal.sh
 ```
 
-## Deployment Checklist
-
-- [ ] `NODE_ENV=production` set
-- [ ] All secrets rotated from defaults
-- [ ] HTTPS enforced, HSTS enabled
-- [ ] CSP configured, no unsafe-inline
-- [ ] Rate limiting on distributed store
-- [ ] Error messages sanitized
-- [ ] `npm audit` clean
-- [ ] File upload limits at infrastructure level
+This gates on SW update reliability and offline import completing, which are the primary "safety" concerns for the current local-only phase.

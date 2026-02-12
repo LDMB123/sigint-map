@@ -1,6 +1,8 @@
 #!/bin/bash
 # Real-time swarm agent dashboard
 
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+
 clear
 echo "╔════════════════════════════════════════════════════════════════════════════════╗"
 echo "║              UNIVERSAL AGENT FRAMEWORK - SWARM OPERATIONS DASHBOARD            ║"
@@ -90,8 +92,8 @@ echo ""
 
 if [ $COMPLETED -eq $TOTAL_AGENTS ]; then
     echo "  🎉 ALL AGENTS COMPLETE!"
-    echo "  → Run: bash /Users/louisherman/ClaudeCodeProjects/.claude/scripts/comprehensive-validation.sh"
-    echo "  → Then: bash /Users/louisherman/ClaudeCodeProjects/.claude/scripts/generate-completion-report.sh"
+    echo "  → Run: bash $PROJECT_ROOT/.claude/scripts/comprehensive-validation.sh"
+    echo "  → Then: bash $PROJECT_ROOT/.claude/scripts/generate-completion-report.sh"
 elif [ $FAILED -gt 0 ]; then
     echo "  ⚠️  Some agents failed - investigate errors"
     echo "  → Check output files for failed agents"

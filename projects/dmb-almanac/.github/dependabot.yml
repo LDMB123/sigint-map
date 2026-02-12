@@ -3,52 +3,9 @@
 
 version: 2
 updates:
-  # Main app dependencies (SvelteKit, Vite, etc.)
+  # Rust-only E2E harness (Playwright)
   - package-ecosystem: "npm"
-    directory: "/app"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "America/New_York"
-    open-pull-requests-limit: 10
-    commit-message:
-      prefix: "deps(app)"
-    labels:
-      - "dependencies"
-      - "security"
-    groups:
-      # Group minor/patch updates to reduce PR noise
-      svelte-ecosystem:
-        patterns:
-          - "@sveltejs/*"
-          - "svelte"
-          - "svelte-*"
-      vite-ecosystem:
-        patterns:
-          - "vite"
-          - "vite-*"
-          - "@vitejs/*"
-      testing:
-        patterns:
-          - "vitest"
-          - "@vitest/*"
-          - "playwright"
-          - "@playwright/*"
-      d3-modules:
-        patterns:
-          - "d3-*"
-      types:
-        patterns:
-          - "@types/*"
-    ignore:
-      # Only security updates for D3 (we're migrating away)
-      - dependency-name: "d3-*"
-        update-types: ["version-update:semver-minor", "version-update:semver-patch"]
-
-  # Scraper dependencies (Playwright, Cheerio, etc.)
-  - package-ecosystem: "npm"
-    directory: "/app/scraper"
+    directory: "/e2e"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -56,10 +13,25 @@ updates:
       timezone: "America/New_York"
     open-pull-requests-limit: 5
     commit-message:
-      prefix: "deps(scraper)"
+      prefix: "deps(e2e)"
     labels:
       - "dependencies"
-      - "scraper"
+      - "testing"
+
+  # Rust workspace dependencies
+  - package-ecosystem: "cargo"
+    directory: "/rust"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps(rust)"
+    labels:
+      - "dependencies"
+      - "rust"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"

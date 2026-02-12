@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+  "name": "Blaire's Kind Heart",
+  "short_name": "Kind Heart",
+  "description": "A kindness adventure for Blaire - track kind acts, complete quests, read stories, and earn stickers!",
+  "categories": ["education", "kids"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#FFF0F5",
+  "theme_color": "#FFB7C5",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./icons/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "./icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Kind Acts",
+      "short_name": "Tracker",
+      "description": "Log your kind acts",
+      "url": "./#panel-tracker"
+    },
+    {
+      "name": "Quests",
+      "short_name": "Quests",
+      "description": "Today's kindness quests",
+      "url": "./#panel-quests"
+    },
+    {
+      "name": "Stories",
+      "short_name": "Stories",
+      "description": "Read kindness stories",
+      "url": "./#panel-stories"
+    },
+    {
+      "name": "Stickers",
+      "short_name": "Stickers",
+      "description": "Your sticker collection",
+      "url": "./#panel-rewards"
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light">
+    <title>Blaire's Unicorn Adventure</title>
+    <meta name="description" content="A magical unicorn adventure game for children. Guide Blaire the unicorn to collect friends and spread kindness.">
+
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self'; worker-src 'self'">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Blaire's Unicorn Adventure">
+    <meta property="og:description" content="A magical kindness adventure. Guide Blaire the unicorn to collect friends and spread kindness!">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="assets/app_icon.png">
+
+    <!-- PWA / iOS 26 Capability -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#FFD1DC">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app_icon.png">
+    <link rel="apple-touch-icon" href="assets/app_icon.png">
+
+    <!-- Preload critical assets -->
+    <link rel="preload" href="assets/forest_background.png" as="image" fetchpriority="high">
+    <link rel="preload" href="assets/unicorn_sprite.png" as="image">
+    <!-- Friend sprites (lower priority — loaded on demand by FriendManager) -->
+    <link rel="preload" href="assets/bunny_sprite.png" as="image" fetchpriority="low">
+    <!-- fox, owl, deer, hedgehog preloads added when sprites are generated -->
+
+    <!-- Module preload for JS dependency chain -->
+    <link rel="modulepreload" href="src/app.js">
+    <link rel="modulepreload" href="src/game/engine.js">
+    <link rel="modulepreload" href="src/game/unicorn.js">
+    <link rel="modulepreload" href="src/game/sparkles.js">
+    <link rel="modulepreload" href="src/game/friends.js">
+    <link rel="modulepreload" href="src/audio/synth.js">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/glass.css">
+    <link rel="stylesheet" href="styles/animations.css">
+    <link rel="stylesheet" href="styles/a11y.css">
+
+    <style>
+        /* Critical CSS for loading state */
+        body {
+            background-color: #FFD1DC;
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "Blaire's Unicorn Adventure",
+        "description": "A magical kindness adventure for children. Guide Blaire the unicorn to collect friends and spread kindness.",
+        "genre": ["Children", "Adventure", "Educational"],
+        "gamePlatform": "Web Browser",
+        "applicationCategory": "Game",
+        "operatingSystem": "Any",
+        "audience": {
+            "@type": "PeopleAudience",
+            "suggestedMinAge": 3,
+            "suggestedMaxAge": 8
+        },
+        "accessibilityFeature": [
+            "alternativeText",
+            "highContrastDisplay",
+            "largePrint",
+            "keyboardControl",
+            "touchControl",
+            "audioDescription"
+        ],
+        "accessibilityHazard": "none",
+        "isAccessibleForFree": true
+    }
+    </script>
+
+</head>
+
+<body>
+    <!-- Skip Navigation Link -->
+    <a href="#app-container" class="skip-link">Skip to game</a>
+
+    <main id="app-container">
+        <!-- Home View -->
+        <section id="view-home" class="view" role="region" aria-label="Home screen">
+            <div class="glass-card title-card">
+                <h1><span class="title-line">Blaire's</span> <span class="title-line">Unicorn Adventure</span></h1>
+                <p class="story-blurb">A sparkly storm scattered the bunny friends! Can Blaire help them find their way home?</p>
+                <a href="#view-game" class="btn-primary glass-button" id="play-button">Play!</a>
+            </div>
+        </section>
+
+        <!-- Game View -->
+        <section id="view-game" class="view" role="region" aria-label="Game screen">
+            <canvas id="game-canvas"
+                role="img"
+                aria-label="Unicorn adventure game. Guide the unicorn by touching, clicking, or using arrow keys to collect bunny friends and earn kindness points."
+                tabindex="0"></canvas>
+            <div id="game-ui">
+                <a href="#view-home" class="btn-back glass-button" aria-label="Go back to home screen" id="back-button">
+                    <span aria-hidden="true">&#x1F3E0;</span>
+                </a>
+                <div class="kindness-meter glass-pill" role="status" aria-label="Kindness score">
+                    <span aria-hidden="true">&#x1F496;</span>
+                    <span class="score-text">0</span>
+                    <span class="sr-only">kindness points</span>
+                </div>
+            </div>
+            <!-- Live region for game announcements (score changes, friend collection) -->
+            <div id="game-announcements" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+        </section>
+
+        <!-- Offline Indicator -->
+        <div id="offline-toast" class="glass-toast hidden" role="status" aria-live="polite">
+            Using Fairy Magic (Offline)
+        </div>
+    </main>
+
+    <!-- App Logic -->
+    <script src="src/app.js" type="module"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch((err) => {
+                console.warn('SW registration failed:', err);
+            });
+        }
+    </script>
+</body>
+
+</html>

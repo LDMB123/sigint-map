@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 
-AGENTS_DIR = Path("/Users/louisherman/ClaudeCodeProjects/.claude/agents")
+AGENTS_DIR = Path(__file__).resolve().parent.parent / "agents"
 
 class AgentValidator:
     def __init__(self):

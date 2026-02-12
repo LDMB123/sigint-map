@@ -1,0 +1,24 @@
+# Build artifacts
+/target/
+/dist/
+/.trunk/
+/.playwright-mcp/
+
+# Backup files
+*.bak
+*-backup.css
+*.tmp
+
+# Playwright logs
+.playwright-mcp/*.log
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Environment
+.env
+.env.local

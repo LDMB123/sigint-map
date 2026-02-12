@@ -1,205 +1,66 @@
-# DMB Almanac Scraping Reference
+# DMB Almanac Scraping (Rust Pipeline)
 
-## Scraper Inventory (14 files)
+The Rust pipeline is the source of truth for scraping and producing the offline data bundle used by the Rust-first local PWA.
 
-### Core Scrapers
-- `shows.ts` - TourShowSet.aspx / ShowSetlist.aspx - setlists, guests, segments [100%]
-- `songs.ts` - SongList.aspx / SongStats.aspx - titles, play counts, dates [100%]
-- `venues.ts` - VenueList.aspx / VenueStats.aspx - names, locations, show counts [100%]
-- `guests.ts` - GuestList.aspx / GuestStats.aspx - names, instruments, appearances [100%]
-- `tours.ts` - TourShow.aspx / TourShowInfo.aspx - names, dates, stats, top songs [100%]
-- `releases.ts` - DiscographyList.aspx / ReleaseView.aspx - titles, types, tracks [100%]
+## Where The Scraper Lives
+- Scrape + parsing logic: `rust/crates/dmb_pipeline/src/scrape.rs`
+- CLI entrypoints: `rust/crates/dmb_pipeline/src/main.rs`
+- Fixture suite: `rust/crates/dmb_pipeline/tests/fixtures/`
 
-### Enhanced/Optional Scrapers
-- `song-stats.ts` - SongStats.aspx re-parse - slot breakdown, segues, year-by-year
-- `venue-stats.ts` - VenueStats.aspx re-parse - show frequency, patterns
-- `guest-shows.ts` - TourGuestShows.aspx?gid=X - per-song instruments, full history
+## Core Commands
 
-### Special Data Scrapers
-- `rarity.ts` - ShowRarity.aspx - show/tour rarity index [100%]
-- `liberation.ts` - Liberation.aspx - songs with long gaps [100%]
-- `history.ts` - ThisDayinHistory.aspx - all 366 calendar days [100%]
-- `lists.ts` - Lists.aspx / ListView.aspx - 45+ curated lists [100%]
-- `reparse-song-stats.ts` - utility/debug only
-
-## Architecture
-
-- **Stack**: Playwright (browser) + Cheerio (HTML parsing) + p-queue (rate limiting) + better-sqlite3 (import)
-- **Three-tier resilience**: Rate Limiter (PQueue) -> Circuit Breaker -> Exponential Backoff Retry
-- **Files**: `scraper/src/utils/circuit-breaker.ts`, `retry.ts`, `resilience-monitor.ts`
-- **Base**: `scraper/src/base/BaseScraper.ts` - integrates all resilience features + year param
-- **Site**: ASP.NET WebForms, server-side rendered, table-based layouts, minimal CSS classes
-- **Navigation**: Query string with `id`, `sid`, `vid`, `gid`, `tid` params
-- **No pagination**: Most lists load completely; JS used for charts only
-- **No new dependencies**: all features use existing packages
-
-### Data Flow
-```
-DMBAlmanac.com -> Playwright/Cheerio -> Scraper Layer (TypeScript)
-  -> Output JSON files (output/*.json)
-  -> Validation (validator.ts) -> validation-report.md
-  -> Import (importer.ts) -> SQLite (dmb-almanac.db)
-  -> Next.js/SvelteKit Web App
-```
-
-### Detailed Flow
-```
-TourShowsByYear.aspx -> tours.ts -> tour IDs
-  -> TourShowInfo.aspx -> tour stats
-  -> shows.ts (individual show URLs)
-     -> SongStats.aspx -> songs.ts -> song-stats.ts
-     -> VenueStats.aspx -> venues.ts -> venue-stats.ts
-     -> GuestStats.aspx -> guests.ts -> TourGuestShows.aspx -> guest-shows.ts
-  -> releases.ts (DiscographyList -> ReleaseView)
-  -> lists.ts (Lists.aspx -> ListView)
-  -> history.ts (366 synthetic calendar days)
-  -> liberation.ts, rarity.ts (single pages)
-```
-
-### File Structure
-```
-scraper/
-├── src/
-│   ├── base/BaseScraper.ts          # Base scraper with year support + resilience
-│   ├── scrapers/                    # shows, songs, venues, guests, tours, releases, etc.
-│   ├── validation/validator.ts      # Data validation engine (650 lines)
-│   ├── import/importer.ts           # Database importer (650 lines)
-│   ├── utils/
-│   │   ├── incremental.ts           # Incremental update manager (350 lines)
-│   │   ├── cache.ts                 # URL-based HTML caching
-│   │   ├── helpers.ts               # Parsing helpers
-│   │   ├── rate-limit.ts            # PQueue rate limiting
-│   │   ├── circuit-breaker.ts       # Circuit breaker pattern
-│   │   ├── retry.ts                 # Exponential backoff retry
-│   │   └── resilience-monitor.ts    # Health monitoring
-│   ├── orchestrator.ts              # CLI entry point, all integrations
-│   └── types.ts                     # TypeScript interfaces
-├── output/                          # JSON data, validation report, incremental state
-├── cache/                           # HTML cache, checkpoint files
-└── package.json                     # NPM scripts
-```
-
-## CLI Commands
+All commands below are run from repo root.
 
 ```bash
-# All scraper commands use direct tsx invocation (no npm scripts defined)
-cd app/scraper
-npx tsx src/orchestrator.ts [targets...] [options]  # Main entry point
-npx tsx src/orchestrator.ts all                     # Full production scrape (~2 hours)
-npx tsx src/orchestrator.ts all --incremental --validate --import  # Daily update
-npx tsx src/orchestrator.ts shows --year=2024 --validate  # Single year
-npx tsx src/orchestrator.ts all --dry-run            # Preview execution plan
-npx tsx src/orchestrator.ts --resume                 # Resume from checkpoint
-npx tsx scripts/import-data.ts                       # Import JSON to SQLite
+# Live scrape (network) + JSON warning report
+cargo run -p dmb_pipeline -- scrape --live --warnings-output data/warnings.json
+
+# Fail the run if warnings exceed a budget
+cargo run -p dmb_pipeline -- scrape --live --warnings-output data/warnings.json --warnings-max 0
+
+# Cache-only dry run (no network, no output writes)
+cargo run -p dmb_pipeline -- scrape --live --dry-run --warnings-output data/warnings.json
+
+# Fixture-only regression gate
+cargo run -p dmb_pipeline -- scrape-fixtures --warnings-output data/warnings-fixtures.json --warnings-max 0
+
+# Selector smoke test (fast, meant to catch HTML drift)
+cargo run -p dmb_pipeline -- scrape-smoke --warnings-output data/warnings.json --warnings-max 0
 ```
 
-### Targets
-- `all`, `shows`, `songs`, `venues`, `guests`, `tours`, `releases`
-- `song-stats`, `liberation`, `history`, `venue-stats`, `guest-shows`, `rarity`
+## Validation + Regression Gate
 
-### Target Dependencies
-- `shows` depends on: venues, songs, guests
-- `releases` depends on: songs
-- `liberation` depends on: songs, shows
-- `rarity` depends on: shows
-- `venues`, `songs`, `guests`, `tours`: no dependencies
-
-### Options
-
-| Option | Description |
-|--------|-------------|
-| `--year=YYYY` | Filter to specific year |
-| `--incremental` | Only fetch new/changed data |
-| `--validate` | Run validation after scrape |
-| `--import` | Import to database after scrape |
-| `--dry-run` | Preview execution plan |
-| `--resume` | Resume from checkpoint |
-| `--batch-size=N` | Records per batch |
-
-### Per-Scraper Commands
 ```bash
-# cd app/scraper && npx tsx src/orchestrator.ts <target>
-npx tsx src/orchestrator.ts shows       npx tsx src/orchestrator.ts songs
-npx tsx src/orchestrator.ts tours       npx tsx src/orchestrator.ts releases
-npx tsx src/orchestrator.ts song-stats  npx tsx src/orchestrator.ts venue-stats
-npx tsx src/orchestrator.ts rarity      npx tsx src/orchestrator.ts history
-npx tsx src/orchestrator.ts guest-shows npx tsx src/orchestrator.ts all
+# Validate using the warning report produced by a scrape run
+DMB_VALIDATE_WARNING_REPORT=data/warnings.json \
+  cargo run -p dmb_pipeline -- validate --strict-warnings
 ```
 
-## P0 Features
+## Outputs
 
-### Year Filtering (`--year=YYYY`)
-- Parsed from CLI, passed through orchestrator to scraper
-- Shows scraper filters tour years before fetching URLs
-- Reduces scrape time ~90% for single year (60min -> 5min)
+- Warning reports: `data/warnings.json` (and optional JSONL in `target/`)
+- Static data bundle (server-served): `rust/static/data/`
+- Data manifest: `rust/static/data/manifest.json`
 
-### Validation (`--validate`)
-- Engine: `src/validation/validator.ts`
-- Report output: `output/validation-report.md`
-- **Shows**: required originalId/date/venueName, YYYY-MM-DD format, no duplicate positions
-- **Songs**: required title, duplicate detection, type validation
-- **Venues**: required name/city/country, duplicate detection (name+city)
-- **Guests**: required name, duplicate detection
-- **Releases**: required title, date format validation
-- **Tours**: required name/year, year range 1991-present
+## Notes
 
-### Database Import (`--import`)
-- Engine: `src/import/importer.ts`
-- Import order (FK dependency): venues -> songs -> guests -> tours -> shows (+ setlist_entries) -> releases (+ release_tracks)
-- Uses better-sqlite3, transactions, FK enforcement, UPSERT
-- Transforms: slug generation, sort title normalization, duration parsing (MM:SS -> seconds), FK resolution (venue names -> IDs), JSON serialization
-
-### Incremental Updates (`--incremental`)
-- Manager: `src/utils/incremental.ts`
-- State: `output/incremental-metadata.json` (target, lastScrapedAt, lastItemCount)
-- Detection: file existence, timestamp comparison, count change >50%
-- Merging: new items replace same-ID, preserves items not in new scrape
-- Fallback: graceful degradation to full scrape on corruption
-
-## URL Patterns
-
-| Entity | Param | Example |
-|--------|-------|---------|
-| Show | `id` | `TourShowSet.aspx?id=453532912` |
-| Song | `sid` | `SongStats.aspx?sid=1` |
-| Venue | `vid` | `VenueStats.aspx?vid=100` |
-| Guest | `gid` | `GuestStats.aspx?gid=15` |
-| Tour | `tid` | `TourStats.aspx?tid=5` |
-| Year | `where` | `TourShow.aspx?where=2024` |
-| Release | `release` | `ReleaseView.aspx?release=XXX` |
-
-### ID Extraction Regex
-```typescript
-const idPatterns = {
-  show: /[?&]id=(\d+)/, song: /[?&]sid=(\d+)/, venue: /[?&]vid=(\d+)/,
-  guest: /[?&]gid=(\d+)/, tour: /[?&]tid=(\d+)/, year: /[?&](?:where|year)=(\d{4})/
-};
-```
-
-## Rate Limiting & Caching
-
-- **Concurrency**: 1-2 parallel requests max (p-queue)
-- **Rate**: 5 requests per 10 seconds (30/min max)
-- **Delay**: 1-4s random between requests
-- **User-Agent**: `DMBAlmanacClone/1.0 (Educational Project; Respectful Scraping)`
-- **HTML cache**: `scraper/cache/` (URL-based / MD5 hash filenames)
-- **Checkpoints**: `cache/checkpoint_{scraper}.json` every 10-50 items, resume on restart
+- Older documentation about a JavaScript scraper is intentionally removed from the main docs set. If you need historical context, treat it as archive-only, not an executable workflow.
 
 ## Resilience System
 
-### Retry Logic (`src/utils/retry.ts`)
+### Retry Logic (`src/utils/retry.js`)
 - Exponential backoff: 1s -> 2s -> 4s (3 attempts default, max 30s)
 - 10% jitter to prevent thundering herd
 - Rate limit detection: 429/503 -> 5s+ extended delay
 - **Retryable**: network errors, timeouts, rate limits, transient selector issues
 - **Not retryable**: parse errors, auth failures, invalid HTML
 
-### Circuit Breaker (`src/utils/circuit-breaker.ts`)
+### Circuit Breaker (`src/utils/circuit-breaker.js`)
 - States: CLOSED -> OPEN (5 consecutive failures) -> HALF_OPEN (60s cooldown) -> CLOSED (3 successes)
 - Fast-fails when open (< 1ms), per-scraper tracking via registry
 - `circuitBreakerRegistry.getOrCreate("scraper-name", { failureThreshold: 5, cooldownMs: 60000 })`
 
-### Health Monitor (`src/utils/resilience-monitor.ts`)
+### Health Monitor (`src/utils/resilience-monitor.js`)
 - `HealthChecker.quickCheck()`, `ResilienceMonitor.printHealthReport()`, `.shouldPauseScraping()`
 - Risk: LOW 0-5% | MEDIUM 5-20% | HIGH 20-50% | CRITICAL 50%+
 
@@ -408,7 +269,7 @@ if (!result.success) { console.error(`Failed in ${result.phase} after ${result.r
 
 ### High Priority
 - Song performance history table in SongStats.aspx: only summary extracted, full table skipped
-- `topSeguesFrom` in song-stats.ts: currently empty (not parsed)
+- `topSeguesFrom` in song-stats.js: currently empty (not parsed)
 
 ### Medium Priority
 - Venue complete show history (only top songs extracted from VenueStats)
@@ -441,6 +302,6 @@ if (!result.success) { console.error(`Failed in ${result.phase} after ${result.r
 
 ## Maintenance Schedule
 
-- Active tour season: run shows.ts weekly
+- Active tour season: run shows.js weekly
 - Year-end: run all scrapers
 - Daily: `npm run scrape:incremental -- --validate --import`

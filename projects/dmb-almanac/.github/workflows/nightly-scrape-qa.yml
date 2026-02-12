@@ -1,0 +1,41 @@
+name: Nightly Scrape QA (Rust)
+
+on:
+  schedule:
+    - cron: "30 9 * * *"
+  workflow_dispatch: {}
+
+env:
+  RUST_VERSION: 'stable'
+
+jobs:
+  rust-scrape-qa:
+    name: Rust Scrape QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ./rust
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          cache: true
+
+      - name: Scrape fixtures + validate warnings
+        run: cargo run -p xtask -- scrape-qa
+
+      - name: Upload warning report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-scrape-qa-warnings
+          path: |
+            rust/data/warnings-fixtures.json
+            rust/data/warnings-events.jsonl
+            rust/data/warnings-summary.json
+          retention-days: 14

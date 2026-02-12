@@ -38,7 +38,7 @@ model_tiers:
       - Parallelization gain > 10x justifies use
 
     parallelization:
-      max_concurrent: 200
+      max_concurrent: 100  # Aligned with parallelization.yaml (burst: 150)
       recommended_batch_size: 50
       optimal_for_swarms: true
 
@@ -77,7 +77,7 @@ model_tiers:
       - Balance of speed and quality needed
 
     parallelization:
-      max_concurrent: 30
+      max_concurrent: 45  # Aligned with parallelization.yaml (burst: 50)
       recommended_batch_size: 10
       optimal_for_specialists: true
 

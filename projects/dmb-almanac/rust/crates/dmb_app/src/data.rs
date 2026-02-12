@@ -73,6 +73,10 @@ pub struct SqliteParityReport {
     pub total_mismatches: usize,
     pub mismatches: Vec<SqliteParityEntry>,
     pub missing_tables: Vec<String>,
+    // If any IndexedDB store counts fail, the parity check is incomplete.
+    // We avoid defaulting to `0` (which creates misleading "mismatch" alerts) and instead
+    // surface these failures separately in the diagnostics UI.
+    pub idb_count_failures: Vec<String>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -253,7 +257,24 @@ pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
             total_mismatches: 0,
             mismatches: Vec::new(),
             missing_tables: response.missing_tables,
+            idb_count_failures: Vec::new(),
         });
+    }
+
+    async fn count_store_with_retry(store_name: &str, attempts: usize) -> Result<u32, JsValue> {
+        let attempts = attempts.max(1);
+        let mut last_err: Option<JsValue> = None;
+        for _ in 0..attempts {
+            match dmb_idb::count_store(store_name).await {
+                Ok(value) => return Ok(value),
+                Err(err) => {
+                    last_err = Some(err);
+                    // Yield a tick so we don't keep retrying in a tight loop.
+                    let _ = JsFuture::from(js_sys::Promise::resolve(&JsValue::NULL)).await;
+                }
+            }
+        }
+        Err(last_err.unwrap_or_else(|| JsValue::from_str("count_store failed")))
     }
 
     let mapping: &[(&str, &str)] = &[
@@ -273,8 +294,20 @@ pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
     ];
 
     let mut mismatches = Vec::new();
+    let mut idb_count_failures = Vec::new();
     for (store, table) in mapping {
-        let idb_count = dmb_idb::count_store(store).await.ok().unwrap_or(0) as u64;
+        let idb_count = match count_store_with_retry(store, 3).await {
+            Ok(value) => value as u64,
+            Err(err) => {
+                tracing::warn!(
+                    store,
+                    error = ?err,
+                    "sqlite parity: failed to count IndexedDB store; skipping parity comparison"
+                );
+                idb_count_failures.push((*store).to_string());
+                continue;
+            }
+        };
         let sqlite_count = response.counts.get(*table).copied().unwrap_or(0);
         if idb_count != sqlite_count {
             mismatches.push(SqliteParityEntry {
@@ -292,6 +325,7 @@ pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
         total_mismatches,
         mismatches,
         missing_tables: response.missing_tables,
+        idb_count_failures,
     })
 }
 
@@ -428,19 +462,19 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
 
     update("Checking offline data…".to_string(), 0.0);
 
-    update("Checking legacy data…".to_string(), 0.0);
-    match dmb_idb::migrate_legacy_db().await {
+    update("Checking previous-version data…".to_string(), 0.0);
+    match dmb_idb::migrate_previous_db().await {
         Ok(true) => {
-            update("Migrated legacy data".to_string(), 0.05);
+            update("Migrated previous-version data".to_string(), 0.05);
         }
         Ok(false) => {}
         Err(err) => {
             update(
-                "Legacy migration failed; proceeding with fresh import".to_string(),
+                "Previous-version migration failed; proceeding with fresh import".to_string(),
                 0.05,
             );
             web_sys::console::warn_1(&JsValue::from_str(&format!(
-                "legacy migration failed: {err:?}"
+                "previous-version migration failed: {err:?}"
             )));
         }
     }
@@ -463,24 +497,34 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
     if let Ok(Some(marker)) = dmb_idb::get_sync_meta::<ImportMarker>(IMPORT_MARKER_ID).await {
         if marker.manifest_version == manifest.version {
             if let Some(mismatches) = verify_import_integrity(&manifest, dry_run.as_ref()).await {
-                let summary = format!("Integrity check failed for {} stores", mismatches.len());
+                // Auto-repair: this typically means the IDB schema drifted (missing stores)
+                // or the previous import was interrupted. Clear seed stores and re-import.
+                tracing::warn!(
+                    mismatch_count = mismatches.len(),
+                    "integrity check failed for current manifest; clearing seed stores and reimporting"
+                );
+                update(
+                    "Offline data integrity check failed; repairing…".to_string(),
+                    0.02,
+                );
+                for spec in IMPORT_SPECS {
+                    if let Err(err) = dmb_idb::clear_store(spec.store).await {
+                        tracing::warn!(store = spec.store, error = ?err, "failed to clear store during repair");
+                    }
+                }
+                let _ = dmb_idb::delete_sync_meta(IMPORT_MARKER_ID).await;
+                let _ = dmb_idb::delete_sync_meta(IMPORT_CHECKPOINT_ID).await;
+                // Proceed into the normal import loop.
+            } else {
                 status.set(ImportStatus {
-                    message: summary,
+                    message: "Offline data ready".to_string(),
                     progress: 1.0,
-                    done: false,
-                    error: Some(format!("{mismatches:?}")),
-                    can_reset: true,
+                    done: true,
+                    error: None,
+                    can_reset: false,
                 });
                 return;
             }
-            status.set(ImportStatus {
-                message: "Offline data ready".to_string(),
-                progress: 1.0,
-                done: true,
-                error: None,
-                can_reset: false,
-            });
-            return;
         }
     }
 
@@ -675,9 +719,24 @@ async fn verify_import_integrity(
         let Some(store) = store else {
             continue;
         };
-        let actual = match dmb_idb::count_store(store).await.ok() {
-            Some(value) => value as u64,
-            None => continue,
+        let actual = match dmb_idb::count_store(store).await {
+            Ok(value) => value as u64,
+            Err(err) => {
+                // If we cannot count a store we expect to exist, treat it as an integrity failure.
+                // This avoids false "Offline data ready" states when IDB schema drifted.
+                tracing::warn!(
+                    store,
+                    expected_count,
+                    error = ?err,
+                    "integrity: failed to count store; treating as mismatch"
+                );
+                mismatches.push(IntegrityMismatch {
+                    store: store.to_string(),
+                    expected: expected_count,
+                    actual: 0,
+                });
+                continue;
+            }
         };
         if actual != expected_count {
             mismatches.push(IntegrityMismatch {
@@ -690,9 +749,22 @@ async fn verify_import_integrity(
     if let Some(report) = dry_run {
         let counts = dry_run_store_counts(report);
         for (store, expected_count) in counts {
-            let actual = match dmb_idb::count_store(&store).await.ok() {
-                Some(value) => value as u64,
-                None => continue,
+            let actual = match dmb_idb::count_store(&store).await {
+                Ok(value) => value as u64,
+                Err(err) => {
+                    tracing::warn!(
+                        store,
+                        expected_count,
+                        error = ?err,
+                        "integrity: failed to count dry-run store; treating as mismatch"
+                    );
+                    mismatches.push(IntegrityMismatch {
+                        store,
+                        expected: expected_count,
+                        actual: 0,
+                    });
+                    continue;
+                }
             };
             if actual != expected_count {
                 mismatches.push(IntegrityMismatch {

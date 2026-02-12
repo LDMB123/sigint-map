@@ -53,7 +53,7 @@
 
 **To extract originals:**
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/.claude/docs/reports
+cd .claude/docs/reports
 tar -xzf _compressed/claude-audits-2026-01-31.tar.gz
 ```
 

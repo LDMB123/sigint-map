@@ -31,7 +31,7 @@ caching:
   l2_context_cache:
     enabled: true
     type: sqlite
-    path: /Users/louisherman/.claude/cache/l2_context.db
+    path: ${HOME}/.claude/cache/l2_context.db
     max_size_mb: 500
     ttl_seconds: 86400  # 24 hours
     eviction_policy: lru
@@ -70,7 +70,7 @@ caching:
   l3_semantic_cache:
     enabled: true
     type: sqlite
-    path: /Users/louisherman/.claude/cache/l3_semantic.db
+    path: ${HOME}/.claude/cache/l3_semantic.db
     max_size_mb: 1000
     ttl_seconds: 604800  # 7 days
     eviction_policy: lru
@@ -113,9 +113,9 @@ caching:
 storage:
   sqlite:
     journals:
-      - /Users/louisherman/.claude/cache/l1_routing.db
-      - /Users/louisherman/.claude/cache/l2_context.db
-      - /Users/louisherman/.claude/cache/l3_semantic.db
+      - ${HOME}/.claude/cache/l1_routing.db
+      - ${HOME}/.claude/cache/l2_context.db
+      - ${HOME}/.claude/cache/l3_semantic.db
 
     connection_pool:
       max_connections: 50  # INCREASED from 10 to handle 150 concurrent agents
@@ -135,7 +135,7 @@ storage:
     vacuum_interval_hours: 168  # Weekly
     analyze_interval_hours: 24
     backup_enabled: true
-    backup_path: /Users/louisherman/.claude/cache/backups/
+    backup_path: ${HOME}/.claude/cache/backups/
     retention_days: 7
 
 # Cache Performance Monitoring
@@ -248,7 +248,7 @@ deduplication:
 statistics:
   enabled: true
   export_interval_seconds: 300
-  export_path: /Users/louisherman/.claude/cache/stats.json
+  export_path: ${HOME}/.claude/cache/stats.json
 
   metrics:
     - hit_rate_by_cache_layer
@@ -300,7 +300,7 @@ examples:
       confidence: 0.95
 
   l2_context:
-    key: "project:/Users/louisherman/ClaudeCodeProjects/dmb-almanac:dependency_graph"
+    key: "project:${PROJECT_ROOT}/dmb-almanac:dependency_graph"
     value:
       nodes: 342
       edges: 1523

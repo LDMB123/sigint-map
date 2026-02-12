@@ -538,7 +538,7 @@ cfg_if::cfg_if! {
             Ok(out)
         }
 
-        async fn list_all<T: serde::de::DeserializeOwned>(store_name: &str) -> Result<Vec<T>> {
+        pub async fn list_all<T: serde::de::DeserializeOwned>(store_name: &str) -> Result<Vec<T>> {
             let db = open_db().await?;
             let tx = db
                 .transaction(&[store_name], TransactionMode::ReadOnly)
@@ -701,7 +701,9 @@ cfg_if::cfg_if! {
             mismatches: Vec<(String, u32, u32)>,
         }
 
-        async fn legacy_db_exists() -> Result<bool> {
+        const PREVIOUS_MIGRATION_KEY: &str = "previous_migration_v1";
+
+        async fn previous_db_exists() -> Result<bool> {
             let window = web_sys::window().ok_or_else(|| js_error("window missing"))?;
             let indexed_db = Reflect::get(&window, &JsValue::from_str("indexedDB")).js()?;
             let databases_fn = Reflect::get(&indexed_db, &JsValue::from_str("databases")).js()?;
@@ -717,7 +719,7 @@ cfg_if::cfg_if! {
             let arr = Array::from(&list);
             for entry in arr.iter() {
                 if let Ok(name) = Reflect::get(&entry, &JsValue::from_str("name")) {
-                    if name.as_string().as_deref() == Some(LEGACY_DB_NAME) {
+                    if name.as_string().as_deref() == Some(PREVIOUS_DB_NAME) {
                         return Ok(true);
                     }
                 }
@@ -732,7 +734,7 @@ cfg_if::cfg_if! {
                 .js()?;
             let store = tx.object_store(TABLE_SYNC_META).js()?;
             let value: Option<JsValue> = store
-                .get(JsValue::from_str("legacy_migration_v1"))
+                .get(JsValue::from_str(PREVIOUS_MIGRATION_KEY))
                 .js()?
                 .await
                 .js()?;
@@ -747,7 +749,7 @@ cfg_if::cfg_if! {
             mismatches: Vec<(String, u32, u32)>,
         ) -> Result<()> {
             let record = MigrationRecord {
-                id: "legacy_migration_v1".to_string(),
+                id: PREVIOUS_MIGRATION_KEY.to_string(),
                 migrated_at: js_sys::Date::new_0()
                     .to_string()
                     .as_string()
@@ -767,12 +769,12 @@ cfg_if::cfg_if! {
         }
 
         async fn copy_store(
-            legacy_db: &Database,
-            new_db: &Database,
+            source_db: &Database,
+            target_db: &Database,
             store_name: &str,
         ) -> Result<u32> {
             const MIGRATION_BATCH_SIZE: usize = 500;
-            let tx_read = legacy_db
+            let tx_read = source_db
                 .transaction(&[store_name], TransactionMode::ReadOnly)
                 .js()?;
             let store_read = tx_read.object_store(store_name).js()?;
@@ -788,7 +790,7 @@ cfg_if::cfg_if! {
                 batch.push(value);
                 total += 1;
                 if batch.len() >= MIGRATION_BATCH_SIZE {
-                    write_batch(new_db, store_name, &batch).await?;
+                    write_batch(target_db, store_name, &batch).await?;
                     batch.clear();
                 }
                 request = cursor.next(None).js()?;
@@ -797,7 +799,7 @@ cfg_if::cfg_if! {
             tx_read.await.js()?;
 
             if !batch.is_empty() {
-                write_batch(new_db, store_name, &batch).await?;
+                write_batch(target_db, store_name, &batch).await?;
             }
 
             Ok(total)
@@ -813,9 +815,9 @@ cfg_if::cfg_if! {
             Ok(count as u32)
         }
 
-        pub async fn migrate_legacy_db() -> Result<bool> {
+        pub async fn migrate_previous_db() -> Result<bool> {
             let factory = Factory::new().js()?;
-            if !legacy_db_exists().await? {
+            if !previous_db_exists().await? {
                 return Ok(false);
             }
 
@@ -824,13 +826,13 @@ cfg_if::cfg_if! {
                 return Ok(false);
             }
 
-            let legacy_db = factory
-                .open(LEGACY_DB_NAME, None)
+            let previous_db = factory
+                .open(PREVIOUS_DB_NAME, None)
                 .js()?
                 .await
                 .js()?;
 
-            let store_names = legacy_db.store_names();
+            let store_names = previous_db.store_names();
             let mut counts: Vec<(String, u32)> = Vec::new();
             let mut mismatches: Vec<(String, u32, u32)> = Vec::new();
 
@@ -838,9 +840,17 @@ cfg_if::cfg_if! {
                 if !store_names.iter().any(|name| name == store) {
                     continue;
                 }
-                let count = copy_store(&legacy_db, &new_db, store).await?;
+                let count = copy_store(&previous_db, &new_db, store).await?;
                 counts.push((store.to_string(), count));
-                let new_count = count_store_in_db(&new_db, store).await.unwrap_or(0);
+                let new_count = match count_store_in_db(&new_db, store).await {
+                    Ok(value) => value,
+                    Err(err) => {
+                        web_sys::console::warn_1(&JsValue::from_str(&format!(
+                            "[IDB] failed to count new store after copy: store={store} error={err:?}"
+                        )));
+                        0
+                    }
+                };
                 if new_count != count {
                     mismatches.push((store.to_string(), count, new_count));
                 }
@@ -848,16 +858,16 @@ cfg_if::cfg_if! {
 
             if !mismatches.is_empty() {
                 web_sys::console::warn_1(&JsValue::from_str(&format!(
-                    "[IDB] legacy migration count mismatch: {mismatches:?}"
+                    "[IDB] previous-version migration count mismatch: {mismatches:?}"
                 )));
                 write_migration_marker(&new_db, counts, false, mismatches).await?;
                 return Ok(false);
             }
 
             write_migration_marker(&new_db, counts, true, Vec::new()).await?;
-            // Close the legacy handle before delete to avoid a blocked deleteDatabase request.
-            legacy_db.close();
-            if let Ok(request) = factory.delete(LEGACY_DB_NAME) {
+            // Close the previous-version handle before delete to avoid a blocked deleteDatabase request.
+            previous_db.close();
+            if let Ok(request) = factory.delete(PREVIOUS_DB_NAME) {
                 let _ = request.await;
             }
             Ok(true)
@@ -917,6 +927,32 @@ cfg_if::cfg_if! {
 
         pub async fn get_sync_meta<T: DeserializeOwned>(id: &str) -> Result<Option<T>> {
             get_by_key(TABLE_SYNC_META, JsValue::from_str(id)).await
+        }
+
+        pub async fn delete_sync_meta(id: &str) -> Result<()> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[TABLE_SYNC_META], TransactionMode::ReadWrite)
+                .js()?;
+            let store = tx.object_store(TABLE_SYNC_META).js()?;
+            store
+                .delete(Query::Key(JsValue::from_str(id)))
+                .js()?
+                .await
+                .js()?;
+            tx.await.js()?;
+            Ok(())
+        }
+
+        pub async fn clear_store(store_name: &str) -> Result<()> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadWrite)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            store.clear().js()?.await.js()?;
+            tx.await.js()?;
+            Ok(())
         }
 
         pub async fn store_embedding_chunk(chunk: &EmbeddingChunk) -> Result<()> {
@@ -999,8 +1035,8 @@ cfg_if::cfg_if! {
         }
 
         #[wasm_bindgen]
-        pub async fn js_migrate_legacy_db() -> std::result::Result<bool, JsValue> {
-            migrate_legacy_db()
+        pub async fn js_migrate_previous_db() -> std::result::Result<bool, JsValue> {
+            migrate_previous_db()
                 .await
                 .map_err(|e| JsValue::from_str(&format!("{e:?}")))
         }
@@ -1123,7 +1159,7 @@ cfg_if::cfg_if! {
             Err(JsValue::from_str("IndexedDB not available on server"))
         }
 
-        pub async fn migrate_legacy_db() -> Result<bool, JsValue> {
+        pub async fn migrate_previous_db() -> Result<bool, JsValue> {
             Err(JsValue::from_str("IndexedDB not available on server"))
         }
 
@@ -1136,6 +1172,14 @@ cfg_if::cfg_if! {
         }
 
         pub async fn get_sync_meta<T: DeserializeOwned>(_id: &str) -> Result<Option<T>, JsValue> {
+            Err(JsValue::from_str("IndexedDB not available on server"))
+        }
+
+        pub async fn delete_sync_meta(_id: &str) -> Result<(), JsValue> {
+            Err(JsValue::from_str("IndexedDB not available on server"))
+        }
+
+        pub async fn clear_store(_store_name: &str) -> Result<(), JsValue> {
             Err(JsValue::from_str("IndexedDB not available on server"))
         }
 
@@ -1168,6 +1212,10 @@ cfg_if::cfg_if! {
         }
 
         pub async fn count_store(_store_name: &str) -> Result<u32, JsValue> {
+            Err(JsValue::from_str("IndexedDB not available on server"))
+        }
+
+        pub async fn list_all<T: serde::de::DeserializeOwned>(_store_name: &str) -> Result<Vec<T>, JsValue> {
             Err(JsValue::from_str("IndexedDB not available on server"))
         }
 

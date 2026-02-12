@@ -1,0 +1,295 @@
+/* ==========================================================================
+   Accessibility Styles - Blaire's Unicorn Adventure
+
+   Addresses WCAG 2.1 AA compliance for a children's application.
+   Children with disabilities, parents using assistive tech, and young users
+   with motor/cognitive differences all depend on these styles.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Screen Reader Only - visually hidden, accessible to assistive tech
+   WCAG: 1.3.1 Info and Relationships
+   -------------------------------------------------------------------------- */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Skip Navigation Link
+   WCAG: 2.4.1 Bypass Blocks (Level A)
+   -------------------------------------------------------------------------- */
+.skip-link {
+    position: absolute;
+    top: -100px;
+    left: 50%;
+    translate: -50% 0;
+    z-index: 10000;
+    padding: 12px 24px;
+    background: #4a0e6b;
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 0 0 12px 12px;
+    transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+    top: 0;
+    outline: 3px solid #ffcc00;
+    outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Focus Indicators
+   WCAG: 2.4.7 Focus Visible (Level AA)
+
+   Extra prominent for children who may be learning keyboard navigation.
+   Uses a high-contrast yellow ring that is visible on any background.
+   -------------------------------------------------------------------------- */
+*:focus {
+    outline: none;
+}
+
+*:focus-visible {
+    outline: 3px solid #ffcc00;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px rgba(255, 204, 0, 0.3);
+    border-radius: 8px;
+}
+
+/* Canvas gets a distinct focus ring */
+#game-canvas:focus-visible {
+    outline: 4px solid #ffcc00;
+    outline-offset: 0;
+    box-shadow: inset 0 0 0 4px rgba(255, 204, 0, 0.3);
+    border-radius: 0;
+}
+
+/* Glass buttons get enhanced focus with animated pulse for visibility */
+.glass-button:focus-visible {
+    outline: 3px solid #ffcc00;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px rgba(255, 204, 0, 0.4), 0 0 20px rgba(255, 204, 0, 0.2);
+    animation: focus-pulse 2s ease-in-out infinite;
+}
+
+@keyframes focus-pulse {
+    0%, 100% {
+        outline-offset: 3px;
+        box-shadow: 0 0 0 6px rgba(255, 204, 0, 0.4), 0 0 20px rgba(255, 204, 0, 0.2);
+    }
+    50% {
+        outline-offset: 5px;
+        box-shadow: 0 0 0 8px rgba(255, 204, 0, 0.3), 0 0 30px rgba(255, 204, 0, 0.3);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Reduced Motion
+   WCAG: 2.3.3 Animation from Interactions (Level AAA)
+
+   Critical for children with vestibular disorders, motion sensitivity,
+   or certain forms of autism. Removes all non-essential animation.
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .title-card {
+        animation: none !important;
+
+        &::before,
+        &::after {
+            animation: none !important;
+            display: none;
+        }
+    }
+
+    .glass-button {
+        animation: none !important;
+    }
+
+    .glass-button:focus-visible {
+        animation: none !important;
+    }
+
+    .glass-button:active {
+        transition: none;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   High Contrast / Forced Colors Mode
+   WCAG: 1.4.11 Non-text Contrast (Level AA)
+
+   Ensures glass morphism degrades gracefully when the OS forces
+   high-contrast colors (Windows High Contrast Mode, etc.)
+   -------------------------------------------------------------------------- */
+@media (forced-colors: active) {
+    .glass-card,
+    .glass-button,
+    .glass-pill,
+    .glass-toast {
+        background: Canvas;
+        border: 2px solid ButtonText;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        forced-color-adjust: none;
+    }
+
+    .glass-button {
+        background: ButtonFace;
+        color: ButtonText;
+        border: 2px solid ButtonText;
+    }
+
+    .glass-button:active,
+    .glass-button:hover {
+        background: Highlight;
+        color: HighlightText;
+    }
+
+    h1 {
+        background: none;
+        background-clip: unset;
+        -webkit-background-clip: unset;
+        color: CanvasText;
+        -webkit-text-fill-color: CanvasText;
+        filter: none;
+    }
+
+    *:focus-visible {
+        outline: 3px solid Highlight;
+        box-shadow: none;
+        animation: none;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Color Contrast Enhancements
+   WCAG: 1.4.3 Contrast (Minimum) (Level AA) -- 4.5:1 for normal text
+
+   Glass morphism creates translucent backgrounds that make text contrast
+   unpredictable. We add solid fallback backgrounds and text shadows to
+   guarantee legibility.
+   -------------------------------------------------------------------------- */
+
+/* Ensure h1 gradient text has a readable fallback */
+h1 {
+    /* The gradient clip trick can fail contrast. Add a text shadow for legibility. */
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15)) drop-shadow(0 0 1px rgba(80, 0, 80, 0.3));
+}
+
+/* Glass pill (score display) needs solid enough background */
+.kindness-meter.glass-pill {
+    background: rgba(255, 255, 255, 0.75);
+    color: #4a0e6b;
+    font-weight: bold;
+}
+
+/* Glass buttons need sufficient contrast for their text */
+.glass-button {
+    color: #4a0e6b;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+/* Offline toast: dark background already good, but ensure white is solid */
+.glass-toast {
+    background: rgba(0, 0, 0, 0.85);
+    color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Heading Line Breaks via CSS (not <br>)
+   WCAG: 1.3.2 Meaningful Sequence (Level A)
+   -------------------------------------------------------------------------- */
+.title-line {
+    display: block;
+}
+
+/* --------------------------------------------------------------------------
+   Touch Target Sizes
+   WCAG: 2.5.8 Target Size (Minimum) (Level AA - WCAG 2.2)
+
+   Minimum 44x44px for all interactive elements.
+   For children, we aim for 48x48px minimum because small fingers
+   have less precision.
+   -------------------------------------------------------------------------- */
+.btn-back {
+    min-width: 48px;
+    min-height: 48px;
+}
+
+.btn-primary {
+    min-height: 48px;
+    min-width: 120px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --------------------------------------------------------------------------
+   Text Selection
+   WCAG: 1.3.1 Info and Relationships (Level A)
+
+   Allow text selection for assistive tech (text-to-speech, reading aids).
+   Only disable selection on the canvas and game UI overlay where it
+   interferes with touch gameplay.
+   -------------------------------------------------------------------------- */
+body {
+    user-select: auto;
+    -webkit-user-select: auto;
+}
+
+#game-canvas,
+#game-ui {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* --------------------------------------------------------------------------
+   Increased Contrast Mode (prefers-contrast)
+   For users who prefer higher contrast but are not in forced-colors mode.
+   -------------------------------------------------------------------------- */
+@media (prefers-contrast: more) {
+    .glass-card {
+        background: rgba(255, 255, 255, 0.85);
+        border: 2px solid #4a0e6b;
+    }
+
+    .glass-button {
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid #4a0e6b;
+        color: #4a0e6b;
+        text-shadow: none;
+    }
+
+    .glass-pill {
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid #4a0e6b;
+    }
+
+    h1 {
+        background: none;
+        background-clip: unset;
+        -webkit-background-clip: unset;
+        color: #4a0e6b;
+        -webkit-text-fill-color: #4a0e6b;
+        filter: none;
+    }
+}

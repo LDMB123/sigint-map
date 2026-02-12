@@ -1,18 +1,24 @@
 # DMB Almanac
 
-Dave Matthews Band concert database PWA. SvelteKit 2, Svelte 5, SQLite, Dexie.js, Chromium 143+.
+Dave Matthews Band concert database PWA, Rust-first and local-only (offline-first).
 
 ## Quick Start
 
 ```bash
-cd app
-npm install
-npm run dev
+# Runs the “green gate” locally (data release + server + E2E subset)
+bash scripts/cutover-rehearsal.sh
 ```
 
-## Structure
+Or run the server directly:
 
-- `app/` - SvelteKit application
-- `app/docs/` - App-level reference docs (compressed)
-- `docs/` - Project documentation (guides, audits, reports)
-- `CLAUDE.md` - Developer runbook
+```bash
+cd rust
+cargo run -p dmb_server
+```
+
+## Repo Layout
+
+- `rust/` Rust workspace (SSR + hydration app, server, pipeline, IndexedDB, WASM)
+- `data/` SQLite source DB and generated artifacts
+- `e2e/` Playwright E2E tests
+- `docs/` Documentation (see `docs/INDEX.md`)

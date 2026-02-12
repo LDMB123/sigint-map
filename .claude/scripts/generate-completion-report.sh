@@ -3,8 +3,10 @@
 
 set -e
 
-REPORT_TEMPLATE="/Users/louisherman/ClaudeCodeProjects/.claude/COMPLETION_REPORT.md"
-REPORT_FINAL="/Users/louisherman/ClaudeCodeProjects/.claude/COMPLETION_REPORT_FINAL.md"
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+
+REPORT_TEMPLATE="$PROJECT_ROOT/.claude/COMPLETION_REPORT.md"
+REPORT_FINAL="$PROJECT_ROOT/.claude/COMPLETION_REPORT_FINAL.md"
 TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
 echo "Generating completion report..."
@@ -12,14 +14,14 @@ echo ""
 
 # Run validation first
 echo "Running comprehensive validation..."
-bash /Users/louisherman/ClaudeCodeProjects/.claude/scripts/comprehensive-validation.sh > /tmp/validation-results.txt
+bash $PROJECT_ROOT/.claude/scripts/comprehensive-validation.sh > /tmp/validation-results.txt
 VALIDATION_EXIT=$?
 
 # Extract metrics from validation
 YAML_VALID=$(grep "✓ All .* YAML files valid" /tmp/validation-results.txt | grep -o "[0-9]*" | head -1 || echo "0")
 CORRUPTION_COUNT=$(grep "Found .* occurrences" /tmp/validation-results.txt | grep -o "[0-9]*" || echo "0")
 CONTRACTS_ADDED=$(grep "agents have collaboration contracts" /tmp/validation-results.txt | grep -o "[0-9]*" | head -1 || echo "0")
-TOTAL_AGENTS=$(find /Users/louisherman/ClaudeCodeProjects/.claude/agents -name "*.yaml" -o -name "*.md" | wc -l | tr -d ' ')
+TOTAL_AGENTS=$(find $PROJECT_ROOT/.claude/agents -name "*.yaml" -o -name "*.md" | wc -l | tr -d ' ')
 
 # Calculate system health score
 if [ $VALIDATION_EXIT -eq 0 ]; then
@@ -40,12 +42,12 @@ else
 fi
 
 # Count deliverables
-CATEGORY_READMES=$(find /Users/louisherman/ClaudeCodeProjects/.claude/agents -name "README.md" | wc -l | tr -d ' ')
-TEST_FILES=$(find /Users/louisherman/ClaudeCodeProjects/.claude/tests -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
-OPENAPI_SPECS=$(find /Users/louisherman/ClaudeCodeProjects/.claude/api -name "*.openapi.yaml" -o -name "openapi.yaml" 2>/dev/null | wc -l | tr -d ' ')
+CATEGORY_READMES=$(find $PROJECT_ROOT/.claude/agents -name "README.md" | wc -l | tr -d ' ')
+TEST_FILES=$(find $PROJECT_ROOT/.claude/tests -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
+OPENAPI_SPECS=$(find $PROJECT_ROOT/.claude/api -name "*.openapi.yaml" -o -name "openapi.yaml" 2>/dev/null | wc -l | tr -d ' ')
 
 # Check telemetry
-if [ -f "/Users/louisherman/ClaudeCodeProjects/.claude/lib/telemetry-wrapper.ts" ]; then
+if [ -f "$PROJECT_ROOT/.claude/lib/telemetry-wrapper.ts" ]; then
     TELEMETRY_STATUS="INTEGRATED"
 else
     TELEMETRY_STATUS="PENDING"

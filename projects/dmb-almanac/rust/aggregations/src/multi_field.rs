@@ -116,9 +116,9 @@ mod tests {
 
     #[test]
     fn test_input_validation() {
-        let years = vec![1991, 1992];
-        let venues = vec![1]; // Wrong length
-        let _songs = vec![1, 2];
+        let years = [1991, 1992];
+        let venues = [1]; // Wrong length
+        let _songs = [1, 2];
 
         // This would fail with validation error if we could test WASM types
         // In practice, tested via JavaScript tests

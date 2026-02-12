@@ -21,15 +21,12 @@ rustup target add wasm32-unknown-unknown
 wasm-pack build --target web --dev
 
 # Production (optimized, minimal size)
-wasm-pack build --target web --release --out-dir ../../app/src/lib/wasm/aggregations
-
-# Automated (recommended)
-./scripts/build-wasm.sh
+wasm-pack build --target web --release
 ```
 
 ### Output
 ```
-app/src/lib/wasm/aggregations/
+rust/aggregations/pkg/
 ├── index.js         # JavaScript bindings
 ├── index_bg.wasm    # WASM binary (~19KB)
 └── package.json     # NPM package metadata
@@ -41,8 +38,8 @@ app/src/lib/wasm/aggregations/
 cargo test                           # Rust unit tests
 cargo clippy -- -D warnings          # Linter
 cargo fmt                            # Format
-cd app && npm test -- tests/wasm/aggregations.integration.test.js  # JS integration
 ```
+Note: Validate the Rust-first runtime via `bash scripts/cutover-rehearsal.sh` from the repo root.
 
 ## Project Structure
 
@@ -107,9 +104,8 @@ serde-wasm-bindgen = "0.6"    # Serde + wasm-bindgen
 
 1. Add `#[wasm_bindgen] pub fn` to `src/lib.rs`
 2. Add `#[cfg(test)]` unit tests
-3. Rebuild: `./scripts/build-wasm.sh`
-4. Update typedef in `app/src/lib/wasm/loader.js`
-5. Add JS integration test in `app/tests/wasm/`
+3. Rebuild: `cd rust/aggregations && wasm-pack build --target web --release`
+4. If you still need an external JS integration harness, keep it out of this repo’s runtime dependency graph.
 
 ### Function Template
 ```rust
@@ -132,7 +128,7 @@ log(&format!("Processing {} items", input.len()));
 ```
 
 ```bash
-ls -lh app/src/lib/wasm/aggregations/index_bg.wasm  # Check binary size (~19KB expected)
+ls -lh rust/aggregations/pkg/index_bg.wasm  # Check binary size (~19KB expected)
 ```
 
 - Browser DevTools Performance tab -> look for "WASM" entries
@@ -142,7 +138,7 @@ ls -lh app/src/lib/wasm/aggregations/index_bg.wasm  # Check binary size (~19KB e
 
 - **wasm-pack not found**: `cargo install wasm-pack`
 - **Unknown target**: `rustup target add wasm32-unknown-unknown`
-- **JS can't find module**: run `./scripts/build-wasm.sh`, verify output exists
+- **JS can't find module**: rebuild the crate and verify `rust/aggregations/pkg/` exists
 - **Binary too large (>50KB)**: ensure `--release` build, check dependencies, run `wasm-opt -Oz`
 - **Slow performance**: ensure release build (10-50x faster than dev)
 

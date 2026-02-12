@@ -17,6 +17,28 @@ mod export;
 mod runtime_db;
 mod scrape;
 
+fn env_u64_or_warn(name: &str) -> Option<u64> {
+    match std::env::var(name) {
+        Ok(raw) => match raw.parse::<u64>() {
+            Ok(value) => Some(value),
+            Err(err) => {
+                tracing::warn!(
+                    env = name,
+                    value = raw,
+                    error = %err,
+                    "invalid u64 env var; ignoring"
+                );
+                None
+            }
+        },
+        Err(std::env::VarError::NotUnicode(_)) => {
+            tracing::warn!(env = name, "env var is not valid unicode; ignoring");
+            None
+        }
+        Err(std::env::VarError::NotPresent) => None,
+    }
+}
+
 #[derive(Parser)]
 #[command(name = "dmb_pipeline")]
 #[command(about = "DMB Almanac Rust data pipeline", long_about = None)]
@@ -89,7 +111,7 @@ enum Command {
     },
     Transform,
     BuildDb {
-        #[arg(long, default_value = "../app/data/dmb-almanac.db")]
+        #[arg(long, default_value = "data/dmb-almanac.db")]
         source: PathBuf,
         #[arg(long, default_value = "data/dmb-almanac.db")]
         output: PathBuf,
@@ -101,7 +123,7 @@ enum Command {
         output: PathBuf,
     },
     BuildIdb {
-        #[arg(long, default_value = "../app/static/data")]
+        #[arg(long, default_value = "../data/static-data")]
         source_dir: PathBuf,
         #[arg(long, default_value = "static/data")]
         output_dir: PathBuf,
@@ -421,11 +443,8 @@ fn main() -> Result<()> {
                     min_delay_ms: 1000,
                     max_delay_ms: 3000,
                     max_retries: 3,
-                    endpoint_retry_max: endpoint_retry_max.or_else(|| {
-                        std::env::var("DMB_ENDPOINT_RETRY_MAX")
-                            .ok()
-                            .and_then(|v| v.parse::<u64>().ok())
-                    }),
+                    endpoint_retry_max: endpoint_retry_max
+                        .or_else(|| env_u64_or_warn("DMB_ENDPOINT_RETRY_MAX")),
                     strict,
                     warnings_output,
                     warnings_max,
@@ -511,11 +530,8 @@ fn main() -> Result<()> {
                 min_delay_ms: 500,
                 max_delay_ms: 1500,
                 max_retries: 3,
-                endpoint_retry_max: endpoint_retry_max.or_else(|| {
-                    std::env::var("DMB_ENDPOINT_RETRY_MAX")
-                        .ok()
-                        .and_then(|v| v.parse::<u64>().ok())
-                }),
+                endpoint_retry_max: endpoint_retry_max
+                    .or_else(|| env_u64_or_warn("DMB_ENDPOINT_RETRY_MAX")),
                 strict: false,
                 warnings_output,
                 warnings_max,
@@ -1587,11 +1603,11 @@ fn build_idb(source_dir: &Path, output_dir: &Path) -> Result<()> {
 }
 
 fn scrape_seed_data() -> Result<()> {
-    let source_dir = PathBuf::from("../app/static/data");
+    let source_dir = PathBuf::from("../data/static-data");
     let output_dir = PathBuf::from("data/raw");
     if !source_dir.exists() {
         anyhow::bail!(
-            "seed data not found at {} (run legacy pipeline first)",
+            "seed data not found at {} (ensure ../data/static-data exists)",
             source_dir.display()
         );
     }
@@ -1807,13 +1823,13 @@ fn validate_data(
 ) -> Result<()> {
     let normalized_dir = PathBuf::from("data/normalized");
     let rust_static_dir = PathBuf::from("static/data");
-    let legacy_dir = PathBuf::from("../app/static/data");
+    let baseline_dir = PathBuf::from("../data/static-data");
     let data_dir = if normalized_dir.exists() {
         normalized_dir
     } else if rust_static_dir.exists() {
         rust_static_dir
     } else {
-        legacy_dir.clone()
+        baseline_dir.clone()
     };
     let allow_mismatch = std::env::var("DMB_VALIDATE_ALLOW_MISMATCH").ok().is_some();
 
@@ -1939,40 +1955,40 @@ fn validate_data(
         }
     }
 
-    if data_dir != legacy_dir && legacy_dir.exists() {
+    if data_dir != baseline_dir && baseline_dir.exists() {
         compare_counts(
             &data_dir.join("shows.json"),
-            &legacy_dir.join("shows.json"),
+            &baseline_dir.join("shows.json"),
             "shows",
             allow_mismatch,
         )?;
         compare_counts(
             &data_dir.join("venues.json"),
-            &legacy_dir.join("venues.json"),
+            &baseline_dir.join("venues.json"),
             "venues",
             allow_mismatch,
         )?;
         compare_counts(
             &data_dir.join("songs.json"),
-            &legacy_dir.join("songs.json"),
+            &baseline_dir.join("songs.json"),
             "songs",
             allow_mismatch,
         )?;
         compare_counts(
             &data_dir.join("tours.json"),
-            &legacy_dir.join("tours.json"),
+            &baseline_dir.join("tours.json"),
             "tours",
             allow_mismatch,
         )?;
         compare_counts(
             &data_dir.join("guests.json"),
-            &legacy_dir.join("guests.json"),
+            &baseline_dir.join("guests.json"),
             "guests",
             allow_mismatch,
         )?;
         compare_counts(
             &data_dir.join("releases.json"),
-            &legacy_dir.join("releases.json"),
+            &baseline_dir.join("releases.json"),
             "releases",
             allow_mismatch,
         )?;
@@ -1984,14 +2000,8 @@ fn validate_data(
         let report = read_warning_report(Path::new(&report_path))?;
         warning_summary = Some((report.empty, report.missing, report_path.clone()));
         current_warning_report = Some(report);
-        let max_empty = std::env::var("DMB_WARNING_MAX_EMPTY")
-            .ok()
-            .and_then(|v| v.parse::<u64>().ok())
-            .unwrap_or(0);
-        let max_missing = std::env::var("DMB_WARNING_MAX_MISSING")
-            .ok()
-            .and_then(|v| v.parse::<u64>().ok())
-            .unwrap_or(0);
+        let max_empty = env_u64_or_warn("DMB_WARNING_MAX_EMPTY").unwrap_or(0);
+        let max_missing = env_u64_or_warn("DMB_WARNING_MAX_MISSING").unwrap_or(0);
         if let Some(report) = current_warning_report.as_ref() {
             if report.empty > max_empty || report.missing > max_missing {
                 anyhow::bail!(
@@ -2010,11 +2020,8 @@ fn validate_data(
             let baseline = read_warning_report(Path::new(&baseline_path))?;
             compare_warning_reports(current, &baseline)
                 .with_context(|| format!("warning regression vs {}", baseline_path))?;
-            let max_pct = endpoint_timing_max_pct.or_else(|| {
-                std::env::var("DMB_ENDPOINT_TIMING_MAX_PCT")
-                    .ok()
-                    .and_then(|v| v.parse::<u64>().ok())
-            });
+            let max_pct =
+                endpoint_timing_max_pct.or_else(|| env_u64_or_warn("DMB_ENDPOINT_TIMING_MAX_PCT"));
             if let Some(max_pct) = max_pct {
                 compare_endpoint_timings(current, &baseline, max_pct)
                     .with_context(|| "endpoint timing regression")?;
@@ -2099,11 +2106,7 @@ fn validate_data(
     }
 
     if let Some(current) = current_warning_report.as_ref() {
-        let retry_max = endpoint_retry_max.or_else(|| {
-            std::env::var("DMB_ENDPOINT_RETRY_MAX")
-                .ok()
-                .and_then(|v| v.parse::<u64>().ok())
-        });
+        let retry_max = endpoint_retry_max.or_else(|| env_u64_or_warn("DMB_ENDPOINT_RETRY_MAX"));
         if let Some(max) = retry_max {
             enforce_endpoint_retries(&current.endpoint_retries, max)
                 .with_context(|| "endpoint retry budget exceeded")?;
@@ -2649,16 +2652,21 @@ fn ensure_required_fields(items: &[serde_json::Value], fields: &[&str], label: &
     Ok(())
 }
 
-fn compare_counts(primary: &Path, legacy: &Path, label: &str, allow_mismatch: bool) -> Result<()> {
-    if !primary.exists() || !legacy.exists() {
+fn compare_counts(
+    primary: &Path,
+    baseline: &Path,
+    label: &str,
+    allow_mismatch: bool,
+) -> Result<()> {
+    if !primary.exists() || !baseline.exists() {
         return Ok(());
     }
     let primary_count = load_json_array(primary)?.len();
-    let legacy_count = load_json_array(legacy)?.len();
-    if primary_count != legacy_count {
+    let baseline_count = load_json_array(baseline)?.len();
+    if primary_count != baseline_count {
         let message = format!(
-            "{label}: count mismatch primary={} legacy={}",
-            primary_count, legacy_count
+            "{label}: count mismatch primary={} baseline={}",
+            primary_count, baseline_count
         );
         if allow_mismatch {
             tracing::warn!("{message}");

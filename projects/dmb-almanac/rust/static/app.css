@@ -518,6 +518,104 @@
       padding: 3rem 3.5rem;
     }
   }
+
+  /* Stats tabs */
+  .stats-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.5rem;
+  }
+
+  .stats-tabs button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 150ms, color 150ms;
+  }
+
+  .stats-tabs button:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  .stats-tabs button.active {
+    background: var(--accent);
+    color: var(--on-accent, #fff);
+    border-color: var(--accent);
+  }
+
+  /* Stats table */
+  .stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stats-table th,
+  .stats-table td {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stats-table th {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .stats-table td a {
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .stats-table td a:hover {
+    text-decoration: underline;
+  }
+
+  /* Bar chart */
+  .bar-chart {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 1rem;
+  }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 50px;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .bar-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bar {
+    height: 20px;
+    background: var(--accent);
+    border-radius: 2px;
+    min-width: 2px;
+    transition: width 300ms ease-out;
+  }
+
+  .bar-value {
+    font-size: 0.85rem;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @layer utilities {

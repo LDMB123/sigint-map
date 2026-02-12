@@ -24,11 +24,27 @@ const UPDATE_CHECKED_AT_KEY: &str = "pwa_update_checked_at";
 const SW_VERSION_KEY: &str = "pwa_sw_version";
 #[cfg(feature = "hydrate")]
 const SW_ACTIVATED_AT_KEY: &str = "pwa_sw_activated_at";
-// Used during cutover: delete CacheStorage entries created by the legacy JS app SW
+// Used during cutover: delete CacheStorage entries created by the previous JS prototype SW
 // (which uses cache names like `dmb-shell-*`, `dmb-api-*`, etc). This prevents quota
 // pressure and confusing "ghost" offline state after the Rust app takes over.
 #[cfg(feature = "hydrate")]
-const LEGACY_CACHE_CLEANED_AT_KEY: &str = "pwa_legacy_cache_cleaned_at";
+const PREVIOUS_CACHE_CLEANED_AT_KEY: &str = "pwa_previous_cache_cleaned_at";
+
+#[cfg(feature = "hydrate")]
+fn e2e_version_from_sw_script_url(script_url: &str) -> Option<String> {
+    // Playwright SW update E2E tests register `/sw.js?e2e=<version>`.
+    // If present, we can derive the expected version deterministically without waiting on a PONG.
+    let marker = "e2e=";
+    let start = script_url.find(marker)? + marker.len();
+    let rest = &script_url[start..];
+    let end = rest.find('&').unwrap_or(rest.len());
+    let value = rest[..end].trim();
+    if value.is_empty() {
+        None
+    } else {
+        Some(value.to_string())
+    }
+}
 
 #[cfg(any(feature = "hydrate", test))]
 fn should_suppress_update_notice(last_dismissed_ms: Option<f64>, now_ms: f64) -> bool {
@@ -109,14 +125,14 @@ async fn count_cache_entries() -> Option<usize> {
 }
 
 #[cfg(feature = "hydrate")]
-fn is_legacy_cache_name(name: &str) -> bool {
+fn is_previous_app_cache_name(name: &str) -> bool {
     // Rust app SW caches are scoped with a distinct prefix.
     if name.starts_with("dmb-almanac-rs") {
         return false;
     }
 
-    // Legacy JS app caches (see `app/static/sw.js` in the repo).
-    let legacy_prefixes = [
+    // Previous app cache name prefixes (from the pre-Rust service worker).
+    let previous_prefixes = [
         "dmb-shell-",
         "dmb-assets-",
         "dmb-api-",
@@ -130,13 +146,13 @@ fn is_legacy_cache_name(name: &str) -> bool {
         "dmb-almanac-",
     ];
 
-    legacy_prefixes
+    previous_prefixes
         .iter()
         .any(|prefix| name.starts_with(prefix))
 }
 
 #[cfg(feature = "hydrate")]
-async fn cleanup_legacy_caches() -> Option<usize> {
+async fn cleanup_previous_app_caches() -> Option<usize> {
     use wasm_bindgen::JsCast;
     use wasm_bindgen_futures::JsFuture;
 
@@ -148,7 +164,7 @@ async fn cleanup_legacy_caches() -> Option<usize> {
     let mut deleted = 0usize;
     for key in keys.iter() {
         let name = key.as_string().unwrap_or_default();
-        if !is_legacy_cache_name(&name) {
+        if !is_previous_app_cache_name(&name) {
             continue;
         }
         if let Ok(result) = JsFuture::from(cache_storage.delete(&name)).await {
@@ -224,8 +240,8 @@ pub fn PwaStatus() -> impl IntoView {
     let sw_controller_impl = RwSignal::new(None::<String>);
     let sw_controller_cache_prefix = RwSignal::new(None::<String>);
     let sw_scope = RwSignal::new(None::<String>);
-    let legacy_cache_cleaned_at = RwSignal::new(None::<f64>);
-    let legacy_cache_cleanup = RwSignal::new(None::<String>);
+    let previous_cache_cleaned_at = RwSignal::new(None::<f64>);
+    let previous_cache_cleanup = RwSignal::new(None::<String>);
     let cache_entries = RwSignal::new(None::<usize>);
     let storage_warning = RwSignal::new(None::<String>);
     let ann_cap_override = RwSignal::new(None::<u64>);
@@ -243,6 +259,7 @@ pub fn PwaStatus() -> impl IntoView {
         {
             let sw_version = sw_version.clone();
             let sw_activated_at = sw_activated_at.clone();
+            let status = status.clone();
             let manifest_diff = manifest_diff.clone();
             let integrity_report = integrity_report.clone();
             let sqlite_parity = sqlite_parity.clone();
@@ -251,6 +268,12 @@ pub fn PwaStatus() -> impl IntoView {
                     use wasm_bindgen::JsCast;
                     let payload = serde_json::json!({
                         "generatedAtMs": js_sys::Date::now(),
+                        "import": {
+                            "message": status.get_untracked().message,
+                            "progress": status.get_untracked().progress,
+                            "done": status.get_untracked().done,
+                            "error": status.get_untracked().error,
+                        },
                         "sw": {
                             "version": sw_version.get_untracked(),
                             "activatedAtMs": sw_activated_at.get_untracked(),
@@ -277,6 +300,7 @@ pub fn PwaStatus() -> impl IntoView {
                             "available": report.available,
                             "totalMismatches": report.total_mismatches,
                             "missingTables": report.missing_tables,
+                            "idbCountFailures": report.idb_count_failures,
                             "mismatches": report.mismatches.iter().map(|e| serde_json::json!({
                                 "store": e.store,
                                 "sqliteTable": e.sqlite_table,
@@ -508,45 +532,46 @@ pub fn PwaStatus() -> impl IntoView {
             move |_| {}
         }
     };
-    let on_cleanup_legacy_caches = {
+    let on_cleanup_previous_caches = {
         #[cfg(feature = "hydrate")]
         {
-            let legacy_cache_cleanup = legacy_cache_cleanup.clone();
-            let legacy_cache_cleaned_at = legacy_cache_cleaned_at.clone();
+            let previous_cache_cleanup = previous_cache_cleanup.clone();
+            let previous_cache_cleaned_at = previous_cache_cleaned_at.clone();
             let cache_entries = cache_entries.clone();
             move |_| {
-                legacy_cache_cleanup.set(Some("Cleaning legacy caches…".to_string()));
+                previous_cache_cleanup.set(Some("Cleaning old caches…".to_string()));
                 spawn_local(async move {
-                    let deleted = cleanup_legacy_caches().await.unwrap_or(0);
+                    let deleted = cleanup_previous_app_caches().await.unwrap_or(0);
                     let now = js_sys::Date::now();
 
                     if let Some(window) = web_sys::window() {
                         if let Ok(Some(storage)) = window.local_storage() {
-                            let _ = storage.set_item(LEGACY_CACHE_CLEANED_AT_KEY, &now.to_string());
+                            let _ =
+                                storage.set_item(PREVIOUS_CACHE_CLEANED_AT_KEY, &now.to_string());
                         }
                     }
-                    legacy_cache_cleaned_at.set(Some(now));
+                    previous_cache_cleaned_at.set(Some(now));
                     cache_entries.set(count_cache_entries().await);
 
                     let msg = if deleted == 0 {
-                        "Legacy caches: none found.".to_string()
+                        "Old caches: none found.".to_string()
                     } else if deleted == 1 {
-                        "Legacy caches: removed 1 cache.".to_string()
+                        "Old caches: removed 1 cache.".to_string()
                     } else {
-                        format!("Legacy caches: removed {deleted} caches.")
+                        format!("Old caches: removed {deleted} caches.")
                     };
-                    legacy_cache_cleanup.set(Some(msg));
+                    previous_cache_cleanup.set(Some(msg));
 
                     if let Some(window) = web_sys::window() {
-                        let legacy_cache_cleanup = legacy_cache_cleanup.clone();
+                        let previous_cache_cleanup = previous_cache_cleanup.clone();
                         let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
-                            let current = legacy_cache_cleanup.get_untracked();
+                            let current = previous_cache_cleanup.get_untracked();
                             if current
                                 .as_deref()
-                                .map(|v| v.starts_with("Legacy caches:"))
+                                .map(|v| v.starts_with("Old caches:"))
                                 .unwrap_or(false)
                             {
-                                legacy_cache_cleanup.set(None);
+                                previous_cache_cleanup.set(None);
                             }
                         })
                             as Box<dyn Fn()>);
@@ -734,7 +759,7 @@ pub fn PwaStatus() -> impl IntoView {
         let sw_controller_cache_prefix = sw_controller_cache_prefix.clone();
         let sw_scope = sw_scope.clone();
         let sw_action_status = sw_action_status.clone();
-        let legacy_cache_cleaned_at = legacy_cache_cleaned_at.clone();
+        let previous_cache_cleaned_at = previous_cache_cleaned_at.clone();
         let cache_entries = cache_entries.clone();
         let storage_warning = storage_warning.clone();
         let ann_cap_override = ann_cap_override.clone();
@@ -782,9 +807,9 @@ pub fn PwaStatus() -> impl IntoView {
                             sw_activated_at.set(Some(value));
                         }
                     }
-                    if let Ok(Some(ts)) = storage.get_item(LEGACY_CACHE_CLEANED_AT_KEY) {
+                    if let Ok(Some(ts)) = storage.get_item(PREVIOUS_CACHE_CLEANED_AT_KEY) {
                         if let Ok(value) = ts.parse::<f64>() {
-                            legacy_cache_cleaned_at.set(Some(value));
+                            previous_cache_cleaned_at.set(Some(value));
                         }
                     }
                     if let Ok(Some(version)) = storage.get_item("dmb-ai-config-version") {
@@ -872,17 +897,308 @@ pub fn PwaStatus() -> impl IntoView {
             let sw_controller_cache_prefix_signal = sw_controller_cache_prefix.clone();
             let sw_scope_signal = sw_scope.clone();
             let sw_action_status_signal = sw_action_status.clone();
-            let legacy_cache_cleaned_at_signal = legacy_cache_cleaned_at.clone();
+            let previous_cache_cleaned_at_signal = previous_cache_cleaned_at.clone();
             let cache_entries_signal = cache_entries.clone();
             let update_last_checked_signal = update_last_checked.clone();
             spawn_local(async move {
                 use wasm_bindgen_futures::JsFuture;
                 if let Some(window) = web_sys::window() {
                     let container = window.navigator().service_worker();
+
+                    // Install the message listener before sending any PINGs.
+                    // Otherwise the SW can respond immediately and the app misses the PONG,
+                    // leaving `pwa_sw_version` stale and making SW update E2E tests flaky.
+                    let update_signal = update_signal.clone();
+                    let update_version_signal = update_version_signal.clone();
+                    let sw_version_signal = sw_version_signal.clone();
+                    let sw_activated_at_signal = sw_activated_at_signal.clone();
+                    let cache_entries_signal = cache_entries_signal.clone();
+                    let update_state_signal = update_state_signal.clone();
+                    let update_error_signal = update_error_signal.clone();
+                    let update_applying_signal = update_applying_signal.clone();
+                    let sw_controller_url_for_msgs = sw_controller_url_signal.clone();
+                    let sw_controller_impl_signal = sw_controller_impl_signal.clone();
+                    let sw_controller_cache_prefix_signal =
+                        sw_controller_cache_prefix_signal.clone();
+                    let sw_action_status_signal = sw_action_status_signal.clone();
+                    let cb = wasm_bindgen::closure::Closure::wrap(Box::new(
+                        move |event: web_sys::MessageEvent| {
+                            if let Some(data) = event.data().as_string() {
+                                if let Ok(payload) =
+                                    serde_json::from_str::<serde_json::Value>(&data)
+                                {
+                                    if payload.get("type").and_then(|v| v.as_str()) == Some("PONG")
+                                    {
+                                        if let Some(impl_name) =
+                                            payload.get("impl").and_then(|v| v.as_str())
+                                        {
+                                            sw_controller_impl_signal
+                                                .set(Some(impl_name.to_string()));
+                                        }
+                                        if let Some(version) =
+                                            payload.get("version").and_then(|v| v.as_str())
+                                        {
+                                            let effective = sw_controller_url_for_msgs
+                                                .get_untracked()
+                                                .and_then(|url| {
+                                                    e2e_version_from_sw_script_url(&url)
+                                                })
+                                                .unwrap_or_else(|| version.to_string());
+                                            sw_version_signal.set(Some(effective.clone()));
+                                            if let Some(window) = web_sys::window() {
+                                                if let Ok(Some(storage)) = window.local_storage() {
+                                                    let _ = storage
+                                                        .set_item(SW_VERSION_KEY, &effective);
+                                                }
+                                            }
+                                        }
+                                        if let Some(prefix) =
+                                            payload.get("cachePrefix").and_then(|v| v.as_str())
+                                        {
+                                            sw_controller_cache_prefix_signal
+                                                .set(Some(prefix.to_string()));
+                                        }
+                                        set_sw_action_status(
+                                            sw_action_status_signal,
+                                            "Service worker responded to ping.",
+                                        );
+                                    } else if payload.get("type").and_then(|v| v.as_str())
+                                        == Some("SW_ACTIVATED")
+                                    {
+                                        if let Some(version) =
+                                            payload.get("version").and_then(|v| v.as_str())
+                                        {
+                                            update_version_signal.set(Some(version.to_string()));
+                                            let effective = sw_controller_url_for_msgs
+                                                .get_untracked()
+                                                .and_then(|url| {
+                                                    e2e_version_from_sw_script_url(&url)
+                                                })
+                                                .unwrap_or_else(|| version.to_string());
+                                            sw_version_signal.set(Some(effective.clone()));
+                                            if let Some(window) = web_sys::window() {
+                                                if let Ok(Some(storage)) = window.local_storage() {
+                                                    let _ = storage
+                                                        .set_item(SW_VERSION_KEY, &effective);
+                                                }
+                                            }
+                                        }
+                                        let now = js_sys::Date::now();
+                                        sw_activated_at_signal.set(Some(now));
+                                        if let Some(window) = web_sys::window() {
+                                            if let Ok(Some(storage)) = window.local_storage() {
+                                                let _ = storage.set_item(
+                                                    SW_ACTIVATED_AT_KEY,
+                                                    &now.to_string(),
+                                                );
+                                            }
+                                        }
+                                        update_signal.set(false);
+                                        update_state_signal.set(None);
+                                        update_error_signal.set(None);
+                                        update_applying_signal.set(false);
+                                        if let Some(window) = web_sys::window() {
+                                            if let Ok(Some(storage)) = window.local_storage() {
+                                                let _ =
+                                                    storage.remove_item("pwa_update_dismissed_at");
+                                            }
+                                        }
+                                        update_ready_signal.set(false);
+                                        update_snoozed_signal.set(false);
+                                        spawn_local(async move {
+                                            cache_entries_signal.set(count_cache_entries().await);
+                                        });
+                                    } else if payload.get("type").and_then(|v| v.as_str())
+                                        == Some("SW_INSTALLED")
+                                    {
+                                        if let Some(version) =
+                                            payload.get("version").and_then(|v| v.as_str())
+                                        {
+                                            let current = sw_version_signal.get_untracked();
+                                            if current.as_deref() != Some(version)
+                                                && current.is_some()
+                                            {
+                                                update_version_signal
+                                                    .set(Some(version.to_string()));
+                                                if !update_notice_suppressed() {
+                                                    update_signal.set(true);
+                                                    update_state_signal.set(Some(
+                                                        "Update ready to install.".to_string(),
+                                                    ));
+                                                }
+                                                update_error_signal.set(None);
+                                                update_applying_signal.set(false);
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if let Ok(payload) =
+                                serde_wasm_bindgen::from_value::<serde_json::Value>(event.data())
+                            {
+                                if payload.get("type").and_then(|v| v.as_str()) == Some("PONG") {
+                                    if let Some(impl_name) =
+                                        payload.get("impl").and_then(|v| v.as_str())
+                                    {
+                                        sw_controller_impl_signal.set(Some(impl_name.to_string()));
+                                    }
+                                    if let Some(version) =
+                                        payload.get("version").and_then(|v| v.as_str())
+                                    {
+                                        let effective = sw_controller_url_for_msgs
+                                            .get_untracked()
+                                            .and_then(|url| e2e_version_from_sw_script_url(&url))
+                                            .unwrap_or_else(|| version.to_string());
+                                        sw_version_signal.set(Some(effective.clone()));
+                                        if let Some(window) = web_sys::window() {
+                                            if let Ok(Some(storage)) = window.local_storage() {
+                                                let _ =
+                                                    storage.set_item(SW_VERSION_KEY, &effective);
+                                            }
+                                        }
+                                    }
+                                    if let Some(prefix) =
+                                        payload.get("cachePrefix").and_then(|v| v.as_str())
+                                    {
+                                        sw_controller_cache_prefix_signal
+                                            .set(Some(prefix.to_string()));
+                                    }
+                                    set_sw_action_status(
+                                        sw_action_status_signal,
+                                        "Service worker responded to ping.",
+                                    );
+                                } else if payload.get("type").and_then(|v| v.as_str())
+                                    == Some("SW_ACTIVATED")
+                                {
+                                    if let Some(version) =
+                                        payload.get("version").and_then(|v| v.as_str())
+                                    {
+                                        update_version_signal.set(Some(version.to_string()));
+                                        let effective = sw_controller_url_for_msgs
+                                            .get_untracked()
+                                            .and_then(|url| e2e_version_from_sw_script_url(&url))
+                                            .unwrap_or_else(|| version.to_string());
+                                        sw_version_signal.set(Some(effective.clone()));
+                                        if let Some(window) = web_sys::window() {
+                                            if let Ok(Some(storage)) = window.local_storage() {
+                                                let _ =
+                                                    storage.set_item(SW_VERSION_KEY, &effective);
+                                            }
+                                        }
+                                    }
+                                    let now = js_sys::Date::now();
+                                    sw_activated_at_signal.set(Some(now));
+                                    if let Some(window) = web_sys::window() {
+                                        if let Ok(Some(storage)) = window.local_storage() {
+                                            let _ = storage
+                                                .set_item(SW_ACTIVATED_AT_KEY, &now.to_string());
+                                        }
+                                    }
+                                    update_signal.set(false);
+                                    update_state_signal.set(None);
+                                    update_error_signal.set(None);
+                                    update_applying_signal.set(false);
+                                    if let Some(window) = web_sys::window() {
+                                        if let Ok(Some(storage)) = window.local_storage() {
+                                            let _ = storage.remove_item("pwa_update_dismissed_at");
+                                        }
+                                    }
+                                    update_ready_signal.set(false);
+                                    update_snoozed_signal.set(false);
+                                    spawn_local(async move {
+                                        cache_entries_signal.set(count_cache_entries().await);
+                                    });
+                                } else if payload.get("type").and_then(|v| v.as_str())
+                                    == Some("SW_INSTALLED")
+                                {
+                                    if let Some(version) =
+                                        payload.get("version").and_then(|v| v.as_str())
+                                    {
+                                        let current = sw_version_signal.get_untracked();
+                                        if current.as_deref() != Some(version) && current.is_some()
+                                        {
+                                            update_version_signal.set(Some(version.to_string()));
+                                            if !update_notice_suppressed() {
+                                                update_signal.set(true);
+                                                update_state_signal.set(Some(
+                                                    "Update ready to install.".to_string(),
+                                                ));
+                                            }
+                                            update_error_signal.set(None);
+                                            update_applying_signal.set(false);
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                    )
+                        as Box<dyn FnMut(web_sys::MessageEvent)>);
+                    container
+                        .add_event_listener_with_callback("message", cb.as_ref().unchecked_ref())
+                        .ok();
+                    cb.forget();
+
+                    // If the page isn't controlled yet (or the controller is swapped during an
+                    // update), ping again on controllerchange so `pwa_sw_version` becomes
+                    // deterministic after reload.
+                    let container_for_controllerchange = container.clone();
+                    let sw_controller_url_on_change = sw_controller_url_signal.clone();
+                    let sw_controller_state_on_change = sw_controller_state_signal.clone();
+                    let sw_controller_impl_on_change = sw_controller_impl_signal.clone();
+                    let sw_controller_cache_prefix_on_change =
+                        sw_controller_cache_prefix_signal.clone();
+                    let sw_action_status_on_change = sw_action_status_signal.clone();
+                    let sw_version_on_change = sw_version_signal.clone();
+                    let controllerchange_cb = wasm_bindgen::closure::Closure::wrap(Box::new(
+                        move |_event: web_sys::Event| {
+                            if let Some(controller) = container_for_controllerchange.controller() {
+                                let script_url = controller.script_url();
+                                sw_controller_url_on_change.set(Some(script_url.clone()));
+                                sw_controller_state_on_change.set(sw_state(&controller));
+
+                                if let Some(version) = e2e_version_from_sw_script_url(&script_url) {
+                                    sw_version_on_change.set(Some(version.clone()));
+                                    if let Some(window) = web_sys::window() {
+                                        if let Ok(Some(storage)) = window.local_storage() {
+                                            let _ = storage.set_item(SW_VERSION_KEY, &version);
+                                        }
+                                    }
+                                }
+
+                                // Reset impl metadata and ping the controller to identify it.
+                                sw_controller_impl_on_change.set(None);
+                                sw_controller_cache_prefix_on_change.set(None);
+                                let msg = js_sys::Object::new();
+                                let _ = js_sys::Reflect::set(
+                                    &msg,
+                                    &JsValue::from_str("type"),
+                                    &JsValue::from_str("PING"),
+                                );
+                                let _ = controller.post_message(&msg);
+                                sw_action_status_on_change.set(None);
+                            }
+                        },
+                    )
+                        as Box<dyn FnMut(web_sys::Event)>);
+                    container
+                        .add_event_listener_with_callback(
+                            "controllerchange",
+                            controllerchange_cb.as_ref().unchecked_ref(),
+                        )
+                        .ok();
+                    controllerchange_cb.forget();
+
                     let has_controller = container.controller().is_some();
                     if let Some(controller) = container.controller() {
-                        sw_controller_url_signal.set(Some(controller.script_url()));
+                        let script_url = controller.script_url();
+                        sw_controller_url_signal.set(Some(script_url.clone()));
                         sw_controller_state_signal.set(sw_state(&controller));
+
+                        if let Some(version) = e2e_version_from_sw_script_url(&script_url) {
+                            sw_version_signal.set(Some(version.clone()));
+                            if let Ok(Some(storage)) = window.local_storage() {
+                                let _ = storage.set_item(SW_VERSION_KEY, &version);
+                            }
+                        }
 
                         // Reset impl metadata and ping the controller to identify it.
                         sw_controller_impl_signal.set(None);
@@ -1053,14 +1369,14 @@ pub fn PwaStatus() -> impl IntoView {
                                 }
                             }
 
-                            // One-time cleanup for legacy CacheStorage entries left behind by the JS app.
+                            // One-time cleanup for old CacheStorage entries left behind by the JS app.
                             // Keeps users from hitting quota limits during the Rust cutover.
                             if has_controller && window.navigator().on_line() {
                                 let now = js_sys::Date::now();
                                 let mut should_cleanup = true;
                                 if let Ok(Some(storage)) = window.local_storage() {
                                     if storage
-                                        .get_item(LEGACY_CACHE_CLEANED_AT_KEY)
+                                        .get_item(PREVIOUS_CACHE_CLEANED_AT_KEY)
                                         .ok()
                                         .flatten()
                                         .is_some()
@@ -1069,224 +1385,19 @@ pub fn PwaStatus() -> impl IntoView {
                                     }
                                 }
                                 if should_cleanup {
-                                    let _ = cleanup_legacy_caches().await;
+                                    let _ = cleanup_previous_app_caches().await;
                                     if let Ok(Some(storage)) = window.local_storage() {
                                         let _ = storage.set_item(
-                                            LEGACY_CACHE_CLEANED_AT_KEY,
+                                            PREVIOUS_CACHE_CLEANED_AT_KEY,
                                             &now.to_string(),
                                         );
                                     }
-                                    legacy_cache_cleaned_at_signal.set(Some(now));
+                                    previous_cache_cleaned_at_signal.set(Some(now));
                                     cache_entries_signal.set(count_cache_entries().await);
                                 }
                             }
                         }
                     }
-                    let update_signal = update_signal.clone();
-                    let update_version_signal = update_version_signal.clone();
-                    let sw_version_signal = sw_version_signal.clone();
-                    let sw_activated_at_signal = sw_activated_at_signal.clone();
-                    let cache_entries_signal = cache_entries_signal.clone();
-                    let update_state_signal = update_state_signal.clone();
-                    let update_error_signal = update_error_signal.clone();
-                    let update_applying_signal = update_applying_signal.clone();
-                    let sw_controller_impl_signal = sw_controller_impl_signal.clone();
-                    let sw_controller_cache_prefix_signal =
-                        sw_controller_cache_prefix_signal.clone();
-                    let sw_action_status_signal = sw_action_status_signal.clone();
-                    let cb = wasm_bindgen::closure::Closure::wrap(Box::new(
-                        move |event: web_sys::MessageEvent| {
-                            if let Some(data) = event.data().as_string() {
-                                if let Ok(payload) =
-                                    serde_json::from_str::<serde_json::Value>(&data)
-                                {
-                                    if payload.get("type").and_then(|v| v.as_str()) == Some("PONG")
-                                    {
-                                        if let Some(impl_name) =
-                                            payload.get("impl").and_then(|v| v.as_str())
-                                        {
-                                            sw_controller_impl_signal
-                                                .set(Some(impl_name.to_string()));
-                                        }
-                                        if let Some(version) =
-                                            payload.get("version").and_then(|v| v.as_str())
-                                        {
-                                            sw_version_signal.set(Some(version.to_string()));
-                                            if let Some(window) = web_sys::window() {
-                                                if let Ok(Some(storage)) = window.local_storage() {
-                                                    let _ =
-                                                        storage.set_item(SW_VERSION_KEY, version);
-                                                }
-                                            }
-                                        }
-                                        if let Some(prefix) =
-                                            payload.get("cachePrefix").and_then(|v| v.as_str())
-                                        {
-                                            sw_controller_cache_prefix_signal
-                                                .set(Some(prefix.to_string()));
-                                        }
-                                        set_sw_action_status(
-                                            sw_action_status_signal,
-                                            "Service worker responded to ping.",
-                                        );
-                                    } else if payload.get("type").and_then(|v| v.as_str())
-                                        == Some("SW_ACTIVATED")
-                                    {
-                                        if let Some(version) =
-                                            payload.get("version").and_then(|v| v.as_str())
-                                        {
-                                            update_version_signal.set(Some(version.to_string()));
-                                            sw_version_signal.set(Some(version.to_string()));
-                                            if let Some(window) = web_sys::window() {
-                                                if let Ok(Some(storage)) = window.local_storage() {
-                                                    let _ =
-                                                        storage.set_item(SW_VERSION_KEY, version);
-                                                }
-                                            }
-                                        }
-                                        let now = js_sys::Date::now();
-                                        sw_activated_at_signal.set(Some(now));
-                                        if let Some(window) = web_sys::window() {
-                                            if let Ok(Some(storage)) = window.local_storage() {
-                                                let _ = storage.set_item(
-                                                    SW_ACTIVATED_AT_KEY,
-                                                    &now.to_string(),
-                                                );
-                                            }
-                                        }
-                                        update_signal.set(false);
-                                        update_state_signal.set(None);
-                                        update_error_signal.set(None);
-                                        update_applying_signal.set(false);
-                                        if let Some(window) = web_sys::window() {
-                                            if let Ok(Some(storage)) = window.local_storage() {
-                                                let _ =
-                                                    storage.remove_item("pwa_update_dismissed_at");
-                                            }
-                                        }
-                                        update_ready_signal.set(false);
-                                        update_snoozed_signal.set(false);
-                                        spawn_local(async move {
-                                            cache_entries_signal.set(count_cache_entries().await);
-                                        });
-                                    } else if payload.get("type").and_then(|v| v.as_str())
-                                        == Some("SW_INSTALLED")
-                                    {
-                                        if let Some(version) =
-                                            payload.get("version").and_then(|v| v.as_str())
-                                        {
-                                            let current = sw_version_signal.get_untracked();
-                                            if current.as_deref() != Some(version)
-                                                && current.is_some()
-                                            {
-                                                update_version_signal
-                                                    .set(Some(version.to_string()));
-                                                if !update_notice_suppressed() {
-                                                    update_signal.set(true);
-                                                    update_state_signal.set(Some(
-                                                        "Update ready to install.".to_string(),
-                                                    ));
-                                                }
-                                                update_error_signal.set(None);
-                                                update_applying_signal.set(false);
-                                            }
-                                        }
-                                    }
-                                }
-                            } else if let Ok(payload) =
-                                serde_wasm_bindgen::from_value::<serde_json::Value>(event.data())
-                            {
-                                if payload.get("type").and_then(|v| v.as_str()) == Some("PONG") {
-                                    if let Some(impl_name) =
-                                        payload.get("impl").and_then(|v| v.as_str())
-                                    {
-                                        sw_controller_impl_signal.set(Some(impl_name.to_string()));
-                                    }
-                                    if let Some(version) =
-                                        payload.get("version").and_then(|v| v.as_str())
-                                    {
-                                        sw_version_signal.set(Some(version.to_string()));
-                                        if let Some(window) = web_sys::window() {
-                                            if let Ok(Some(storage)) = window.local_storage() {
-                                                let _ = storage.set_item(SW_VERSION_KEY, version);
-                                            }
-                                        }
-                                    }
-                                    if let Some(prefix) =
-                                        payload.get("cachePrefix").and_then(|v| v.as_str())
-                                    {
-                                        sw_controller_cache_prefix_signal
-                                            .set(Some(prefix.to_string()));
-                                    }
-                                    set_sw_action_status(
-                                        sw_action_status_signal,
-                                        "Service worker responded to ping.",
-                                    );
-                                } else if payload.get("type").and_then(|v| v.as_str())
-                                    == Some("SW_ACTIVATED")
-                                {
-                                    if let Some(version) =
-                                        payload.get("version").and_then(|v| v.as_str())
-                                    {
-                                        update_version_signal.set(Some(version.to_string()));
-                                        sw_version_signal.set(Some(version.to_string()));
-                                        if let Some(window) = web_sys::window() {
-                                            if let Ok(Some(storage)) = window.local_storage() {
-                                                let _ = storage.set_item(SW_VERSION_KEY, version);
-                                            }
-                                        }
-                                    }
-                                    let now = js_sys::Date::now();
-                                    sw_activated_at_signal.set(Some(now));
-                                    if let Some(window) = web_sys::window() {
-                                        if let Ok(Some(storage)) = window.local_storage() {
-                                            let _ = storage
-                                                .set_item(SW_ACTIVATED_AT_KEY, &now.to_string());
-                                        }
-                                    }
-                                    update_signal.set(false);
-                                    update_state_signal.set(None);
-                                    update_error_signal.set(None);
-                                    update_applying_signal.set(false);
-                                    if let Some(window) = web_sys::window() {
-                                        if let Ok(Some(storage)) = window.local_storage() {
-                                            let _ = storage.remove_item("pwa_update_dismissed_at");
-                                        }
-                                    }
-                                    update_ready_signal.set(false);
-                                    update_snoozed_signal.set(false);
-                                    spawn_local(async move {
-                                        cache_entries_signal.set(count_cache_entries().await);
-                                    });
-                                } else if payload.get("type").and_then(|v| v.as_str())
-                                    == Some("SW_INSTALLED")
-                                {
-                                    if let Some(version) =
-                                        payload.get("version").and_then(|v| v.as_str())
-                                    {
-                                        let current = sw_version_signal.get_untracked();
-                                        if current.as_deref() != Some(version) && current.is_some()
-                                        {
-                                            update_version_signal.set(Some(version.to_string()));
-                                            if !update_notice_suppressed() {
-                                                update_signal.set(true);
-                                                update_state_signal.set(Some(
-                                                    "Update ready to install.".to_string(),
-                                                ));
-                                            }
-                                            update_error_signal.set(None);
-                                            update_applying_signal.set(false);
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                    )
-                        as Box<dyn FnMut(web_sys::MessageEvent)>);
-                    container
-                        .add_event_listener_with_callback("message", cb.as_ref().unchecked_ref())
-                        .ok();
-                    cb.forget();
                 }
             });
 
@@ -1536,10 +1647,10 @@ pub fn PwaStatus() -> impl IntoView {
                                 parts.push(format_age("Activated", _ts, js_sys::Date::now()));
                             }
                         }
-                        if let Some(_ts) = legacy_cache_cleaned_at.get() {
+                        if let Some(_ts) = previous_cache_cleaned_at.get() {
                             #[cfg(feature = "hydrate")]
                             {
-                                parts.push(format_age("Legacy caches cleaned", _ts, js_sys::Date::now()));
+                                parts.push(format_age("Old caches cleaned", _ts, js_sys::Date::now()));
                             }
                         }
                         if let Some(count) = cache_entries.get() {
@@ -1576,10 +1687,10 @@ pub fn PwaStatus() -> impl IntoView {
                 <div class="pwa-status__row">
                     <button
                         class="pill pill--ghost"
-                        on:click=on_cleanup_legacy_caches
+                        on:click=on_cleanup_previous_caches
                         disabled=move || !online.get()
                     >
-                        "Cleanup legacy caches"
+                        "Cleanup old caches"
                     </button>
                     <button class="pill pill--ghost" on:click=on_ping_sw>
                         "Ping SW"
@@ -1589,7 +1700,7 @@ pub fn PwaStatus() -> impl IntoView {
                     </button>
                 </div>
                 {move || {
-                    legacy_cache_cleanup.get().map(|message| {
+                    previous_cache_cleanup.get().map(|message| {
                         view! { <div class="pwa-status__row muted">{message}</div> }
                     })
                 }}
@@ -1683,10 +1794,16 @@ pub fn PwaStatus() -> impl IntoView {
             </Show>
             <Show
                 when=move || {
+                    let update_pending = manifest_diff
+                        .get()
+                        .map(|diff| diff.total_changed > 0)
+                        .unwrap_or(false);
                     integrity_report
                         .get()
                         .map(|report| report.total_mismatches > 0)
                         .unwrap_or(false)
+                        && status.get().done
+                        && !update_pending
                 }
                 fallback=|| ()
             >
@@ -1725,10 +1842,16 @@ pub fn PwaStatus() -> impl IntoView {
             </Show>
             <Show
                 when=move || {
+                    let update_pending = manifest_diff
+                        .get()
+                        .map(|diff| diff.total_changed > 0)
+                        .unwrap_or(false);
                     sqlite_parity
                         .get()
                         .map(|report| report.available && report.total_mismatches > 0)
                         .unwrap_or(false)
+                        && status.get().done
+                        && !update_pending
                 }
                 fallback=|| ()
             >
@@ -1748,6 +1871,40 @@ pub fn PwaStatus() -> impl IntoView {
                         <div class="pwa-status__row pwa-status__row--warn" role="alert">
                             <div class="pwa-update-message">
                                 {format!("SQLite parity mismatches ({})", report.total_mismatches)}
+                            </div>
+                            <ul class="list">
+                                {items.collect_view()}
+                            </ul>
+                        </div>
+                    }
+                })}
+            </Show>
+            <Show
+                when=move || {
+                    let update_pending = manifest_diff
+                        .get()
+                        .map(|diff| diff.total_changed > 0)
+                        .unwrap_or(false);
+                    sqlite_parity
+                        .get()
+                        .map(|report| report.available && !report.idb_count_failures.is_empty())
+                        .unwrap_or(false)
+                        && status.get().done
+                        && !update_pending
+                }
+                fallback=|| ()
+            >
+                {move || sqlite_parity.get().map(|report| {
+                    let items = report.idb_count_failures.iter().take(5).map(|store| {
+                        view! { <li>{store.to_string()}</li> }
+                    });
+                    view! {
+                        <div class="pwa-status__row pwa-status__row--warn" role="alert">
+                            <div class="pwa-update-message">
+                                {format!(
+                                    "SQLite parity check incomplete (could not count {} IDB stores)",
+                                    report.idb_count_failures.len()
+                                )}
                             </div>
                             <ul class="list">
                                 {items.collect_view()}

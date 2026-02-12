@@ -1,0 +1,553 @@
+/* ═══════════════════════════════════════════════════════════════
+   Blaire's Kind Heart — Animation Library (Optimized)
+   Safari 26.2+. Removed unused celebration overlay system.
+   Reduced file size by removing 300+ lines of unused CSS.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ====== VIEW TRANSITIONS ====== */
+::view-transition-old(root) {
+  animation: slide-out var(--duration-normal) var(--ease-smooth);
+}
+::view-transition-new(root) {
+  animation: slide-in var(--duration-normal) var(--ease-smooth);
+}
+
+@keyframes slide-out {
+  to {
+    opacity: 0;
+    transform: translateX(-30px) scale(0.96);
+  }
+}
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(30px) scale(0.96);
+  }
+}
+
+/* ====== HEART BOUNCE — juicier multi-step ====== */
+.heart-bounce {
+  animation: heart-bounce 0.6s var(--ease-bounce);
+}
+@keyframes heart-bounce {
+  0% { transform: scale(1) rotate(0deg); }
+  20% { transform: scale(1.45) rotate(-5deg); }
+  40% { transform: scale(0.85) rotate(3deg); }
+  60% { transform: scale(1.2) rotate(-2deg); }
+  80% { transform: scale(0.95) rotate(1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* ====== FLOAT UP (for "+1 heart" indicators) — with scale ====== */
+.float-up {
+  animation: float-up 1s var(--ease-smooth) forwards;
+  pointer-events: none;
+}
+@keyframes float-up {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  60% { opacity: 0.8; }
+  100% { transform: translateY(-80px) scale(1.3); opacity: 0; }
+}
+
+/* ====== FLOAT UP + FADE — for score/heart popups ====== */
+.float-up-fade {
+  animation: float-up-fade 1.2s var(--ease-smooth) forwards;
+  pointer-events: none;
+}
+@keyframes float-up-fade {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translateY(-10px) scale(1.15);
+    opacity: 1;
+  }
+  40% {
+    transform: translateY(-35px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-90px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* ====== SHIMMER LOADING ====== */
+.shimmer {
+  background: linear-gradient(90deg, var(--color-pink-light) 25%, var(--color-white) 50%, var(--color-pink-light) 75%);
+  background-size: 200% 100%;
+  animation: shimmer-loading 1.5s ease infinite;
+}
+@keyframes shimmer-loading {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ====== RAINBOW SHIMMER — for progress bars ====== */
+.rainbow-shimmer {
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.35) 40%,
+      rgba(255, 255, 255, 0.55) 50%,
+      rgba(255, 255, 255, 0.35) 60%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: rainbow-shimmer 2s ease-in-out infinite;
+  }
+}
+@keyframes rainbow-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ====== BLOOM — garden flower growing ====== */
+.bloom {
+  animation: bloom var(--duration-dramatic) var(--ease-overshoot) forwards;
+}
+@keyframes bloom {
+  0% {
+    transform: scale(0) rotate(-20deg);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  30% {
+    transform: scale(0.5) rotate(-8deg);
+    opacity: 0.7;
+    filter: blur(1px);
+  }
+  60% {
+    transform: scale(1.15) rotate(3deg);
+    opacity: 1;
+    filter: blur(0);
+  }
+  80% {
+    transform: scale(0.95) rotate(-1deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* ====== SPARKLE POP ====== */
+.sparkle-reveal {
+  animation: sparkle-pop 0.6s var(--ease-elastic);
+}
+@keyframes sparkle-pop {
+  0% { transform: scale(0) rotate(-360deg); opacity: 0; filter: blur(8px); }
+  50% { transform: scale(1.35) rotate(15deg); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+}
+
+/* Float-heart "+1" indicator */
+.float-heart {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--font-size-xl);
+  pointer-events: none;
+  animation: float-up 0.8s var(--ease-smooth) forwards;
+  z-index: 100;
+}
+
+/* Bounce animation class (for companion reactions) */
+.bounce {
+  animation: heart-bounce 0.6s var(--ease-bounce);
+}
+
+/* ====== JELLY WOBBLE (playful squish) ====== */
+.jelly-wobble {
+  animation: jelly-wobble 0.5s var(--ease-elastic);
+}
+@keyframes jelly-wobble {
+  0% { transform: scale(1, 1); }
+  20% { transform: scale(1.15, 0.85); }
+  40% { transform: scale(0.9, 1.1); }
+  60% { transform: scale(1.05, 0.95); }
+  80% { transform: scale(0.98, 1.02); }
+  100% { transform: scale(1, 1); }
+}
+
+/* ====== BTN SHINE — button highlight animation ====== */
+.btn-shine {
+  animation: btn-shine 2s ease-in-out infinite;
+}
+@keyframes btn-shine {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+}
+
+/* ====== MAGIC ENTRANCE (blur reveal) ====== */
+.magic-entrance {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  filter: blur(0);
+  transition:
+    opacity var(--duration-slow) var(--ease-smooth),
+    transform var(--duration-slow) var(--ease-smooth),
+    filter var(--duration-slow) var(--ease-smooth);
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.7) translateY(20px);
+    filter: blur(8px);
+  }
+}
+
+/* Legacy keyframe animation for browsers without @starting-style */
+@supports not at-rule(@starting-style) {
+  .magic-entrance {
+    animation: magic-entrance var(--duration-slow) var(--ease-smooth) both;
+  }
+  @keyframes magic-entrance {
+    from {
+      opacity: 0;
+      transform: scale(0.7) translateY(20px);
+      filter: blur(8px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0);
+    }
+  }
+}
+
+/* ====== GLOW BREATHE (ambient glow pulse) ====== */
+.glow-breathe {
+  animation: glow-breathe 3s ease-in-out infinite;
+}
+@keyframes glow-breathe {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(197, 163, 255, 0.3)); }
+  50% { filter: drop-shadow(0 0 24px rgba(197, 163, 255, 0.6)); }
+}
+
+/* ====== WIGGLE — for error/incorrect feedback ====== */
+.wiggle {
+  animation: wiggle 0.6s var(--ease-elastic);
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-8deg); }
+  30% { transform: rotate(8deg); }
+  45% { transform: rotate(-6deg); }
+  60% { transform: rotate(5deg); }
+  75% { transform: rotate(-3deg); }
+  90% { transform: rotate(2deg); }
+}
+
+/* ====== COMPANION FLOAT — Sparkle idle bobbing ====== */
+.companion--idle {
+  animation: companion-float 3s ease-in-out infinite;
+}
+@keyframes companion-float {
+  0%, 100% { transform: translateY(0) rotate(-3deg) scale(1); }
+  33% { transform: translateY(-10px) rotate(2deg) scale(1.03); }
+  66% { transform: translateY(-4px) rotate(-1deg) scale(0.98); }
+}
+
+/* ====== COMPANION EXPRESSIONS — Emotional reactions ====== */
+.companion--surprised {
+  animation: companion-surprised 0.6s var(--ease-elastic);
+}
+@keyframes companion-surprised {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.25) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.companion--proud {
+  animation: companion-proud 1s ease-in-out;
+}
+@keyframes companion-proud {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-8deg); }
+  75% { transform: scale(1.1) rotate(8deg); }
+}
+
+.companion--silly {
+  animation: companion-silly 0.8s var(--ease-elastic);
+}
+@keyframes companion-silly {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-15deg) scale(1.1); }
+  50% { transform: rotate(15deg) scale(1.05); }
+  75% { transform: rotate(-10deg) scale(1.08); }
+}
+
+.companion--curious {
+  animation: companion-curious 1.2s ease-in-out;
+}
+@keyframes companion-curious {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  40% { transform: translateY(-8px) rotate(5deg) scale(1.05); }
+  60% { transform: translateY(-8px) rotate(-5deg) scale(1.05); }
+}
+
+.companion--loving {
+  animation: companion-loving 1.5s ease-in-out;
+}
+@keyframes companion-loving {
+  0%, 100% { transform: scale(1); }
+  20%, 60% { transform: scale(1.15); }
+  40%, 80% { transform: scale(1.08); }
+}
+
+.companion--thinking {
+  animation: companion-thinking 2s ease-in-out infinite;
+}
+@keyframes companion-thinking {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg) translateX(-3px); }
+  75% { transform: rotate(5deg) translateX(3px); }
+}
+
+.companion--celebrating {
+  animation: companion-celebrating 1s var(--ease-elastic);
+}
+@keyframes companion-celebrating {
+  0% { transform: scale(1) rotate(0deg) translateY(0); }
+  25% { transform: scale(1.2) rotate(-10deg) translateY(-15px); }
+  50% { transform: scale(1.15) rotate(10deg) translateY(-25px); }
+  75% { transform: scale(1.18) rotate(-5deg) translateY(-20px); }
+  100% { transform: scale(1) rotate(0deg) translateY(0); }
+}
+
+/* ====== CONFETTI PARTICLE SYSTEM ====== */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3000;
+  overflow: hidden;
+}
+
+.confetti-particle {
+  position: absolute;
+  top: -10%;
+  animation: confetti-fall 1.8s var(--ease-smooth) forwards;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(0.3);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+    transform: translateY(8vh) rotate(60deg) scale(1.2);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(115vh) translateX(var(--drift, 0px)) rotate(900deg) scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* Single floating emoji (spawned near heart counter) */
+.confetti-float {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  pointer-events: none;
+  font-size: 1.8rem;
+  animation: confetti-float-up 1.2s var(--ease-smooth) forwards;
+  z-index: 100;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
+}
+@keyframes confetti-float-up {
+  0% { transform: translate(-50%, 0) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -90px) scale(0.4) rotate(20deg); opacity: 0; }
+}
+
+/* ====== TAP RIPPLE EFFECT ====== */
+.tap-ripple {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-round);
+  background: radial-gradient(circle, rgba(197, 163, 255, 0.5), rgba(255, 183, 197, 0.3), transparent 70%);
+  pointer-events: none;
+  animation: ripple-expand var(--duration-slow) var(--ease-smooth) forwards;
+  z-index: 50;
+}
+@keyframes ripple-expand {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+}
+
+/* ====== HOME BUTTON WIGGLE (attention grab) ====== */
+.home-btn--wiggle {
+  animation: wiggle 0.6s var(--ease-elastic);
+}
+
+/* ====== PULSE GLOW (for new content indicators) ====== */
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: var(--shadow-md); }
+  50% { box-shadow: var(--shadow-md), 0 0 24px rgba(255, 183, 197, 0.6), 0 0 48px rgba(197, 163, 255, 0.3); }
+}
+
+/* ====== SCALE POP IN — generic entrance with overshoot ====== */
+.scale-pop-in {
+  transform: scale(1);
+  opacity: 1;
+  transition:
+    transform var(--duration-normal) var(--ease-overshoot),
+    opacity var(--duration-normal) var(--ease-overshoot);
+
+  @starting-style {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+/* Legacy keyframe animation for browsers without @starting-style */
+@supports not at-rule(@starting-style) {
+  .scale-pop-in {
+    animation: scale-pop-in var(--duration-normal) var(--ease-overshoot) both;
+  }
+  @keyframes scale-pop-in {
+    0% {
+      transform: scale(0);
+      opacity: 0;
+    }
+    70% {
+      transform: scale(1.1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+}
+
+/* ====== SHAKE — horizontal error shake (stronger variant) ====== */
+.shake {
+  animation: shake 0.5s var(--ease-smooth);
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 50%, 90% { transform: translateX(-6px); }
+  30%, 70% { transform: translateX(6px); }
+}
+
+/* ====== FADE IN UP — gentle content entrance ====== */
+.fade-in-up {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--duration-normal) var(--ease-smooth),
+    transform var(--duration-normal) var(--ease-smooth);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* Legacy keyframe animation for browsers without @starting-style */
+@supports not at-rule(@starting-style) {
+  .fade-in-up {
+    animation: fade-in-up var(--duration-normal) var(--ease-smooth) both;
+  }
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* ====== SPIN — continuous rotation (loading, etc.) ====== */
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ====== GENTLE PULSE (loading states) ====== */
+.gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
+}
+@keyframes gentle-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+}
+
+/* ====== REDUCED MOTION ====== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Companion Skin Transformation (View Transitions API)
+   ══════════════════════════════════════════════════════════════ */
+
+::view-transition-old(companion-transform),
+::view-transition-new(companion-transform) {
+  animation-duration: 600ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::view-transition-old(companion-transform) {
+  animation-name: companion-fade-scale-out;
+}
+
+::view-transition-new(companion-transform) {
+  animation-name: companion-fade-scale-in;
+}
+
+@keyframes companion-fade-scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.8) rotate(-15deg);
+  }
+}
+
+@keyframes companion-fade-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(1.2) rotate(15deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}

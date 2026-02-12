@@ -6,7 +6,7 @@
 
 - Animation: Framer Motion / GSAP / anime.js -> CSS scroll-driven + WAAPI
 - Tooltips: Tippy.js / Radix -> native Popover API
-- Dates: date-fns / moment / dayjs -> Temporal API
+- Dates: date-fns / moment / dayjs -> Date + Intl
 - Forms: react-hook-form / yup / zod -> native constraint validation
 - CSS-in-JS: styled-components / emotion -> CSS nesting + Svelte scoped
 - Virtualization: react-window -> custom VirtualList with content-visibility
@@ -34,7 +34,6 @@
 | `d3-axis` | ~4 KB | Remove. `native-axis.js` (494 lines) already exists as complete replacement. | 2-4 hrs |
 | `d3-scale` | ~10 KB | Complete migration to `native-scales.js`. Partially done. | 4-8 hrs |
 | `d3-drag` | ~4 KB | Replace with Pointer Events API (`pointerdown`/`pointermove`/`pointerup` + `setPointerCapture()`). ~40 lines native code. | 3-5 hrs |
-| `@js-temporal/polyfill` | 2.9 MB disk | Test-only (0 KB bundle). Remove when Node.js 24+ ships Temporal unflagged. Near-term: `--harmony-temporal` flag in vitest config with Node.js 22+. | Blocked |
 
 ## CSS Fallbacks to Remove
 
@@ -60,16 +59,16 @@ Savings: ~2-3 KB CSS (uncompressed)
 
 ## `new Date()` Remnants (~30 call sites)
 
-- `sitemap.xml/+server.js`: `new Date().toISOString()` -> `Temporal.Now.instant().toString()`
-- `monitoring/errors.js`: `timestamp: new Date()` -> `Temporal.Now.instant()`
+- `sitemap.xml/+server.js`: `new Date().toISOString()`
+- `monitoring/errors.js`: `timestamp: new Date()`
 - `errors/logger.js`, `errors/types.js`: same pattern
 - `pwa/pushNotificationEnhanced.js`: `new Date()`, `.getHours()`
-- `db/dexie/sync.js`: `new Date().getFullYear()` -> `Temporal.Now.plainDateISO().year`
+- `db/dexie/sync.js`: `new Date().getFullYear()` -> `getYear()` from dateUtils.js
 - `db/dexie/validation/*.js`: timestamps
-- `utils/contentIndex.js`: date formatting -> `formatDate()` from temporalDate.js
+- `utils/contentIndex.js`: date formatting -> `formatDate()` from dateUtils.js
 - `utils/compression-monitor.js`: timestamps
 - `api/push-subscribe/+server.js`: date parsing
-- Risk: `new Date('YYYY-MM-DD')` parses as UTC midnight, can shift dates by timezone. Temporal avoids this.
+- Risk: `new Date('YYYY-MM-DD')` parses as UTC midnight and can shift dates by timezone. Use `parseDate()`/`formatDate()` from dateUtils.js for date-only strings.
 
 ## Native APIs Adopted
 
@@ -81,13 +80,13 @@ Savings: ~2-3 KB CSS (uncompressed)
 | Popover API | 114+ | `popoverAPI.js`, `popover.js` |
 | CSS Anchor Positioning | 125+ | `anchor-positioning.css` |
 | `<dialog>` | 37+ | `showModal()` |
-| Temporal API | 137+ | `temporalDate.js` (264 lines) |
+| Date + Intl | 137+ | `dateUtils.js` (264 lines) |
 | Navigation API | 102+ | `navigationApi.js` |
 | Speculation Rules | 109+ | `speculationRules.js`, `SpeculationRules.svelte` |
 | `content-visibility` | 85+ | `contentVisibility.js` (370 lines) |
 | CSS Nesting | 120+ | Throughout |
 | CSS `@scope` | 118+ | `scoped-patterns.css` |
-| `Intl.RelativeTimeFormat` | 71+ | `temporalDate.js` |
+| `Intl.RelativeTimeFormat` | 71+ | `dateUtils.js` |
 | `Intl.DateTimeFormat` | 24+ | Throughout |
 | `IntersectionObserver` | 51+ | D3 lazy loading, content visibility |
 | `ResizeObserver` | 64+ | VirtualList, visualizations |
@@ -130,7 +129,7 @@ Savings: ~2-3 KB CSS (uncompressed)
 - Migrate 30 `new Date()` call sites to Temporal (correctness)
 
 ### LOW (High effort or blocked)
-- Remove `@js-temporal/polyfill` (blocked on Node.js 24+)
+- Removed `@js-temporal/polyfill` (Date + Intl path is native)
 - Replace `d3-selection` with native DOM (-12 KB, 20-40 hrs)
 - Replace `dexie` with raw IndexedDB (-45 KB, 100+ hrs)
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # SWARM 8 - Task 3: File Watcher for Cache Invalidation
 
-AGENTS_DIR="/Users/louisherman/ClaudeCodeProjects/.claude/agents"
+AGENTS_DIR="$(cd "$(dirname "$0")/.." && pwd)/agents"
 CACHE_DIR="/tmp/agent-cache"
 
 echo "Agent Cache Invalidation File Watcher"

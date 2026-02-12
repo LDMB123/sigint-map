@@ -15,6 +15,7 @@ use serde::Serialize;
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::SqlitePool;
 use std::collections::HashMap;
+use std::env;
 use tower_http::{
     compression::CompressionLayer,
     request_id::{MakeRequestUuid, PropagateRequestIdLayer, RequestId, SetRequestIdLayer},
@@ -35,17 +36,15 @@ async fn cache_control_middleware(req: Request<Body>, next: Next) -> Response {
 
     // Avoid "stale bundle" loops where the browser HTTP cache serves old WASM/JS
     // and hydration fails. We want the SW + CacheStorage to be the primary cache.
-    if path == "/sw.js" {
-        res.headers_mut()
-            .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
-    } else if path.starts_with("/pkg/")
+    let is_no_cache = path == "/sw.js"
+        || path.starts_with("/pkg/")
         || path == "/app.css"
         || path == "/webgpu.js"
         || path == "/webgpu-worker.js"
-    {
-        res.headers_mut()
-            .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
-    } else if path.starts_with("/data/") || path == "/manifest.json" {
+        || path.starts_with("/data/")
+        || path == "/manifest.json";
+
+    if is_no_cache {
         res.headers_mut()
             .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
     } else if accepts_html {
@@ -80,6 +79,32 @@ async fn fetch_table_count(pool: &SqlitePool, table: &str) -> Option<u64> {
             None
         }
     }
+}
+
+fn bind_addr_from_env(default: SocketAddr) -> SocketAddr {
+    // This is intentionally separate from LeptosOptions so CI and staging environments
+    // can control bind behavior (port collisions, container runtimes, etc.) without
+    // changing app config files.
+    if let Ok(raw) = env::var("DMB_SITE_ADDR") {
+        match raw.parse::<SocketAddr>() {
+            Ok(addr) => return addr,
+            Err(err) => {
+                tracing::warn!(value = %raw, error = ?err, "invalid DMB_SITE_ADDR; falling back to default");
+            }
+        }
+    }
+
+    // Common hosting convention: PORT. Keep the default IP, only override port.
+    if let Ok(raw) = env::var("PORT").or_else(|_| env::var("DMB_PORT")) {
+        match raw.parse::<u16>() {
+            Ok(port) => return SocketAddr::from((default.ip(), port)),
+            Err(err) => {
+                tracing::warn!(value = %raw, error = ?err, "invalid PORT/DMB_PORT; falling back to default");
+            }
+        }
+    }
+
+    default
 }
 
 #[tokio::main]
@@ -169,7 +194,7 @@ async fn main() {
         );
     }
 
-    let addr: SocketAddr = leptos.site_addr;
+    let addr: SocketAddr = bind_addr_from_env(leptos.site_addr);
     tracing::info!("listening on http://{addr}");
 
     let listener = match tokio::net::TcpListener::bind(addr).await {
@@ -445,7 +470,7 @@ async fn init_db_pool() -> Option<SqlitePool> {
         }
     }
 
-    let candidates = ["data/dmb-almanac.db", "../app/data/dmb-almanac.db"];
+    let candidates = ["data/dmb-almanac.db"];
     for path in candidates {
         if !std::path::Path::new(path).exists() {
             continue;

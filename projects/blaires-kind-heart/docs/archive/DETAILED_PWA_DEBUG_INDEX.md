@@ -1,0 +1,256 @@
+# Blaire's Kind Heart - PWA Debug Reports
+
+All Service Worker and caching bugs found during Phase 3 manual testing have been documented here.
+
+## Reports Generated
+
+### 1. PWA_DEBUG_REPORT.md (COMPREHENSIVE)
+**Full technical analysis of all 8 bugs**
+
+Contents:
+- Bug #1-8 detailed breakdowns with code samples
+- Root cause analysis for each bug
+- Expected vs actual behavior
+- Testing checklist (5 phases)
+- Summary of all fixes required
+- Files to modify
+
+**Read this if:** You need full technical details about what's wrong and why.
+
+---
+
+### 2. SW_BUGS_SUMMARY.md (EXECUTIVE)
+**Quick overview of critical issues**
+
+Contents:
+- 2 CRITICAL bugs preventing offline
+- 2 HIGH priority bugs degrading UX
+- 3 MEDIUM bugs for polish
+- 1 LOW bug (minor)
+- Quick fix priority list
+- Root cause analysis
+
+**Read this if:** You want to understand the problem in 5 minutes before diving into fixes.
+
+---
+
+### 3. FIXES_CHECKLIST.md (ACTION PLAN)
+**Step-by-step instructions to fix everything**
+
+Contents:
+- Critical Fix #1: Copy WebP assets (5 min)
+- Critical Fix #2: Update precache manifest (2 min)
+- High priority fixes with code diffs
+- Testing checklist for iPad
+- Validation commands
+- Common issues & solutions
+- Rollback plan
+
+**Read this if:** You're ready to implement fixes and want exact code changes.
+
+---
+
+### 4. DEVTOOLS_INVESTIGATION.md (DEBUGGING GUIDE)
+**How to investigate on Safari 26.2 iPad**
+
+Contents:
+- Step-by-step DevTools navigation
+- Console scripts to verify each bug
+- Expected outputs (current vs fixed)
+- Network tab inspection guide
+- Cache Storage UI inspection
+- Offline simulation test
+- Automated diagnostic script
+- Throttling tests
+
+**Read this if:** You want to see the bugs yourself on iPad or verify fixes.
+
+---
+
+## Quick Reference
+
+### The Problem (1 sentence)
+78 WebP assets (companions + gardens) are referenced in precache manifest but never copied to build output, causing Service Worker installation to fail silently.
+
+### The Impact
+- Offline mode completely broken
+- Gardens panel shows broken images
+- All companion animations missing
+- Rewards panel non-functional
+
+### The Fix (3 steps)
+1. Copy `assets/companions/` and `assets/gardens/` to `public/assets/`
+2. Add 3 missing CSS files to `public/sw-assets.js`
+3. Rebuild with `trunk build --release`
+
+### Time Required
+- Implementation: 10 minutes
+- Testing: 10 minutes on iPad
+- Total: ~20 minutes
+
+---
+
+## File Locations
+
+All reports saved to:
+```
+/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/docs/
+
+├── PWA_DEBUG_REPORT.md          (9,000 words - comprehensive)
+├── SW_BUGS_SUMMARY.md            (2,000 words - quick overview)
+├── FIXES_CHECKLIST.md            (3,000 words - action plan)
+├── DEVTOOLS_INVESTIGATION.md     (2,500 words - debugging guide)
+└── PWA_DEBUG_INDEX.md            (this file)
+```
+
+---
+
+## Recommended Reading Order
+
+### For Developers Fixing This
+1. **SW_BUGS_SUMMARY.md** (5 min read) → understand scope
+2. **FIXES_CHECKLIST.md** (10 min read) → get exact instructions
+3. **DEVTOOLS_INVESTIGATION.md** (skim) → bookmark for testing
+
+### For Project Managers
+1. **SW_BUGS_SUMMARY.md** (5 min read) → understand impact
+2. Skip technical details, check "Time Required" section
+
+### For QA Testing
+1. **DEVTOOLS_INVESTIGATION.md** (10 min read) → learn how to verify
+2. **FIXES_CHECKLIST.md** → Testing Checklist section
+3. Use the automated diagnostic script from DEVTOOLS_INVESTIGATION
+
+### For Complete Understanding
+Read all 4 reports in this order:
+1. SW_BUGS_SUMMARY.md
+2. PWA_DEBUG_REPORT.md
+3. FIXES_CHECKLIST.md
+4. DEVTOOLS_INVESTIGATION.md
+
+---
+
+## At a Glance
+
+### Bugs Found: 8 Total
+
+#### CRITICAL (2) - Block Offline Entirely
+- [ ] Bug #1: Missing 78 WebP assets in build (companions + gardens)
+- [ ] Bug #2: Service Worker cache.addAll() fails atomically
+
+#### HIGH (2) - Degrade UX
+- [ ] Bug #3: No image fallback in Service Worker
+- [ ] Bug #4: Missing CSS in precache manifest
+
+#### MEDIUM (3) - Polish
+- [ ] Bug #5: No stale-while-revalidate
+- [ ] Bug #6: SW update detection could fail silently
+- [ ] Bug #8: No error logging in Service Worker
+
+#### LOW (1) - Minor
+- [ ] Bug #7: Manifest maskable icons missing safe zone
+
+---
+
+## Verification: Before and After
+
+### BEFORE Fixes
+```
+Cache Status: BROKEN
+├─ Total cached: ~90 items (should be 168)
+├─ Companions: 0 (should be 18)
+├─ Gardens: 0 (should be 60)
+├─ CSS: 13 (missing 3)
+└─ Offline status: UNUSABLE
+```
+
+### AFTER Fixes
+```
+Cache Status: FIXED
+├─ Total cached: 168 items ✓
+├─ Companions: 18 ✓
+├─ Gardens: 60 ✓
+├─ CSS: 15 ✓
+└─ Offline status: FULLY FUNCTIONAL
+```
+
+---
+
+## Scripts Provided
+
+### Verification Script (DEVTOOLS_INVESTIGATION.md)
+```javascript
+// Copy-paste into Safari Console on iPad
+async function diagnosePWA() {
+  // Checks SW registration, cache contents, offline fetch
+  // Returns detailed status
+}
+diagnosePWA();
+```
+
+### Build Validation Script (FIXES_CHECKLIST.md)
+```bash
+# Run after rebuild to verify all precache files exist
+/tmp/verify_precache.sh
+```
+
+---
+
+## Files to Modify
+
+**Must Edit:**
+- `public/sw-assets.js` - Add 3 CSS files (2 min)
+
+**Must Copy:**
+- `assets/companions/` → `public/assets/companions/` (1 min)
+- `assets/gardens/` → `public/assets/gardens/` (1 min)
+
+**Can Edit (optional):**
+- `public/sw.js` - Add error logging (5 min)
+- `public/sw.js` - Add image fallback (optional)
+
+---
+
+## Next Steps
+
+1. Read **SW_BUGS_SUMMARY.md** (5 minutes)
+2. Read **FIXES_CHECKLIST.md** (10 minutes)
+3. Implement fixes (10 minutes):
+   - Copy WebP directories
+   - Update sw-assets.js
+   - Rebuild
+4. Verify on iPad using **DEVTOOLS_INVESTIGATION.md** (10 minutes)
+5. Commit changes with clear message
+
+---
+
+## Questions?
+
+Check the relevant report:
+
+- "What's the exact code change?" → FIXES_CHECKLIST.md
+- "How do I verify this on iPad?" → DEVTOOLS_INVESTIGATION.md
+- "Why did this happen?" → PWA_DEBUG_REPORT.md
+- "How bad is this?" → SW_BUGS_SUMMARY.md
+
+---
+
+## Generated By
+
+PWA Debugger analysis of:
+- Service Worker registration (pwa.rs)
+- Caching strategy (sw.js)
+- Precache manifest (sw-assets.js)
+- Build output (dist/)
+- Browser DevTools inspection
+
+---
+
+## Status
+
+- Analysis: COMPLETE
+- Reports: GENERATED
+- Fixes: READY TO IMPLEMENT
+- Testing: PROCEDURES PROVIDED
+
+Next Action: Implement fixes from FIXES_CHECKLIST.md

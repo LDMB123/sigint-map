@@ -43,14 +43,14 @@ telemetry:
   # Storage backend
   storage:
     type: local_sqlite
-    path: /Users/louisherman/.claude/telemetry/metrics.db
+    path: ${HOME}/.claude/telemetry/metrics.db
 
     # Backup and retention
     backup:
       enabled: true
       interval_hours: 24
       retention_backups: 7
-      path: /Users/louisherman/.claude/telemetry/backups/
+      path: ${HOME}/.claude/telemetry/backups/
 
     # Rotation policy
     rotation:
@@ -74,7 +74,7 @@ telemetry:
         - type: log
           level: warning
         - type: file
-          path: /Users/louisherman/.claude/telemetry/alerts.log
+          path: ${HOME}/.claude/telemetry/alerts.log
 
       rules:
         - name: high_error_rate
@@ -320,7 +320,7 @@ reports:
       interval: daily
       time: "09:00"
       format: markdown
-      output_path: /Users/louisherman/.claude/telemetry/reports/daily/
+      output_path: ${HOME}/.claude/telemetry/reports/daily/
 
       sections:
         - agent_usage_top_10
@@ -334,7 +334,7 @@ reports:
       day: monday
       time: "08:00"
       format: markdown
-      output_path: /Users/louisherman/.claude/telemetry/reports/weekly/
+      output_path: ${HOME}/.claude/telemetry/reports/weekly/
 
       sections:
         - week_over_week_comparison
@@ -348,7 +348,7 @@ reports:
       day: 1
       time: "08:00"
       format: markdown
-      output_path: /Users/louisherman/.claude/telemetry/reports/monthly/
+      output_path: ${HOME}/.claude/telemetry/reports/monthly/
 
       sections:
         - executive_summary
@@ -367,12 +367,12 @@ export:
 
     - name: json
       enabled: true
-      path: /Users/louisherman/.claude/telemetry/exports/
+      path: ${HOME}/.claude/telemetry/exports/
       interval_minutes: 60
 
     - name: csv
       enabled: true
-      path: /Users/louisherman/.claude/telemetry/exports/
+      path: ${HOME}/.claude/telemetry/exports/
       interval_hours: 24
 
 # Validation

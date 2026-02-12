@@ -51,19 +51,19 @@
           "next_action": "compile-fix",
           "confidence": 0.92,
           "conditions": ["cargo build failed", "type error"],
-          "agent": "rust-semantics-engineer"
+          "agent": "code-generator"
         },
         {
           "next_action": "borrow-fix",
           "confidence": 0.88,
           "conditions": ["lifetime error", "borrow checker error"],
-          "agent": "rust-borrow-checker-specialist"
+          "agent": "error-debugger"
         },
         {
           "next_action": "optimize",
           "confidence": 0.85,
           "conditions": ["performance target missed", "bundle size > 500KB"],
-          "agent": "rust-performance-engineer"
+          "agent": "performance-profiler"
         }
       ],
       "confidence": 0.90,
@@ -101,13 +101,13 @@
           "next_action": "lifetime-annotate",
           "confidence": 0.87,
           "conditions": ["missing lifetime specifier"],
-          "agent": "rust-semantics-engineer"
+          "agent": "code-generator"
         },
         {
           "next_action": "clone-or-ref",
           "confidence": 0.84,
           "conditions": ["value moved", "multiple owners needed"],
-          "agent": "rust-borrow-checker-specialist"
+          "agent": "error-debugger"
         }
       ],
       "confidence": 0.89,
@@ -142,13 +142,13 @@
           "next_action": "type-mapping",
           "confidence": 0.91,
           "conditions": ["JsValue conversion", "serde_wasm_bindgen"],
-          "agent": "wasm-integration-specialist"
+          "agent": "code-generator"
         },
         {
           "next_action": "benchmark",
           "confidence": 0.86,
           "conditions": ["performance comparison needed"],
-          "agent": "performance-analyzer"
+          "agent": "performance-profiler"
         }
       ],
       "confidence": 0.88,
@@ -184,7 +184,7 @@
           "next_action": "reactivity-setup",
           "confidence": 0.89,
           "conditions": ["state management", "$: reactive statement"],
-          "agent": "svelte-reactivity-specialist"
+          "agent": "svelte5-specialist"
         },
         {
           "next_action": "test-create",
@@ -225,13 +225,13 @@
           "next_action": "load-function",
           "confidence": 0.93,
           "conditions": ["data fetching needed"],
-          "agent": "sveltekit-routing-specialist"
+          "agent": "sveltekit-specialist"
         },
         {
           "next_action": "validation",
           "confidence": 0.85,
           "conditions": ["form submission", "user input"],
-          "agent": "validation-specialist"
+          "agent": "code-generator"
         }
       ],
       "confidence": 0.91,
@@ -268,7 +268,7 @@
           "next_action": "profile",
           "confidence": 0.90,
           "conditions": ["performance issue identified"],
-          "agent": "performance-analyzer"
+          "agent": "performance-profiler"
         },
         {
           "next_action": "optimize",
@@ -280,7 +280,7 @@
           "next_action": "benchmark",
           "confidence": 0.92,
           "conditions": ["optimization applied"],
-          "agent": "benchmark-specialist"
+          "agent": "performance-profiler"
         }
       ],
       "confidence": 0.91,
@@ -320,13 +320,13 @@
           "next_action": "code-split",
           "confidence": 0.89,
           "conditions": ["large chunks identified"],
-          "agent": "vite-build-engineer"
+          "agent": "bundle-size-analyzer"
         },
         {
           "next_action": "tree-shake",
           "confidence": 0.86,
           "conditions": ["unused exports detected"],
-          "agent": "bundle-optimizer"
+          "agent": "bundle-size-analyzer"
         }
       ],
       "confidence": 0.88,
@@ -362,19 +362,19 @@
           "next_action": "impact-assess",
           "confidence": 0.94,
           "conditions": ["vulnerability identified"],
-          "agent": "security-specialist"
+          "agent": "security-scanner"
         },
         {
           "next_action": "patch-apply",
           "confidence": 0.91,
           "conditions": ["patch available"],
-          "agent": "dependency-updater"
+          "agent": "dependency-analyzer"
         },
         {
           "next_action": "test-security",
           "confidence": 0.89,
           "conditions": ["patch applied"],
-          "agent": "security-tester"
+          "agent": "security-scanner"
         }
       ],
       "confidence": 0.93,
@@ -409,13 +409,13 @@
           "next_action": "escape-output",
           "confidence": 0.90,
           "conditions": ["dynamic html rendering"],
-          "agent": "security-specialist"
+          "agent": "security-scanner"
         },
         {
           "next_action": "csp-configure",
           "confidence": 0.87,
           "conditions": ["content security policy needed"],
-          "agent": "web-security-engineer"
+          "agent": "security-engineer"
         }
       ],
       "confidence": 0.89,
@@ -456,7 +456,7 @@
           "next_action": "refactor",
           "confidence": 0.86,
           "conditions": ["tests passing"],
-          "agent": "code-quality-engineer"
+          "agent": "refactoring-agent"
         },
         {
           "next_action": "coverage-check",
@@ -538,13 +538,13 @@
           "next_action": "version-migrate",
           "confidence": 0.90,
           "conditions": ["schema change"],
-          "agent": "indexeddb-specialist"
+          "agent": "dexie-specialist"
         },
         {
           "next_action": "optimize-indices",
           "confidence": 0.86,
           "conditions": ["query performance issues"],
-          "agent": "database-optimizer"
+          "agent": "database-specialist"
         }
       ],
       "confidence": 0.87,
@@ -580,13 +580,13 @@
           "next_action": "transaction-trace",
           "confidence": 0.89,
           "conditions": ["transaction error"],
-          "agent": "dmb-indexeddb-debugger"
+          "agent": "dexie-specialist"
         },
         {
           "next_action": "quota-check",
           "confidence": 0.87,
           "conditions": ["QuotaExceededError"],
-          "agent": "storage-specialist"
+          "agent": "indexeddb-storage-specialist"
         }
       ],
       "confidence": 0.86,
@@ -670,7 +670,7 @@
           "next_action": "prune-branches",
           "confidence": 0.85,
           "conditions": ["many stale branches"],
-          "agent": "git-specialist"
+          "agent": "devops-engineer"
         }
       ],
       "confidence": 0.87,
@@ -712,7 +712,7 @@
           "next_action": "progressive-enhancement",
           "confidence": 0.88,
           "conditions": ["partial browser support"],
-          "agent": "frontend-architect"
+          "agent": "senior-frontend-engineer"
         }
       ],
       "confidence": 0.86,
@@ -797,7 +797,7 @@
           "next_action": "add-generics",
           "confidence": 0.85,
           "conditions": ["reusable components"],
-          "agent": "type-system-specialist"
+          "agent": "typescript-type-wizard"
         }
       ],
       "confidence": 0.86,
@@ -832,13 +832,13 @@
           "next_action": "validation-add",
           "confidence": 0.90,
           "conditions": ["user input"],
-          "agent": "backend-engineer"
+          "agent": "senior-backend-engineer"
         },
         {
           "next_action": "error-handling",
           "confidence": 0.87,
           "conditions": ["external dependencies"],
-          "agent": "error-handling-specialist"
+          "agent": "error-boundary-specialist"
         }
       ],
       "confidence": 0.88,
@@ -880,7 +880,7 @@
           "next_action": "progressive-enhancement",
           "confidence": 0.86,
           "conditions": ["fallback defined"],
-          "agent": "frontend-architect"
+          "agent": "senior-frontend-engineer"
         }
       ],
       "confidence": 0.85,
@@ -922,7 +922,7 @@
           "next_action": "keyboard-navigation",
           "confidence": 0.88,
           "conditions": ["interactive elements"],
-          "agent": "ux-engineer"
+          "agent": "ux-designer"
         }
       ],
       "confidence": 0.89,
@@ -959,7 +959,7 @@
           "next_action": "security-audit",
           "confidence": 0.93,
           "conditions": ["updates available"],
-          "agent": "security-specialist"
+          "agent": "security-scanner"
         },
         {
           "next_action": "test-run",
@@ -1007,7 +1007,7 @@
           "next_action": "cache-configure",
           "confidence": 0.87,
           "conditions": ["build time > 5min"],
-          "agent": "ci-cd-specialist"
+          "agent": "cicd-pipeline-architect"
         }
       ],
       "confidence": 0.90,
@@ -1043,13 +1043,13 @@
           "next_action": "fallback-ui",
           "confidence": 0.88,
           "conditions": ["error caught"],
-          "agent": "frontend-engineer"
+          "agent": "senior-frontend-engineer"
         },
         {
           "next_action": "monitoring-setup",
           "confidence": 0.85,
           "conditions": ["production app"],
-          "agent": "observability-engineer"
+          "agent": "observability-architect"
         }
       ],
       "confidence": 0.86,
@@ -1091,7 +1091,7 @@
           "next_action": "handle-dynamic-height",
           "confidence": 0.84,
           "conditions": ["variable item heights"],
-          "agent": "frontend-specialist"
+          "agent": "senior-frontend-engineer"
         }
       ],
       "confidence": 0.87,
@@ -1127,13 +1127,13 @@
           "next_action": "implement-dynamic-imports",
           "confidence": 0.90,
           "conditions": ["split points identified"],
-          "agent": "vite-build-engineer"
+          "agent": "bundle-size-analyzer"
         },
         {
           "next_action": "optimize-chunks",
           "confidence": 0.86,
           "conditions": ["too many chunks"],
-          "agent": "bundle-optimizer"
+          "agent": "bundle-size-analyzer"
         }
       ],
       "confidence": 0.88,
@@ -1169,13 +1169,13 @@
           "next_action": "message-protocol",
           "confidence": 0.88,
           "conditions": ["worker created"],
-          "agent": "web-worker-specialist"
+          "agent": "code-generator"
         },
         {
           "next_action": "fallback-main-thread",
           "confidence": 0.83,
           "conditions": ["worker not supported"],
-          "agent": "progressive-enhancement-specialist"
+          "agent": "chromium-browser-expert"
         }
       ],
       "confidence": 0.85,
@@ -1211,13 +1211,13 @@
           "next_action": "invalidation-trigger",
           "confidence": 0.89,
           "conditions": ["cache keys defined"],
-          "agent": "caching-specialist"
+          "agent": "redis-cache-specialist"
         },
         {
           "next_action": "monitor-hit-rate",
           "confidence": 0.85,
           "conditions": ["cache deployed"],
-          "agent": "performance-analyzer"
+          "agent": "performance-profiler"
         }
       ],
       "confidence": 0.87,
@@ -1253,7 +1253,7 @@
           "next_action": "mobile-first-css",
           "confidence": 0.90,
           "conditions": ["breakpoints defined"],
-          "agent": "css-specialist"
+          "agent": "css-debugger"
         },
         {
           "next_action": "image-responsive",
@@ -1295,13 +1295,13 @@
           "next_action": "server-validation",
           "confidence": 0.92,
           "conditions": ["client validation done"],
-          "agent": "backend-engineer"
+          "agent": "senior-backend-engineer"
         },
         {
           "next_action": "error-display",
           "confidence": 0.89,
           "conditions": ["validation rules defined"],
-          "agent": "ux-engineer"
+          "agent": "ux-designer"
         }
       ],
       "confidence": 0.90,
@@ -1337,7 +1337,7 @@
           "next_action": "use-transform",
           "confidence": 0.91,
           "conditions": ["layout thrashing detected"],
-          "agent": "animation-specialist"
+          "agent": "motion-designer"
         },
         {
           "next_action": "fallback-prefers-reduced-motion",
@@ -1379,7 +1379,7 @@
           "next_action": "responsive-sizes",
           "confidence": 0.89,
           "conditions": ["images compressed"],
-          "agent": "image-optimizer"
+          "agent": "performance-optimizer"
         },
         {
           "next_action": "lazy-load",
@@ -1427,7 +1427,7 @@
           "next_action": "sitemap-generate",
           "confidence": 0.86,
           "conditions": ["content structured"],
-          "agent": "seo-engineer"
+          "agent": "seo-specialist"
         }
       ],
       "confidence": 0.86,
@@ -1469,7 +1469,7 @@
           "next_action": "validate-data",
           "confidence": 0.91,
           "conditions": ["migration executed"],
-          "agent": "data-quality-engineer"
+          "agent": "dmb-data-validator"
         }
       ],
       "confidence": 0.92,
@@ -1505,13 +1505,13 @@
           "next_action": "logging-setup",
           "confidence": 0.90,
           "conditions": ["metrics defined"],
-          "agent": "observability-engineer"
+          "agent": "observability-architect"
         },
         {
           "next_action": "alerts-configure",
           "confidence": 0.88,
           "conditions": ["logging configured"],
-          "agent": "sre-specialist"
+          "agent": "incident-response-engineer"
         }
       ],
       "confidence": 0.89,
@@ -1547,13 +1547,13 @@
           "next_action": "rollout-strategy",
           "confidence": 0.89,
           "conditions": ["flag implemented"],
-          "agent": "feature-flag-specialist"
+          "agent": "feature-flags-specialist"
         },
         {
           "next_action": "gradual-rollout",
           "confidence": 0.87,
           "conditions": ["strategy defined"],
-          "agent": "deployment-engineer"
+          "agent": "devops-engineer"
         }
       ],
       "confidence": 0.88,
@@ -1589,13 +1589,13 @@
           "next_action": "generate-api-docs",
           "confidence": 0.91,
           "conditions": ["code analyzed"],
-          "agent": "documentation-engineer"
+          "agent": "documentation-writer"
         },
         {
           "next_action": "generate-diagrams",
           "confidence": 0.84,
           "conditions": ["complex architecture"],
-          "agent": "technical-writer"
+          "agent": "technical-documentation-writer"
         }
       ],
       "confidence": 0.87,
@@ -1631,13 +1631,13 @@
           "next_action": "store-setup",
           "confidence": 0.90,
           "conditions": ["solution chosen"],
-          "agent": "state-management-specialist"
+          "agent": "zustand-state-architect"
         },
         {
           "next_action": "devtools-configure",
           "confidence": 0.85,
           "conditions": ["store implemented"],
-          "agent": "frontend-architect"
+          "agent": "senior-frontend-engineer"
         }
       ],
       "confidence": 0.88,
@@ -1673,13 +1673,13 @@
           "next_action": "resolver-create",
           "confidence": 0.92,
           "conditions": ["schema defined"],
-          "agent": "graphql-specialist"
+          "agent": "code-generator"
         },
         {
           "next_action": "optimize-n-plus-1",
           "confidence": 0.88,
           "conditions": ["nested queries"],
-          "agent": "backend-optimizer"
+          "agent": "performance-profiler"
         }
       ],
       "confidence": 0.89,
@@ -1715,13 +1715,13 @@
           "next_action": "message-protocol",
           "confidence": 0.89,
           "conditions": ["connection established"],
-          "agent": "real-time-specialist"
+          "agent": "realtime-systems-specialist"
         },
         {
           "next_action": "reconnection-logic",
           "confidence": 0.87,
           "conditions": ["production deployment"],
-          "agent": "reliability-engineer"
+          "agent": "incident-response-engineer"
         }
       ],
       "confidence": 0.87,
@@ -1757,13 +1757,13 @@
           "next_action": "shared-dependencies",
           "confidence": 0.88,
           "conditions": ["federation configured"],
-          "agent": "micro-frontend-architect"
+          "agent": "system-architect"
         },
         {
           "next_action": "deployment-strategy",
           "confidence": 0.86,
           "conditions": ["integration complete"],
-          "agent": "devops-architect"
+          "agent": "cloud-platform-architect"
         }
       ],
       "confidence": 0.85,
@@ -1799,13 +1799,13 @@
           "next_action": "optimize-cold-start",
           "confidence": 0.87,
           "conditions": ["function tested"],
-          "agent": "serverless-specialist"
+          "agent": "cloud-platform-architect"
         },
         {
           "next_action": "monitor-latency",
           "confidence": 0.85,
           "conditions": ["deployed to edge"],
-          "agent": "performance-analyzer"
+          "agent": "performance-profiler"
         }
       ],
       "confidence": 0.86,
@@ -1841,13 +1841,13 @@
           "next_action": "report-only-mode",
           "confidence": 0.91,
           "conditions": ["policy defined"],
-          "agent": "security-specialist"
+          "agent": "security-scanner"
         },
         {
           "next_action": "fix-violations",
           "confidence": 0.89,
           "conditions": ["violations reported"],
-          "agent": "web-security-engineer"
+          "agent": "security-engineer"
         }
       ],
       "confidence": 0.90,
@@ -1883,13 +1883,13 @@
           "next_action": "feature-detection",
           "confidence": 0.88,
           "conditions": ["enhancements added"],
-          "agent": "progressive-enhancement-specialist"
+          "agent": "chromium-browser-expert"
         },
         {
           "next_action": "test-degradation",
           "confidence": 0.86,
           "conditions": ["fallbacks defined"],
-          "agent": "cross-browser-tester"
+          "agent": "chromium-browser-expert"
         }
       ],
       "confidence": 0.87,
@@ -1931,7 +1931,7 @@
           "next_action": "rtl-support",
           "confidence": 0.84,
           "conditions": ["RTL language added"],
-          "agent": "frontend-specialist"
+          "agent": "senior-frontend-engineer"
         }
       ],
       "confidence": 0.88,
@@ -1967,13 +1967,13 @@
           "next_action": "storage-backend",
           "confidence": 0.89,
           "conditions": ["middleware implemented"],
-          "agent": "backend-security-specialist"
+          "agent": "security-engineer"
         },
         {
           "next_action": "monitor-usage",
           "confidence": 0.87,
           "conditions": ["rate limits active"],
-          "agent": "api-monitoring-specialist"
+          "agent": "observability-architect"
         }
       ],
       "confidence": 0.88,
@@ -2009,13 +2009,13 @@
           "next_action": "structured-logging",
           "confidence": 0.91,
           "conditions": ["logger configured"],
-          "agent": "logging-specialist"
+          "agent": "observability-architect"
         },
         {
           "next_action": "search-indexing",
           "confidence": 0.88,
           "conditions": ["logs aggregated"],
-          "agent": "observability-engineer"
+          "agent": "observability-architect"
         }
       ],
       "confidence": 0.89,
@@ -2051,7 +2051,7 @@
           "next_action": "tracking-setup",
           "confidence": 0.90,
           "conditions": ["variants implemented"],
-          "agent": "analytics-engineer"
+          "agent": "analytics-specialist"
         },
         {
           "next_action": "analyze-results",
@@ -2099,7 +2099,7 @@
           "next_action": "query-rewrite",
           "confidence": 0.88,
           "conditions": ["inefficient query plan"],
-          "agent": "sql-optimizer"
+          "agent": "database-specialist"
         }
       ],
       "confidence": 0.90,
@@ -2135,13 +2135,13 @@
           "next_action": "image-optimize",
           "confidence": 0.90,
           "conditions": ["dockerfile created"],
-          "agent": "docker-specialist"
+          "agent": "docker-container-specialist"
         },
         {
           "next_action": "health-checks",
           "confidence": 0.88,
           "conditions": ["deployed"],
-          "agent": "kubernetes-engineer"
+          "agent": "devops-engineer"
         }
       ],
       "confidence": 0.89,
@@ -2177,13 +2177,13 @@
           "next_action": "ci-integration",
           "confidence": 0.90,
           "conditions": ["benchmark suite ready"],
-          "agent": "performance-engineer"
+          "agent": "performance-profiler"
         },
         {
           "next_action": "alert-on-degradation",
           "confidence": 0.88,
           "conditions": ["thresholds defined"],
-          "agent": "ci-cd-specialist"
+          "agent": "cicd-pipeline-architect"
         }
       ],
       "confidence": 0.89,

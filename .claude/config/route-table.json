@@ -402,6 +402,84 @@
       "predictor": {
         "agent": "dmb-analyst",
         "tier": "tier-2"
+      },
+      "knowledge": {
+        "agent": "dmb-expert",
+        "tier": "tier-2"
+      },
+      "scraping": {
+        "agent": "dmbalmanac-scraper",
+        "tier": "tier-1"
+      },
+      "site_navigation": {
+        "agent": "dmbalmanac-site-expert",
+        "tier": "tier-3"
+      },
+      "show_analysis": {
+        "agent": "dmb-show-analyzer",
+        "tier": "tier-1"
+      },
+      "data_validation": {
+        "agent": "dmb-data-validator",
+        "tier": "tier-2"
+      },
+      "sqlite": {
+        "agent": "dmb-sqlite-specialist",
+        "tier": "tier-3"
+      },
+      "offline": {
+        "agent": "dmb-offline-first-architect",
+        "tier": "tier-3"
+      },
+      "dexie": {
+        "agent": "dmb-dexie-architect",
+        "tier": "tier-3"
+      },
+      "scraper_debug": {
+        "agent": "dmb-scraper-debugger",
+        "tier": "tier-1"
+      }
+    },
+    "sveltekit": {
+      "routing": {
+        "agent": "sveltekit-specialist",
+        "tier": "tier-2"
+      },
+      "load_functions": {
+        "agent": "sveltekit-specialist",
+        "tier": "tier-2"
+      },
+      "ssr": {
+        "agent": "sveltekit-specialist",
+        "tier": "tier-2"
+      }
+    },
+    "svelte": {
+      "runes": {
+        "agent": "svelte5-specialist",
+        "tier": "tier-2"
+      },
+      "reactivity": {
+        "agent": "svelte5-specialist",
+        "tier": "tier-2"
+      },
+      "components": {
+        "agent": "svelte5-specialist",
+        "tier": "tier-2"
+      }
+    },
+    "indexeddb": {
+      "dexie": {
+        "agent": "dexie-specialist",
+        "tier": "tier-2"
+      },
+      "offline": {
+        "agent": "dexie-specialist",
+        "tier": "tier-2"
+      },
+      "schema": {
+        "agent": "dexie-specialist",
+        "tier": "tier-2"
       }
     }
   },

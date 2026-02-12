@@ -5,7 +5,7 @@
 
 set -e
 
-WORKSPACE_ROOT="/Users/louisherman/ClaudeCodeProjects"
+WORKSPACE_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$WORKSPACE_ROOT"
 
 echo "═══════════════════════════════════════════════════════"

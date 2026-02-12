@@ -29,7 +29,7 @@ fn manifest_includes_ann_index_bin() {
         .unwrap_or(false);
     if !manifest_path.exists() && !require_static_data {
         // `xtask verify` runs in environments where `rust/static/data` may not be generated yet.
-        // We validate this in the cutover rehearsal after seeding from the legacy bundle.
+        // We validate this in the cutover rehearsal after seeding from the static data bundle.
         return;
     }
     let payload = std::fs::read_to_string(&manifest_path)

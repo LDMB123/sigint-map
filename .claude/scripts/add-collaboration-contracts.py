@@ -13,7 +13,7 @@ import re
 import argparse
 from pathlib import Path
 
-AGENTS_DIR = Path("/Users/louisherman/ClaudeCodeProjects/.claude/agents")
+AGENTS_DIR = Path(__file__).resolve().parent.parent / "agents"
 
 # Define team structures and collaboration patterns
 TEAM_STRUCTURES = {

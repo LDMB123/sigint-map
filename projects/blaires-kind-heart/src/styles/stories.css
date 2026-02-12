@@ -1,0 +1,596 @@
+/* Stories panel — physical book feeling, warm paper textures */
+#panel-stories .panel-body {
+  background:
+    linear-gradient(180deg, rgba(255, 248, 240, 0.8) 0%, rgba(255, 228, 237, 0.7) 100%),
+    url('../assets/illustrations/backgrounds/stories-bg.webp') center / cover no-repeat;
+}
+
+/* ====== Keyframes (top-level only) ====== */
+
+@keyframes story-card-in {
+  0% {
+    transform: perspective(600px) rotateY(-27deg) rotateX(7.5deg) scale(0.5) translateZ(-40px);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  60% {
+    transform: perspective(600px) rotateY(-1.5deg) rotateX(0deg) scale(1.04) translateZ(8px);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: perspective(600px) rotateY(-6deg) rotateX(1.5deg) scale(1) translateZ(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes ken-burns {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.08) translate(-2%, -1%); }
+}
+
+@keyframes badge-sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.15) rotate(-6deg); }
+  50% { transform: scale(1) rotate(0deg); }
+  75% { transform: scale(1.1) rotate(4deg); }
+}
+
+@keyframes story-badge-glow {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(255, 209, 66, 0.5);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 16px rgba(255, 209, 66, 0.8), 0 0 24px rgba(255, 209, 66, 0.4);
+  }
+}
+
+@keyframes scene-entrance {
+  0% {
+    transform: scale(0.65) translateY(12px);
+    opacity: 0;
+    filter: blur(8px) brightness(1.2);
+  }
+  55% {
+    transform: scale(1.03) translateY(-2px);
+    opacity: 1;
+    filter: blur(0) brightness(1.02);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    filter: blur(0) brightness(1);
+  }
+}
+
+@keyframes page-turn-out {
+  0% { transform: perspective(800px) rotateY(0deg); opacity: 1; }
+  100% { transform: perspective(800px) rotateY(-30deg); opacity: 0; }
+}
+
+@keyframes page-turn-in {
+  0% { transform: perspective(800px) rotateY(30deg); opacity: 0; }
+  100% { transform: perspective(800px) rotateY(0deg); opacity: 1; }
+}
+
+@keyframes story-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes choice-shimmer {
+  0%, 75% { transform: translateX(-150%); }
+  100% { transform: translateX(150%); }
+}
+
+@keyframes choice-slide-in {
+  0% {
+    transform: translateY(28px) scale(0.88) rotateX(8deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-2px) scale(1.02) rotateX(-1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1) rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes feedback-shine {
+  0%, 60% { transform: translateX(-150%); }
+  100% { transform: translateX(150%); }
+}
+
+@keyframes feedback-pop {
+  0% {
+    transform: scale(0.4) rotate(-5deg);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  55% {
+    transform: scale(1.1) rotate(2deg);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* ====== Story Library Grid ====== */
+.story-library {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-lg);
+  perspective: 1000px;
+}
+
+/* ====== Story Cover — feels like a real children's book ====== */
+.story-cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background:
+    /* Paper grain texture via repeating noise-like gradient */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      rgba(45, 27, 48, 0.008) 1px,
+      transparent 2px,
+      transparent 4px
+    ),
+    /* Warm parchment base */
+    linear-gradient(
+      175deg,
+      var(--color-surface) 0%,
+      var(--color-surface-raised) 40%,
+      var(--color-yellow-light) 100%
+    );
+  border: 3px solid var(--color-blue-light);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    var(--shadow-md),
+    /* Page-curl shadow on bottom-right — books curl there */
+    6px 6px 18px rgba(45, 27, 48, 0.14),
+    2px 8px 6px rgba(45, 27, 48, 0.06),
+    /* Inner page-edge highlight (top/left = light hits) */
+    inset -4px 0 10px rgba(45, 27, 48, 0.05),
+    inset 0 2px 6px rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition:
+    transform var(--duration-fast) var(--ease-bounce),
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    border-color var(--duration-fast) var(--ease-smooth);
+  animation: story-card-in 0.5s var(--ease-overshoot) both;
+  position: relative;
+  overflow: visible;
+  touch-action: manipulation;
+
+  /* Book-like 3D perspective — deeper tilt like leaning on a shelf */
+  transform: perspective(600px) rotateY(-6deg) rotateX(1.5deg);
+  transform-origin: left center;
+  transform-style: preserve-3d;
+
+  /* Staggered entrance — Safari 26.2 sibling-index() */
+  animation-delay: calc(0.05s + (sibling-index() - 1) * 0.1s);
+
+  /* Satisfying press — book pushes flat into the shelf */
+  &:active {
+    transform: perspective(600px) rotateY(0deg) rotateX(0deg) scale(0.94) translateZ(-6px);
+    box-shadow:
+      var(--shadow-sm),
+      2px 2px 6px rgba(45, 27, 48, 0.08);
+    border-color: var(--color-blue);
+  }
+
+  /* Glass highlight — inner glossy effect for depth */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(170deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.08) 40%, transparent 60%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Page-edge effect — stacked pages visible on right side */
+  &::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    right: 0;
+    bottom: 6px;
+    width: 5px;
+    background: repeating-linear-gradient(
+      180deg,
+      rgba(45, 27, 48, 0.04) 0px,
+      rgba(255, 255, 255, 0.3) 1px,
+      rgba(45, 27, 48, 0.03) 2px,
+      rgba(255, 255, 255, 0.2) 3px
+    );
+    border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* ─── Completed Story Badge ─── */
+  &--done {
+    border-color: var(--color-green);
+    box-shadow:
+      var(--shadow-md),
+      0 0 16px rgba(94, 201, 139, 0.35),
+      6px 6px 18px rgba(45, 27, 48, 0.12),
+      inset -4px 0 10px rgba(45, 27, 48, 0.04);
+  }
+
+  /* ─── New Story Badge ─── */
+  &--new::before {
+    content: "NEW!";
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    background: var(--color-yellow);
+    color: var(--color-text);
+    padding: 2px var(--space-sm);
+    border-radius: var(--radius-xs);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    z-index: 2;
+    animation: story-badge-glow 2s ease-in-out infinite;
+  }
+}
+
+/* ====== Cover Illustration ====== */
+.story-cover-img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: linear-gradient(
+    135deg,
+    var(--color-blue-light) 0%,
+    var(--color-purple-light) 50%,
+    var(--color-pink-light) 100%
+  );
+  font-size: var(--font-size-4xl);
+  line-height: 1;
+  letter-spacing: -0.1em;
+  text-align: center;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    inset 0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 -1px 4px rgba(255, 255, 255, 0.4);
+
+  /* Emoji depth glow */
+  &:not(:has(img)) {
+    filter: drop-shadow(0 2px 6px rgba(45, 27, 48, 0.1));
+  }
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+    animation: ken-burns 20s ease-in-out infinite alternate;
+  }
+
+  /* Hide emoji text when image loads */
+  &:has(img) {
+    font-size: 0;
+  }
+}
+
+/* ====== Cover Title ====== */
+.story-cover-title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  color: var(--color-text);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+.story-cover-badge {
+  font-size: var(--font-size-xl);
+  filter: drop-shadow(0 2px 6px rgba(94, 201, 139, 0.4));
+  animation: badge-sparkle 2s var(--ease-smooth) infinite;
+}
+
+/* ============================================
+   STORY READER — immersive, warm, page-like
+   ============================================ */
+
+.story-reader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  padding: var(--space-lg);
+  /* Warm paper background with subtle grain */
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      rgba(45, 27, 48, 0.006) 1px,
+      transparent 2px,
+      transparent 5px
+    ),
+    linear-gradient(
+      180deg,
+      var(--color-surface-raised) 0%,
+      var(--color-yellow-light) 100%
+    );
+  border-radius: var(--radius-lg);
+  min-height: 100%;
+}
+
+/* ====== Illustration Panel (Story Scene) ====== */
+.story-illustration,
+.story-scene {
+  width: 100%;
+  min-height: 38vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    135deg,
+    var(--color-surface) 0%,
+    var(--color-blue-light) 35%,
+    var(--color-purple-light) 70%,
+    var(--color-pink-light) 100%
+  );
+  font-size: 4rem;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  word-spacing: 0.2em;
+  text-align: center;
+  padding: var(--space-lg);
+  box-shadow:
+    var(--shadow-lg),
+    0 0 28px rgba(92, 184, 228, 0.18),
+    0 0 60px rgba(181, 126, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  animation: fade-in-up var(--duration-normal) var(--ease-smooth) both;
+  position: relative;
+  overflow: hidden;
+
+  /* Emoji in illustrations get a warm glow */
+  &:not(:has(img)) {
+    text-shadow: 0 4px 16px rgba(45, 27, 48, 0.12);
+    filter: drop-shadow(0 2px 10px rgba(181, 126, 255, 0.15));
+  }
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+  }
+
+  /* Hide emoji text when image loads */
+  &:has(img) {
+    font-size: 0;
+    padding: 0;
+  }
+
+  /* Dreamy light overlay — warm spotlight from upper-right */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 75% 25%, rgba(255, 255, 255, 0.4), transparent 55%),
+      radial-gradient(circle at 20% 80%, rgba(255, 244, 199, 0.15), transparent 50%);
+    pointer-events: none;
+  }
+
+  /* Subtle vignette frame */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 40px rgba(45, 27, 48, 0.06);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+}
+
+/* Story Scene Transitions (Page-Turn Effect) */
+.story-scene--exit {
+  animation: page-turn-out 0.5s var(--ease-smooth) forwards;
+}
+
+.story-scene--enter {
+  animation: page-turn-in 0.5s var(--ease-smooth) both;
+}
+
+/* ====== Story Text — warm, readable, inviting ====== */
+.story-text {
+  font-size: var(--font-size-xl);
+  line-height: 1.75;
+  text-align: center;
+  padding: var(--space-sm) var(--space-lg);
+  color: var(--color-text);
+  /* Storybook-style text shadow for warmth */
+  text-shadow: 0 1px 2px rgba(255, 244, 199, 0.4);
+  animation: story-text-in 0.5s var(--ease-smooth) 0.3s both;
+}
+
+
+/* ============================================
+   STORY CHOICES — big, colorful, inviting buttons
+   ============================================ */
+
+.story-choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.story-choice {
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border: 3px solid var(--color-pink);
+  border-radius: var(--radius-xl);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  min-height: var(--touch-comfortable);
+  transition:
+    transform var(--duration-fast) var(--ease-bounce),
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    border-color var(--duration-fast) var(--ease-smooth);
+  animation: choice-slide-in 0.45s var(--ease-overshoot) both;
+  box-shadow:
+    var(--shadow-md),
+    0 4px 12px rgba(45, 27, 48, 0.06);
+  position: relative;
+  overflow: hidden;
+  touch-action: manipulation;
+  color: var(--color-text);
+
+  /* Shimmer sweep across choices */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%);
+    transform: translateX(-150%);
+    animation: choice-shimmer 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* Staggered entrance delays — Safari 26.2 sibling-index() */
+  animation-delay: calc(0.35s + (sibling-index() - 1) * 0.15s);
+
+  /* Per-child border and background colors */
+  &:nth-child(1) {
+    border-color: var(--color-pink);
+    background: linear-gradient(135deg, var(--color-surface), var(--color-pink-light));
+  }
+
+  &:nth-child(2) {
+    border-color: var(--color-purple);
+    background: linear-gradient(135deg, var(--color-surface), var(--color-purple-light));
+  }
+
+  &:nth-child(3) {
+    border-color: var(--color-blue);
+    background: linear-gradient(135deg, var(--color-surface), var(--color-blue-light));
+  }
+
+  /* Each choice shimmers at a different offset — Safari 26.2 sibling-index() */
+  &::before {
+    animation-delay: calc((sibling-index() - 1) * 2s);
+  }
+
+  /* Satisfying press-down on choice tap */
+  &:active {
+    transform: scale(0.94) translateY(2px);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+
+/* ====== Story Feedback (after choosing) ====== */
+.story-feedback {
+  text-align: center;
+  padding: var(--space-xl) var(--space-lg);
+  background: linear-gradient(
+    135deg,
+    var(--color-green-light),
+    var(--color-yellow-light),
+    var(--color-pink-light)
+  );
+  border-radius: var(--radius-xl);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  box-shadow:
+    var(--shadow-glow-rainbow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  animation: feedback-pop 0.5s var(--ease-elastic) both;
+  position: relative;
+  overflow: hidden;
+
+  /* Celebration shimmer on feedback */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.4) 50%, transparent 70%);
+    animation: feedback-shine 2.5s ease-in-out 0.5s infinite;
+    pointer-events: none;
+  }
+}
+
+
+/* ====== Back to Library Button ====== */
+.story-back-btn {
+  padding: var(--space-lg) var(--space-xl);
+  background: var(--gradient-magic);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-xl);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  min-height: var(--touch-comfortable);
+  transition:
+    transform var(--duration-fast) var(--ease-bounce),
+    box-shadow var(--duration-fast) var(--ease-smooth);
+  align-self: center;
+  box-shadow:
+    var(--shadow-md),
+    0 0 16px rgba(181, 126, 255, 0.35),
+    0 0 32px rgba(255, 143, 171, 0.15);
+  touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+
+  /* Shine sweep on back button */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.3) 50%, transparent 60%);
+    transform: translateX(-150%);
+    animation: btn-shine 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  &:active {
+    transform: scale(0.92) translateY(2px);
+    box-shadow: var(--shadow-sm), 0 0 8px rgba(181, 126, 255, 0.2);
+  }
+}

@@ -1,6 +1,9 @@
 pub const DB_NAME: &str = "dmb-almanac-rs";
-pub const DB_VERSION: u32 = 1;
-pub const LEGACY_DB_NAME: &str = "dmb-almanac";
+// Bump this whenever SCHEMA_V12_REFERENCE changes so existing clients get an upgrade transaction
+// that can create any newly-added stores/indexes.
+pub const DB_VERSION: u32 = 2;
+// Prior prototype DB name. Used only for one-time migration/cleanup during cutover.
+pub const PREVIOUS_DB_NAME: &str = "dmb-almanac";
 
 pub const TABLE_VENUES: &str = "venues";
 pub const TABLE_SONGS: &str = "songs";

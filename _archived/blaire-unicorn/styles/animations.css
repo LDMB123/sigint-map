@@ -1,0 +1,187 @@
+/* ==========================================================================
+   Animations - Blaire's Unicorn Adventure
+   Native CSS animations using modern properties for GPU-composited,
+   jank-free motion on all devices.
+   ========================================================================== */
+
+/* Animatable hue for sparkle pseudo-elements */
+@property --sparkle-hue {
+    syntax: '<number>';
+    initial-value: 330;
+    inherits: false;
+}
+
+/* --------------------------------------------------------------------------
+   Fade-in: generic entry animation
+   Uses scale property (not transform) for independent compositing.
+   -------------------------------------------------------------------------- */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        scale: 0.98;
+    }
+    to {
+        opacity: 1;
+        scale: 1;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Float: gentle hover for title card
+   Uses translate property for compositor-only animation (no layout trigger).
+   Added subtle rotation for extra whimsy.
+   -------------------------------------------------------------------------- */
+@keyframes float {
+    0%, 100% {
+        translate: 0 0;
+        rotate: 0deg;
+    }
+    25% {
+        translate: 0 -6px;
+        rotate: 0.5deg;
+    }
+    50% {
+        translate: 0 -10px;
+        rotate: 0deg;
+    }
+    75% {
+        translate: 0 -6px;
+        rotate: -0.5deg;
+    }
+}
+
+.title-card {
+    animation: float 6s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+
+    /* Sparkle pseudo-elements: purely decorative CSS sparkles */
+    position: relative;
+
+    &::before,
+    &::after {
+        content: '\2728'; /* Sparkle emoji */
+        position: absolute;
+        font-size: 1.4rem;
+        pointer-events: none;
+        opacity: 0;
+        animation: sparkle-float 4s ease-in-out infinite;
+
+        /* Animated hue shift via @property */
+        --sparkle-hue: 330;
+        filter: hue-rotate(calc(var(--sparkle-hue) * 1deg));
+
+        /* Performance: own compositing layer */
+        contain: layout style;
+        will-change: opacity, translate;
+    }
+
+    &::before {
+        top: -8px;
+        right: 12%;
+        animation-delay: 0s;
+    }
+
+    &::after {
+        bottom: -8px;
+        left: 12%;
+        animation-delay: 2s;
+        font-size: 1.1rem;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Sparkle Float: the pseudo-element sparkle lifecycle
+   Fades in, drifts up with rotation, fades out.
+   -------------------------------------------------------------------------- */
+@keyframes sparkle-float {
+    0% {
+        opacity: 0;
+        translate: 0 8px;
+        scale: 0.6;
+        --sparkle-hue: 330;
+    }
+    15% {
+        opacity: 0.9;
+        scale: 1;
+    }
+    50% {
+        opacity: 0.7;
+        translate: 0 -12px;
+        rotate: 15deg;
+        --sparkle-hue: 200;
+    }
+    85% {
+        opacity: 0.9;
+        scale: 1.1;
+        --sparkle-hue: 90;
+    }
+    100% {
+        opacity: 0;
+        translate: 0 -20px;
+        scale: 0.6;
+        rotate: -10deg;
+        --sparkle-hue: 330;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Score Bounce: triggers when kindness points increase
+   Applied via JS: element.classList.add('score-bump') then remove after anim.
+   -------------------------------------------------------------------------- */
+@keyframes score-bump {
+    0% {
+        scale: 1;
+    }
+    40% {
+        scale: 1.25;
+    }
+    70% {
+        scale: 0.95;
+    }
+    100% {
+        scale: 1;
+    }
+}
+
+.score-bump {
+    animation: score-bump 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* --------------------------------------------------------------------------
+   Collection Burst: plays when unicorn collects a friend
+   A quick scale + glow flash.
+   -------------------------------------------------------------------------- */
+@keyframes collect-burst {
+    0% {
+        scale: 1;
+        filter: brightness(1);
+    }
+    30% {
+        scale: 1.15;
+        filter: brightness(1.3);
+    }
+    100% {
+        scale: 1;
+        filter: brightness(1);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Button Breathe: subtle idle breathing for the play button
+   Uses scale + opacity for purely composited animation.
+   -------------------------------------------------------------------------- */
+@keyframes breathe {
+    0%, 100% {
+        scale: 1;
+        opacity: 1;
+    }
+    50% {
+        scale: 1.02;
+        opacity: 0.95;
+    }
+}
+
+.glass-button[href="#view-game"] {
+    animation:
+        button-glow 3s ease-in-out infinite,
+        breathe 4s ease-in-out infinite;
+}

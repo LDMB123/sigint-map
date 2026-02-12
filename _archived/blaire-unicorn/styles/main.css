@@ -1,0 +1,240 @@
+/* Animated gradient hue for rainbow shimmer title */
+@property --gradient-hue {
+    syntax: '<angle>';
+    initial-value: 330deg;
+    inherits: false;
+}
+
+:root {
+    /* Color scheme hint for UA styles (scrollbars, form controls, etc.) */
+    color-scheme: light;
+
+    /* Allow keyword values (auto, min-content) in calc-size() transitions */
+    interpolate-size: allow-keywords;
+
+    /* Liquid Glass Palette (OKLCH) */
+    --color-primary: oklch(85% 0.1 330);
+    /* Soft Pink */
+    --color-secondary: oklch(90% 0.05 280);
+    /* Lavender */
+    --color-accent: oklch(95% 0.15 90);
+    /* Gold/Yellow */
+    --color-glass: oklch(100% 0 0 / 0.25);
+    /* Translucent White */
+    --color-glass-border: oklch(100% 0 0 / 0.4);
+    --color-text: oklch(40% 0.1 280);
+    /* Deep Purple Text */
+
+    /* Spacing */
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --radius-lg: 24px;
+    --radius-pill: 999px;
+
+    /* Safe Area */
+    --safe-top: env(safe-area-inset-top, 20px);
+    --safe-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #FFD1DC;
+    /* Fallback */
+    background-image: url('../assets/forest_background.png');
+    background-size: cover;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    color: var(--color-text);
+    height: 100dvh;
+    width: 100vw;
+    overflow: hidden;
+    /* iOS 26 rubber-band prevention */
+    overscroll-behavior-y: none;
+    margin: 0;
+}
+
+#app-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.view {
+    display: none;
+    /* Hidden by default */
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    /* Performance: skip rendering offscreen views */
+    content-visibility: auto;
+    contain: layout style paint;
+}
+
+/* Zero-JS Routing Logic */
+.view:target {
+    display: block;
+    animation: fade-in 0.4s ease-out;
+}
+
+/* View Transitions — behind @supports so Safari <18 doesn't break the rule */
+@supports (view-transition-name: test) {
+    .view:target {
+        view-transition-name: main-view;
+    }
+
+    /* Per-element transitions for richer scene changes */
+    .title-card {
+        view-transition-name: title-card;
+    }
+
+    #game-canvas {
+        view-transition-name: game-canvas;
+    }
+
+    /* Transition animations */
+    ::view-transition-old(main-view) {
+        animation: fade-in 0.3s ease-out reverse;
+    }
+
+    ::view-transition-new(main-view) {
+        animation: fade-in 0.3s ease-out;
+    }
+
+    /* Title card zooms out when leaving home */
+    ::view-transition-old(title-card) {
+        animation: card-exit 0.3s cubic-bezier(0.4, 0, 1, 1);
+    }
+
+    /* Game canvas zooms in when entering */
+    ::view-transition-new(game-canvas) {
+        animation: canvas-enter 0.4s cubic-bezier(0, 0, 0.2, 1);
+    }
+}
+
+/* Default to Home if no hash */
+body:not(:has(:target)) #view-home {
+    display: block;
+}
+
+h1 {
+    font-size: 3rem;
+    line-height: 1.1;
+    text-align: center;
+    text-wrap: balance;
+    margin-bottom: var(--spacing-lg);
+
+    /* Animated rainbow gradient via @property */
+    --gradient-hue: 330deg;
+    background: linear-gradient(135deg,
+        oklch(100% 0 0),
+        oklch(85% 0.12 var(--gradient-hue)),
+        oklch(90% 0.10 calc(var(--gradient-hue) + 60deg)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+
+    animation: rainbow-shimmer 8s ease-in-out infinite;
+    contain: layout style;
+}
+
+@keyframes rainbow-shimmer {
+    0%, 100% { --gradient-hue: 330deg; }
+    25% { --gradient-hue: 270deg; }
+    50% { --gradient-hue: 200deg; }
+    75% { --gradient-hue: 90deg; }
+}
+
+#game-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+
+    /* GPU acceleration hint for Canvas 2D */
+    contain: strict;
+}
+
+#game-ui {
+    position: absolute;
+    top: var(--safe-top);
+    left: 0;
+    width: 100%;
+    padding: var(--spacing-md);
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+
+    /* Isolate overlay from canvas repaints */
+    contain: layout style;
+
+    & > * {
+        pointer-events: auto;
+    }
+}
+
+/* Container query: adapt home screen for small viewports */
+#view-home {
+    container-type: size;
+    container-name: home-view;
+}
+
+@container home-view (max-width: 360px) {
+    h1 {
+        font-size: 2.2rem;
+    }
+
+    .title-card {
+        padding: 24px;
+        gap: 16px;
+    }
+
+    .glass-button {
+        font-size: 1.2rem;
+        padding: 12px 24px;
+    }
+}
+
+/* Tall narrow screens: shift card up slightly */
+@container home-view (max-aspect-ratio: 9/20) {
+    .title-card {
+        top: 42%;
+    }
+}
+
+/* Narrative story blurb on home screen */
+.story-blurb {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--color-text);
+    opacity: 0.85;
+    max-width: 28ch;
+    margin: 0 auto;
+    text-wrap: balance;
+    font-style: italic;
+}
+
+@container home-view (max-width: 360px) {
+    .story-blurb {
+        font-size: 0.95rem;
+    }
+}
+
+@keyframes card-exit {
+    to {
+        scale: 0.85;
+        opacity: 0;
+    }
+}
+
+@keyframes canvas-enter {
+    from {
+        scale: 1.05;
+        opacity: 0;
+    }
+}

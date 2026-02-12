@@ -20,6 +20,10 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ============================================================================
 // Statistical Utilities
@@ -950,7 +954,7 @@ function main() {
 
   // Generate and save markdown report
   const markdown = generateMarkdownReport(report);
-  const outputPath = '/Users/louisherman/ClaudeCodeProjects/.claude/validation/STATISTICAL_PROOF.md';
+  const outputPath = path.join(__dirname, 'STATISTICAL_PROOF.md');
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, markdown);
@@ -960,7 +964,7 @@ function main() {
   console.log('='.repeat(80));
 
   // Save raw results as JSON
-  const rawDataPath = '/Users/louisherman/ClaudeCodeProjects/.claude/validation/raw-results.json';
+  const rawDataPath = path.join(__dirname, 'raw-results.json');
   fs.writeFileSync(rawDataPath, JSON.stringify({
     metadata: {
       timestamp: new Date().toISOString(),
