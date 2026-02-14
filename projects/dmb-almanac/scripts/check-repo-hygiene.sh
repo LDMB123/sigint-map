@@ -16,12 +16,35 @@ check_tracked_forbidden() {
   fi
 }
 
+check_required_file() {
+  local path="$1"
+  if [[ ! -f "$path" ]]; then
+    echo "repo-hygiene: error: required file missing: $path"
+    FAIL=1
+  fi
+}
+
 check_missing_legacy_root_file() {
   local path="$1"
   if [[ -e "$path" ]]; then
     echo "repo-hygiene: error: legacy root file should be archived, found: $path"
     FAIL=1
   fi
+}
+
+check_unexpected_root_markdown() {
+  while IFS= read -r path; do
+    local name
+    name="$(basename "$path")"
+    case "$name" in
+      README.md|CONTRIBUTING.md|CLAUDE.md|CONTEXT.md|STATUS.md)
+        ;;
+      *)
+        echo "repo-hygiene: error: unexpected root markdown file: $name"
+        FAIL=1
+        ;;
+    esac
+  done < <(find . -maxdepth 1 -type f -name '*.md' | sort)
 }
 
 echo "repo-hygiene: checking tracked generated-artifact paths"
@@ -36,6 +59,13 @@ echo "repo-hygiene: checking root-level legacy documentation clutter"
 check_missing_legacy_root_file "JSDOC_EXTRACTION_CHECKLIST.md"
 check_missing_legacy_root_file "JSDOC_EXTRACTION_INDEX.md"
 check_missing_legacy_root_file "JSDOC_EXTRACTION_SUMMARY.md"
+
+echo "repo-hygiene: checking expected top-level documentation files"
+check_required_file "data/README.md"
+check_required_file "e2e/README.md"
+
+echo "repo-hygiene: checking for unexpected root markdown files"
+check_unexpected_root_markdown
 
 if [[ $FAIL -ne 0 ]]; then
   echo "repo-hygiene: FAILED"

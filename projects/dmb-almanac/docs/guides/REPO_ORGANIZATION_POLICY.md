@@ -39,6 +39,12 @@ Dry-run preview:
 bash scripts/clean-workspace.sh --dry-run --include-generated-data
 ```
 
+Pristine gate:
+
+```bash
+bash scripts/pristine-check.sh
+```
+
 ## Integrity and Hygiene Checks
 
 Run locally:
@@ -57,4 +63,5 @@ CI workflow:
 - Keep repository root minimal: only active entrypoint docs and configs.
 - Archive obsolete docs under `docs/reports/_archived/`.
 - Keep a `README.md` landing page in each top-level `docs/*` section.
+- Keep `data/README.md` and `e2e/README.md` current for non-Rust top-level areas.
 - Keep `docs/INDEX.md` current when moving or adding docs.

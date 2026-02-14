@@ -28,6 +28,7 @@
 - `docs/guides/DMB_START_HERE.md`
 - `docs/guides/DEPLOYMENT_REFERENCE.md`
 - `docs/guides/REPO_ORGANIZATION_POLICY.md`
+- `docs/guides/QUALITY_ASSURANCE_STRATEGY.md`
 - `docs/ops/CUTOVER_RUNBOOK.md`
 - `docs/ops/ROLLBACK_RUNBOOK.md`
 - `docs/quick-references/QUICK_REFERENCE.md`

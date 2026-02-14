@@ -6,16 +6,12 @@ on:
     paths:
       - 'README.md'
       - 'CONTRIBUTING.md'
-      - 'docs/README.md'
-      - 'docs/INDEX.md'
-      - 'docs/guides/DMB_START_HERE.md'
-      - 'docs/guides/DEPLOYMENT_REFERENCE.md'
-      - 'docs/guides/REPO_ORGANIZATION_POLICY.md'
-      - 'docs/ops/CUTOVER_RUNBOOK.md'
-      - 'docs/ops/ROLLBACK_RUNBOOK.md'
-      - 'scripts/README.md'
-      - 'scripts/check-doc-integrity.py'
-      - 'scripts/check-repo-hygiene.sh'
+      - 'CONTEXT.md'
+      - 'STATUS.md'
+      - 'data/README.md'
+      - 'e2e/README.md'
+      - 'docs/**'
+      - 'scripts/**'
       - '.github/workflows/docs-integrity.yml'
       - '.gitignore'
 
@@ -32,8 +28,5 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run documentation link/path integrity checks
-        run: python3 scripts/check-doc-integrity.py
-
-      - name: Run repository hygiene checks
-        run: bash scripts/check-repo-hygiene.sh
+      - name: Run pristine integrity gate
+        run: bash scripts/pristine-check.sh

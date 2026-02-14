@@ -28,6 +28,7 @@ cargo run -p dmb_server
 | Remote E2E against running env | `BASE_URL=https://your-env bash scripts/cutover-remote-e2e.sh` |
 | Deploy helper (local) | `bash scripts/deploy.sh local` |
 | Docs + hygiene checks | `python3 scripts/check-doc-integrity.py && bash scripts/check-repo-hygiene.sh` |
+| Pristine gate (fast) | `bash scripts/pristine-check.sh` |
 | Clean generated artifacts | `bash scripts/clean-workspace.sh --include-generated-data` |
 
 ## Repository Layout
@@ -35,8 +36,8 @@ cargo run -p dmb_server
 | Path | Purpose |
 |---|---|
 | `rust/` | Rust workspace: app (`dmb_app`), server (`dmb_server`), IDB (`dmb_idb`), pipeline (`dmb_pipeline`) |
-| `data/static-data/` | Versioned static data artifacts (canonical checked-in data) |
-| `e2e/` | Playwright test harness |
+| `data/` | Canonical static data artifacts and dataset notes (see `data/README.md`) |
+| `e2e/` | Playwright test harness (see `e2e/README.md`) |
 | `scripts/` | Operational and verification scripts (see `scripts/README.md`) |
 | `docs/` | Architecture, runbooks, reports, migration docs (start at `docs/README.md`) |
 
@@ -47,6 +48,7 @@ cargo run -p dmb_server
 - Getting started guide: `docs/guides/DMB_START_HERE.md`
 - Cutover runbook: `docs/ops/CUTOVER_RUNBOOK.md`
 - Deployment reference: `docs/guides/DEPLOYMENT_REFERENCE.md`
+- QA strategy: `docs/guides/QUALITY_ASSURANCE_STRATEGY.md`
 - Repository organization policy: `docs/guides/REPO_ORGANIZATION_POLICY.md`
 
 ## Contributing

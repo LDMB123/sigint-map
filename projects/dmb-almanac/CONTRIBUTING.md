@@ -8,6 +8,8 @@
 
 ## Quality Gates
 
+Reference: `docs/guides/QUALITY_ASSURANCE_STRATEGY.md`
+
 ### Full Gate (recommended)
 
 ```bash
@@ -26,6 +28,12 @@ cargo run -p xtask -- verify
 ```bash
 python3 scripts/check-doc-integrity.py
 bash scripts/check-repo-hygiene.sh
+```
+
+### Pristine Gate (fast)
+
+```bash
+bash scripts/pristine-check.sh
 ```
 
 ### Remote E2E (running target env)
@@ -62,3 +70,4 @@ When editing docs:
 - [ ] Docs are updated for changed behavior.
 - [ ] No generated/local artifact files were added.
 - [ ] Docs/hygiene checks pass for doc or structure changes.
+- [ ] `bash scripts/pristine-check.sh` passes.
