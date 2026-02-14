@@ -21,6 +21,7 @@ DOC_PATTERNS = [
     "docs/guides/DEPLOYMENT_REFERENCE.md",
     "docs/guides/REPO_ORGANIZATION_POLICY.md",
     "docs/guides/QUALITY_ASSURANCE_STRATEGY.md",
+    "docs/guides/TOKEN_CONTEXT_WORKFLOW.md",
     "docs/ops/CUTOVER_RUNBOOK.md",
     "docs/ops/ROLLBACK_RUNBOOK.md",
     "scripts/README.md",
@@ -62,6 +63,7 @@ OPTIONAL_GENERATED_PREFIXES = (
     "rust/static/pkg/",
     "rust/static/data/",
     "rust/data/raw/",
+    "rust/aggregations/pkg/",
     "e2e/playwright-report/",
     "e2e/test-results/",
 )

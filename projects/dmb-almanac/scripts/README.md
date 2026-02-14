@@ -32,6 +32,7 @@
 | `scripts/check-repo-hygiene.sh` | Fail on tracked generated artifacts and legacy root clutter | `bash scripts/check-repo-hygiene.sh` |
 | `scripts/clean-workspace.sh` | Remove local runtime/build artifacts and optional generated data duplicates | `bash scripts/clean-workspace.sh --include-generated-data` |
 | `scripts/pristine-check.sh` | Run combined repo integrity checks with optional deep gates (`--with-rust-verify`, `--with-cutover-rehearsal`) | `bash scripts/pristine-check.sh` |
+| `scripts/token-context-report.py` | Generate approximate token budgets and recommended context packs for active docs | `python3 scripts/token-context-report.py --budget 12000` |
 
 ## Notes
 

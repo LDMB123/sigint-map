@@ -310,7 +310,7 @@ setInterval(() => {
 ### Documentation
 - Full audit: `MEMORY_MANAGEMENT_AUDIT.md`
 - Technical reference: `MEMORY_LEAK_SOURCES.md`
-- Memory patterns guide: `docs/memory/MEMORY_REFERENCE.md` (existing)
+- Memory patterns guide: `docs/reports/MEMORY_LEAK_SOURCES.md`
 
 ### Tools to Use
 - Chrome DevTools Memory panel

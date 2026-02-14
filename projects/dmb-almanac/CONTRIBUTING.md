@@ -36,6 +36,12 @@ bash scripts/check-repo-hygiene.sh
 bash scripts/pristine-check.sh
 ```
 
+### Token Context Report (docs-heavy changes)
+
+```bash
+python3 scripts/token-context-report.py --budget 12000
+```
+
 ### Remote E2E (running target env)
 
 ```bash

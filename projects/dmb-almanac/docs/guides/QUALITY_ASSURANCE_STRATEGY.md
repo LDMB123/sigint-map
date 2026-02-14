@@ -17,6 +17,12 @@ What it enforces:
 - Docs integrity (`scripts/check-doc-integrity.py`)
 - Repo hygiene (`scripts/check-repo-hygiene.sh`)
 
+Optional companion report for docs-heavy sessions:
+
+```bash
+python3 scripts/token-context-report.py --budget 12000
+```
+
 ### Tier 2: Engineering Gate
 
 Use before merging Rust or pipeline code.
@@ -61,4 +67,3 @@ The project should maintain a practical test distribution:
 - Run at least Tier 1 for all PRs.
 - Run Tier 2 for Rust code changes.
 - Use Tier 3 for release/cutover work.
-

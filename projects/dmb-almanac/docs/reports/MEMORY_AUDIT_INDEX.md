@@ -185,7 +185,7 @@ Detailed file:line references for every issue found.
 ## Resources
 
 ### Memory Management Patterns
-- Guide: `docs/memory/MEMORY_REFERENCE.md`
+- Guide: `docs/reports/MEMORY_LEAK_SOURCES.md`
 - Helpers: `src/lib/utils/memory-cleanup-helpers.js`
 
 ### Tools

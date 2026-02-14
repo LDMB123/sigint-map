@@ -30,3 +30,19 @@ jobs:
 
       - name: Run pristine integrity gate
         run: bash scripts/pristine-check.sh
+
+      - name: Generate token context reports
+        run: |
+          mkdir -p .tmp
+          python3 scripts/token-context-report.py --scope active --budget 12000 --json-output .tmp/token-context-active.json
+          python3 scripts/token-context-report.py --scope all-markdown --budget 12000 --json-output .tmp/token-context-all.json
+
+      - name: Upload token context reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: token-context-reports
+          path: |
+            .tmp/token-context-active.json
+            .tmp/token-context-all.json
+          retention-days: 7

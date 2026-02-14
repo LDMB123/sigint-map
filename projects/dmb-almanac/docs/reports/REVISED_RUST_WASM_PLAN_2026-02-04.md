@@ -71,7 +71,7 @@
 - Inventory high-LOC routes and consolidate summary strip patterns.
 - Normalize typography scale + spacing tokens before redesign.
 - Establish a11y test baseline (Playwright + axe).
-- See `docs/reports/UI_UX_REBUILD_PREP_2026-02-04.md` for route/component sizing.
+- See `docs/guides/UI_UX_MIGRATION_CHECKLIST.md` for route/component sizing guidance.
 
 ## Test Cases
 - SIMD required for analytics routes, base nav works without SIMD.

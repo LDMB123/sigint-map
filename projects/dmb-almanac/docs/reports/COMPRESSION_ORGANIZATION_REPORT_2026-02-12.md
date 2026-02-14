@@ -164,7 +164,7 @@
 - `docs/audits/` - Domain references
 - `docs/migration/` - Rust-first milestones
 - `docs/quick-references/` - Consolidated cheat sheets
-- `docs/_archived/` - Historical content properly archived
+- `docs/reports/_archived/` - Historical content properly archived
 
 **Existing summaries are appropriate**:
 - `ACCESSIBILITY_AUDIT_SUMMARY.md` - 15 lines (stub for Rust app)

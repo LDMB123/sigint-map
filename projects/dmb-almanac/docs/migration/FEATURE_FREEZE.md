@@ -3,7 +3,7 @@
 - Effective date: 2026-02-04
 - Scope: No new features. Only bug fixes, security fixes, and performance fixes allowed.
 - Applies to: UI, API routes, data schema, and scraper changes.
-- Exceptions: None without written approval in `docs/migration/MIGRATION_LOG.md`.
+- Exceptions: None without written approval tracked in `docs/migration/MIGRATION_MILESTONES.md`.
 - Required labels for any PR: `freeze-exception` (if applicable), `perf`, `security`, or `bug`.
 
 ## Rationale

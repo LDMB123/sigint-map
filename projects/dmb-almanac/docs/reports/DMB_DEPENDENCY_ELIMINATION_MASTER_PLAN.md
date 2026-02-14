@@ -80,7 +80,7 @@
 ### 2.2 topojson-client → Build-time Convert (3h, -4KB)
 
 - **Recommended**: Pre-convert at build time (Option A)
-- Create build script (e.g., `scripts/convert-topojson.js` - planned): read TopoJSON → `topojson.feature()` → write GeoJSON
+- Create a dedicated build conversion script (planned): read TopoJSON → `topojson.feature()` → write GeoJSON
 - Add to package.json: `"build:geo"` script, run in `prebuild`
 - Update `TourMap.svelte`: fetch `/data/us-states-geo.json` directly
 - Move topojson-client to devDependencies

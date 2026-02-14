@@ -29,6 +29,7 @@ cargo run -p dmb_server
 | Deploy helper (local) | `bash scripts/deploy.sh local` |
 | Docs + hygiene checks | `python3 scripts/check-doc-integrity.py && bash scripts/check-repo-hygiene.sh` |
 | Pristine gate (fast) | `bash scripts/pristine-check.sh` |
+| Token context report | `python3 scripts/token-context-report.py --budget 12000` |
 | Clean generated artifacts | `bash scripts/clean-workspace.sh --include-generated-data` |
 
 ## Repository Layout
@@ -49,6 +50,7 @@ cargo run -p dmb_server
 - Cutover runbook: `docs/ops/CUTOVER_RUNBOOK.md`
 - Deployment reference: `docs/guides/DEPLOYMENT_REFERENCE.md`
 - QA strategy: `docs/guides/QUALITY_ASSURANCE_STRATEGY.md`
+- Token workflow: `docs/guides/TOKEN_CONTEXT_WORKFLOW.md`
 - Repository organization policy: `docs/guides/REPO_ORGANIZATION_POLICY.md`
 
 ## Contributing

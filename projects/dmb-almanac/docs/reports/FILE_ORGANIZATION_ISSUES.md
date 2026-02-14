@@ -119,7 +119,7 @@
 - `docs/reports/` - Roadmap, performance, security
 - `docs/audits/` - Domain references (chromium, database, security)
 - `docs/migration/` - Rust-first milestones
-- `docs/_archived/` - Historical files properly archived
+- `docs/reports/_archived/` - Historical files properly archived
 
 **Existing summaries** (no compression needed):
 - `ACCESSIBILITY_AUDIT_SUMMARY.md` (15 lines) - stub for Rust app

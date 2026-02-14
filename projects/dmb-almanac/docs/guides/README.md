@@ -8,6 +8,7 @@ Guides are task-oriented docs for day-to-day development and operations.
 - `docs/guides/DEPLOYMENT_REFERENCE.md`
 - `docs/guides/REPO_ORGANIZATION_POLICY.md`
 - `docs/guides/QUALITY_ASSURANCE_STRATEGY.md`
+- `docs/guides/TOKEN_CONTEXT_WORKFLOW.md`
 
 ## Additional Guides
 
