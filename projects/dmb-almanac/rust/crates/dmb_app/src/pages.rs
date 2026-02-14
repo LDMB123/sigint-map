@@ -142,6 +142,101 @@ pub fn static_page(title: &'static str) -> impl IntoView {
     }
 }
 
+#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WebgpuRuntimeTelemetry {
+    #[serde(default)]
+    counters: std::collections::HashMap<String, u64>,
+    #[serde(default)]
+    last_event: Option<String>,
+    #[serde(default)]
+    last_event_ts: Option<f64>,
+}
+
+#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AppleSiliconWorkgroup {
+    #[serde(default)]
+    dot: Option<usize>,
+    #[serde(default)]
+    score: Option<usize>,
+}
+
+#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AppleSiliconWorkerProfile {
+    #[serde(default)]
+    threshold_floats: Option<usize>,
+    #[serde(default)]
+    max_floats: Option<usize>,
+}
+
+#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AppleSiliconProfile {
+    #[serde(default)]
+    is_apple_silicon: bool,
+    #[serde(default)]
+    cpu_cores: Option<f64>,
+    #[serde(default)]
+    device_memory_gb: Option<f64>,
+    #[serde(default)]
+    workgroup: Option<AppleSiliconWorkgroup>,
+    #[serde(default)]
+    worker: Option<AppleSiliconWorkerProfile>,
+}
+
+#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct IdbRuntimeMetrics {
+    #[serde(default)]
+    open_blocked_count: u64,
+    #[serde(default)]
+    open_blocked_last_ms: Option<f64>,
+    #[serde(default)]
+    version_change_count: u64,
+    #[serde(default)]
+    version_change_last_ms: Option<f64>,
+}
+
+#[cfg(feature = "hydrate")]
+fn call_window_helper(function_name: &str) -> Option<JsValue> {
+    let window = web_sys::window()?;
+    let helper = js_sys::Reflect::get(&window, &JsValue::from_str(function_name)).ok()?;
+    if !helper.is_function() {
+        return None;
+    }
+    helper
+        .dyn_into::<js_sys::Function>()
+        .ok()?
+        .call0(&JsValue::NULL)
+        .ok()
+}
+
+#[cfg(feature = "hydrate")]
+fn load_webgpu_runtime_telemetry() -> Option<WebgpuRuntimeTelemetry> {
+    let value = call_window_helper("dmbGetWebgpuTelemetry")?;
+    serde_wasm_bindgen::from_value(value).ok()
+}
+
+#[cfg(feature = "hydrate")]
+fn reset_webgpu_runtime_telemetry() {
+    let _ = call_window_helper("dmbResetWebgpuTelemetry");
+}
+
+#[cfg(feature = "hydrate")]
+fn load_apple_silicon_profile() -> Option<AppleSiliconProfile> {
+    let value = call_window_helper("dmbGetAppleSiliconProfile")?;
+    serde_wasm_bindgen::from_value(value).ok()
+}
+
+#[cfg(feature = "hydrate")]
+fn load_idb_runtime_metrics() -> Option<IdbRuntimeMetrics> {
+    dmb_idb::js_idb_runtime_metrics()
+        .ok()
+        .and_then(|value| serde_wasm_bindgen::from_value(value).ok())
+}
+
 pub fn ai_diagnostics_page() -> impl IntoView {
     // Keep the initial render deterministic for hydration; client-only detection runs post-mount.
     let caps = RwSignal::new(crate::ai::AiCapabilities::default());
@@ -178,6 +273,9 @@ pub fn ai_diagnostics_page() -> impl IntoView {
     let webgpu_probe = RwSignal::new(None::<bool>);
     let sqlite_parity = RwSignal::new(None::<crate::data::SqliteParityReport>);
     let integrity_report = RwSignal::new(None::<crate::data::IntegrityReport>);
+    let webgpu_runtime = RwSignal::new(None::<WebgpuRuntimeTelemetry>);
+    let apple_silicon_profile = RwSignal::new(None::<AppleSiliconProfile>);
+    let idb_runtime_metrics = RwSignal::new(None::<IdbRuntimeMetrics>);
 
     #[cfg(feature = "hydrate")]
     {
@@ -207,6 +305,9 @@ pub fn ai_diagnostics_page() -> impl IntoView {
         let worker_threshold_input_signal = worker_threshold_input.clone();
         let webgpu_disabled_signal = webgpu_disabled.clone();
         let mismatch_signal = ai_config_mismatch.clone();
+        let webgpu_runtime_signal = webgpu_runtime.clone();
+        let apple_silicon_profile_signal = apple_silicon_profile.clone();
+        let idb_runtime_metrics_signal = idb_runtime_metrics.clone();
         request_animation_frame(move || {
             caps_signal.set(crate::ai::detect_ai_capabilities());
 
@@ -229,6 +330,9 @@ pub fn ai_diagnostics_page() -> impl IntoView {
             embedding_sample_enabled_signal.set(crate::ai::embedding_sample_enabled());
             ai_warnings_signal.set(crate::ai::load_ai_warning_events());
             worker_bench_timestamp_signal.set(crate::ai::webgpu_worker_bench_timestamp());
+            webgpu_runtime_signal.set(load_webgpu_runtime_telemetry());
+            apple_silicon_profile_signal.set(load_apple_silicon_profile());
+            idb_runtime_metrics_signal.set(load_idb_runtime_metrics());
 
             if let Some(window) = web_sys::window() {
                 if let Ok(value) =
@@ -414,6 +518,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                 let worker_threshold_current = worker_threshold_current.clone();
                 let worker_threshold_input = worker_threshold_input.clone();
                 let worker_failure = worker_failure.clone();
+                let webgpu_runtime = webgpu_runtime.clone();
                 spawn_local(async move {
                     let result = crate::ai::benchmark_worker_threshold().await;
                     worker_signal.set(result.clone());
@@ -423,8 +528,42 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                     worker_threshold_current.set(current);
                     worker_threshold_input.set(current.map(|v| v.to_string()).unwrap_or_default());
                     worker_failure.set(crate::ai::worker_failure_status());
+                    webgpu_runtime.set(load_webgpu_runtime_telemetry());
                 });
             }
+        }
+    };
+
+    let refresh_runtime_metrics = {
+        #[cfg(feature = "hydrate")]
+        {
+            let webgpu_runtime = webgpu_runtime.clone();
+            let apple_silicon_profile = apple_silicon_profile.clone();
+            let idb_runtime_metrics = idb_runtime_metrics.clone();
+            move |_| {
+                webgpu_runtime.set(load_webgpu_runtime_telemetry());
+                apple_silicon_profile.set(load_apple_silicon_profile());
+                idb_runtime_metrics.set(load_idb_runtime_metrics());
+            }
+        }
+        #[cfg(not(feature = "hydrate"))]
+        {
+            move |_| {}
+        }
+    };
+
+    let reset_runtime_metrics = {
+        #[cfg(feature = "hydrate")]
+        {
+            let webgpu_runtime = webgpu_runtime.clone();
+            move |_| {
+                reset_webgpu_runtime_telemetry();
+                webgpu_runtime.set(load_webgpu_runtime_telemetry());
+            }
+        }
+        #[cfg(not(feature = "hydrate"))]
+        {
+            move |_| {}
         }
     };
 
@@ -449,6 +588,12 @@ pub fn ai_diagnostics_page() -> impl IntoView {
         let cross_origin_isolated = cross_origin_isolated.clone();
         #[cfg(feature = "hydrate")]
         let history = benchmark_history.clone();
+        #[cfg(feature = "hydrate")]
+        let webgpu_runtime = webgpu_runtime.clone();
+        #[cfg(feature = "hydrate")]
+        let apple_silicon_profile = apple_silicon_profile.clone();
+        #[cfg(feature = "hydrate")]
+        let idb_runtime_metrics = idb_runtime_metrics.clone();
         move |_| {
             #[cfg(feature = "hydrate")]
             {
@@ -484,6 +629,9 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                         "tuningResult": tuning_result.get_untracked(),
                         "benchmarkHistory": history_snapshot,
                         "benchmarkDiff": benchmark_diff,
+                        "webgpuRuntimeTelemetry": webgpu_runtime.get_untracked(),
+                        "appleSiliconProfile": apple_silicon_profile.get_untracked(),
+                        "idbRuntimeMetrics": idb_runtime_metrics.get_untracked(),
                         "crossOriginIsolated": cross_origin_isolated.get_untracked(),
                         "workerThresholdOverride": window.local_storage().ok().and_then(|s| s.and_then(|s| s.get_item("dmb-webgpu-worker-threshold").ok().flatten())),
                         "workerMaxFloats": crate::ai::worker_max_floats_value(),
@@ -849,6 +997,174 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                             view! { <ul class="list">{items.collect_view()}</ul> }.into_any()
                         }
                     }}
+                </div>
+                <div class="card">
+                    <h2>"WebGPU Runtime"</h2>
+                    {move || {
+                        webgpu_runtime
+                            .get()
+                            .map(|telemetry| {
+                                let direct_calls = telemetry
+                                    .counters
+                                    .get("direct_scores_calls")
+                                    .copied()
+                                    .unwrap_or(0);
+                                let worker_success = telemetry
+                                    .counters
+                                    .get("worker_success")
+                                    .copied()
+                                    .unwrap_or(0);
+                                let worker_fallback = telemetry
+                                    .counters
+                                    .get("worker_fallback_runtime_failed")
+                                    .copied()
+                                    .unwrap_or(0)
+                                    + telemetry
+                                        .counters
+                                        .get("worker_fallback_init_failed")
+                                        .copied()
+                                        .unwrap_or(0);
+                                let subset_success = telemetry
+                                    .counters
+                                    .get("subset_worker_success")
+                                    .copied()
+                                    .unwrap_or(0);
+                                let last_event =
+                                    telemetry.last_event.unwrap_or_else(|| "none".to_string());
+                                let last_event_age = telemetry
+                                    .last_event_ts
+                                    .map(|ts| {
+                                        let minutes = (js_sys::Date::now() - ts) / 60000.0;
+                                        format!("{:.1}m ago", minutes.max(0.0))
+                                    })
+                                    .unwrap_or_else(|| "n/a".to_string());
+                                view! {
+                                    <ul class="list">
+                                        <li>{format!("Direct score calls: {direct_calls}")}</li>
+                                        <li>{format!("Worker successes: {worker_success}")}</li>
+                                        <li>{format!("Worker fallback errors: {worker_fallback}")}</li>
+                                        <li>{format!("Subset worker successes: {subset_success}")}</li>
+                                        <li>{format!("Last event: {last_event}")}</li>
+                                        <li>{format!("Last event age: {last_event_age}")}</li>
+                                    </ul>
+                                }
+                                .into_any()
+                            })
+                            .unwrap_or_else(|| {
+                                view! { <p class="muted">"Runtime telemetry unavailable."</p> }
+                                    .into_any()
+                            })
+                    }}
+                    <div class="pill-row">
+                        <button class="pill pill--ghost" on:click=refresh_runtime_metrics>
+                            "Refresh Runtime Metrics"
+                        </button>
+                        <button class="pill pill--ghost" on:click=reset_runtime_metrics>
+                            "Reset WebGPU Metrics"
+                        </button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>"Apple Silicon Profile"</h2>
+                    {move || {
+                        apple_silicon_profile
+                            .get()
+                            .map(|profile| {
+                                let workgroup_dot = profile
+                                    .workgroup
+                                    .as_ref()
+                                    .and_then(|group| group.dot)
+                                    .map(|v| v.to_string())
+                                    .unwrap_or_else(|| "n/a".to_string());
+                                let workgroup_score = profile
+                                    .workgroup
+                                    .as_ref()
+                                    .and_then(|group| group.score)
+                                    .map(|v| v.to_string())
+                                    .unwrap_or_else(|| "n/a".to_string());
+                                let threshold = profile
+                                    .worker
+                                    .as_ref()
+                                    .and_then(|worker| worker.threshold_floats)
+                                    .map(|v| v.to_string())
+                                    .unwrap_or_else(|| "n/a".to_string());
+                                let max_floats = profile
+                                    .worker
+                                    .as_ref()
+                                    .and_then(|worker| worker.max_floats)
+                                    .map(|v| v.to_string())
+                                    .unwrap_or_else(|| "n/a".to_string());
+                                view! {
+                                    <ul class="list">
+                                        <li>{format!(
+                                            "Apple Silicon detected: {}",
+                                            if profile.is_apple_silicon { "yes" } else { "no" }
+                                        )}</li>
+                                        <li>{format!(
+                                            "CPU cores: {}",
+                                            profile
+                                                .cpu_cores
+                                                .map(|v| format!("{v:.0}"))
+                                                .unwrap_or_else(|| "n/a".to_string())
+                                        )}</li>
+                                        <li>{format!(
+                                            "Device memory: {}",
+                                            profile
+                                                .device_memory_gb
+                                                .map(|v| format!("{v:.1} GB"))
+                                                .unwrap_or_else(|| "n/a".to_string())
+                                        )}</li>
+                                        <li>{format!("Workgroup dot: {workgroup_dot}")}</li>
+                                        <li>{format!("Workgroup score: {workgroup_score}")}</li>
+                                        <li>{format!("Worker threshold: {threshold}")}</li>
+                                        <li>{format!("Worker max floats: {max_floats}")}</li>
+                                    </ul>
+                                }
+                                .into_any()
+                            })
+                            .unwrap_or_else(|| {
+                                view! { <p class="muted">"Profile unavailable."</p> }.into_any()
+                            })
+                    }}
+                </div>
+                <div class="card">
+                    <h2>"IndexedDB Runtime"</h2>
+                    {move || {
+                        idb_runtime_metrics
+                            .get()
+                            .map(|metrics| {
+                                let blocked_age = metrics
+                                    .open_blocked_last_ms
+                                    .map(|ts| {
+                                        let minutes = (js_sys::Date::now() - ts) / 60000.0;
+                                        format!("{:.1}m ago", minutes.max(0.0))
+                                    })
+                                    .unwrap_or_else(|| "n/a".to_string());
+                                let version_age = metrics
+                                    .version_change_last_ms
+                                    .map(|ts| {
+                                        let minutes = (js_sys::Date::now() - ts) / 60000.0;
+                                        format!("{:.1}m ago", minutes.max(0.0))
+                                    })
+                                    .unwrap_or_else(|| "n/a".to_string());
+                                view! {
+                                    <ul class="list">
+                                        <li>{format!("Open blocked events: {}", metrics.open_blocked_count)}</li>
+                                        <li>{format!("Last open blocked: {blocked_age}")}</li>
+                                        <li>{format!("Version change events: {}", metrics.version_change_count)}</li>
+                                        <li>{format!("Last version change: {version_age}")}</li>
+                                    </ul>
+                                }
+                                .into_any()
+                            })
+                            .unwrap_or_else(|| {
+                                view! { <p class="muted">"Runtime metrics unavailable."</p> }
+                                    .into_any()
+                            })
+                    }}
+                    <button class="pill pill--ghost" on:click=refresh_runtime_metrics>
+                        "Refresh Runtime Metrics"
+                    </button>
                 </div>
                 <div class="card">
                     <h2>"ANN Index"</h2>

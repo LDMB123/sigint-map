@@ -20,7 +20,7 @@ cfg_if::cfg_if! {
             CursorDirection, Database, DatabaseEvent, Factory, IndexParams, KeyPath, KeyRange,
             ObjectStoreParams, Query, TransactionMode,
         };
-        use js_sys::{Array, Function, Reflect};
+        use js_sys::{Array, Date, Function, Reflect};
         use std::cmp::Ordering;
         use wasm_bindgen::{JsCast, JsValue};
         use wasm_bindgen_futures::JsFuture;
@@ -43,7 +43,7 @@ cfg_if::cfg_if! {
 
         #[derive(Debug, Clone)]
         struct IndexSpec {
-            name: &'static str,
+            name: String,
             key_path: KeyPath,
             unique: bool,
             multi_entry: bool,
@@ -89,14 +89,14 @@ cfg_if::cfg_if! {
                     let inner = &name_token[1..name_token.len() - 1];
                     let fields: Vec<&str> = inner.split('+').map(|s| s.trim()).collect();
                     indexes.push(IndexSpec {
-                        name: Box::leak(inner.to_string().into_boxed_str()),
+                        name: inner.to_string(),
                         key_path: KeyPath::new_array(fields),
                         unique,
                         multi_entry,
                     });
                 } else {
                     indexes.push(IndexSpec {
-                        name: Box::leak(name_token.to_string().into_boxed_str()),
+                        name: name_token.to_string(),
                         key_path: KeyPath::new_single(name_token),
                         unique,
                         multi_entry,
@@ -133,15 +133,65 @@ cfg_if::cfg_if! {
                 params.unique(index.unique);
                 params.multi_entry(index.multi_entry);
                 store
-                    .create_index(index.name, index.key_path.clone(), Some(params))
+                    .create_index(&index.name, index.key_path.clone(), Some(params))
                     .js()?;
             }
             Ok(())
         }
 
+        const IDB_OPEN_BLOCKED_COUNT_KEY: &str = "dmb-idb-open-blocked-count";
+        const IDB_OPEN_BLOCKED_LAST_KEY: &str = "dmb-idb-open-blocked-last";
+        const IDB_VERSIONCHANGE_COUNT_KEY: &str = "dmb-idb-versionchange-count";
+        const IDB_VERSIONCHANGE_LAST_KEY: &str = "dmb-idb-versionchange-last";
+
+        fn with_local_storage(mut f: impl FnMut(&web_sys::Storage)) {
+            let Some(window) = web_sys::window() else {
+                return;
+            };
+            let Ok(Some(storage)) = window.local_storage() else {
+                return;
+            };
+            f(&storage);
+        }
+
+        fn read_storage_u64(key: &str) -> u64 {
+            let mut current = 0;
+            with_local_storage(|storage| {
+                current = storage
+                    .get_item(key)
+                    .ok()
+                    .flatten()
+                    .and_then(|raw| raw.parse::<u64>().ok())
+                    .unwrap_or(0);
+            });
+            current
+        }
+
+        fn write_storage_value(key: &str, value: &str) {
+            with_local_storage(|storage| {
+                let _ = storage.set_item(key, value);
+            });
+        }
+
+        fn bump_storage_counter(key: &str) {
+            let next = read_storage_u64(key).saturating_add(1);
+            write_storage_value(key, &next.to_string());
+        }
+
         pub async fn open_db() -> Result<Database> {
             let factory = Factory::new().js()?;
             let mut request = factory.open(DB_NAME, Some(DB_VERSION)).js()?;
+
+            request.on_blocked(|event| {
+                bump_storage_counter(IDB_OPEN_BLOCKED_COUNT_KEY);
+                write_storage_value(IDB_OPEN_BLOCKED_LAST_KEY, &Date::now().to_string());
+                web_sys::console::warn_1(&JsValue::from_str(&format!(
+                    "[IDB] open blocked for `{}`: old_version={:?} new_version={:?}. Close other tabs using the app.",
+                    DB_NAME,
+                    event.old_version().ok(),
+                    event.new_version().ok().flatten()
+                )));
+            });
 
             request.on_upgrade_needed(|event| {
                 let db = match event.database() {
@@ -166,7 +216,18 @@ cfg_if::cfg_if! {
                 }
             });
 
-            let db = request.await.js()?;
+            let mut db = request.await.js()?;
+            db.on_version_change(|event| {
+                bump_storage_counter(IDB_VERSIONCHANGE_COUNT_KEY);
+                write_storage_value(IDB_VERSIONCHANGE_LAST_KEY, &Date::now().to_string());
+                if let Ok(database) = event.database() {
+                    database.close();
+                }
+                web_sys::console::warn_1(&JsValue::from_str(&format!(
+                    "[IDB] versionchange received for `{}`. Closed stale connection; refresh if needed.",
+                    DB_NAME
+                )));
+            });
             Ok(db)
         }
 
@@ -1040,9 +1101,70 @@ cfg_if::cfg_if! {
                 .await
                 .map_err(|e| JsValue::from_str(&format!("{e:?}")))
         }
+
+        #[wasm_bindgen]
+        pub fn js_idb_runtime_metrics() -> std::result::Result<JsValue, JsValue> {
+            let blocked_count = read_storage_u64(IDB_OPEN_BLOCKED_COUNT_KEY);
+            let blocked_last = {
+                let mut value = None;
+                with_local_storage(|storage| {
+                    value = storage.get_item(IDB_OPEN_BLOCKED_LAST_KEY).ok().flatten();
+                });
+                value
+            };
+            let versionchange_count = read_storage_u64(IDB_VERSIONCHANGE_COUNT_KEY);
+            let versionchange_last = {
+                let mut value = None;
+                with_local_storage(|storage| {
+                    value = storage.get_item(IDB_VERSIONCHANGE_LAST_KEY).ok().flatten();
+                });
+                value
+            };
+
+            let metrics = js_sys::Object::new();
+            Reflect::set(
+                &metrics,
+                &JsValue::from_str("openBlockedCount"),
+                &JsValue::from_f64(blocked_count as f64),
+            )
+            .js()?;
+            Reflect::set(
+                &metrics,
+                &JsValue::from_str("openBlockedLastMs"),
+                &blocked_last
+                    .as_ref()
+                    .and_then(|value| value.parse::<f64>().ok())
+                    .map(JsValue::from_f64)
+                    .unwrap_or(JsValue::NULL),
+            )
+            .js()?;
+            Reflect::set(
+                &metrics,
+                &JsValue::from_str("versionChangeCount"),
+                &JsValue::from_f64(versionchange_count as f64),
+            )
+            .js()?;
+            Reflect::set(
+                &metrics,
+                &JsValue::from_str("versionChangeLastMs"),
+                &versionchange_last
+                    .as_ref()
+                    .and_then(|value| value.parse::<f64>().ok())
+                    .map(JsValue::from_f64)
+                    .unwrap_or(JsValue::NULL),
+            )
+            .js()?;
+            Ok(metrics.into())
+        }
     } else {
         pub async fn open_db() -> Result<(), JsValue> {
             Err(JsValue::from_str("IndexedDB not available on server"))
+        }
+
+        pub fn js_idb_runtime_metrics() -> std::result::Result<JsValue, JsValue> {
+            Err(JsValue::from_str(
+                "IndexedDB runtime metrics only available in wasm32",
+            ))
         }
 
         pub async fn get_show(_id: i32) -> Result<Option<Show>, JsValue> {

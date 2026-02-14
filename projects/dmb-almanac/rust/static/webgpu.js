@@ -9,6 +9,7 @@ const WORKER_FAIL_COOLDOWN_MS = 10 * 60 * 1000;
 const WORKER_THRESHOLD_MIN = 5000;
 const WORKER_THRESHOLD_MAX = 1000000;
 const WORKER_MAX_FLOATS_FALLBACK = 2000000;
+const DEFAULT_WORKGROUP_SIZE = 64;
 let workerThresholdFloats = DEFAULT_WORKER_MIN_FLOATS;
 let workerMaxFloats = WORKER_MAX_FLOATS_FALLBACK;
 let workerFailureUntil = 0;
@@ -17,11 +18,72 @@ const WORKER_FAILURE_UNTIL_KEY = 'dmb-webgpu-worker-failure-until';
 
 let devicePromise = null;
 let cachedDevice = null;
+let dotPipelineCache = null;
+let scorePipelineCache = null;
+const WEBGPU_METRIC_PREFIX = 'dmb-webgpu-metric-';
+const WEBGPU_METRIC_LAST_KEY = `${WEBGPU_METRIC_PREFIX}last`;
+const WEBGPU_METRIC_LAST_TS_KEY = `${WEBGPU_METRIC_PREFIX}last-ts`;
+const WEBGPU_METRIC_KEYS = [
+  'direct_scores_calls',
+  'worker_success',
+  'worker_failure_marked',
+  'worker_fallback_cooldown',
+  'worker_fallback_maxfloats',
+  'worker_fallback_below_threshold',
+  'worker_fallback_worker_unavailable',
+  'worker_fallback_init_failed',
+  'worker_fallback_runtime_failed',
+  'subset_worker_success',
+  'subset_worker_fallback_cooldown',
+  'subset_worker_fallback_maxfloats',
+  'subset_worker_fallback_below_threshold',
+  'subset_worker_fallback_worker_unavailable',
+  'subset_worker_fallback_init_failed',
+  'subset_worker_fallback_runtime_failed'
+];
+
+function getHardwareProfile() {
+  try {
+    return {
+      cores: Number(root?.navigator?.hardwareConcurrency || 4),
+      memoryGb: Number(root?.navigator?.deviceMemory || 0),
+    };
+  } catch (err) {
+    return { cores: 4, memoryGb: 0 };
+  }
+}
+
+function detectAppleSilicon() {
+  try {
+    const platform = root?.navigator?.platform || '';
+    const ua = root?.navigator?.userAgent || '';
+    const isMac = /Mac/.test(platform) || /macOS/i.test(ua);
+    const looksIntel = /Intel/.test(platform) || /x86_64|i[3-6]86/i.test(ua);
+    return isMac && !looksIntel;
+  } catch (err) {
+    return false;
+  }
+}
+
+const IS_APPLE_SILICON = detectAppleSilicon();
+const DOT_WORKGROUP_SIZE = IS_APPLE_SILICON ? 256 : DEFAULT_WORKGROUP_SIZE;
+const SCORE_WORKGROUP_SIZE = IS_APPLE_SILICON ? 256 : DEFAULT_WORKGROUP_SIZE;
+
+function resetGpuState() {
+  cachedDevice = null;
+  devicePromise = null;
+  dotPipelineCache = null;
+  scorePipelineCache = null;
+}
 
 function computeDefaultWorkerThreshold() {
   try {
-    const cores = root?.navigator?.hardwareConcurrency || 4;
-    const memory = root?.navigator?.deviceMemory || 0;
+    const { cores, memoryGb: memory } = getHardwareProfile();
+    if (IS_APPLE_SILICON) {
+      if (memory >= 16 || cores >= 10) return 12000;
+      if (memory >= 8 || cores >= 8) return 18000;
+      return 26000;
+    }
     if (memory >= 16 || cores >= 12) return 15000;
     if (memory <= 4 || cores <= 4) return 60000;
     if (memory >= 8 || cores >= 8) return 25000;
@@ -33,7 +95,13 @@ function computeDefaultWorkerThreshold() {
 
 function computeWorkerMaxFloats() {
   try {
-    const memory = root?.navigator?.deviceMemory || 0;
+    const { memoryGb: memory } = getHardwareProfile();
+    if (IS_APPLE_SILICON) {
+      if (memory >= 16) return 5000000;
+      if (memory >= 8) return 3500000;
+      if (memory >= 4) return 2200000;
+      return 1400000;
+    }
     if (memory >= 16) return 4000000;
     if (memory >= 8) return 2500000;
     if (memory >= 4) return 1500000;
@@ -46,6 +114,66 @@ function computeWorkerMaxFloats() {
 function clampWorkerThreshold(value) {
   if (!Number.isFinite(value)) return DEFAULT_WORKER_MIN_FLOATS;
   return Math.min(Math.max(Math.floor(value), WORKER_THRESHOLD_MIN), WORKER_THRESHOLD_MAX);
+}
+
+function metricKey(name) {
+  return `${WEBGPU_METRIC_PREFIX}${name}`;
+}
+
+function readMetricCounter(name) {
+  try {
+    if (!root.localStorage) return 0;
+    const value = Number(root.localStorage.getItem(metricKey(name)) || '0');
+    return Number.isFinite(value) ? value : 0;
+  } catch (err) {
+    return 0;
+  }
+}
+
+function bumpMetricCounter(name) {
+  try {
+    if (!root.localStorage) return;
+    const key = metricKey(name);
+    const current = Number(root.localStorage.getItem(key) || '0');
+    const next = (Number.isFinite(current) ? current : 0) + 1;
+    root.localStorage.setItem(key, String(next));
+    root.localStorage.setItem(WEBGPU_METRIC_LAST_KEY, name);
+    root.localStorage.setItem(WEBGPU_METRIC_LAST_TS_KEY, String(Date.now()));
+  } catch (err) {
+    // ignore
+  }
+}
+
+function getWebgpuTelemetry() {
+  const counters = {};
+  for (const name of WEBGPU_METRIC_KEYS) {
+    counters[name] = readMetricCounter(name);
+  }
+  let lastEvent = null;
+  let lastEventTs = null;
+  try {
+    if (root.localStorage) {
+      lastEvent = root.localStorage.getItem(WEBGPU_METRIC_LAST_KEY);
+      const rawTs = Number(root.localStorage.getItem(WEBGPU_METRIC_LAST_TS_KEY) || '0');
+      lastEventTs = Number.isFinite(rawTs) && rawTs > 0 ? rawTs : null;
+    }
+  } catch (err) {
+    // ignore
+  }
+  return { counters, lastEvent, lastEventTs };
+}
+
+function resetWebgpuTelemetry() {
+  try {
+    if (!root.localStorage) return;
+    for (const name of WEBGPU_METRIC_KEYS) {
+      root.localStorage.removeItem(metricKey(name));
+    }
+    root.localStorage.removeItem(WEBGPU_METRIC_LAST_KEY);
+    root.localStorage.removeItem(WEBGPU_METRIC_LAST_TS_KEY);
+  } catch (err) {
+    // ignore
+  }
 }
 
 function loadWorkerThreshold() {
@@ -71,6 +199,7 @@ function loadWorkerFailureUntil() {
 }
 
 function markWorkerFailure(reason) {
+  bumpMetricCounter('worker_failure_marked');
   const next = Date.now() + WORKER_FAIL_COOLDOWN_MS;
   workerFailureUntil = next;
   try {
@@ -143,6 +272,24 @@ root.dmbGetWorkerLimits = function dmbGetWorkerLimits() {
     maxFloats: workerMaxFloats
   };
 };
+root.dmbGetWebgpuTelemetry = getWebgpuTelemetry;
+root.dmbResetWebgpuTelemetry = resetWebgpuTelemetry;
+root.dmbGetAppleSiliconProfile = function dmbGetAppleSiliconProfile() {
+  const profile = getHardwareProfile();
+  return {
+    isAppleSilicon: IS_APPLE_SILICON,
+    cpuCores: profile.cores,
+    deviceMemoryGb: profile.memoryGb,
+    workgroup: {
+      dot: DOT_WORKGROUP_SIZE,
+      score: SCORE_WORKGROUP_SIZE,
+    },
+    worker: {
+      thresholdFloats: workerThresholdFloats,
+      maxFloats: workerMaxFloats,
+    },
+  };
+};
 
 root.dmbWarmWebgpuWorker = async function dmbWarmWebgpuWorker() {
   const state = ensureWorker();
@@ -184,16 +331,105 @@ async function ensureDevice() {
     if (!adapter) return null;
     const device = await adapter.requestDevice();
     device.lost.then(() => {
-      cachedDevice = null;
-      devicePromise = null;
+      resetGpuState();
     }).catch(() => {
-      cachedDevice = null;
-      devicePromise = null;
+      resetGpuState();
     });
     cachedDevice = device;
     return device;
   })();
   return devicePromise;
+}
+
+function createUploadBuffer(device, typedArray, usage) {
+  const buffer = device.createBuffer({
+    size: typedArray.byteLength,
+    usage,
+    mappedAtCreation: true,
+  });
+  const TypedArrayCtor = typedArray.constructor;
+  new TypedArrayCtor(buffer.getMappedRange()).set(typedArray);
+  buffer.unmap();
+  return buffer;
+}
+
+function getDotPipeline(device) {
+  if (dotPipelineCache?.device === device) {
+    return dotPipelineCache.pipeline;
+  }
+  const shader = `
+struct Params {
+  len: u32,
+  _pad: u32,
+};
+@group(0) @binding(0) var<storage, read> a: array<f32>;
+@group(0) @binding(1) var<storage, read> b: array<f32>;
+@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+@group(0) @binding(3) var<uniform> params: Params;
+
+@compute @workgroup_size(${DOT_WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let i = gid.x;
+  if (i < params.len) {
+    out[i] = a[i] * b[i];
+  }
+}
+`;
+  const module = device.createShaderModule({ code: shader });
+  const pipeline = device.createComputePipeline({
+    layout: 'auto',
+    compute: {
+      module,
+      entryPoint: 'main'
+    }
+  });
+  dotPipelineCache = { device, pipeline };
+  return pipeline;
+}
+
+function getScorePipeline(device) {
+  if (scorePipelineCache?.device === device) {
+    return scorePipelineCache.pipeline;
+  }
+  const shader = `
+struct Params {
+  dim: u32,
+  count: u32,
+  _pad1: u32,
+  _pad2: u32,
+};
+@group(0) @binding(0) var<storage, read> matrix: array<f32>;
+@group(0) @binding(1) var<storage, read> query: array<f32>;
+@group(0) @binding(2) var<storage, read_write> out: array<f32>;
+@group(0) @binding(3) var<uniform> params: Params;
+
+@compute @workgroup_size(${SCORE_WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let idx = gid.x;
+  if (idx >= params.count) {
+    return;
+  }
+  let base = idx * params.dim;
+  var sum: f32 = 0.0;
+  var i: u32 = 0u;
+  loop {
+    if (i >= params.dim) { break; }
+    sum = sum + matrix[base + i] * query[i];
+    i = i + 1u;
+  }
+  out[idx] = sum;
+}
+`;
+  const module = device.createShaderModule({ code: shader });
+  const pipeline = device.createComputePipeline({
+    layout: 'auto',
+    compute: {
+      module,
+      entryPoint: 'main'
+    }
+  });
+  scorePipelineCache = { device, pipeline };
+  return pipeline;
 }
 
 root.dmbWebgpuProbe = async function dmbWebgpuProbe() {
@@ -220,14 +456,8 @@ async function webgpuDot(a, b) {
   const len = a.length;
   const byteLength = len * 4;
 
-  const aBuffer = device.createBuffer({
-    size: byteLength,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-  });
-  const bBuffer = device.createBuffer({
-    size: byteLength,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-  });
+  const aBuffer = createUploadBuffer(device, a, GPUBufferUsage.STORAGE);
+  const bBuffer = createUploadBuffer(device, b, GPUBufferUsage.STORAGE);
   const outBuffer = device.createBuffer({
     size: byteLength,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
@@ -236,43 +466,8 @@ async function webgpuDot(a, b) {
     size: byteLength,
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
   });
-  const paramsBuffer = device.createBuffer({
-    size: 8,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-  });
-
-  device.queue.writeBuffer(aBuffer, 0, a);
-  device.queue.writeBuffer(bBuffer, 0, b);
-  const params = new Uint32Array([len, 0]);
-  device.queue.writeBuffer(paramsBuffer, 0, params);
-
-  const shader = `
-struct Params {
-  len: u32,
-  _pad: u32,
-};
-@group(0) @binding(0) var<storage, read> a: array<f32>;
-@group(0) @binding(1) var<storage, read> b: array<f32>;
-@group(0) @binding(2) var<storage, read_write> out: array<f32>;
-@group(0) @binding(3) var<uniform> params: Params;
-
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let i = gid.x;
-  if (i < params.len) {
-    out[i] = a[i] * b[i];
-  }
-}
-`;
-
-  const module = device.createShaderModule({ code: shader });
-  const pipeline = device.createComputePipeline({
-    layout: 'auto',
-    compute: {
-      module,
-      entryPoint: 'main'
-    }
-  });
+  const paramsBuffer = createUploadBuffer(device, new Uint32Array([len, 0]), GPUBufferUsage.UNIFORM);
+  const pipeline = getDotPipeline(device);
 
   const bindGroup = device.createBindGroup({
     layout: pipeline.getBindGroupLayout(0),
@@ -288,7 +483,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   const pass = encoder.beginComputePass();
   pass.setPipeline(pipeline);
   pass.setBindGroup(0, bindGroup);
-  const workgroups = Math.ceil(len / 64);
+  const workgroups = Math.ceil(len / DOT_WORKGROUP_SIZE);
   pass.dispatchWorkgroups(workgroups);
   pass.end();
 
@@ -298,6 +493,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   await readBuffer.mapAsync(GPUMapMode.READ);
   const copy = new Float32Array(readBuffer.getMappedRange().slice(0));
   readBuffer.unmap();
+  aBuffer.destroy?.();
+  bBuffer.destroy?.();
+  outBuffer.destroy?.();
+  readBuffer.destroy?.();
+  paramsBuffer.destroy?.();
 
   let sum = 0;
   for (let i = 0; i < copy.length; i++) {
@@ -311,6 +511,7 @@ root.dmbWebgpuDot = webgpuDot;
 // Exposes window.dmbWebgpuScores(Float32Array query, Float32Array matrix, number dim)
 // Returns Promise<Float32Array|null>
 async function webgpuScores(query, matrix, dim) {
+  bumpMetricCounter('direct_scores_calls');
   if (!(query instanceof Float32Array) || !(matrix instanceof Float32Array)) {
     throw new Error('Expected Float32Array inputs');
   }
@@ -330,14 +531,8 @@ async function webgpuScores(query, matrix, dim) {
     return new Float32Array();
   }
 
-  const matrixBuffer = device.createBuffer({
-    size: matrix.length * 4,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-  });
-  const queryBuffer = device.createBuffer({
-    size: query.length * 4,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-  });
+  const matrixBuffer = createUploadBuffer(device, matrix, GPUBufferUsage.STORAGE);
+  const queryBuffer = createUploadBuffer(device, query, GPUBufferUsage.STORAGE);
   const outBuffer = device.createBuffer({
     size: count * 4,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
@@ -346,53 +541,12 @@ async function webgpuScores(query, matrix, dim) {
     size: count * 4,
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
   });
-  const paramsBuffer = device.createBuffer({
-    size: 16,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-  });
-
-  device.queue.writeBuffer(matrixBuffer, 0, matrix);
-  device.queue.writeBuffer(queryBuffer, 0, query);
-  device.queue.writeBuffer(paramsBuffer, 0, new Uint32Array([dim, count, 0, 0]));
-
-  const shader = `
-struct Params {
-  dim: u32,
-  count: u32,
-  _pad1: u32,
-  _pad2: u32,
-};
-@group(0) @binding(0) var<storage, read> matrix: array<f32>;
-@group(0) @binding(1) var<storage, read> query: array<f32>;
-@group(0) @binding(2) var<storage, read_write> out: array<f32>;
-@group(0) @binding(3) var<uniform> params: Params;
-
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let idx = gid.x;
-  if (idx >= params.count) {
-    return;
-  }
-  let base = idx * params.dim;
-  var sum: f32 = 0.0;
-  var i: u32 = 0u;
-  loop {
-    if (i >= params.dim) { break; }
-    sum = sum + matrix[base + i] * query[i];
-    i = i + 1u;
-  }
-  out[idx] = sum;
-}
-`;
-
-  const module = device.createShaderModule({ code: shader });
-  const pipeline = device.createComputePipeline({
-    layout: 'auto',
-    compute: {
-      module,
-      entryPoint: 'main'
-    }
-  });
+  const paramsBuffer = createUploadBuffer(
+    device,
+    new Uint32Array([dim, count, 0, 0]),
+    GPUBufferUsage.UNIFORM
+  );
+  const pipeline = getScorePipeline(device);
 
   const bindGroup = device.createBindGroup({
     layout: pipeline.getBindGroupLayout(0),
@@ -408,7 +562,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   const pass = encoder.beginComputePass();
   pass.setPipeline(pipeline);
   pass.setBindGroup(0, bindGroup);
-  pass.dispatchWorkgroups(Math.ceil(count / 64));
+  pass.dispatchWorkgroups(Math.ceil(count / SCORE_WORKGROUP_SIZE));
   pass.end();
 
   encoder.copyBufferToBuffer(outBuffer, 0, readBuffer, 0, count * 4);
@@ -417,6 +571,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   await readBuffer.mapAsync(GPUMapMode.READ);
   const data = new Float32Array(readBuffer.getMappedRange().slice(0));
   readBuffer.unmap();
+  matrixBuffer.destroy?.();
+  queryBuffer.destroy?.();
+  outBuffer.destroy?.();
+  readBuffer.destroy?.();
+  paramsBuffer.destroy?.();
   return data;
 }
 
@@ -434,7 +593,7 @@ async function webgpuScoresSubset(query, matrix, dim, indices) {
     const idx = indices[i];
     const start = idx * dim;
     const end = start + dim;
-    subMatrix.set(matrix.slice(start, end), i * dim);
+    subMatrix.set(matrix.subarray(start, end), i * dim);
   }
   return webgpuScores(query, subMatrix, dim);
 }
@@ -540,19 +699,26 @@ async function webgpuScoresWorker(query, matrix, dim) {
     clearWorkerFailure();
   }
   if (Date.now() < workerFailureUntil) {
+    bumpMetricCounter('worker_fallback_cooldown');
     return webgpuScores(query, matrix, dim);
   }
   if (matrix.length > workerMaxFloats) {
+    bumpMetricCounter('worker_fallback_maxfloats');
     return webgpuScores(query, matrix, dim);
   }
   if (matrix.length < workerThresholdFloats) {
+    bumpMetricCounter('worker_fallback_below_threshold');
     return webgpuScores(query, matrix, dim);
   }
   const state = ensureWorker();
-  if (!state) return null;
+  if (!state) {
+    bumpMetricCounter('worker_fallback_worker_unavailable');
+    return null;
+  }
   try {
     await initWorkerMatrix(state, matrix, dim);
   } catch (err) {
+    bumpMetricCounter('worker_fallback_init_failed');
     markWorkerFailure(err);
     return webgpuScores(query, matrix, dim);
   }
@@ -567,8 +733,10 @@ async function webgpuScoresWorker(query, matrix, dim) {
   try {
     const scores = await promise;
     clearWorkerFailure();
+    bumpMetricCounter('worker_success');
     return scores ? new Float32Array(scores) : null;
   } catch (err) {
+    bumpMetricCounter('worker_fallback_runtime_failed');
     markWorkerFailure(err);
     return webgpuScores(query, matrix, dim);
   }
@@ -581,19 +749,26 @@ async function webgpuScoresSubsetWorker(query, matrix, dim, indices) {
     clearWorkerFailure();
   }
   if (Date.now() < workerFailureUntil) {
+    bumpMetricCounter('subset_worker_fallback_cooldown');
     return webgpuScoresSubset(query, matrix, dim, indices);
   }
   if (matrix.length > workerMaxFloats) {
+    bumpMetricCounter('subset_worker_fallback_maxfloats');
     return webgpuScoresSubset(query, matrix, dim, indices);
   }
   if (matrix.length < workerThresholdFloats) {
+    bumpMetricCounter('subset_worker_fallback_below_threshold');
     return webgpuScoresSubset(query, matrix, dim, indices);
   }
   const state = ensureWorker();
-  if (!state) return null;
+  if (!state) {
+    bumpMetricCounter('subset_worker_fallback_worker_unavailable');
+    return null;
+  }
   try {
     await initWorkerMatrix(state, matrix, dim);
   } catch (err) {
+    bumpMetricCounter('subset_worker_fallback_init_failed');
     markWorkerFailure(err);
     return webgpuScoresSubset(query, matrix, dim, indices);
   }
@@ -609,8 +784,10 @@ async function webgpuScoresSubsetWorker(query, matrix, dim, indices) {
   try {
     const scores = await promise;
     clearWorkerFailure();
+    bumpMetricCounter('subset_worker_success');
     return scores ? new Float32Array(scores) : null;
   } catch (err) {
+    bumpMetricCounter('subset_worker_fallback_runtime_failed');
     markWorkerFailure(err);
     return webgpuScoresSubset(query, matrix, dim, indices);
   }
