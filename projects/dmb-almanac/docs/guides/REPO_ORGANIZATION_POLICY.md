@@ -56,4 +56,5 @@ CI workflow:
 
 - Keep repository root minimal: only active entrypoint docs and configs.
 - Archive obsolete docs under `docs/reports/_archived/`.
+- Keep a `README.md` landing page in each top-level `docs/*` section.
 - Keep `docs/INDEX.md` current when moving or adding docs.

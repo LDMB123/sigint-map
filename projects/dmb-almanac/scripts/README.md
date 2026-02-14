@@ -28,7 +28,7 @@
 
 | Script | Purpose | Typical Use |
 |---|---|---|
-| `scripts/check-doc-integrity.py` | Validate local markdown references and repo-path code references | `python3 scripts/check-doc-integrity.py` |
+| `scripts/check-doc-integrity.py` | Validate markdown references, docs section landing pages, docs index links, and script catalog drift | `python3 scripts/check-doc-integrity.py` |
 | `scripts/check-repo-hygiene.sh` | Fail on tracked generated artifacts and legacy root clutter | `bash scripts/check-repo-hygiene.sh` |
 | `scripts/clean-workspace.sh` | Remove local runtime/build artifacts and optional generated data duplicates | `bash scripts/clean-workspace.sh --include-generated-data` |
 

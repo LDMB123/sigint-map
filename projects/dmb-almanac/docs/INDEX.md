@@ -11,14 +11,17 @@
 
 | Area | Path | Notes |
 |---|---|---|
-| Guides | `docs/guides/` | Primary developer-facing guides |
-| Operations | `docs/ops/` | Cutover and rollback runbooks |
-| API | `docs/api/` | OpenAPI contract |
-| Migration | `docs/migration/` | Rust-first migration planning and status |
-| References | `docs/references/` | Schema, module, and data references |
-| Reports | `docs/reports/` | Summaries, audits, strategic plans |
-| Quick references | `docs/quick-references/` | Short cheatsheets |
-| Domain deep dives | `docs/gpu/`, `docs/wasm/`, `docs/scraping/` | Specialized technical notes |
+| Guides | `docs/guides/README.md` | Primary developer-facing guides |
+| Operations | `docs/ops/README.md` | Cutover and rollback runbooks |
+| API | `docs/api/README.md` | OpenAPI contract and API docs |
+| Migration | `docs/migration/README.md` | Rust-first migration planning and status |
+| References | `docs/references/README.md` | Schema, module, and data references |
+| Reports | `docs/reports/README.md` | Summaries, audits, strategic plans |
+| Quick references | `docs/quick-references/README.md` | Short cheatsheets |
+| Audits | `docs/audits/README.md` | Security/database/chromium audit references |
+| GPU | `docs/gpu/README.md` | GPU-specific reference docs |
+| Wasm | `docs/wasm/README.md` | Wasm architecture and roadmap |
+| Scraping | `docs/scraping/README.md` | Scraping fixtures and extraction references |
 
 ## Key Documents
 

@@ -2,16 +2,19 @@
 from __future__ import annotations
 
 import re
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 DOC_PATTERNS = [
     "README.md",
+    "CONTEXT.md",
+    "STATUS.md",
     "CONTRIBUTING.md",
     "docs/README.md",
     "docs/INDEX.md",
+    "docs/*/README.md",
+    "docs/audits/*/README.md",
     "docs/guides/DMB_START_HERE.md",
     "docs/guides/DEPLOYMENT_REFERENCE.md",
     "docs/guides/REPO_ORGANIZATION_POLICY.md",
@@ -20,12 +23,30 @@ DOC_PATTERNS = [
     "scripts/README.md",
 ]
 
+REQUIRED_SECTION_READMES = [
+    "docs/api/README.md",
+    "docs/audits/README.md",
+    "docs/gpu/README.md",
+    "docs/guides/README.md",
+    "docs/migration/README.md",
+    "docs/ops/README.md",
+    "docs/quick-references/README.md",
+    "docs/references/README.md",
+    "docs/reports/README.md",
+    "docs/scraping/README.md",
+    "docs/wasm/README.md",
+]
+
 MD_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 INLINE_CODE_RE = re.compile(r"`([^`\n]+)`")
+SCRIPTS_README_PATH_RE = re.compile(r"(scripts/[A-Za-z0-9._-]+)")
 
 PATH_PREFIXES = (
     "README.md",
+    "CONTEXT.md",
+    "STATUS.md",
     "CONTRIBUTING.md",
+    ".github/",
     "docs/",
     "scripts/",
     "rust/",
@@ -83,7 +104,7 @@ def resolve_inline_path(token: str) -> Path | None:
         return None
     if path.startswith(OPTIONAL_GENERATED_PREFIXES):
         return None
-    if path in ("README.md", "CONTRIBUTING.md"):
+    if path in ("README.md", "CONTEXT.md", "STATUS.md", "CONTRIBUTING.md"):
         return ROOT / path
     if path.endswith("/"):
         return ROOT / path
@@ -94,8 +115,55 @@ def resolve_inline_path(token: str) -> Path | None:
     return None
 
 
+def check_required_section_readmes() -> list[str]:
+    errors: list[str] = []
+    for rel_path in REQUIRED_SECTION_READMES:
+        if not (ROOT / rel_path).is_file():
+            errors.append(f"required-doc-missing: `{rel_path}`")
+    return errors
+
+
+def check_section_readme_links() -> list[str]:
+    errors: list[str] = []
+    docs_home = (ROOT / "docs/README.md").read_text(encoding="utf-8")
+    docs_index = (ROOT / "docs/INDEX.md").read_text(encoding="utf-8")
+    for rel_path in REQUIRED_SECTION_READMES:
+        if rel_path not in docs_home:
+            errors.append(f"docs-home-missing-link: `{rel_path}`")
+        if rel_path not in docs_index:
+            errors.append(f"docs-index-missing-link: `{rel_path}`")
+    return errors
+
+
+def check_scripts_readme_coverage() -> list[str]:
+    errors: list[str] = []
+    scripts_dir = ROOT / "scripts"
+    scripts_readme = scripts_dir / "README.md"
+    readme_text = scripts_readme.read_text(encoding="utf-8")
+    referenced = set(SCRIPTS_README_PATH_RE.findall(readme_text))
+
+    on_disk_scripts = sorted(
+        str(path.relative_to(ROOT).as_posix())
+        for path in scripts_dir.iterdir()
+        if path.is_file() and path.name != "README.md"
+    )
+
+    for rel_path in on_disk_scripts:
+        if rel_path not in referenced:
+            errors.append(f"scripts-readme-missing-entry: `{rel_path}`")
+
+    for rel_path in sorted(referenced):
+        if rel_path == "scripts/README.md":
+            continue
+        if not (ROOT / rel_path).exists():
+            errors.append(f"scripts-readme-stale-entry: `{rel_path}`")
+
+    return errors
+
+
 def main() -> int:
-    missing: list[tuple[Path, str, str]] = []
+    missing_refs: list[tuple[Path, str, str]] = []
+    structural_errors: list[str] = []
     docs = gather_docs()
 
     for doc in docs:
@@ -107,7 +175,7 @@ def main() -> int:
             if resolved is None:
                 continue
             if not resolved.exists():
-                missing.append((doc, raw_target, "markdown-link"))
+                missing_refs.append((doc, raw_target, "markdown-link"))
 
         for match in INLINE_CODE_RE.finditer(text):
             raw_token = match.group(1).strip()
@@ -115,12 +183,18 @@ def main() -> int:
             if resolved is None:
                 continue
             if not resolved.exists():
-                missing.append((doc, raw_token, "inline-path"))
+                missing_refs.append((doc, raw_token, "inline-path"))
 
-    if missing:
-        print("doc-integrity: missing references detected")
-        for doc, ref, kind in missing:
+    structural_errors.extend(check_required_section_readmes())
+    structural_errors.extend(check_section_readme_links())
+    structural_errors.extend(check_scripts_readme_coverage())
+
+    if missing_refs or structural_errors:
+        print("doc-integrity: issues detected")
+        for doc, ref, kind in missing_refs:
             print(f"- {doc.relative_to(ROOT)} [{kind}]: `{ref}`")
+        for issue in structural_errors:
+            print(f"- {issue}")
         return 1
 
     print(f"doc-integrity: ok ({len(docs)} files checked)")
