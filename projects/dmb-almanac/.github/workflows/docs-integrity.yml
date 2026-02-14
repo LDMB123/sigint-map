@@ -1,0 +1,39 @@
+name: Docs Integrity
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'docs/README.md'
+      - 'docs/INDEX.md'
+      - 'docs/guides/DMB_START_HERE.md'
+      - 'docs/guides/DEPLOYMENT_REFERENCE.md'
+      - 'docs/guides/REPO_ORGANIZATION_POLICY.md'
+      - 'docs/ops/CUTOVER_RUNBOOK.md'
+      - 'docs/ops/ROLLBACK_RUNBOOK.md'
+      - 'scripts/README.md'
+      - 'scripts/check-doc-integrity.py'
+      - 'scripts/check-repo-hygiene.sh'
+      - '.github/workflows/docs-integrity.yml'
+      - '.gitignore'
+
+concurrency:
+  group: docs-integrity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-integrity:
+    name: Docs and Hygiene Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run documentation link/path integrity checks
+        run: python3 scripts/check-doc-integrity.py
+
+      - name: Run repository hygiene checks
+        run: bash scripts/check-repo-hygiene.sh

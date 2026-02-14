@@ -1,0 +1,39 @@
+# Scripts Reference
+
+## Primary Scripts
+
+| Script | Purpose | Typical Use |
+|---|---|---|
+| `scripts/cutover-rehearsal.sh` | Full local green gate (verify + data release + server + Rust E2E subset) | `bash scripts/cutover-rehearsal.sh` |
+| `scripts/cutover-remote-e2e.sh` | Run Rust E2E subset against an existing remote/staging server | `BASE_URL=https://env bash scripts/cutover-remote-e2e.sh` |
+| `scripts/deploy.sh` | Local deploy helper for Rust server | `bash scripts/deploy.sh local` |
+
+## CI and Environment
+
+| Script | Purpose |
+|---|---|
+| `scripts/setup-ci.sh` | Print CI setup expectations |
+| `scripts/verify-ci-setup.sh` | Validate required CI/workflow files and local tooling |
+| `scripts/validate-env.sh` | Validate required environment variables |
+
+## Data / Warning Utilities
+
+| Script | Purpose |
+|---|---|
+| `scripts/update-warning-baseline.sh` | Regenerate warning report baseline |
+| `scripts/compare-warning-reports.py` | Compare two warning report JSON files |
+| `scripts/validate-cache-metadata.js` | Validate `.claude/cache-metadata.json` and related references |
+
+## Repo Hygiene Utilities
+
+| Script | Purpose | Typical Use |
+|---|---|---|
+| `scripts/check-doc-integrity.py` | Validate local markdown references and repo-path code references | `python3 scripts/check-doc-integrity.py` |
+| `scripts/check-repo-hygiene.sh` | Fail on tracked generated artifacts and legacy root clutter | `bash scripts/check-repo-hygiene.sh` |
+| `scripts/clean-workspace.sh` | Remove local runtime/build artifacts and optional generated data duplicates | `bash scripts/clean-workspace.sh --include-generated-data` |
+
+## Notes
+
+- Run scripts from repository root unless stated otherwise.
+- Most scripts assume Rust toolchain, Node.js, and Playwright dependencies are available.
+- Prefer `scripts/cutover-rehearsal.sh` as the default pre-merge confidence gate.

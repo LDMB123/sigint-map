@@ -1,0 +1,24 @@
+# Local runtime artifacts
+.tmp/
+.tmp_dmb_server.log
+.tmp_dmb_server.pid
+firebase-debug.log
+
+# E2E artifacts
+e2e/node_modules/
+e2e/playwright-report/
+e2e/test-results/
+
+# Rust build artifacts
+rust/target/
+rust/static/pkg/
+
+# Generated runtime data artifacts (canonical source is data/static-data/)
+rust/static/data/
+rust/data/raw/
+rust/data/*.db
+rust/data/*.db-shm
+rust/data/*.db-wal
+
+# OS/editor
+.DS_Store
