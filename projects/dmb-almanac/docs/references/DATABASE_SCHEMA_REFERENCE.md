@@ -6,6 +6,7 @@ This project’s offline database is IndexedDB. The schema is defined and enforc
 
 - Store + index definitions: `rust/crates/dmb_idb/src/schema.rs`
 - Store creation + upgrade logic: `rust/crates/dmb_idb/src/lib.rs`
+- IDB-to-SQLite parity mapping: `rust/crates/dmb_core/src/parity.rs`
 
 ## Database Names / Versioning
 
@@ -75,3 +76,9 @@ cargo run -p dmb_pipeline -- validate-parity \
 For migration regression tests:
 
 - Browser migration tests: `rust/crates/dmb_idb/tests/migration.rs`
+
+To validate query plans and index usage on the generated runtime SQLite:
+
+```bash
+bash scripts/db-query-plan-audit.sh rust/.tmp/dmb-runtime.db
+```

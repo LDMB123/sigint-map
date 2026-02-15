@@ -46,6 +46,23 @@ python3 scripts/token-context-report.py --json-output .tmp/context-report.json
 2. Run `scripts/token-context-report.py`.
 3. Load only the recommended pack unless a specific deep-dive file is required.
 
+## DMB Minimal Context Pack
+
+For most DMB coding tasks, start with this small pack first:
+
+- `README.md`
+- `docs/README.md`
+- `docs/INDEX.md`
+- `docs/guides/DMB_START_HERE.md`
+- `docs/guides/TOKEN_CONTEXT_WORKFLOW.md`
+- `scripts/README.md`
+
+Then add only one domain-specific file set as needed:
+
+- DB/parity work: `docs/references/DATABASE_SCHEMA_REFERENCE.md`, `rust/crates/dmb_core/src/parity.rs`
+- Migration/cutover work: `docs/migration/README.md`, `docs/ops/CUTOVER_RUNBOOK.md`
+- Pipeline/scraping work: `docs/scraping/README.md`, `docs/scraping/SCRAPING_REFERENCE.md`
+
 ## CI Integration
 
 `docs-integrity.yml` generates and uploads two JSON artifacts on PRs:

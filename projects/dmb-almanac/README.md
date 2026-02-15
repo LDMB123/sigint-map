@@ -29,6 +29,8 @@ cargo run -p dmb_server
 | Deploy helper (local) | `bash scripts/deploy.sh local` |
 | Docs + hygiene checks | `python3 scripts/check-doc-integrity.py && bash scripts/check-repo-hygiene.sh` |
 | Pristine gate (fast) | `bash scripts/pristine-check.sh` |
+| Autonomous DB optimize pass | `bash scripts/autonomous-db-optimize.sh` |
+| SQLite query-plan audit | `bash scripts/db-query-plan-audit.sh rust/.tmp/dmb-runtime.db` |
 | Token context report | `python3 scripts/token-context-report.py --budget 12000` |
 | Clean generated artifacts | `bash scripts/clean-workspace.sh --include-generated-data` |
 

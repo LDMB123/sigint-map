@@ -33,6 +33,8 @@
 | `scripts/clean-workspace.sh` | Remove local runtime/build artifacts and optional generated data duplicates | `bash scripts/clean-workspace.sh --include-generated-data` |
 | `scripts/pristine-check.sh` | Run combined repo integrity checks with optional deep gates (`--with-rust-verify`, `--with-cutover-rehearsal`) | `bash scripts/pristine-check.sh` |
 | `scripts/token-context-report.py` | Generate approximate token budgets and recommended context packs for active docs | `python3 scripts/token-context-report.py --budget 12000` |
+| `scripts/autonomous-db-optimize.sh` | Run DB-focused Rust quality gates + parity validation + query-plan audit in one pass | `bash scripts/autonomous-db-optimize.sh` |
+| `scripts/db-query-plan-audit.sh` | Enforce SQLite plan/index expectations for key product queries | `bash scripts/db-query-plan-audit.sh rust/.tmp/dmb-runtime.db` |
 
 ## Notes
 
