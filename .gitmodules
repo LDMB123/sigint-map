@@ -1,0 +1,3 @@
+[submodule "projects/emerson-violin-pwa"]
+	path = projects/emerson-violin-pwa
+	url = https://github.com/LDMB123/emerson-violin-pwa.git
