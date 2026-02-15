@@ -3,8 +3,22 @@
 ## Snapshot
 
 - Branch: `codex/dmb-almanac-handoff-20260215`
-- Base handoff commit: `eaed5c67`
+- Current handoff commit: `c928bd74`
 - Workspace scope: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+
+## Verification Stamp (2026-02-15)
+
+Latest full validation run on `c928bd74`:
+
+```bash
+cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac
+cd rust && cargo fmt --all --check
+cd rust && cargo clippy --workspace --all-targets -- -D warnings
+cd rust && cargo test --workspace
+cd e2e && RUST_E2E=1 BASE_URL=http://127.0.0.1:3000 npm run test:e2e
+```
+
+Result: all checks passed (`23` Playwright tests passed).
 
 ## Canonical Docs
 

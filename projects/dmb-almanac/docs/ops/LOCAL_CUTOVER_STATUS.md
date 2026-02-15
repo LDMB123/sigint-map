@@ -5,6 +5,12 @@ Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 
 Detailed current status is canonical in `STATUS.md`.
 
+## Last Verified Baseline
+
+- Branch: `codex/dmb-almanac-handoff-20260215`
+- Commit: `c928bd74`
+- Local E2E: `RUST_E2E=1 BASE_URL=http://127.0.0.1:3000 npm run test:e2e` passed (`23 passed`)
+
 ## Local Cutover Commands
 
 ```bash
