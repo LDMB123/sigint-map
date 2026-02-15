@@ -2,7 +2,7 @@
 #panel-tracker .panel-body {
   background:
     linear-gradient(180deg, rgba(212, 245, 224, 0.8) 0%, rgba(255, 240, 245, 0.7) 100%),
-    url(../assets/illustrations/backgrounds/tracker-bg.webp) center / cover no-repeat;
+    url(/illustrations/backgrounds/tracker-bg.webp) center / cover no-repeat;
 }
 
 .tracker-grid,

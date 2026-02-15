@@ -51,8 +51,10 @@ pub fn init() {
     listen_navigate_event();
     listen_navigate_error();
     if !try_restore_current_entry() {
-        // Replace current entry with state instead of pushing to avoid duplicate entries
-        replace_panel_state(PANEL_HOME);
+        if !try_restore_hash_panel() {
+            // Replace current entry with state instead of pushing to avoid duplicate entries
+            replace_panel_state(PANEL_HOME);
+        }
     }
     bind_panel_buttons();
 }
@@ -157,6 +159,23 @@ fn try_restore_current_entry() -> bool {
         Some(_) => true,
         None => false,
     }
+}
+
+fn try_restore_hash_panel() -> bool {
+    let hash = dom::window().location().hash().unwrap_or_default();
+    let panel_id = hash.trim_start_matches('#');
+    if panel_id.is_empty() {
+        return false;
+    }
+
+    let selector = format!("#{panel_id}.panel");
+    if dom::query(&selector).is_none() {
+        return false;
+    }
+
+    apply_panel_transition(panel_id);
+    replace_panel_state(panel_id);
+    true
 }
 
 fn get_navigation_object() -> Option<bindings::Navigation> {

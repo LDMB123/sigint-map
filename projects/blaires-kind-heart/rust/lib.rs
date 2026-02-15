@@ -667,6 +667,11 @@ fn cache_boot_elements() {
     });
 }
 
+#[wasm_bindgen]
+pub async fn restore_snapshot_for_test(snapshot_json: String) -> Result<(), JsValue> {
+    db_client::restore_snapshot(snapshot_json).await
+}
+
 #[wasm_bindgen(start)]
 pub fn start() {
   console_error_panic_hook::set_once();

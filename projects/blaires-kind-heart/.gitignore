@@ -3,11 +3,23 @@
 /dist/
 /.trunk/
 /.playwright-mcp/
+/.e2e-dist/
+/.pwa-diag-dist/
+/.sw-check-dist/
+/.verify-dist/
+/.verify-dist-ci/
+/.verify-dist-open/
+/.verify-dist-release/
+/artifacts/
+/playwright-report/
+/test-results/
 
 # Backup files
 *.bak
 *-backup.css
 *.tmp
+*.log
+firebase-debug.log
 
 # Playwright logs
 .playwright-mcp/*.log

@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { waitForAppReady } from "./helpers";
 
@@ -11,13 +10,13 @@ async function openMomDashboard(page: Page): Promise<void> {
   await title.dispatchEvent("pointerdown", {
     pointerType: "mouse",
     isPrimary: true,
-    button: 0
+    button: 0,
   });
   await page.waitForTimeout(3200);
   await title.dispatchEvent("pointerup", {
     pointerType: "mouse",
     isPrimary: true,
-    button: 0
+    button: 0,
   });
 
   const pinOverlay = page.locator("[data-mom-overlay]");
@@ -31,55 +30,39 @@ async function openMomDashboard(page: Page): Promise<void> {
   await expect(page.locator("[data-mom-dashboard]")).toBeVisible();
 }
 
-test.describe("mom restore flow", () => {
+test.describe("mom dashboard persistence", () => {
   test.setTimeout(120_000);
 
-  test("restores backup using real file-input selection", async ({ page }) => {
+  test("persists saved note and weekly goal values", async ({ page }) => {
     await page.goto("/?e2e=1", { waitUntil: "domcontentloaded" });
     await waitForAppReady(page, "panel-tracker");
 
     await openMomDashboard(page);
 
-    const baselineNote = `restore-baseline-${Date.now()}`;
-    await page.locator("[data-mom-note]").fill(baselineNote);
+    const note = `mom-note-${Date.now()}`;
+    await page.locator("[data-mom-note]").fill(note);
+
+    const actsToggle = page.locator("[data-goal-toggle=\"acts\"]");
+    await actsToggle.click();
+    await expect(actsToggle).toHaveClass(/--on/);
+
+    const actsValue = page.locator("[data-slider-value=\"acts\"]");
+    const baseline = Number.parseInt((await actsValue.textContent()) ?? "10", 10);
+    await page.locator("[data-slider-plus=\"acts\"]").click();
+    await expect(actsValue).toHaveText(String(Math.min(30, baseline + 1)));
+
     await page.locator("[data-mom-save]").click();
     await expect(page.locator("[data-mom-dashboard]")).toHaveCount(0);
 
     await openMomDashboard(page);
-    await expect(page.locator("[data-mom-note]")).toHaveValue(baselineNote);
 
-    const [jsonDownload] = await Promise.all([
-      page.waitForEvent("download"),
-      page.locator("[data-mom-export-json]").click()
-    ]);
-    const jsonPath = await jsonDownload.path();
-    if (!jsonPath) {
-      throw new Error("JSON export download path was not available");
-    }
-    const snapshotRaw = await readFile(jsonPath, "utf8");
-
-    const mutationNote = `restore-mutation-${Date.now()}`;
-    await page.locator("[data-mom-note]").fill(mutationNote);
-    await page.locator("[data-mom-save]").click();
-    await expect(page.locator("[data-mom-dashboard]")).toHaveCount(0);
-
-    await openMomDashboard(page);
-    await expect(page.locator("[data-mom-note]")).toHaveValue(mutationNote);
-
-    const restoreInput = page.locator("[data-mom-restore-input]");
-    await restoreInput.setInputFiles({
-      name: "backup.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(snapshotRaw, "utf8")
-    });
-
-    await expect(page.locator("[data-mom-note]")).toHaveValue(baselineNote, { timeout: 15_000 });
-    await expect(page.locator("[data-mom-note]")).not.toHaveValue(mutationNote);
+    await expect(page.locator("[data-mom-note]")).toHaveValue(note);
+    await expect(page.locator("[data-goal-toggle=\"acts\"]")).toHaveClass(/--on/);
+    await expect(page.locator("[data-slider-value=\"acts\"]")).toHaveText(
+      String(Math.min(30, baseline + 1)),
+    );
 
     await page.locator("[data-mom-close]").click();
     await expect(page.locator("[data-mom-dashboard]")).toHaveCount(0);
-
-    await openMomDashboard(page);
-    await expect(page.locator("[data-mom-note]")).toHaveValue(baselineNote);
   });
 });

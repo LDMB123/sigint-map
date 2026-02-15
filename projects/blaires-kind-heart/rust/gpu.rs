@@ -78,10 +78,14 @@ pub async fn init() {
 }
 
 async fn try_init() -> Result<(), JsValue> {
-    // 1. navigator.gpu (Safari 26.2 guarantees WebGPU)
+    // 1. navigator.gpu (may be unavailable in headless/CI browsers)
     let nav = dom::window().navigator();
     let ext_nav: &bindings::ExtNavigator = nav.unchecked_ref();
-    let gpu: bindings::Gpu = ext_nav.gpu().unchecked_into();
+    let gpu_js = ext_nav.gpu();
+    if gpu_js.is_null() || gpu_js.is_undefined() {
+        return Err(JsValue::from_str("navigator.gpu unavailable"));
+    }
+    let gpu: bindings::Gpu = gpu_js.unchecked_into();
 
     // 2. Request adapter (prefer high-performance for A15 GPU)
     // Safari 26.2 guarantees WebGPU on A15+ — this should never fail
@@ -89,11 +93,17 @@ async fn try_init() -> Result<(), JsValue> {
     adapter_opts.set_power_preference("high-performance");
     let adapter_promise = gpu.request_adapter_with_options(&adapter_opts);
     let adapter_val = JsFuture::from(adapter_promise).await?;
+    if adapter_val.is_null() || adapter_val.is_undefined() {
+        return Err(JsValue::from_str("No WebGPU adapter available"));
+    }
     let adapter: bindings::GpuAdapter = adapter_val.unchecked_into();
 
     // 3. Request device
     let device_promise = adapter.request_device();
     let device_val = JsFuture::from(device_promise).await?;
+    if device_val.is_null() || device_val.is_undefined() {
+        return Err(JsValue::from_str("Failed to acquire WebGPU device"));
+    }
     let device: bindings::GpuDevice = device_val.unchecked_into();
     let queue = device.queue();
 

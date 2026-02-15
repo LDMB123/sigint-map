@@ -125,6 +125,20 @@ pub async fn query(sql: &str, params: Vec<String>) -> Result<serde_json::Value, 
     .await
 }
 
+/// Restore a full DB snapshot via the worker contract.
+pub async fn restore_snapshot(snapshot_json: String) -> Result<(), JsValue> {
+    browser_apis::with_web_lock("kindheart-db", move || async move {
+        let req = DbRequest::Restore { snapshot_json };
+        let resp = send_request(req).await?;
+        match resp {
+            DbResponse::Ok { .. } => Ok(()),
+            DbResponse::Error { message, .. } => Err(JsValue::from_str(&message)),
+            _ => Err(JsValue::from_str("Unexpected restore response")),
+        }
+    })
+    .await
+}
+
 async fn send_request(request: DbRequest) -> Result<DbResponse, JsValue> {
     let id = next_id();
     let (tx, rx) = oneshot::channel::<DbResponse>();

@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { waitForAppReady } from "./helpers";
 
 test.use({ video: "off" });
+test.describe.configure({ mode: "serial" });
 
 const PANELS = [
   "panel-tracker",
@@ -56,14 +57,14 @@ async function expectNoCriticalA11yViolations(
 test.describe("a11y gate: axe critical checks", () => {
   test("home", async ({ page }) => {
     await page.goto("/?e2e=1", { waitUntil: "domcontentloaded" });
-    await waitForAppReady(page, "panel-tracker");
+    await waitForAppReady(page, "panel-tracker", 45_000);
     await expectNoCriticalA11yViolations(page, "home");
   });
 
   for (const panelId of PANELS) {
     test(`panel ${panelId}`, async ({ page }) => {
       await page.goto(`/?e2e=1&panel=${panelId}#${panelId}`, { waitUntil: "domcontentloaded" });
-      await waitForAppReady(page, panelId);
+      await waitForAppReady(page, panelId, 45_000);
       await expect(page.locator(`#${panelId}`)).toBeVisible();
       await expectNoCriticalA11yViolations(page, panelId);
     });

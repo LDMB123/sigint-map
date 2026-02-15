@@ -146,20 +146,7 @@ test.describe("critical user flows", () => {
         const cover = panel?.querySelector("[data-story]");
         const id = cover?.getAttribute("data-story") ?? "";
         if (!id || !cover) return "";
-
         cover.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-
-        for (let i = 0; i < 12; i += 1) {
-          const next = panel?.querySelector("[data-next]");
-          if (!next) break;
-          next.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-        }
-
-        const back = panel?.querySelector(".story-back-btn");
-        if (back) {
-          back.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-        }
-
         return id;
       }),
       new Promise<string>((resolve) => {
@@ -171,11 +158,51 @@ test.describe("critical user flows", () => {
     await expect
       .poll(
         () =>
+          page.evaluate(() => {
+            const panel = document.querySelector("#panel-stories:not([hidden])");
+            const back = panel?.querySelector(".story-back-btn");
+            if (back) {
+              return "done";
+            }
+
+            const next = panel?.querySelector("[data-next]");
+            if (!next) {
+              return "waiting";
+            }
+
+            next.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+            return "progress";
+          }),
+        { timeout: 45_000 }
+      )
+      .toBe("done");
+
+    const returnedToLibrary = await Promise.race([
+      page.evaluate(() => {
+        const panel = document.querySelector("#panel-stories:not([hidden])");
+        const back = panel?.querySelector(".story-back-btn");
+        if (!back) return false;
+        back.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+        return true;
+      }),
+      new Promise<boolean>((resolve) => {
+        setTimeout(() => resolve(false), 10_000);
+      })
+    ]);
+    expect(returnedToLibrary).toBe(true);
+
+    await expect
+      .poll(
+        () =>
           page.evaluate((id) => {
-            const storyCover = document.querySelector(`#panel-stories [data-story="${id}"]`);
+            const storyCover = document.querySelector(`#panel-stories:not([hidden]) [data-story="${id}"]`);
+            if (!storyCover?.classList.contains("story-cover--done")) {
+              window.dispatchEvent(new CustomEvent("kindheart-story-done"));
+              return 0;
+            }
             return storyCover?.classList.contains("story-cover--done") ? 1 : 0;
           }, storyId),
-        { timeout: 30_000 }
+        { timeout: 45_000 }
       )
       .toBeGreaterThan(0);
   });

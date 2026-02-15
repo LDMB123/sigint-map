@@ -4,6 +4,8 @@
 
 use serde::{Deserialize, Serialize};
 
+pub const DB_WORKER_API_VERSION: u16 = 1;
+
 /// Wrapper sent to the Worker via postMessage.
 /// Replaces manual `js_sys::Object::new()` + `Reflect::set()` with typed serde serialization.
 #[derive(Serialize)]
@@ -20,6 +22,7 @@ pub enum DbRequest {
     Query { sql: String, params: Vec<String> },
     Batch { statements: Vec<(String, Vec<String>)> },
     Export,
+    Restore { snapshot_json: String, },
 }
 
 #[derive(Serialize, Deserialize, Debug)]

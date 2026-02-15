@@ -1,47 +1,54 @@
 # Blaire's Kind Heart
 
-Offline-first kindness PWA for a 4-year-old.
-Target device: iPad mini 6 (A15, 4GB RAM), iPadOS 26.2, Safari 26.2.
+Offline-first kindness PWA for a young child, built with Rust/WASM plus browser-native PWA features.
 
-## Current Status (2026-02-13)
-- Core web build: green on latest verified run.
-- End-to-end suite: green on latest verified run.
-- PWA health: green on latest verified run.
-- Whole-app simplification plan: complete (Wave 7 closed).
-- `pwa:health` script has been hardened to be server-agnostic for local execution.
-- Physical iPad regression pass: pending.
+Target platform: iPad mini 6 (A15, 4GB RAM), iPadOS 26.2, Safari 26.2.
 
-## Canonical Commands
+## Start Here
+- Project standing: `docs/PROJECT_STANDING.md`
+- Latest verified checks: `docs/APP_STATUS.md`
+- Command-by-command evidence: `docs/STATUS_LEDGER.md`
+- Full documentation map: `docs/INDEX.md`
+
+## Current Standing (verified on 2026-02-15)
+- PWA contract check: PASS (`npm run qa:pwa-contract`)
+- Runtime diagnostics check: PASS (`npm run qa:runtime`)
+- DB contract check: PASS (`npm run qa:db-contract`)
+- Full E2E suite: PASS (`npm run test:e2e:all` -> `40 passed`, `1 skipped`)
+- Docs link gate: PASS (`npm run qa:docs-links`)
+- Rust warning drift gate: PASS (`npm run qa:rust-warning-drift`, baseline=`4`)
+- Docs token budget check: PASS (`npm run qa:docs-budget`)
+- Token baseline currently within target (`active_est_tokens=23726`)
+- Xcode iPad simulator regression evidence captured; physical iPad mini 6 rerun still pending for this cycle
+
+## Quick Commands
 ```bash
 # Dev
 trunk serve
 
-# Release build
+# Release
 trunk build --release
 
-# PWA health (managed local server in script)
-trunk build
-npm run pwa:health
+# Health and contracts
+npm run qa:pwa-contract
+npm run qa:runtime
+npm run qa:db-contract
 
-# E2E gate
+# Full E2E gate
 npm run test:e2e:all
 
-# Docs token baseline
+# Doc/token footprint
 npm run token:baseline
+npm run qa:docs-budget
 ```
 
-## Project Surfaces in This App
-1. Rust/WASM runtime (`Cargo.toml`).
-2. Node/Playwright validation tooling (`package.json`).
+## Repository Layout
+- `rust/` core application runtime
+- `public/` service worker, worker scripts, runtime diagnostics, static assets
+- `src/styles/` panel and theme stylesheets
+- `e2e/` Playwright tests + visual snapshots
+- `scripts/` quality, build, and audit automation
+- `docs/` active documentation
+- `docs/archive/` historical/low-frequency documentation and artifacts
 
-## Current Documentation Entry Points
-- `docs/APP_STATUS.md` - authoritative engineering snapshot.
-- `docs/STATUS_LEDGER.md` - command evidence and change ledger.
-- `docs/PWA_STATUS.md` - service worker and offline behavior state.
-- `docs/TOKEN_ECONOMY_REPORT.md` - token-economy orchestrator findings.
-- `docs/TOKEN_OPTIMIZATION.md` - active token budget governance.
-- `docs/AUTONOMOUS_WHOLE_APP_SIMPLIFICATION_PLAN.md` - wave-based simplification execution plan.
-- `docs/simplification-contracts.md` - frozen no-breakage contract (exports, storage, metrics).
-- `docs/CODEX_WORKING_CONTEXT_PLAN.md` - persistent resume context and next-action order.
-
-Last updated: 2026-02-13
+Last updated: 2026-02-15

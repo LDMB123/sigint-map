@@ -9,8 +9,14 @@
 
 const CACHE_NAME = 'kindheart-v6'; // LCP Optimization: image compression + CSS cleanup
 
+importScripts("./runtime-diagnostics.js");
+
 // Import asset manifest (includes CRITICAL_ASSETS and DEFERRED_ASSETS)
 importScripts('./sw-assets.js');
+
+self.__BKH_RUNTIME_DIAGNOSTICS__?.install({
+  scope: "sw"
+});
 
 // Install: precache CRITICAL assets only (fast boot)
 self.addEventListener('install', (event) => {

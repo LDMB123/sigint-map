@@ -2,7 +2,7 @@
 #panel-rewards .panel-body {
   background:
     linear-gradient(180deg, rgba(237, 224, 255, 0.8) 0%, rgba(214, 239, 255, 0.7) 100%),
-    url(../assets/illustrations/backgrounds/rewards-bg.webp) center / cover no-repeat;
+    url(/illustrations/backgrounds/rewards-bg.webp) center / cover no-repeat;
 }
 
 /* ====== Keyframes (top-level only) ====== */

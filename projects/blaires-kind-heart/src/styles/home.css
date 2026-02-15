@@ -10,7 +10,7 @@
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 240, 245, 0.4) 0%, rgba(237, 224, 255, 0.35) 50%, rgba(214, 239, 255, 0.4) 100%),
-    url(../assets/illustrations/backgrounds/home-bg.webp) center / cover no-repeat;
+    url(/illustrations/backgrounds/home-bg.webp) center / cover no-repeat;
   /* Removed 'fixed' attachment for better paint performance — Safari repaints less */
   animation: gentle-sway 20s ease-in-out infinite;
 

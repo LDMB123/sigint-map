@@ -62,7 +62,7 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: url('/assets/noise.png') repeat;
+  background: url('/noise.png') repeat;
   background-size: 64px 64px;
   mix-blend-mode: soft-light;
   opacity: 0.6;

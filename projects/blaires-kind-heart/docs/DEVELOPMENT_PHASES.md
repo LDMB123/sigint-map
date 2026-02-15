@@ -106,8 +106,8 @@ Quick reference for major development milestones and completion status.
   - Offline serving
 
 **Testing**:
-- Manual test plan: `docs/testing/week3-manual-test-plan.md`
-- Validation report: `docs/testing/week3-validation-report.md`
+- Manual test plan: `docs/archive/testing/week3-manual-test-plan.md`
+- Validation report: `docs/archive/testing/week3-validation-report.md`
 
 **Deliverables**:
 - `companion.rs` - Companion skin rendering
@@ -168,7 +168,7 @@ Quick reference for major development milestones and completion status.
 - Asset loading confirmation
 
 **Validation Reports**:
-- `docs/testing/week3-validation-report.md`
+- `docs/archive/testing/week3-validation-report.md`
 - `phase5-completion-report.md`
 
 **Deployment Prep**:

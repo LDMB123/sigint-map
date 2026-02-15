@@ -63,7 +63,7 @@
 
 #panel-progress .panel-body {
   background:
-    url('../assets/illustrations/backgrounds/progress-bg.webp') center / cover no-repeat,
+    url('/illustrations/backgrounds/progress-bg.webp') center / cover no-repeat,
     linear-gradient(
       180deg,
       rgba(212, 245, 224, 0.9) 0%,

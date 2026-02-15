@@ -1,7 +1,15 @@
+import './runtime-diagnostics.js';
+
 // WASM initialization with performance marks, streaming compilation, and error handling.
 performance.mark('wasm-init-start');
 
 try {
+  window.__BKH_RUNTIME_DIAGNOSTICS__?.install({
+    scope: 'wasm-init',
+    captureInp: true,
+    captureLoaf: true
+  });
+
   const params = new URL(import.meta.url).searchParams;
   const rawJs = params.get('js') || 'blaires-kind-heart.js';
   const rawWasm = params.get('wasm') || 'blaires-kind-heart_bg.wasm';

@@ -428,6 +428,26 @@ fn show_dashboard() {
     let _ = save_btn.set_attribute("data-mom-save", "");
     let _ = card.append_child(&save_btn);
 
+    // Export / restore controls
+    let export_row = render::create_el_with_class(&doc, "div", "mom-export-row");
+    let export_json = render::create_button(&doc, "mom-export-btn", "\u{1F4E6} Export JSON");
+    let _ = export_json.set_attribute("data-mom-export-json", "");
+    let _ = export_row.append_child(&export_json);
+    let export_csv = render::create_button(&doc, "mom-export-btn", "\u{1F4CA} Export CSV");
+    let _ = export_csv.set_attribute("data-mom-export-csv", "");
+    let _ = export_row.append_child(&export_csv);
+    let restore_json = render::create_button(&doc, "mom-export-btn", "\u{1F504} Restore JSON");
+    let _ = restore_json.set_attribute("data-mom-restore-json", "");
+    let _ = export_row.append_child(&restore_json);
+    let _ = card.append_child(&export_row);
+
+    let restore_input = render::create_el_with_class(&doc, "input", "mom-restore-input");
+    let _ = restore_input.set_attribute("data-mom-restore-input", "");
+    let _ = restore_input.set_attribute("type", "file");
+    let _ = restore_input.set_attribute("accept", "application/json");
+    let _ = restore_input.set_attribute("hidden", "");
+    let _ = card.append_child(&restore_input);
+
     let _ = overlay.append_child(&card);
 
     if let Some(body) = doc.body() {
@@ -494,6 +514,30 @@ fn bind_dashboard_interactions() {
             wasm_bindgen_futures::spawn_local(async move {
                 save_goals().await;
             });
+            return;
+        }
+
+        if el.closest("[data-mom-export-json]").ok().flatten().is_some() {
+            wasm_bindgen_futures::spawn_local(async move {
+                export_json_backup().await;
+            });
+            return;
+        }
+
+        if el.closest("[data-mom-export-csv]").ok().flatten().is_some() {
+            wasm_bindgen_futures::spawn_local(async move {
+                export_kind_acts_csv().await;
+            });
+            return;
+        }
+
+        if el.closest("[data-mom-restore-json]").ok().flatten().is_some() {
+            if let Some(input_el) = dom::query("[data-mom-restore-input]") {
+                let _ = js_sys::Reflect::get(input_el.as_ref(), &"click".into())
+                    .ok()
+                    .and_then(|f| f.dyn_into::<js_sys::Function>().ok())
+                    .and_then(|f| f.call0(input_el.as_ref()).ok());
+            }
         }
     });
 }
@@ -639,3 +683,97 @@ async fn load_existing_goals() {
     }
 }
 
+fn trigger_text_download(file_name: &str, text: &str, mime_type: &str) {
+    let encoded = js_sys::encode_uri_component(text)
+        .as_string()
+        .unwrap_or_default();
+    let href = format!("data:{mime_type};charset=utf-8,{encoded}");
+    let document = dom::document();
+    let anchor = document.create_element("a").ok();
+    let Some(a) = anchor else { return };
+    let _ = a.set_attribute("href", &href);
+    let _ = a.set_attribute("download", file_name);
+    if let Some(body) = document.body() {
+        let _ = body.append_child(&a);
+        let _ = js_sys::Reflect::get(a.as_ref(), &"click".into())
+            .ok()
+            .and_then(|f| f.dyn_into::<js_sys::Function>().ok())
+            .and_then(|f| f.call0(a.as_ref()).ok());
+        a.remove();
+    }
+}
+
+async fn export_json_backup() {
+    let stamp = js_sys::Date::new_0().to_iso_string().as_string().unwrap_or_default();
+    let day = stamp.split('T').next().unwrap_or("unknown-day").to_string();
+    let file_name = format!("blaires-kind-heart-export-{day}.json");
+
+    let kind_acts = db_client::query(
+        "SELECT id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day FROM kind_acts ORDER BY created_at ASC",
+        vec![],
+    ).await.unwrap_or(serde_json::json!([]));
+
+    let settings = db_client::query(
+        "SELECT key, value FROM settings WHERE key != 'parent_pin'",
+        vec![],
+    ).await.unwrap_or(serde_json::json!([]));
+
+    let quests = db_client::query(
+        "SELECT * FROM quests ORDER BY day_key ASC",
+        vec![],
+    ).await.unwrap_or(serde_json::json!([]));
+
+    let payload = serde_json::json!({
+        "export_format_version": 1,
+        "schema_version": 1,
+        "exported_at": stamp,
+        "tables": {
+            "kind_acts": kind_acts,
+            "settings": settings,
+            "quests": quests
+        }
+    });
+
+    if let Ok(json) = serde_json::to_string_pretty(&payload) {
+        trigger_text_download(&file_name, &json, "application/json");
+    }
+}
+
+async fn export_kind_acts_csv() {
+    let stamp = js_sys::Date::new_0().to_iso_string().as_string().unwrap_or_default();
+    let day = stamp.split('T').next().unwrap_or("unknown-day").to_string();
+    let file_name = format!("blaires-kind-heart-kind-acts-{day}.csv");
+    let header = "id,category,description,hearts_earned,created_at,day_key,reflection_type,emotion_selected,bonus_context,combo_day";
+
+    let rows = db_client::query(
+        "SELECT id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day FROM kind_acts ORDER BY created_at ASC",
+        vec![],
+    ).await.unwrap_or(serde_json::json!([]));
+
+    let mut csv = String::from(header);
+    if let Some(array) = rows.as_array() {
+        for row in array {
+            let fields = [
+                row.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                row.get("category").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                row.get("description").and_then(|v| v.as_str()).unwrap_or("").replace(',', " "),
+                row.get("hearts_earned").and_then(|v| v.as_i64()).unwrap_or(0).to_string(),
+                row.get("created_at").and_then(|v| v.as_i64()).unwrap_or(0).to_string(),
+                row.get("day_key").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                row.get("reflection_type").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                row.get("emotion_selected").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                row.get("bonus_context").and_then(|v| v.as_str()).unwrap_or("").replace(',', " "),
+                row.get("combo_day").and_then(|v| v.as_i64()).unwrap_or(0).to_string(),
+            ];
+            csv.push('\n');
+            csv.push_str(&fields.join(","));
+        }
+    }
+
+    trigger_text_download(&file_name, &csv, "text/csv");
+}
+
+#[allow(dead_code)]
+pub async fn restore_snapshot(snapshot_json: String) -> Result<(), JsValue> {
+    db_client::restore_snapshot(snapshot_json).await
+}

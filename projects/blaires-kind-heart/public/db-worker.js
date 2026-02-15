@@ -7,8 +7,17 @@
 //
 // All messages are DbRequest/DbResponse (defined in Rust, serialized via serde).
 
+import "./runtime-diagnostics.js";
+
+self.__BKH_RUNTIME_DIAGNOSTICS__?.install({
+  scope: "db-worker"
+});
+
 let db = null;
 let backend = 'none';
+self.DB_WORKER_API_VERSION = 1;
+self.DB_WORKER_MIN_CLIENT_API_VERSION = 1;
+const DB_SCHEMA_VERSION = 1;
 
 // Phase 2.3: Prepared statement cache for hot-path queries
 // Key: SQL string, Value: compiled statement
@@ -277,6 +286,102 @@ const SCHEMA = `
   CREATE INDEX IF NOT EXISTS idx_themes_week ON weekly_themes(week_key);
 `;
 
+function readSchemaVersion(dbInstance) {
+  try {
+    const rows = dbInstance.exec(
+      "SELECT value FROM meta WHERE key = 'schema_version' LIMIT 1",
+      { returnValue: "resultRows" }
+    );
+    if (!rows || !rows[0] || rows[0].length === 0) {
+      return 0;
+    }
+    const raw = rows[0][0];
+    const parsed = Number.parseInt(String(raw), 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
+function writeSchemaVersion(dbInstance, version) {
+  dbInstance.exec(
+    "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?1)",
+    { bind: [String(version)] }
+  );
+}
+
+function restoreFromSnapshot(snapshotJson) {
+  const parsed = JSON.parse(snapshotJson);
+  if (!parsed || parsed.export_format_version !== 1) {
+    throw new Error("Invalid snapshot: export_format_version must be 1");
+  }
+
+  const snapshotSchemaVersion = Number(parsed.schema_version ?? 0);
+  if (Number.isFinite(snapshotSchemaVersion) && snapshotSchemaVersion > DB_SCHEMA_VERSION) {
+    throw new Error(
+      `Snapshot schema version ${snapshotSchemaVersion} is newer than worker schema ${DB_SCHEMA_VERSION}`
+    );
+  }
+
+  const tables = parsed.tables ?? {};
+  const restoreTables = [
+    "kind_acts",
+    "quests",
+    "streaks",
+    "stories_progress",
+    "stickers",
+    "settings",
+    "ai_cache",
+    "meta",
+    "game_scores",
+    "weekly_goals",
+    "mom_notes",
+    "skill_mastery",
+    "weekly_insights",
+    "reflection_prompts",
+    "badges",
+    "companion_skins",
+    "gardens",
+    "quest_chains",
+    "weekly_themes"
+  ];
+
+  db.exec("BEGIN TRANSACTION");
+  try {
+    for (const tableName of restoreTables) {
+      const rows = Array.isArray(tables[tableName]) ? tables[tableName] : [];
+      if (tableName === "settings") {
+        db.exec("DELETE FROM settings WHERE key != 'parent_pin'");
+      } else {
+        db.exec(`DELETE FROM ${tableName}`);
+      }
+
+      for (const row of rows) {
+        const entries = Object.entries(row ?? {});
+        if (entries.length === 0) {
+          continue;
+        }
+        const columns = entries.map(([column]) => column).join(", ");
+        const placeholders = entries.map((_, index) => `?${index + 1}`).join(", ");
+        const values = entries.map(([, value]) =>
+          value === null || value === undefined ? null : value
+        );
+
+        db.exec(
+          `INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`,
+          { bind: values }
+        );
+      }
+    }
+
+    writeSchemaVersion(db, DB_SCHEMA_VERSION);
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
 // ── Init with tiered fallback ──
 async function initDb() {
   try {
@@ -302,6 +407,13 @@ async function initDb() {
     }
 
     db.exec(SCHEMA);
+
+    const currentSchemaVersion = readSchemaVersion(db);
+    if (currentSchemaVersion > DB_SCHEMA_VERSION) {
+      throw new Error(
+        `Database schema version ${currentSchemaVersion} is newer than worker schema ${DB_SCHEMA_VERSION}`
+      );
+    }
 
     // Run migrations for existing tables
     try {
@@ -413,6 +525,8 @@ async function initDb() {
       console.log('[db-worker] Seeded reflection_prompts with templates');
     }
 
+    writeSchemaVersion(db, DB_SCHEMA_VERSION);
+
     console.log(`[db-worker] Ready (backend: ${backend})`);
     return true;
   } catch (err) {
@@ -451,6 +565,30 @@ self.onmessage = async function(event) {
       await exportToBlob(sqlite3, db);
     }
     self.postMessage({ type: 'Ok', request_id: request_id || 0 });
+    return;
+  }
+
+  if (reqType === "Restore") {
+    const snapshotJson = request?.snapshot_json;
+    if (typeof snapshotJson !== "string" || snapshotJson.trim().length === 0) {
+      self.postMessage({
+        type: "Error",
+        request_id: request_id || 0,
+        message: "Restore requires snapshot_json"
+      });
+      return;
+    }
+
+    try {
+      restoreFromSnapshot(snapshotJson);
+      self.postMessage({ type: "Ok", request_id: request_id || 0 });
+    } catch (error) {
+      self.postMessage({
+        type: "Error",
+        request_id: request_id || 0,
+        message: `Restore failed: ${error instanceof Error ? error.message : String(error)}`
+      });
+    }
     return;
   }
 

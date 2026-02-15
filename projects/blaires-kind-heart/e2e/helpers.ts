@@ -7,10 +7,23 @@ export async function waitForAppReady(
   panelId = "panel-tracker",
   timeoutMs = DEFAULT_TIMEOUT_MS
 ): Promise<void> {
-  await page.locator('html[data-app-ready="true"]').waitFor({
-    state: "attached",
-    timeout: timeoutMs
-  });
+  await page.waitForFunction(
+    () => {
+      const appRoot = document.querySelector("#app");
+      const trackerToggle = document.querySelector('[data-panel-open="panel-tracker"]');
+      const loading = document.querySelector("#loading-screen");
+      const loadingHidden =
+        !loading ||
+        loading.hasAttribute("hidden") ||
+        getComputedStyle(loading).display === "none";
+
+      return Boolean(appRoot && trackerToggle && loadingHidden);
+    },
+    undefined,
+    {
+      timeout: timeoutMs
+    }
+  );
 
   await page.waitForFunction(
     id => {
@@ -19,15 +32,24 @@ export async function waitForAppReady(
         return false;
       }
 
-      const panelToggle = document.querySelector(`[data-panel-open="${id}"]`);
-      if (panelToggle) {
+      const activePanel = document.querySelector("#app")?.getAttribute("data-active-panel");
+      if (activePanel === id) {
         return true;
       }
 
-      const activePanel = document.querySelector("#app")?.getAttribute("data-active-panel");
-      return activePanel === id;
+      if (panelRoot instanceof HTMLElement && !panelRoot.hidden) {
+        return true;
+      }
+
+      return Boolean(document.querySelector(`[data-panel-open="${id}"]`));
     },
     panelId,
-    { timeout: timeoutMs }
+    {
+      timeout: timeoutMs
+    }
   );
+
+  await page.waitForLoadState("networkidle", {
+    timeout: timeoutMs
+  });
 }

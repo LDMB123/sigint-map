@@ -21,6 +21,8 @@ const CRITICAL_ASSETS = [
   '/offline.html',
   '/manifest.webmanifest',
   '/wasm-init.js',
+  "runtime-diagnostics.js",
+  "/runtime-diagnostics.js",
   '/db-worker.js',
 
   // App WASM + JS glue (Trunk output):
@@ -39,7 +41,7 @@ const CRITICAL_ASSETS = [
   '/animations.css',
 
   // Background grain texture (2.5KB, used by app.css body):
-  '/assets/noise.png',
+  '/noise.png',
 
   // App icons (manifest requirement):
   '/icons/app-icon-192.png',

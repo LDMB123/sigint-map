@@ -102,19 +102,22 @@ pub async fn clear_old_errors() -> Result<usize, String> {
 
 /// Initialize errors table schema if not exists.
 pub async fn init_schema() -> Result<(), String> {
-    let sql = r#"
+    let create_table_sql = r#"
         CREATE TABLE IF NOT EXISTS errors (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp REAL NOT NULL,
             severity INTEGER NOT NULL,
             error_json TEXT NOT NULL
         );
-        CREATE INDEX IF NOT EXISTS idx_errors_timestamp ON errors(timestamp);
     "#;
-
-    db_client::exec(sql, vec![])
+    db_client::exec(create_table_sql, vec![])
         .await
-        .map_err(|e| format!("Schema init failed: {:?}", e))?;
+        .map_err(|e| format!("Schema table init failed: {:?}", e))?;
+
+    let create_index_sql = "CREATE INDEX IF NOT EXISTS idx_errors_timestamp ON errors(timestamp);";
+    db_client::exec(create_index_sql, vec![])
+        .await
+        .map_err(|e| format!("Schema index init failed: {:?}", e))?;
 
     Ok(())
 }

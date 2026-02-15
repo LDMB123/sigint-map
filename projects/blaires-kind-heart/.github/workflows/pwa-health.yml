@@ -221,10 +221,61 @@ jobs:
       - name: Run DB contract QA gate
         run: npm run qa:db-contract
 
+  docs-budget-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Enforce docs token budget
+        env:
+          DOC_TOKEN_BUDGET: "25000"
+        run: npm run qa:docs-budget
+
+  docs-links-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate active docs links
+        run: npm run qa:docs-links
+
+  rust-warning-drift-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Enforce Rust warning drift baseline
+        run: npm run qa:rust-warning-drift
+
   e2e-quality-gates:
     needs:
       - runtime-diagnostics-gate
       - db-contract-gate
+      - docs-budget-gate
+      - docs-links-gate
+      - rust-warning-drift-gate
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
