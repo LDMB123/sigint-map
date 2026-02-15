@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-globals */
 importScripts('/webgpu.js');
 
 let matrix = null;
@@ -71,3 +70,4 @@ self.onmessage = async (event) => {
     self.postMessage({ id, error: err?.message || String(err) });
   }
 };
+//# sourceMappingURL=webgpu-worker.js.map

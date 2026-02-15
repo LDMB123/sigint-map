@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::path::{Path, PathBuf};
 
 use axum::{
     body::Body,
@@ -8,14 +9,17 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use dmb_core::{is_supported_sqlite_parity_table, sqlite_parity_tables};
 use leptos::context::provide_context;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use leptos_config::LeptosOptions;
 use serde::Serialize;
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::SqlitePool;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tower_http::{
     compression::CompressionLayer,
     request_id::{MakeRequestUuid, PropagateRequestIdLayer, RequestId, SetRequestIdLayer},
@@ -60,8 +64,20 @@ async fn cache_control_middleware(req: Request<Body>, next: Next) -> Response {
 #[derive(Clone)]
 struct AppState {
     leptos: LeptosOptions,
-    #[allow(dead_code)]
     db: Option<SqlitePool>,
+    data_parity_cache: Arc<tokio::sync::RwLock<Option<DataParityCacheEntry>>>,
+}
+
+const DATA_PARITY_CACHE_TTL: Duration = Duration::from_secs(10);
+
+#[derive(Clone)]
+struct DataParityCacheEntry {
+    generated_at: Instant,
+    response: DataParityResponse,
+}
+
+fn new_data_parity_cache() -> Arc<tokio::sync::RwLock<Option<DataParityCacheEntry>>> {
+    Arc::new(tokio::sync::RwLock::new(None))
 }
 
 impl axum::extract::FromRef<AppState> for LeptosOptions {
@@ -71,11 +87,81 @@ impl axum::extract::FromRef<AppState> for LeptosOptions {
 }
 
 async fn fetch_table_count(pool: &SqlitePool, table: &str) -> Option<u64> {
-    let query = format!("SELECT COUNT(*) FROM {}", table);
+    if !is_supported_sqlite_parity_table(table) {
+        tracing::warn!(table, "unsupported sqlite table requested for parity count");
+        return None;
+    }
+
+    let query = format!("SELECT COUNT(*) FROM {table}");
     match sqlx::query_scalar::<_, i64>(&query).fetch_one(pool).await {
         Ok(value) => Some(value.max(0) as u64),
         Err(err) => {
             tracing::warn!(table, error = ?err, "failed to count sqlite table");
+            None
+        }
+    }
+}
+
+async fn fetch_existing_tables(pool: &SqlitePool) -> HashSet<String> {
+    match sqlx::query_scalar::<_, String>(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+    )
+    .fetch_all(pool)
+    .await
+    {
+        Ok(rows) => rows.into_iter().collect(),
+        Err(err) => {
+            tracing::warn!(error = ?err, "failed to enumerate sqlite tables");
+            HashSet::new()
+        }
+    }
+}
+
+async fn fetch_all_table_counts(pool: &SqlitePool) -> Option<HashMap<String, u64>> {
+    let tables: Vec<&str> = sqlite_parity_tables().collect();
+    fetch_selected_table_counts(pool, &tables).await
+}
+
+fn build_table_counts_query(tables: &[&str]) -> Option<String> {
+    if tables.is_empty() {
+        return None;
+    }
+
+    let mut query = String::new();
+    for (index, table) in tables.iter().enumerate() {
+        if index > 0 {
+            query.push_str("\nUNION ALL ");
+        }
+        query.push_str("SELECT '");
+        query.push_str(table);
+        query.push_str("', (SELECT COUNT(*) FROM ");
+        query.push_str(table);
+        query.push(')');
+    }
+    Some(query)
+}
+
+async fn fetch_selected_table_counts(
+    pool: &SqlitePool,
+    tables: &[&str],
+) -> Option<HashMap<String, u64>> {
+    let query = build_table_counts_query(tables)?;
+    match sqlx::query_as::<_, (String, i64)>(&query)
+        .fetch_all(pool)
+        .await
+    {
+        Ok(rows) => {
+            let mut counts = HashMap::with_capacity(rows.len());
+            for (table, count) in rows {
+                counts.insert(table, count.max(0) as u64);
+            }
+            Some(counts)
+        }
+        Err(err) => {
+            tracing::warn!(
+                error = ?err,
+                "failed to fetch sqlite parity counts via selected aggregate query"
+            );
             None
         }
     }
@@ -107,20 +193,88 @@ fn bind_addr_from_env(default: SocketAddr) -> SocketAddr {
     default
 }
 
+fn missing_required_static_assets_from_cwd(leptos: &LeptosOptions, cwd: &Path) -> Vec<PathBuf> {
+    let pkg_dir = cwd
+        .join(leptos.site_root.as_ref())
+        .join(leptos.site_pkg_dir.as_ref());
+    ["dmb_app.js", "dmb_app_bg.wasm"]
+        .into_iter()
+        .map(|file| pkg_dir.join(file))
+        .filter(|path| !path.exists())
+        .collect()
+}
+
+fn missing_required_static_assets(leptos: &LeptosOptions) -> Vec<PathBuf> {
+    let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    missing_required_static_assets_from_cwd(leptos, &cwd)
+}
+
+fn resolve_log_filter() -> String {
+    let rust_log = env::var("RUST_LOG")
+        .ok()
+        .map(|value| value.trim().to_string());
+    if let Some(value) = rust_log.filter(|value| !value.is_empty()) {
+        return value;
+    }
+    let dmb_level = env::var("DMB_LOG_LEVEL")
+        .ok()
+        .map(|value| value.trim().to_string());
+    if let Some(value) = dmb_level.filter(|value| !value.is_empty()) {
+        return value;
+    }
+    "info".to_string()
+}
+
+fn payload_size_bytes(payload: &serde_json::Value) -> usize {
+    serde_json::to_vec(payload)
+        .map(|bytes| bytes.len())
+        .unwrap_or(0)
+}
+
+fn payload_top_level_keys(payload: &serde_json::Value) -> usize {
+    payload.as_object().map(|map| map.len()).unwrap_or(0)
+}
+
+fn payload_event_name(payload: &serde_json::Value) -> &'static str {
+    for key in ["event", "eventName", "name", "type"] {
+        if payload
+            .get(key)
+            .and_then(serde_json::Value::as_str)
+            .is_some()
+        {
+            return key;
+        }
+    }
+    "unknown"
+}
+
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt().with_env_filter("info").init();
+    let log_filter = resolve_log_filter();
+    tracing_subscriber::fmt()
+        .with_env_filter(log_filter.clone())
+        .init();
+    tracing::info!(log_filter = %log_filter, "tracing initialized");
 
     let leptos = LeptosOptions::builder()
         .output_name("dmb_app")
         .site_root("static")
         .site_pkg_dir("pkg")
         .build();
+    let missing_assets = missing_required_static_assets(&leptos);
+    if !missing_assets.is_empty() {
+        tracing::error!(
+            missing_assets = ?missing_assets,
+            "required static assets missing; start dmb_server from the rust/ directory so static/pkg is resolvable"
+        );
+        std::process::exit(1);
+    }
 
     let db = init_db_pool().await;
     let state = AppState {
         leptos: leptos.clone(),
         db: db.clone(),
+        data_parity_cache: new_data_parity_cache(),
     };
     let leptos_for_shell = leptos.clone();
 
@@ -239,8 +393,12 @@ mod tests {
     use axum::body::Body;
     use axum::http::{Request, StatusCode};
     use axum::response::Response;
+    use serde_json::Value;
+    use sqlx::sqlite::SqlitePoolOptions;
     use std::convert::Infallible;
+    use std::fs;
     use std::sync::Mutex;
+    use std::time::{SystemTime, UNIX_EPOCH};
     use tower::util::BoxCloneService;
     use tower::ServiceExt;
 
@@ -257,6 +415,13 @@ mod tests {
             std::env::remove_var(key);
         }
         result
+    }
+
+    async fn parse_json_body(response: Response) -> Value {
+        let body = to_bytes(response.into_body(), 2 * 1024 * 1024)
+            .await
+            .expect("read body");
+        serde_json::from_slice(&body).expect("parse json body")
     }
 
     #[tokio::test]
@@ -321,6 +486,145 @@ mod tests {
         });
     }
 
+    #[test]
+    fn resolve_log_filter_prefers_rust_log() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let original_rust_log = std::env::var("RUST_LOG").ok();
+        let original_dmb_log_level = std::env::var("DMB_LOG_LEVEL").ok();
+        std::env::set_var("RUST_LOG", "debug,dmb_server=trace");
+        std::env::set_var("DMB_LOG_LEVEL", "warn");
+        let value = resolve_log_filter();
+        assert_eq!(value, "debug,dmb_server=trace");
+        if let Some(value) = original_rust_log {
+            std::env::set_var("RUST_LOG", value);
+        } else {
+            std::env::remove_var("RUST_LOG");
+        }
+        if let Some(value) = original_dmb_log_level {
+            std::env::set_var("DMB_LOG_LEVEL", value);
+        } else {
+            std::env::remove_var("DMB_LOG_LEVEL");
+        }
+    }
+
+    #[test]
+    fn resolve_log_filter_falls_back_to_dmb_log_level() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let original_rust_log = std::env::var("RUST_LOG").ok();
+        let original_dmb_log_level = std::env::var("DMB_LOG_LEVEL").ok();
+        std::env::remove_var("RUST_LOG");
+        std::env::set_var("DMB_LOG_LEVEL", "debug");
+        let value = resolve_log_filter();
+        assert_eq!(value, "debug");
+        if let Some(value) = original_rust_log {
+            std::env::set_var("RUST_LOG", value);
+        } else {
+            std::env::remove_var("RUST_LOG");
+        }
+        if let Some(value) = original_dmb_log_level {
+            std::env::set_var("DMB_LOG_LEVEL", value);
+        } else {
+            std::env::remove_var("DMB_LOG_LEVEL");
+        }
+    }
+
+    #[test]
+    fn resolve_log_filter_defaults_to_info() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let original_rust_log = std::env::var("RUST_LOG").ok();
+        let original_dmb_log_level = std::env::var("DMB_LOG_LEVEL").ok();
+        std::env::remove_var("RUST_LOG");
+        std::env::remove_var("DMB_LOG_LEVEL");
+        let value = resolve_log_filter();
+        assert_eq!(value, "info");
+        if let Some(value) = original_rust_log {
+            std::env::set_var("RUST_LOG", value);
+        } else {
+            std::env::remove_var("RUST_LOG");
+        }
+        if let Some(value) = original_dmb_log_level {
+            std::env::set_var("DMB_LOG_LEVEL", value);
+        } else {
+            std::env::remove_var("DMB_LOG_LEVEL");
+        }
+    }
+
+    #[test]
+    fn build_table_counts_query_empty() {
+        assert!(build_table_counts_query(&[]).is_none());
+    }
+
+    #[test]
+    fn build_table_counts_query_subset() {
+        let query =
+            build_table_counts_query(&["songs", "shows"]).expect("expected generated query");
+        assert!(query.contains("SELECT 'songs', (SELECT COUNT(*) FROM songs)"));
+        assert!(query.contains("UNION ALL SELECT 'shows', (SELECT COUNT(*) FROM shows)"));
+    }
+
+    fn unique_temp_dir(prefix: &str) -> std::path::PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("unix epoch")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "dmb_server_{prefix}_{}_{}",
+            std::process::id(),
+            nanos
+        ));
+        fs::create_dir_all(&dir).expect("create temp dir");
+        dir
+    }
+
+    #[test]
+    fn static_asset_guard_reports_missing_files() {
+        let cwd = unique_temp_dir("missing_assets");
+        let leptos = LeptosOptions::builder()
+            .output_name("dmb_app")
+            .site_root("static")
+            .site_pkg_dir("pkg")
+            .build();
+        let missing = missing_required_static_assets_from_cwd(&leptos, &cwd);
+        let missing_paths: Vec<String> = missing
+            .iter()
+            .map(|path| path.to_string_lossy().into_owned())
+            .collect();
+        assert!(
+            missing_paths
+                .iter()
+                .any(|path| path.ends_with("static/pkg/dmb_app.js")),
+            "missing list should include dmb_app.js: {missing_paths:?}"
+        );
+        assert!(
+            missing_paths
+                .iter()
+                .any(|path| path.ends_with("static/pkg/dmb_app_bg.wasm")),
+            "missing list should include dmb_app_bg.wasm: {missing_paths:?}"
+        );
+        let _ = fs::remove_dir_all(cwd);
+    }
+
+    #[test]
+    fn static_asset_guard_passes_when_pkg_files_exist() {
+        let cwd = unique_temp_dir("present_assets");
+        let pkg_dir = cwd.join("static").join("pkg");
+        fs::create_dir_all(&pkg_dir).expect("create pkg dir");
+        fs::write(pkg_dir.join("dmb_app.js"), b"// test").expect("write dmb_app.js");
+        fs::write(pkg_dir.join("dmb_app_bg.wasm"), b"\0asm").expect("write dmb_app_bg.wasm");
+
+        let leptos = LeptosOptions::builder()
+            .output_name("dmb_app")
+            .site_root("static")
+            .site_pkg_dir("pkg")
+            .build();
+        let missing = missing_required_static_assets_from_cwd(&leptos, &cwd);
+        assert!(
+            missing.is_empty(),
+            "expected no missing assets: {missing:?}"
+        );
+        let _ = fs::remove_dir_all(cwd);
+    }
+
     #[tokio::test]
     async fn ai_health_endpoint_smoke() {
         let leptos = LeptosOptions::builder()
@@ -328,7 +632,11 @@ mod tests {
             .site_root("static")
             .site_pkg_dir("pkg")
             .build();
-        let state = AppState { leptos, db: None };
+        let state = AppState {
+            leptos,
+            db: None,
+            data_parity_cache: new_data_parity_cache(),
+        };
         let app = Router::new()
             .route("/api/ai-health", get(api_ai_health))
             .with_state(state);
@@ -346,13 +654,128 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn data_parity_unavailable_without_sqlite_pool() {
+        let leptos = LeptosOptions::builder()
+            .output_name("dmb_app")
+            .site_root("static")
+            .site_pkg_dir("pkg")
+            .build();
+        let state = AppState {
+            leptos,
+            db: None,
+            data_parity_cache: new_data_parity_cache(),
+        };
+        let app = Router::new()
+            .route("/api/data-parity", get(api_data_parity))
+            .with_state(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/data-parity")
+                    .body(Body::empty())
+                    .expect("request body"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let payload = parse_json_body(response).await;
+        assert_eq!(
+            payload.get("available").and_then(Value::as_bool),
+            Some(false)
+        );
+        assert_eq!(
+            payload
+                .get("counts")
+                .and_then(Value::as_object)
+                .map(|counts| counts.len()),
+            Some(0)
+        );
+        assert_eq!(
+            payload
+                .get("missingTables")
+                .and_then(Value::as_array)
+                .map(|tables| tables.len()),
+            Some(0)
+        );
+    }
+
+    #[tokio::test]
+    async fn data_parity_reports_counts_and_missing_tables_for_partial_schema() {
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .expect("sqlite pool");
+        sqlx::query("CREATE TABLE songs (id INTEGER PRIMARY KEY)")
+            .execute(&pool)
+            .await
+            .expect("create songs");
+        sqlx::query("INSERT INTO songs (id) VALUES (1), (2)")
+            .execute(&pool)
+            .await
+            .expect("insert songs");
+
+        let leptos = LeptosOptions::builder()
+            .output_name("dmb_app")
+            .site_root("static")
+            .site_pkg_dir("pkg")
+            .build();
+        let state = AppState {
+            leptos,
+            db: Some(pool),
+            data_parity_cache: new_data_parity_cache(),
+        };
+        let app = Router::new()
+            .route("/api/data-parity", get(api_data_parity))
+            .with_state(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/data-parity")
+                    .body(Body::empty())
+                    .expect("request body"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let payload = parse_json_body(response).await;
+        assert_eq!(
+            payload.get("available").and_then(Value::as_bool),
+            Some(true)
+        );
+        assert_eq!(
+            payload
+                .get("counts")
+                .and_then(Value::as_object)
+                .and_then(|counts| counts.get("songs"))
+                .and_then(Value::as_u64),
+            Some(2)
+        );
+        let missing_tables = payload
+            .get("missingTables")
+            .and_then(Value::as_array)
+            .expect("missingTables array");
+        let missing: Vec<&str> = missing_tables.iter().filter_map(Value::as_str).collect();
+        assert!(missing.contains(&"shows"));
+        assert!(missing.contains(&"venues"));
+    }
+
+    #[tokio::test]
     async fn request_id_is_propagated() {
         let leptos = LeptosOptions::builder()
             .output_name("dmb_app")
             .site_root("static")
             .site_pkg_dir("pkg")
             .build();
-        let state = AppState { leptos, db: None };
+        let state = AppState {
+            leptos,
+            db: None,
+            data_parity_cache: new_data_parity_cache(),
+        };
 
         let app = Router::new()
             .route("/api/health", get(api_health))
@@ -391,6 +814,7 @@ mod tests {
         let state = AppState {
             leptos: leptos.clone(),
             db: None,
+            data_parity_cache: new_data_parity_cache(),
         };
         let routes = generate_route_list(dmb_app::App);
         Router::new()
@@ -493,7 +917,13 @@ async fn init_db_pool() -> Option<SqlitePool> {
 async fn api_data_parity(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {
-    let Some(pool) = state.db else {
+    if let Some(cache_entry) = state.data_parity_cache.read().await.as_ref().cloned() {
+        if cache_entry.generated_at.elapsed() <= DATA_PARITY_CACHE_TTL {
+            return (StatusCode::OK, Json(cache_entry.response));
+        }
+    }
+
+    let Some(pool) = state.db.as_ref() else {
         let response = DataParityResponse {
             available: false,
             counts: HashMap::new(),
@@ -501,36 +931,54 @@ async fn api_data_parity(
         };
         return (StatusCode::OK, Json(response));
     };
-    let tables = [
-        "venues",
-        "songs",
-        "tours",
-        "shows",
-        "setlist_entries",
-        "guests",
-        "guest_appearances",
-        "liberation_list",
-        "song_statistics",
-        "releases",
-        "release_tracks",
-        "curated_lists",
-        "curated_list_items",
-    ];
-    let mut counts = HashMap::new();
-    let mut missing_tables = Vec::new();
-    for table in tables {
-        match fetch_table_count(&pool, table).await {
-            Some(value) => {
-                counts.insert(table.to_string(), value);
-            }
-            None => missing_tables.push(table.to_string()),
+    let existing_tables = fetch_existing_tables(pool).await;
+    let mut missing_set = HashSet::new();
+    let parity_tables: Vec<&str> = sqlite_parity_tables().collect();
+    let mut present_tables = Vec::with_capacity(parity_tables.len());
+    for table in &parity_tables {
+        if existing_tables.contains(*table) {
+            present_tables.push(*table);
+        } else {
+            missing_set.insert((*table).to_string());
         }
     }
+
+    let mut counts = if present_tables.len() == parity_tables.len() {
+        fetch_all_table_counts(pool).await.unwrap_or_default()
+    } else {
+        fetch_selected_table_counts(pool, &present_tables)
+            .await
+            .unwrap_or_default()
+    };
+
+    if counts.is_empty() && !present_tables.is_empty() {
+        for table in present_tables {
+            match fetch_table_count(pool, table).await {
+                Some(value) => {
+                    counts.insert(table.to_string(), value);
+                }
+                None => {
+                    missing_set.insert(table.to_string());
+                }
+            }
+        }
+    }
+
+    let mut missing_tables: Vec<String> = missing_set.into_iter().collect();
+    missing_tables.sort_unstable();
+
     let response = DataParityResponse {
         available: true,
         counts,
         missing_tables,
     };
+    {
+        let mut cache = state.data_parity_cache.write().await;
+        *cache = Some(DataParityCacheEntry {
+            generated_at: Instant::now(),
+            response: response.clone(),
+        });
+    }
     (StatusCode::OK, Json(response))
 }
 
@@ -552,7 +1000,7 @@ struct AiHealthResponse {
     static_idb_migration_present: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct DataParityResponse {
     available: bool,
@@ -604,22 +1052,49 @@ async fn api_ai_health(
 }
 
 async fn api_analytics(Json(payload): Json<serde_json::Value>) -> impl IntoResponse {
-    tracing::info!("analytics event: {}", payload);
+    tracing::info!(
+        endpoint = "analytics",
+        payload_bytes = payload_size_bytes(&payload),
+        top_level_keys = payload_top_level_keys(&payload),
+        event_key = payload_event_name(&payload),
+        "analytics event received"
+    );
     StatusCode::NO_CONTENT
 }
 
 async fn api_csp_report(Json(payload): Json<serde_json::Value>) -> impl IntoResponse {
-    tracing::warn!("csp-report: {}", payload);
+    let violated_directive = payload
+        .get("csp-report")
+        .and_then(|report| report.get("violated-directive"))
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("unknown");
+    tracing::warn!(
+        endpoint = "csp_report",
+        payload_bytes = payload_size_bytes(&payload),
+        violated_directive = violated_directive,
+        "csp report received"
+    );
     StatusCode::NO_CONTENT
 }
 
 async fn api_share_target(Json(payload): Json<serde_json::Value>) -> impl IntoResponse {
-    tracing::info!("share-target: {}", payload);
+    tracing::info!(
+        endpoint = "share_target",
+        payload_bytes = payload_size_bytes(&payload),
+        top_level_keys = payload_top_level_keys(&payload),
+        "share-target payload received"
+    );
     (StatusCode::OK, Json(payload))
 }
 
 async fn api_telemetry(Json(payload): Json<serde_json::Value>) -> impl IntoResponse {
-    tracing::info!("telemetry: {}", payload);
+    tracing::info!(
+        endpoint = "telemetry",
+        payload_bytes = payload_size_bytes(&payload),
+        top_level_keys = payload_top_level_keys(&payload),
+        event_key = payload_event_name(&payload),
+        "telemetry payload received"
+    );
     StatusCode::NO_CONTENT
 }
 

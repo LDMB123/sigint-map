@@ -7,6 +7,14 @@ use dmb_core::{
 };
 #[cfg(feature = "ssr")]
 use dmb_core::{LiberationLastShow, LiberationVenue};
+#[cfg(feature = "ssr")]
+use std::collections::HashMap;
+#[cfg(feature = "ssr")]
+use std::hash::Hash;
+#[cfg(feature = "ssr")]
+use std::sync::{OnceLock, RwLock};
+#[cfg(feature = "ssr")]
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HomeStats {
@@ -32,6 +40,126 @@ pub struct ShowSummary {
 use sqlx::Row;
 
 #[cfg(feature = "ssr")]
+const SSR_DB_CACHE_TTL: Duration = Duration::from_secs(10);
+#[cfg(feature = "ssr")]
+const SSR_DB_CACHE_MAX_ENTRIES: usize = 256;
+
+#[cfg(feature = "ssr")]
+#[derive(Clone)]
+struct TimedCacheValue<T> {
+    value: T,
+    cached_at: Instant,
+}
+
+#[cfg(feature = "ssr")]
+fn read_ttl_cache<T: Clone>(cache: &OnceLock<RwLock<Option<TimedCacheValue<T>>>>) -> Option<T> {
+    let lock = cache.get_or_init(|| RwLock::new(None));
+    let guard = lock.read().ok()?;
+    let entry = guard.as_ref()?;
+    if entry.cached_at.elapsed() <= SSR_DB_CACHE_TTL {
+        Some(entry.value.clone())
+    } else {
+        None
+    }
+}
+
+#[cfg(feature = "ssr")]
+fn write_ttl_cache<T: Clone>(cache: &OnceLock<RwLock<Option<TimedCacheValue<T>>>>, value: &T) {
+    if let Ok(mut guard) = cache.get_or_init(|| RwLock::new(None)).write() {
+        *guard = Some(TimedCacheValue {
+            value: value.clone(),
+            cached_at: Instant::now(),
+        });
+    }
+}
+
+#[cfg(feature = "ssr")]
+fn read_ttl_keyed_cache<K, T>(
+    cache: &OnceLock<RwLock<HashMap<K, TimedCacheValue<T>>>>,
+    key: &K,
+) -> Option<T>
+where
+    K: Eq + Hash,
+    T: Clone,
+{
+    let lock = cache.get_or_init(|| RwLock::new(HashMap::new()));
+    let guard = lock.read().ok()?;
+    let entry = guard.get(key)?;
+    if entry.cached_at.elapsed() <= SSR_DB_CACHE_TTL {
+        Some(entry.value.clone())
+    } else {
+        None
+    }
+}
+
+#[cfg(feature = "ssr")]
+fn write_ttl_keyed_cache<K, T>(
+    cache: &OnceLock<RwLock<HashMap<K, TimedCacheValue<T>>>>,
+    key: K,
+    value: &T,
+) where
+    K: Eq + Hash + Clone,
+    T: Clone,
+{
+    if let Ok(mut guard) = cache.get_or_init(|| RwLock::new(HashMap::new())).write() {
+        guard.insert(
+            key,
+            TimedCacheValue {
+                value: value.clone(),
+                cached_at: Instant::now(),
+            },
+        );
+        if guard.len() > SSR_DB_CACHE_MAX_ENTRIES {
+            guard.retain(|_, entry| entry.cached_at.elapsed() <= SSR_DB_CACHE_TTL);
+            if guard.len() > SSR_DB_CACHE_MAX_ENTRIES {
+                guard.clear();
+            }
+        }
+    }
+}
+
+#[cfg(feature = "ssr")]
+static HOME_STATS_CACHE: OnceLock<RwLock<Option<TimedCacheValue<HomeStats>>>> = OnceLock::new();
+#[cfg(feature = "ssr")]
+static RECENT_SHOWS_CACHE: OnceLock<RwLock<HashMap<usize, TimedCacheValue<Vec<ShowSummary>>>>> =
+    OnceLock::new();
+#[cfg(feature = "ssr")]
+static TOP_SONGS_CACHE: OnceLock<RwLock<HashMap<usize, TimedCacheValue<Vec<Song>>>>> =
+    OnceLock::new();
+#[cfg(feature = "ssr")]
+static TOP_VENUES_CACHE: OnceLock<RwLock<HashMap<usize, TimedCacheValue<Vec<Venue>>>>> =
+    OnceLock::new();
+#[cfg(feature = "ssr")]
+static TOP_GUESTS_CACHE: OnceLock<RwLock<HashMap<usize, TimedCacheValue<Vec<Guest>>>>> =
+    OnceLock::new();
+#[cfg(feature = "ssr")]
+static RECENT_TOURS_CACHE: OnceLock<RwLock<HashMap<usize, TimedCacheValue<Vec<Tour>>>>> =
+    OnceLock::new();
+#[cfg(feature = "ssr")]
+static RECENT_RELEASES_CACHE: OnceLock<RwLock<HashMap<usize, TimedCacheValue<Vec<Release>>>>> =
+    OnceLock::new();
+#[cfg(feature = "ssr")]
+static ALL_RELEASES_CACHE: OnceLock<RwLock<Option<TimedCacheValue<Vec<Release>>>>> =
+    OnceLock::new();
+#[cfg(feature = "ssr")]
+static RELEASE_TRACKS_CACHE: OnceLock<RwLock<HashMap<i32, TimedCacheValue<Vec<ReleaseTrack>>>>> =
+    OnceLock::new();
+#[cfg(feature = "ssr")]
+static SETLIST_ENTRIES_CACHE: OnceLock<RwLock<HashMap<i32, TimedCacheValue<Vec<SetlistEntry>>>>> =
+    OnceLock::new();
+#[cfg(feature = "ssr")]
+static LIBERATION_LIST_CACHE: OnceLock<
+    RwLock<HashMap<i32, TimedCacheValue<Vec<LiberationEntry>>>>,
+> = OnceLock::new();
+#[cfg(feature = "ssr")]
+static CURATED_LISTS_CACHE: OnceLock<RwLock<Option<TimedCacheValue<Vec<CuratedList>>>>> =
+    OnceLock::new();
+#[cfg(feature = "ssr")]
+type CuratedListItemsCacheMap = HashMap<(i32, i32), TimedCacheValue<Vec<CuratedListItem>>>;
+#[cfg(feature = "ssr")]
+static CURATED_LIST_ITEMS_CACHE: OnceLock<RwLock<CuratedListItemsCacheMap>> = OnceLock::new();
+
+#[cfg(feature = "ssr")]
 async fn pool() -> Result<sqlx::SqlitePool, ServerFnError> {
     use sqlx::SqlitePool;
 
@@ -44,12 +172,6 @@ fn to_server_error(err: sqlx::Error) -> ServerFnError {
     ServerFnError::ServerError(err.to_string())
 }
 
-#[cfg(not(feature = "ssr"))]
-#[allow(dead_code)]
-async fn pool() -> Result<(), ServerFnError> {
-    Err(ServerFnError::ServerError("DB pool unavailable".into()))
-}
-
 #[cfg(feature = "ssr")]
 fn year_from_date(date: &str) -> i32 {
     date.get(0..4)
@@ -57,28 +179,36 @@ fn year_from_date(date: &str) -> i32 {
         .unwrap_or_default()
 }
 
+#[cfg(feature = "ssr")]
+fn sanitize_i32_limit(limit: i32, max: i32) -> i32 {
+    limit.clamp(0, max.max(0))
+}
+
 #[server(GetHomeStats, "/api")]
 pub async fn get_home_stats() -> Result<HomeStats, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        if let Some(cached) = read_ttl_cache(&HOME_STATS_CACHE) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
-        let shows: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM shows")
-            .fetch_one(&pool)
-            .await
-            .map_err(to_server_error)?;
-        let songs: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM songs")
-            .fetch_one(&pool)
-            .await
-            .map_err(to_server_error)?;
-        let venues: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM venues")
-            .fetch_one(&pool)
-            .await
-            .map_err(to_server_error)?;
-        Ok(HomeStats {
-            shows: shows.0,
-            songs: songs.0,
-            venues: venues.0,
-        })
+        let (shows, songs, venues): (i64, i64, i64) = sqlx::query_as(
+            "SELECT
+                (SELECT COUNT(*) FROM shows),
+                (SELECT COUNT(*) FROM songs),
+                (SELECT COUNT(*) FROM venues)",
+        )
+        .fetch_one(&pool)
+        .await
+        .map_err(to_server_error)?;
+        let stats = HomeStats {
+            shows,
+            songs,
+            venues,
+        };
+        write_ttl_cache(&HOME_STATS_CACHE, &stats);
+        Ok(stats)
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -240,11 +370,17 @@ pub async fn get_tour(year: i32) -> Result<Option<Tour>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = sqlx::query("SELECT id, year, name, total_shows FROM tours WHERE year = ?")
-            .bind(year)
-            .fetch_optional(&pool)
-            .await
-            .map_err(to_server_error)?;
+        let row = sqlx::query(
+            "SELECT id, year, name, total_shows
+             FROM tours
+             WHERE year = ?
+             ORDER BY year DESC, total_shows DESC, id DESC
+             LIMIT 1",
+        )
+        .bind(year)
+        .fetch_optional(&pool)
+        .await
+        .map_err(to_server_error)?;
 
         if let Some(row) = row {
             let tour = Tour {
@@ -380,6 +516,10 @@ pub async fn get_release(slug: String) -> Result<Option<Release>, ServerFnError>
 pub async fn get_all_releases() -> Result<Vec<Release>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        if let Some(cached) = read_ttl_cache(&ALL_RELEASES_CACHE) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
         let rows = sqlx::query(
             "SELECT id, title, slug, release_type, release_date FROM releases ORDER BY release_date DESC, id DESC",
@@ -402,6 +542,7 @@ pub async fn get_all_releases() -> Result<Vec<Release>, ServerFnError> {
                 search_text: None,
             });
         }
+        write_ttl_cache(&ALL_RELEASES_CACHE, &out);
         Ok(out)
     }
 
@@ -415,6 +556,10 @@ pub async fn get_all_releases() -> Result<Vec<Release>, ServerFnError> {
 pub async fn get_release_tracks(release_id: i32) -> Result<Vec<ReleaseTrack>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        if let Some(cached) = read_ttl_keyed_cache(&RELEASE_TRACKS_CACHE, &release_id) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
         let rows = sqlx::query(
             "SELECT id, release_id, song_id, show_id, track_number, disc_number, duration_seconds, notes
@@ -458,6 +603,7 @@ pub async fn get_release_tracks(release_id: i32) -> Result<Vec<ReleaseTrack>, Se
                     .map_err(to_server_error)?,
             });
         }
+        write_ttl_keyed_cache(&RELEASE_TRACKS_CACHE, release_id, &out);
         Ok(out)
     }
 
@@ -471,6 +617,10 @@ pub async fn get_release_tracks(release_id: i32) -> Result<Vec<ReleaseTrack>, Se
 pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        if let Some(cached) = read_ttl_keyed_cache(&SETLIST_ENTRIES_CACHE, &show_id) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
         let rows = sqlx::query(
             "SELECT se.id, se.show_id, se.song_id, se.position, se.set_name, se.slot, se.duration_seconds,
@@ -573,6 +723,7 @@ pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, Serv
                 song,
             });
         }
+        write_ttl_keyed_cache(&SETLIST_ENTRIES_CACHE, show_id, &out);
         Ok(out)
     }
 
@@ -586,6 +737,15 @@ pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, Serv
 pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        let limit = sanitize_i32_limit(limit, 200);
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+
+        if let Some(cached) = read_ttl_keyed_cache(&LIBERATION_LIST_CACHE, &limit) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
         let rows = sqlx::query(
             "SELECT ll.id, ll.song_id, ll.last_played_date, ll.last_played_show_id,
@@ -708,6 +868,7 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
                 last_show,
             });
         }
+        write_ttl_keyed_cache(&LIBERATION_LIST_CACHE, limit, &out);
         Ok(out)
     }
 
@@ -721,6 +882,10 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
 pub async fn get_curated_lists() -> Result<Vec<CuratedList>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        if let Some(cached) = read_ttl_cache(&CURATED_LISTS_CACHE) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
         let rows = sqlx::query(
             "SELECT id, original_id, title, slug, category, description, item_count, is_featured,
@@ -766,6 +931,7 @@ pub async fn get_curated_lists() -> Result<Vec<CuratedList>, ServerFnError> {
                     .map_err(to_server_error)?,
             });
         }
+        write_ttl_cache(&CURATED_LISTS_CACHE, &out);
         Ok(out)
     }
 
@@ -782,13 +948,23 @@ pub async fn get_curated_list_items(
 ) -> Result<Vec<CuratedListItem>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        let limit = sanitize_i32_limit(limit, 500);
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+
+        let cache_key = (list_id, limit);
+        if let Some(cached) = read_ttl_keyed_cache(&CURATED_LIST_ITEMS_CACHE, &cache_key) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
         let rows = sqlx::query(
             "SELECT id, list_id, position, item_type, show_id, song_id, venue_id, guest_id, release_id,
                     item_title, item_link, notes, metadata, created_at
              FROM curated_list_items
              WHERE list_id = ?
-             ORDER BY position
+             ORDER BY position, id
              LIMIT ?",
         )
         .bind(list_id)
@@ -844,6 +1020,7 @@ pub async fn get_curated_list_items(
                     .map_err(to_server_error)?,
             });
         }
+        write_ttl_keyed_cache(&CURATED_LIST_ITEMS_CACHE, cache_key, &out);
         Ok(out)
     }
 
@@ -857,8 +1034,13 @@ pub async fn get_curated_list_items(
 pub async fn get_recent_shows(limit: usize) -> Result<Vec<ShowSummary>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        let limit = limit.min(200);
+        if let Some(cached) = read_ttl_keyed_cache(&RECENT_SHOWS_CACHE, &limit) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
-        let limit = limit.min(200) as i64;
+        let sql_limit = limit as i64;
         let rows = sqlx::query(
             r#"
             SELECT
@@ -878,7 +1060,7 @@ pub async fn get_recent_shows(limit: usize) -> Result<Vec<ShowSummary>, ServerFn
             LIMIT ?
             "#,
         )
-        .bind(limit)
+        .bind(sql_limit)
         .fetch_all(&pool)
         .await
         .map_err(to_server_error)?;
@@ -908,6 +1090,7 @@ pub async fn get_recent_shows(limit: usize) -> Result<Vec<ShowSummary>, ServerFn
                     .map(|v| v as i32),
             });
         }
+        write_ttl_keyed_cache(&RECENT_SHOWS_CACHE, limit, &out);
         Ok(out)
     }
 
@@ -921,8 +1104,13 @@ pub async fn get_recent_shows(limit: usize) -> Result<Vec<ShowSummary>, ServerFn
 pub async fn get_top_songs(limit: usize) -> Result<Vec<Song>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        let limit = limit.min(200);
+        if let Some(cached) = read_ttl_keyed_cache(&TOP_SONGS_CACHE, &limit) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
-        let limit = limit.min(200) as i64;
+        let sql_limit = limit as i64;
         let rows = sqlx::query(
             r#"
             SELECT id, slug, title, sort_title, total_performances, last_played_date,
@@ -932,7 +1120,7 @@ pub async fn get_top_songs(limit: usize) -> Result<Vec<Song>, ServerFnError> {
             LIMIT ?
             "#,
         )
-        .bind(limit)
+        .bind(sql_limit)
         .fetch_all(&pool)
         .await
         .map_err(to_server_error)?;
@@ -969,6 +1157,7 @@ pub async fn get_top_songs(limit: usize) -> Result<Vec<Song>, ServerFnError> {
                 search_text: None,
             });
         }
+        write_ttl_keyed_cache(&TOP_SONGS_CACHE, limit, &out);
         Ok(out)
     }
 
@@ -982,8 +1171,13 @@ pub async fn get_top_songs(limit: usize) -> Result<Vec<Song>, ServerFnError> {
 pub async fn get_top_venues(limit: usize) -> Result<Vec<Venue>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        let limit = limit.min(200);
+        if let Some(cached) = read_ttl_keyed_cache(&TOP_VENUES_CACHE, &limit) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
-        let limit = limit.min(200) as i64;
+        let sql_limit = limit as i64;
         let rows = sqlx::query(
             r#"
             SELECT id, name, city, state, country, country_code, venue_type, total_shows
@@ -992,7 +1186,7 @@ pub async fn get_top_venues(limit: usize) -> Result<Vec<Venue>, ServerFnError> {
             LIMIT ?
             "#,
         )
-        .bind(limit)
+        .bind(sql_limit)
         .fetch_all(&pool)
         .await
         .map_err(to_server_error)?;
@@ -1022,6 +1216,7 @@ pub async fn get_top_venues(limit: usize) -> Result<Vec<Venue>, ServerFnError> {
                 search_text: None,
             });
         }
+        write_ttl_keyed_cache(&TOP_VENUES_CACHE, limit, &out);
         Ok(out)
     }
 
@@ -1035,8 +1230,13 @@ pub async fn get_top_venues(limit: usize) -> Result<Vec<Venue>, ServerFnError> {
 pub async fn get_top_guests(limit: usize) -> Result<Vec<Guest>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        let limit = limit.min(200);
+        if let Some(cached) = read_ttl_keyed_cache(&TOP_GUESTS_CACHE, &limit) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
-        let limit = limit.min(200) as i64;
+        let sql_limit = limit as i64;
         let rows = sqlx::query(
             r#"
             SELECT id, name, slug, total_appearances
@@ -1045,7 +1245,7 @@ pub async fn get_top_guests(limit: usize) -> Result<Vec<Guest>, ServerFnError> {
             LIMIT ?
             "#,
         )
-        .bind(limit)
+        .bind(sql_limit)
         .fetch_all(&pool)
         .await
         .map_err(to_server_error)?;
@@ -1063,6 +1263,7 @@ pub async fn get_top_guests(limit: usize) -> Result<Vec<Guest>, ServerFnError> {
                 search_text: None,
             });
         }
+        write_ttl_keyed_cache(&TOP_GUESTS_CACHE, limit, &out);
         Ok(out)
     }
 
@@ -1076,17 +1277,22 @@ pub async fn get_top_guests(limit: usize) -> Result<Vec<Guest>, ServerFnError> {
 pub async fn get_recent_tours(limit: usize) -> Result<Vec<Tour>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        let limit = limit.min(200);
+        if let Some(cached) = read_ttl_keyed_cache(&RECENT_TOURS_CACHE, &limit) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
-        let limit = limit.min(200) as i64;
+        let sql_limit = limit as i64;
         let rows = sqlx::query(
             r#"
             SELECT id, year, name, total_shows
             FROM tours
-            ORDER BY year DESC
+            ORDER BY year DESC, total_shows DESC, id DESC
             LIMIT ?
             "#,
         )
-        .bind(limit)
+        .bind(sql_limit)
         .fetch_all(&pool)
         .await
         .map_err(to_server_error)?;
@@ -1104,6 +1310,7 @@ pub async fn get_recent_tours(limit: usize) -> Result<Vec<Tour>, ServerFnError> 
                 search_text: None,
             });
         }
+        write_ttl_keyed_cache(&RECENT_TOURS_CACHE, limit, &out);
         Ok(out)
     }
 
@@ -1117,17 +1324,22 @@ pub async fn get_recent_tours(limit: usize) -> Result<Vec<Tour>, ServerFnError> 
 pub async fn get_recent_releases(limit: usize) -> Result<Vec<Release>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
+        let limit = limit.min(200);
+        if let Some(cached) = read_ttl_keyed_cache(&RECENT_RELEASES_CACHE, &limit) {
+            return Ok(cached);
+        }
+
         let pool = pool().await?;
-        let limit = limit.min(200) as i64;
+        let sql_limit = limit as i64;
         let rows = sqlx::query(
             r#"
             SELECT id, title, slug, release_type, release_date
             FROM releases
-            ORDER BY release_date DESC
+            ORDER BY release_date DESC, id DESC
             LIMIT ?
             "#,
         )
-        .bind(limit)
+        .bind(sql_limit)
         .fetch_all(&pool)
         .await
         .map_err(to_server_error)?;
@@ -1147,6 +1359,7 @@ pub async fn get_recent_releases(limit: usize) -> Result<Vec<Release>, ServerFnE
                 search_text: None,
             });
         }
+        write_ttl_keyed_cache(&RECENT_RELEASES_CACHE, limit, &out);
         Ok(out)
     }
 

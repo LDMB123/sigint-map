@@ -1,5 +1,7 @@
 #[cfg(feature = "hydrate")]
-use std::collections::HashMap;
+use std::cell::RefCell;
+#[cfg(feature = "hydrate")]
+use std::collections::{HashMap, HashSet};
 
 use leptos::prelude::RwSignal;
 #[cfg(feature = "hydrate")]
@@ -11,6 +13,8 @@ use wasm_bindgen::JsCast;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen_futures::JsFuture;
 
+#[cfg(feature = "hydrate")]
+use dmb_core::SQLITE_PARITY_STORE_TABLE_MAPPINGS;
 #[cfg(feature = "hydrate")]
 use dmb_idb::{
     TABLE_CURATED_LISTS, TABLE_CURATED_LIST_ITEMS, TABLE_GUESTS, TABLE_GUEST_APPEARANCES,
@@ -91,14 +95,6 @@ pub struct SqliteParityEntry {
 #[derive(Debug, Clone, Deserialize)]
 struct DataManifest {
     version: String,
-    #[allow(dead_code)]
-    #[serde(
-        default,
-        alias = "generatedAt",
-        alias = "timestamp",
-        alias = "generated_at"
-    )]
-    generated_at: Option<String>,
     #[serde(default, alias = "recordCounts")]
     record_counts: HashMap<String, u64>,
     #[serde(default)]
@@ -108,13 +104,7 @@ struct DataManifest {
 #[cfg(feature = "hydrate")]
 #[derive(Debug, Clone, Deserialize)]
 struct ManifestFile {
-    #[allow(dead_code)]
     name: String,
-    #[allow(dead_code)]
-    size: Option<u64>,
-    #[allow(dead_code)]
-    checksum: Option<String>,
-    #[allow(dead_code)]
     #[serde(default, alias = "recordCount")]
     count: Option<u64>,
 }
@@ -213,7 +203,47 @@ pub async fn fetch_manifest_diff() -> Option<ManifestDiff> {
 }
 
 #[cfg(feature = "hydrate")]
+const INTEGRITY_REPORT_CACHE_TTL_MS: f64 = 10_000.0;
+
+#[cfg(feature = "hydrate")]
+thread_local! {
+    static INTEGRITY_REPORT_CACHE: RefCell<Option<(f64, IntegrityReport)>> = const { RefCell::new(None) };
+}
+
+#[cfg(feature = "hydrate")]
+fn read_integrity_report_cache() -> Option<IntegrityReport> {
+    let now = js_sys::Date::now();
+    INTEGRITY_REPORT_CACHE.with(|cache| {
+        let cached = cache.borrow();
+        let (timestamp_ms, report) = cached.as_ref()?;
+        if now - *timestamp_ms <= INTEGRITY_REPORT_CACHE_TTL_MS {
+            Some(report.clone())
+        } else {
+            None
+        }
+    })
+}
+
+#[cfg(feature = "hydrate")]
+fn write_integrity_report_cache(report: &IntegrityReport) {
+    INTEGRITY_REPORT_CACHE.with(|cache| {
+        *cache.borrow_mut() = Some((js_sys::Date::now(), report.clone()));
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn clear_integrity_report_cache() {
+    INTEGRITY_REPORT_CACHE.with(|cache| {
+        *cache.borrow_mut() = None;
+    });
+}
+
+#[cfg(feature = "hydrate")]
 pub async fn fetch_integrity_report() -> Option<IntegrityReport> {
+    if let Some(cached) = read_integrity_report_cache() {
+        return Some(cached);
+    }
+
     let manifest = fetch_json::<DataManifest>("/data/manifest.json").await?;
     let dry_run = fetch_json::<DryRunReport>("/data/idb-migration-dry-run.json").await;
     let mismatches = verify_import_integrity(&manifest, dry_run.as_ref()).await?;
@@ -226,10 +256,12 @@ pub async fn fetch_integrity_report() -> Option<IntegrityReport> {
         })
         .collect::<Vec<_>>();
     let total_mismatches = entries.len();
-    Some(IntegrityReport {
+    let report = IntegrityReport {
         total_mismatches,
         mismatches: entries,
-    })
+    };
+    write_integrity_report_cache(&report);
+    Some(report)
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -249,66 +281,99 @@ struct SqliteParityResponse {
 }
 
 #[cfg(feature = "hydrate")]
+const SQLITE_PARITY_CACHE_TTL_MS: f64 = 10_000.0;
+
+#[cfg(feature = "hydrate")]
+thread_local! {
+    static SQLITE_PARITY_CACHE: RefCell<Option<(f64, SqliteParityReport)>> = const { RefCell::new(None) };
+}
+
+#[cfg(feature = "hydrate")]
+fn read_sqlite_parity_cache() -> Option<SqliteParityReport> {
+    let now = js_sys::Date::now();
+    SQLITE_PARITY_CACHE.with(|cache| {
+        let cached = cache.borrow();
+        let (timestamp_ms, report) = cached.as_ref()?;
+        if now - *timestamp_ms <= SQLITE_PARITY_CACHE_TTL_MS {
+            Some(report.clone())
+        } else {
+            None
+        }
+    })
+}
+
+#[cfg(feature = "hydrate")]
+fn write_sqlite_parity_cache(report: &SqliteParityReport) {
+    SQLITE_PARITY_CACHE.with(|cache| {
+        *cache.borrow_mut() = Some((js_sys::Date::now(), report.clone()));
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn clear_sqlite_parity_cache() {
+    SQLITE_PARITY_CACHE.with(|cache| {
+        *cache.borrow_mut() = None;
+    });
+}
+
+#[cfg(feature = "hydrate")]
 pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
+    if let Some(cached) = read_sqlite_parity_cache() {
+        return Some(cached);
+    }
+
     let response = fetch_json::<SqliteParityResponse>("/api/data-parity").await?;
     if !response.available {
-        return Some(SqliteParityReport {
+        let report = SqliteParityReport {
             available: false,
             total_mismatches: 0,
             mismatches: Vec::new(),
             missing_tables: response.missing_tables,
             idb_count_failures: Vec::new(),
+        };
+        write_sqlite_parity_cache(&report);
+        return Some(report);
+    }
+
+    let stores: Vec<&str> = SQLITE_PARITY_STORE_TABLE_MAPPINGS
+        .iter()
+        .map(|(store, _)| *store)
+        .collect();
+    let (idb_counts, known_missing_stores) = dmb_idb::count_stores_with_missing(&stores)
+        .await
+        .map(|(entries, missing)| {
+            let counts = entries
+                .into_iter()
+                .map(|(name, count)| (name, count as u64))
+                .collect::<HashMap<_, _>>();
+            let missing = missing.into_iter().collect::<HashSet<_>>();
+            (counts, missing)
+        })
+        .unwrap_or_else(|err| {
+            tracing::warn!(
+                error = ?err,
+                "sqlite parity: IndexedDB store counting failed; marking all stores unavailable"
+            );
+            let missing = stores
+                .iter()
+                .map(|store| (*store).to_string())
+                .collect::<HashSet<_>>();
+            (HashMap::new(), missing)
         });
-    }
-
-    async fn count_store_with_retry(store_name: &str, attempts: usize) -> Result<u32, JsValue> {
-        let attempts = attempts.max(1);
-        let mut last_err: Option<JsValue> = None;
-        for _ in 0..attempts {
-            match dmb_idb::count_store(store_name).await {
-                Ok(value) => return Ok(value),
-                Err(err) => {
-                    last_err = Some(err);
-                    // Yield a tick so we don't keep retrying in a tight loop.
-                    let _ = JsFuture::from(js_sys::Promise::resolve(&JsValue::NULL)).await;
-                }
-            }
-        }
-        Err(last_err.unwrap_or_else(|| JsValue::from_str("count_store failed")))
-    }
-
-    let mapping: &[(&str, &str)] = &[
-        (TABLE_VENUES, "venues"),
-        (TABLE_SONGS, "songs"),
-        (TABLE_TOURS, "tours"),
-        (TABLE_SHOWS, "shows"),
-        (TABLE_SETLIST_ENTRIES, "setlist_entries"),
-        (TABLE_GUESTS, "guests"),
-        (TABLE_GUEST_APPEARANCES, "guest_appearances"),
-        (TABLE_LIBERATION_LIST, "liberation_list"),
-        (TABLE_SONG_STATS, "song_statistics"),
-        (TABLE_RELEASES, "releases"),
-        (TABLE_RELEASE_TRACKS, "release_tracks"),
-        (TABLE_CURATED_LISTS, "curated_lists"),
-        (TABLE_CURATED_LIST_ITEMS, "curated_list_items"),
-    ];
 
     let mut mismatches = Vec::new();
     let mut idb_count_failures = Vec::new();
-    for (store, table) in mapping {
-        let idb_count = match count_store_with_retry(store, 3).await {
-            Ok(value) => value as u64,
-            Err(err) => {
-                tracing::warn!(
-                    store,
-                    error = ?err,
-                    "sqlite parity: failed to count IndexedDB store; skipping parity comparison"
-                );
-                idb_count_failures.push((*store).to_string());
-                continue;
-            }
+    for &(store, table) in SQLITE_PARITY_STORE_TABLE_MAPPINGS.iter() {
+        if known_missing_stores.contains(store) {
+            idb_count_failures.push(store.to_string());
+            continue;
+        }
+
+        let Some(idb_count) = idb_counts.get(store).copied() else {
+            idb_count_failures.push(store.to_string());
+            continue;
         };
-        let sqlite_count = response.counts.get(*table).copied().unwrap_or(0);
+        let sqlite_count = response.counts.get(table).copied().unwrap_or(0);
         if idb_count != sqlite_count {
             mismatches.push(SqliteParityEntry {
                 store: store.to_string(),
@@ -318,15 +383,19 @@ pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
             });
         }
     }
+    idb_count_failures.sort_unstable();
+    idb_count_failures.dedup();
 
     let total_mismatches = mismatches.len();
-    Some(SqliteParityReport {
+    let report = SqliteParityReport {
         available: true,
         total_mismatches,
         mismatches,
         missing_tables: response.missing_tables,
         idb_count_failures,
-    })
+    };
+    write_sqlite_parity_cache(&report);
+    Some(report)
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -450,6 +519,9 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
     use wasm_bindgen::JsValue;
     use wasm_bindgen_futures::JsFuture;
 
+    clear_sqlite_parity_cache();
+    clear_integrity_report_cache();
+
     let update = |message: String, progress: f32| {
         status.set(ImportStatus {
             message,
@@ -497,6 +569,17 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
     if let Ok(Some(marker)) = dmb_idb::get_sync_meta::<ImportMarker>(IMPORT_MARKER_ID).await {
         if marker.manifest_version == manifest.version {
             if let Some(mismatches) = verify_import_integrity(&manifest, dry_run.as_ref()).await {
+                if mismatches.is_empty() {
+                    status.set(ImportStatus {
+                        message: "Offline data ready".to_string(),
+                        progress: 1.0,
+                        done: true,
+                        error: None,
+                        can_reset: false,
+                    });
+                    return;
+                }
+
                 // Auto-repair: this typically means the IDB schema drifted (missing stores)
                 // or the previous import was interrupted. Clear seed stores and re-import.
                 tracing::warn!(
@@ -650,15 +733,17 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
     let _ = dmb_idb::put_sync_meta(&checkpoint).await;
 
     if let Some(mismatches) = verify_import_integrity(&manifest, dry_run.as_ref()).await {
-        let summary = format!("Integrity check failed for {} stores", mismatches.len());
-        status.set(ImportStatus {
-            message: summary,
-            progress: 1.0,
-            done: false,
-            error: Some(format!("{mismatches:?}")),
-            can_reset: true,
-        });
-        return;
+        if !mismatches.is_empty() {
+            let summary = format!("Integrity check failed for {} stores", mismatches.len());
+            status.set(ImportStatus {
+                message: summary,
+                progress: 1.0,
+                done: false,
+                error: Some(format!("{mismatches:?}")),
+                can_reset: true,
+            });
+            return;
+        }
     }
 
     status.set(ImportStatus {
@@ -698,6 +783,61 @@ fn dry_run_store_counts(report: &DryRunReport) -> std::collections::HashMap<Stri
 }
 
 #[cfg(feature = "hydrate")]
+async fn collect_integrity_mismatches_for_checks(
+    checks: Vec<(String, u64)>,
+    counted: &mut HashMap<String, u64>,
+    missing_stores: &HashSet<String>,
+    mismatches: &mut Vec<IntegrityMismatch>,
+    scope: &'static str,
+) {
+    for (store, expected_count) in checks {
+        if missing_stores.contains(&store) {
+            mismatches.push(IntegrityMismatch {
+                store,
+                expected: expected_count,
+                actual: 0,
+            });
+            continue;
+        }
+
+        let actual = if let Some(value) = counted.get(&store).copied() {
+            value
+        } else {
+            match dmb_idb::count_store(&store).await {
+                Ok(value) => {
+                    let value = value as u64;
+                    counted.insert(store.clone(), value);
+                    value
+                }
+                Err(err) => {
+                    tracing::warn!(
+                        store,
+                        expected_count,
+                        scope,
+                        error = ?err,
+                        "integrity: failed to count store; treating as mismatch"
+                    );
+                    mismatches.push(IntegrityMismatch {
+                        store,
+                        expected: expected_count,
+                        actual: 0,
+                    });
+                    continue;
+                }
+            }
+        };
+
+        if actual != expected_count {
+            mismatches.push(IntegrityMismatch {
+                store,
+                expected: expected_count,
+                actual,
+            });
+        }
+    }
+}
+
+#[cfg(feature = "hydrate")]
 async fn verify_import_integrity(
     manifest: &DataManifest,
     dry_run: Option<&DryRunReport>,
@@ -706,7 +846,8 @@ async fn verify_import_integrity(
     if expected.is_empty() && dry_run.is_none() {
         return None;
     }
-    let mut mismatches = Vec::new();
+
+    let mut manifest_checks: Vec<(String, u64)> = Vec::new();
     for (name, expected_count) in expected {
         let store = IMPORT_SPECS.iter().find_map(|spec| {
             let normalized = normalized_manifest_name(spec.file)?;
@@ -716,70 +857,69 @@ async fn verify_import_integrity(
                 None
             }
         });
-        let Some(store) = store else {
-            continue;
-        };
-        let actual = match dmb_idb::count_store(store).await {
-            Ok(value) => value as u64,
-            Err(err) => {
-                // If we cannot count a store we expect to exist, treat it as an integrity failure.
-                // This avoids false "Offline data ready" states when IDB schema drifted.
-                tracing::warn!(
-                    store,
-                    expected_count,
-                    error = ?err,
-                    "integrity: failed to count store; treating as mismatch"
-                );
-                mismatches.push(IntegrityMismatch {
-                    store: store.to_string(),
-                    expected: expected_count,
-                    actual: 0,
-                });
-                continue;
-            }
-        };
-        if actual != expected_count {
-            mismatches.push(IntegrityMismatch {
-                store: store.to_string(),
-                expected: expected_count,
-                actual,
-            });
+        if let Some(store) = store {
+            manifest_checks.push((store.to_string(), expected_count));
         }
     }
-    if let Some(report) = dry_run {
-        let counts = dry_run_store_counts(report);
-        for (store, expected_count) in counts {
-            let actual = match dmb_idb::count_store(&store).await {
-                Ok(value) => value as u64,
-                Err(err) => {
-                    tracing::warn!(
-                        store,
-                        expected_count,
-                        error = ?err,
-                        "integrity: failed to count dry-run store; treating as mismatch"
-                    );
-                    mismatches.push(IntegrityMismatch {
-                        store,
-                        expected: expected_count,
-                        actual: 0,
-                    });
-                    continue;
+
+    let dry_run_checks = dry_run.map(dry_run_store_counts).unwrap_or_default();
+    let dry_run_check_entries: Vec<(String, u64)> = dry_run_checks
+        .iter()
+        .map(|(store, count)| (store.clone(), *count))
+        .collect();
+
+    let mut stores_to_count: Vec<String> = manifest_checks
+        .iter()
+        .map(|(store, _)| store.clone())
+        .collect();
+    stores_to_count.extend(dry_run_check_entries.iter().map(|(store, _)| store.clone()));
+    stores_to_count.sort_unstable();
+    stores_to_count.dedup();
+
+    let mut counted: HashMap<String, u64> = HashMap::new();
+    let mut missing_stores: HashSet<String> = HashSet::new();
+    if !stores_to_count.is_empty() {
+        let store_refs: Vec<&str> = stores_to_count.iter().map(|store| store.as_str()).collect();
+        match dmb_idb::count_stores_with_missing(&store_refs).await {
+            Ok((entries, missing)) => {
+                for (store, count) in entries {
+                    counted.insert(store, count as u64);
                 }
-            };
-            if actual != expected_count {
-                mismatches.push(IntegrityMismatch {
-                    store,
-                    expected: expected_count,
-                    actual,
-                });
+                missing_stores.extend(missing);
+            }
+            Err(err) => {
+                tracing::warn!(
+                    error = ?err,
+                    "integrity: batched store counting failed; falling back to per-store counts"
+                );
             }
         }
     }
-    if mismatches.is_empty() {
-        None
-    } else {
-        Some(mismatches)
+
+    let mut mismatches = Vec::new();
+    collect_integrity_mismatches_for_checks(
+        manifest_checks,
+        &mut counted,
+        &missing_stores,
+        &mut mismatches,
+        "manifest",
+    )
+    .await;
+    collect_integrity_mismatches_for_checks(
+        dry_run_check_entries,
+        &mut counted,
+        &missing_stores,
+        &mut mismatches,
+        "dry-run",
+    )
+    .await;
+
+    if mismatches.len() > 1 {
+        let mut seen: HashSet<(String, u64, u64)> = HashSet::new();
+        mismatches.retain(|entry| seen.insert((entry.store.clone(), entry.expected, entry.actual)));
     }
+
+    Some(mismatches)
 }
 
 #[cfg(not(feature = "hydrate"))]

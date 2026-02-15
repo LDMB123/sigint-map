@@ -48,7 +48,7 @@ function getHardwareProfile() {
       cores: Number(root?.navigator?.hardwareConcurrency || 4),
       memoryGb: Number(root?.navigator?.deviceMemory || 0),
     };
-  } catch (err) {
+  } catch {
     return { cores: 4, memoryGb: 0 };
   }
 }
@@ -60,7 +60,7 @@ function detectAppleSilicon() {
     const isMac = /Mac/.test(platform) || /macOS/i.test(ua);
     const looksIntel = /Intel/.test(platform) || /x86_64|i[3-6]86/i.test(ua);
     return isMac && !looksIntel;
-  } catch (err) {
+  } catch {
     return false;
   }
 }
@@ -88,7 +88,7 @@ function computeDefaultWorkerThreshold() {
     if (memory <= 4 || cores <= 4) return 60000;
     if (memory >= 8 || cores >= 8) return 25000;
     return 35000;
-  } catch (err) {
+  } catch {
     return DEFAULT_WORKER_MIN_FLOATS;
   }
 }
@@ -106,7 +106,7 @@ function computeWorkerMaxFloats() {
     if (memory >= 8) return 2500000;
     if (memory >= 4) return 1500000;
     return 900000;
-  } catch (err) {
+  } catch {
     return WORKER_MAX_FLOATS_FALLBACK;
   }
 }
@@ -125,7 +125,7 @@ function readMetricCounter(name) {
     if (!root.localStorage) return 0;
     const value = Number(root.localStorage.getItem(metricKey(name)) || '0');
     return Number.isFinite(value) ? value : 0;
-  } catch (err) {
+  } catch {
     return 0;
   }
 }
@@ -139,7 +139,7 @@ function bumpMetricCounter(name) {
     root.localStorage.setItem(key, String(next));
     root.localStorage.setItem(WEBGPU_METRIC_LAST_KEY, name);
     root.localStorage.setItem(WEBGPU_METRIC_LAST_TS_KEY, String(Date.now()));
-  } catch (err) {
+  } catch {
     // ignore
   }
 }
@@ -157,7 +157,7 @@ function getWebgpuTelemetry() {
       const rawTs = Number(root.localStorage.getItem(WEBGPU_METRIC_LAST_TS_KEY) || '0');
       lastEventTs = Number.isFinite(rawTs) && rawTs > 0 ? rawTs : null;
     }
-  } catch (err) {
+  } catch {
     // ignore
   }
   return { counters, lastEvent, lastEventTs };
@@ -171,7 +171,7 @@ function resetWebgpuTelemetry() {
     }
     root.localStorage.removeItem(WEBGPU_METRIC_LAST_KEY);
     root.localStorage.removeItem(WEBGPU_METRIC_LAST_TS_KEY);
-  } catch (err) {
+  } catch {
     // ignore
   }
 }
@@ -182,7 +182,7 @@ function loadWorkerThreshold() {
     const raw = root.localStorage.getItem('dmb-webgpu-worker-threshold');
     const value = raw ? Number(raw) : computeDefaultWorkerThreshold();
     return clampWorkerThreshold(value);
-  } catch (err) {
+  } catch {
     return clampWorkerThreshold(computeDefaultWorkerThreshold());
   }
 }
@@ -193,7 +193,7 @@ function loadWorkerFailureUntil() {
     const raw = root.localStorage.getItem(WORKER_FAILURE_UNTIL_KEY);
     const value = raw ? Number(raw) : 0;
     return Number.isFinite(value) ? value : 0;
-  } catch (err) {
+  } catch {
     return 0;
   }
 }
@@ -211,7 +211,7 @@ function markWorkerFailure(reason) {
         root.localStorage.setItem(WORKER_FAILURE_REASON_KEY, String(reason));
       }
     }
-  } catch (err) {
+  } catch {
     // ignore
   }
   if (reason) {
@@ -226,7 +226,7 @@ function clearWorkerFailure() {
       root.localStorage.removeItem(WORKER_FAILURE_UNTIL_KEY);
       root.localStorage.removeItem(WORKER_FAILURE_REASON_KEY);
     }
-  } catch (err) {
+  } catch {
     // ignore
   }
 }
@@ -237,7 +237,7 @@ function getWorkerFailureStatus() {
     if (root.localStorage) {
       lastError = root.localStorage.getItem(WORKER_FAILURE_REASON_KEY);
     }
-  } catch (err) {
+  } catch {
     lastError = null;
   }
   const remaining = workerFailureUntil > 0 ? Math.max(workerFailureUntil - Date.now(), 0) : 0;
@@ -255,7 +255,7 @@ function setWorkerThreshold(value) {
     if (root.localStorage) {
       root.localStorage.setItem('dmb-webgpu-worker-threshold', String(workerThresholdFloats));
     }
-  } catch (err) {
+  } catch {
     // ignore storage failures
   }
 }
@@ -606,7 +606,7 @@ function failWorkerPending(state, reason) {
   state.pending.forEach(({ reject }) => {
     try {
       reject(reason);
-    } catch (err) {
+    } catch {
       // ignore
     }
   });
@@ -617,7 +617,7 @@ function resetWorkerState(reason) {
   if (!workerState) return;
   try {
     workerState.worker.terminate();
-  } catch (err) {
+  } catch {
     // ignore
   }
   failWorkerPending(workerState, reason || new Error('WebGPU worker reset'));
@@ -794,3 +794,4 @@ async function webgpuScoresSubsetWorker(query, matrix, dim, indices) {
 }
 
 root.dmbWebgpuScoresSubsetWorker = webgpuScoresSubsetWorker;
+//# sourceMappingURL=webgpu.js.map

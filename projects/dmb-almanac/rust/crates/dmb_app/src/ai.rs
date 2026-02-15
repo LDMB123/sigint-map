@@ -375,7 +375,7 @@ const AI_WARNING_EVENTS_KEY: &str = "dmb-ai-warning-events";
 const AI_WARNING_EVENTS_LIMIT: usize = 20;
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
+#[cfg_attr(not(feature = "hydrate"), allow(dead_code))]
 struct CapPolicy {
     cap_bytes: u64,
     device_memory_gb: Option<f64>,
