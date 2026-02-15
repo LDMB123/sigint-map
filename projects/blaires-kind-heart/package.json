@@ -1,0 +1,26 @@
+{
+  "name": "blaires-kind-heart-e2e",
+  "private": true,
+  "scripts": {
+    "build:release": "bash scripts/build-verify-release.sh",
+    "build:verify:release": "DIST_DIR=.verify-dist-release bash scripts/build-verify-release.sh",
+    "test:e2e": "node scripts/run-e2e.mjs",
+    "test:e2e:all": "E2E_WEBKIT=1 node scripts/run-e2e.mjs",
+    "test:e2e:webkit": "E2E_WEBKIT=1 node scripts/run-e2e.mjs --project=webkit-smoke",
+    "test:e2e:headed": "node scripts/run-e2e.mjs --headed",
+    "test:e2e:ui": "node scripts/run-e2e.mjs --ui",
+    "qa:runtime": "node scripts/check-runtime-diagnostics-contract.mjs && node scripts/run-e2e.mjs --grep \"runtime diagnostics\"",
+    "qa:db-contract": "node scripts/check-db-contract.mjs && node scripts/run-e2e.mjs --grep \"db contract\"",
+    "qa:audit-baseline": "bash scripts/checks/full-stack-audit-baseline.sh",
+    "qa:e2e-gap-report": "node scripts/checks/e2e-gap-report.mjs",
+    "qa:pwa-contract": "node scripts/pwa-health-check.mjs",
+    "pwa:health": "node scripts/pwa-health-check.mjs",
+    "lighthouse:ci": "bash scripts/run-lighthouse-ci.sh",
+    "token:baseline": "node scripts/token-doc-baseline.mjs"
+  },
+  "devDependencies": {
+    "@lhci/cli": "^0.15.1",
+    "@axe-core/playwright": "^4.11.1",
+    "@playwright/test": "^1.51.0"
+  }
+}

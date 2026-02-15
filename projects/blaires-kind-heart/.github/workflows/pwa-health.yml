@@ -1,0 +1,255 @@
+name: PWA Health
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  audit-baseline:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Generate audit baseline report
+        run: npm run qa:audit-baseline
+
+      - name: Generate E2E gap report
+        run: npm run qa:e2e-gap-report
+
+      - name: Upload audit baseline artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-baseline-report
+          path: scripts/reports/audit-baseline-*.md
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload E2E gap report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-gap-report
+          path: scripts/reports/e2e-gap-report-*.md
+          if-no-files-found: warn
+          retention-days: 7
+
+  build-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install Trunk
+        run: cargo install trunk --locked
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build app
+        run: npm run build:release
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 3
+
+  pwa-health:
+    needs: build-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-dist
+          path: .
+
+      - name: Run PWA health check
+        env:
+          PWA_HEALTH_PHASE_TIMEOUT_MS: "40000"
+          PWA_HEALTH_TOTAL_TIMEOUT_MS: "240000"
+        run: |
+          python3 -m http.server 4173 --directory dist >/tmp/pwa-health-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID' EXIT
+          npm run pwa:health -- http://127.0.0.1:4173
+
+  lighthouse-ci:
+    needs: build-release
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ github.event_name == 'pull_request' }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-dist
+          path: .
+
+      - name: Run Lighthouse CI
+        env:
+          LHCI_MAX_ATTEMPTS: "2"
+          LHCI_COMMAND_TIMEOUT_SECONDS: "600"
+        run: npm run lighthouse:ci
+
+      - name: Summarize Lighthouse results
+        if: always()
+        run: node scripts/summarize-lighthouse.mjs >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Lighthouse artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-artifacts
+          path: |
+            .lighthouseci
+            artifacts/lighthouse
+          if-no-files-found: warn
+          retention-days: 7
+
+  runtime-diagnostics-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install Trunk
+        run: cargo install trunk --locked
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run runtime diagnostics QA gate
+        run: npm run qa:runtime
+
+  db-contract-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install Trunk
+        run: cargo install trunk --locked
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run DB contract QA gate
+        run: npm run qa:db-contract
+
+  e2e-quality-gates:
+    needs:
+      - runtime-diagnostics-gate
+      - db-contract-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install Trunk
+        run: cargo install trunk --locked
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Run E2E quality gates (smoke + visual + a11y)
+        run: npm run test:e2e:all
