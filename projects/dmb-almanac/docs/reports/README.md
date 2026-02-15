@@ -19,7 +19,13 @@ This directory contains project reports and reference-style summaries for the Ru
 - `MEMORY_AUDIT_SUMMARY.md`
 - `MEMORY_LEAK_SOURCES.md`
 
-Note: some memory writeups are generic web patterns and may reference older prototypes. Treat them as ideas, not current implementation descriptions.
+Note: memory writeups are now intentionally condensed. Legacy JS-specific findings are historical and should not override current Rust implementation behavior.
+
+## Current vs Historical
+
+- Current operational state: `STATUS.md`
+- Condensed organization history: `COMPRESSION_ORGANIZATION_REPORT_2026-02-12.md`
+- Historical deep dives: `_full_audits/`
 
 ## Doc Hygiene
 

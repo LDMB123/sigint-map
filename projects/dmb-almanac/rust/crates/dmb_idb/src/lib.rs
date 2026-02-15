@@ -260,6 +260,40 @@ cfg_if::cfg_if! {
             Ok(count as u32)
         }
 
+        pub async fn count_stores_with_missing(
+            store_names: &[&str],
+        ) -> Result<(Vec<(String, u32)>, Vec<String>)> {
+            if store_names.is_empty() {
+                return Ok((Vec::new(), Vec::new()));
+            }
+
+            let db = open_db().await?;
+            let known_stores = db.store_names();
+            let mut existing: Vec<&str> = Vec::new();
+            let mut missing: Vec<String> = Vec::new();
+            for store in store_names {
+                if known_stores.iter().any(|candidate| candidate == *store) {
+                    existing.push(*store);
+                } else {
+                    missing.push((*store).to_string());
+                }
+            }
+
+            if existing.is_empty() {
+                return Ok((Vec::new(), missing));
+            }
+
+            let tx = db.transaction(&existing, TransactionMode::ReadOnly).js()?;
+            let mut counts = Vec::with_capacity(existing.len());
+            for store_name in existing {
+                let store = tx.object_store(store_name).js()?;
+                let count = store.count(None).js()?.await.js()?;
+                counts.push((store_name.to_string(), count as u32));
+            }
+            tx.await.js()?;
+            Ok((counts, missing))
+        }
+
         pub async fn get_show(id: i32) -> Result<Option<Show>> {
             get_by_key(TABLE_SHOWS, JsValue::from_f64(id as f64)).await
         }
@@ -1334,6 +1368,12 @@ cfg_if::cfg_if! {
         }
 
         pub async fn count_store(_store_name: &str) -> Result<u32, JsValue> {
+            Err(JsValue::from_str("IndexedDB not available on server"))
+        }
+
+        pub async fn count_stores_with_missing(
+            _store_names: &[&str],
+        ) -> Result<(Vec<(String, u32)>, Vec<String>), JsValue> {
             Err(JsValue::from_str("IndexedDB not available on server"))
         }
 

@@ -3,19 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="DMB Almanac offline page. Cached pages and local data remain available while disconnected."
+    />
     <meta name="theme-color" content="#111827" />
     <link rel="stylesheet" href="/app.css" />
     <title>DMB Almanac Offline</title>
   </head>
-  <body>
-    <div class="app-shell">
-      <main class="main">
-        <section class="page">
-          <h1>Offline</h1>
-          <p class="lead">You're offline. The Almanac still works for cached pages and offline data.</p>
-          <p class="muted">Reconnect to refresh the latest shows and data bundles.</p>
-        </section>
-      </main>
-    </div>
+  <body class="app-shell">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <main id="main-content" class="main" tabindex="-1">
+      <section class="page">
+        <h1>Offline</h1>
+        <p class="lead">You're offline. The Almanac still works for cached pages and offline data.</p>
+        <p class="muted">Reconnect to refresh the latest shows and data bundles.</p>
+      </section>
+    </main>
   </body>
 </html>

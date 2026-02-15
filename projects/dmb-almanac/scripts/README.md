@@ -31,7 +31,9 @@
 | `scripts/check-doc-integrity.py` | Validate markdown references, docs section landing pages, docs index links, and script catalog drift | `python3 scripts/check-doc-integrity.py` |
 | `scripts/check-repo-hygiene.sh` | Fail on tracked generated artifacts and legacy root clutter | `bash scripts/check-repo-hygiene.sh` |
 | `scripts/clean-workspace.sh` | Remove local runtime/build artifacts and optional generated data duplicates | `bash scripts/clean-workspace.sh --include-generated-data` |
-| `scripts/pristine-check.sh` | Run combined repo integrity checks with optional deep gates (`--with-rust-verify`, `--with-cutover-rehearsal`) | `bash scripts/pristine-check.sh` |
+| `scripts/clean-global-test-caches.sh` | Remove global Playwright/Cypress browser caches from user cache dirs | `bash scripts/clean-global-test-caches.sh` |
+| `scripts/check-disk-budget.sh` | Report project/cache size budgets and optionally fail when exceeded | `bash scripts/check-disk-budget.sh --enforce` |
+| `scripts/pristine-check.sh` | Run combined repo integrity checks with optional deep gates (`--with-rust-verify`, `--with-cutover-rehearsal`, `--with-disk-budget`) | `bash scripts/pristine-check.sh --with-disk-budget` |
 | `scripts/token-context-report.py` | Generate approximate token budgets and recommended context packs for active docs | `python3 scripts/token-context-report.py --budget 12000` |
 | `scripts/autonomous-db-optimize.sh` | Run DB-focused Rust quality gates + parity validation + query-plan audit in one pass | `bash scripts/autonomous-db-optimize.sh` |
 | `scripts/db-query-plan-audit.sh` | Enforce SQLite plan/index expectations for key product queries | `bash scripts/db-query-plan-audit.sh rust/.tmp/dmb-runtime.db` |

@@ -62,4 +62,4 @@ BASE_URL=http://127.0.0.1:3000 npm run test:e2e -- --project=chromium --workers=
 
 ## Operational Runbook
 - Cutover runbook: `docs/ops/CUTOVER_RUNBOOK.md`
-- Local cutover status checkpoint: `docs/ops/LOCAL_CUTOVER_STATUS.md`
+- Canonical repo status checkpoint: `STATUS.md`

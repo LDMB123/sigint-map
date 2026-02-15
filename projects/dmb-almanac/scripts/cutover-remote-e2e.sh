@@ -53,6 +53,7 @@ echo "[cutover-remote] run Rust E2E subset against ${BASE_URL}"
   tests/e2e/rust-runtime.spec.js \
   tests/e2e/rust-offline.spec.js \
   tests/e2e/rust-import-completes.spec.js \
+  tests/e2e/rust-visual.spec.js \
   tests/e2e/rust-search.spec.js \
   tests/e2e/rust-previous-idb-migration.spec.js \
   tests/e2e/rust-previous-cache-cleanup.spec.js \

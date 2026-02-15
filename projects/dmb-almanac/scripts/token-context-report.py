@@ -19,7 +19,17 @@ ACTIVE_PATTERNS = [
     "data/README.md",
     "e2e/README.md",
     "scripts/README.md",
-    "docs/**/*.md",
+    "docs/README.md",
+    "docs/INDEX.md",
+    "docs/*/README.md",
+    "docs/guides/DMB_START_HERE.md",
+    "docs/guides/DEPLOYMENT_REFERENCE.md",
+    "docs/guides/TOKEN_CONTEXT_WORKFLOW.md",
+    "docs/guides/REPO_ORGANIZATION_POLICY.md",
+    "docs/guides/QUALITY_ASSURANCE_STRATEGY.md",
+    "docs/ops/CUTOVER_RUNBOOK.md",
+    "docs/ops/ROLLBACK_RUNBOOK.md",
+    "docs/ops/LOCAL_CUTOVER_STATUS.md",
 ]
 
 ARCHIVE_PREFIXES = (
@@ -37,8 +47,8 @@ EXCLUDED_PREFIXES = (
 PACK_PRIORITY = [
     "README.md",
     "CONTRIBUTING.md",
-    "CONTEXT.md",
     "STATUS.md",
+    "CONTEXT.md",
     "data/README.md",
     "e2e/README.md",
     "docs/README.md",

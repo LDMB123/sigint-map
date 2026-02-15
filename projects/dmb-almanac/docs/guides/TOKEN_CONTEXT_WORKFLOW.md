@@ -7,6 +7,7 @@ This guide standardizes how to build low-noise, token-efficient context packs fo
 - Keep context focused on active docs and operational entry points.
 - Avoid loading archived reports unless explicitly needed.
 - Track approximate token usage before sharing large context bundles.
+- Use `STATUS.md` as the only detailed state source to avoid duplicate status reads.
 
 ## Fast Report
 
@@ -45,16 +46,16 @@ python3 scripts/token-context-report.py --json-output .tmp/context-report.json
 1. Run `scripts/pristine-check.sh`.
 2. Run `scripts/token-context-report.py`.
 3. Load only the recommended pack unless a specific deep-dive file is required.
+4. Prefer linking to `STATUS.md` instead of duplicating status sections in other docs.
 
 ## DMB Minimal Context Pack
 
 For most DMB coding tasks, start with this small pack first:
 
 - `README.md`
+- `STATUS.md`
 - `docs/README.md`
 - `docs/INDEX.md`
-- `docs/guides/DMB_START_HERE.md`
-- `docs/guides/TOKEN_CONTEXT_WORKFLOW.md`
 - `scripts/README.md`
 
 Then add only one domain-specific file set as needed:

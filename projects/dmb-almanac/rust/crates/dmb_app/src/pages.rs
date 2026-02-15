@@ -47,6 +47,27 @@ fn spawn_local_to_send<T: Send + 'static>(
     async move { rx.await.expect("spawn_local task canceled") }
 }
 
+#[cfg(feature = "hydrate")]
+fn focus_stats_tab(idx: u8) {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let Some(document) = window.document() else {
+        return;
+    };
+    let tab_id = format!("stats-tab-{idx}");
+    let Some(element) = document.get_element_by_id(&tab_id) else {
+        return;
+    };
+    let Ok(tab) = element.dyn_into::<web_sys::HtmlElement>() else {
+        return;
+    };
+    let _ = tab.focus();
+}
+
+#[cfg(not(feature = "hydrate"))]
+fn focus_stats_tab(_idx: u8) {}
+
 pub fn home_page() -> impl IntoView {
     let stats = Resource::new(|| (), |_| async move { get_home_stats().await.ok() });
     let storage = RwSignal::new(None::<crate::data::StorageInfo>);
@@ -919,11 +940,11 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                 .unwrap_or_else(|| "none".to_string())
                         )}</li>
                     </ul>
-                    <button class="pill pill--ghost" on:click=toggle_webgpu>
+                    <button type="button" class="pill pill--ghost" on:click=toggle_webgpu>
                         {move || if webgpu_disabled.get() { "Enable WebGPU" } else { "Disable WebGPU" }}
                     </button>
                     <Show when=move || worker_failure.get().cooldown_remaining_ms.is_some() fallback=|| () >
-                        <button class="pill pill--ghost" on:click=move |_| {
+                        <button type="button" class="pill pill--ghost" on:click=move |_| {
                             #[cfg(feature = "hydrate")]
                             {
                                 crate::ai::clear_worker_failure_status();
@@ -931,7 +952,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                             }
                         }>"Clear worker cooldown"</button>
                     </Show>
-                    <button class="pill pill--ghost" on:click=move |_| {
+                    <button type="button" class="pill pill--ghost" on:click=move |_| {
                         #[cfg(feature = "hydrate")]
                         {
                             let version = ai_config_version.clone();
@@ -971,7 +992,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                         "Use a small sample dataset for faster local tuning."
                     </p>
                     <div class="pill-row">
-                        <button class="pill pill--ghost" on:click=toggle_embedding_sample>
+                        <button type="button" class="pill pill--ghost" on:click=toggle_embedding_sample>
                             {move || if embedding_sample_enabled.get() { "Disable Sample" } else { "Enable Sample" }}
                         </button>
                     </div>
@@ -1056,10 +1077,10 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                             })
                     }}
                     <div class="pill-row">
-                        <button class="pill pill--ghost" on:click=refresh_runtime_metrics>
+                        <button type="button" class="pill pill--ghost" on:click=refresh_runtime_metrics>
                             "Refresh Runtime Metrics"
                         </button>
-                        <button class="pill pill--ghost" on:click=reset_runtime_metrics>
+                        <button type="button" class="pill pill--ghost" on:click=reset_runtime_metrics>
                             "Reset WebGPU Metrics"
                         </button>
                     </div>
@@ -1162,7 +1183,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                     .into_any()
                             })
                     }}
-                    <button class="pill pill--ghost" on:click=refresh_runtime_metrics>
+                    <button type="button" class="pill pill--ghost" on:click=refresh_runtime_metrics>
                         "Refresh Runtime Metrics"
                     </button>
                 </div>
@@ -1184,7 +1205,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                 <div class="card">
                     <h2>"ANN Cap"</h2>
                     <div class="pill-row">
-                        <button
+                        <button type="button"
                             class="pill"
                             prop:disabled=move || ann_caps_loading.get()
                             on:click=load_ann_caps
@@ -1244,10 +1265,10 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                             />
                         </label>
                         <div class="pill-row">
-                            <button class="pill pill--ghost" on:click=apply_ann_cap_override>
+                            <button type="button" class="pill pill--ghost" on:click=apply_ann_cap_override>
                                 "Apply Override"
                             </button>
-                            <button class="pill pill--ghost" on:click=clear_ann_cap_override>
+                            <button type="button" class="pill pill--ghost" on:click=clear_ann_cap_override>
                                 "Reset Auto"
                             </button>
                         </div>
@@ -1344,9 +1365,9 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                 <div class="card">
                     <h2>"Benchmark"</h2>
                     <div class="stack">
-                        <button class="pill" on:click=run_benchmark>"Run Benchmark"</button>
+                        <button type="button" class="pill" on:click=run_benchmark>"Run Benchmark"</button>
                         <Show when=move || bench_running.get() fallback=|| () >
-                            <button class="pill pill--ghost" on:click=cancel_benchmark>"Cancel"</button>
+                            <button type="button" class="pill pill--ghost" on:click=cancel_benchmark>"Cancel"</button>
                         </Show>
                         <Show when=move || bench_running.get() fallback=|| () >
                             <div class="muted">{move || bench_stage.get()}</div>
@@ -1403,12 +1424,12 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                 <div class="card">
                     <h2>"Export"</h2>
                     <p class="muted">"Download a JSON snapshot of AI diagnostics."</p>
-                    <button class="pill" on:click=export_diagnostics>"Export Snapshot"</button>
+                    <button type="button" class="pill" on:click=export_diagnostics>"Export Snapshot"</button>
                 </div>
                 <div class="card">
                     <h2>"Worker Threshold"</h2>
                     <div class="stack">
-                        <button class="pill" on:click=run_worker_benchmark>"Run Worker Benchmark"</button>
+                        <button type="button" class="pill" on:click=run_worker_benchmark>"Run Worker Benchmark"</button>
                         {move || worker_threshold_current.get().map(|value| {
                             let dim = embed_meta.get().map(|meta| meta.dim as usize).unwrap_or(0);
                             let dim = dim.max(1);
@@ -1433,10 +1454,10 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                             />
                         </label>
                         <div class="pill-row">
-                            <button class="pill pill--ghost" on:click=apply_worker_threshold>
+                            <button type="button" class="pill pill--ghost" on:click=apply_worker_threshold>
                                 "Apply Override"
                             </button>
-                            <button class="pill pill--ghost" on:click=clear_worker_threshold>
+                            <button type="button" class="pill pill--ghost" on:click=clear_worker_threshold>
                                 "Reset Auto"
                             </button>
                         </div>
@@ -1457,7 +1478,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                 </div>
                 <div class="card">
                     <h2>"IVF Tuning"</h2>
-                    <button class="pill" on:click=run_tuning>"Auto-Tune Probe"</button>
+                    <button type="button" class="pill" on:click=run_tuning>"Auto-Tune Probe"</button>
                     {move || tuning.get().map(|state| view! {
                         <ul class="list">
                             <li>{format!("Probe Override: {}", state.probe_override.map(|v| v.to_string()).unwrap_or_else(|| "none".to_string()))}</li>
@@ -1512,7 +1533,7 @@ pub fn ai_benchmark_page() -> impl IntoView {
         <section class="page">
             <h1>"AI Benchmark"</h1>
             <p class="lead">"Compare CPU vs GPU scoring (full matrix vs IVF subset)."</p>
-            <button class="pill" on:click=run_benchmarks>"Run Benchmarks"</button>
+            <button type="button" class="pill" on:click=run_benchmarks>"Run Benchmarks"</button>
             <div class="card-grid">
                 <div class="card">
                     <h2>"Full Matrix"</h2>
@@ -1636,7 +1657,7 @@ pub fn ai_smoke_page() -> impl IntoView {
                     />
                 </label>
                 <div class="pill-row">
-                    <button class="pill" on:click=run_smoke>"Run smoke test"</button>
+                    <button type="button" class="pill" on:click=run_smoke>"Run smoke test"</button>
                 </div>
                 <p class="muted">{move || status.get()}</p>
                 {move || elapsed_ms.get().map(|ms| view! {
@@ -2472,7 +2493,7 @@ pub fn show_detail_page() -> impl IntoView {
                                 view! { <p class="muted">"Setlist unavailable."</p> }.into_any()
                             } else {
                                 view! {
-                                    <ol class="setlist">
+                                    <ol class="setlist" aria-label="Show setlist">
                                         {items
                                             .into_iter()
                                             .map(|entry| {
@@ -2755,7 +2776,7 @@ pub fn release_detail_page() -> impl IntoView {
                     } else {
                         let items = tracks.get();
                         view! {
-                            <ol class="tracklist">
+                            <ol class="tracklist" aria-label="Release tracks">
                                 {items
                                     .into_iter()
                                     .map(|track| {
@@ -2786,7 +2807,7 @@ pub fn release_detail_page() -> impl IntoView {
                             view! { <p class="muted">"No tracks available."</p> }.into_any()
                         } else {
                             view! {
-                                <ol class="tracklist">
+                                <ol class="tracklist" aria-label="Release tracks">
                                     {items
                                         .into_iter()
                                         .map(|track| {
@@ -3460,24 +3481,50 @@ pub fn stats_page() -> impl IntoView {
     let guests = Resource::new(|| (), |_| async move { load_stats_guests().await });
 
     let tab_names = ["Overview", "Songs", "Shows & Tours", "Venues", "Guests"];
+    let tab_count = tab_names.len() as u8;
 
     view! {
         <section class="page">
             <h1>"Stats"</h1>
             <p class="lead">"WASM-powered aggregations over the full concert database."</p>
 
-            <nav class="stats-tabs" role="tablist">
+            <nav
+                class="stats-tabs"
+                role="tablist"
+                aria-label="Statistics sections"
+                aria-orientation="horizontal"
+            >
                 {tab_names
                     .iter()
                     .enumerate()
                     .map(|(i, name)| {
                         let idx = i as u8;
+                        let tab_id = format!("stats-tab-{idx}");
+                        let panel_id = format!("stats-panel-{idx}");
                         view! {
-                            <button
+                            <button type="button"
                                 role="tab"
+                                id=tab_id
+                                aria-controls=panel_id
                                 class:active=move || active_tab.get() == idx
-                                aria-selected=move || (active_tab.get() == idx).to_string()
+                                aria-selected=move || active_tab.get() == idx
+                                tabindex=move || if active_tab.get() == idx { 0 } else { -1 }
                                 on:click=move |_| active_tab.set(idx)
+                                on:keydown=move |ev| {
+                                    let key = ev.key();
+                                    let next = match key.as_str() {
+                                        "ArrowRight" => Some((idx + 1) % tab_count),
+                                        "ArrowLeft" => Some((idx + tab_count - 1) % tab_count),
+                                        "Home" => Some(0),
+                                        "End" => Some(tab_count - 1),
+                                        _ => None,
+                                    };
+                                    if let Some(next_idx) = next {
+                                        ev.prevent_default();
+                                        active_tab.set(next_idx);
+                                        focus_stats_tab(next_idx);
+                                    }
+                                }
                             >
                                 {*name}
                             </button>
@@ -3487,7 +3534,13 @@ pub fn stats_page() -> impl IntoView {
             </nav>
 
             // Tab 0: Overview
-            <div style:display=move || if active_tab.get() == 0 { "block" } else { "none" }>
+            <div
+                id="stats-panel-0"
+                role="tabpanel"
+                aria-labelledby="stats-tab-0"
+                hidden=move || active_tab.get() != 0
+                style:display=move || if active_tab.get() == 0 { "block" } else { "none" }
+            >
                 <Suspense fallback=move || view! { <p class="muted">"Loading overview..."</p> }>
                     {move || {
                         let data = overview.get().unwrap_or_default();
@@ -3531,7 +3584,13 @@ pub fn stats_page() -> impl IntoView {
             </div>
 
             // Tab 1: Songs
-            <div style:display=move || if active_tab.get() == 1 { "block" } else { "none" }>
+            <div
+                id="stats-panel-1"
+                role="tabpanel"
+                aria-labelledby="stats-tab-1"
+                hidden=move || active_tab.get() != 1
+                style:display=move || if active_tab.get() == 1 { "block" } else { "none" }
+            >
                 <Suspense fallback=move || view! { <p class="muted">"Loading songs stats..."</p> }>
                     {move || {
                         let data = songs.get().unwrap_or_default();
@@ -3556,7 +3615,13 @@ pub fn stats_page() -> impl IntoView {
             </div>
 
             // Tab 2: Shows & Tours
-            <div style:display=move || if active_tab.get() == 2 { "block" } else { "none" }>
+            <div
+                id="stats-panel-2"
+                role="tabpanel"
+                aria-labelledby="stats-tab-2"
+                hidden=move || active_tab.get() != 2
+                style:display=move || if active_tab.get() == 2 { "block" } else { "none" }
+            >
                 <Suspense fallback=move || view! { <p class="muted">"Loading shows stats..."</p> }>
                     {move || {
                         let data = shows.get().unwrap_or_default();
@@ -3630,7 +3695,13 @@ pub fn stats_page() -> impl IntoView {
             </div>
 
             // Tab 3: Venues
-            <div style:display=move || if active_tab.get() == 3 { "block" } else { "none" }>
+            <div
+                id="stats-panel-3"
+                role="tabpanel"
+                aria-labelledby="stats-tab-3"
+                hidden=move || active_tab.get() != 3
+                style:display=move || if active_tab.get() == 3 { "block" } else { "none" }
+            >
                 <Suspense fallback=move || view! { <p class="muted">"Loading venue stats..."</p> }>
                     {move || {
                         let data = venues.get().unwrap_or_default();
@@ -3669,7 +3740,13 @@ pub fn stats_page() -> impl IntoView {
             </div>
 
             // Tab 4: Guests
-            <div style:display=move || if active_tab.get() == 4 { "block" } else { "none" }>
+            <div
+                id="stats-panel-4"
+                role="tabpanel"
+                aria-labelledby="stats-tab-4"
+                hidden=move || active_tab.get() != 4
+                style:display=move || if active_tab.get() == 4 { "block" } else { "none" }
+            >
                 <Suspense fallback=move || view! { <p class="muted">"Loading guest stats..."</p> }>
                     {move || {
                         let data = guests.get().unwrap_or_default();
@@ -3712,14 +3789,20 @@ fn render_song_table(songs: &[Song], show_total: bool) -> impl IntoView {
     if songs.is_empty() {
         return view! { <p class="muted">"No data available."</p> }.into_any();
     }
+    let table_label = if show_total {
+        "Song ranking by total performances"
+    } else {
+        "Song ranking"
+    };
     view! {
-        <table class="stats-table">
+        <table class="stats-table" aria-label=table_label>
+            <caption class="visually-hidden">{table_label}</caption>
             <thead>
                 <tr>
-                    <th>"#"</th>
-                    <th>"Song"</th>
+                    <th scope="col">"#"</th>
+                    <th scope="col">"Song"</th>
                     {if show_total {
-                        Some(view! { <th>"Plays"</th> })
+                        Some(view! { <th scope="col">"Plays"</th> })
                     } else {
                         None
                     }}
@@ -3782,7 +3865,7 @@ fn render_bar_chart(data: &[(u32, u32)]) -> impl IntoView {
     }
     let max_val = data.iter().map(|&(_, v)| v).max().unwrap_or(1) as f64;
     view! {
-        <div class="bar-chart">
+        <div class="bar-chart" role="list" aria-label="Bar chart">
             {data
                 .iter()
                 .map(|&(label, value)| {
@@ -3793,7 +3876,7 @@ fn render_bar_chart(data: &[(u32, u32)]) -> impl IntoView {
                     };
                     let width = format!("width: {}%", pct.max(1));
                     view! {
-                        <div class="bar-row">
+                        <div class="bar-row" role="listitem" aria-label=format!("{label}: {value}")>
                             <span class="bar-label">{label.to_string()}</span>
                             <div class="bar" style=width></div>
                             <span class="bar-value">{value.to_string()}</span>
@@ -3813,7 +3896,7 @@ fn render_string_bar_chart(data: &[(String, u32)], limit: usize) -> impl IntoVie
     let items: Vec<_> = data.iter().take(limit).collect();
     let max_val = items.iter().map(|(_, v)| *v).max().unwrap_or(1) as f64;
     view! {
-        <div class="bar-chart">
+        <div class="bar-chart" role="list" aria-label="Bar chart">
             {items
                 .iter()
                 .map(|(label, value)| {
@@ -3824,7 +3907,7 @@ fn render_string_bar_chart(data: &[(String, u32)], limit: usize) -> impl IntoVie
                     };
                     let width = format!("width: {}%", pct.max(1));
                     view! {
-                        <div class="bar-row">
+                        <div class="bar-row" role="listitem" aria-label=format!("{label}: {value}")>
                             <span class="bar-label">{label.clone()}</span>
                             <div class="bar" style=width></div>
                             <span class="bar-value">{value.to_string()}</span>
@@ -4002,7 +4085,7 @@ pub fn my_shows_page() -> impl IntoView {
                     prop:value=move || input.get()
                     on:input=move |ev| input.set(event_target_value(&ev))
                 />
-                <button class="pill" on:click=on_add>"Add"</button>
+                <button type="button" class="pill" on:click=on_add>"Add"</button>
             </div>
             {move || {
                 #[cfg(feature = "hydrate")]
@@ -4033,7 +4116,7 @@ pub fn my_shows_page() -> impl IntoView {
                                     view! {
                                         <li class="result-card">
                                             <a class="result-label" href=href>{date}</a>
-                                            <button class="pill" on:click=move |_| on_remove(item.show_id)>
+                                            <button type="button" class="pill" on:click=move |_| on_remove(item.show_id)>
                                                 "Remove"
                                             </button>
                                         </li>
@@ -4379,7 +4462,7 @@ pub fn curated_list_detail_page() -> impl IntoView {
                                     <p class="muted">{list_meta.as_ref().and_then(|l| l.description.clone()).unwrap_or_default()}</p>
                                 </div>
                             </div>
-                            <ol class="tracklist">
+                            <ol class="tracklist" aria-label="Curated list items">
                                 {list_items
                                     .into_iter()
                                     .map(|item| {
@@ -4415,7 +4498,7 @@ pub fn curated_list_detail_page() -> impl IntoView {
                                     <p class="muted">{description}</p>
                                 </div>
                             </div>
-                            <ol class="tracklist">
+                            <ol class="tracklist" aria-label="Curated list items">
                                 {list_items
                                     .into_iter()
                                     .map(|item| {

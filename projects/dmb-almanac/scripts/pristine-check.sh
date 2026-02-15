@@ -6,6 +6,7 @@ cd "$ROOT_DIR"
 
 RUN_RUST_VERIFY=0
 RUN_CUTOVER_REHEARSAL=0
+RUN_DISK_BUDGET=0
 
 for arg in "$@"; do
   case "$arg" in
@@ -15,9 +16,12 @@ for arg in "$@"; do
     --with-cutover-rehearsal)
       RUN_CUTOVER_REHEARSAL=1
       ;;
+    --with-disk-budget)
+      RUN_DISK_BUDGET=1
+      ;;
     *)
       echo "unknown option: $arg" >&2
-      echo "usage: bash scripts/pristine-check.sh [--with-rust-verify] [--with-cutover-rehearsal]" >&2
+      echo "usage: bash scripts/pristine-check.sh [--with-rust-verify] [--with-cutover-rehearsal] [--with-disk-budget]" >&2
       exit 2
       ;;
   esac
@@ -40,6 +44,11 @@ fi
 if [[ $RUN_CUTOVER_REHEARSAL -eq 1 ]]; then
   echo "pristine-check: cutover rehearsal"
   bash scripts/cutover-rehearsal.sh
+fi
+
+if [[ $RUN_DISK_BUDGET -eq 1 ]]; then
+  echo "pristine-check: disk budget"
+  bash scripts/check-disk-budget.sh --enforce
 fi
 
 echo "pristine-check: ok"

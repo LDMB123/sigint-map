@@ -36,6 +36,8 @@ pub const RUST_ROUTES: &[&str] = &[
     "/assistant",
     "/ai-diagnostics",
     "/ai-benchmark",
+    "/ai-warmup",
+    "/ai-smoke",
     "/visualizations",
     "/offline",
     "/*",
@@ -57,10 +59,10 @@ use wasm_bindgen::JsValue;
 pub fn App() -> impl IntoView {
     view! {
         <a class="skip-link" href="#main-content">"Skip to content"</a>
-        <div class="app-shell">
-            <components::Header />
-            <main id="main-content" tabindex="-1" class="main">
-                <Router>
+        <Router>
+            <div class="app-shell">
+                <components::Header />
+                <main id="main-content" tabindex="-1" class="main">
                     <Routes fallback=|| pages::not_found_page().into_view()>
                         <Route path=path!("") view=pages::home_page />
                         <Route path=path!("/about") view=|| pages::static_page("About") />
@@ -96,10 +98,10 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/visualizations") view=pages::visualizations_page />
                         <Route path=path!("/offline") view=|| pages::static_page("Offline") />
                     </Routes>
-                </Router>
-            </main>
-            <components::Footer />
-        </div>
+                </main>
+                <components::Footer />
+            </div>
+        </Router>
         <components::PwaStatus />
     }
 }
@@ -112,15 +114,22 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <meta charset="utf-8" />
                 <title>"DMB Almanac (Rust)"</title>
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <meta
+                    name="description"
+                    content="Rust-first, offline-first Dave Matthews Band concert database and analytics PWA."
+                />
+                <meta name="application-name" content="DMB Almanac" />
                 <meta name="theme-color" content="#111827" />
                 <meta name="color-scheme" content="dark light" />
                 <link rel="manifest" href="/manifest.json" />
                 <link rel="icon" href="/icons/icon-192.png" />
+                <link rel="preload" href="/app.css" r#as="style" />
                 <link rel="stylesheet" href="/app.css" />
                 <HydrationScripts options=options.clone() />
             </head>
             <body>
                 <App />
+                <noscript>"DMB Almanac works best with JavaScript enabled."</noscript>
                 <script src="/webgpu.js" defer></script>
                 <script>
                     {r#"if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }); }"#}

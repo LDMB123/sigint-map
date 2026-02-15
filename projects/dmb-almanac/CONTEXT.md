@@ -1,35 +1,22 @@
-# DMB Almanac Context Pack (For A New LLM Session)
+# DMB Almanac Context Pack (Minimal)
 
 Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 
-This repo is Rust-first and local-only (offline PWA).
+Use this file as a low-token session starter.  
+For full current state, always read `STATUS.md`.
 
-## What Matters
+## Load First
 
-- SSR + hydration correctness (avoid any SSR/CSR mismatch)
-- Service Worker update reliability (avoid stale bundle loops)
-- Offline hydration/import correctness (IndexedDB)
-- Data parity between shipped static bundle and the SQLite source DB
+1. `README.md`
+2. `STATUS.md`
+3. `docs/README.md`
+4. `docs/INDEX.md`
+5. `docs/guides/TOKEN_CONTEXT_WORKFLOW.md`
 
-## Key Commands
+## Core Commands
 
 ```bash
-# Green gate
+bash scripts/pristine-check.sh
 bash scripts/cutover-rehearsal.sh
-
-# Rust verify gate
-cd rust
-cargo run -p xtask -- verify
-
-# Run server
-cargo run -p dmb_server
+python3 scripts/token-context-report.py --scope active
 ```
-
-## Key Locations
-
-- App + UI: `rust/crates/dmb_app/`
-- Server: `rust/crates/dmb_server/`
-- IndexedDB schema + client: `rust/crates/dmb_idb/`
-- Pipeline (scrape/export/validate/parity): `rust/crates/dmb_pipeline/`
-- Static data bundle: `rust/static/data/`
-- E2E tests: `e2e/`

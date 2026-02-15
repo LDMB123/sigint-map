@@ -1457,7 +1457,7 @@ pub fn PwaStatus() -> impl IntoView {
     }
 
     view! {
-        <div class="pwa-status">
+        <aside class="pwa-status" aria-label="PWA status">
             <div class="pwa-status__row">
                 <span>{move || status.get().message.clone()}</span>
             </div>
@@ -1520,7 +1520,7 @@ pub fn PwaStatus() -> impl IntoView {
                             <span>
                                 {format!("Storage pressure: {:.0}% used", ratio * 100.0)}
                             </span>
-                            <button class="pill pill--ghost" on:click=on_storage_cleanup>
+                            <button type="button" class="pill pill--ghost" on:click=on_storage_cleanup>
                                 "Clear AI cache"
                             </button>
                         </div>
@@ -1595,7 +1595,7 @@ pub fn PwaStatus() -> impl IntoView {
                     Some(view! {
                         <div class="pwa-status__row pwa-status__row--warn">
                             <span>"Offline data needs attention."</span>
-                            <button class="pill pill--ghost" on:click=on_reset_data>
+                            <button type="button" class="pill pill--ghost" on:click=on_reset_data>
                                 "Reset offline data"
                             </button>
                         </div>
@@ -1605,15 +1605,13 @@ pub fn PwaStatus() -> impl IntoView {
                 }
             }}
             <div class="pwa-status__row">
-                <button
-                    class="pill pill--ghost"
+                <button type="button" class="pill pill--ghost"
                     on:click=on_update_check
                     disabled=move || update_checking.get()
                 >
                     {move || if update_checking.get() { "Checking updates…" } else { "Check for updates" }}
                 </button>
-                <button
-                    class="pill pill--ghost"
+                <button type="button" class="pill pill--ghost"
                     on:click=move |_| show_sw_details.set(!show_sw_details.get_untracked())
                 >
                     {move || if show_sw_details.get() { "Hide SW details" } else { "SW details" }}
@@ -1685,17 +1683,16 @@ pub fn PwaStatus() -> impl IntoView {
                     </div>
                 </Show>
                 <div class="pwa-status__row">
-                    <button
-                        class="pill pill--ghost"
+                    <button type="button" class="pill pill--ghost"
                         on:click=on_cleanup_previous_caches
                         disabled=move || !online.get()
                     >
                         "Cleanup old caches"
                     </button>
-                    <button class="pill pill--ghost" on:click=on_ping_sw>
+                    <button type="button" class="pill pill--ghost" on:click=on_ping_sw>
                         "Ping SW"
                     </button>
-                    <button class="pill pill--ghost" on:click=on_unregister_sw>
+                    <button type="button" class="pill pill--ghost" on:click=on_unregister_sw>
                         "Unregister SW"
                     </button>
                 </div>
@@ -1711,7 +1708,7 @@ pub fn PwaStatus() -> impl IntoView {
                 }}
             </Show>
             <div class="pwa-status__row">
-                <button class="pill pill--ghost" on:click=on_export_parity>
+                <button type="button" class="pill pill--ghost" on:click=on_export_parity>
                     "Export parity report"
                 </button>
             </div>
@@ -1746,10 +1743,10 @@ pub fn PwaStatus() -> impl IntoView {
                         <div class="pwa-status__row pwa-status__row--update" role="status" aria-live="polite">
                             <div class="pwa-update-message">{label}</div>
                             <div class="pwa-update-actions">
-                                <button class="pill" on:click=on_update_click disabled=move || update_applying.get()>
+                                <button type="button" class="pill" on:click=on_update_click disabled=move || update_applying.get()>
                                     {move || if update_applying.get() { "Applying…" } else { "Reload" }}
                                 </button>
-                                <button class="pill pill--ghost" on:click=on_update_later disabled=move || update_applying.get()>
+                                <button type="button" class="pill pill--ghost" on:click=on_update_later disabled=move || update_applying.get()>
                                     "Later"
                                 </button>
                             </div>
@@ -1933,7 +1930,7 @@ pub fn PwaStatus() -> impl IntoView {
                 })
             }}
             <crate::components::AiStatus />
-        </div>
+        </aside>
     }
 }
 

@@ -3,6 +3,8 @@
 ## Fast Paths
 
 - Project onboarding: `docs/guides/DMB_START_HERE.md`
+- Current repo state (canonical): `STATUS.md`
+- Minimal context starter: `CONTEXT.md`
 - Deployment + verification: `docs/guides/DEPLOYMENT_REFERENCE.md`
 - Cutover operations: `docs/ops/CUTOVER_RUNBOOK.md`
 - Docs home and conventions: `docs/README.md`

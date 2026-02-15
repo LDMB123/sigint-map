@@ -38,6 +38,7 @@ remove_path() {
 
 echo "clean-workspace: removing runtime/build artifacts"
 remove_path ".tmp"
+remove_path "rust/.tmp"
 remove_path ".tmp_dmb_server.log"
 remove_path ".tmp_dmb_server.pid"
 remove_path "firebase-debug.log"
@@ -45,6 +46,14 @@ remove_path "e2e/playwright-report"
 remove_path "e2e/test-results"
 remove_path "rust/target"
 remove_path "rust/static/pkg"
+remove_path "scripts/__pycache__"
+
+if [[ $DRY_RUN -eq 1 ]]; then
+  echo "would remove: .DS_Store files under repo root"
+else
+  find . -name ".DS_Store" -delete 2>/dev/null || true
+  echo "removed: .DS_Store files (if any)"
+fi
 
 if [[ $INCLUDE_GENERATED_DATA -eq 1 ]]; then
   echo "clean-workspace: removing generated data duplicates"
