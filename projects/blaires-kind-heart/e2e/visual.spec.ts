@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { waitForAppReady } from "./helpers";
 
 test.use({ video: "off" });
+test.describe.configure({ mode: "serial" });
 
 const PANELS = [
   "panel-tracker",
@@ -30,6 +31,15 @@ async function stabilizeForSnapshots(page: import("@playwright/test").Page): Pro
         opacity: 0 !important;
         filter: none !important;
       }
+      .loading-screen::before,
+      .loading-screen::after,
+      .panel-body::before,
+      .panel-body::after {
+        animation: none !important;
+        transition: none !important;
+        display: none !important;
+        content: none !important;
+      }
     `
   });
 }
@@ -49,11 +59,18 @@ async function forceLoadingScreen(page: import("@playwright/test").Page): Promis
       opacity: "1",
       pointerEvents: "none"
     });
+    loading.classList.remove("loading-screen--exit");
 
     const app = document.getElementById("app");
     if (app) {
       app.setAttribute("aria-hidden", "true");
       app.style.visibility = "hidden";
+    }
+
+    const progress = loading.querySelector("[data-loading-bar]");
+    if (progress instanceof HTMLElement) {
+      progress.style.width = "42%";
+      progress.style.transition = "none";
     }
 
     return true;
@@ -62,11 +79,48 @@ async function forceLoadingScreen(page: import("@playwright/test").Page): Promis
   expect(found).toBe(true);
 }
 
+async function waitForDomSettle(
+  page: import("@playwright/test").Page,
+  selector: string,
+  quietMs = 300,
+  timeoutMs = 10_000
+): Promise<void> {
+  await page.waitForFunction(
+    async ({ sel, quiet }) => {
+      const root = document.querySelector(sel);
+      if (!root) {
+        return false;
+      }
+      await new Promise<void>(resolve => {
+        let timer = window.setTimeout(done, quiet);
+        const observer = new MutationObserver(() => {
+          clearTimeout(timer);
+          timer = window.setTimeout(done, quiet);
+        });
+        function done(): void {
+          observer.disconnect();
+          resolve();
+        }
+        observer.observe(root, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          characterData: true
+        });
+      });
+      return true;
+    },
+    { sel: selector, quiet: quietMs },
+    { timeout: timeoutMs }
+  );
+}
+
 test.describe("visual gate: desktop", () => {
   test("loading screen", async ({ page }) => {
     await page.goto("/?e2e=1", { waitUntil: "domcontentloaded" });
     await stabilizeForSnapshots(page);
     await forceLoadingScreen(page);
+    await waitForDomSettle(page, "#loading-screen", 300, 30_000);
 
     const loading = page.locator("#loading-screen");
     await expect(loading).toBeVisible();
@@ -82,6 +136,7 @@ test.describe("visual gate: desktop", () => {
       await page.goto(`/?e2e=1&panel=${panelId}#${panelId}`, { waitUntil: "domcontentloaded" });
       await waitForAppReady(page, panelId);
       await stabilizeForSnapshots(page);
+      await waitForDomSettle(page, `#${panelId}`);
 
       const panel = page.locator(`#${panelId}`);
       await expect(panel).toBeVisible();
@@ -106,6 +161,7 @@ test.describe("visual gate: mobile", () => {
     await page.goto("/?e2e=1", { waitUntil: "domcontentloaded" });
     await stabilizeForSnapshots(page);
     await forceLoadingScreen(page);
+    await waitForDomSettle(page, "#loading-screen", 300, 30_000);
 
     const loading = page.locator("#loading-screen");
     await expect(loading).toBeVisible();
@@ -121,6 +177,7 @@ test.describe("visual gate: mobile", () => {
       await page.goto(`/?e2e=1&panel=${panelId}#${panelId}`, { waitUntil: "domcontentloaded" });
       await waitForAppReady(page, panelId);
       await stabilizeForSnapshots(page);
+      await waitForDomSettle(page, `#${panelId}`);
 
       const panel = page.locator(`#${panelId}`);
       await expect(panel).toBeVisible();

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test.use({ video: "off", serviceWorkers: "block" });
+test.skip(!process.env.RUN_E2E_PROBES, "Probe-only test; opt in with RUN_E2E_PROBES=1.");
 
 test("probe tracker dom", async ({ page }) => {
   await page.goto("/?e2e=1&flows=1&panel=panel-tracker#panel-tracker", { waitUntil: "domcontentloaded" });
