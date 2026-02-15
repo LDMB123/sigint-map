@@ -144,3 +144,7 @@ Desktop.ini
 
 # Empty db files
 **/data/.gitkeep
+
+# Project-level git repositories (each project has its own .git/)
+projects/*/.git/
+projects/*/.gitignore
