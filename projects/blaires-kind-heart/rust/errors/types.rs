@@ -69,6 +69,7 @@ impl AppError {
     }
 
     /// Get a short title for display.
+    #[allow(dead_code)]
     pub fn title(&self) -> String {
         match self {
             AppError::DatabaseInit { backend, .. } => format!("DB Init Failed ({})", backend),

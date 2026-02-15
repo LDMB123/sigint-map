@@ -181,32 +181,6 @@ fn show_loading_skeleton() {
     let _ = body.append_child(&list);
 }
 
-/// Mark a quest as completed in the DOM (called during hydration from lib.rs).
-/// Matches by title since that's what we stored in SQLite.
-pub fn hydrate_completed_quest(title: &str) {
-    let title_str = title.to_string();
-    wasm_bindgen_futures::spawn_local(async move {
-        let indices = get_quest_indices().await;
-        for &idx in &indices {
-            let q = &QUEST_POOL[idx];
-            if q.title == title_str {
-                let selector = format!("[data-quest-idx=\"{idx}\"]");
-                if let Some(card) = dom::query(&selector) {
-                    if !card.class_list().contains("quest-card--done") {
-                        let _ = card.class_list().add_1("quest-card--done");
-                        // Mark the check as done
-                        if let Ok(Some(check)) = card.query_selector(".quest-check") {
-                            let _ = check.class_list().add_1("quest-check--done");
-                            check.set_text_content(Some("\u{2713}"));
-                        }
-                    }
-                }
-                return;
-            }
-        }
-    });
-}
-
 /// Get today's quest indices: adaptive focus quest + rotation quests
 async fn get_quest_indices() -> [usize; 3] {
     adaptive_quests::get_daily_quests_adaptive().await

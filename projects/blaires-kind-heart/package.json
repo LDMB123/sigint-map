@@ -2,6 +2,8 @@
   "name": "blaires-kind-heart-e2e",
   "private": true,
   "scripts": {
+    "clean": "bash scripts/clean-workspace.sh",
+    "clean:artifacts": "rm -rf artifacts/playwright artifacts/simulator-regression playwright-report test-results",
     "build:release": "bash scripts/build-verify-release.sh",
     "build:verify:release": "DIST_DIR=.verify-dist-release bash scripts/build-verify-release.sh",
     "test:e2e": "node scripts/run-e2e.mjs",

@@ -18,6 +18,7 @@ npm run qa:db-contract
 - DB persistence mismatch or stale cache behavior.
 - Service worker/offline navigation issues.
 - Visual or interaction regressions in Safari/WebKit.
+- Missing Playwright browser runtime (usually WebKit on fresh machines).
 
 ## Useful Diagnostics
 - Runtime diagnostics script and E2E contract.
@@ -25,6 +26,10 @@ npm run qa:db-contract
 - WebKit smoke run:
 ```bash
 npm run test:e2e:webkit
+```
+- If browser runtime is missing:
+```bash
+npx playwright install webkit
 ```
 
 ## Escalation

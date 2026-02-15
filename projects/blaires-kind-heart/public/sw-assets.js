@@ -8,8 +8,10 @@
 // - CRITICAL_ASSETS: Needed for first paint (<2s target)
 // - DEFERRED_ASSETS: Lazy-loaded on demand or after first paint
 //
-// Phase 4.1: Import asset paths from generated manifest
-import ASSET_MANIFEST from './asset-manifest.js';
+// Phase 4.1: Import asset paths from generated manifest.
+// This file is loaded via importScripts() from sw.js, so it must stay classic-script compatible.
+importScripts('./asset-manifest.js');
+const ASSET_MANIFEST = self.ASSET_MANIFEST || { companions: {}, gardens: {} };
 
 // Extract companion and garden assets from manifest
 const MANIFEST_COMPANIONS = Object.values(ASSET_MANIFEST.companions).map(path => `/${path}`);

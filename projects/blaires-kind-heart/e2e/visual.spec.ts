@@ -40,6 +40,28 @@ async function stabilizeForSnapshots(page: import("@playwright/test").Page): Pro
         display: none !important;
         content: none !important;
       }
+      #loading-screen[data-e2e-force-visible="1"][hidden] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+      #loading-screen[data-e2e-force-visible="1"].loading-screen--exit {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: none !important;
+        filter: none !important;
+      }
+      #loading-screen .loading-bar-fill {
+        animation: none !important;
+        transition: none !important;
+      }
+      #loading-screen[data-e2e-force-visible="1"] ~ .skip-link,
+      #loading-screen[data-e2e-force-visible="1"] ~ .app-shell {
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
     `
   });
 }

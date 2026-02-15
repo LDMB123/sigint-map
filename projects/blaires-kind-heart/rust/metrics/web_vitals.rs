@@ -38,6 +38,7 @@ pub fn init() {
 }
 
 /// Get current Web Vitals snapshot (for debug panel).
+#[allow(dead_code)]
 pub fn get_vitals() -> WebVitals {
     WEB_VITALS.with(|v| v.borrow().clone())
 }

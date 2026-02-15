@@ -305,9 +305,6 @@ async fn boot_async(state: Rc<RefCell<AppState>>) {
   // Debug panel gesture (triple-tap to activate)
   gestures::setup_debug_gesture();
 
-  // Web Vitals tracking (LCP, FID, CLS, INP)
-  metrics::init_web_vitals();
-
   // Sparkle greets Blaire after everything is ready
   companion::greet();
 
@@ -369,15 +366,12 @@ async fn hydrate_state() {
 
     // WEEK 1 OPTIMIZATION: Parallel hydration queries (remaining async operations)
     // Run remaining independent hydration queries concurrently using join! (from futures crate)
-    let (sticker_result, quest_result, story_result) = join!(
+    let (sticker_result, story_result) = join!(
         // Sticker hydration query
         db_client::query(
             "SELECT sticker_type FROM stickers ORDER BY earned_at ASC",
             vec![]
         ),
-        // Quest query removed - quest count already obtained in batched counters query (line 271)
-        // TODO: Lazy load quest titles on panel navigation instead of hydration
-        async { Ok::<serde_json::Value, wasm_bindgen::JsValue>(serde_json::Value::Array(vec![])) },
         // Story progress query
         db_client::query(
             "SELECT story_id FROM stories_progress WHERE completed = 1",
@@ -418,18 +412,6 @@ async fn hydrate_state() {
         }
     } else {
         web_sys::console::error_1(&"Sticker query failed during hydration".into());
-    }
-
-    // Process quest hydration result (currently disabled - see line 322-324)
-    if let Ok(rows) = quest_result {
-        if let Some(arr) = rows.as_array() {
-            for row in arr {
-                let Some(title) = row.get("title").and_then(|v| v.as_str()) else { continue };
-                quests::hydrate_completed_quest(title);
-            }
-        }
-    } else {
-        web_sys::console::error_1(&"Quest query failed during hydration".into());
     }
 
     // Process story progress result

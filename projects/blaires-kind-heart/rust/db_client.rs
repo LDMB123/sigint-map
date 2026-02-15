@@ -11,7 +11,11 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use web_sys::MessageEvent;
 
-use crate::{bindings, browser_apis, db_messages::{DbRequest, DbResponse, WorkerMessage}};
+use crate::{
+    bindings,
+    browser_apis,
+    db_messages::{DbRequest, DbResponse, WorkerMessage, DB_WORKER_API_VERSION},
+};
 
 // Safari 26.2 always uses Trusted Types — WorkerHandle enum removed.
 // TrustedWorker is the only variant used; no need for abstraction.
@@ -77,7 +81,11 @@ pub fn init(worker: bindings::TrustedWorker) {
     cb.forget();
 
     // Send Init before storing — typed serde serialization, zero Reflect calls
-    let envelope = WorkerMessage { request: DbRequest::Init, request_id: 0 };
+    let envelope = WorkerMessage {
+        api_version: DB_WORKER_API_VERSION,
+        request: DbRequest::Init,
+        request_id: 0,
+    };
     if let Ok(msg) = serde_wasm_bindgen::to_value(&envelope) {
         let _ = worker.post_message(&msg);
     }
@@ -149,7 +157,11 @@ async fn send_request(request: DbRequest) -> Result<DbResponse, JsValue> {
         client.pending.borrow_mut().insert(id, tx);
 
         // Typed serde serialization — zero Reflect calls
-        let envelope = WorkerMessage { request, request_id: id };
+        let envelope = WorkerMessage {
+            api_version: DB_WORKER_API_VERSION,
+            request,
+            request_id: id,
+        };
         if let Ok(msg) = serde_wasm_bindgen::to_value(&envelope) {
             let _ = client.worker.post_message(&msg);
         }
@@ -187,6 +199,7 @@ pub fn flush_sync() {
             .collect();
 
         let batch_envelope = WorkerMessage {
+            api_version: DB_WORKER_API_VERSION,
             request: DbRequest::Batch { statements },
             request_id: 0, // Fire-and-forget
         };
@@ -206,7 +219,11 @@ pub fn flush_sync() {
     }
 
     // OPFS export (fire-and-forget)
-    let envelope = WorkerMessage { request: DbRequest::Export, request_id: 0 };
+    let envelope = WorkerMessage {
+        api_version: DB_WORKER_API_VERSION,
+        request: DbRequest::Export,
+        request_id: 0,
+    };
     if let Ok(msg) = serde_wasm_bindgen::to_value(&envelope) {
         DB_CLIENT.with(|c| {
             if let Some(client) = c.borrow().as_ref() {

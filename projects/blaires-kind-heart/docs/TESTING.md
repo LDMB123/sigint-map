@@ -8,6 +8,10 @@ Historical test reports index: `docs/testing/README.md`
 Run these before release-impacting changes:
 
 ```bash
+# One-time setup on a new machine
+npx playwright install chromium webkit
+
+# Core QA gates
 npm run qa:pwa-contract
 npm run qa:runtime
 npm run qa:db-contract

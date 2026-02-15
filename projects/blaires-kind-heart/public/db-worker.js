@@ -23,6 +23,7 @@ const DB_SCHEMA_VERSION = 1;
 // Key: SQL string, Value: compiled statement
 // Reduces query latency by 5-10ms per request
 const STMT_CACHE = new Map();
+const STMT_CACHE_MAX = 128;
 
 // ── Tier 1: OPFS (synchronous access handle VFS) ──
 async function tryOpfs(sqlite3) {
@@ -537,7 +538,16 @@ async function initDb() {
 
 // ── Message handler ──
 self.onmessage = async function(event) {
-  const { request, request_id } = event.data;
+  const { request, request_id, api_version } = event.data;
+
+  if (typeof api_version === "number" && api_version < self.DB_WORKER_MIN_CLIENT_API_VERSION) {
+    self.postMessage({
+      type: "Error",
+      request_id: request_id || 0,
+      message: `Client API version ${api_version} is too old (min ${self.DB_WORKER_MIN_CLIENT_API_VERSION})`
+    });
+    return;
+  }
 
   // Handle Init — serde(tag = "type") sends { type: "Init" } or wrapped { request: { type: "Init" } }
   const reqType = request?.type || (typeof request === 'string' ? request : null);
@@ -602,6 +612,16 @@ self.onmessage = async function(event) {
   // Phase 2.3: Get or create cached prepared statement
   function getOrPrepare(db, sql) {
     if (!STMT_CACHE.has(sql)) {
+      if (STMT_CACHE.size >= STMT_CACHE_MAX) {
+        const [evictKey] = STMT_CACHE.keys();
+        if (evictKey) {
+          const evictStmt = STMT_CACHE.get(evictKey);
+          try {
+            evictStmt?.finalize();
+          } catch (_) {}
+          STMT_CACHE.delete(evictKey);
+        }
+      }
       STMT_CACHE.set(sql, db.prepare(sql));
     }
     return STMT_CACHE.get(sql);
@@ -634,10 +654,14 @@ self.onmessage = async function(event) {
         stmt.bind(params);
       }
       const colCount = stmt.columnCount;
+      const colNames = [];
+      for (let i = 0; i < colCount; i++) {
+        colNames.push(stmt.getColumnName(i));
+      }
       while (stmt.step()) {
         const row = {};
         for (let i = 0; i < colCount; i++) {
-          row[stmt.getColumnName(i)] = stmt.get(i);
+          row[colNames[i]] = stmt.get(i);
         }
         rows.push(row);
       }
@@ -679,26 +703,6 @@ self.onmessage = async function(event) {
           message: `Batch failed: ${err.message}`
         });
       }
-      return;
-    }
-
-    // Batch (multiple statements in transaction) - duplicate handler, should be removed
-    if (reqType === 'Batch') {
-      const statements = request?.statements;
-      db.exec('BEGIN');
-      try {
-        for (const [batchSql, batchParams] of statements) {
-          const stmt = getOrPrepare(db, batchSql);
-          if (batchParams && batchParams.length > 0) stmt.bind(batchParams);
-          stmt.step();
-          stmt.reset(); // Reset for reuse, don't finalize cached statements
-        }
-        db.exec('COMMIT');
-      } catch (batchErr) {
-        db.exec('ROLLBACK');
-        throw batchErr;
-      }
-      self.postMessage({ type: 'Ok', request_id });
       return;
     }
 

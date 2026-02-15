@@ -548,6 +548,23 @@ pub fn init() {
     console::log_1(&"[badges] Module initialized".into());
 }
 
+fn extract_count_i64(rows: &serde_json::Value, key: &str) -> i64 {
+    rows.as_array()
+        .and_then(|arr| arr.first())
+        .and_then(|row| row.get(key))
+        .and_then(|v| v.as_f64())
+        .unwrap_or(0.0) as i64
+}
+
+fn extract_bool_flag(rows: &serde_json::Value, key: &str) -> bool {
+    rows.as_array()
+        .and_then(|arr| arr.first())
+        .and_then(|row| row.get(key))
+        .and_then(|v| v.as_f64())
+        .unwrap_or(0.0)
+        > 0.0
+}
+
 /// Award a badge to the user
 /// Award a badge directly without checking for platinum achievements (used internally)
 async fn award_badge_direct(badge_id: &str) {
@@ -556,11 +573,7 @@ async fn award_badge_direct(badge_id: &str) {
     // Check if already earned
     let check_sql = "SELECT earned FROM badges WHERE id = ?1";
     let already_earned = match db_client::query(check_sql, vec![badge_id.to_string()]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("earned"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) == 1.0,
+        Ok(rows) => extract_bool_flag(&rows, "earned"),
         Err(_) => false,
     };
 
@@ -592,11 +605,7 @@ pub async fn award_badge(badge_id: &str) {
     // Check if already earned
     let check_sql = "SELECT earned FROM badges WHERE id = ?1";
     let already_earned = match db_client::query(check_sql, vec![badge_id.to_string()]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("earned"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) == 1.0,
+        Ok(rows) => extract_bool_flag(&rows, "earned"),
         Err(_) => false,
     };
 
@@ -654,61 +663,35 @@ async fn celebrate_badge_unlock(badge_id: &str) {
 async fn check_platinum_achievements() {
     use crate::db_client;
 
-    // Kindness Master: All 6 skill platinum badges
-    let skill_platinum_count_sql = "SELECT COUNT(*) as count FROM badges WHERE badge_type = 'skill_mastery' AND tier = 'platinum' AND earned = 1";
-    let skill_platinum_count = match db_client::query(skill_platinum_count_sql, vec![]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) as i64,
-        Err(_) => 0,
-    };
+    let aggregate_sql = "
+        SELECT
+            (SELECT COUNT(*) FROM badges WHERE badge_type = 'skill_mastery' AND tier = 'platinum' AND earned = 1) as skill_platinum_count,
+            (SELECT COUNT(*) FROM badges WHERE badge_type = 'story' AND earned = 1) as story_count,
+            (SELECT COUNT(*) FROM badges WHERE badge_type = 'quest_chain' AND earned = 1) as chain_count,
+            (SELECT COUNT(*) FROM gardens WHERE growth_stage >= 5) as garden_count
+    ";
+    let (skill_platinum_count, story_count, chain_count, garden_count) =
+        match db_client::query(aggregate_sql, vec![]).await {
+            Ok(rows) => (
+                extract_count_i64(&rows, "skill_platinum_count"),
+                extract_count_i64(&rows, "story_count"),
+                extract_count_i64(&rows, "chain_count"),
+                extract_count_i64(&rows, "garden_count"),
+            ),
+            Err(_) => (0, 0, 0, 0),
+        };
 
     if skill_platinum_count >= 6 {
         award_badge_direct("badge-kindness-master").await;
     }
 
-    // Story Master: All 10 story badges
-    let story_count_sql = "SELECT COUNT(*) as count FROM badges WHERE badge_type = 'story' AND earned = 1";
-    let story_count = match db_client::query(story_count_sql, vec![]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) as i64,
-        Err(_) => 0,
-    };
-
     if story_count >= 15 {
         award_badge_direct("badge-story-master").await;
     }
 
-    // Chain Champion: All 12 quest chain badges
-    let chain_count_sql = "SELECT COUNT(*) as count FROM badges WHERE badge_type = 'quest_chain' AND earned = 1";
-    let chain_count = match db_client::query(chain_count_sql, vec![]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) as i64,
-        Err(_) => 0,
-    };
-
     if chain_count >= 12 {
         award_badge_direct("badge-chain-champion").await;
     }
-
-    // Garden Keeper: All 12 gardens at stage 5
-    let garden_count_sql = "SELECT COUNT(*) as count FROM gardens WHERE growth_stage >= 5";
-    let garden_count = match db_client::query(garden_count_sql, vec![]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) as i64,
-        Err(_) => 0,
-    };
 
     if garden_count >= 12 {
         award_badge_direct("badge-garden-keeper").await;
@@ -723,45 +706,21 @@ pub async fn check_daily_combo() {
 
     let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
 
-    // Check if all 4 conditions met
-    let quest_sql = "SELECT COUNT(*) as count FROM quests WHERE day_key = ?1 AND completed = 1";
-    let quest_done = match db_client::query(quest_sql, vec![today.clone()]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) > 0.0,
-        Err(_) => false,
-    };
-
-    let act_sql = "SELECT COUNT(*) as count FROM kind_acts WHERE day_key = ?1";
-    let act_done = match db_client::query(act_sql, vec![today.clone()]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) > 0.0,
-        Err(_) => false,
-    };
-
-    let reflect_sql = "SELECT COUNT(*) as count FROM kind_acts WHERE day_key = ?1 AND reflection_type IS NOT NULL";
-    let reflected = match db_client::query(reflect_sql, vec![today.clone()]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) > 0.0,
-        Err(_) => false,
-    };
-
-    let emotion_sql = "SELECT COUNT(*) as count FROM kind_acts WHERE day_key = ?1 AND emotion_selected IS NOT NULL";
-    let emotion = match db_client::query(emotion_sql, vec![today.clone()]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) > 0.0,
-        Err(_) => false,
+    let combo_sql = "
+        SELECT
+            (SELECT COUNT(*) FROM quests WHERE day_key = ?1 AND completed = 1) as quest_count,
+            (SELECT COUNT(*) FROM kind_acts WHERE day_key = ?1) as act_count,
+            (SELECT COUNT(*) FROM kind_acts WHERE day_key = ?1 AND reflection_type IS NOT NULL) as reflection_count,
+            (SELECT COUNT(*) FROM kind_acts WHERE day_key = ?1 AND emotion_selected IS NOT NULL) as emotion_count
+    ";
+    let (quest_done, act_done, reflected, emotion) = match db_client::query(combo_sql, vec![today.clone()]).await {
+        Ok(rows) => (
+            extract_count_i64(&rows, "quest_count") > 0,
+            extract_count_i64(&rows, "act_count") > 0,
+            extract_count_i64(&rows, "reflection_count") > 0,
+            extract_count_i64(&rows, "emotion_count") > 0,
+        ),
+        Err(_) => (false, false, false, false),
     };
 
     if quest_done && act_done && reflected && emotion {
@@ -781,61 +740,35 @@ pub async fn check_daily_combo() {
 async fn check_combo_streaks() {
     use crate::db_client;
 
-    // Check 3-day streak
-    let three_day_sql = "SELECT COUNT(*) as count FROM kind_acts WHERE combo_day = 1 AND day_key >= date('now', '-3 days')";
-    let three_day_count = match db_client::query(three_day_sql, vec![]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) as i64,
-        Err(_) => 0,
-    };
+    let streak_sql = "
+        SELECT
+            (SELECT COUNT(*) FROM kind_acts WHERE combo_day = 1 AND day_key >= date('now', '-3 days')) as three_day_count,
+            (SELECT COUNT(*) FROM kind_acts WHERE combo_day = 1 AND day_key >= date('now', '-7 days')) as week_count,
+            (SELECT COUNT(DISTINCT day_key) FROM kind_acts WHERE combo_day = 1) as full_heart_count,
+            (SELECT COUNT(DISTINCT category) FROM kind_acts WHERE day_key >= date('now', '-7 days')) as rainbow_count
+    ";
+    let (three_day_count, week_count, full_heart_count, rainbow_count) =
+        match db_client::query(streak_sql, vec![]).await {
+            Ok(rows) => (
+                extract_count_i64(&rows, "three_day_count"),
+                extract_count_i64(&rows, "week_count"),
+                extract_count_i64(&rows, "full_heart_count"),
+                extract_count_i64(&rows, "rainbow_count"),
+            ),
+            Err(_) => (0, 0, 0, 0),
+        };
 
     if three_day_count >= 3 {
         award_badge("badge-kindness-streak").await;
     }
 
-    // Check Perfect Week (7 days)
-    let week_sql = "SELECT COUNT(*) as count FROM kind_acts WHERE combo_day = 1 AND day_key >= date('now', '-7 days')";
-    let week_count = match db_client::query(week_sql, vec![]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) as i64,
-        Err(_) => 0,
-    };
-
     if week_count >= 7 {
         award_badge("badge-perfect-week").await;
     }
 
-    // Check Full Heart badge (complete all daily tasks 10 times)
-    let full_heart_sql = "SELECT COUNT(DISTINCT day_key) as count FROM kind_acts WHERE combo_day = 1";
-    let full_heart_count = match db_client::query(full_heart_sql, vec![]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) as i64,
-        Err(_) => 0,
-    };
-
     if full_heart_count >= 10 {
         award_badge("badge-full-heart").await;
     }
-
-    // Check Rainbow Week badge (6 different skill acts in one week)
-    let rainbow_sql = "SELECT COUNT(DISTINCT category) as count FROM kind_acts WHERE day_key >= date('now', '-7 days')";
-    let rainbow_count = match db_client::query(rainbow_sql, vec![]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) as i64,
-        Err(_) => 0,
-    };
 
     if rainbow_count >= 6 {
         award_badge("badge-rainbow-week").await;
@@ -857,11 +790,7 @@ pub async fn check_skill_mastery(skill_category: &str) {
     // Count acts for this skill
     let count_sql = "SELECT COUNT(*) as count FROM kind_acts WHERE category = ?1";
     let count = match db_client::query(count_sql, vec![skill_category.to_string()]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0) as i64,
+        Ok(rows) => extract_count_i64(&rows, "count"),
         Err(_) => 0,
     };
 
@@ -926,11 +855,7 @@ pub async fn seed_badges() {
     // Check if already seeded
     let check_sql = "SELECT COUNT(*) as count FROM badges";
     let count = match db_client::query(check_sql, vec![]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0),
+        Ok(rows) => extract_count_i64(&rows, "count") as f64,
         Err(_) => 0.0,
     };
 

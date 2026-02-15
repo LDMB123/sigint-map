@@ -7,8 +7,8 @@ Keep active documentation below 25k estimated tokens while preserving clear oper
 
 ## Current Baseline
 From `npm run token:baseline` on 2026-02-15:
-- Active files: `30`
-- Active estimated tokens: `23,726`
+- Active files: `31`
+- Active estimated tokens: `24,465`
 - Archive files: `83`
 - Archive estimated tokens: `193,665`
 

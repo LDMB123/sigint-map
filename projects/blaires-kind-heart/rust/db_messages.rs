@@ -10,6 +10,7 @@ pub const DB_WORKER_API_VERSION: u16 = 1;
 /// Replaces manual `js_sys::Object::new()` + `Reflect::set()` with typed serde serialization.
 #[derive(Serialize)]
 pub struct WorkerMessage {
+    pub api_version: u16,
     pub request: DbRequest,
     pub request_id: u32,
 }

@@ -17,22 +17,24 @@ Last updated: 2026-02-15
 - `npm run qa:pwa-contract`: PASS (`ok: true`, managed server mode)
 - `npm run qa:runtime`: PASS (`1 passed`)
 - `npm run qa:db-contract`: PASS (`2 passed`)
+- `npm run test:e2e`: PASS (`39 passed`, `1 skipped`)
 - `npm run test:e2e:all`: PASS (`40 passed`, `1 skipped`)
 - `npm run qa:docs-links`: PASS
-- `npm run qa:rust-warning-drift`: PASS (`warning_count=4`, `baseline=4`)
+- `npm run qa:rust-warning-drift`: PASS (`warning_count=3`, `baseline=3`, improved from previous `4`)
 - `npm run test:e2e:webkit`: PASS (`1 passed`)
-- `npm run token:baseline`: PASS (`active_est_tokens=23726`)
+- `npx playwright install webkit`: PASS (local WebKit runtime installed for cross-browser gate)
+- `npm run token:baseline`: PASS (`active_est_tokens=24465`)
 - `npm run qa:docs-budget`: PASS (`budget=25000`)
 - Xcode iPad simulator regression capture: PASS (`home/stories/tracker` panels captured)
 
 ### Current Risk Snapshot
 1. Physical iPad mini 6 regression has not been re-run for this exact verification cycle (simulator run complete).
-2. Rust compile emits dead-code warnings during QA runs (non-blocking today, but cleanup debt).
+2. Rust compile emits 3 dead-code warnings during QA runs (debug utilities preserved with `#[allow(dead_code)]`).
 
 ### Immediate Priorities
 1. Run and record a physical-device iPad regression cycle.
 2. Keep active docs under the 25k budget gate as docs evolve.
-3. Keep dead-code warnings from drifting upward (treat warning count as a tracked metric).
+3. Keep dead-code warnings from drifting upward (baseline enforced at 3 warnings).
 
 ## Repository Reorganization Performed
 - Moved root screenshot files into `docs/archive/assets/root-screenshots/`.

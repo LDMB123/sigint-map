@@ -11,9 +11,9 @@ Scope: active documentation set in `/Users/louisherman/ClaudeCodeProjects/projec
 ## Current Metrics (`npm run token:baseline`)
 | Metric | Value |
 |---|---:|
-| Active files | 30 |
-| Active bytes | 94,907 |
-| Active est. tokens | 23,726 |
+| Active files | 31 |
+| Active bytes | 97,861 |
+| Active est. tokens | 24,465 |
 | Archive files | 83 |
 | Archive bytes | 774,662 |
 | Archive est. tokens | 193,665 |

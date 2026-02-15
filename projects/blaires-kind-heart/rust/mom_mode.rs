@@ -4,6 +4,7 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use futures::join;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, Event};
@@ -641,10 +642,18 @@ fn close_dashboard() {
 
 async fn load_existing_goals() {
     let week = utils::week_key();
-    if let Ok(rows) = db_client::query(
-        "SELECT goal_type, target FROM weekly_goals WHERE week_key = ?1",
-        vec![week.clone()],
-    ).await {
+    let (goals_rows, note_rows) = join!(
+        db_client::query(
+            "SELECT goal_type, target FROM weekly_goals WHERE week_key = ?1",
+            vec![week.clone()],
+        ),
+        db_client::query(
+            "SELECT note_text FROM mom_notes WHERE week_key = ?1 ORDER BY created_at DESC LIMIT 1",
+            vec![week],
+        )
+    );
+
+    if let Ok(rows) = goals_rows {
         if let Some(arr) = rows.as_array() {
             for row in arr {
                 let Some(goal_type) = row.get("goal_type").and_then(|v| v.as_str()) else { continue };
@@ -667,10 +676,7 @@ async fn load_existing_goals() {
     }
 
     // Load existing note
-    if let Ok(rows) = db_client::query(
-        "SELECT note_text FROM mom_notes WHERE week_key = ?1 ORDER BY created_at DESC LIMIT 1",
-        vec![week],
-    ).await {
+    if let Ok(rows) = note_rows {
         if let Some(note) = rows.as_array()
             .and_then(|a| a.first())
             .and_then(|r| r.get("note_text"))
@@ -708,20 +714,24 @@ async fn export_json_backup() {
     let day = stamp.split('T').next().unwrap_or("unknown-day").to_string();
     let file_name = format!("blaires-kind-heart-export-{day}.json");
 
-    let kind_acts = db_client::query(
-        "SELECT id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day FROM kind_acts ORDER BY created_at ASC",
-        vec![],
-    ).await.unwrap_or(serde_json::json!([]));
+    let (kind_acts_result, settings_result, quests_result) = join!(
+        db_client::query(
+            "SELECT id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day FROM kind_acts ORDER BY created_at ASC",
+            vec![],
+        ),
+        db_client::query(
+            "SELECT key, value FROM settings WHERE key != 'parent_pin'",
+            vec![],
+        ),
+        db_client::query(
+            "SELECT * FROM quests ORDER BY day_key ASC",
+            vec![],
+        )
+    );
 
-    let settings = db_client::query(
-        "SELECT key, value FROM settings WHERE key != 'parent_pin'",
-        vec![],
-    ).await.unwrap_or(serde_json::json!([]));
-
-    let quests = db_client::query(
-        "SELECT * FROM quests ORDER BY day_key ASC",
-        vec![],
-    ).await.unwrap_or(serde_json::json!([]));
+    let kind_acts = kind_acts_result.unwrap_or(serde_json::json!([]));
+    let settings = settings_result.unwrap_or(serde_json::json!([]));
+    let quests = quests_result.unwrap_or(serde_json::json!([]));
 
     let payload = serde_json::json!({
         "export_format_version": 1,

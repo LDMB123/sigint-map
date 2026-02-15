@@ -24,6 +24,8 @@ RG_EXCLUDES=(
   --glob '!target/**'
   --glob '!node_modules/**'
   --glob '!dist/**'
+  --glob '!scripts/reports/**'
+  --glob '!public/sqlite/**'
 )
 
 AUDIT_PATHS=(

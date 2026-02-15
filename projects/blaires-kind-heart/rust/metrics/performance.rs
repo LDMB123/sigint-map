@@ -65,6 +65,7 @@ pub fn duration(start_mark: &str, end_mark: &str) -> Option<f64> {
 }
 
 /// Get all performance marks (for debug panel).
+#[allow(dead_code)]
 pub fn get_marks() -> Vec<(String, f64)> {
     PERF_MONITOR.with(|m| {
         m.borrow()

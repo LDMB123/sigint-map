@@ -4,6 +4,14 @@ const port = process.env.E2E_PORT ?? "4173";
 const baseURL = `http://127.0.0.1:${port}`;
 const includeWebkit = process.env.E2E_WEBKIT === "1";
 const reportRoot = process.env.PLAYWRIGHT_REPORT_DIR ?? "artifacts/playwright";
+const workersOverride = process.env.E2E_WORKERS;
+const parsedWorkersOverride = Number.parseInt(workersOverride ?? "", 10);
+const workers =
+  includeWebkit
+    ? 1
+    : Number.isFinite(parsedWorkersOverride) && parsedWorkersOverride > 0
+      ? parsedWorkersOverride
+      : workersOverride || 4;
 const reporter = [
   ["list"],
   ["html", { open: "never", outputFolder: `${reportRoot}/html` }],
@@ -18,7 +26,7 @@ export default defineConfig({
     timeout: 10_000
   },
   fullyParallel: includeWebkit ? false : true,
-  workers: includeWebkit ? 1 : process.env.CI ? 4 : "75%",
+  workers,
   retries: process.env.CI ? 2 : 0,
   reporter,
   use: {
