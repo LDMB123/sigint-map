@@ -27,7 +27,17 @@ test.describe('Rust visual regression', () => {
     await expect(page.locator('.page h1')).toBeVisible();
   }
 
+  async function stabilizeVisualFrame(page) {
+    await page.addStyleTag({
+      content: `
+        .pwa-status { display: none !important; }
+        .pwa-status__row--update { animation: none !important; }
+      `
+    });
+  }
+
   async function expectPageSnapshot(page, name) {
+    await stabilizeVisualFrame(page);
     await expect(page.locator('.page')).toHaveScreenshot(name, {
       animations: 'disabled',
       caret: 'hide',

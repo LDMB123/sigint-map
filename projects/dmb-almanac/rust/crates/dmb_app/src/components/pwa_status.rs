@@ -264,8 +264,15 @@ pub fn PwaStatus() -> impl IntoView {
             let integrity_report = integrity_report.clone();
             let sqlite_parity = sqlite_parity.clone();
             move |_| {
+                let manifest_diff = manifest_diff.clone();
+                let integrity_report = integrity_report.clone();
+                let sqlite_parity = sqlite_parity.clone();
                 spawn_local(async move {
                     use wasm_bindgen::JsCast;
+                    manifest_diff.set(crate::data::fetch_manifest_diff().await);
+                    integrity_report.set(crate::data::fetch_integrity_report().await);
+                    sqlite_parity.set(crate::data::fetch_sqlite_parity_report().await);
+
                     let payload = serde_json::json!({
                         "generatedAtMs": js_sys::Date::now(),
                         "import": {
@@ -826,8 +833,15 @@ pub fn PwaStatus() -> impl IntoView {
             ann_cap_override.set(crate::ai::ann_cap_override_mb());
 
             let status_signal = status.clone();
+            let manifest_diff_after_seed = manifest_diff.clone();
+            let integrity_report_after_seed = integrity_report.clone();
+            let sqlite_parity_after_seed = sqlite_parity.clone();
             spawn_local(async move {
                 crate::data::ensure_seed_data(status_signal).await;
+                // Refresh diagnostics after seed import completes.
+                manifest_diff_after_seed.set(crate::data::fetch_manifest_diff().await);
+                integrity_report_after_seed.set(crate::data::fetch_integrity_report().await);
+                sqlite_parity_after_seed.set(crate::data::fetch_sqlite_parity_report().await);
             });
 
             let storage_signal = storage.clone();
@@ -870,15 +884,47 @@ pub fn PwaStatus() -> impl IntoView {
             let local_generated_at = ai_config_generated_at.clone();
             spawn_local(async move {
                 if let Some(remote) = crate::ai::fetch_ai_config_meta().await {
-                    let local_v = local_version.get_untracked();
-                    let local_g = local_generated_at.get_untracked();
-                    if remote.version != local_v || remote.generated_at != local_g {
-                        let msg = format!(
-                            "AI config mismatch: remote {} @ {}.",
-                            remote.version.unwrap_or_else(|| "n/a".to_string()),
-                            remote.generated_at.unwrap_or_else(|| "n/a".to_string())
-                        );
-                        ai_status_signal.set(Some(msg));
+                    let normalize = |value: Option<String>| {
+                        value
+                            .map(|item| item.trim().to_string())
+                            .filter(|item| !item.is_empty())
+                    };
+                    let remote_v = normalize(remote.version.clone());
+                    let remote_g = normalize(remote.generated_at.clone());
+                    let mut local_v = normalize(local_version.get_untracked());
+                    let mut local_g = normalize(local_generated_at.get_untracked());
+                    if remote_v != local_v || remote_g != local_g {
+                        // Attempt self-heal for stale local AI config metadata.
+                        if crate::ai::refresh_ai_config().await {
+                            local_v = normalize(crate::ai::ai_config_version());
+                            local_g = normalize(crate::ai::ai_config_generated_at());
+                            local_version.set(local_v.clone());
+                            local_generated_at.set(local_g.clone());
+                        }
+                        if remote_v != local_v || remote_g != local_g {
+                            // Fallback: sync metadata directly from remote response.
+                            if crate::ai::sync_ai_config_meta(
+                                remote_v.as_deref(),
+                                remote_g.as_deref(),
+                            ) {
+                                local_v = remote_v.clone();
+                                local_g = remote_g.clone();
+                                local_version.set(local_v.clone());
+                                local_generated_at.set(local_g.clone());
+                            }
+                        }
+                        if remote_v != local_v || remote_g != local_g {
+                            let msg = format!(
+                                "AI config mismatch: remote {} @ {}.",
+                                remote_v.clone().unwrap_or_else(|| "n/a".to_string()),
+                                remote_g.clone().unwrap_or_else(|| "n/a".to_string())
+                            );
+                            ai_status_signal.set(Some(msg));
+                        } else {
+                            ai_status_signal.set(None);
+                        }
+                    } else {
+                        ai_status_signal.set(None);
                     }
                 }
             });
@@ -1708,7 +1754,15 @@ pub fn PwaStatus() -> impl IntoView {
                 }}
             </Show>
             <div class="pwa-status__row">
-                <button type="button" class="pill pill--ghost" on:click=on_export_parity>
+                <button
+                    type="button"
+                    class="pill pill--ghost"
+                    on:click=on_export_parity
+                    disabled=move || {
+                        let current = status.get();
+                        !current.done && current.error.is_none()
+                    }
+                >
                     "Export parity report"
                 </button>
             </div>

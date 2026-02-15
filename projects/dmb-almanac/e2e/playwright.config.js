@@ -5,10 +5,13 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  // Rust E2E mutates origin-scoped storage heavily; full intra-file parallelism
+  // causes non-deterministic contention and flaky timeouts.
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Keep local runs reasonably fast while avoiding import/IDB contention storms.
+  workers: process.env.CI ? 1 : 3,
   reporter: [
     ['html', { outputFolder: 'playwright-report', open: 'never' }],
     ['json', { outputFile: 'test-results/results.json' }],

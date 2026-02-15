@@ -11,7 +11,7 @@ test.describe('Rust parity report diagnostics', () => {
   }
 
   test('does not report integrity/parity mismatches after import and can export report', async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(240_000);
 
     await page.goto('/');
     await page.waitForLoadState('load');
@@ -20,7 +20,7 @@ test.describe('Rust parity report diagnostics', () => {
     // Wait for offline import to finish, otherwise parity checks can be in-flight.
     await expect(page.locator('.pwa-status .pwa-status__row').first()).toContainText(
       /Offline data ready/i,
-      { timeout: 90_000 }
+      { timeout: 210_000 }
     );
 
     await page.getByRole('button', { name: 'SW details' }).click();

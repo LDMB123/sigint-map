@@ -1,4 +1,4 @@
-const VERSION = '2026-02-06';
+const VERSION = '2026-02-15';
 const CACHE_PREFIX = 'dmb-almanac-rs';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const DATA_CACHE = `${CACHE_PREFIX}-data-${VERSION}`;

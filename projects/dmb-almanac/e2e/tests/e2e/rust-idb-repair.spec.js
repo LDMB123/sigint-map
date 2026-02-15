@@ -72,11 +72,23 @@ test.describe('Rust IDB auto-repair', () => {
     await expect(statusRow).toHaveText(/repairing|Importing/i, { timeout: 10000 });
 
     // Importing the full dataset can take longer than the default E2E timeout, especially on CI.
-    // Instead of waiting for completion, validate that progress continues beyond the first few files.
-    await expect(statusRow).toHaveText(
-      /Importing setlist-entries\.json|Importing guests\.json|Offline data ready/i,
-      { timeout: 45000 }
-    );
+    // Instead of hard-coding specific filenames, assert that progress advances beyond early files.
+    await page.waitForFunction(() => {
+      const el = document.querySelector('.pwa-status .pwa-status__row');
+      if (!el) return false;
+
+      const text = el.textContent || '';
+      if (/offline data ready/i.test(text)) return true;
+
+      const match = text.match(/Importing [^(]+\((\d+)\/(\d+)\)/i);
+      if (!match) return false;
+
+      const current = Number(match[1]);
+      const total = Number(match[2]);
+      if (!Number.isFinite(current) || !Number.isFinite(total) || total <= 0) return false;
+
+      return current >= Math.min(4, total);
+    }, { timeout: 45000 });
 
     const finalText = await statusRow.textContent();
     expect(finalText || '').not.toMatch(/Import failed/i);

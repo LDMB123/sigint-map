@@ -1063,6 +1063,24 @@ pub async fn fetch_ai_config_meta() -> Option<AiConfigMeta> {
 }
 
 #[cfg(feature = "hydrate")]
+pub fn sync_ai_config_meta(version: Option<&str>, generated_at: Option<&str>) -> bool {
+    let Some(window) = web_sys::window() else {
+        return false;
+    };
+    let Ok(Some(storage)) = window.local_storage() else {
+        return false;
+    };
+    if let Some(version) = version {
+        let _ = storage.set_item(AI_CONFIG_VERSION_KEY, version);
+    }
+    if let Some(generated_at) = generated_at {
+        let _ = storage.set_item(AI_CONFIG_GENERATED_AT_KEY, generated_at);
+    }
+    let _ = storage.set_item(AI_CONFIG_SEEDED_KEY, "1");
+    true
+}
+
+#[cfg(feature = "hydrate")]
 async fn fetch_f32_array_with_cap(url: &str, cap_bytes: u64) -> Option<Vec<f32>> {
     use wasm_bindgen::JsCast;
     use wasm_bindgen_futures::JsFuture;

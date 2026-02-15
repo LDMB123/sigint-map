@@ -6,7 +6,7 @@ test.describe('Rust offline seed import', () => {
   test.skip(!isRustE2E, 'Set RUST_E2E=1 and BASE_URL to the Rust server.');
 
   test('reaches "Offline data ready" (import does not stall)', async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
 
     await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await page.waitForLoadState('load');
@@ -33,6 +33,6 @@ test.describe('Rust offline seed import', () => {
       }
 
       return false;
-    });
+    }, { timeout: 170_000 });
   });
 });

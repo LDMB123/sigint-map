@@ -4,20 +4,28 @@ const isRustE2E = process.env.RUST_E2E === 'true' || process.env.RUST_E2E === '1
 
 test.describe('Rust AI pages', () => {
     test.skip(!isRustE2E, 'Set RUST_E2E=1 and BASE_URL to the Rust server.');
+    test.describe.configure({ mode: 'serial' });
+    test.setTimeout(90_000);
 
     async function waitForHydration(page) {
-        await page.waitForFunction(() => window.__DMB_HYDRATED === true);
+        await page.waitForFunction(() => window.__DMB_HYDRATED === true, { timeout: 60_000 });
     }
 
     test('AI diagnostics page renders', async ({ page }) => {
         await page.goto('/ai-diagnostics');
         await page.waitForLoadState('load');
         await waitForHydration(page);
+        await page.waitForFunction(() => {
+            const text = document.body.textContent || '';
+            return /Capabilities/i.test(text) && /ANN Index/i.test(text) && /IVF Tuning/i.test(text);
+        });
 
         await expect(page.getByRole('heading', { level: 1, name: /AI Diagnostics/i })).toBeVisible();
         await expect(page.getByRole('heading', { level: 2, name: /Capabilities/i })).toBeVisible();
         await expect(page.getByRole('heading', { level: 2, name: /ANN Index/i })).toBeVisible();
-        await expect(page.getByRole('heading', { level: 2, name: /IVF Tuning/i })).toBeVisible();
+        await expect(page.getByRole('heading', { level: 2, name: /IVF Tuning/i })).toBeVisible({
+            timeout: 15000
+        });
     });
 
     test('AI benchmark page renders', async ({ page }) => {

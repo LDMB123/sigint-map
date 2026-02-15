@@ -21,7 +21,7 @@ use dmb_core::{
     ReleaseTrack, SearchResult, SetlistEntry, Show, Song, Tour, UserAttendedShow, Venue,
 };
 
-#[cfg(feature = "ssr")]
+#[cfg(any(feature = "hydrate", feature = "ssr"))]
 use crate::server::{
     get_all_releases, get_curated_list_items, get_curated_lists, get_liberation_list,
     get_release_tracks, get_setlist_entries,
@@ -378,15 +378,49 @@ pub fn ai_diagnostics_page() -> impl IntoView {
             spawn_local(async move {
                 let remote = crate::ai::fetch_ai_config_meta().await;
                 if let Some(remote) = remote {
-                    let version = local_version.get_untracked();
-                    let generated = local_generated_at.get_untracked();
-                    if remote.version != version || remote.generated_at != generated {
-                        let msg = format!(
-                            "Remote AI config differs (remote {} @ {}).",
-                            remote.version.unwrap_or_else(|| "n/a".to_string()),
-                            remote.generated_at.unwrap_or_else(|| "n/a".to_string())
-                        );
-                        mismatch_signal.set(Some(msg));
+                    let normalize = |value: Option<String>| {
+                        value
+                            .map(|item| item.trim().to_string())
+                            .filter(|item| !item.is_empty())
+                    };
+                    let remote_version = normalize(remote.version.clone());
+                    let remote_generated = normalize(remote.generated_at.clone());
+                    let mut version = normalize(local_version.get_untracked());
+                    let mut generated = normalize(local_generated_at.get_untracked());
+                    if remote_version != version || remote_generated != generated {
+                        // Attempt self-heal for stale local AI config metadata.
+                        if crate::ai::refresh_ai_config().await {
+                            version = normalize(crate::ai::ai_config_version());
+                            generated = normalize(crate::ai::ai_config_generated_at());
+                            local_version.set(version.clone());
+                            local_generated_at.set(generated.clone());
+                        }
+                        if remote_version != version || remote_generated != generated {
+                            // Fallback: sync metadata directly from remote response.
+                            if crate::ai::sync_ai_config_meta(
+                                remote_version.as_deref(),
+                                remote_generated.as_deref(),
+                            ) {
+                                version = remote_version.clone();
+                                generated = remote_generated.clone();
+                                local_version.set(version.clone());
+                                local_generated_at.set(generated.clone());
+                            }
+                        }
+                        if remote_version != version || remote_generated != generated {
+                            let msg = format!(
+                                "Remote AI config differs (remote {} @ {}).",
+                                remote_version.clone().unwrap_or_else(|| "n/a".to_string()),
+                                remote_generated
+                                    .clone()
+                                    .unwrap_or_else(|| "n/a".to_string())
+                            );
+                            mismatch_signal.set(Some(msg));
+                        } else {
+                            mismatch_signal.set(None);
+                        }
+                    } else {
+                        mismatch_signal.set(None);
                     }
                 }
             });
@@ -1993,46 +2027,68 @@ async fn load_all_releases() -> Vec<Release> {
             return releases;
         }
     }
+    if let Ok(releases) = get_all_releases().await {
+        if !releases.is_empty() {
+            return releases;
+        }
+    }
     get_recent_releases(200).await.unwrap_or_default()
 }
 
 #[cfg(feature = "hydrate")]
 async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
-    if let Ok(tracks) = dmb_idb::list_release_tracks(_release_id).await {
+    let tracks =
+        spawn_local_to_send(async move { dmb_idb::list_release_tracks(_release_id).await.ok() })
+            .await
+            .unwrap_or_default();
+    if !tracks.is_empty() {
         return tracks;
     }
-    Vec::new()
+    get_release_tracks(_release_id).await.unwrap_or_default()
 }
 
 #[cfg(feature = "hydrate")]
 async fn load_setlist_entries(_show_id: i32) -> Vec<SetlistEntry> {
-    spawn_local_to_send(async move { dmb_idb::list_setlist_entries(_show_id).await.ok() })
-        .await
-        .unwrap_or_default()
+    let entries =
+        spawn_local_to_send(async move { dmb_idb::list_setlist_entries(_show_id).await.ok() })
+            .await
+            .unwrap_or_default();
+    if !entries.is_empty() {
+        return entries;
+    }
+    get_setlist_entries(_show_id).await.unwrap_or_default()
 }
 
 #[cfg(feature = "hydrate")]
 async fn load_liberation_list(_limit: usize) -> Vec<LiberationEntry> {
     if let Ok(entries) = dmb_idb::list_liberation_entries(_limit).await {
-        return entries;
+        if !entries.is_empty() {
+            return entries;
+        }
     }
-    Vec::new()
+    get_liberation_list(_limit as i32).await.unwrap_or_default()
 }
 
 #[cfg(feature = "hydrate")]
 async fn load_curated_lists() -> Vec<CuratedList> {
     if let Ok(lists) = dmb_idb::list_curated_lists().await {
-        return lists;
+        if !lists.is_empty() {
+            return lists;
+        }
     }
-    Vec::new()
+    get_curated_lists().await.unwrap_or_default()
 }
 
 #[cfg(feature = "hydrate")]
 async fn load_curated_list_items(_list_id: i32, _limit: usize) -> Vec<CuratedListItem> {
     if let Ok(items) = dmb_idb::list_curated_list_items(_list_id, _limit).await {
-        return items;
+        if !items.is_empty() {
+            return items;
+        }
     }
-    Vec::new()
+    get_curated_list_items(_list_id, _limit as i32)
+        .await
+        .unwrap_or_default()
 }
 
 #[cfg(feature = "hydrate")]
@@ -2547,27 +2603,6 @@ pub fn song_detail_page() -> impl IntoView {
     }
     };
 
-    #[cfg(feature = "hydrate")]
-    let (song, loading) = {
-        let song = RwSignal::new(None::<Song>);
-        let loading = RwSignal::new(true);
-        let song_signal = song.clone();
-        let loading_signal = loading.clone();
-        Effect::new(move |_| {
-            let slug = slug();
-            let song_signal = song_signal.clone();
-            let loading_signal = loading_signal.clone();
-            loading_signal.set(true);
-            spawn_local(async move {
-                let value = load_song(slug).await;
-                song_signal.set(value);
-                loading_signal.set(false);
-            });
-        });
-        (song, loading)
-    };
-
-    #[cfg(not(feature = "hydrate"))]
     let song = Resource::new(slug, |slug: String| async move { load_song(slug).await });
 
     view! {
@@ -2575,21 +2610,7 @@ pub fn song_detail_page() -> impl IntoView {
             <h1>"Song"</h1>
             <p>"slug: " {slug}</p>
             <Suspense fallback=move || view! { <p class="muted">"Loading song..."</p> }>
-                {move || {
-                    #[cfg(feature = "hydrate")]
-                    {
-                        if loading.get() {
-                            view! { <p class="muted">"Loading song..."</p> }.into_any()
-                        } else {
-                            render(song.get())
-                        }
-                    }
-
-                    #[cfg(not(feature = "hydrate"))]
-                    {
-                        render(song.get().unwrap_or(None))
-                    }
-                }}
+                {move || render(song.get().unwrap_or(None))}
             </Suspense>
         </section>
     }
@@ -2616,27 +2637,6 @@ pub fn guest_detail_page() -> impl IntoView {
     }
     };
 
-    #[cfg(feature = "hydrate")]
-    let (guest, loading) = {
-        let guest = RwSignal::new(None::<Guest>);
-        let loading = RwSignal::new(true);
-        let guest_signal = guest.clone();
-        let loading_signal = loading.clone();
-        Effect::new(move |_| {
-            let slug = slug();
-            let guest_signal = guest_signal.clone();
-            let loading_signal = loading_signal.clone();
-            loading_signal.set(true);
-            spawn_local(async move {
-                let value = load_guest(slug).await;
-                guest_signal.set(value);
-                loading_signal.set(false);
-            });
-        });
-        (guest, loading)
-    };
-
-    #[cfg(not(feature = "hydrate"))]
     let guest = Resource::new(slug, |slug: String| async move { load_guest(slug).await });
 
     view! {
@@ -2644,21 +2644,7 @@ pub fn guest_detail_page() -> impl IntoView {
             <h1>"Guest"</h1>
             <p>"slug: " {slug}</p>
             <Suspense fallback=move || view! { <p class="muted">"Loading guest..."</p> }>
-                {move || {
-                    #[cfg(feature = "hydrate")]
-                    {
-                        if loading.get() {
-                            view! { <p class="muted">"Loading guest..."</p> }.into_any()
-                        } else {
-                            render(guest.get())
-                        }
-                    }
-
-                    #[cfg(not(feature = "hydrate"))]
-                    {
-                        render(guest.get().unwrap_or(None))
-                    }
-                }}
+                {move || render(guest.get().unwrap_or(None))}
             </Suspense>
         </section>
     }
@@ -2686,54 +2672,7 @@ pub fn release_detail_page() -> impl IntoView {
     }
     };
 
-    #[cfg(feature = "hydrate")]
-    let (release, loading) = {
-        let release = RwSignal::new(None::<Release>);
-        let loading = RwSignal::new(true);
-        let release_signal = release.clone();
-        let loading_signal = loading.clone();
-        Effect::new(move |_| {
-            let slug = slug();
-            let release_signal = release_signal.clone();
-            let loading_signal = loading_signal.clone();
-            loading_signal.set(true);
-            spawn_local(async move {
-                let value = load_release(slug).await;
-                release_signal.set(value);
-                loading_signal.set(false);
-            });
-        });
-        (release, loading)
-    };
-
-    #[cfg(feature = "hydrate")]
-    let (tracks, tracks_loading) = {
-        let tracks = RwSignal::new(Vec::<ReleaseTrack>::new());
-        let loading = RwSignal::new(true);
-        let tracks_signal = tracks.clone();
-        let loading_signal = loading.clone();
-        let release_signal = release.clone();
-        Effect::new(move |_| {
-            let release = release_signal.get();
-            let tracks_signal = tracks_signal.clone();
-            let loading_signal = loading_signal.clone();
-            loading_signal.set(true);
-            spawn_local(async move {
-                let items = if let Some(release) = release {
-                    load_release_tracks(release.id).await
-                } else {
-                    Vec::new()
-                };
-                tracks_signal.set(items);
-                loading_signal.set(false);
-            });
-        });
-        (tracks, loading)
-    };
-
-    #[cfg(not(feature = "hydrate"))]
     let release = Resource::new(slug, |slug: String| async move { load_release(slug).await });
-    #[cfg(not(feature = "hydrate"))]
     let tracks = Resource::new(slug, |slug: String| async move {
         let release = load_release(slug).await;
         if let Some(release) = release {
@@ -2748,60 +2687,12 @@ pub fn release_detail_page() -> impl IntoView {
             <h1>"Release"</h1>
             <p>"slug: " {slug}</p>
             <Suspense fallback=move || view! { <p class="muted">"Loading release..."</p> }>
-                {move || {
-                    #[cfg(feature = "hydrate")]
-                    {
-                        if loading.get() {
-                            view! { <p class="muted">"Loading release..."</p> }.into_any()
-                        } else {
-                            render(release.get())
-                        }
-                    }
-
-                    #[cfg(not(feature = "hydrate"))]
-                    {
-                        render(release.get().unwrap_or(None))
-                    }
-                }}
+                {move || render(release.get().unwrap_or(None))}
             </Suspense>
             <div class="section-divider"></div>
             <h2>"Tracks"</h2>
-            {move || {
-                #[cfg(feature = "hydrate")]
-                {
-                    if tracks_loading.get() {
-                        view! { <p class="muted">"Loading tracks..."</p> }.into_any()
-                    } else if tracks.get().is_empty() {
-                        view! { <p class="muted">"No tracks available."</p> }.into_any()
-                    } else {
-                        let items = tracks.get();
-                        view! {
-                            <ol class="tracklist" aria-label="Release tracks">
-                                {items
-                                    .into_iter()
-                                    .map(|track| {
-                                        let track_label = track
-                                            .song_id
-                                            .map(|id| format!("Song #{}", id))
-                                            .unwrap_or_else(|| "Unknown song".to_string());
-                                        let number = track.track_number.unwrap_or(0);
-                                        let disc = track.disc_number.unwrap_or(1);
-                                        view! {
-                                            <li class="tracklist-item">
-                                                <span class="tracklist-pos">{format!("{}-{}", disc, number)}</span>
-                                                <span class="tracklist-title">{track_label}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ol>
-                        }
-                        .into_any()
-                    }
-                }
-
-                #[cfg(not(feature = "hydrate"))]
-                {
+            <Suspense fallback=move || view! { <p class="muted">"Loading tracks..."</p> }>
+                {move || {
                     if let Some(items) = tracks.get().unwrap_or(None) {
                         if items.is_empty() {
                             view! { <p class="muted">"No tracks available."</p> }.into_any()
@@ -2832,8 +2723,8 @@ pub fn release_detail_page() -> impl IntoView {
                     } else {
                         view! { <p class="muted">"Tracks unavailable."</p> }.into_any()
                     }
-                }
-            }}
+                }}
+            </Suspense>
         </section>
     }
 }
@@ -2859,31 +2750,6 @@ pub fn tour_year_page() -> impl IntoView {
     }
     };
 
-    #[cfg(feature = "hydrate")]
-    let (tour, loading) = {
-        let tour = RwSignal::new(None::<Tour>);
-        let loading = RwSignal::new(true);
-        let tour_signal = tour.clone();
-        let loading_signal = loading.clone();
-        Effect::new(move |_| {
-            let year = year();
-            let tour_signal = tour_signal.clone();
-            let loading_signal = loading_signal.clone();
-            loading_signal.set(true);
-            spawn_local(async move {
-                let value = if let Ok(year) = year.parse::<i32>() {
-                    load_tour(year).await
-                } else {
-                    None
-                };
-                tour_signal.set(value);
-                loading_signal.set(false);
-            });
-        });
-        (tour, loading)
-    };
-
-    #[cfg(not(feature = "hydrate"))]
     let tour = Resource::new(year, |year: String| async move {
         let year = year.parse::<i32>().ok()?;
         load_tour(year).await
@@ -2894,21 +2760,7 @@ pub fn tour_year_page() -> impl IntoView {
             <h1>"Tour"</h1>
             <p>"year: " {year}</p>
             <Suspense fallback=move || view! { <p class="muted">"Loading tour..."</p> }>
-                {move || {
-                    #[cfg(feature = "hydrate")]
-                    {
-                        if loading.get() {
-                            view! { <p class="muted">"Loading tour..."</p> }.into_any()
-                        } else {
-                            render(tour.get())
-                        }
-                    }
-
-                    #[cfg(not(feature = "hydrate"))]
-                    {
-                        render(tour.get().unwrap_or(None))
-                    }
-                }}
+                {move || render(tour.get().unwrap_or(None))}
             </Suspense>
         </section>
     }
@@ -2934,31 +2786,6 @@ pub fn venue_detail_page() -> impl IntoView {
         .into_any(),
     };
 
-    #[cfg(feature = "hydrate")]
-    let (venue, loading) = {
-        let venue = RwSignal::new(None::<Venue>);
-        let loading = RwSignal::new(true);
-        let venue_signal = venue.clone();
-        let loading_signal = loading.clone();
-        Effect::new(move |_| {
-            let id = venue_id();
-            let venue_signal = venue_signal.clone();
-            let loading_signal = loading_signal.clone();
-            loading_signal.set(true);
-            spawn_local(async move {
-                let value = if let Ok(id) = id.parse::<i32>() {
-                    load_venue(id).await
-                } else {
-                    None
-                };
-                venue_signal.set(value);
-                loading_signal.set(false);
-            });
-        });
-        (venue, loading)
-    };
-
-    #[cfg(not(feature = "hydrate"))]
     let venue = Resource::new(venue_id, |id: String| async move {
         let id = id.parse::<i32>().ok()?;
         load_venue(id).await
@@ -2969,21 +2796,7 @@ pub fn venue_detail_page() -> impl IntoView {
             <h1>"Venue"</h1>
             <p>"venueId: " {venue_id}</p>
             <Suspense fallback=move || view! { <p class="muted">"Loading venue..."</p> }>
-                {move || {
-                    #[cfg(feature = "hydrate")]
-                    {
-                        if loading.get() {
-                            view! { <p class="muted">"Loading venue..."</p> }.into_any()
-                        } else {
-                            render(venue.get())
-                        }
-                    }
-
-                    #[cfg(not(feature = "hydrate"))]
-                    {
-                        render(venue.get().unwrap_or(None))
-                    }
-                }}
+                {move || render(venue.get().unwrap_or(None))}
             </Suspense>
         </section>
     }

@@ -30,4 +30,19 @@ test.describe('Rust smoke', () => {
     await waitForHydration(page);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
+
+  test('release detail page renders and resolves tracks state', async ({ page }) => {
+    await page.goto('/releases/live-trax-vol-63-76127712-alpine-valley-music-theatre-east-troy-wi');
+    await page.waitForLoadState('load');
+    await waitForHydration(page);
+    await expect(page.getByRole('heading', { level: 1, name: /Release/i })).toBeVisible();
+    await page.waitForFunction(() => {
+      const text = document.body.textContent || '';
+      return (
+        document.querySelectorAll('.tracklist-item').length > 0 ||
+        /No tracks available/i.test(text) ||
+        /Tracks unavailable/i.test(text)
+      );
+    });
+  });
 });
