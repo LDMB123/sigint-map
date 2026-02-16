@@ -66,6 +66,9 @@ struct UnicornGameState {
 
     // Ambient flowers — tap-spawned decorative elements
     flowers: Vec<FlowerDecor>,
+
+    // Active biome
+    biome: &'static game_unicorn_friends::Biome,
 }
 
 struct FlowerDecor {
@@ -90,6 +93,7 @@ type RafClosure = Closure<dyn FnMut(f64)>;
 thread_local! {
     static GAME: RefCell<Option<UnicornGameState>> = const { RefCell::new(None) };
     static RAF_CLOSURE: RefCell<Option<RafClosure>> = const { RefCell::new(None) };
+    static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) };
 }
 
 // ── Public API ───────────────────────────────────────────────────
@@ -100,8 +104,70 @@ pub fn init() {
 }
 
 pub fn start(state: Rc<RefCell<AppState>>) {
+    show_biome_picker(state);
+}
+
+fn show_biome_picker(state: Rc<RefCell<AppState>>) {
+    // Clean up any previous picker listener
+    PICKER_ABORT.with(|p| { p.borrow_mut().take(); });
+
     let Some(arena) = dom::query("#game-arena") else { return };
     let doc = dom::document();
+    dom::safe_set_inner_html(&arena, "");
+
+    let container = render::create_el_with_class(&doc, "div", "memory-select");
+
+    let title = render::create_el_with_class(&doc, "div", "memory-select-title");
+    title.set_text_content(Some("\u{1F984} Choose Your World!"));
+
+    let buttons = render::create_el_with_class(&doc, "div", "memory-select-buttons");
+
+    for biome in game_unicorn_friends::ALL_BIOMES {
+        let label = format!("{} {}", biome.picker_emoji, biome.name);
+        let btn = render::create_button(&doc, "game-card game-card--unicorn", &label);
+        let _ = btn.set_attribute("data-unicorn-biome", biome.name);
+        let _ = buttons.append_child(&btn);
+    }
+
+    let _ = container.append_child(&title);
+    let _ = container.append_child(&buttons);
+    let _ = arena.append_child(&container);
+
+    // Bind click handler via event delegation on arena
+    let abort = browser_apis::new_abort_handle();
+    let signal = abort.signal();
+    let s = state.clone();
+
+    dom::on_with_signal(
+        arena.unchecked_ref(),
+        "click",
+        &signal,
+        move |event: Event| {
+            let Some(target) = event.target() else { return };
+            let el: &web_sys::Element = target.unchecked_ref();
+            let Some(btn) = el.closest("[data-unicorn-biome]").ok().flatten() else { return };
+            let Some(biome_name) = btn.get_attribute("data-unicorn-biome") else { return };
+
+            // Find the biome by name
+            let Some(biome) = game_unicorn_friends::ALL_BIOMES.iter().find(|b| b.name == biome_name) else { return };
+
+            synth_audio::tap();
+            native_apis::vibrate_tap();
+
+            start_with_biome(s.clone(), biome);
+        },
+    );
+
+    PICKER_ABORT.with(|p| { *p.borrow_mut() = Some(abort); });
+}
+
+fn start_with_biome(state: Rc<RefCell<AppState>>, biome: &'static game_unicorn_friends::Biome) {
+    // Clean up picker listener
+    PICKER_ABORT.with(|p| { p.borrow_mut().take(); });
+
+    let Some(arena) = dom::query("#game-arena") else { return };
+    let doc = dom::document();
+    dom::safe_set_inner_html(&arena, "");
 
     // Container
     let container = render::create_el_with_class(&doc, "div", "unicorn-container");
@@ -177,8 +243,8 @@ pub fn start(state: Rc<RefCell<AppState>>) {
     let mut unicorn = game_unicorn_unicorn::Unicorn::new();
     unicorn.center_in(css_w, css_h);
 
-    // Friends
-    let friends = game_unicorn_friends::FriendManager::new();
+    // Friends — use biome's friend types
+    let friends = game_unicorn_friends::FriendManager::new(biome.friends);
 
     // Sparkles
     let sparkles = game_unicorn_sparkles::SparkleSystem::new();
@@ -198,8 +264,8 @@ pub fn start(state: Rc<RefCell<AppState>>) {
     bind_mute_button(&signal);
     bind_back_button(&signal, state.clone());
 
-    // Start ambient soundscape
-    game_unicorn_audio::start_ambient();
+    // Start ambient soundscape with biome frequency
+    game_unicorn_audio::start_ambient(biome.ambient_freq);
 
     // Announcements
     if let Some(arena_el) = dom::query("#game-arena") {
@@ -234,6 +300,7 @@ pub fn start(state: Rc<RefCell<AppState>>) {
             bg_image,
             bg_loaded: false,
             flowers: Vec::new(),
+            biome,
         });
     });
 
@@ -441,11 +508,11 @@ fn draw_game(game: &mut UnicornGameState) {
             ).ok();
         }
     } else {
-        // Gradient fallback
+        // Gradient fallback — uses biome colors
         let grad = ctx.create_linear_gradient(0.0, 0.0, 0.0, h);
-        grad.add_color_stop(0.0, "#87CEEB").ok();  // sky blue
-        grad.add_color_stop(0.6, "#90EE90").ok();  // light green
-        grad.add_color_stop(1.0, "#228B22").ok();  // forest green
+        grad.add_color_stop(0.0, game.biome.bg_gradient.0).ok();
+        grad.add_color_stop(0.6, game.biome.bg_gradient.1).ok();
+        grad.add_color_stop(1.0, game.biome.bg_gradient.2).ok();
         ctx.set_fill_style_canvas_gradient(&grad);
         ctx.fill_rect(0.0, 0.0, w, h);
     }
@@ -786,7 +853,7 @@ fn bind_end_screen_buttons(state: Rc<RefCell<AppState>>) {
     let s = state.clone();
     games::bind_end_buttons(
         None,
-        move || { cleanup(); start(s.clone()); },
+        move || { cleanup(); show_biome_picker(s.clone()); },
         || { cleanup(); games::return_to_menu(); },
     );
 }
@@ -794,6 +861,7 @@ fn bind_end_screen_buttons(state: Rc<RefCell<AppState>>) {
 // ── Cleanup ──────────────────────────────────────────────────────
 
 pub fn cleanup() {
+    PICKER_ABORT.with(|p| { p.borrow_mut().take(); });
     game_unicorn_audio::stop_ambient();
     game_unicorn_audio::cleanup();
 

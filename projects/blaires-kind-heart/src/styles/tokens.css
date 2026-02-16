@@ -28,6 +28,7 @@
   --color-text-light: #5C4560;
   --color-surface: #FFFFFF;
   --color-surface-raised: #FFF5F8;
+  --color-surface-alt: #F5F0F3;
 
   /* Interactive state colors — derived via color-mix() */
   --color-purple-hover: color-mix(in srgb, var(--color-purple) 85%, white);
@@ -116,8 +117,13 @@
   --duration-slow: 600ms;
   --duration-dramatic: 1000ms;
 
-  /* Z-index layers */
+  /* Z-index layers — ordered scale for stacking context */
+  --z-base: 1;
   --z-panel: 10;
-  --z-toast: 100;
-  --z-loading: 1000;
+  --z-game: 50;
+  --z-modal: 100;
+  --z-toast: 200;
+  --z-confetti: 500;
+  --z-overlay: 1000;
+  --z-loading: 3000;
 }

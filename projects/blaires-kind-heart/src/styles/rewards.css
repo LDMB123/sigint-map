@@ -69,10 +69,12 @@
 }
 
 .skeleton-cell {
-  width: 80px;
-  height: 80px;
+  width: var(--touch-large);
+  height: var(--touch-large);
   border-radius: var(--radius-lg);
-  background: var(--color-surface-alt);
+  background: linear-gradient(90deg, var(--color-surface-alt) 25%, var(--color-surface-raised) 50%, var(--color-surface-alt) 75%);
+  background-size: 200% 100%;
+  animation: shimmer-loading 1.5s ease infinite;
 }
 
 /* ====== Streak Section ====== */
@@ -273,7 +275,7 @@
   border: 2px solid var(--color-purple-light);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
-  min-width: 90px;
+  min-width: var(--touch-large);
   flex-shrink: 0;
   scroll-snap-align: center;
   transition: transform var(--duration-fast) var(--ease-bounce);
@@ -328,7 +330,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: var(--z-overlay);
   animation: fade-in-up var(--duration-normal) var(--ease-smooth) both;
 }
 

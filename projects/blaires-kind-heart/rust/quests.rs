@@ -288,6 +288,7 @@ async fn render_daily_quests(state: Rc<RefCell<AppState>>) {
         let completed = s.borrow().quests_completed_today;
         if completed >= 3 {
             confetti::celebrate(confetti::CelebrationTier::Epic);
+            synth_audio::sparkle();
             rewards::award_sticker("quest-bonus");
             dom::toast("\u{1F31F} All quests done! Bonus sticker! \u{1F31F}");
             speech::celebrate("WOW! You finished ALL the quests! You're AMAZING!");

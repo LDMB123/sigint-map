@@ -14,6 +14,76 @@ use crate::{
     state::AppState, synth_audio, theme, ui, utils, weekly_goals,
 };
 
+// ── Theme packs ─────────────────────────────────────────────────
+#[derive(Clone, Copy, PartialEq)]
+enum CatcherTheme {
+    Classic,
+    GardenParty,
+    SweetTreats,
+    StarryNight,
+}
+
+struct CatcherThemeData {
+    name: &'static str,
+    catch_items: &'static [&'static str],  // emoji only
+    hazard: &'static str,                   // emoji only
+    bg_gradient: &'static str,
+    picker_emoji: &'static str,
+}
+
+impl CatcherTheme {
+    fn data(&self) -> &'static CatcherThemeData {
+        match self {
+            Self::Classic => &THEME_CLASSIC,
+            Self::GardenParty => &THEME_GARDEN,
+            Self::SweetTreats => &THEME_SWEETS,
+            Self::StarryNight => &THEME_STARRY,
+        }
+    }
+    fn name(&self) -> &str { self.data().name }
+    fn picker_emoji(&self) -> &str { self.data().picker_emoji }
+    fn attr(&self) -> &str {
+        match self {
+            Self::Classic => "classic",
+            Self::GardenParty => "garden",
+            Self::SweetTreats => "sweets",
+            Self::StarryNight => "starry",
+        }
+    }
+}
+
+const THEME_CLASSIC: CatcherThemeData = CatcherThemeData {
+    name: "Classic",
+    catch_items: &["\u{1F496}", "\u{2B50}", "\u{1F984}"],
+    hazard: "\u{1F327}",
+    bg_gradient: "linear-gradient(180deg, #87CEEB 0%, #B0E0FF 100%)",
+    picker_emoji: "\u{1F496}",
+};
+
+const THEME_GARDEN: CatcherThemeData = CatcherThemeData {
+    name: "Garden Party",
+    catch_items: &["\u{1F33A}", "\u{1F98B}", "\u{1F41E}"],
+    hazard: "\u{1F4A7}",
+    bg_gradient: "linear-gradient(180deg, #90EE90 0%, #228B22 100%)",
+    picker_emoji: "\u{1F33A}",
+};
+
+const THEME_SWEETS: CatcherThemeData = CatcherThemeData {
+    name: "Sweet Treats",
+    catch_items: &["\u{1F9C1}", "\u{1F36A}", "\u{1F366}"],
+    hazard: "\u{1F966}",
+    bg_gradient: "linear-gradient(180deg, #FFB6C1 0%, #FF69B4 100%)",
+    picker_emoji: "\u{1F9C1}",
+};
+
+const THEME_STARRY: CatcherThemeData = CatcherThemeData {
+    name: "Starry Night",
+    catch_items: &["\u{1F319}", "\u{1F320}", "\u{1FA90}"],
+    hazard: "\u{2604}",
+    bg_gradient: "linear-gradient(180deg, #1a0033 0%, #2d1b69 100%)",
+    picker_emoji: "\u{1F319}",
+};
+
 // ── Item types ──────────────────────────────────────────────────────
 
 #[derive(Clone, Copy, PartialEq)]
@@ -98,6 +168,18 @@ impl ItemKind {
             Self::RainbowStar | Self::TimeFreeze | Self::StarShower | Self::SizeBoost
         )
     }
+
+    fn themed_emoji(&self, theme: CatcherTheme) -> &str {
+        let data = theme.data();
+        match self {
+            Self::Heart => data.catch_items[0],
+            Self::Star => data.catch_items[1],
+            Self::Unicorn => data.catch_items[2],
+            Self::RainCloud => data.hazard,
+            // Power-ups are universal
+            _ => self.emoji(),
+        }
+    }
 }
 
 // ── Active power-up state ───────────────────────────────────────────
@@ -135,26 +217,87 @@ struct CatcherState {
     abort: browser_apis::AbortHandle,
     power_ups: PowerUpState,
     start_time_ms: f64,
+    theme: CatcherTheme,
 }
 
 thread_local! {
     static GAME: RefCell<Option<CatcherState>> = const { RefCell::new(None) };
+    static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) };
 }
 
 // ── Public API ──────────────────────────────────────────────────────
 
-
-pub fn start(state: Rc<RefCell<AppState>>) {
+fn show_theme_picker(state: Rc<RefCell<AppState>>) {
     let Some(arena) = dom::query("#game-arena") else { return };
     let doc = dom::document();
+    dom::safe_set_inner_html(&arena, "");
+
+    // Clean up previous picker listener if any
+    PICKER_ABORT.with(|p| { p.borrow_mut().take(); });
+
+    let abort = browser_apis::new_abort_handle();
+    let signal = abort.signal();
+
+    let container = render::create_el_with_class(&doc, "div", "memory-select");
+
+    let title = render::create_el_with_class(&doc, "div", "memory-select-title");
+    title.set_text_content(Some("\u{1F496} Choose a Theme!"));
+
+    let buttons = render::create_el_with_class(&doc, "div", "memory-select-buttons");
+
+    for theme in [CatcherTheme::Classic, CatcherTheme::GardenParty, CatcherTheme::SweetTreats, CatcherTheme::StarryNight] {
+        let label = format!("{} {}", theme.picker_emoji(), theme.name());
+        let btn = render::create_button(&doc, "game-card game-card--catcher", &label);
+        let _ = btn.set_attribute("data-catcher-theme", theme.attr());
+        let _ = buttons.append_child(&btn);
+    }
+
+    let _ = container.append_child(&title);
+    let _ = container.append_child(&buttons);
+    let _ = arena.append_child(&container);
+
+    // Event delegation for theme selection
+    let state_click = state.clone();
+    dom::on_with_signal(arena.unchecked_ref(), "click", &signal, move |event: Event| {
+        let target = event.target().and_then(|t| t.dyn_into::<Element>().ok());
+        let Some(el) = target else { return };
+        if let Ok(Some(btn)) = el.closest("[data-catcher-theme]") {
+            let theme_attr = btn.get_attribute("data-catcher-theme").unwrap_or_default();
+            let theme = match theme_attr.as_str() {
+                "garden" => CatcherTheme::GardenParty,
+                "sweets" => CatcherTheme::SweetTreats,
+                "starry" => CatcherTheme::StarryNight,
+                _ => CatcherTheme::Classic,
+            };
+            start_with_theme(state_click.clone(), theme);
+        }
+    });
+
+    // Store abort handle so it can be dropped later
+    PICKER_ABORT.with(|p| { *p.borrow_mut() = Some(abort); });
+}
+
+pub fn start(state: Rc<RefCell<AppState>>) {
+    show_theme_picker(state);
+}
+
+fn start_with_theme(state: Rc<RefCell<AppState>>, theme: CatcherTheme) {
+    // Abort picker click handler
+    PICKER_ABORT.with(|p| { p.borrow_mut().take(); });
+
+    let Some(arena) = dom::query("#game-arena") else { return };
+    let doc = dom::document();
+    dom::safe_set_inner_html(&arena, "");
 
     let container = render::create_el_with_class(&doc, "div", "catcher-container");
+    let _ = container.set_attribute("style",
+        &format!("background: {};", theme.data().bg_gradient));
 
     // HUD: lives + score + level + combo
     let hud = render::create_el_with_class(&doc, "div", "catcher-hud");
 
     let lives_el = render::create_el_with_class(&doc, "span", "catcher-lives");
-    lives_el.set_text_content(Some(&"\u{1F496}".repeat(theme::CATCHER_STARTING_LIVES as usize)));
+    lives_el.set_text_content(Some(&theme.data().catch_items[0].repeat(theme::CATCHER_STARTING_LIVES as usize)));
     let _ = lives_el.set_attribute("data-catcher-lives", "");
     let _ = lives_el.set_attribute("aria-label", "Lives");
 
@@ -220,6 +363,7 @@ pub fn start(state: Rc<RefCell<AppState>>) {
             abort,
             power_ups: PowerUpState::default(),
             start_time_ms: 0.0,
+            theme,
         });
     });
 }
@@ -473,6 +617,11 @@ fn run_game_loop() {
         spawn_interval.as_ref().unchecked_ref(),
         400, // spawn check every 400ms (faster than before)
     ).unwrap_or(0);
+    // Store closure on arena element — GC'd when arena is cleared instead of leaked
+    if let Some(arena) = dom::query("#game-arena") {
+        let key = wasm_bindgen::JsValue::from_str("__catcher_spawn_closure");
+        let _ = js_sys::Reflect::set(&arena, &key, spawn_interval.as_ref().unchecked_ref());
+    }
     spawn_interval.forget();
 
     start_gravity_loop();
@@ -493,9 +642,14 @@ fn spawn_falling_item(level: u32) {
     let rand = js_sys::Math::random();
     let kind = pick_item_kind(level, rand);
 
+    // Read theme from GAME
+    let catcher_theme = GAME.with(|g| {
+        g.borrow().as_ref().map(|game| game.theme).unwrap_or(CatcherTheme::Classic)
+    });
+
     let doc = dom::document();
     let item = render::create_el_with_class(&doc, "div", kind.css_class());
-    item.set_text_content(Some(kind.emoji()));
+    item.set_text_content(Some(kind.themed_emoji(catcher_theme)));
     let _ = item.set_attribute("data-item-kind", kind.kind_attr());
 
     // Random horizontal position
@@ -519,9 +673,14 @@ fn spawn_falling_item(level: u32) {
 fn spawn_item_immediate(kind: ItemKind) {
     let Some(area) = dom::query("[data-catcher-area]") else { return };
 
+    // Read theme from GAME
+    let catcher_theme = GAME.with(|g| {
+        g.borrow().as_ref().map(|game| game.theme).unwrap_or(CatcherTheme::Classic)
+    });
+
     let doc = dom::document();
     let item = render::create_el_with_class(&doc, "div", kind.css_class());
-    item.set_text_content(Some(kind.emoji()));
+    item.set_text_content(Some(kind.themed_emoji(catcher_theme)));
     let _ = item.set_attribute("data-item-kind", kind.kind_attr());
 
     // Random horizontal position
@@ -631,6 +790,11 @@ fn start_gravity_loop() {
     }
 
     if let Some(closure) = cb.borrow_mut().take() {
+        // Store closure on arena element — GC'd when arena is cleared instead of leaked
+        if let Some(arena) = dom::query("#game-arena") {
+            let key = wasm_bindgen::JsValue::from_str("__catcher_gravity_closure");
+            let _ = js_sys::Reflect::set(&arena, &key, closure.as_ref().unchecked_ref());
+        }
         closure.forget();
     };
 }
@@ -924,7 +1088,12 @@ fn update_level_display(level: u32) {
 }
 
 fn update_lives_display(lives: u32) {
-    let hearts = "\u{1F496}".repeat(lives as usize);
+    let heart_emoji = GAME.with(|g| {
+        g.borrow().as_ref()
+            .map(|game| game.theme.data().catch_items[0])
+            .unwrap_or("\u{1F496}")
+    });
+    let hearts = heart_emoji.repeat(lives as usize);
     let empties = "\u{1F5A4}".repeat((theme::CATCHER_STARTING_LIVES.saturating_sub(lives)) as usize);
     dom::set_text("[data-catcher-lives]", &format!("{hearts}{empties}"));
 

@@ -153,13 +153,13 @@
   }
 
   &--unicorn {
-    background: linear-gradient(135deg, var(--color-pink-light), var(--color-purple-light), var(--color-purple));
-    border-color: var(--color-purple-dark);
+    background: linear-gradient(135deg, #67e8f9 0%, #06b6d4 100%);
+    border: 3px solid #0891b2;
     color: var(--color-text);
     box-shadow:
       var(--shadow-md),
-      0 8px 24px -4px rgba(181, 126, 255, 0.35),
-      0 12px 28px -8px rgba(255, 143, 171, 0.15);
+      0 8px 24px -4px rgba(6, 182, 212, 0.35),
+      0 12px 28px -8px rgba(103, 232, 249, 0.15);
   }
 
   /* Difficulty select variants with matching glows */
@@ -1164,6 +1164,29 @@
 .game-card--space {
   background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
   border: 3px solid #7c3aed;
+}
+
+.game-card--bugs {
+  background: linear-gradient(135deg, #fda4af 0%, #fb7185 100%);
+  border: 3px solid #f43f5e;
+}
+.game-card--food {
+  background: linear-gradient(135deg, #fde047 0%, #facc15 100%);
+  border: 3px solid #eab308;
+}
+.game-card--music {
+  background: linear-gradient(135deg, #fce7f3 0%, #f9a8d4 100%);
+  border: 3px solid #ec4899;
+}
+
+.game-card--hug {
+  background: linear-gradient(135deg, #FFB7C5 0%, #FF6B9D 100%);
+  border: 3px solid #FF4081;
+}
+
+.game-card--paint {
+  background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
+  border: 3px solid #6d28d9;
 }
 
 /* Flip animation styles */
@@ -2234,7 +2257,7 @@
 .skeleton-game-card {
   height: 180px;
   border-radius: var(--radius-md);
-  background: var(--surface-alt);
+  background: var(--color-surface-alt);
 }
 
 @media (min-width: 768px) {

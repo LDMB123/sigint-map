@@ -61,16 +61,26 @@
   <link data-trunk rel="css" href="src/styles/home.css" />
   <link data-trunk rel="css" href="src/styles/animations.css" />
 
-  <!-- DEFERRED CSS: Panel-specific (will be loaded by Service Worker on-demand) -->
-  <!-- Removed broken Trunk data-trunk-attrs approach - relying on SW cache instead -->
-  <!-- All panel CSS files are in DEFERRED_ASSETS and load on first panel navigation -->
+  <!-- Panel-specific CSS: Trunk bundles all, browser loads on parse -->
+  <link data-trunk rel="css" href="src/styles/tracker.css" />
+  <link data-trunk rel="css" href="src/styles/quests.css" />
+  <link data-trunk rel="css" href="src/styles/stories.css" />
+  <link data-trunk rel="css" href="src/styles/rewards.css" />
+  <link data-trunk rel="css" href="src/styles/games.css" />
+  <link data-trunk rel="css" href="src/styles/mom.css" />
+  <link data-trunk rel="css" href="src/styles/progress.css" />
+  <link data-trunk rel="css" href="src/styles/gardens.css" />
+  <link data-trunk rel="css" href="src/styles/particles.css" />
+  <link data-trunk rel="css" href="src/styles/scroll-effects.css" />
+  <link data-trunk rel="css" href="src/styles/particle-effects.css" />
+  <link data-trunk rel="css" href="src/styles/demo-overhaul.css" />
 
   <style>
     /* CRITICAL INLINE CSS: Loading screen + GPU canvas (for LCP <2s target) */
 
     /* CSS Custom Properties (subset for loading screen) */
     :root {
-      --z-loading: 1000;
+      --z-loading: 3000;
       --space-xl: 32px;
       --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
       --ease-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6);

@@ -1,6 +1,6 @@
 //! Magic Painting Studio — Canvas2D creativity game.
-//! Responsive canvas, 5 coloring templates, fill bucket, enhanced magic wand,
-//! 12 stamps (3 sizes), velocity brush, bezier smoothing, "Masterpiece!" celebration.
+//! Responsive canvas, 8 coloring templates, fill bucket, enhanced magic wand,
+//! 24 stamps (3 sizes), velocity brush, bezier smoothing, "Masterpiece!" celebration.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -36,7 +36,7 @@ const BRUSHES: &[(&str, f64)] = &[
     ("\u{2588}", 24.0),  // big chunky
 ];
 
-// ── 18 Stamp emojis ─────────────────────────────────────────────────────
+// ── 24 Stamp emojis ─────────────────────────────────────────────────────
 
 const STAMPS: &[&str] = &[
     "\u{1F496}", // sparkling heart
@@ -57,6 +57,12 @@ const STAMPS: &[&str] = &[
     "\u{1F31E}", // sun
     "\u{26A1}",  // lightning
     "\u{1F490}", // bouquet
+    "\u{1F3F0}", // castle
+    "\u{1F995}", // dinosaur
+    "\u{1F697}", // car
+    "\u{1F680}", // rocket
+    "\u{1F339}", // rose
+    "\u{1F47B}", // ghost
 ];
 
 // ── Stamp sizes ──────────────────────────────────────────────────────────
@@ -65,6 +71,16 @@ const STAMP_SIZES: &[(&str, f64)] = &[
     ("S", 24.0),
     ("M", 40.0),
     ("L", 64.0),
+];
+
+// ── Paint categories ────────────────────────────────────────────────────
+
+const PAINT_CATEGORIES: &[(&str, &str, &str)] = &[
+    ("free", "\u{1F58C}", "Free Draw"),
+    ("animals", "\u{1F98B}", "Animals"),
+    ("fantasy", "\u{1F3F0}", "Fantasy"),
+    ("food", "\u{1F355}", "Food"),
+    ("space", "\u{1F680}", "Space"),
 ];
 
 // ── Template IDs ─────────────────────────────────────────────────────────
@@ -76,6 +92,9 @@ const TEMPLATES: &[(&str, &str)] = &[
     ("unicorn", "\u{1F984} Unicorn"),
     ("rainbow", "\u{1F308} Rainbow"),
     ("flower", "\u{1F33A} Flower"),
+    ("castle", "\u{1F3F0} Castle"),
+    ("butterfly", "\u{1F98B} Butterfly"),
+    ("dinosaur", "\u{1F995} Dinosaur"),
 ];
 
 // ── Tool enum ────────────────────────────────────────────────────────────
@@ -120,12 +139,66 @@ struct PaintState {
 
 thread_local! {
     static GAME: RefCell<Option<PaintState>> = const { RefCell::new(None) };
+    static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) };
 }
 
 
 // ── Start ────────────────────────────────────────────────────────────────
 
 pub fn start(state: Rc<RefCell<AppState>>) {
+    show_category_picker(state);
+}
+
+fn show_category_picker(state: Rc<RefCell<AppState>>) {
+    let Some(arena) = dom::query("#game-arena") else { return };
+    let doc = dom::document();
+    dom::safe_set_inner_html(&arena, "");
+
+    // Clean up previous picker listener if any
+    PICKER_ABORT.with(|p| { p.borrow_mut().take(); });
+
+    let abort = browser_apis::new_abort_handle();
+    let signal = abort.signal();
+
+    let container = render::create_el_with_class(&doc, "div", "memory-select");
+
+    let title = render::create_el_with_class(&doc, "div", "memory-select-title");
+    title.set_text_content(Some("\u{1F3A8} What Do You Want to Paint?"));
+
+    let buttons = render::create_el_with_class(&doc, "div", "memory-select-buttons");
+
+    for &(id, emoji, label) in PAINT_CATEGORIES {
+        let text = format!("{} {}", emoji, label);
+        let btn = render::create_button(&doc, "game-card game-card--paint", &text);
+        let _ = btn.set_attribute("data-paint-category", id);
+        let _ = buttons.append_child(&btn);
+    }
+
+    let _ = container.append_child(&title);
+    let _ = container.append_child(&buttons);
+    let _ = arena.append_child(&container);
+
+    // Bind click handler for category selection
+    let state_click = state.clone();
+    dom::on_with_signal(arena.unchecked_ref(), "click", &signal, move |event: Event| {
+        let target = event.target().and_then(|t| t.dyn_into::<Element>().ok());
+        let Some(el) = target else { return };
+        if let Ok(Some(btn)) = el.closest("[data-paint-category]") {
+            let _category = btn.get_attribute("data-paint-category").unwrap_or_default();
+            synth_audio::sparkle();
+            native_apis::vibrate_tap();
+            // Category selection noted — future: pre-select stamps/templates by category
+            start_painting(state_click.clone());
+        }
+    });
+
+    PICKER_ABORT.with(|p| { *p.borrow_mut() = Some(abort); });
+}
+
+fn start_painting(state: Rc<RefCell<AppState>>) {
+    // Abort picker click handler
+    PICKER_ABORT.with(|p| { p.borrow_mut().take(); });
+
     let Some(arena) = dom::query("#game-arena") else { return };
     let doc = dom::document();
     dom::safe_set_inner_html(&arena, "");
@@ -281,6 +354,9 @@ pub fn start(state: Rc<RefCell<AppState>>) {
         ("waves", "\u{223C} Waves"),
         ("diamonds", "\u{1F48E} Diamonds"),
         ("hearts", "\u{1F496} Hearts"),
+        ("clouds", "\u{2601} Clouds"),
+        ("polkadots", "\u{25CF} Polka Dots"),
+        ("zigzag", "\u{26A1} Zigzag"),
     ];
     for &(id, label) in &patterns {
         let btn = render::create_button(&doc, "paint-pattern-btn", label);
@@ -1030,6 +1106,24 @@ fn flood_fill_pattern(game: &mut PaintState, css_x: f64, css_y: f64, pattern_typ
                 // Simple heart shape
                 (dx - mid).pow(2) + (dy - mid / 2).pow(2) < (pattern_size / 2).pow(2)
             }
+            "clouds" => {
+                let cx = sx % 80;
+                let cy = sy % 60;
+                let dist = ((cx - 40) * (cx - 40) + (cy - 30) * (cy - 30)) as f64;
+                dist < 400.0 || (((cx - 55) * (cx - 55) + (cy - 25) * (cy - 25)) as f64) < 225.0
+            }
+            "polkadots" => {
+                let cx = sx % 40;
+                let cy = sy % 40;
+                let dist = ((cx - 20) * (cx - 20) + (cy - 20) * (cy - 20)) as f64;
+                dist < 64.0
+            }
+            "zigzag" => {
+                let phase = sx % 20;
+                let expected_y = if phase < 10 { phase * 15 / 10 } else { (20 - phase) * 15 / 10 };
+                let actual_y = sy % 30;
+                (actual_y - expected_y).abs() < 3
+            }
             _ => true, // solid fill as fallback
         };
 
@@ -1075,6 +1169,24 @@ fn flood_fill_pattern(game: &mut PaintState, css_x: f64, css_y: f64, pattern_typ
                     let mid = pattern_size;
                     (dx - mid).pow(2) + (dy - mid / 2).pow(2) < (pattern_size / 2).pow(2)
                 }
+                "clouds" => {
+                    let cx = lx % 80;
+                    let cy = ly % 60;
+                    let dist = ((cx - 40) * (cx - 40) + (cy - 30) * (cy - 30)) as f64;
+                    dist < 400.0 || (((cx - 55) * (cx - 55) + (cy - 25) * (cy - 25)) as f64) < 225.0
+                }
+                "polkadots" => {
+                    let cx = lx % 40;
+                    let cy = ly % 40;
+                    let dist = ((cx - 20) * (cx - 20) + (cy - 20) * (cy - 20)) as f64;
+                    dist < 64.0
+                }
+                "zigzag" => {
+                    let phase = lx % 20;
+                    let expected_y = if phase < 10 { phase * 15 / 10 } else { (20 - phase) * 15 / 10 };
+                    let actual_y = ly % 30;
+                    (actual_y - expected_y).abs() < 3
+                }
                 _ => true,
             };
 
@@ -1118,6 +1230,24 @@ fn flood_fill_pattern(game: &mut PaintState, css_x: f64, css_y: f64, pattern_typ
                     let dy = ry % (pattern_size * 2);
                     let mid = pattern_size;
                     (dx - mid).pow(2) + (dy - mid / 2).pow(2) < (pattern_size / 2).pow(2)
+                }
+                "clouds" => {
+                    let cx = rx % 80;
+                    let cy = ry % 60;
+                    let dist = ((cx - 40) * (cx - 40) + (cy - 30) * (cy - 30)) as f64;
+                    dist < 400.0 || (((cx - 55) * (cx - 55) + (cy - 25) * (cy - 25)) as f64) < 225.0
+                }
+                "polkadots" => {
+                    let cx = rx % 40;
+                    let cy = ry % 40;
+                    let dist = ((cx - 20) * (cx - 20) + (cy - 20) * (cy - 20)) as f64;
+                    dist < 64.0
+                }
+                "zigzag" => {
+                    let phase = rx % 20;
+                    let expected_y = if phase < 10 { phase * 15 / 10 } else { (20 - phase) * 15 / 10 };
+                    let actual_y = ry % 30;
+                    (actual_y - expected_y).abs() < 3
                 }
                 _ => true,
             };
@@ -1192,6 +1322,9 @@ fn apply_template(id: &str) {
             "unicorn" => draw_template_unicorn(ctx, cx, cy, scale),
             "rainbow" => draw_template_rainbow(ctx, cx, cy, w, scale),
             "flower" => draw_template_flower(ctx, cx, cy, scale),
+            "castle" => draw_template_castle(ctx, cx, cy, scale),
+            "butterfly" => draw_template_butterfly(ctx, cx, cy, scale),
+            "dinosaur" => draw_template_dinosaur(ctx, cx, cy, scale),
             _ => {}
         }
     });
@@ -1321,6 +1454,140 @@ fn draw_template_flower(ctx: &CanvasRenderingContext2d, cx: f64, cy: f64, s: f64
         cx + 50.0 * s, cy + 50.0 * s,
         cx + 30.0 * s, cy + 60.0 * s,
     );
+    ctx.stroke();
+}
+
+fn draw_template_castle(ctx: &CanvasRenderingContext2d, cx: f64, cy: f64, s: f64) {
+    // Main wall
+    ctx.begin_path();
+    ctx.move_to(cx - 80.0 * s, cy + 80.0 * s);
+    ctx.line_to(cx - 80.0 * s, cy - 20.0 * s);
+    ctx.line_to(cx + 80.0 * s, cy - 20.0 * s);
+    ctx.line_to(cx + 80.0 * s, cy + 80.0 * s);
+    ctx.stroke();
+    // Left tower
+    ctx.begin_path();
+    ctx.move_to(cx - 80.0 * s, cy - 20.0 * s);
+    ctx.line_to(cx - 80.0 * s, cy - 80.0 * s);
+    ctx.line_to(cx - 50.0 * s, cy - 80.0 * s);
+    ctx.line_to(cx - 50.0 * s, cy - 20.0 * s);
+    ctx.stroke();
+    // Right tower
+    ctx.begin_path();
+    ctx.move_to(cx + 50.0 * s, cy - 20.0 * s);
+    ctx.line_to(cx + 50.0 * s, cy - 80.0 * s);
+    ctx.line_to(cx + 80.0 * s, cy - 80.0 * s);
+    ctx.line_to(cx + 80.0 * s, cy - 20.0 * s);
+    ctx.stroke();
+    // Door arch
+    ctx.begin_path();
+    let _ = ctx.arc(cx, cy + 80.0 * s, 25.0 * s, std::f64::consts::PI, 0.0);
+    ctx.stroke();
+    // Flag on left tower
+    ctx.begin_path();
+    ctx.move_to(cx - 65.0 * s, cy - 80.0 * s);
+    ctx.line_to(cx - 65.0 * s, cy - 110.0 * s);
+    ctx.line_to(cx - 45.0 * s, cy - 100.0 * s);
+    ctx.line_to(cx - 65.0 * s, cy - 90.0 * s);
+    ctx.stroke();
+}
+
+fn draw_template_butterfly(ctx: &CanvasRenderingContext2d, cx: f64, cy: f64, s: f64) {
+    // Body (vertical line)
+    ctx.begin_path();
+    ctx.move_to(cx, cy - 60.0 * s);
+    ctx.line_to(cx, cy + 60.0 * s);
+    ctx.stroke();
+    // Left upper wing
+    ctx.begin_path();
+    ctx.move_to(cx, cy - 20.0 * s);
+    ctx.bezier_curve_to(
+        cx - 90.0 * s, cy - 80.0 * s,
+        cx - 100.0 * s, cy - 10.0 * s,
+        cx, cy + 10.0 * s,
+    );
+    ctx.stroke();
+    // Right upper wing
+    ctx.begin_path();
+    ctx.move_to(cx, cy - 20.0 * s);
+    ctx.bezier_curve_to(
+        cx + 90.0 * s, cy - 80.0 * s,
+        cx + 100.0 * s, cy - 10.0 * s,
+        cx, cy + 10.0 * s,
+    );
+    ctx.stroke();
+    // Left lower wing
+    ctx.begin_path();
+    ctx.move_to(cx, cy + 10.0 * s);
+    ctx.bezier_curve_to(
+        cx - 70.0 * s, cy + 20.0 * s,
+        cx - 60.0 * s, cy + 70.0 * s,
+        cx, cy + 50.0 * s,
+    );
+    ctx.stroke();
+    // Right lower wing
+    ctx.begin_path();
+    ctx.move_to(cx, cy + 10.0 * s);
+    ctx.bezier_curve_to(
+        cx + 70.0 * s, cy + 20.0 * s,
+        cx + 60.0 * s, cy + 70.0 * s,
+        cx, cy + 50.0 * s,
+    );
+    ctx.stroke();
+    // Antennae
+    ctx.begin_path();
+    ctx.move_to(cx, cy - 60.0 * s);
+    ctx.line_to(cx - 20.0 * s, cy - 90.0 * s);
+    ctx.stroke();
+    ctx.begin_path();
+    ctx.move_to(cx, cy - 60.0 * s);
+    ctx.line_to(cx + 20.0 * s, cy - 90.0 * s);
+    ctx.stroke();
+}
+
+fn draw_template_dinosaur(ctx: &CanvasRenderingContext2d, cx: f64, cy: f64, s: f64) {
+    // Body (big oval)
+    ctx.begin_path();
+    let _ = ctx.ellipse(cx, cy + 10.0 * s, 70.0 * s, 50.0 * s, 0.0, 0.0, std::f64::consts::TAU);
+    ctx.stroke();
+    // Head (smaller circle)
+    ctx.begin_path();
+    let _ = ctx.arc(cx + 80.0 * s, cy - 40.0 * s, 30.0 * s, 0.0, std::f64::consts::TAU);
+    ctx.stroke();
+    // Neck
+    ctx.begin_path();
+    ctx.move_to(cx + 50.0 * s, cy - 20.0 * s);
+    ctx.line_to(cx + 60.0 * s, cy - 30.0 * s);
+    ctx.stroke();
+    // Tail
+    ctx.begin_path();
+    ctx.move_to(cx - 70.0 * s, cy + 10.0 * s);
+    ctx.bezier_curve_to(
+        cx - 100.0 * s, cy - 10.0 * s,
+        cx - 120.0 * s, cy + 20.0 * s,
+        cx - 110.0 * s, cy + 40.0 * s,
+    );
+    ctx.stroke();
+    // Legs (two simple lines)
+    ctx.begin_path();
+    ctx.move_to(cx - 30.0 * s, cy + 55.0 * s);
+    ctx.line_to(cx - 30.0 * s, cy + 90.0 * s);
+    ctx.stroke();
+    ctx.begin_path();
+    ctx.move_to(cx + 30.0 * s, cy + 55.0 * s);
+    ctx.line_to(cx + 30.0 * s, cy + 90.0 * s);
+    ctx.stroke();
+    // Eye
+    ctx.begin_path();
+    let _ = ctx.arc(cx + 88.0 * s, cy - 45.0 * s, 4.0 * s, 0.0, std::f64::consts::TAU);
+    ctx.stroke();
+    // Spikes on back
+    ctx.begin_path();
+    ctx.move_to(cx - 30.0 * s, cy - 35.0 * s);
+    ctx.line_to(cx - 20.0 * s, cy - 55.0 * s);
+    ctx.line_to(cx - 5.0 * s, cy - 35.0 * s);
+    ctx.line_to(cx + 10.0 * s, cy - 55.0 * s);
+    ctx.line_to(cx + 25.0 * s, cy - 35.0 * s);
     ctx.stroke();
 }
 
@@ -1491,7 +1758,7 @@ fn show_paint_end(state: Rc<RefCell<AppState>>) {
     let s = state.clone();
     games::bind_end_buttons(
         end_signal.as_ref(),
-        move || { cleanup(); crate::game_paint::start(s.clone()); },
+        move || { cleanup(); show_category_picker(s.clone()); },
         || { cleanup(); games::return_to_menu(); },
     );
 }
@@ -1499,6 +1766,7 @@ fn show_paint_end(state: Rc<RefCell<AppState>>) {
 // ── Cleanup ──────────────────────────────────────────────────────────────
 
 pub fn cleanup() {
+    PICKER_ABORT.with(|p| { p.borrow_mut().take(); });
     GAME.with(|g| {
         if let Some(game) = g.borrow_mut().as_mut() {
             game.active = false;

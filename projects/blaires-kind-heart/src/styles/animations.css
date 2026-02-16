@@ -118,17 +118,15 @@
   0% {
     transform: scale(0) rotate(-20deg);
     opacity: 0;
-    filter: blur(4px);
   }
   30% {
     transform: scale(0.5) rotate(-8deg);
     opacity: 0.7;
-    filter: blur(1px);
   }
   60% {
     transform: scale(1.15) rotate(3deg);
     opacity: 1;
-    filter: blur(0);
+    filter: none;
   }
   80% {
     transform: scale(0.95) rotate(-1deg);
@@ -136,7 +134,7 @@
   100% {
     transform: scale(1) rotate(0deg);
     opacity: 1;
-    filter: blur(0);
+    filter: none;
   }
 }
 
@@ -145,9 +143,9 @@
   animation: sparkle-pop 0.6s var(--ease-elastic);
 }
 @keyframes sparkle-pop {
-  0% { transform: scale(0) rotate(-360deg); opacity: 0; filter: blur(8px); }
-  50% { transform: scale(1.35) rotate(15deg); opacity: 1; filter: blur(0); }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+  0% { transform: scale(0) rotate(-360deg); opacity: 0; }
+  50% { transform: scale(1.35) rotate(15deg); opacity: 1; filter: none; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; filter: none; }
 }
 
 /* Float-heart "+1" indicator */
@@ -159,7 +157,7 @@
   font-size: var(--font-size-xl);
   pointer-events: none;
   animation: float-up 0.8s var(--ease-smooth) forwards;
-  z-index: 100;
+  z-index: var(--z-toast);
 }
 
 /* Bounce animation class (for companion reactions) */
@@ -330,7 +328,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 3000;
+  z-index: var(--z-confetti);
   overflow: hidden;
 }
 
@@ -367,7 +365,7 @@
   pointer-events: none;
   font-size: 1.8rem;
   animation: confetti-float-up 1.2s var(--ease-smooth) forwards;
-  z-index: 100;
+  z-index: var(--z-toast);
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
 }
 @keyframes confetti-float-up {
@@ -384,7 +382,7 @@
   background: radial-gradient(circle, rgba(197, 163, 255, 0.5), rgba(255, 183, 197, 0.3), transparent 70%);
   pointer-events: none;
   animation: ripple-expand var(--duration-slow) var(--ease-smooth) forwards;
-  z-index: 50;
+  z-index: var(--z-game);
 }
 @keyframes ripple-expand {
   0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }

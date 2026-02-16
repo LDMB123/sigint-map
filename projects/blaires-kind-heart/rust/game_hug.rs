@@ -1,5 +1,5 @@
-//! Sparkle's Hug Machine — multi-stage affection game with 8 interaction types.
-//! Each session picks 5 random stages from 8 for variety. Rich reactions per stage,
+//! Sparkle's Hug Machine — multi-stage affection game with 15 interaction types.
+//! Each session picks 5 random stages from 15 for variety. Rich reactions per stage,
 //! between-stage celebrations, and a dramatic grand finale.
 
 use std::cell::RefCell;
@@ -14,7 +14,7 @@ use crate::{
 };
 
 // ---------------------------------------------------------------------------
-// Stage definitions — 8 interaction types, data-driven
+// Stage definitions — 15 interaction types, data-driven
 // ---------------------------------------------------------------------------
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -30,6 +30,10 @@ enum HugStage {
     SpinDance     = 8,  // new: spin Sparkle around
     GentleRock    = 9,  // new: soothing rocking motion
     StarCatch     = 10, // new: catch falling stars
+    PeekaBoo      = 11,
+    PattyKake     = 12,
+    BlowKisses    = 13,
+    MagicSpell    = 14,
 }
 
 /// Static per-stage data. Sounds use `fn()` pointers since closures can't be const.
@@ -55,8 +59,12 @@ fn complete_nose()           { synth_audio::sparkle(); confetti::burst_party(); 
 fn complete_spin()           { synth_audio::rainbow_burst(); confetti::burst_unicorn(); }
 fn complete_rock()           { synth_audio::lullaby(); confetti::burst_hearts(); }
 fn complete_star()           { synth_audio::magic_wand(); confetti::burst_stars(); }
+fn complete_peekaboo()       { synth_audio::giggle(); confetti::burst_party(); }
+fn complete_pattykake()      { synth_audio::tap(); confetti::burst_stars(); }
+fn complete_blowkisses()     { synth_audio::dreamy(); confetti::burst_hearts(); }
+fn complete_magicspell()     { synth_audio::magic_wand(); confetti::burst_unicorn(); }
 
-const STAGE_DATA: [StageData; 11] = [
+const STAGE_DATA: [StageData; 15] = [
     // GentlePat
     StageData {
         instruction: "Gently pat Sparkle! (tap 5 times)",
@@ -134,13 +142,52 @@ const STAGE_DATA: [StageData; 11] = [
         bg: "linear-gradient(180deg, #1a0033 0%, #5533FF 50%, #FFB700 100%)",
         pulse_sound: synth_audio::sparkle, complete_sound: complete_star, is_hold: false,
     },
+    // PeekaBoo
+    StageData {
+        instruction: "Peek-a-boo! Tap to hide and find Sparkle!",
+        mood: "\u{1F648}", reaction: "\u{1F601}", bubble: "peek-a-boo!",
+        bg: "linear-gradient(180deg, #FFE4B5 0%, #FFA07A 100%)",
+        pulse_sound: synth_audio::giggle, complete_sound: complete_peekaboo, is_hold: false,
+    },
+    // PattyKake
+    StageData {
+        instruction: "Patty-cake! Tap left then right!",
+        mood: "\u{1F44F}", reaction: "\u{1F60A}", bubble: "patty-cake!",
+        bg: "linear-gradient(180deg, #FFFDE7 0%, #FFF176 100%)",
+        pulse_sound: synth_audio::tap, complete_sound: complete_pattykake, is_hold: false,
+    },
+    // BlowKisses
+    StageData {
+        instruction: "Blow Sparkle kisses! (quick taps!)",
+        mood: "\u{1F618}", reaction: "\u{1F970}", bubble: "mwah!",
+        bg: "linear-gradient(180deg, #FFE0EC 0%, #FF80AB 100%)",
+        pulse_sound: synth_audio::chime, complete_sound: complete_blowkisses, is_hold: false,
+    },
+    // MagicSpell
+    StageData {
+        instruction: "Cast a spell! (draw a circle!)",
+        mood: "\u{2728}", reaction: "\u{1FA84}", bubble: "abracadabra!",
+        bg: "linear-gradient(180deg, #E1BEE7 0%, #7B1FA2 50%, #311B92 100%)",
+        pulse_sound: synth_audio::magic_wand, complete_sound: complete_magicspell, is_hold: false,
+    },
 ];
 
-/// All 11 stage types for random selection.
-const ALL_STAGES: [HugStage; 11] = [
+/// All 15 stage types for random selection.
+const ALL_STAGES: [HugStage; 15] = [
     HugStage::GentlePat, HugStage::BigHug, HugStage::TickleTime, HugStage::SleepyLullaby,
     HugStage::WakeUpKiss, HugStage::HighFive, HugStage::BellyRub, HugStage::NoseBoops,
     HugStage::SpinDance, HugStage::GentleRock, HugStage::StarCatch,
+    HugStage::PeekaBoo, HugStage::PattyKake, HugStage::BlowKisses, HugStage::MagicSpell,
+];
+
+const GENTLE_STAGES: &[HugStage] = &[
+    HugStage::GentlePat, HugStage::SleepyLullaby, HugStage::GentleRock,
+    HugStage::WakeUpKiss, HugStage::BlowKisses,
+];
+
+const SILLY_STAGES: &[HugStage] = &[
+    HugStage::TickleTime, HugStage::HighFive, HugStage::NoseBoops,
+    HugStage::PeekaBoo, HugStage::PattyKake,
 ];
 
 impl HugStage {
@@ -173,7 +220,7 @@ struct HugState {
     state: Rc<RefCell<AppState>>,
     abort: browser_apis::AbortHandle,
     /// Bitmask of unique stage types seen across all games.
-    /// u16 supports up to 16 stages (currently using 11: stages 0-10).
+    /// u16 supports up to 16 stages (currently using 15: stages 0-14).
     stages_seen_mask: u16,
     /// BellyRub: track pointer positions for circular motion detection.
     motion_points: Vec<(f64, f64)>,
@@ -200,6 +247,7 @@ impl HugState {
 
 thread_local! {
     static GAME: RefCell<Option<HugState>> = const { RefCell::new(None) };
+    static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) };
 }
 
 // ---------------------------------------------------------------------------
@@ -208,11 +256,80 @@ thread_local! {
 
 
 pub fn start(state: Rc<RefCell<AppState>>) {
+    show_mood_picker(state);
+}
+
+fn show_mood_picker(state: Rc<RefCell<AppState>>) {
+    let Some(arena) = dom::query("#game-arena") else { return };
+    let doc = dom::document();
+    dom::safe_set_inner_html(&arena, "");
+
+    let container = render::create_el_with_class(&doc, "div", "memory-select");
+
+    let title = render::create_el_with_class(&doc, "div", "memory-select-title");
+    title.set_text_content(Some("\u{1F917} How Should We Play?"));
+
+    let buttons = render::create_el_with_class(&doc, "div", "memory-select-buttons");
+
+    let gentle = render::create_button(&doc, "game-card game-card--hug", "\u{1F60C} Gentle");
+    let _ = gentle.set_attribute("data-hug-mood", "gentle");
+
+    let silly = render::create_button(&doc, "game-card game-card--hug", "\u{1F923} Silly");
+    let _ = silly.set_attribute("data-hug-mood", "silly");
+
+    let surprise = render::create_button(&doc, "game-card game-card--hug", "\u{1F381} Surprise!");
+    let _ = surprise.set_attribute("data-hug-mood", "surprise");
+
+    let _ = buttons.append_child(&gentle);
+    let _ = buttons.append_child(&silly);
+    let _ = buttons.append_child(&surprise);
+
+    let _ = container.append_child(&title);
+    let _ = container.append_child(&buttons);
+    let _ = arena.append_child(&container);
+
+    // Bind mood selection clicks
+    let picker_abort = browser_apis::new_abort_handle();
+    let picker_signal = picker_abort.signal();
+
+    let s = state.clone();
+    dom::on_with_signal(arena.unchecked_ref(), "click", &picker_signal, move |event: Event| {
+        let target = event.target().and_then(|t| t.dyn_into::<Element>().ok());
+        let Some(el) = target else { return };
+
+        if let Some(mood_attr) = el.closest("[data-hug-mood]")
+            .ok().flatten()
+            .and_then(|e| e.get_attribute("data-hug-mood"))
+        {
+            // Clean up picker abort
+            PICKER_ABORT.with(|p| { *p.borrow_mut() = None; });
+
+            let stages = match mood_attr.as_str() {
+                "gentle" => pick_from_pool(GENTLE_STAGES, 5),
+                "silly" => pick_from_pool(SILLY_STAGES, 5),
+                _ => pick_random_stages(5), // surprise = random from all 15
+            };
+            start_with_stages(s.clone(), stages);
+        }
+    });
+
+    PICKER_ABORT.with(|p| { *p.borrow_mut() = Some(picker_abort); });
+}
+
+fn pick_from_pool(pool: &[HugStage], count: usize) -> Vec<HugStage> {
+    let mut v: Vec<HugStage> = pool.to_vec();
+    let n = v.len();
+    for i in 0..count.min(n) {
+        let j = i + (utils::random_u32() as usize % (n - i));
+        v.swap(i, j);
+    }
+    v.truncate(count);
+    v
+}
+
+fn start_with_stages(state: Rc<RefCell<AppState>>, stages: Vec<HugStage>) {
     let abort = browser_apis::new_abort_handle();
     let signal = abort.signal();
-
-    // Pick 5 random stages from 8 (Fisher-Yates partial shuffle)
-    let stages = pick_random_stages(theme::HUG_STAGES_PER_GAME);
 
     GAME.with(|g| {
         *g.borrow_mut() = Some(HugState {
@@ -269,6 +386,8 @@ pub fn start(state: Rc<RefCell<AppState>>) {
 }
 
 pub fn cleanup() {
+    PICKER_ABORT.with(|p| { *p.borrow_mut() = None; });
+
     GAME.with(|g| {
         if let Some(game) = g.borrow_mut().as_mut() {
             game.active = false;
@@ -420,6 +539,10 @@ fn render_stage(stage: HugStage) {
         HugStage::BellyRub => counter.set_text_content(Some("0 / 3 circles")),
         HugStage::SpinDance => counter.set_text_content(Some("0 / 3 spins")),
         HugStage::StarCatch => counter.set_text_content(Some("0 / 8 stars")),
+        HugStage::PeekaBoo => counter.set_text_content(Some("0 / 6 peeks")),
+        HugStage::PattyKake => counter.set_text_content(Some("0 / 8 claps")),
+        HugStage::BlowKisses => counter.set_text_content(Some("0 / 6 kisses")),
+        HugStage::MagicSpell => counter.set_text_content(Some("0 / 3 spells")),
     }
 
     let _ = container.append_child(&instruction);
@@ -625,6 +748,77 @@ fn on_sparkle_tap(state: Rc<RefCell<AppState>>) {
                 confetti::float_emoji("[data-hug-sparkle]", "\u{1F48B}");
                 show_bubble();
                 complete_stage(game, state);
+            }
+            HugStage::PeekaBoo => {
+                game.tap_count += 1;
+                stage.pulse_sound();
+                native_apis::vibrate_tap();
+
+                // Sparkle hides/reveals on alternating taps
+                let sparkle = state::get_cached_hug_sparkle()
+                    .or_else(|| dom::query("[data-hug-sparkle]"));
+                if let Some(sparkle) = sparkle {
+                    if game.tap_count % 2 == 1 {
+                        sparkle.set_text_content(Some("\u{1F648}")); // see-no-evil (hiding)
+                    } else {
+                        sparkle.set_text_content(Some("\u{1F601}")); // grinning (found!)
+                        confetti::float_emoji("[data-hug-sparkle]", "\u{2728}");
+                    }
+                    animations::jelly_wobble(&sparkle);
+                }
+
+                if game.tap_count >= 3 { show_bubble(); }
+                dom::set_text("[data-hug-counter]", &format!("{} / 6 peeks", game.tap_count));
+
+                if game.tap_count >= 6 {
+                    complete_stage(game, state);
+                }
+            }
+            HugStage::PattyKake => {
+                game.tap_count += 1;
+                stage.pulse_sound();
+                native_apis::vibrate_tap();
+
+                let sparkle = state::get_cached_hug_sparkle()
+                    .or_else(|| dom::query("[data-hug-sparkle]"));
+                if let Some(sparkle) = sparkle {
+                    // Alternate clap directions
+                    if game.tap_count % 2 == 1 {
+                        sparkle.set_text_content(Some("\u{1F44F}")); // clapping
+                    } else {
+                        sparkle.set_text_content(Some("\u{1F60A}")); // smiling
+                    }
+                    animations::bounce(&sparkle);
+                }
+
+                confetti::float_emoji("[data-hug-sparkle]", "\u{1F44F}");
+                if game.tap_count >= 4 { show_bubble(); }
+                dom::set_text("[data-hug-counter]", &format!("{} / 8 claps", game.tap_count));
+
+                if game.tap_count >= 8 {
+                    complete_stage(game, state);
+                }
+            }
+            HugStage::BlowKisses => {
+                game.tap_count += 1;
+                stage.pulse_sound();
+                native_apis::vibrate_tap();
+
+                confetti::float_emoji("[data-hug-sparkle]", "\u{1F48B}");
+
+                let sparkle = state::get_cached_hug_sparkle()
+                    .or_else(|| dom::query("[data-hug-sparkle]"));
+                if let Some(sparkle) = sparkle {
+                    sparkle.set_text_content(Some("\u{1F970}")); // smiling with hearts
+                    animations::jelly_wobble(&sparkle);
+                }
+
+                if game.tap_count >= 3 { show_bubble(); }
+                dom::set_text("[data-hug-counter]", &format!("{} / 6 kisses", game.tap_count));
+
+                if game.tap_count >= 6 {
+                    complete_stage(game, state);
+                }
             }
             _ => {} // Hold/motion stages handled separately
         }
@@ -905,6 +1099,45 @@ fn on_pointer_move(pe: PointerEvent, state: Rc<RefCell<AppState>>) {
                 }
                 game.rock_direction = new_direction;
             }
+            HugStage::MagicSpell => {
+                game.motion_points.push((x, y));
+
+                if game.motion_points.len() >= 20 {
+                    if detect_circle(&game.motion_points) {
+                        game.circle_count += 1;
+                        game.motion_points.clear();
+                        game.current_stage().pulse_sound();
+                        native_apis::vibrate_tap();
+
+                        // Sparkle transforms on each circle!
+                        let sparkle = state::get_cached_hug_sparkle()
+                            .or_else(|| dom::query("[data-hug-sparkle]"));
+                        if let Some(sparkle) = sparkle {
+                            let transform_emoji = match game.circle_count {
+                                1 => "\u{2728}",  // sparkles
+                                2 => "\u{1FA84}", // wand
+                                _ => "\u{1F31F}", // glowing star
+                            };
+                            sparkle.set_text_content(Some(transform_emoji));
+                            animations::bounce(&sparkle);
+                        }
+
+                        confetti::float_emoji("[data-hug-sparkle]", "\u{2728}");
+                        dom::set_text("[data-hug-counter]", &format!("{} / 3 spells", game.circle_count));
+
+                        if game.circle_count == 2 { show_bubble(); }
+
+                        if game.circle_count >= 3 {
+                            complete_stage(game, state.clone());
+                        }
+                    }
+
+                    if game.motion_points.len() > 10 {
+                        let keep = game.motion_points.len() - 10;
+                        game.motion_points.drain(0..keep);
+                    }
+                }
+            }
             _ => {}
         }
     });
@@ -1001,6 +1234,11 @@ fn start_hold_meter(stage: HugStage) {
 
     let interval_id = dom::window().set_interval_with_callback_and_timeout_and_arguments_0(
         cb.as_ref().unchecked_ref(), 100).unwrap_or(0);
+    // Store closure on arena element — GC'd when arena is cleared instead of leaked
+    if let Some(arena) = dom::query("#game-arena") {
+        let key = wasm_bindgen::JsValue::from_str("__hug_hold_closure");
+        let _ = js_sys::Reflect::set(&arena, &key, cb.as_ref().unchecked_ref());
+    }
     cb.forget();
 
     GAME.with(|g| {
@@ -1099,6 +1337,11 @@ fn complete_stage(game: &mut HugState, state: Rc<RefCell<AppState>>) {
         });
         let timeout_id = dom::window().set_timeout_with_callback_and_timeout_and_arguments_0(
             cb.as_ref().unchecked_ref(), 1200).unwrap_or(0);
+        // Store closure on arena element — GC'd when arena is cleared instead of leaked
+        if let Some(arena) = dom::query("#game-arena") {
+            let key = wasm_bindgen::JsValue::from_str("__hug_finale_closure");
+            let _ = js_sys::Reflect::set(&arena, &key, cb.as_ref().unchecked_ref());
+        }
         cb.forget();
         game.celebration_timeout = Some(timeout_id);
     } else {
@@ -1111,6 +1354,11 @@ fn complete_stage(game: &mut HugState, state: Rc<RefCell<AppState>>) {
         });
         let timeout_id = dom::window().set_timeout_with_callback_and_timeout_and_arguments_0(
             celebration_cb.as_ref().unchecked_ref(), 1500).unwrap_or(0);
+        // Store closure on arena element — GC'd when arena is cleared instead of leaked
+        if let Some(arena) = dom::query("#game-arena") {
+            let key = wasm_bindgen::JsValue::from_str("__hug_celebration_closure");
+            let _ = js_sys::Reflect::set(&arena, &key, celebration_cb.as_ref().unchecked_ref());
+        }
         celebration_cb.forget();
         game.celebration_timeout = Some(timeout_id);
 
@@ -1297,7 +1545,7 @@ fn show_hug_end(state: Rc<RefCell<AppState>>, stages_seen_mask: u16) {
     let s = state.clone();
     games::bind_end_buttons(
         end_signal.as_ref(),
-        move || { cleanup(); crate::game_hug::start(s.clone()); },
+        move || { cleanup(); show_mood_picker(s.clone()); },
         || { cleanup(); games::return_to_menu(); },
     );
 }

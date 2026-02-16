@@ -11,11 +11,11 @@ use crate::{companion, constants::*, dom, render, state, db_client, game_catcher
 
 /// Game definitions: (emoji_fallback, title, description, game_id, color_variant, image_path)
 const GAME_CARDS: &[(&str, &str, &str, &str, &str, &str)] = &[
-    ("\u{1F496}", "Kindness Catcher", "Catch falling hearts and stars!", "catcher", "catcher", "illustrations/buttons/btn-game-catcher.webp"),
-    ("\u{1F0CF}", "Memory Match", "Find the matching pairs!", "memory", "memory", "illustrations/buttons/btn-game-memory.webp"),
-    ("\u{1F917}", "Hug Machine", "Give Sparkle hugs and tickles!", "hug", "hug", "illustrations/buttons/btn-game-hug.webp"),
-    ("\u{1F3A8}", "Magic Painting", "Paint and create art!", "paint", "paint", "illustrations/buttons/btn-game-paint.webp"),
-    ("\u{1F984}", "Unicorn Adventure", "Help Blaire collect forest friends!", "unicorn", "unicorn", "illustrations/buttons/btn-game-unicorn.webp"),
+    ("\u{1F496}", "Kindness Catcher", "Catch falling hearts! \u{00B7} 4 themes", "catcher", "catcher", "illustrations/buttons/btn-game-catcher.webp"),
+    ("\u{1F0CF}", "Memory Match", "Find the matching pairs! \u{00B7} 6 themes", "memory", "memory", "illustrations/buttons/btn-game-memory.webp"),
+    ("\u{1F917}", "Hug Machine", "Give Sparkle hugs! \u{00B7} 3 moods", "hug", "hug", "illustrations/buttons/btn-game-hug.webp"),
+    ("\u{1F3A8}", "Magic Painting", "Paint and create art! \u{00B7} 5 styles", "paint", "paint", "illustrations/buttons/btn-game-paint.webp"),
+    ("\u{1F984}", "Unicorn Adventure", "Collect forest friends! \u{00B7} 4 worlds", "unicorn", "unicorn", "illustrations/buttons/btn-game-unicorn.webp"),
 ];
 
 pub fn init() {
@@ -82,7 +82,7 @@ fn render_game_menu() {
         // Stats line — shows personal best, populated async
         let stats_el = render::create_el_with_class(&doc, "div", "game-card-stats");
         let _ = stats_el.set_attribute("data-game-stats", game_id);
-        stats_el.set_text_content(Some("")); // filled by hydrate_hub_stats
+        stats_el.set_text_content(Some("...")); // filled by hydrate_hub_stats
 
         let _ = content.append_child(&title_el);
         let _ = content.append_child(&desc_el);

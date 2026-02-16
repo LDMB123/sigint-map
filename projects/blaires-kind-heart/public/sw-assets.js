@@ -23,8 +23,7 @@ const CRITICAL_ASSETS = [
   '/offline.html',
   '/manifest.webmanifest',
   '/wasm-init.js',
-  "runtime-diagnostics.js",
-  "/runtime-diagnostics.js",
+  '/runtime-diagnostics.js',
   '/db-worker.js',
 
   // App WASM + JS glue (Trunk output):
@@ -94,18 +93,8 @@ const CRITICAL_ASSETS = [
 
 // DEFERRED: Panel-specific assets (loaded on demand)
 const DEFERRED_ASSETS = [
-  // Panel CSS (not needed until panel opens):
-  '/tracker.css',
-  '/quests.css',
-  '/stories.css',
-  '/rewards.css',
-  '/games.css',
-  '/mom.css',
-  '/progress.css',
-  '/particles.css',
-  '/gardens.css',
-  '/scroll-effects.css',
-  '/particle-effects.css',
+  // Panel CSS: Now bundled by Trunk via <link data-trunk> in index.html.
+  // Trunk hashes filenames, so they're covered by the Trunk output cache.
 
   // WebGPU shaders (games panel only):
   '/shaders/particles_compute.wgsl',

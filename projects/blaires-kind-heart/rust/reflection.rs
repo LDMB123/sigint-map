@@ -80,6 +80,8 @@ fn show_reflection_prompt(category: &str, act_id: &str) {
         return;
     }
 
+    synth_audio::gentle();
+
     // Select random prompt from pool
     let prompt_text = select_reflection_prompt();
 

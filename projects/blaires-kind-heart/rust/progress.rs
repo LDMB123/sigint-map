@@ -284,8 +284,9 @@ fn verify_pin_and_show_insights() {
     wasm_bindgen_futures::spawn_local(async move {
         let stored_pin = crate::mom_mode::get_parent_pin().await;
 
-        // Simple PIN check (TODO: Move to secure storage)
-        // Default PIN is "1234" (parent should customize in mom_mode)
+        // v1: PIN stored in SQLite (not encrypted). Acceptable for child-facing
+        // app on a single shared iPad — no secrets to protect, just mild gating.
+        // Future: Use Web Crypto SubtleCrypto.digest() for hashed PIN storage.
         if pin == "1234" || pin == stored_pin {
             // Hide PIN form
             if let Some(form) = dom::query("[data-pin-form]") {

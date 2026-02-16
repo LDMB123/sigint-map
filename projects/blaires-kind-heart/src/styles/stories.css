@@ -361,7 +361,7 @@
     var(--color-purple-light) 70%,
     var(--color-pink-light) 100%
   );
-  font-size: 4rem;
+  font-size: var(--font-size-4xl);
   line-height: 1;
   letter-spacing: 0.05em;
   word-spacing: 0.2em;

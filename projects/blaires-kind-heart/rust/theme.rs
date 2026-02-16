@@ -35,7 +35,7 @@ pub const MEMORY_3STAR_HARD_S: u32 = 90;
 
 // Hug — stage counts
 pub const HUG_STAGES_PER_GAME: usize = 5;
-pub const HUG_TOTAL_STAGE_TYPES: usize = 8;
+pub const HUG_TOTAL_STAGE_TYPES: usize = 15;
 
 // Paint
 pub const PAINT_MIN_CANVAS: u32 = 300;

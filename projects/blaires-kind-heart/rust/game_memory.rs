@@ -75,6 +75,9 @@ enum CardTheme {
     MagicalForest,
     OceanFriends,
     SpaceAdventure,
+    GardenBugs,
+    YummyFood,
+    MusicParty,
 }
 
 impl CardTheme {
@@ -83,6 +86,9 @@ impl CardTheme {
             Self::MagicalForest => "\u{1F332} Magical Forest",
             Self::OceanFriends => "\u{1F30A} Ocean Friends",
             Self::SpaceAdventure => "\u{1F680} Space Adventure",
+            Self::GardenBugs => "\u{1F98B} Garden Bugs",
+            Self::YummyFood => "\u{1F355} Yummy Food",
+            Self::MusicParty => "\u{1F3B8} Music Party",
         }
     }
 
@@ -117,6 +123,36 @@ impl CardTheme {
                 ("\u{1F6F8}", "UFO", 880.0),           // A5
                 ("\u{1F47D}", "Alien", 987.77),        // B5
                 ("\u{2604}", "Comet", 1046.50),        // C6
+            ],
+            Self::GardenBugs => &[
+                ("\u{1FAB1}", "Worm", 523.25),
+                ("\u{1F41E}", "Ladybug", 587.33),
+                ("\u{1F41D}", "Bee", 659.25),
+                ("\u{1F41B}", "Caterpillar", 698.46),
+                ("\u{1F40C}", "Snail", 783.99),
+                ("\u{1F41C}", "Ant", 880.0),
+                ("\u{1FAB2}", "Beetle", 987.77),
+                ("\u{1F997}", "Cricket", 1046.50),
+            ],
+            Self::YummyFood => &[
+                ("\u{1F355}", "Pizza", 523.25),
+                ("\u{1F36A}", "Cookie", 587.33),
+                ("\u{1F366}", "Ice Cream", 659.25),
+                ("\u{1F349}", "Watermelon", 698.46),
+                ("\u{1F34C}", "Banana", 783.99),
+                ("\u{1F9C1}", "Cupcake", 880.0),
+                ("\u{1F369}", "Donut", 987.77),
+                ("\u{1F353}", "Strawberry", 1046.50),
+            ],
+            Self::MusicParty => &[
+                ("\u{1F3B8}", "Guitar", 523.25),
+                ("\u{1F941}", "Drums", 587.33),
+                ("\u{1F3B9}", "Piano", 659.25),
+                ("\u{1F3BA}", "Trumpet", 698.46),
+                ("\u{1F3BB}", "Violin", 783.99),
+                ("\u{1FA87}", "Maracas", 880.0),
+                ("\u{1F3A4}", "Microphone", 987.77),
+                ("\u{1F3B7}", "Saxophone", 1046.50),
             ],
         }
     }
@@ -246,6 +282,9 @@ fn bind_unified_click_handler(state: Rc<RefCell<AppState>>, signal: &web_sys::Ab
                         "forest" => CardTheme::MagicalForest,
                         "ocean" => CardTheme::OceanFriends,
                         "space" => CardTheme::SpaceAdventure,
+                        "bugs" => CardTheme::GardenBugs,
+                        "food" => CardTheme::YummyFood,
+                        "music" => CardTheme::MusicParty,
                         _ => return,
                     };
                     GAME.with(|g| {
@@ -334,9 +373,21 @@ fn show_theme_select(_state: Rc<RefCell<AppState>>) {
     let space_btn = render::create_button(&doc, "game-card game-card--space", CardTheme::SpaceAdventure.name());
     let _ = space_btn.set_attribute("data-memory-theme", "space");
 
+    let bugs_btn = render::create_button(&doc, "game-card game-card--bugs", CardTheme::GardenBugs.name());
+    let _ = bugs_btn.set_attribute("data-memory-theme", "bugs");
+
+    let food_btn = render::create_button(&doc, "game-card game-card--food", CardTheme::YummyFood.name());
+    let _ = food_btn.set_attribute("data-memory-theme", "food");
+
+    let music_btn = render::create_button(&doc, "game-card game-card--music", CardTheme::MusicParty.name());
+    let _ = music_btn.set_attribute("data-memory-theme", "music");
+
     let _ = buttons.append_child(&forest_btn);
     let _ = buttons.append_child(&ocean_btn);
     let _ = buttons.append_child(&space_btn);
+    let _ = buttons.append_child(&bugs_btn);
+    let _ = buttons.append_child(&food_btn);
+    let _ = buttons.append_child(&music_btn);
 
     let _ = container.append_child(&title);
     let _ = container.append_child(&buttons);
@@ -590,6 +641,11 @@ fn start_timer() {
     let id = window.set_interval_with_callback_and_timeout_and_arguments_0(
         cb.as_ref().unchecked_ref(), 1000,
     ).unwrap_or(0);
+    // Store closure on arena element — GC'd when arena is cleared instead of leaked
+    if let Some(arena) = dom::query("#game-arena") {
+        let key = wasm_bindgen::JsValue::from_str("__memory_timer_closure");
+        let _ = js_sys::Reflect::set(&arena, &key, cb.as_ref().unchecked_ref());
+    }
     cb.forget();
 
     GAME.with(|g| {
@@ -678,6 +734,11 @@ fn reset_hint_timer() {
     let id = dom::window().set_timeout_with_callback_and_timeout_and_arguments_0(
         cb.as_ref().unchecked_ref(), 10_000,
     ).unwrap_or(0);
+    // Store closure on arena element — GC'd when arena is cleared instead of leaked
+    if let Some(arena) = dom::query("#game-arena") {
+        let key = wasm_bindgen::JsValue::from_str("__memory_hint_closure");
+        let _ = js_sys::Reflect::set(&arena, &key, cb.as_ref().unchecked_ref());
+    }
     cb.forget();
 
     GAME.with(|g| {
@@ -732,6 +793,9 @@ fn on_card_tap(idx: usize, card_el: &Element) {
             CardTheme::MagicalForest => synth_audio::chime(),
             CardTheme::OceanFriends => synth_audio::dreamy(),
             CardTheme::SpaceAdventure => synth_audio::whoosh(),
+            CardTheme::GardenBugs => synth_audio::sparkle(),
+            CardTheme::YummyFood => synth_audio::tap(),
+            CardTheme::MusicParty => synth_audio::magic_wand(),
         }
 
         // Spawn particle trail

@@ -9,6 +9,75 @@ const COLLECT_DIST: f64 = 40.0;
 const MAX_FRIENDS: usize = 8;
 const SPAWN_INTERVAL: f64 = 2.5; // seconds
 
+pub struct Biome {
+    pub name: &'static str,
+    pub picker_emoji: &'static str,
+    pub friends: &'static [(&'static str, &'static str, u32, u32)],
+    pub bg_gradient: (&'static str, &'static str, &'static str),
+    pub ambient_freq: f32,
+}
+
+pub const BIOME_FOREST: Biome = Biome {
+    name: "Enchanted Forest",
+    picker_emoji: "\u{1F332}",
+    friends: FRIEND_TYPES,
+    bg_gradient: ("#87CEEB", "#90EE90", "#228B22"),
+    ambient_freq: 110.0,
+};
+
+pub const BIOME_CAVE: Biome = Biome {
+    name: "Crystal Cave",
+    picker_emoji: "\u{1F48E}",
+    friends: &[
+        ("bat", "\u{1F987}", 1, 40),
+        ("glowworm", "\u{1F41B}", 2, 25),
+        ("crystal_spider", "\u{1F577}", 3, 20),
+        ("cave_fish", "\u{1F420}", 2, 25),
+        ("mushroom", "\u{1F344}", 1, 35),
+        ("gem_dragon", "\u{1F432}", 5, 10),
+        ("mole", "\u{1F401}", 1, 35),
+        ("firefly", "\u{2728}", 2, 30),
+    ],
+    bg_gradient: ("#2d1b69", "#4a148c", "#1a0033"),
+    ambient_freq: 85.0,
+};
+
+pub const BIOME_CLOUD: Biome = Biome {
+    name: "Cloud Kingdom",
+    picker_emoji: "\u{2601}",
+    friends: &[
+        ("cloud_bunny", "\u{1F430}", 1, 40),
+        ("sky_fish", "\u{1F41F}", 2, 25),
+        ("rainbow_bird", "\u{1F426}", 3, 20),
+        ("wind_sprite", "\u{1F4A8}", 2, 25),
+        ("star_mouse", "\u{1F42D}", 1, 35),
+        ("moon_cat", "\u{1F431}", 2, 30),
+        ("sun_bear", "\u{1F43B}", 3, 15),
+        ("thunder_pup", "\u{1F436}", 5, 10),
+    ],
+    bg_gradient: ("#E3F2FD", "#BBDEFB", "#87CEEB"),
+    ambient_freq: 165.0,
+};
+
+pub const BIOME_OCEAN: Biome = Biome {
+    name: "Ocean Shore",
+    picker_emoji: "\u{1F30A}",
+    friends: &[
+        ("crab", "\u{1F980}", 1, 40),
+        ("starfish", "\u{2B50}", 2, 25),
+        ("seahorse", "\u{1F40E}", 3, 20),
+        ("dolphin", "\u{1F42C}", 2, 25),
+        ("turtle", "\u{1F422}", 1, 35),
+        ("octopus", "\u{1F419}", 3, 15),
+        ("jellyfish", "\u{1FAB8}", 2, 30),
+        ("clownfish", "\u{1F420}", 1, 40),
+    ],
+    bg_gradient: ("#00BCD4", "#80DEEA", "#FFECB3"),
+    ambient_freq: 130.0,
+};
+
+pub const ALL_BIOMES: &[&Biome] = &[&BIOME_FOREST, &BIOME_CAVE, &BIOME_CLOUD, &BIOME_OCEAN];
+
 /// Forest friend types with emoji, point values, and spawn weights.
 const FRIEND_TYPES: &[(&str, &str, u32, u32)] = &[
     ("bunny", "\u{1F430}", 1, 40),      // bunny - common
@@ -47,6 +116,7 @@ impl Friend {
 
 pub struct FriendManager {
     friends: Vec<Friend>,
+    friend_types: &'static [(&'static str, &'static str, u32, u32)],
     spawn_timer: f64,
     pub score: u32,
     pub total_collected: u32,
@@ -55,9 +125,10 @@ pub struct FriendManager {
 }
 
 impl FriendManager {
-    pub fn new() -> Self {
+    pub fn new(friends: &'static [(&'static str, &'static str, u32, u32)]) -> Self {
         Self {
             friends: Vec::with_capacity(MAX_FRIENDS),
+            friend_types: friends,
             spawn_timer: 1.0, // spawn first friend quickly
             score: 0,
             total_collected: 0,
@@ -132,11 +203,11 @@ impl FriendManager {
 
     fn spawn_friend(&mut self, canvas_w: f64, canvas_h: f64) {
         // Weighted random selection
-        let total_weight: u32 = FRIEND_TYPES.iter().map(|(_, _, _, w)| w).sum();
+        let total_weight: u32 = self.friend_types.iter().map(|(_, _, _, w)| w).sum();
         let mut roll = (js_sys::Math::random() * total_weight as f64) as u32;
-        
-        let mut selected = FRIEND_TYPES[0];
-        for &entry in FRIEND_TYPES {
+
+        let mut selected = self.friend_types[0];
+        for &entry in self.friend_types {
             if roll < entry.3 {
                 selected = entry;
                 break;

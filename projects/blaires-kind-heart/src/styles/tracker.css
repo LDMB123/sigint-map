@@ -75,11 +75,19 @@
     }
   }
 
+  &:focus-visible {
+    outline: 3px solid var(--color-purple);
+    outline-offset: 3px;
+    box-shadow:
+      var(--shadow-md),
+      0 0 0 6px rgba(181, 126, 255, 0.2);
+  }
+
   /* ─── Color-coded kind act buttons — matches tracker.rs CATEGORIES ─── */
   &--hug {
     background: var(--gradient-button-pink);  /* Phase 2.4: Use CSS variable */
     border-color: var(--color-pink);
-    color: contrast-color(var(--color-pink));  /* Safari 26.2: Accessible text */
+    color: var(--color-white);  /* White on dark pink background */
     box-shadow:
       0 2px 4px rgba(45, 27, 48, 0.06),
       0 6px 16px rgba(255, 143, 171, 0.2),
@@ -96,7 +104,7 @@
   &--nice-words {
     background: var(--gradient-button-blue);  /* Phase 2.4: Use CSS variable */
     border-color: var(--color-blue);
-    color: contrast-color(var(--color-blue));  /* Safari 26.2: Accessible text */
+    color: var(--color-white);  /* White on dark blue background */
     box-shadow:
       0 2px 4px rgba(45, 27, 48, 0.06),
       0 6px 16px rgba(92, 184, 228, 0.2),
@@ -113,7 +121,7 @@
   &--sharing {
     background: var(--gradient-button-green);  /* Phase 2.4: Use CSS variable */
     border-color: var(--color-green);
-    color: contrast-color(var(--color-green));  /* Safari 26.2: Accessible text */
+    color: var(--color-white);  /* White on dark green background */
     box-shadow:
       0 2px 4px rgba(45, 27, 48, 0.06),
       0 6px 16px rgba(94, 201, 139, 0.2),
@@ -130,7 +138,7 @@
   &--helping {
     background: var(--gradient-button-yellow);  /* Phase 2.4: Use CSS variable */
     border-color: var(--color-yellow);
-    color: contrast-color(var(--color-yellow));  /* Safari 26.2: Accessible text */
+    color: var(--color-text);  /* Dark text on light yellow background */
     box-shadow:
       0 2px 4px rgba(45, 27, 48, 0.06),
       0 6px 16px rgba(255, 211, 45, 0.2),
@@ -147,7 +155,7 @@
   &--love {
     background: var(--gradient-button-purple);  /* Phase 2.4: Use CSS variable */
     border-color: var(--color-purple);
-    color: contrast-color(var(--color-purple));  /* Safari 26.2: Accessible text */
+    color: var(--color-white);  /* White on dark purple background */
     box-shadow:
       0 2px 4px rgba(45, 27, 48, 0.06),
       0 6px 16px rgba(181, 126, 255, 0.2),
@@ -164,7 +172,7 @@
   &--unicorn {
     background: var(--gradient-button-orange);  /* Phase 2.4: Use CSS variable */
     border-color: var(--color-orange);
-    color: contrast-color(var(--color-orange));  /* Safari 26.2: Accessible text */
+    color: var(--color-white);  /* White on dark orange background */
     box-shadow:
       0 2px 4px rgba(45, 27, 48, 0.06),
       0 6px 16px rgba(255, 159, 67, 0.25),
@@ -346,7 +354,7 @@
 [data-emotion-checkin] {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-overlay);
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(6px); /* Optimized from blur(12px) for mobile performance */
   display: flex;
@@ -388,7 +396,7 @@
   justify-content: center;
   gap: var(--space-xs);
   min-width: 72px;
-  min-height: 80px;
+  min-height: var(--touch-large);
   padding: var(--space-md);
   border: 3px solid var(--color-purple-light);
   border-radius: var(--radius-lg);

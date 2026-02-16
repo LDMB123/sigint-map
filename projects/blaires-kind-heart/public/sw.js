@@ -150,8 +150,8 @@ self.addEventListener('fetch', (event) => {
       // Offline fallback for images (return transparent 1x1 WebP to avoid broken icons)
       if (event.request.headers.get('Accept')?.includes('image/')) {
         // Return a data URI for a transparent 1x1 WebP image
-        const transparentWebP = 'data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA=';
-        return fetch(transparentWebP);
+        const bytes = Uint8Array.from(atob('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA='), c => c.charCodeAt(0));
+        return new Response(bytes, { headers: { 'Content-Type': 'image/webp' } });
       }
     })
   );

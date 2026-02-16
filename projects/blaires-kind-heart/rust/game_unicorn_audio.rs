@@ -20,22 +20,22 @@ fn get_audio_ctx() -> Option<AudioContext> {
     crate::synth_audio::get_context()
 }
 
-pub fn start_ambient() {
+pub fn start_ambient(freq: f32) {
     let Some(ctx) = get_audio_ctx() else { return };
-    
+
     // Create gain node for ambient control
     let Ok(gain) = ctx.create_gain() else { return };
     let _ = gain.connect_with_audio_node(&ctx.destination());
-    
+
     let is_muted = MUTED.with(|m| *m.borrow());
     gain.gain().set_value(if is_muted { 0.0 } else { 0.15 });
-    
+
     AMBIENT_GAIN.with(|ag| *ag.borrow_mut() = Some(gain.clone()));
-    
-    // Gentle forest ambience (soft low-frequency hum)
+
+    // Ambient tone — frequency set by biome
     if let Ok(osc) = ctx.create_oscillator() {
         osc.set_type(OscillatorType::Sine);
-        osc.frequency().set_value(110.0); // Low A
+        osc.frequency().set_value(freq);
         let _ = osc.connect_with_audio_node(&gain);
         let _ = osc.start();
         
@@ -77,9 +77,14 @@ pub fn step() {
 pub fn collect_friend(type_id: &str) {
     let Some(ctx) = get_audio_ctx() else { return };
     if is_muted_state() { return; }
-    
+
     // Different pitch per friend type
+    // Forest friends: C5-C6 range
+    // Cave friends: C4-C5 range (lower register)
+    // Cloud friends: C5-C6 range (higher register)
+    // Ocean friends: D4-D5 range (mid register)
     let freq = match type_id {
+        // Forest friends (C5-C6)
         "bunny" => 523.25,      // C5
         "fox" => 587.33,        // D5
         "deer" => 659.25,       // E5
@@ -88,6 +93,37 @@ pub fn collect_friend(type_id: &str) {
         "hedgehog" => 880.0,    // A5
         "bird" => 987.77,       // B5
         "butterfly" => 1046.50, // C6
+
+        // Cave friends (C4-C5, lower register)
+        "bat" => 262.0,         // C4
+        "glowworm" => 293.66,   // D4
+        "crystal_spider" => 329.63, // E4
+        "cave_fish" => 349.23,  // F4
+        "mushroom" => 392.0,    // G4
+        "gem_dragon" => 440.0,  // A4
+        "mole" => 493.88,       // B4
+        "firefly" => 523.25,    // C5
+
+        // Cloud friends (C5-C6, higher register)
+        "cloud_bunny" => 587.33,   // D5
+        "sky_fish" => 659.25,      // E5
+        "rainbow_bird" => 698.46,  // F5
+        "wind_sprite" => 783.99,   // G5
+        "star_mouse" => 880.0,     // A5
+        "moon_cat" => 987.77,      // B5
+        "sun_bear" => 1046.50,     // C6
+        "thunder_pup" => 1174.66,  // D6
+
+        // Ocean friends (D4-D5, mid register)
+        "crab" => 293.66,       // D4
+        "starfish" => 329.63,   // E4
+        "seahorse" => 349.23,   // F4
+        "dolphin" => 392.0,     // G4
+        "turtle" => 440.0,      // A4
+        "octopus" => 493.88,    // B4
+        "jellyfish" => 523.25,  // C5
+        "clownfish" => 587.33,  // D5
+
         _ => 440.0,
     };
     
