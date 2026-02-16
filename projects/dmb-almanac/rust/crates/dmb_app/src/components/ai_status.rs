@@ -38,7 +38,7 @@ pub fn AiStatus() -> impl IntoView {
     }
 
     view! {
-        <div class="ai-status">
+        <div class="ai-status" role="status" aria-live="polite" aria-label="AI capability status">
             <span>"AI: "</span>
             <span class="pill">"WebGPU " {move || if caps.get().webgpu_enabled { "on" } else { "off" }}</span>
             <span class="pill">"GPU Worker " {move || if caps.get().webgpu_worker { "on" } else { "off" }}</span>
@@ -96,6 +96,14 @@ pub fn AiStatus() -> impl IntoView {
             >
                 <span class="ai-status__note">
                     "WebNN detected (experimental; using WASM SIMD fallback)"
+                </span>
+            </Show>
+            <Show
+                when=move || !caps.get().webgpu_enabled && !caps.get().webnn
+                fallback=|| ()
+            >
+                <span class="ai-status__note">
+                    "GPU acceleration unavailable; semantic search may run slower on CPU."
                 </span>
             </Show>
         </div>

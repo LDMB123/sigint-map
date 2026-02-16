@@ -28,6 +28,35 @@ Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 2. Continue reducing duplicate docs/context to lower token usage per session.
 3. Keep cleanup/disk-budget scripts in regular use to avoid local storage bloat.
 
+## All-In Polish Progress (2026-02-15)
+
+- Phase coverage advanced on route polish, UI state consistency, and server payload validation.
+- New progress report:
+  - `docs/reports/QUALITY/ALL_IN_POLISH_PROGRESS_2026-02-15.md`
+- Key completed files this pass:
+  - `rust/crates/dmb_app/src/pages.rs`
+  - `rust/crates/dmb_app/tests/route_render.rs`
+  - `rust/crates/dmb_app/tests/route_smoke.rs`
+  - `rust/crates/dmb_app/tests/a11y_routes.rs`
+  - `rust/crates/dmb_app/src/components/footer.rs`
+  - `rust/crates/dmb_app/src/components/ai_status.rs`
+  - `rust/crates/dmb_app/src/components/pwa_status.rs`
+  - `rust/crates/dmb_server/src/main.rs`
+  - `.github/workflows/rust-ci.yml`
+  - `docs/reports/QUALITY/RELEASE_READINESS_CHECKLIST.md`
+  - `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md`
+  - `scripts/a11y-keyboard-spotcheck.sh`
+  - `docs/reports/QUALITY/A11Y_KEYBOARD_SPOTCHECK_SAMPLE.md`
+- Validation snapshot for this pass:
+  - `cargo check --workspace` (pass)
+  - `cargo clippy --workspace --all-targets -- -D warnings` (pass)
+  - `cargo test -p dmb_app --features ssr` (pass)
+  - `cargo test -p dmb_app --test route_render --features ssr` (pass)
+  - `cargo test -p dmb_app --test route_smoke --features ssr` (pass)
+  - `cargo test -p dmb_server` (pass)
+- Phase 5 CI gate definitions and release checklist updates are now in place.
+- Manual release-window checks still pending: offline no-network pass, AI timeout/degradation pass, and sign-offs.
+
 ## Recommended Verification
 
 ```bash

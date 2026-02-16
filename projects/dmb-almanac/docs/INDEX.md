@@ -7,6 +7,7 @@
 - Minimal context starter: `CONTEXT.md`
 - Deployment + verification: `docs/guides/DEPLOYMENT_REFERENCE.md`
 - Cutover operations: `docs/ops/CUTOVER_RUNBOOK.md`
+- Manual a11y keyboard checks: `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md`
 - Docs home and conventions: `docs/README.md`
 
 ## Core Documentation Areas
@@ -35,6 +36,7 @@
 - `docs/references/DATABASE_SCHEMA_REFERENCE.md`
 - `docs/ops/CUTOVER_RUNBOOK.md`
 - `docs/ops/ROLLBACK_RUNBOOK.md`
+- `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md`
 - `docs/quick-references/QUICK_REFERENCE.md`
 - `docs/reports/README.md`
 

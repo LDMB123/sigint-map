@@ -30,7 +30,7 @@ const SW_ACTIVATED_AT_KEY: &str = "pwa_sw_activated_at";
 #[cfg(feature = "hydrate")]
 const PREVIOUS_CACHE_CLEANED_AT_KEY: &str = "pwa_previous_cache_cleaned_at";
 
-#[cfg(feature = "hydrate")]
+#[cfg(any(feature = "hydrate", test))]
 fn e2e_version_from_sw_script_url(script_url: &str) -> Option<String> {
     // Playwright SW update E2E tests register `/sw.js?e2e=<version>`.
     // If present, we can derive the expected version deterministically without waiting on a PONG.
@@ -1504,7 +1504,9 @@ pub fn PwaStatus() -> impl IntoView {
 
     view! {
         <aside class="pwa-status" aria-label="PWA status">
-            <div class="pwa-status__row">
+            <h2>"App Status"</h2>
+            <p class="muted">"Offline availability, update state, cache health, and recovery actions."</p>
+            <div class="pwa-status__row" role="status" aria-live="polite">
                 <span>{move || status.get().message.clone()}</span>
             </div>
             {move || {
@@ -1635,6 +1637,11 @@ pub fn PwaStatus() -> impl IntoView {
             <div class="pwa-status__row">
                 <span class="pill">{move || if online.get() { "Online" } else { "Offline" }}</span>
             </div>
+            <Show when=move || !online.get() fallback=|| () >
+                <div class="pwa-status__row pwa-status__row--warn" role="alert">
+                    "You are offline. Cached pages remain available; updates and network sync are paused."
+                </div>
+            </Show>
             {move || {
                 let current = status.get();
                 if current.can_reset {
@@ -1749,7 +1756,7 @@ pub fn PwaStatus() -> impl IntoView {
                 }}
                 {move || {
                     sw_action_status.get().map(|message| {
-                        view! { <div class="pwa-status__row muted">{message}</div> }
+                        view! { <div class="pwa-status__row muted" role="status" aria-live="polite">{message}</div> }
                     })
                 }}
             </Show>
@@ -1990,7 +1997,7 @@ pub fn PwaStatus() -> impl IntoView {
 
 #[cfg(test)]
 mod tests {
-    use super::{should_suppress_update_notice, UPDATE_SNOOZE_MS};
+    use super::{e2e_version_from_sw_script_url, remaining_snooze_ms, should_suppress_update_notice, UPDATE_SNOOZE_MS};
 
     #[test]
     fn suppress_update_notice_within_snooze_window() {
@@ -2010,9 +2017,35 @@ mod tests {
     fn remaining_snooze_reports_time_left() {
         let now = 1_000_000.0;
         let last = now - (UPDATE_SNOOZE_MS / 2.0);
-        let remaining =
-            super::remaining_snooze_ms(Some(last), now).expect("remaining snooze missing");
+        let remaining = remaining_snooze_ms(Some(last), now).expect("remaining snooze missing");
         assert!(remaining > 0.0);
         assert!(remaining < UPDATE_SNOOZE_MS);
+    }
+
+    #[test]
+    fn suppress_update_notice_with_clock_skew() {
+        let now = 1_000_000.0;
+        let last = now + 5_000.0;
+        assert!(should_suppress_update_notice(Some(last), now));
+    }
+
+    #[test]
+    fn remaining_snooze_none_after_window() {
+        let now = 2_000_000.0;
+        let last = now - (UPDATE_SNOOZE_MS * 2.0);
+        assert!(remaining_snooze_ms(Some(last), now).is_none());
+    }
+
+    #[test]
+    fn e2e_version_parser_handles_query_shapes() {
+        assert_eq!(
+            e2e_version_from_sw_script_url("/sw.js?e2e=build123"),
+            Some("build123".to_string())
+        );
+        assert_eq!(
+            e2e_version_from_sw_script_url("/sw.js?foo=1&e2e=build999&bar=2"),
+            Some("build999".to_string())
+        );
+        assert_eq!(e2e_version_from_sw_script_url("/sw.js"), None);
     }
 }

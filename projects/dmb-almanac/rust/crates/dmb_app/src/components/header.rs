@@ -27,10 +27,12 @@ pub fn Header() -> impl IntoView {
     let location = use_location();
     let current_path = Memo::new(move |_| location.pathname.get());
     view! {
-        <header class="header">
+        <header class="header" role="banner">
             <div class="container">
-                <a class="brand" href="/">"DMB Almanac"</a>
-                <nav class="nav" aria-label="Main navigation">
+                <a class="brand" href="/" aria-label="DMB Almanac home">
+                    "DMB Almanac"
+                </a>
+                <nav class="nav" aria-label="Primary navigation">
                     <ul>
                         <li><NavLink current_path href="/shows" label="Shows" /></li>
                         <li><NavLink current_path href="/songs" label="Songs" /></li>
@@ -43,6 +45,9 @@ pub fn Header() -> impl IntoView {
                         <li><NavLink current_path href="/stats" label="Stats" /></li>
                         <li><NavLink current_path href="/visualizations" label="Visuals" /></li>
                         <li><NavLink current_path href="/search" label="Search" /></li>
+                        <li><NavLink current_path href="/about" label="About" /></li>
+                        <li><NavLink current_path href="/contact" label="Contact" /></li>
+                        <li><NavLink current_path href="/faq" label="FAQ" /></li>
                         <li><NavLink current_path href="/assistant" label="AI" /></li>
                         <li><NavLink current_path href="/ai-diagnostics" label="AI Diagnostics" /></li>
                         <li><NavLink current_path href="/ai-benchmark" label="AI Benchmark" /></li>

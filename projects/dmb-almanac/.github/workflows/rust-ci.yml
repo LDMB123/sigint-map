@@ -45,6 +45,24 @@ jobs:
       - name: Run xtask verify
         run: cargo run -p xtask -- verify
 
+      - name: Enforce rustfmt
+        run: cargo fmt --all -- --check
+
+      - name: Route parity and render smoke gates
+        run: |
+          cargo test -p dmb_app --features ssr --test route_parity
+          cargo test -p dmb_app --features ssr --test route_render
+          cargo test -p dmb_app --features ssr --test route_smoke
+          cargo test -p dmb_app --features ssr --test a11y_routes
+
+      - name: Phase 5 regression gates (parity + server validation)
+        run: |
+          cargo test -p dmb_core parity
+          cargo test -p dmb_server rejects_
+          cargo test -p dmb_server csp_report_requires_report_object
+          cargo test -p dmb_server data_parity_ignores_stale_cache_entries
+          cargo test -p dmb_app --features ssr normalize_helpers_handle_empty_input
+
   rust-pipeline-validate:
     name: Rust Pipeline Validate (Warnings)
     runs-on: ubuntu-latest

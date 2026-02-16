@@ -158,7 +158,117 @@ pub fn static_page(title: &'static str) -> impl IntoView {
     view! {
         <section class="page">
             <h1>{title}</h1>
-            <p>"Placeholder content pending data and UI port."</p>
+            <p class="lead">"This route is active in the Rust app and is being finalized."</p>
+            <p class="muted">
+                "Use the core browse routes and support pages while this section receives final data polish."
+            </p>
+            <div class="card-grid">
+                <a class="card card-link" href="/shows">
+                    <h2>"Browse Shows"</h2>
+                    <p class="muted">"Open the primary browse flow."</p>
+                </a>
+                <a class="card card-link" href="/search">
+                    <h2>"Search"</h2>
+                    <p class="muted">"Use global search across songs, venues, tours, and more."</p>
+                </a>
+            </div>
+        </section>
+    }
+}
+
+pub fn about_page() -> impl IntoView {
+    view! {
+        <section class="page">
+            <h1>"About"</h1>
+            <p class="lead">"DMB Almanac Rust is an offline-first, WASM-powered browse and analytics app."</p>
+            <p>
+                "The Rust build serves the same feature set as the legacy frontend with improved rendering stability, stronger parity checks, and deterministic data fallbacks."
+            </p>
+            <div class="card-grid">
+                <a class="card card-link" href="/protocol">
+                    <h2>"Protocol"</h2>
+                    <p class="muted">"Review how deep links and shared links are handled."</p>
+                </a>
+                <a class="card card-link" href="/offline">
+                    <h2>"Offline"</h2>
+                    <p class="muted">"Understand offline usage and cache expectations."</p>
+                </a>
+            </div>
+        </section>
+    }
+}
+
+pub fn contact_page() -> impl IntoView {
+    view! {
+        <section class="page">
+            <h1>"Contact"</h1>
+            <p class="lead">"Questions, issues, and feedback are welcome."</p>
+            <div class="card">
+                <p>
+                    "Use the repository issues or support channel for bug reports, "
+                    <strong>"offline behavior questions"</strong>
+                    ", and data parity concerns."
+                </p>
+            </div>
+            <ul class="result-list">
+                <li class="result-card">
+                    <span class="result-label">"Expected response"</span>
+                    <span class="result-meta">"Support requests are usually acknowledged during business days."</span>
+                </li>
+                <li class="result-card">
+                    <span class="result-label">"Fastest path"</span>
+                    <span class="result-meta">"Include route, browser, and whether SW is installed."</span>
+                </li>
+            </ul>
+        </section>
+    }
+}
+
+pub fn faq_page() -> impl IntoView {
+    view! {
+        <section class="page">
+            <h1>"FAQ"</h1>
+            <p class="lead">"Common questions about app behavior, data, and PWA usage."</p>
+            <div class="section-divider"></div>
+            <h2>"How do I check if data loaded?"</h2>
+            <p class="muted">"Open key browse routes such as /shows or /songs and watch for loading messages before data appears."</p>
+            <div class="section-divider"></div>
+            <h2>"What if AI routes are slow?"</h2>
+            <p class="muted">"AI paths now show timeout and status states. Use warmup first on slower devices."</p>
+            <div class="section-divider"></div>
+            <h2>"Why is offline status stale?"</h2>
+            <p class="muted">"SW update and cache maintenance can take a moment; use cache controls and refresh guidance in the status banner."</p>
+        </section>
+    }
+}
+
+pub fn offline_page() -> impl IntoView {
+    view! {
+        <section class="page">
+            <h1>"Offline"</h1>
+            <p class="lead">"You are in offline mode. Core pages still work from cached data."</p>
+            <div class="card-grid">
+                <div class="card">
+                    <h2>"What still works"</h2>
+                    <ul class="list">
+                        <li>"Browse cached show, song, venue, and guest views."</li>
+                        <li>"Use saved visualizations and local AI cache where available."</li>
+                        <li>"Run AI smoke and warmup checks from already-cached state."</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h2>"What requires network"</h2>
+                    <ul class="list">
+                        <li>"Initial data sync or fresh imports."</li>
+                        <li>"Revalidation parity checks and update metadata refresh."</li>
+                        <li>"Search index refresh from remote sources."</li>
+                    </ul>
+                </div>
+            </div>
+            <p>
+                <a href="/">"Return to dashboard"</a>
+                " for immediate local status and navigation."
+            </p>
         </section>
     }
 }
@@ -1545,6 +1655,9 @@ pub fn ai_diagnostics_page() -> impl IntoView {
 pub fn ai_benchmark_page() -> impl IntoView {
     let full_bench = RwSignal::new(None::<crate::ai::AiBenchmark>);
     let subset_bench = RwSignal::new(None::<crate::ai::AiSubsetBenchmark>);
+    let running = RwSignal::new(false);
+    let status = RwSignal::new("Idle".to_string());
+    let error = RwSignal::new(None::<String>);
 
     let run_benchmarks = {
         move |_| {
@@ -1552,12 +1665,30 @@ pub fn ai_benchmark_page() -> impl IntoView {
             {
                 let full_signal = full_bench.clone();
                 let subset_signal = subset_bench.clone();
+                let running_signal = running.clone();
+                let status_signal = status.clone();
+                let error_signal = error.clone();
                 spawn_local(async move {
+                    running_signal.set(true);
+                    status_signal.set("Running benchmark suite...".to_string());
+                    error_signal.set(None);
                     let full = crate::ai::benchmark_scoring(4000).await;
                     let subset = crate::ai::benchmark_subset_scoring(20).await;
                     full_signal.set(full.clone());
                     subset_signal.set(subset.clone());
                     crate::ai::store_benchmark_sample(full, subset, None);
+                    if full_signal.get_untracked().is_none()
+                        && subset_signal.get_untracked().is_none()
+                    {
+                        status_signal.set("Failed".to_string());
+                        error_signal.set(Some(
+                            "Benchmark data unavailable. Warm up embeddings and try again."
+                                .to_string(),
+                        ));
+                    } else {
+                        status_signal.set("Complete".to_string());
+                    }
+                    running_signal.set(false);
                 });
             }
         }
@@ -1567,29 +1698,47 @@ pub fn ai_benchmark_page() -> impl IntoView {
         <section class="page">
             <h1>"AI Benchmark"</h1>
             <p class="lead">"Compare CPU vs GPU scoring (full matrix vs IVF subset)."</p>
-            <button type="button" class="pill" on:click=run_benchmarks>"Run Benchmarks"</button>
+            <button type="button" class="pill" disabled=move || running.get() on:click=run_benchmarks>
+                {move || if running.get() { "Running..." } else { "Run Benchmarks" }}
+            </button>
+            <p class="muted">{move || status.get()}</p>
+            {move || error.get().map(|message| view! { <p class="muted">{message}</p> })}
             <div class="card-grid">
                 <div class="card">
                     <h2>"Full Matrix"</h2>
-                    {move || full_bench.get().map(|result| view! {
-                        <ul class="list">
-                            <li>{format!("Sample Count: {}", result.sample_count)}</li>
-                            <li>{format!("CPU: {:.2} ms", result.cpu_ms)}</li>
-                            <li>{format!("GPU: {}", result.gpu_ms.map(|ms| format!("{:.2} ms", ms)).unwrap_or_else(|| "n/a".to_string()))}</li>
-                            <li>{format!("Backend: {}", result.backend)}</li>
-                        </ul>
-                    })}
+                    {move || {
+                        if let Some(result) = full_bench.get() {
+                            view! {
+                                <ul class="list">
+                                    <li>{format!("Sample Count: {}", result.sample_count)}</li>
+                                    <li>{format!("CPU: {:.2} ms", result.cpu_ms)}</li>
+                                    <li>{format!("GPU: {}", result.gpu_ms.map(|ms| format!("{:.2} ms", ms)).unwrap_or_else(|| "n/a".to_string()))}</li>
+                                    <li>{format!("Backend: {}", result.backend)}</li>
+                                </ul>
+                            }
+                            .into_any()
+                        } else {
+                            view! { <p class="muted">"No benchmark run yet."</p> }.into_any()
+                        }
+                    }}
                 </div>
                 <div class="card">
                     <h2>"IVF Subset"</h2>
-                    {move || subset_bench.get().map(|result| view! {
-                        <ul class="list">
-                            <li>{format!("Candidates: {}", result.candidate_count)}</li>
-                            <li>{format!("CPU: {:.2} ms", result.cpu_ms)}</li>
-                            <li>{format!("GPU: {}", result.gpu_ms.map(|ms| format!("{:.2} ms", ms)).unwrap_or_else(|| "n/a".to_string()))}</li>
-                            <li>{format!("Backend: {}", result.backend)}</li>
-                        </ul>
-                    })}
+                    {move || {
+                        if let Some(result) = subset_bench.get() {
+                            view! {
+                                <ul class="list">
+                                    <li>{format!("Candidates: {}", result.candidate_count)}</li>
+                                    <li>{format!("CPU: {:.2} ms", result.cpu_ms)}</li>
+                                    <li>{format!("GPU: {}", result.gpu_ms.map(|ms| format!("{:.2} ms", ms)).unwrap_or_else(|| "n/a".to_string()))}</li>
+                                    <li>{format!("Backend: {}", result.backend)}</li>
+                                </ul>
+                            }
+                            .into_any()
+                        } else {
+                            view! { <p class="muted">"No benchmark run yet."</p> }.into_any()
+                        }
+                    }}
                 </div>
             </div>
         </section>
@@ -1600,18 +1749,29 @@ pub fn ai_warmup_page() -> impl IntoView {
     let status = RwSignal::new("Ready".to_string());
     let ann_caps = RwSignal::new(None::<crate::ai::AnnCapDiagnostics>);
     let sample_enabled = RwSignal::new(false);
+    let error = RwSignal::new(None::<String>);
 
     #[cfg(feature = "hydrate")]
     {
         let status_signal = status.clone();
         let ann_caps_signal = ann_caps.clone();
         let sample_enabled_signal = sample_enabled.clone();
+        let error_signal = error.clone();
         request_animation_frame(move || {
             sample_enabled_signal.set(crate::ai::embedding_sample_enabled());
             spawn_local(async move {
                 status_signal.set("Warming embedding index…".to_string());
-                let _ = crate::ai::load_embedding_index().await;
+                let loaded = crate::ai::load_embedding_index().await;
+                if loaded.is_none() {
+                    status_signal.set("Warmup failed".to_string());
+                    error_signal.set(Some(
+                        "Embedding index could not be loaded. Retry after data sync.".to_string(),
+                    ));
+                    ann_caps_signal.set(None);
+                    return;
+                }
                 ann_caps_signal.set(crate::ai::ann_cap_diagnostics());
+                error_signal.set(None);
                 status_signal.set("Warmup complete".to_string());
             });
         });
@@ -1626,6 +1786,7 @@ pub fn ai_warmup_page() -> impl IntoView {
                 <p class="muted">
                     {move || if sample_enabled.get() { "Sample mode: ON" } else { "Sample mode: OFF" }}
                 </p>
+                {move || error.get().map(|message| view! { <p class="muted">{message}</p> })}
                 {move || ann_caps.get().map(|cap| view! {
                     <ul class="list">
                         <li>{format!("Vectors: {}", cap.vectors_after)}</li>
@@ -1643,19 +1804,33 @@ pub fn ai_smoke_page() -> impl IntoView {
     let results = RwSignal::new(Vec::<SearchResult>::new());
     let backend = RwSignal::new("n/a".to_string());
     let elapsed_ms = RwSignal::new(None::<f64>);
+    let running = RwSignal::new(false);
+    let error = RwSignal::new(None::<String>);
 
     let run_smoke = move |_| {
         #[cfg(feature = "hydrate")]
         {
-            let query_value = query.get_untracked();
+            let query_value = query.get_untracked().trim().to_string();
+            if query_value.is_empty() {
+                error.set(Some("Enter a query before running smoke test.".to_string()));
+                return;
+            }
             let status_signal = status.clone();
             let results_signal = results.clone();
             let backend_signal = backend.clone();
             let elapsed_signal = elapsed_ms.clone();
+            let running_signal = running.clone();
+            let error_signal = error.clone();
             spawn_local(async move {
+                running_signal.set(true);
+                error_signal.set(None);
                 status_signal.set("Loading embeddings…".to_string());
                 let Some(index) = crate::ai::load_embedding_index().await else {
                     status_signal.set("Embedding load failed.".to_string());
+                    error_signal.set(Some(
+                        "Embedding index unavailable. Run warmup and retry.".to_string(),
+                    ));
+                    running_signal.set(false);
                     return;
                 };
                 status_signal.set("Running semantic search…".to_string());
@@ -1669,7 +1844,12 @@ pub fn ai_smoke_page() -> impl IntoView {
                     "WASM SIMD".to_string()
                 });
                 elapsed_signal.set(Some(end - start));
-                status_signal.set("Complete".to_string());
+                if results_signal.get_untracked().is_empty() {
+                    status_signal.set("Complete (no matches)".to_string());
+                } else {
+                    status_signal.set("Complete".to_string());
+                }
+                running_signal.set(false);
             });
         }
     };
@@ -1691,9 +1871,12 @@ pub fn ai_smoke_page() -> impl IntoView {
                     />
                 </label>
                 <div class="pill-row">
-                    <button type="button" class="pill" on:click=run_smoke>"Run smoke test"</button>
+                    <button type="button" class="pill" disabled=move || running.get() on:click=run_smoke>
+                        {move || if running.get() { "Running..." } else { "Run smoke test" }}
+                    </button>
                 </div>
                 <p class="muted">{move || status.get()}</p>
+                {move || error.get().map(|message| view! { <p class="muted">{message}</p> })}
                 {move || elapsed_ms.get().map(|ms| view! {
                     <p class="muted">{format!("Latency: {:.2} ms ({})", ms, backend.get())}</p>
                 })}
@@ -1851,17 +2034,84 @@ async fn load_venue(id: i32) -> Option<Venue> {
     }
 }
 
+fn normalize_show_summaries(mut items: Vec<ShowSummary>, limit: usize) -> Vec<ShowSummary> {
+    items.sort_by(|a, b| b.date.cmp(&a.date).then_with(|| b.id.cmp(&a.id)));
+    items.truncate(limit);
+    items
+}
+
+fn normalize_songs(mut items: Vec<Song>, limit: usize) -> Vec<Song> {
+    items.sort_by(|a, b| {
+        b.total_performances
+            .unwrap_or(0)
+            .cmp(&a.total_performances.unwrap_or(0))
+            .then_with(|| a.title.cmp(&b.title))
+            .then_with(|| a.id.cmp(&b.id))
+    });
+    items.truncate(limit);
+    items
+}
+
+fn normalize_venues(mut items: Vec<Venue>, limit: usize) -> Vec<Venue> {
+    items.sort_by(|a, b| {
+        b.total_shows
+            .unwrap_or(0)
+            .cmp(&a.total_shows.unwrap_or(0))
+            .then_with(|| a.name.cmp(&b.name))
+            .then_with(|| a.id.cmp(&b.id))
+    });
+    items.truncate(limit);
+    items
+}
+
+fn normalize_guests(mut items: Vec<Guest>, limit: usize) -> Vec<Guest> {
+    items.sort_by(|a, b| {
+        b.total_appearances
+            .unwrap_or(0)
+            .cmp(&a.total_appearances.unwrap_or(0))
+            .then_with(|| a.name.cmp(&b.name))
+            .then_with(|| a.id.cmp(&b.id))
+    });
+    items.truncate(limit);
+    items
+}
+
+fn normalize_tours(mut items: Vec<Tour>, limit: usize) -> Vec<Tour> {
+    items.sort_by(|a, b| {
+        b.year
+            .cmp(&a.year)
+            .then_with(|| b.total_shows.unwrap_or(0).cmp(&a.total_shows.unwrap_or(0)))
+            .then_with(|| a.name.cmp(&b.name))
+            .then_with(|| a.id.cmp(&b.id))
+    });
+    items.truncate(limit);
+    items
+}
+
+fn normalize_releases(mut items: Vec<Release>, limit: usize) -> Vec<Release> {
+    items.sort_by(|a, b| {
+        b.release_date
+            .as_deref()
+            .unwrap_or("")
+            .cmp(a.release_date.as_deref().unwrap_or(""))
+            .then_with(|| a.title.cmp(&b.title))
+            .then_with(|| a.id.cmp(&b.id))
+    });
+    items.truncate(limit);
+    items
+}
+
 async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
     #[cfg(feature = "hydrate")]
     {
         let shows =
             spawn_local_to_send(async move { dmb_idb::list_recent_shows(limit).await.ok() }).await;
         let Some(shows) = shows else {
-            return get_recent_shows(limit).await.unwrap_or_default();
+            return normalize_show_summaries(get_recent_shows(limit).await.unwrap_or_default(), limit);
         };
 
         if shows.is_empty() {
-            return get_recent_shows(limit).await.unwrap_or_default();
+            return normalize_show_summaries(get_recent_shows(limit).await.unwrap_or_default(), limit);
         }
 
         let mut venue_ids: HashSet<i32> = HashSet::new();
@@ -1925,12 +2175,12 @@ async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
                 tour_year,
             });
         }
-        out
+        normalize_show_summaries(out, limit)
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
-        get_recent_shows(limit).await.unwrap_or_default()
+        normalize_show_summaries(get_recent_shows(limit).await.unwrap_or_default(), limit)
     }
 }
 
@@ -1940,14 +2190,14 @@ async fn load_top_songs(limit: usize) -> Vec<Song> {
         let songs =
             spawn_local_to_send(async move { dmb_idb::stats_top_songs(limit).await.ok() }).await;
         match songs {
-            Some(items) if !items.is_empty() => items,
-            _ => get_top_songs(limit).await.unwrap_or_default(),
+            Some(items) if !items.is_empty() => normalize_songs(items, limit),
+            _ => normalize_songs(get_top_songs(limit).await.unwrap_or_default(), limit),
         }
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
-        get_top_songs(limit).await.unwrap_or_default()
+        normalize_songs(get_top_songs(limit).await.unwrap_or_default(), limit)
     }
 }
 
@@ -1957,14 +2207,14 @@ async fn load_top_venues(limit: usize) -> Vec<Venue> {
         let venues =
             spawn_local_to_send(async move { dmb_idb::list_top_venues(limit).await.ok() }).await;
         match venues {
-            Some(items) if !items.is_empty() => items,
-            _ => get_top_venues(limit).await.unwrap_or_default(),
+            Some(items) if !items.is_empty() => normalize_venues(items, limit),
+            _ => normalize_venues(get_top_venues(limit).await.unwrap_or_default(), limit),
         }
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
-        get_top_venues(limit).await.unwrap_or_default()
+        normalize_venues(get_top_venues(limit).await.unwrap_or_default(), limit)
     }
 }
 
@@ -1974,14 +2224,14 @@ async fn load_top_guests(limit: usize) -> Vec<Guest> {
         let guests =
             spawn_local_to_send(async move { dmb_idb::list_top_guests(limit).await.ok() }).await;
         match guests {
-            Some(items) if !items.is_empty() => items,
-            _ => get_top_guests(limit).await.unwrap_or_default(),
+            Some(items) if !items.is_empty() => normalize_guests(items, limit),
+            _ => normalize_guests(get_top_guests(limit).await.unwrap_or_default(), limit),
         }
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
-        get_top_guests(limit).await.unwrap_or_default()
+        normalize_guests(get_top_guests(limit).await.unwrap_or_default(), limit)
     }
 }
 
@@ -1991,14 +2241,14 @@ async fn load_recent_tours(limit: usize) -> Vec<Tour> {
         let tours =
             spawn_local_to_send(async move { dmb_idb::list_recent_tours(limit).await.ok() }).await;
         match tours {
-            Some(items) if !items.is_empty() => items,
-            _ => get_recent_tours(limit).await.unwrap_or_default(),
+            Some(items) if !items.is_empty() => normalize_tours(items, limit),
+            _ => normalize_tours(get_recent_tours(limit).await.unwrap_or_default(), limit),
         }
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
-        get_recent_tours(limit).await.unwrap_or_default()
+        normalize_tours(get_recent_tours(limit).await.unwrap_or_default(), limit)
     }
 }
 
@@ -2009,14 +2259,14 @@ async fn load_recent_releases(limit: usize) -> Vec<Release> {
             spawn_local_to_send(async move { dmb_idb::list_recent_releases(limit).await.ok() })
                 .await;
         match releases {
-            Some(items) if !items.is_empty() => items,
-            _ => get_recent_releases(limit).await.unwrap_or_default(),
+            Some(items) if !items.is_empty() => normalize_releases(items, limit),
+            _ => normalize_releases(get_recent_releases(limit).await.unwrap_or_default(), limit),
         }
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
-        get_recent_releases(limit).await.unwrap_or_default()
+        normalize_releases(get_recent_releases(limit).await.unwrap_or_default(), limit)
     }
 }
 
@@ -2481,6 +2731,38 @@ pub fn releases_page() -> impl IntoView {
     }
 }
 
+fn parse_positive_i32_param(raw: &str, param_name: &str) -> Result<i32, String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Err(format!("Missing `{param_name}` parameter."));
+    }
+    let value = trimmed
+        .parse::<i32>()
+        .map_err(|_| format!("Invalid `{param_name}` parameter: expected integer."))?;
+    if value <= 0 {
+        return Err(format!(
+            "Invalid `{param_name}` parameter: expected positive integer."
+        ));
+    }
+    Ok(value)
+}
+
+fn parse_slug_param(raw: &str, param_name: &str) -> Result<String, String> {
+    let slug = raw.trim();
+    if slug.is_empty() {
+        return Err(format!("Missing `{param_name}` parameter."));
+    }
+    Ok(slug.to_string())
+}
+
+fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
+    let year = parse_positive_i32_param(raw, "year")?;
+    if !(1960..=2100).contains(&year) {
+        return Err("Invalid `year` parameter: expected 1960-2100.".to_string());
+    }
+    Ok(year)
+}
+
 pub fn show_detail_page() -> impl IntoView {
     let params = use_params_map();
     let show_id = move || params.with(|p| p.get("showId").unwrap_or_default());
@@ -2524,18 +2806,23 @@ pub fn show_detail_page() -> impl IntoView {
     };
 
     let show = Resource::new(show_id, |id: String| async move {
-        let id = id.parse::<i32>().ok()?;
+        let id = parse_positive_i32_param(&id, "showId").ok()?;
         load_show_context(id).await
     });
     let setlist = Resource::new(show_id, |id: String| async move {
-        let id = id.parse::<i32>().ok()?;
+        let id = parse_positive_i32_param(&id, "showId").ok()?;
         Some(load_setlist_entries(id).await)
     });
 
     view! {
         <section class="page">
-            <h1>"Show"</h1>
-            <p>"showId: " {show_id}</p>
+            <h1>"Show Details"</h1>
+            {move || {
+                match parse_positive_i32_param(&show_id(), "showId") {
+                    Ok(id) => view! { <p class="muted">{format!("showId: {id}")}</p> }.into_any(),
+                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
+                }
+            }}
             <Suspense fallback=move || view! { <p class="muted">"Loading show..."</p> }>
                 {move || render(show.get().unwrap_or(None))}
             </Suspense>
@@ -2603,12 +2890,20 @@ pub fn song_detail_page() -> impl IntoView {
     }
     };
 
-    let song = Resource::new(slug, |slug: String| async move { load_song(slug).await });
+    let song = Resource::new(slug, |slug: String| async move {
+        let slug = parse_slug_param(&slug, "slug").ok()?;
+        load_song(slug).await
+    });
 
     view! {
         <section class="page">
-            <h1>"Song"</h1>
-            <p>"slug: " {slug}</p>
+            <h1>"Song Details"</h1>
+            {move || {
+                match parse_slug_param(&slug(), "slug") {
+                    Ok(value) => view! { <p class="muted">{format!("slug: {value}")}</p> }.into_any(),
+                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
+                }
+            }}
             <Suspense fallback=move || view! { <p class="muted">"Loading song..."</p> }>
                 {move || render(song.get().unwrap_or(None))}
             </Suspense>
@@ -2637,12 +2932,20 @@ pub fn guest_detail_page() -> impl IntoView {
     }
     };
 
-    let guest = Resource::new(slug, |slug: String| async move { load_guest(slug).await });
+    let guest = Resource::new(slug, |slug: String| async move {
+        let slug = parse_slug_param(&slug, "slug").ok()?;
+        load_guest(slug).await
+    });
 
     view! {
         <section class="page">
-            <h1>"Guest"</h1>
-            <p>"slug: " {slug}</p>
+            <h1>"Guest Details"</h1>
+            {move || {
+                match parse_slug_param(&slug(), "slug") {
+                    Ok(value) => view! { <p class="muted">{format!("slug: {value}")}</p> }.into_any(),
+                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
+                }
+            }}
             <Suspense fallback=move || view! { <p class="muted">"Loading guest..."</p> }>
                 {move || render(guest.get().unwrap_or(None))}
             </Suspense>
@@ -2672,9 +2975,15 @@ pub fn release_detail_page() -> impl IntoView {
     }
     };
 
-    let release = Resource::new(slug, |slug: String| async move { load_release(slug).await });
+    let release = Resource::new(slug, |slug: String| async move {
+        let slug = parse_slug_param(&slug, "slug").ok()?;
+        load_release(slug).await
+    });
     let tracks = Resource::new(slug, |slug: String| async move {
-        let release = load_release(slug).await;
+        let Some(parsed_slug) = parse_slug_param(&slug, "slug").ok() else {
+            return Some(Vec::new());
+        };
+        let release = load_release(parsed_slug).await;
         if let Some(release) = release {
             Some(load_release_tracks(release.id).await)
         } else {
@@ -2684,8 +2993,13 @@ pub fn release_detail_page() -> impl IntoView {
 
     view! {
         <section class="page">
-            <h1>"Release"</h1>
-            <p>"slug: " {slug}</p>
+            <h1>"Release Details"</h1>
+            {move || {
+                match parse_slug_param(&slug(), "slug") {
+                    Ok(value) => view! { <p class="muted">{format!("slug: {value}")}</p> }.into_any(),
+                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
+                }
+            }}
             <Suspense fallback=move || view! { <p class="muted">"Loading release..."</p> }>
                 {move || render(release.get().unwrap_or(None))}
             </Suspense>
@@ -2751,14 +3065,19 @@ pub fn tour_year_page() -> impl IntoView {
     };
 
     let tour = Resource::new(year, |year: String| async move {
-        let year = year.parse::<i32>().ok()?;
+        let year = parse_tour_year_param(&year).ok()?;
         load_tour(year).await
     });
 
     view! {
         <section class="page">
-            <h1>"Tour"</h1>
-            <p>"year: " {year}</p>
+            <h1>"Tour Details"</h1>
+            {move || {
+                match parse_tour_year_param(&year()) {
+                    Ok(value) => view! { <p class="muted">{format!("year: {value}")}</p> }.into_any(),
+                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
+                }
+            }}
             <Suspense fallback=move || view! { <p class="muted">"Loading tour..."</p> }>
                 {move || render(tour.get().unwrap_or(None))}
             </Suspense>
@@ -2787,14 +3106,19 @@ pub fn venue_detail_page() -> impl IntoView {
     };
 
     let venue = Resource::new(venue_id, |id: String| async move {
-        let id = id.parse::<i32>().ok()?;
+        let id = parse_positive_i32_param(&id, "venueId").ok()?;
         load_venue(id).await
     });
 
     view! {
         <section class="page">
-            <h1>"Venue"</h1>
-            <p>"venueId: " {venue_id}</p>
+            <h1>"Venue Details"</h1>
+            {move || {
+                match parse_positive_i32_param(&venue_id(), "venueId") {
+                    Ok(id) => view! { <p class="muted">{format!("venueId: {id}")}</p> }.into_any(),
+                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
+                }
+            }}
             <Suspense fallback=move || view! { <p class="muted">"Loading venue..."</p> }>
                 {move || render(venue.get().unwrap_or(None))}
             </Suspense>
@@ -3826,7 +4150,21 @@ pub fn not_found_page() -> impl IntoView {
     view! {
         <section class="page">
             <h1>"Not Found"</h1>
-            <p>"The page you requested was not found."</p>
+            <p>"That route does not exist in the Rust app."</p>
+            <div class="card-grid">
+                <a class="card card-link" href="/">
+                    <h2>"Return Home"</h2>
+                    <p class="muted">"Go back to the dashboard and continue browsing."</p>
+                </a>
+                <a class="card card-link" href="/shows">
+                    <h2>"Explore Shows"</h2>
+                    <p class="muted">"Jump to core browse pages."</p>
+                </a>
+                <a class="card card-link" href="/search">
+                    <h2>"Search"</h2>
+                    <p class="muted">"Find songs, venues, tours, and releases quickly."</p>
+                </a>
+            </div>
         </section>
     }
 }
@@ -4344,17 +4682,24 @@ pub fn visualizations_page() -> impl IntoView {
     view! {
         <section class="page">
             <h1>"Visualizations"</h1>
-            <p class="lead">"Interactive charts and story-driven views."</p>
-            <ul class="result-list">
-                <li class="result-card">
-                    <span class="result-label">"Show Density"</span>
-                    <span class="result-meta">"Heatmap coming soon"</span>
-                </li>
-                <li class="result-card">
-                    <span class="result-label">"Tour Timeline"</span>
-                    <span class="result-meta">"Scroll narrative in progress"</span>
-                </li>
-            </ul>
+            <p class="lead">"Live data visual summaries are available through Rust-native routes."</p>
+            <div class="card-grid">
+                <a class="card card-link" href="/stats">
+                    <h2>"Stats Dashboard"</h2>
+                    <p class="muted">"Shows by year, top songs, venues, guests, and era splits."</p>
+                </a>
+                <a class="card card-link" href="/liberation">
+                    <h2>"Liberation Trends"</h2>
+                    <p class="muted">"Longest gaps, recent liberations, and rarity context."</p>
+                </a>
+                <a class="card card-link" href="/shows">
+                    <h2>"Show Browser"</h2>
+                    <p class="muted">"Use date and venue metadata as a timeline-style exploration flow."</p>
+                </a>
+            </div>
+            <p class="muted">
+                "Additional dedicated visualization modules are being migrated to this route without changing route contracts."
+            </p>
         </section>
     }
 }
@@ -4380,6 +4725,8 @@ pub fn open_file_page() -> impl IntoView {
         <section class="page">
             <h1>"Open File"</h1>
             <p class="lead">"Import a JSON payload into your offline workspace."</p>
+            <h2>"Import File"</h2>
+            <p class="muted">"Choose a JSON export to inspect or load into local cache workflows."</p>
             <input type="file" accept=".json,.txt" on:change=on_select />
             {move || {
                 #[cfg(feature = "hydrate")]
@@ -4416,6 +4763,7 @@ pub fn protocol_page() -> impl IntoView {
         <section class="page">
             <h1>"Protocol Handler"</h1>
             <p class="lead">"Incoming deep links will surface here."</p>
+            <h2>"Incoming URL Payload"</h2>
             {move || {
                 #[cfg(feature = "hydrate")]
                 {
@@ -4464,5 +4812,200 @@ pub fn test_wasm_page() -> impl IntoView {
                 }
             }}
         </section>
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        normalize_guests, normalize_releases, normalize_show_summaries, normalize_songs,
+        normalize_tours, normalize_venues, ShowSummary,
+    };
+    use dmb_core::{Guest, Release, Song, Tour, Venue};
+
+    #[test]
+    fn normalize_show_summaries_sorts_by_date_desc_then_id() {
+        let input = vec![
+            ShowSummary {
+                id: 2,
+                date: "2024-07-10".to_string(),
+                year: 2024,
+                venue_id: 1,
+                venue_name: "B".to_string(),
+                venue_city: "x".to_string(),
+                venue_state: None,
+                tour_name: None,
+                tour_year: None,
+            },
+            ShowSummary {
+                id: 1,
+                date: "2024-07-10".to_string(),
+                year: 2024,
+                venue_id: 2,
+                venue_name: "A".to_string(),
+                venue_city: "y".to_string(),
+                venue_state: None,
+                tour_name: None,
+                tour_year: None,
+            },
+            ShowSummary {
+                id: 3,
+                date: "2023-08-01".to_string(),
+                year: 2023,
+                venue_id: 3,
+                venue_name: "C".to_string(),
+                venue_city: "z".to_string(),
+                venue_state: None,
+                tour_name: None,
+                tour_year: None,
+            },
+        ];
+        let out = normalize_show_summaries(input, 2);
+        assert_eq!(out.len(), 2);
+        assert_eq!(out[0].id, 2);
+        assert_eq!(out[1].id, 1);
+    }
+
+    #[test]
+    fn normalize_songs_sorts_by_performances_desc() {
+        let input = vec![
+            Song {
+                id: 1,
+                slug: "a".to_string(),
+                title: "A".to_string(),
+                sort_title: None,
+                total_performances: Some(10),
+                last_played_date: None,
+                is_liberated: None,
+                opener_count: None,
+                closer_count: None,
+                encore_count: None,
+                search_text: None,
+            },
+            Song {
+                id: 2,
+                slug: "b".to_string(),
+                title: "B".to_string(),
+                sort_title: None,
+                total_performances: Some(25),
+                last_played_date: None,
+                is_liberated: None,
+                opener_count: None,
+                closer_count: None,
+                encore_count: None,
+                search_text: None,
+            },
+        ];
+        let out = normalize_songs(input, 50);
+        assert_eq!(out[0].id, 2);
+        assert_eq!(out[1].id, 1);
+    }
+
+    #[test]
+    fn normalize_venues_and_guests_respect_limit() {
+        let venues = vec![
+            Venue {
+                id: 1,
+                name: "A".to_string(),
+                city: "x".to_string(),
+                state: None,
+                country: "US".to_string(),
+                country_code: None,
+                venue_type: None,
+                total_shows: Some(10),
+                search_text: None,
+            },
+            Venue {
+                id: 2,
+                name: "B".to_string(),
+                city: "x".to_string(),
+                state: None,
+                country: "US".to_string(),
+                country_code: None,
+                venue_type: None,
+                total_shows: Some(20),
+                search_text: None,
+            },
+        ];
+        let guests = vec![
+            Guest {
+                id: 1,
+                slug: "a".to_string(),
+                name: "A".to_string(),
+                total_appearances: Some(7),
+                search_text: None,
+            },
+            Guest {
+                id: 2,
+                slug: "b".to_string(),
+                name: "B".to_string(),
+                total_appearances: Some(11),
+                search_text: None,
+            },
+        ];
+        let venues_out = normalize_venues(venues, 1);
+        let guests_out = normalize_guests(guests, 1);
+        assert_eq!(venues_out.len(), 1);
+        assert_eq!(venues_out[0].id, 2);
+        assert_eq!(guests_out.len(), 1);
+        assert_eq!(guests_out[0].id, 2);
+    }
+
+    #[test]
+    fn normalize_tours_sorts_by_year_desc() {
+        let input = vec![
+            Tour {
+                id: 1,
+                year: 2023,
+                name: "Tour 2023".to_string(),
+                total_shows: Some(40),
+                search_text: None,
+            },
+            Tour {
+                id: 2,
+                year: 2024,
+                name: "Tour 2024".to_string(),
+                total_shows: Some(20),
+                search_text: None,
+            },
+        ];
+        let out = normalize_tours(input, 10);
+        assert_eq!(out[0].year, 2024);
+        assert_eq!(out[1].year, 2023);
+    }
+
+    #[test]
+    fn normalize_releases_sorts_by_release_date_desc() {
+        let input = vec![
+            Release {
+                id: 1,
+                title: "Older".to_string(),
+                slug: "older".to_string(),
+                release_type: None,
+                release_date: Some("2010-01-01".to_string()),
+                search_text: None,
+            },
+            Release {
+                id: 2,
+                title: "Newer".to_string(),
+                slug: "newer".to_string(),
+                release_type: None,
+                release_date: Some("2020-01-01".to_string()),
+                search_text: None,
+            },
+        ];
+        let out = normalize_releases(input, 10);
+        assert_eq!(out[0].id, 2);
+        assert_eq!(out[1].id, 1);
+    }
+
+    #[test]
+    fn normalize_helpers_handle_empty_input() {
+        assert!(normalize_show_summaries(Vec::new(), 10).is_empty());
+        assert!(normalize_songs(Vec::new(), 10).is_empty());
+        assert!(normalize_venues(Vec::new(), 10).is_empty());
+        assert!(normalize_guests(Vec::new(), 10).is_empty());
+        assert!(normalize_tours(Vec::new(), 10).is_empty());
+        assert!(normalize_releases(Vec::new(), 10).is_empty());
     }
 }

@@ -7,6 +7,7 @@ Use this page as the entry point for all repository documentation.
 - New to the project: `docs/guides/DMB_START_HERE.md`
 - Need full navigation: `docs/INDEX.md`
 - Need operational cutover steps: `docs/ops/CUTOVER_RUNBOOK.md`
+- Need manual keyboard a11y checks: `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md`
 - Need current repo state: `STATUS.md`
 - Need minimal context pack: `CONTEXT.md`
 

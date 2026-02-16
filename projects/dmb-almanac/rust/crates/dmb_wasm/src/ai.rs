@@ -22,7 +22,7 @@ pub fn cosine_similarity(a: Vec<f32>, b: Vec<f32>) -> f32 {
 
 #[wasm_bindgen]
 pub fn top_k_cosine(query: Vec<f32>, matrix: Vec<f32>, dim: usize, k: usize) -> JsValue {
-    if dim == 0 || query.len() != dim {
+    if dim == 0 || k == 0 || query.len() != dim {
         return serde_wasm_bindgen::to_value(&Vec::<ScoredIndex>::new())
             .unwrap_or_else(|_| js_sys::Array::new().into());
     }
@@ -35,9 +35,12 @@ pub fn top_k_cosine(query: Vec<f32>, matrix: Vec<f32>, dim: usize, k: usize) -> 
             break;
         }
         let score = dot(&query, &matrix[start..end]);
+        if !score.is_finite() {
+            continue;
+        }
         scored.push(ScoredIndex { index: idx, score });
     }
     scored.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(Ordering::Equal));
-    let top = scored.into_iter().take(k.max(1)).collect::<Vec<_>>();
+    let top = scored.into_iter().take(k).collect::<Vec<_>>();
     serde_wasm_bindgen::to_value(&top).unwrap_or_else(|_| js_sys::Array::new().into())
 }

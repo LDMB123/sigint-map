@@ -65,9 +65,9 @@ pub fn App() -> impl IntoView {
                 <main id="main-content" tabindex="-1" class="main">
                     <Routes fallback=|| pages::not_found_page().into_view()>
                         <Route path=path!("") view=pages::home_page />
-                        <Route path=path!("/about") view=|| pages::static_page("About") />
-                        <Route path=path!("/contact") view=|| pages::static_page("Contact") />
-                        <Route path=path!("/faq") view=|| pages::static_page("FAQ") />
+                        <Route path=path!("/about") view=pages::about_page />
+                        <Route path=path!("/contact") view=pages::contact_page />
+                        <Route path=path!("/faq") view=pages::faq_page />
                         <Route path=path!("/shows") view=pages::shows_page />
                         <Route path=path!("/shows/:showId") view=pages::show_detail_page />
                         <Route path=path!("/songs") view=pages::songs_page />
@@ -96,7 +96,7 @@ pub fn App() -> impl IntoView {
                         <Route path=path!("/ai-warmup") view=pages::ai_warmup_page />
                         <Route path=path!("/ai-smoke") view=pages::ai_smoke_page />
                         <Route path=path!("/visualizations") view=pages::visualizations_page />
-                        <Route path=path!("/offline") view=|| pages::static_page("Offline") />
+                        <Route path=path!("/offline") view=pages::offline_page />
                     </Routes>
                 </main>
                 <components::Footer />

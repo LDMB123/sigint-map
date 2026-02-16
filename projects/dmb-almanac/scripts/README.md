@@ -7,6 +7,7 @@
 | `scripts/cutover-rehearsal.sh` | Full local green gate (verify + data release + server + Rust E2E subset) | `bash scripts/cutover-rehearsal.sh` |
 | `scripts/cutover-remote-e2e.sh` | Run Rust E2E subset against an existing remote/staging server | `BASE_URL=https://env bash scripts/cutover-remote-e2e.sh` |
 | `scripts/deploy.sh` | Local deploy helper for Rust server | `bash scripts/deploy.sh local` |
+| `scripts/a11y-keyboard-spotcheck.sh` | Generate dated manual keyboard accessibility spot-check template | `bash scripts/a11y-keyboard-spotcheck.sh` |
 
 ## CI and Environment
 

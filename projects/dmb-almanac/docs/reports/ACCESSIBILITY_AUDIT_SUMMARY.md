@@ -4,8 +4,13 @@ This repo is currently Rust-first and local-only. Older accessibility audits tha
 
 ## Current Status
 
-- No up-to-date WCAG audit is captured here for the current Rust app.
-- When you are ready to publish beyond localhost, run an accessibility audit against the Rust app UI and replace this file with a real summary.
+- Automated SSR accessibility baseline now exists for top routes:
+  - `rust/crates/dmb_app/tests/a11y_routes.rs`
+- Manual keyboard-only spot-check runbook is available:
+  - `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md`
+- Spot-check report template generator is available:
+  - `scripts/a11y-keyboard-spotcheck.sh`
+- A full WCAG audit summary is still pending and should replace this placeholder summary before broad publish.
 
 ## Suggested Next Audit Inputs
 
