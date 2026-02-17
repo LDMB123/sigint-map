@@ -1,16 +1,16 @@
 import { test, expect } from '@playwright/test';
-
-const isRustE2E = process.env.RUST_E2E === 'true' || process.env.RUST_E2E === '1';
+import { gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
 
 test.describe('Rust offline seed import', () => {
-  test.skip(!isRustE2E, 'Set RUST_E2E=1 and BASE_URL to the Rust server.');
+  skipUnlessRust(test);
 
   test('reaches "Offline data ready" (import does not stall)', async ({ page }) => {
     test.setTimeout(180_000);
 
-    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await page.waitForLoadState('load');
-    await page.waitForFunction(() => window.__DMB_HYDRATED === true, { timeout: 30_000 });
+    await gotoHydrated(page, '/', {
+      gotoOptions: { waitUntil: 'domcontentloaded', timeout: 60_000 },
+      hydrationTimeout: 30_000,
+    });
 
     const statusRow = page.locator('.pwa-status .pwa-status__row').first();
     await expect(statusRow).toBeVisible({ timeout: 15_000 });

@@ -1191,8 +1191,16 @@ cfg_if::cfg_if! {
             Ok(metrics.into())
         }
     } else {
-        pub async fn open_db() -> Result<(), JsValue> {
+        fn idb_unavailable<T>() -> Result<T, JsValue> {
             Err(JsValue::from_str("IndexedDB not available on server"))
+        }
+
+        macro_rules! idb_stub {
+            ($name:ident ( $( $arg:ident : $arg_ty:ty ),* $(,)? ) -> $ret:ty) => {
+                pub async fn $name( $( $arg : $arg_ty ),* ) -> Result<$ret, JsValue> {
+                    idb_unavailable()
+                }
+            };
         }
 
         pub fn js_idb_runtime_metrics() -> std::result::Result<JsValue, JsValue> {
@@ -1201,188 +1209,59 @@ cfg_if::cfg_if! {
             ))
         }
 
-        pub async fn get_show(_id: i32) -> Result<Option<Show>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn get_song(_slug: &str) -> Result<Option<Song>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn get_song_by_id(_id: i32) -> Result<Option<Song>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn get_venue(_id: i32) -> Result<Option<Venue>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn get_tour(_year: i32) -> Result<Option<Tour>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn get_tour_by_id(_id: i32) -> Result<Option<Tour>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn search_global(_query: &str) -> Result<Vec<SearchResult>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn stats_top_songs(_limit: usize) -> Result<Vec<Song>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn stats_top_openers(_limit: usize) -> Result<Vec<Song>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn stats_top_closers(_limit: usize) -> Result<Vec<Song>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn stats_top_encores(_limit: usize) -> Result<Vec<Song>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_recent_shows(_limit: usize) -> Result<Vec<Show>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_top_venues(_limit: usize) -> Result<Vec<Venue>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_top_guests(_limit: usize) -> Result<Vec<Guest>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_recent_tours(_limit: usize) -> Result<Vec<Tour>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_recent_releases(_limit: usize) -> Result<Vec<Release>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_all_releases() -> Result<Vec<Release>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_setlist_entries(_show_id: i32) -> Result<Vec<SetlistEntry>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_release_tracks(_release_id: i32) -> Result<Vec<ReleaseTrack>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_liberation_entries(_limit: usize) -> Result<Vec<LiberationEntry>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_curated_lists() -> Result<Vec<CuratedList>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_curated_list_items(
-            _list_id: i32,
-            _limit: usize,
-        ) -> Result<Vec<CuratedListItem>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn list_user_attended_shows() -> Result<Vec<UserAttendedShow>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn add_user_attended_show(
-            _show_id: i32,
-            _show_date: Option<String>,
-        ) -> Result<(), JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn remove_user_attended_show(_show_id: i32) -> Result<(), JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn get_guest_by_slug(_slug: &str) -> Result<Option<Guest>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn get_release_by_slug(_slug: &str) -> Result<Option<Release>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn migrate_previous_db() -> Result<bool, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn bulk_put(_store_name: &str, _values: &[JsValue]) -> Result<u32, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
+        idb_stub!(open_db() -> ());
+        idb_stub!(get_show(_id: i32) -> Option<Show>);
+        idb_stub!(get_song(_slug: &str) -> Option<Song>);
+        idb_stub!(get_song_by_id(_id: i32) -> Option<Song>);
+        idb_stub!(get_venue(_id: i32) -> Option<Venue>);
+        idb_stub!(get_tour(_year: i32) -> Option<Tour>);
+        idb_stub!(get_tour_by_id(_id: i32) -> Option<Tour>);
+        idb_stub!(search_global(_query: &str) -> Vec<SearchResult>);
+        idb_stub!(stats_top_songs(_limit: usize) -> Vec<Song>);
+        idb_stub!(stats_top_openers(_limit: usize) -> Vec<Song>);
+        idb_stub!(stats_top_closers(_limit: usize) -> Vec<Song>);
+        idb_stub!(stats_top_encores(_limit: usize) -> Vec<Song>);
+        idb_stub!(list_recent_shows(_limit: usize) -> Vec<Show>);
+        idb_stub!(list_top_venues(_limit: usize) -> Vec<Venue>);
+        idb_stub!(list_top_guests(_limit: usize) -> Vec<Guest>);
+        idb_stub!(list_recent_tours(_limit: usize) -> Vec<Tour>);
+        idb_stub!(list_recent_releases(_limit: usize) -> Vec<Release>);
+        idb_stub!(list_all_releases() -> Vec<Release>);
+        idb_stub!(list_setlist_entries(_show_id: i32) -> Vec<SetlistEntry>);
+        idb_stub!(list_release_tracks(_release_id: i32) -> Vec<ReleaseTrack>);
+        idb_stub!(list_liberation_entries(_limit: usize) -> Vec<LiberationEntry>);
+        idb_stub!(list_curated_lists() -> Vec<CuratedList>);
+        idb_stub!(list_curated_list_items(_list_id: i32, _limit: usize) -> Vec<CuratedListItem>);
+        idb_stub!(list_user_attended_shows() -> Vec<UserAttendedShow>);
+        idb_stub!(add_user_attended_show(_show_id: i32, _show_date: Option<String>) -> ());
+        idb_stub!(remove_user_attended_show(_show_id: i32) -> ());
+        idb_stub!(get_guest_by_slug(_slug: &str) -> Option<Guest>);
+        idb_stub!(get_release_by_slug(_slug: &str) -> Option<Release>);
+        idb_stub!(migrate_previous_db() -> bool);
+        idb_stub!(bulk_put(_store_name: &str, _values: &[JsValue]) -> u32);
+        idb_stub!(delete_sync_meta(_id: &str) -> ());
+        idb_stub!(clear_store(_store_name: &str) -> ());
+        idb_stub!(store_embedding_chunk(_chunk: &EmbeddingChunk) -> ());
+        idb_stub!(get_embedding_chunk(_chunk_id: u32) -> Option<EmbeddingChunk>);
+        idb_stub!(store_embedding_manifest(_manifest: &EmbeddingManifest) -> ());
+        idb_stub!(get_embedding_manifest(_version: &str) -> Option<EmbeddingManifest>);
+        idb_stub!(store_ann_index(_meta: &AnnIndexMeta) -> ());
+        idb_stub!(get_ann_index(_id: &str) -> Option<AnnIndexMeta>);
+        idb_stub!(delete_ann_index(_id: &str) -> ());
+        idb_stub!(count_store(_store_name: &str) -> u32);
+        idb_stub!(count_stores_with_missing(_store_names: &[&str]) -> (Vec<(String, u32)>, Vec<String>));
+        idb_stub!(delete_db() -> ());
 
         pub async fn put_sync_meta<T: Serialize>(_value: &T) -> Result<(), JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
+            idb_unavailable()
         }
 
         pub async fn get_sync_meta<T: DeserializeOwned>(_id: &str) -> Result<Option<T>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn delete_sync_meta(_id: &str) -> Result<(), JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn clear_store(_store_name: &str) -> Result<(), JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn store_embedding_chunk(_chunk: &EmbeddingChunk) -> Result<(), JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn get_embedding_chunk(_chunk_id: u32) -> Result<Option<EmbeddingChunk>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn store_embedding_manifest(_manifest: &EmbeddingManifest) -> Result<(), JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn get_embedding_manifest(_version: &str) -> Result<Option<EmbeddingManifest>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn store_ann_index(_meta: &AnnIndexMeta) -> Result<(), JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn get_ann_index(_id: &str) -> Result<Option<AnnIndexMeta>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn delete_ann_index(_id: &str) -> Result<(), JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn count_store(_store_name: &str) -> Result<u32, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn count_stores_with_missing(
-            _store_names: &[&str],
-        ) -> Result<(Vec<(String, u32)>, Vec<String>), JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
+            idb_unavailable()
         }
 
         pub async fn list_all<T: serde::de::DeserializeOwned>(_store_name: &str) -> Result<Vec<T>, JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
-        }
-
-        pub async fn delete_db() -> Result<(), JsValue> {
-            Err(JsValue::from_str("IndexedDB not available on server"))
+            idb_unavailable()
         }
     }
 }

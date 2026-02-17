@@ -1,16 +1,13 @@
 import { test, expect } from "@playwright/test";
-
-const useRust = process.env.RUST_E2E === "true" || process.env.RUST_E2E === "1";
+import { gotoHydrated, skipUnlessRust } from "./_rust_test_utils.js";
 
 test.describe("Rust previous cache cleanup", () => {
-  test.skip(!useRust, "Rust E2E disabled (set RUST_E2E=1)");
+  skipUnlessRust(test, "Rust E2E disabled (set RUST_E2E=1)");
 
   test("removes old CacheStorage entries without deleting Rust caches", async ({
     page,
   }) => {
-    await page.goto("/");
-    await page.waitForLoadState("load");
-    await page.waitForFunction(() => window.__DMB_HYDRATED === true);
+    await gotoHydrated(page, "/");
 
     // Create old caches after the app is loaded so the test is deterministic.
     await page.evaluate(async () => {

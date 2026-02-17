@@ -1,9 +1,8 @@
 import { test, expect } from '@playwright/test';
-
-const isRustE2E = process.env.RUST_E2E === 'true' || process.env.RUST_E2E === '1';
+import { gotoHydrated, skipUnlessRust, waitForHydration } from './_rust_test_utils.js';
 
 test.describe('Rust service worker updates', () => {
-  test.skip(!isRustE2E, 'Set RUST_E2E=1 and BASE_URL to the Rust server.');
+  skipUnlessRust(test);
 
   async function waitForServiceWorker(page) {
     // The page must be loaded before this is called.
@@ -49,9 +48,7 @@ test.describe('Rust service worker updates', () => {
       localStorage.removeItem('pwa_sw_version');
     });
 
-    await page.goto('/');
-    await page.waitForLoadState('load');
-    await page.waitForFunction(() => window.__DMB_HYDRATED === true);
+    await gotoHydrated(page, '/');
 
     await waitForServiceWorker(page);
 
@@ -82,7 +79,7 @@ test.describe('Rust service worker updates', () => {
     );
     await page.reload();
     await page.waitForLoadState('load');
-    await page.waitForFunction(() => window.__DMB_HYDRATED === true);
+    await waitForHydration(page);
 
     await page.waitForFunction(
       (expected) => localStorage.getItem('pwa_sw_version') === expected,

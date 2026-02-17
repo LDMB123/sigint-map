@@ -1,9 +1,8 @@
 import { test, expect } from '@playwright/test';
-
-const useRust = process.env.RUST_E2E === 'true' || process.env.RUST_E2E === '1';
+import { gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
 
 test.describe('Rust IDB auto-repair', () => {
-  test.skip(!useRust, 'Rust E2E disabled (set RUST_E2E=1)');
+  skipUnlessRust(test, 'Rust E2E disabled (set RUST_E2E=1)');
 
   test('repairs when import marker exists but seed stores are missing', async ({ page }) => {
     // Create a "drifted" Rust DB: version matches, but required stores are missing.
@@ -61,9 +60,7 @@ test.describe('Rust IDB auto-repair', () => {
       });
     });
 
-    await page.goto('/');
-    await page.waitForLoadState('load');
-    await page.waitForFunction(() => window.__DMB_HYDRATED === true);
+    await gotoHydrated(page, '/');
 
     const statusRow = page.locator('.pwa-status .pwa-status__row').first();
 

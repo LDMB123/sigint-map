@@ -1,20 +1,13 @@
 import { test, expect } from '@playwright/test';
-
-const isRustE2E = process.env.RUST_E2E === 'true' || process.env.RUST_E2E === '1';
+import { gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
 
 test.describe('Rust AI pages', () => {
-    test.skip(!isRustE2E, 'Set RUST_E2E=1 and BASE_URL to the Rust server.');
+    skipUnlessRust(test);
     test.describe.configure({ mode: 'serial' });
     test.setTimeout(90_000);
 
-    async function waitForHydration(page) {
-        await page.waitForFunction(() => window.__DMB_HYDRATED === true, { timeout: 60_000 });
-    }
-
     test('AI diagnostics page renders', async ({ page }) => {
-        await page.goto('/ai-diagnostics');
-        await page.waitForLoadState('load');
-        await waitForHydration(page);
+        await gotoHydrated(page, '/ai-diagnostics', { hydrationTimeout: 60_000 });
         await page.waitForFunction(() => {
             const text = document.body.textContent || '';
             return /Capabilities/i.test(text) && /ANN Index/i.test(text) && /IVF Tuning/i.test(text);
@@ -29,9 +22,7 @@ test.describe('Rust AI pages', () => {
     });
 
     test('AI benchmark page renders', async ({ page }) => {
-        await page.goto('/ai-benchmark');
-        await page.waitForLoadState('load');
-        await waitForHydration(page);
+        await gotoHydrated(page, '/ai-benchmark');
 
         await expect(page.getByRole('heading', { level: 1, name: /AI Benchmark/i })).toBeVisible();
         await expect(page.getByRole('button', { name: /Run Benchmarks/i })).toBeVisible();
@@ -40,9 +31,7 @@ test.describe('Rust AI pages', () => {
     });
 
     test('AI warmup page renders', async ({ page }) => {
-        await page.goto('/ai-warmup');
-        await page.waitForLoadState('load');
-        await waitForHydration(page);
+        await gotoHydrated(page, '/ai-warmup');
 
         await expect(page.getByRole('heading', { level: 1, name: /AI Warmup/i })).toBeVisible();
     });
@@ -59,8 +48,7 @@ test.describe('Rust AI pages', () => {
             localStorage.setItem('dmb-embedding-sample', '1');
         });
 
-        await page.goto('/ai-diagnostics');
-        await waitForHydration(page);
+        await gotoHydrated(page, '/ai-diagnostics');
         await expect(page.getByRole('heading', { level: 1, name: /AI Diagnostics/i })).toBeVisible();
     });
 });

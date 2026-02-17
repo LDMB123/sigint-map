@@ -1,9 +1,8 @@
 import { test, expect } from '@playwright/test';
-
-const isRustE2E = process.env.RUST_E2E === 'true' || process.env.RUST_E2E === '1';
+import { gotoHydrated, skipUnlessRust, waitForHydration } from './_rust_test_utils.js';
 
 test.describe('Rust service worker updates (multi deploy)', () => {
-  test.skip(!isRustE2E, 'Set RUST_E2E=1 and BASE_URL to the Rust server.');
+  skipUnlessRust(test);
 
   async function waitForServiceWorker(page) {
     await page.waitForFunction(() => 'serviceWorker' in navigator, { timeout: 5000 });
@@ -44,9 +43,7 @@ test.describe('Rust service worker updates (multi deploy)', () => {
       localStorage.removeItem('pwa_sw_version');
     });
 
-    await page.goto('/');
-    await page.waitForLoadState('load');
-    await page.waitForFunction(() => window.__DMB_HYDRATED === true);
+    await gotoHydrated(page, '/');
 
     await waitForServiceWorker(page);
 
@@ -78,7 +75,7 @@ test.describe('Rust service worker updates (multi deploy)', () => {
     );
     await page.reload();
     await page.waitForLoadState('load');
-    await page.waitForFunction(() => window.__DMB_HYDRATED === true);
+    await waitForHydration(page);
     await page.waitForFunction((expected) => localStorage.getItem('pwa_sw_version') === expected, versions[0], {
       timeout: 60_000,
     });
@@ -113,7 +110,7 @@ test.describe('Rust service worker updates (multi deploy)', () => {
     );
     await page.reload();
     await page.waitForLoadState('load');
-    await page.waitForFunction(() => window.__DMB_HYDRATED === true);
+    await waitForHydration(page);
     await page.waitForFunction((expected) => localStorage.getItem('pwa_sw_version') === expected, versions[1], {
       timeout: 60_000,
     });

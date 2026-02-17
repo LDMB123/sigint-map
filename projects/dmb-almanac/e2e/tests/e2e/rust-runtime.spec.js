@@ -1,18 +1,11 @@
 import { test, expect } from '@playwright/test';
-
-const isRustE2E = process.env.RUST_E2E === 'true' || process.env.RUST_E2E === '1';
+import { gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
 
 test.describe('Rust runtime guardrails', () => {
-  test.skip(!isRustE2E, 'Set RUST_E2E=1 and BASE_URL to the Rust server.');
-
-  async function waitForHydration(page) {
-    await page.waitForFunction(() => window.__DMB_HYDRATED === true);
-  }
+  skipUnlessRust(test);
 
   test('cross-origin isolation enables threads', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('load');
-    await waitForHydration(page);
+    await gotoHydrated(page, '/');
 
     const isolated = await page.evaluate(() => window.crossOriginIsolated);
     expect(isolated).toBe(true);
@@ -24,9 +17,7 @@ test.describe('Rust runtime guardrails', () => {
   });
 
   test('offline seed status advances after hydration', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('load');
-    await waitForHydration(page);
+    await gotoHydrated(page, '/');
 
     const statusRow = page.locator('.pwa-status .pwa-status__row').first();
     await expect(statusRow).toHaveText(

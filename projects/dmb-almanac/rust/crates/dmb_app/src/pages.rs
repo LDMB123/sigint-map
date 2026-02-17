@@ -2107,11 +2107,17 @@ async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
         let shows =
             spawn_local_to_send(async move { dmb_idb::list_recent_shows(limit).await.ok() }).await;
         let Some(shows) = shows else {
-            return normalize_show_summaries(get_recent_shows(limit).await.unwrap_or_default(), limit);
+            return normalize_show_summaries(
+                get_recent_shows(limit).await.unwrap_or_default(),
+                limit,
+            );
         };
 
         if shows.is_empty() {
-            return normalize_show_summaries(get_recent_shows(limit).await.unwrap_or_default(), limit);
+            return normalize_show_summaries(
+                get_recent_shows(limit).await.unwrap_or_default(),
+                limit,
+            );
         }
 
         let mut venue_ids: HashSet<i32> = HashSet::new();
@@ -2184,161 +2190,308 @@ async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
     }
 }
 
+#[cfg(feature = "hydrate")]
+async fn load_hydrate_with_server_fallback_and_limit<T, IdbLoad, IdbFut, ServerLoad, ServerFut>(
+    limit: usize,
+    idb_loader: IdbLoad,
+    server_loader: ServerLoad,
+    normalize: fn(Vec<T>, usize) -> Vec<T>,
+) -> Vec<T>
+where
+    T: Send + 'static,
+    IdbLoad: FnOnce() -> IdbFut + Send + 'static,
+    IdbFut: std::future::Future<Output = Option<Vec<T>>> + 'static,
+    ServerLoad: FnOnce() -> ServerFut,
+    ServerFut: std::future::Future<Output = Vec<T>>,
+{
+    match spawn_local_to_send(idb_loader()).await {
+        Some(items) if !items.is_empty() => normalize(items, limit),
+        _ => normalize(server_loader().await, limit),
+    }
+}
+
+#[cfg(not(feature = "hydrate"))]
+async fn load_server_with_limit<T>(
+    limit: usize,
+    server_loader: impl std::future::Future<Output = Vec<T>>,
+    normalize: fn(Vec<T>, usize) -> Vec<T>,
+) -> Vec<T> {
+    normalize(server_loader.await, limit)
+}
+
+#[cfg(feature = "hydrate")]
+async fn load_hydrate_with_server_fallback<T, IdbLoad, IdbFut, ServerLoad, ServerFut>(
+    idb_loader: IdbLoad,
+    server_loader: ServerLoad,
+) -> Vec<T>
+where
+    T: Send + 'static,
+    IdbLoad: FnOnce() -> IdbFut + Send + 'static,
+    IdbFut: std::future::Future<Output = Option<Vec<T>>> + 'static,
+    ServerLoad: FnOnce() -> ServerFut,
+    ServerFut: std::future::Future<Output = Vec<T>>,
+{
+    let local_items = spawn_local_to_send(idb_loader()).await.unwrap_or_default();
+    if !local_items.is_empty() {
+        local_items
+    } else {
+        server_loader().await
+    }
+}
+
 async fn load_top_songs(limit: usize) -> Vec<Song> {
     #[cfg(feature = "hydrate")]
     {
-        let songs =
-            spawn_local_to_send(async move { dmb_idb::stats_top_songs(limit).await.ok() }).await;
-        match songs {
-            Some(items) if !items.is_empty() => normalize_songs(items, limit),
-            _ => normalize_songs(get_top_songs(limit).await.unwrap_or_default(), limit),
-        }
+        load_hydrate_with_server_fallback_and_limit(
+            limit,
+            move || async move { dmb_idb::stats_top_songs(limit).await.ok() },
+            move || async move { get_top_songs(limit).await.unwrap_or_default() },
+            normalize_songs,
+        )
+        .await
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
-        normalize_songs(get_top_songs(limit).await.unwrap_or_default(), limit)
+        load_server_with_limit(
+            limit,
+            async move { get_top_songs(limit).await.unwrap_or_default() },
+            normalize_songs,
+        )
+        .await
     }
 }
 
 async fn load_top_venues(limit: usize) -> Vec<Venue> {
     #[cfg(feature = "hydrate")]
     {
-        let venues =
-            spawn_local_to_send(async move { dmb_idb::list_top_venues(limit).await.ok() }).await;
-        match venues {
-            Some(items) if !items.is_empty() => normalize_venues(items, limit),
-            _ => normalize_venues(get_top_venues(limit).await.unwrap_or_default(), limit),
-        }
+        load_hydrate_with_server_fallback_and_limit(
+            limit,
+            move || async move { dmb_idb::list_top_venues(limit).await.ok() },
+            move || async move { get_top_venues(limit).await.unwrap_or_default() },
+            normalize_venues,
+        )
+        .await
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
-        normalize_venues(get_top_venues(limit).await.unwrap_or_default(), limit)
+        load_server_with_limit(
+            limit,
+            async move { get_top_venues(limit).await.unwrap_or_default() },
+            normalize_venues,
+        )
+        .await
     }
 }
 
 async fn load_top_guests(limit: usize) -> Vec<Guest> {
     #[cfg(feature = "hydrate")]
     {
-        let guests =
-            spawn_local_to_send(async move { dmb_idb::list_top_guests(limit).await.ok() }).await;
-        match guests {
-            Some(items) if !items.is_empty() => normalize_guests(items, limit),
-            _ => normalize_guests(get_top_guests(limit).await.unwrap_or_default(), limit),
-        }
+        load_hydrate_with_server_fallback_and_limit(
+            limit,
+            move || async move { dmb_idb::list_top_guests(limit).await.ok() },
+            move || async move { get_top_guests(limit).await.unwrap_or_default() },
+            normalize_guests,
+        )
+        .await
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
-        normalize_guests(get_top_guests(limit).await.unwrap_or_default(), limit)
+        load_server_with_limit(
+            limit,
+            async move { get_top_guests(limit).await.unwrap_or_default() },
+            normalize_guests,
+        )
+        .await
     }
 }
 
 async fn load_recent_tours(limit: usize) -> Vec<Tour> {
     #[cfg(feature = "hydrate")]
     {
-        let tours =
-            spawn_local_to_send(async move { dmb_idb::list_recent_tours(limit).await.ok() }).await;
-        match tours {
-            Some(items) if !items.is_empty() => normalize_tours(items, limit),
-            _ => normalize_tours(get_recent_tours(limit).await.unwrap_or_default(), limit),
-        }
+        load_hydrate_with_server_fallback_and_limit(
+            limit,
+            move || async move { dmb_idb::list_recent_tours(limit).await.ok() },
+            move || async move { get_recent_tours(limit).await.unwrap_or_default() },
+            normalize_tours,
+        )
+        .await
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
-        normalize_tours(get_recent_tours(limit).await.unwrap_or_default(), limit)
+        load_server_with_limit(
+            limit,
+            async move { get_recent_tours(limit).await.unwrap_or_default() },
+            normalize_tours,
+        )
+        .await
     }
 }
 
 async fn load_recent_releases(limit: usize) -> Vec<Release> {
     #[cfg(feature = "hydrate")]
     {
-        let releases =
-            spawn_local_to_send(async move { dmb_idb::list_recent_releases(limit).await.ok() })
-                .await;
-        match releases {
-            Some(items) if !items.is_empty() => normalize_releases(items, limit),
-            _ => normalize_releases(get_recent_releases(limit).await.unwrap_or_default(), limit),
-        }
+        load_hydrate_with_server_fallback_and_limit(
+            limit,
+            move || async move { dmb_idb::list_recent_releases(limit).await.ok() },
+            move || async move { get_recent_releases(limit).await.unwrap_or_default() },
+            normalize_releases,
+        )
+        .await
     }
 
     #[cfg(not(feature = "hydrate"))]
     {
-        normalize_releases(get_recent_releases(limit).await.unwrap_or_default(), limit)
-    }
-}
-
-#[cfg(feature = "hydrate")]
-async fn load_all_releases() -> Vec<Release> {
-    if let Ok(releases) = dmb_idb::list_all_releases().await {
-        if !releases.is_empty() {
-            return releases;
-        }
-    }
-    if let Ok(releases) = get_all_releases().await {
-        if !releases.is_empty() {
-            return releases;
-        }
-    }
-    get_recent_releases(200).await.unwrap_or_default()
-}
-
-#[cfg(feature = "hydrate")]
-async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
-    let tracks =
-        spawn_local_to_send(async move { dmb_idb::list_release_tracks(_release_id).await.ok() })
-            .await
-            .unwrap_or_default();
-    if !tracks.is_empty() {
-        return tracks;
-    }
-    get_release_tracks(_release_id).await.unwrap_or_default()
-}
-
-#[cfg(feature = "hydrate")]
-async fn load_setlist_entries(_show_id: i32) -> Vec<SetlistEntry> {
-    let entries =
-        spawn_local_to_send(async move { dmb_idb::list_setlist_entries(_show_id).await.ok() })
-            .await
-            .unwrap_or_default();
-    if !entries.is_empty() {
-        return entries;
-    }
-    get_setlist_entries(_show_id).await.unwrap_or_default()
-}
-
-#[cfg(feature = "hydrate")]
-async fn load_liberation_list(_limit: usize) -> Vec<LiberationEntry> {
-    if let Ok(entries) = dmb_idb::list_liberation_entries(_limit).await {
-        if !entries.is_empty() {
-            return entries;
-        }
-    }
-    get_liberation_list(_limit as i32).await.unwrap_or_default()
-}
-
-#[cfg(feature = "hydrate")]
-async fn load_curated_lists() -> Vec<CuratedList> {
-    if let Ok(lists) = dmb_idb::list_curated_lists().await {
-        if !lists.is_empty() {
-            return lists;
-        }
-    }
-    get_curated_lists().await.unwrap_or_default()
-}
-
-#[cfg(feature = "hydrate")]
-async fn load_curated_list_items(_list_id: i32, _limit: usize) -> Vec<CuratedListItem> {
-    if let Ok(items) = dmb_idb::list_curated_list_items(_list_id, _limit).await {
-        if !items.is_empty() {
-            return items;
-        }
-    }
-    get_curated_list_items(_list_id, _limit as i32)
+        load_server_with_limit(
+            limit,
+            async move { get_recent_releases(limit).await.unwrap_or_default() },
+            normalize_releases,
+        )
         .await
-        .unwrap_or_default()
+    }
+}
+
+async fn load_all_releases() -> Vec<Release> {
+    #[cfg(feature = "hydrate")]
+    {
+        let releases = load_hydrate_with_server_fallback(
+            move || async move { dmb_idb::list_all_releases().await.ok() },
+            move || async move { get_all_releases().await.unwrap_or_default() },
+        )
+        .await;
+        if !releases.is_empty() {
+            return releases;
+        }
+        get_recent_releases(200).await.unwrap_or_default()
+    }
+
+    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
+    {
+        get_all_releases().await.unwrap_or_default()
+    }
+
+    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
+    {
+        Vec::new()
+    }
+}
+
+async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
+    #[cfg(feature = "hydrate")]
+    {
+        load_hydrate_with_server_fallback(
+            move || async move { dmb_idb::list_release_tracks(_release_id).await.ok() },
+            move || async move { get_release_tracks(_release_id).await.unwrap_or_default() },
+        )
+        .await
+    }
+
+    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
+    {
+        get_release_tracks(_release_id).await.unwrap_or_default()
+    }
+
+    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
+    {
+        Vec::new()
+    }
+}
+
+async fn load_setlist_entries(_show_id: i32) -> Vec<SetlistEntry> {
+    #[cfg(feature = "hydrate")]
+    {
+        load_hydrate_with_server_fallback(
+            move || async move { dmb_idb::list_setlist_entries(_show_id).await.ok() },
+            move || async move { get_setlist_entries(_show_id).await.unwrap_or_default() },
+        )
+        .await
+    }
+
+    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
+    {
+        get_setlist_entries(_show_id).await.unwrap_or_default()
+    }
+
+    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
+    {
+        Vec::new()
+    }
+}
+
+async fn load_liberation_list(_limit: usize) -> Vec<LiberationEntry> {
+    #[cfg(feature = "hydrate")]
+    {
+        load_hydrate_with_server_fallback(
+            move || async move { dmb_idb::list_liberation_entries(_limit).await.ok() },
+            move || async move { get_liberation_list(_limit as i32).await.unwrap_or_default() },
+        )
+        .await
+    }
+
+    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
+    {
+        get_liberation_list(_limit as i32).await.unwrap_or_default()
+    }
+
+    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
+    {
+        Vec::new()
+    }
+}
+
+async fn load_curated_lists() -> Vec<CuratedList> {
+    #[cfg(feature = "hydrate")]
+    {
+        load_hydrate_with_server_fallback(
+            move || async move { dmb_idb::list_curated_lists().await.ok() },
+            move || async move { get_curated_lists().await.unwrap_or_default() },
+        )
+        .await
+    }
+
+    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
+    {
+        get_curated_lists().await.unwrap_or_default()
+    }
+
+    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
+    {
+        Vec::new()
+    }
+}
+
+async fn load_curated_list_items(_list_id: i32, _limit: usize) -> Vec<CuratedListItem> {
+    #[cfg(feature = "hydrate")]
+    {
+        load_hydrate_with_server_fallback(
+            move || async move {
+                dmb_idb::list_curated_list_items(_list_id, _limit)
+                    .await
+                    .ok()
+            },
+            move || async move {
+                get_curated_list_items(_list_id, _limit as i32)
+                    .await
+                    .unwrap_or_default()
+            },
+        )
+        .await
+    }
+
+    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
+    {
+        get_curated_list_items(_list_id, _limit as i32)
+            .await
+            .unwrap_or_default()
+    }
+
+    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
+    {
+        Vec::new()
+    }
 }
 
 #[cfg(feature = "hydrate")]
@@ -2359,68 +2512,6 @@ async fn add_user_attended_show(show_id: i32, show_date: Option<String>) -> bool
 #[cfg(feature = "hydrate")]
 async fn remove_user_attended_show(show_id: i32) -> bool {
     dmb_idb::remove_user_attended_show(show_id).await.is_ok()
-}
-
-#[cfg(feature = "ssr")]
-async fn load_all_releases() -> Vec<Release> {
-    get_all_releases().await.unwrap_or_default()
-}
-
-#[cfg(feature = "ssr")]
-async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
-    get_release_tracks(_release_id).await.unwrap_or_default()
-}
-
-#[cfg(feature = "ssr")]
-async fn load_setlist_entries(_show_id: i32) -> Vec<SetlistEntry> {
-    get_setlist_entries(_show_id).await.unwrap_or_default()
-}
-
-#[cfg(feature = "ssr")]
-async fn load_liberation_list(_limit: usize) -> Vec<LiberationEntry> {
-    get_liberation_list(_limit as i32).await.unwrap_or_default()
-}
-
-#[cfg(feature = "ssr")]
-async fn load_curated_lists() -> Vec<CuratedList> {
-    get_curated_lists().await.unwrap_or_default()
-}
-
-#[cfg(feature = "ssr")]
-async fn load_curated_list_items(_list_id: i32, _limit: usize) -> Vec<CuratedListItem> {
-    get_curated_list_items(_list_id, _limit as i32)
-        .await
-        .unwrap_or_default()
-}
-
-#[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-async fn load_all_releases() -> Vec<Release> {
-    Vec::new()
-}
-
-#[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
-    Vec::new()
-}
-
-#[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-async fn load_setlist_entries(_show_id: i32) -> Vec<SetlistEntry> {
-    Vec::new()
-}
-
-#[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-async fn load_liberation_list(_limit: usize) -> Vec<LiberationEntry> {
-    Vec::new()
-}
-
-#[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-async fn load_curated_lists() -> Vec<CuratedList> {
-    Vec::new()
-}
-
-#[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-async fn load_curated_list_items(_list_id: i32, _limit: usize) -> Vec<CuratedListItem> {
-    Vec::new()
 }
 
 fn format_location(city: &str, state: &Option<String>) -> String {
