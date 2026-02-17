@@ -209,6 +209,14 @@ fn empty_state_with_link(
     }
 }
 
+fn detail_nav(href: &'static str, label: &'static str) -> impl IntoView {
+    view! {
+        <p class="detail-nav">
+            <a class="detail-nav__link" href=href>{label}</a>
+        </p>
+    }
+}
+
 pub fn about_page() -> impl IntoView {
     view! {
         <section class="page">
@@ -3007,6 +3015,7 @@ pub fn show_detail_page() -> impl IntoView {
 
     view! {
         <section class="page">
+            {detail_nav("/shows", "Back to shows")}
             <h1>"Show Details"</h1>
             {move || {
                 match parse_positive_i32_param(&show_id(), "showId") {
@@ -3096,6 +3105,7 @@ pub fn song_detail_page() -> impl IntoView {
 
     view! {
         <section class="page">
+            {detail_nav("/songs", "Back to songs")}
             <h1>"Song Details"</h1>
             {move || {
                 match parse_slug_param(&slug(), "slug") {
@@ -3141,6 +3151,7 @@ pub fn guest_detail_page() -> impl IntoView {
 
     view! {
         <section class="page">
+            {detail_nav("/guests", "Back to guests")}
             <h1>"Guest Details"</h1>
             {move || {
                 match parse_slug_param(&slug(), "slug") {
@@ -3198,6 +3209,7 @@ pub fn release_detail_page() -> impl IntoView {
 
     view! {
         <section class="page">
+            {detail_nav("/releases", "Back to releases")}
             <h1>"Release Details"</h1>
             {move || {
                 match parse_slug_param(&slug(), "slug") {
@@ -3279,6 +3291,7 @@ pub fn tour_year_page() -> impl IntoView {
 
     view! {
         <section class="page">
+            {detail_nav("/tours", "Back to tours")}
             <h1>"Tour Details"</h1>
             {move || {
                 match parse_tour_year_param(&year()) {
@@ -3321,6 +3334,7 @@ pub fn venue_detail_page() -> impl IntoView {
 
     view! {
         <section class="page">
+            {detail_nav("/venues", "Back to venues")}
             <h1>"Venue Details"</h1>
             {move || {
                 match parse_positive_i32_param(&venue_id(), "venueId") {

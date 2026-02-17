@@ -209,6 +209,17 @@
       background var(--transition-fast);
   }
 
+  .nav-more__summary::after {
+    content: "▾";
+    margin-left: 0.4rem;
+    font-size: 0.72rem;
+    transition: transform var(--transition-fast);
+  }
+
+  .nav-more[open] .nav-more__summary::after {
+    transform: rotate(180deg);
+  }
+
   .nav-more__summary::-webkit-details-marker {
     display: none;
   }
@@ -261,10 +272,22 @@
     box-shadow: var(--shadow);
     content-visibility: auto;
     contain: layout paint style;
+    animation: page-enter 280ms ease-out;
 
     h1 {
       font-size: clamp(2rem, 4vw, 3.2rem);
       margin-bottom: 1rem;
+    }
+  }
+
+  @keyframes page-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 
@@ -285,6 +308,29 @@
     text-transform: uppercase;
   }
 
+  .detail-nav {
+    margin-bottom: 0.8rem;
+  }
+
+  .detail-nav__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+  }
+
+  .detail-nav__link::before {
+    content: "\2190";
+    color: var(--accent);
+    font-size: 0.95rem;
+  }
+
+  .detail-nav__link:hover {
+    color: var(--text);
+  }
+
   .list-summary {
     margin-top: 1rem;
     color: var(--text-muted);
@@ -301,6 +347,7 @@
     background: color-mix(in srgb, var(--panel-bg) 90%, transparent);
     display: grid;
     gap: 0.35rem;
+    box-shadow: 0 8px 18px rgba(10, 18, 38, 0.24);
   }
 
   .status-card--loading {
@@ -412,6 +459,27 @@
     gap: 0.75rem;
     align-items: start;
     padding: 0.85rem 1rem;
+    transition: border-color var(--transition-fast), transform var(--transition-fast),
+      background var(--transition-fast);
+    animation: card-enter 240ms ease-out;
+  }
+
+  @keyframes card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .result-card:hover,
+  .result-card:focus-within {
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    background: color-mix(in srgb, var(--accent) 7%, var(--panel-bg));
+    transform: translateY(-1px);
   }
 
   .result-body {
@@ -634,10 +702,19 @@
     border-radius: 1rem;
     padding: 1rem 1.25rem;
     border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+    transition: border-color var(--transition-fast), transform var(--transition-fast),
+      background var(--transition-fast);
 
     h2 {
       margin-bottom: 0.5rem;
     }
+  }
+
+  .card-link:hover .card,
+  .card-link:focus-visible .card {
+    border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    transform: translateY(-1px);
   }
 
   .card-link {
@@ -653,11 +730,35 @@
   }
 
   .pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    line-height: 1.2;
     border-radius: 999px;
     padding: 0.15rem 0.5rem;
     background: color-mix(in srgb, var(--accent) 25%, transparent);
     border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
     font-weight: 600;
+  }
+
+  button.pill {
+    appearance: none;
+    cursor: pointer;
+    transition: transform var(--transition-fast), border-color var(--transition-fast),
+      background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
+  }
+
+  button.pill:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+    background: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+
+  button.pill:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
   }
 
   .pill--ghost {
@@ -666,8 +767,15 @@
     color: var(--text-muted);
   }
 
+  button.pill--ghost:hover:not(:disabled) {
+    color: var(--text);
+    background: color-mix(in srgb, var(--surface) 75%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+
   .pill-row {
     gap: 0.5rem;
+    align-items: center;
   }
 
   .assistant-search {
@@ -840,6 +948,23 @@
 
     .setlist-slot {
       grid-column: 2;
+    }
+
+    .detail-grid div {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+
+    .stats-tabs {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      padding-bottom: 0.65rem;
+      scrollbar-width: thin;
+    }
+
+    .stats-tabs button {
+      flex: 0 0 auto;
     }
 
     .pwa-status {
