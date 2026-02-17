@@ -1997,7 +1997,10 @@ pub fn PwaStatus() -> impl IntoView {
 
 #[cfg(test)]
 mod tests {
-    use super::{e2e_version_from_sw_script_url, remaining_snooze_ms, should_suppress_update_notice, UPDATE_SNOOZE_MS};
+    use super::{
+        e2e_version_from_sw_script_url, remaining_snooze_ms, should_suppress_update_notice,
+        UPDATE_SNOOZE_MS,
+    };
 
     #[test]
     fn suppress_update_notice_within_snooze_window() {

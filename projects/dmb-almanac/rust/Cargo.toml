@@ -1,8 +1,5 @@
 [workspace]
 members = [
-  "aggregations",
-  "transforms",
-  "wasm-core",
   "crates/dmb_core",
   "crates/dmb_idb",
   "crates/dmb_wasm",
