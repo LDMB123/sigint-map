@@ -280,6 +280,20 @@
     }
   }
 
+  .page > h2 {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    font-size: clamp(1.25rem, 2.6vw, 1.75rem);
+    letter-spacing: 0.01em;
+  }
+
+  .page > h3 {
+    margin-top: 1.35rem;
+    margin-bottom: 0.55rem;
+    font-size: clamp(1.05rem, 2.1vw, 1.35rem);
+    letter-spacing: 0.01em;
+  }
+
   @keyframes page-enter {
     from {
       opacity: 0;
@@ -368,6 +382,18 @@
     border: var(--panel-border);
     background: var(--panel-bg);
     color: var(--text);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
+      background var(--transition-fast);
+  }
+
+  :is(.search-input, .input)::placeholder {
+    color: color-mix(in srgb, var(--text-muted) 82%, transparent);
+  }
+
+  :is(.search-input, .input):focus {
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
   }
 
   .search-input {
@@ -437,6 +463,11 @@
 
   .stack {
     gap: 0.5rem;
+  }
+
+  .card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    align-items: stretch;
   }
 
   .list {
@@ -547,6 +578,11 @@
     gap: 1rem;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     margin-top: 2rem;
+  }
+
+  .stats-panel {
+    display: grid;
+    gap: 0.9rem;
   }
 
   .stat-card {
@@ -797,6 +833,7 @@
       margin: 1.5rem 0;
       border-bottom: var(--panel-border);
       padding-bottom: 0.5rem;
+      scroll-snap-type: x proximity;
     }
 
     button {
@@ -819,6 +856,8 @@
         color: var(--on-accent, #fff);
         border-color: var(--accent);
       }
+
+      scroll-snap-align: start;
     }
   }
 
@@ -850,6 +889,11 @@
       &:hover {
         text-decoration: underline;
       }
+    }
+
+    tbody tr:hover,
+    tbody tr:focus-within {
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
     }
   }
 

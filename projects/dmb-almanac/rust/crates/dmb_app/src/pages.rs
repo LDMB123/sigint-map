@@ -106,7 +106,7 @@ pub fn home_page() -> impl IntoView {
                     })
                 })
             }}
-            <Suspense fallback=move || view! { <p class="muted">"Loading stats..."</p> }>
+            <Suspense fallback=move || loading_state("Loading stats", "Fetching homepage totals.")>
                 {move || match stats.get() {
                     Some(Some(stats)) => view! {
                         <div class="stats-grid">
@@ -124,11 +124,13 @@ pub fn home_page() -> impl IntoView {
                             </div>
                         </div>
                     }.into_any(),
-                    Some(None) => view! {
-                        <div class="stats-grid">
-                            <p class="muted">"Stats unavailable."</p>
-                        </div>
-                    }.into_any(),
+                    Some(None) => {
+                        empty_state(
+                            "Stats unavailable",
+                            "Homepage metrics could not be loaded right now.",
+                        )
+                        .into_any()
+                    }
                     None => view! { <div class="stats-grid"></div> }.into_any(),
                 }}
             </Suspense>
@@ -3456,7 +3458,8 @@ pub fn search_page() -> impl IntoView {
             />
             {move || {
                 let items = results.get();
-                if items.is_empty() && !query.get().is_empty() {
+                let current_query = query.get();
+                if items.is_empty() && !current_query.is_empty() {
                     empty_state(
                         "No results",
                         "Try a different query or shorter phrase.",
@@ -3469,32 +3472,36 @@ pub fn search_page() -> impl IntoView {
                     )
                     .into_any()
                 } else {
+                    let count = items.len();
                     view! {
-                        <ul class="result-list">
-                            {items
-                                .into_iter()
-                                .map(|item| {
-                                    let label = item.label.clone();
-                                    let kind = item.result_type.clone();
-                                    let href = search_result_href(&item);
-                                    view! {
-                                        <li class="result-card">
-                                            <span class="pill">{kind}</span>
-                                            <div class="result-body">
-                                                {move || match &href {
-                                                    Some(link) => view! {
-                                                        <a class="result-label" href=link.clone()>{label.clone()}</a>
-                                                    }
-                                                    .into_any(),
-                                                    None => view! { <span class="result-label">{label.clone()}</span> }.into_any(),
-                                                }}
-                                            </div>
-                                            <span class="result-score">{format!("{:.2}", item.score)}</span>
-                                        </li>
-                                    }
-                                })
-                                .collect::<Vec<_>>()}
-                        </ul>
+                        <>
+                            <p class="list-summary">{format!("Showing {count} results for \"{current_query}\"")}</p>
+                            <ul class="result-list">
+                                {items
+                                    .into_iter()
+                                    .map(|item| {
+                                        let label = item.label.clone();
+                                        let kind = item.result_type.clone();
+                                        let href = search_result_href(&item);
+                                        view! {
+                                            <li class="result-card">
+                                                <span class="pill">{kind}</span>
+                                                <div class="result-body">
+                                                    {move || match &href {
+                                                        Some(link) => view! {
+                                                            <a class="result-label" href=link.clone()>{label.clone()}</a>
+                                                        }
+                                                        .into_any(),
+                                                        None => view! { <span class="result-label">{label.clone()}</span> }.into_any(),
+                                                    }}
+                                                </div>
+                                                <span class="result-score">{format!("{:.2}", item.score)}</span>
+                                            </li>
+                                        }
+                                    })
+                                    .collect::<Vec<_>>()}
+                            </ul>
+                        </>
                     }
                     .into_any()
                 }
@@ -3903,13 +3910,14 @@ pub fn stats_page() -> impl IntoView {
 
             // Tab 0: Overview
             <div
+                class="stats-panel"
                 id="stats-panel-0"
                 role="tabpanel"
                 aria-labelledby="stats-tab-0"
                 hidden=move || active_tab.get() != 0
                 style:display=move || if active_tab.get() == 0 { "block" } else { "none" }
             >
-                <Suspense fallback=move || view! { <p class="muted">"Loading overview..."</p> }>
+                <Suspense fallback=move || loading_state("Loading overview", "Crunching summary aggregates.")>
                     {move || {
                         let data = overview.get().unwrap_or_default();
                         view! {
@@ -3953,13 +3961,14 @@ pub fn stats_page() -> impl IntoView {
 
             // Tab 1: Songs
             <div
+                class="stats-panel"
                 id="stats-panel-1"
                 role="tabpanel"
                 aria-labelledby="stats-tab-1"
                 hidden=move || active_tab.get() != 1
                 style:display=move || if active_tab.get() == 1 { "block" } else { "none" }
             >
-                <Suspense fallback=move || view! { <p class="muted">"Loading songs stats..."</p> }>
+                <Suspense fallback=move || loading_state("Loading songs stats", "Computing song rankings.")>
                     {move || {
                         let data = songs.get().unwrap_or_default();
                         view! {
@@ -3984,13 +3993,14 @@ pub fn stats_page() -> impl IntoView {
 
             // Tab 2: Shows & Tours
             <div
+                class="stats-panel"
                 id="stats-panel-2"
                 role="tabpanel"
                 aria-labelledby="stats-tab-2"
                 hidden=move || active_tab.get() != 2
                 style:display=move || if active_tab.get() == 2 { "block" } else { "none" }
             >
-                <Suspense fallback=move || view! { <p class="muted">"Loading shows stats..."</p> }>
+                <Suspense fallback=move || loading_state("Loading shows stats", "Computing show and rarity metrics.")>
                     {move || {
                         let data = shows.get().unwrap_or_default();
                         view! {
@@ -4064,13 +4074,14 @@ pub fn stats_page() -> impl IntoView {
 
             // Tab 3: Venues
             <div
+                class="stats-panel"
                 id="stats-panel-3"
                 role="tabpanel"
                 aria-labelledby="stats-tab-3"
                 hidden=move || active_tab.get() != 3
                 style:display=move || if active_tab.get() == 3 { "block" } else { "none" }
             >
-                <Suspense fallback=move || view! { <p class="muted">"Loading venue stats..."</p> }>
+                <Suspense fallback=move || loading_state("Loading venue stats", "Computing venue distributions.")>
                     {move || {
                         let data = venues.get().unwrap_or_default();
                         view! {
@@ -4109,13 +4120,14 @@ pub fn stats_page() -> impl IntoView {
 
             // Tab 4: Guests
             <div
+                class="stats-panel"
                 id="stats-panel-4"
                 role="tabpanel"
                 aria-labelledby="stats-tab-4"
                 hidden=move || active_tab.get() != 4
                 style:display=move || if active_tab.get() == 4 { "block" } else { "none" }
             >
-                <Suspense fallback=move || view! { <p class="muted">"Loading guest stats..."</p> }>
+                <Suspense fallback=move || loading_state("Loading guest stats", "Computing guest appearance metrics.")>
                     {move || {
                         let data = guests.get().unwrap_or_default();
                         view! {
@@ -4155,7 +4167,11 @@ pub fn stats_page() -> impl IntoView {
 
 fn render_song_table(songs: &[Song], show_total: bool) -> impl IntoView {
     if songs.is_empty() {
-        return view! { <p class="muted">"No data available."</p> }.into_any();
+        return empty_state(
+            "No data available",
+            "There are no rows for this ranking yet.",
+        )
+        .into_any();
     }
     let table_label = if show_total {
         "Song ranking by total performances"
@@ -4203,7 +4219,11 @@ fn render_song_table(songs: &[Song], show_total: bool) -> impl IntoView {
 
 fn render_song_ranking(songs: &[Song], count_fn: fn(&Song) -> i32) -> impl IntoView {
     if songs.is_empty() {
-        return view! { <p class="muted">"No data available."</p> }.into_any();
+        return empty_state(
+            "No data available",
+            "There are no rows for this ranking yet.",
+        )
+        .into_any();
     }
     view! {
         <ul class="result-list">
@@ -4229,7 +4249,11 @@ fn render_song_ranking(songs: &[Song], count_fn: fn(&Song) -> i32) -> impl IntoV
 
 fn render_bar_chart(data: &[(u32, u32)]) -> impl IntoView {
     if data.is_empty() {
-        return view! { <p class="muted">"No data available."</p> }.into_any();
+        return empty_state(
+            "No chart data",
+            "This aggregation did not return any values.",
+        )
+        .into_any();
     }
     let max_val = data.iter().map(|&(_, v)| v).max().unwrap_or(1) as f64;
     view! {
@@ -4259,7 +4283,11 @@ fn render_bar_chart(data: &[(u32, u32)]) -> impl IntoView {
 
 fn render_string_bar_chart(data: &[(String, u32)], limit: usize) -> impl IntoView {
     if data.is_empty() {
-        return view! { <p class="muted">"No data available."</p> }.into_any();
+        return empty_state(
+            "No chart data",
+            "This aggregation did not return any values.",
+        )
+        .into_any();
     }
     let items: Vec<_> = data.iter().take(limit).collect();
     let max_val = items.iter().map(|(_, v)| *v).max().unwrap_or(1) as f64;
