@@ -353,6 +353,24 @@
     text-transform: uppercase;
   }
 
+  .result-filters {
+    margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+  }
+
+  .result-filter {
+    min-height: 1.95rem;
+  }
+
+  .result-filter--active {
+    color: var(--text);
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+
   .status-card {
     margin-top: 1rem;
     padding: 1rem 1.1rem;
@@ -571,6 +589,7 @@
     justify-self: end;
     text-align: right;
     line-height: 1.25;
+    min-width: 68px;
   }
 
   .stats-grid {
@@ -583,6 +602,34 @@
   .stats-panel {
     display: grid;
     gap: 0.9rem;
+    container-type: inline-size;
+  }
+
+  .stats-panel > h2 {
+    margin-top: 1.7rem;
+    margin-bottom: 0.35rem;
+    padding-top: 0.9rem;
+    border-top: var(--panel-border);
+    font-size: clamp(1.2rem, 2.4vw, 1.6rem);
+  }
+
+  .stats-panel > h2:first-child {
+    margin-top: 0.15rem;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .stats-panel > :is(.status-card, .stats-grid, .result-list, .bar-chart, .stats-table-wrap) {
+    margin-top: 0.35rem;
+  }
+
+  .stats-table-wrap {
+    overflow-x: auto;
+    border-radius: var(--radius-sm);
+    border: var(--panel-border);
+    background: color-mix(in srgb, var(--panel-bg) 80%, transparent);
+    padding: 0.15rem 0.45rem;
+    scrollbar-width: thin;
   }
 
   .stat-card {
@@ -865,8 +912,9 @@
     :scope {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 1rem;
+      margin-top: 0.4rem;
       font-variant-numeric: tabular-nums;
+      min-width: 420px;
     }
 
     :is(th, td) {
@@ -909,6 +957,9 @@
     color: var(--text-muted);
     text-align: right;
     font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .bar {
@@ -983,6 +1034,9 @@
 
     .result-score {
       grid-column: 2;
+      justify-self: start;
+      text-align: left;
+      min-width: 0;
     }
 
     :is(.setlist-item, .tracklist-item) {
@@ -1008,6 +1062,17 @@
     }
 
     .stats-tabs button {
+      flex: 0 0 auto;
+    }
+
+    .result-filters {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 0.35rem;
+      scrollbar-width: thin;
+    }
+
+    .result-filter {
       flex: 0 0 auto;
     }
 

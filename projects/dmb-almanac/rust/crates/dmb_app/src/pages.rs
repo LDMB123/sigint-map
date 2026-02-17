@@ -3412,6 +3412,7 @@ fn merge_search_results(
 
 pub fn search_page() -> impl IntoView {
     let (query, set_query) = signal(String::new());
+    let (active_filter, set_active_filter) = signal(String::from("all"));
     let results = RwSignal::new(Vec::<dmb_core::SearchResult>::new());
 
     #[cfg(feature = "hydrate")]
@@ -3454,7 +3455,13 @@ pub fn search_page() -> impl IntoView {
                 type="search"
                 placeholder="Search songs, shows, venues..."
                 prop:value=move || query.get()
-                on:input=move |ev| set_query.set(event_target_value(&ev))
+                on:input=move |ev| {
+                    let next = event_target_value(&ev);
+                    if next.trim().is_empty() {
+                        set_active_filter.set("all".to_string());
+                    }
+                    set_query.set(next);
+                }
             />
             {move || {
                 let items = results.get();
@@ -3472,35 +3479,153 @@ pub fn search_page() -> impl IntoView {
                     )
                     .into_any()
                 } else {
-                    let count = items.len();
+                    let all_count = items.len();
+                    let song_count = items.iter().filter(|item| item.result_type == "song").count();
+                    let venue_count = items.iter().filter(|item| item.result_type == "venue").count();
+                    let tour_count = items.iter().filter(|item| item.result_type == "tour").count();
+                    let guest_count = items.iter().filter(|item| item.result_type == "guest").count();
+                    let release_count = items.iter().filter(|item| item.result_type == "release").count();
+                    let show_count = items.iter().filter(|item| item.result_type == "show").count();
+
+                    let selected_filter = active_filter.get();
+                    let filtered_items: Vec<_> = items
+                        .into_iter()
+                        .filter(|item| {
+                            selected_filter == "all" || item.result_type == selected_filter
+                        })
+                        .collect();
+                    let filtered_count = filtered_items.len();
+                    let summary_label = match selected_filter.as_str() {
+                        "all" => "all results",
+                        "song" => "songs",
+                        "venue" => "venues",
+                        "tour" => "tours",
+                        "guest" => "guests",
+                        "release" => "releases",
+                        "show" => "shows",
+                        _ => "results",
+                    };
+
                     view! {
                         <>
-                            <p class="list-summary">{format!("Showing {count} results for \"{current_query}\"")}</p>
-                            <ul class="result-list">
-                                {items
-                                    .into_iter()
-                                    .map(|item| {
-                                        let label = item.label.clone();
-                                        let kind = item.result_type.clone();
-                                        let href = search_result_href(&item);
-                                        view! {
-                                            <li class="result-card">
-                                                <span class="pill">{kind}</span>
-                                                <div class="result-body">
-                                                    {move || match &href {
-                                                        Some(link) => view! {
-                                                            <a class="result-label" href=link.clone()>{label.clone()}</a>
-                                                        }
-                                                        .into_any(),
-                                                        None => view! { <span class="result-label">{label.clone()}</span> }.into_any(),
-                                                    }}
-                                                </div>
-                                                <span class="result-score">{format!("{:.2}", item.score)}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
+                            <div class="result-filters" role="group" aria-label="Search result filters">
+                                <button
+                                    type="button"
+                                    class="result-filter pill pill--ghost"
+                                    class:result-filter--active=move || active_filter.get() == "all"
+                                    on:click=move |_| set_active_filter.set("all".to_string())
+                                >
+                                    {format!("All ({all_count})")}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="result-filter pill pill--ghost"
+                                    class:result-filter--active=move || active_filter.get() == "song"
+                                    disabled=song_count == 0
+                                    on:click=move |_| set_active_filter.set("song".to_string())
+                                >
+                                    {format!("Songs ({song_count})")}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="result-filter pill pill--ghost"
+                                    class:result-filter--active=move || active_filter.get() == "show"
+                                    disabled=show_count == 0
+                                    on:click=move |_| set_active_filter.set("show".to_string())
+                                >
+                                    {format!("Shows ({show_count})")}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="result-filter pill pill--ghost"
+                                    class:result-filter--active=move || active_filter.get() == "venue"
+                                    disabled=venue_count == 0
+                                    on:click=move |_| set_active_filter.set("venue".to_string())
+                                >
+                                    {format!("Venues ({venue_count})")}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="result-filter pill pill--ghost"
+                                    class:result-filter--active=move || active_filter.get() == "tour"
+                                    disabled=tour_count == 0
+                                    on:click=move |_| set_active_filter.set("tour".to_string())
+                                >
+                                    {format!("Tours ({tour_count})")}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="result-filter pill pill--ghost"
+                                    class:result-filter--active=move || active_filter.get() == "guest"
+                                    disabled=guest_count == 0
+                                    on:click=move |_| set_active_filter.set("guest".to_string())
+                                >
+                                    {format!("Guests ({guest_count})")}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="result-filter pill pill--ghost"
+                                    class:result-filter--active=move || active_filter.get() == "release"
+                                    disabled=release_count == 0
+                                    on:click=move |_| set_active_filter.set("release".to_string())
+                                >
+                                    {format!("Releases ({release_count})")}
+                                </button>
+                            </div>
+                            <p class="list-summary">
+                                {format!(
+                                    "Showing {filtered_count} {summary_label} for \"{current_query}\""
+                                )}
+                            </p>
+                            {if filtered_items.is_empty() {
+                                view! {
+                                    <section class="status-card status-card--empty">
+                                        <p class="status-title">"No results in this category"</p>
+                                        <p class="muted">
+                                            "Try another filter or switch back to All results."
+                                        </p>
+                                        <p>
+                                            <button
+                                                type="button"
+                                                class="pill pill--ghost"
+                                                on:click=move |_| set_active_filter.set("all".to_string())
+                                            >
+                                                "Show all results"
+                                            </button>
+                                        </p>
+                                    </section>
+                                }
+                                .into_any()
+                            } else {
+                                view! {
+                                    <ul class="result-list">
+                                        {filtered_items
+                                            .into_iter()
+                                            .map(|item| {
+                                                let label = item.label.clone();
+                                                let kind = item.result_type.clone();
+                                                let href = search_result_href(&item);
+                                                view! {
+                                                    <li class="result-card">
+                                                        <span class="pill">{kind}</span>
+                                                        <div class="result-body">
+                                                            {move || match &href {
+                                                                Some(link) => view! {
+                                                                    <a class="result-label" href=link.clone()>{label.clone()}</a>
+                                                                }
+                                                                .into_any(),
+                                                                None => view! { <span class="result-label">{label.clone()}</span> }.into_any(),
+                                                            }}
+                                                        </div>
+                                                        <span class="result-score">{format!("{:.2}", item.score)}</span>
+                                                    </li>
+                                                }
+                                            })
+                                            .collect::<Vec<_>>()}
+                                    </ul>
+                                }
+                                .into_any()
+                            }}
                         </>
                     }
                     .into_any()
@@ -4179,40 +4304,42 @@ fn render_song_table(songs: &[Song], show_total: bool) -> impl IntoView {
         "Song ranking"
     };
     view! {
-        <table class="stats-table" aria-label=table_label>
-            <caption class="visually-hidden">{table_label}</caption>
-            <thead>
-                <tr>
-                    <th scope="col">"#"</th>
-                    <th scope="col">"Song"</th>
-                    {if show_total {
-                        Some(view! { <th scope="col">"Plays"</th> })
-                    } else {
-                        None
-                    }}
-                </tr>
-            </thead>
-            <tbody>
-                {songs
-                    .iter()
-                    .enumerate()
-                    .map(|(i, song)| {
-                        let href = format!("/songs/{}", song.slug);
-                        view! {
-                            <tr>
-                                <td>{(i + 1).to_string()}</td>
-                                <td><a href=href>{song.title.clone()}</a></td>
-                                {if show_total {
-                                    Some(view! { <td>{song.total_performances.unwrap_or(0).to_string()}</td> })
-                                } else {
-                                    None
-                                }}
-                            </tr>
-                        }
-                    })
-                    .collect::<Vec<_>>()}
-            </tbody>
-        </table>
+        <div class="stats-table-wrap">
+            <table class="stats-table" aria-label=table_label>
+                <caption class="visually-hidden">{table_label}</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">"#"</th>
+                        <th scope="col">"Song"</th>
+                        {if show_total {
+                            Some(view! { <th scope="col">"Plays"</th> })
+                        } else {
+                            None
+                        }}
+                    </tr>
+                </thead>
+                <tbody>
+                    {songs
+                        .iter()
+                        .enumerate()
+                        .map(|(i, song)| {
+                            let href = format!("/songs/{}", song.slug);
+                            view! {
+                                <tr>
+                                    <td>{(i + 1).to_string()}</td>
+                                    <td><a href=href>{song.title.clone()}</a></td>
+                                    {if show_total {
+                                        Some(view! { <td>{song.total_performances.unwrap_or(0).to_string()}</td> })
+                                    } else {
+                                        None
+                                    }}
+                                </tr>
+                            }
+                        })
+                        .collect::<Vec<_>>()}
+                </tbody>
+            </table>
+        </div>
     }
     .into_any()
 }
