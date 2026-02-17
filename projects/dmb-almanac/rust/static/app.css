@@ -277,6 +277,46 @@
     font-size: 1.15rem;
   }
 
+  .page-subhead {
+    margin-top: 0.4rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .list-summary {
+    margin-top: 1rem;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .status-card {
+    margin-top: 1rem;
+    padding: 1rem 1.1rem;
+    border-radius: var(--radius-sm);
+    border: var(--panel-border);
+    background: color-mix(in srgb, var(--panel-bg) 90%, transparent);
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .status-card--loading {
+    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--panel-bg));
+  }
+
+  .status-card--empty {
+    border-color: color-mix(in srgb, var(--text-muted) 35%, transparent);
+  }
+
+  .status-title {
+    font-weight: 650;
+    color: var(--text);
+  }
+
   :is(.search-input, .input) {
     border: var(--panel-border);
     background: var(--panel-bg);
@@ -368,9 +408,9 @@
 
   .result-card {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 0.75rem;
-    align-items: center;
+    align-items: start;
     padding: 0.85rem 1rem;
   }
 
@@ -413,6 +453,7 @@
     font-weight: 600;
     color: var(--text);
     text-decoration: none;
+    line-height: 1.25;
 
     &:hover {
       text-decoration: underline;
@@ -428,6 +469,9 @@
   .result-score {
     font-variant-numeric: tabular-nums;
     color: var(--text-muted);
+    justify-self: end;
+    text-align: right;
+    line-height: 1.25;
   }
 
   .stats-grid {
