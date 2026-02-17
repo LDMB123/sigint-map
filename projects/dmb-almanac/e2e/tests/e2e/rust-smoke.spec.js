@@ -18,6 +18,13 @@ test.describe('Rust smoke', () => {
   test('show detail page renders', async ({ page }) => {
     await gotoHydrated(page, '/shows/1');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Copy link/i })).toBeVisible();
+  });
+
+  test('my shows input prefills from query string', async ({ page }) => {
+    await gotoHydrated(page, '/my-shows?showId=41');
+    await expect(page.getByRole('heading', { level: 1, name: /My Shows/i })).toBeVisible();
+    await expect(page.locator('.inline-form input[type="number"]')).toHaveValue('41');
   });
 
   test('release detail page renders and resolves tracks state', async ({ page }) => {

@@ -1,6 +1,4 @@
 use leptos::prelude::*;
-#[cfg(feature = "hydrate")]
-use wasm_bindgen::JsValue;
 
 #[component]
 pub fn AiStatus() -> impl IntoView {
@@ -23,16 +21,8 @@ pub fn AiStatus() -> impl IntoView {
 
             // Used only for better user-facing messaging; the actual gating is via capabilities.
             if let Some(window) = web_sys::window() {
-                if let Ok(value) =
-                    js_sys::Reflect::get(&window, &JsValue::from_str("crossOriginIsolated"))
-                {
-                    cross_origin_isolated.set(Some(value.as_bool().unwrap_or(false)));
-                }
-                if let Ok(value) =
-                    js_sys::Reflect::get(&window, &JsValue::from_str("isSecureContext"))
-                {
-                    is_secure_context.set(Some(value.as_bool().unwrap_or(false)));
-                }
+                cross_origin_isolated.set(Some(window.cross_origin_isolated()));
+                is_secure_context.set(Some(window.is_secure_context()));
             }
         });
     }

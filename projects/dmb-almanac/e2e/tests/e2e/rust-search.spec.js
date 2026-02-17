@@ -39,4 +39,31 @@ test.describe('Rust search flow', () => {
             await context.setOffline(false);
         }
     });
+
+    test('search query and filter persist through URL params', async ({ page }) => {
+        await gotoHydrated(page, '/search');
+        const input = page.getByRole('searchbox');
+
+        await input.fill('grace');
+        await waitForSearchResponse(page);
+        await expect
+            .poll(() => new URL(page.url()).searchParams.get('q'))
+            .toBe('grace');
+
+        await page.goto('/search?q=grace&type=song', { waitUntil: 'domcontentloaded' });
+        await expect(page.getByRole('heading', { name: /Search/i })).toBeVisible();
+        await expect(input).toHaveValue('grace');
+        await expect
+            .poll(() => new URL(page.url()).searchParams.get('type'))
+            .toBe('song');
+
+        await input.fill('');
+        await expect(input).toHaveValue('');
+        await expect
+            .poll(() => new URL(page.url()).searchParams.get('q'))
+            .toBeNull();
+        await expect
+            .poll(() => new URL(page.url()).searchParams.get('type'))
+            .toBeNull();
+    });
 });

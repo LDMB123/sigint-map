@@ -37,10 +37,27 @@ pub struct ImportStatus {
     pub can_reset: bool,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum SeedDataState {
+    Ready,
+    #[default]
+    Importing,
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct StorageInfo {
     pub usage: Option<f64>,
     pub quota: Option<f64>,
+}
+
+#[cfg(feature = "hydrate")]
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StorageEstimateValue {
+    #[serde(default)]
+    usage: Option<f64>,
+    #[serde(default)]
+    quota: Option<f64>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -456,6 +473,34 @@ const AI_CACHE_PATHS: [&str; 4] = [
     "/data/ann-index.ivf.json",
     "/data/embedding-manifest.json",
 ];
+
+#[cfg(feature = "hydrate")]
+pub async fn detect_seed_data_state() -> SeedDataState {
+    if dmb_idb::get_sync_meta::<ImportMarker>(IMPORT_MARKER_ID)
+        .await
+        .ok()
+        .flatten()
+        .is_some()
+    {
+        return SeedDataState::Ready;
+    }
+
+    if let Ok(Some(checkpoint)) =
+        dmb_idb::get_sync_meta::<ImportCheckpoint>(IMPORT_CHECKPOINT_ID).await
+    {
+        if checkpoint.completed {
+            return SeedDataState::Ready;
+        }
+        return SeedDataState::Importing;
+    }
+
+    SeedDataState::Importing
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub async fn detect_seed_data_state() -> SeedDataState {
+    SeedDataState::Ready
+}
 
 #[cfg(feature = "hydrate")]
 const IMPORT_SPECS: &[ImportSpec] = &[
@@ -927,20 +972,14 @@ pub async fn ensure_seed_data(_status: RwSignal<ImportStatus>) {}
 
 #[cfg(feature = "hydrate")]
 pub async fn estimate_storage() -> Option<StorageInfo> {
-    use js_sys::Reflect;
-    use wasm_bindgen::JsValue;
-    use wasm_bindgen_futures::JsFuture;
-
     let window = web_sys::window()?;
     let manager = window.navigator().storage();
     let estimate = JsFuture::from(manager.estimate().ok()?).await.ok()?;
-    let usage = Reflect::get(&estimate, &JsValue::from_str("usage"))
-        .ok()
-        .and_then(|v| v.as_f64());
-    let quota = Reflect::get(&estimate, &JsValue::from_str("quota"))
-        .ok()
-        .and_then(|v| v.as_f64());
-    Some(StorageInfo { usage, quota })
+    let parsed = serde_wasm_bindgen::from_value::<StorageEstimateValue>(estimate).ok()?;
+    Some(StorageInfo {
+        usage: parsed.usage,
+        quota: parsed.quota,
+    })
 }
 
 #[cfg(feature = "hydrate")]

@@ -13,6 +13,8 @@ use std::collections::{HashMap, HashSet};
 #[cfg(feature = "hydrate")]
 use wasm_bindgen::closure::Closure;
 #[cfg(feature = "hydrate")]
+use wasm_bindgen::prelude::wasm_bindgen;
+#[cfg(feature = "hydrate")]
 use wasm_bindgen::JsCast;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen::JsValue;
@@ -91,6 +93,104 @@ async fn wait_ms(ms: i32) {
         }
     });
     let _ = JsFuture::from(promise).await;
+}
+
+#[cfg(feature = "hydrate")]
+async fn copy_text_to_clipboard(text: &str) -> bool {
+    let Some(window) = web_sys::window() else {
+        return false;
+    };
+    let clipboard = window.navigator().clipboard();
+    let Ok(promise) = clipboard.write_text(text) else {
+        return false;
+    };
+    JsFuture::from(promise).await.is_ok()
+}
+
+#[cfg(feature = "hydrate")]
+fn current_search_param(name: &str) -> Option<String> {
+    let window = web_sys::window()?;
+    let search = window.location().search().ok()?;
+    let params = web_sys::UrlSearchParams::new_with_str(&search).ok()?;
+    params.get(name)
+}
+
+fn use_seed_data_state() -> RwSignal<crate::data::SeedDataState> {
+    let state = RwSignal::new(crate::data::SeedDataState::default());
+    #[cfg(feature = "hydrate")]
+    {
+        let state_signal = state.clone();
+        spawn_local(async move {
+            state_signal.set(crate::data::detect_seed_data_state().await);
+        });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        state.set(crate::data::SeedDataState::Ready);
+    }
+    state
+}
+
+fn import_in_progress_state(
+    title: &'static str,
+    href: &'static str,
+    label: &'static str,
+) -> impl IntoView {
+    view! {
+        <section class="status-card status-card--loading" role="status" aria-live="polite">
+            <p class="status-title">{title}</p>
+            <p class="muted">
+                "Offline data is still importing. This detail view will populate when local data is ready."
+            </p>
+            <p><a class="result-label" href=href>{label}</a></p>
+        </section>
+    }
+}
+
+fn normalize_search_filter(raw: &str) -> String {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "song" | "show" | "venue" | "tour" | "guest" | "release" => raw.trim().to_ascii_lowercase(),
+        _ => "all".to_string(),
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn sync_search_query_params(query: &str, active_filter: &str) {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let query_trimmed = query.trim();
+    let filter = normalize_search_filter(active_filter);
+    let pathname = window.location().pathname().unwrap_or_default();
+    let hash = window.location().hash().unwrap_or_default();
+    let Ok(params) = web_sys::UrlSearchParams::new_with_str("") else {
+        return;
+    };
+    if !query_trimmed.is_empty() {
+        params.set("q", query_trimmed);
+    }
+    if filter != "all" {
+        params.set("type", &filter);
+    }
+    let encoded = params.to_string();
+    let query_string = if encoded.is_empty() {
+        String::new()
+    } else {
+        format!("?{encoded}")
+    };
+    let next = format!("{pathname}{query_string}{hash}");
+    let current = format!(
+        "{}{}{}",
+        pathname,
+        window.location().search().unwrap_or_default(),
+        hash
+    );
+    if next == current {
+        return;
+    }
+    if let Ok(history) = window.history() {
+        let _ = history.replace_state_with_url(&JsValue::NULL, "", Some(&next));
+    }
 }
 
 pub fn home_page() -> impl IntoView {
@@ -237,9 +337,52 @@ fn empty_state_with_link(
 }
 
 fn detail_nav(href: &'static str, label: &'static str) -> impl IntoView {
+    let copy_label = RwSignal::new(String::from("Copy link"));
+    let copy_pending = RwSignal::new(false);
+
+    #[cfg(feature = "hydrate")]
+    let on_copy = {
+        let copy_label_signal = copy_label.clone();
+        let copy_pending_signal = copy_pending.clone();
+        move |_| {
+            if copy_pending_signal.get_untracked() {
+                return;
+            }
+            copy_pending_signal.set(true);
+            copy_label_signal.set(String::from("Copying..."));
+            let copy_label_signal = copy_label_signal.clone();
+            let copy_pending_signal = copy_pending_signal.clone();
+            spawn_local(async move {
+                let href = web_sys::window()
+                    .and_then(|window| window.location().href().ok())
+                    .unwrap_or_default();
+                let copied = copy_text_to_clipboard(&href).await;
+                if copied {
+                    copy_label_signal.set(String::from("Copied"));
+                } else {
+                    copy_label_signal.set(String::from("Copy failed"));
+                }
+                copy_pending_signal.set(false);
+                wait_ms(1400).await;
+                copy_label_signal.set(String::from("Copy link"));
+            });
+        }
+    };
+
+    #[cfg(not(feature = "hydrate"))]
+    let on_copy = |_| {};
+
     view! {
         <p class="detail-nav">
             <a class="detail-nav__link" href=href>{label}</a>
+            <button
+                type="button"
+                class="pill pill--ghost detail-nav__copy"
+                disabled=move || copy_pending.get()
+                on:click=on_copy
+            >
+                {move || copy_label.get()}
+            </button>
         </p>
     }
 }
@@ -399,33 +542,32 @@ struct IdbRuntimeMetrics {
 }
 
 #[cfg(feature = "hydrate")]
-fn call_window_helper(function_name: &str) -> Option<JsValue> {
-    let window = web_sys::window()?;
-    let helper = js_sys::Reflect::get(&window, &JsValue::from_str(function_name)).ok()?;
-    if !helper.is_function() {
-        return None;
-    }
-    helper
-        .dyn_into::<js_sys::Function>()
-        .ok()?
-        .call0(&JsValue::NULL)
-        .ok()
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = window, js_name = dmbGetWebgpuTelemetry, catch)]
+    fn js_get_webgpu_runtime_telemetry() -> Result<JsValue, JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbResetWebgpuTelemetry, catch)]
+    fn js_reset_webgpu_runtime_telemetry() -> Result<(), JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbGetAppleSiliconProfile, catch)]
+    fn js_get_apple_silicon_profile() -> Result<JsValue, JsValue>;
 }
 
 #[cfg(feature = "hydrate")]
 fn load_webgpu_runtime_telemetry() -> Option<WebgpuRuntimeTelemetry> {
-    let value = call_window_helper("dmbGetWebgpuTelemetry")?;
+    let value = js_get_webgpu_runtime_telemetry().ok()?;
     serde_wasm_bindgen::from_value(value).ok()
 }
 
 #[cfg(feature = "hydrate")]
 fn reset_webgpu_runtime_telemetry() {
-    let _ = call_window_helper("dmbResetWebgpuTelemetry");
+    let _ = js_reset_webgpu_runtime_telemetry();
 }
 
 #[cfg(feature = "hydrate")]
 fn load_apple_silicon_profile() -> Option<AppleSiliconProfile> {
-    let value = call_window_helper("dmbGetAppleSiliconProfile")?;
+    let value = js_get_apple_silicon_profile().ok()?;
     serde_wasm_bindgen::from_value(value).ok()
 }
 
@@ -535,12 +677,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
             let _ = idb_runtime_metrics_signal.try_set(load_idb_runtime_metrics());
 
             if let Some(window) = web_sys::window() {
-                if let Ok(value) =
-                    js_sys::Reflect::get(&window, &JsValue::from_str("crossOriginIsolated"))
-                {
-                    let _ = cross_origin_isolated_signal
-                        .try_set(Some(value.as_bool().unwrap_or(false)));
-                }
+                let _ = cross_origin_isolated_signal.try_set(Some(window.cross_origin_isolated()));
                 if let Ok(Some(storage)) = window.local_storage() {
                     if let Ok(Some(value)) = storage.get_item("dmb-webgpu-worker-threshold") {
                         let _ = worker_threshold_input_signal.try_set(value);
@@ -3149,8 +3286,26 @@ fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
 pub fn show_detail_page() -> impl IntoView {
     let params = use_params_map();
     let show_id = move || params.with(|p| p.get("showId").unwrap_or_default());
+    let seed_data_state = use_seed_data_state();
     let active_set = RwSignal::new("all".to_string());
     let setlist_query = RwSignal::new(String::new());
+    let saved_show_ids = RwSignal::new(std::collections::HashSet::<i32>::new());
+    let save_pending = RwSignal::new(false);
+    let save_message = RwSignal::new(None::<(String, bool)>);
+
+    #[cfg(feature = "hydrate")]
+    {
+        let saved_show_ids_signal = saved_show_ids.clone();
+        spawn_local(async move {
+            let ids = load_user_attended_shows()
+                .await
+                .into_iter()
+                .map(|item| item.show_id)
+                .collect::<std::collections::HashSet<_>>();
+            saved_show_ids_signal.set(ids);
+        });
+    }
+
     let show_id_for_reset = show_id.clone();
     {
         let active_set_signal = active_set.clone();
@@ -3161,7 +3316,7 @@ pub fn show_detail_page() -> impl IntoView {
             setlist_query_signal.set(String::new());
         });
     }
-    let render = |ctx: Option<ShowContext>| match ctx {
+    let render = move |ctx: Option<ShowContext>| match ctx {
         Some(ctx) => {
             let show = ctx.show;
             let venue_name = ctx
@@ -3195,6 +3350,15 @@ pub fn show_detail_page() -> impl IntoView {
                 .rarity_index
                 .map(|v| format!("{:.2}", v))
                 .unwrap_or_else(|| "-".into());
+            let show_id_value = show.id;
+            #[cfg(feature = "hydrate")]
+            let show_date_value = show.date.clone();
+            #[cfg(feature = "hydrate")]
+            let saved_show_ids_signal = saved_show_ids.clone();
+            #[cfg(feature = "hydrate")]
+            let save_pending_signal = save_pending.clone();
+            #[cfg(feature = "hydrate")]
+            let save_message_signal = save_message.clone();
             view! {
                 <div class="detail-list-head">
                     <div class="detail-list-head__copy">
@@ -3204,6 +3368,86 @@ pub fn show_detail_page() -> impl IntoView {
                     <div class="pill-row detail-list-head__meta">
                         <span class="pill">{format!("{song_count} songs")}</span>
                         <span class="pill pill--ghost">{format!("Rarity {rarity}")}</span>
+                        <button
+                            type="button"
+                            class=move || {
+                                if saved_show_ids.get().contains(&show_id_value) {
+                                    "pill"
+                                } else {
+                                    "pill pill--ghost"
+                                }
+                            }
+                            disabled=move || save_pending.get()
+                            on:click=move |_| {
+                                #[cfg(feature = "hydrate")]
+                                {
+                                    if save_pending_signal.get_untracked() {
+                                        return;
+                                    }
+                                    save_pending_signal.set(true);
+                                    let saved_show_ids_signal = saved_show_ids_signal.clone();
+                                    let save_pending_signal = save_pending_signal.clone();
+                                    let save_message_signal = save_message_signal.clone();
+                                    let show_date_value = show_date_value.clone();
+                                    spawn_local(async move {
+                                        let currently_saved = saved_show_ids_signal
+                                            .with_untracked(|ids| ids.contains(&show_id_value));
+                                        let action_ok = if currently_saved {
+                                            remove_user_attended_show(show_id_value).await
+                                        } else {
+                                            add_user_attended_show(show_id_value, Some(show_date_value))
+                                                .await
+                                        };
+
+                                        if action_ok {
+                                            let ids = load_user_attended_shows()
+                                                .await
+                                                .into_iter()
+                                                .map(|item| item.show_id)
+                                                .collect::<std::collections::HashSet<_>>();
+                                            saved_show_ids_signal.set(ids);
+                                            if currently_saved {
+                                                save_message_signal.set(Some((
+                                                    format!(
+                                                        "Removed show {show_id_value} from My Shows."
+                                                    ),
+                                                    false,
+                                                )));
+                                            } else {
+                                                save_message_signal.set(Some((
+                                                    format!("Saved show {show_id_value} to My Shows."),
+                                                    false,
+                                                )));
+                                            }
+                                        } else if currently_saved {
+                                            save_message_signal.set(Some((
+                                                "Unable to remove this show from My Shows right now."
+                                                    .to_string(),
+                                                true,
+                                            )));
+                                        } else {
+                                            save_message_signal.set(Some((
+                                                "Unable to save this show to My Shows right now."
+                                                    .to_string(),
+                                                true,
+                                            )));
+                                        }
+                                        save_pending_signal.set(false);
+                                    });
+                                }
+                            }
+                        >
+                            {move || {
+                                if save_pending.get() {
+                                    "Updating..."
+                                } else if saved_show_ids.get().contains(&show_id_value) {
+                                    "Remove from My Shows"
+                                } else {
+                                    "Save to My Shows"
+                                }
+                            }}
+                        </button>
+                        <a class="pill pill--ghost" href="/my-shows">"My Shows"</a>
                         <a class="pill pill--ghost" href=venue_href>"Venue details"</a>
                         {tour_href.map(|href| view! {
                             <a class="pill pill--ghost" href=href>"Tour details"</a>
@@ -3221,15 +3465,42 @@ pub fn show_detail_page() -> impl IntoView {
             }
             .into_any()
         }
-        None => view! {
-            {empty_state_with_link(
-                "Show not found",
-                "This show ID was not found in the current dataset.",
-                "/shows",
-                "Browse all shows",
-            )}
+        None => {
+            if seed_data_state.get() == crate::data::SeedDataState::Importing {
+                import_in_progress_state(
+                    "Show details are still loading",
+                    "/offline",
+                    "Open offline help",
+                )
+                .into_any()
+            } else {
+                match parse_positive_i32_param(&show_id(), "showId") {
+                    Ok(parsed_show_id) => {
+                        let my_shows_href = format!("/my-shows?showId={parsed_show_id}");
+                        view! {
+                            <section class="status-card status-card--empty">
+                                <p class="status-title">"Show not found"</p>
+                                <p class="muted">"This show ID was not found in the current dataset."</p>
+                                <div class="pill-row">
+                                    <a class="pill pill--ghost" href="/shows">"Browse all shows"</a>
+                                    <a class="pill pill--ghost" href=my_shows_href>"Track this show in My Shows"</a>
+                                </div>
+                            </section>
+                        }
+                            .into_any()
+                    }
+                    Err(_) => view! {
+                        {empty_state_with_link(
+                            "Show not found",
+                            "This show ID was not found in the current dataset.",
+                            "/shows",
+                            "Browse all shows",
+                        )}
+                    }
+                    .into_any(),
+                }
+            }
         }
-        .into_any(),
     };
 
     let show = Resource::new(show_id, |id: String| async move {
@@ -3250,6 +3521,16 @@ pub fn show_detail_page() -> impl IntoView {
                     Ok(id) => view! { <p class="page-subhead">{format!("Show ID: {id}")}</p> }.into_any(),
                     Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
                 }
+            }}
+            {move || {
+                save_message.get().map(|(msg, is_error)| {
+                    let class_name = if is_error {
+                        "form-message form-message--error"
+                    } else {
+                        "form-message"
+                    };
+                    view! { <p class=class_name>{msg}</p> }
+                })
             }}
             <Suspense fallback=move || loading_state("Loading show", "Fetching show summary and context.")>
                 {move || render(show.get().unwrap_or(None))}
@@ -3464,7 +3745,8 @@ pub fn show_detail_page() -> impl IntoView {
 pub fn song_detail_page() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
-    let render = |song: Option<Song>| match song {
+    let seed_data_state = use_seed_data_state();
+    let render = move |song: Option<Song>| match song {
         Some(song) => {
             let title = song.title.clone();
             let sort_title = song.sort_title.unwrap_or_else(|| "-".to_string());
@@ -3541,13 +3823,24 @@ pub fn song_detail_page() -> impl IntoView {
             }
             .into_any()
         }
-        None => empty_state_with_link(
-            "Song not found",
-            "This song slug could not be resolved.",
-            "/songs",
-            "Browse songs",
-        )
-        .into_any(),
+        None => {
+            if seed_data_state.get() == crate::data::SeedDataState::Importing {
+                import_in_progress_state(
+                    "Song details are still loading",
+                    "/offline",
+                    "Open offline help",
+                )
+                .into_any()
+            } else {
+                empty_state_with_link(
+                    "Song not found",
+                    "This song slug could not be resolved.",
+                    "/songs",
+                    "Browse songs",
+                )
+                .into_any()
+            }
+        }
     };
 
     let song = Resource::new(slug, |slug: String| async move {
@@ -3575,7 +3868,8 @@ pub fn song_detail_page() -> impl IntoView {
 pub fn guest_detail_page() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
-    let render = |guest: Option<Guest>| match guest {
+    let seed_data_state = use_seed_data_state();
+    let render = move |guest: Option<Guest>| match guest {
         Some(guest) => {
             let name = guest.name.clone();
             let guest_slug = guest.slug.clone();
@@ -3623,13 +3917,24 @@ pub fn guest_detail_page() -> impl IntoView {
             }
             .into_any()
         }
-        None => empty_state_with_link(
-            "Guest not found",
-            "This guest slug could not be resolved.",
-            "/guests",
-            "Browse guests",
-        )
-        .into_any(),
+        None => {
+            if seed_data_state.get() == crate::data::SeedDataState::Importing {
+                import_in_progress_state(
+                    "Guest details are still loading",
+                    "/offline",
+                    "Open offline help",
+                )
+                .into_any()
+            } else {
+                empty_state_with_link(
+                    "Guest not found",
+                    "This guest slug could not be resolved.",
+                    "/guests",
+                    "Browse guests",
+                )
+                .into_any()
+            }
+        }
     };
 
     let guest = Resource::new(slug, |slug: String| async move {
@@ -3657,6 +3962,7 @@ pub fn guest_detail_page() -> impl IntoView {
 pub fn release_detail_page() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
+    let seed_data_state = use_seed_data_state();
     let active_disc = RwSignal::new("all".to_string());
     let track_query = RwSignal::new(String::new());
     let slug_for_reset = slug.clone();
@@ -3670,7 +3976,7 @@ pub fn release_detail_page() -> impl IntoView {
         });
     }
 
-    let render = |release: Option<Release>| match release {
+    let render = move |release: Option<Release>| match release {
         Some(release) => {
             let title = release.title.clone();
             let release_slug = release.slug.clone();
@@ -3703,13 +4009,24 @@ pub fn release_detail_page() -> impl IntoView {
             }
             .into_any()
         }
-        None => empty_state_with_link(
-            "Release not found",
-            "This release slug could not be resolved.",
-            "/releases",
-            "Browse releases",
-        )
-        .into_any(),
+        None => {
+            if seed_data_state.get() == crate::data::SeedDataState::Importing {
+                import_in_progress_state(
+                    "Release details are still loading",
+                    "/offline",
+                    "Open offline help",
+                )
+                .into_any()
+            } else {
+                empty_state_with_link(
+                    "Release not found",
+                    "This release slug could not be resolved.",
+                    "/releases",
+                    "Browse releases",
+                )
+                .into_any()
+            }
+        }
     };
 
     let release = Resource::new(slug, |slug: String| async move {
@@ -3933,7 +4250,8 @@ pub fn release_detail_page() -> impl IntoView {
 pub fn tour_year_page() -> impl IntoView {
     let params = use_params_map();
     let year = move || params.with(|p| p.get("year").unwrap_or_default());
-    let render = |tour: Option<Tour>| match tour {
+    let seed_data_state = use_seed_data_state();
+    let render = move |tour: Option<Tour>| match tour {
         Some(tour) => {
             let year = tour.year;
             let name = tour.name.clone();
@@ -3980,13 +4298,24 @@ pub fn tour_year_page() -> impl IntoView {
             }
             .into_any()
         }
-        None => empty_state_with_link(
-            "Tour not found",
-            "This year does not map to a tour record.",
-            "/tours",
-            "Browse tours",
-        )
-        .into_any(),
+        None => {
+            if seed_data_state.get() == crate::data::SeedDataState::Importing {
+                import_in_progress_state(
+                    "Tour details are still loading",
+                    "/offline",
+                    "Open offline help",
+                )
+                .into_any()
+            } else {
+                empty_state_with_link(
+                    "Tour not found",
+                    "This year does not map to a tour record.",
+                    "/tours",
+                    "Browse tours",
+                )
+                .into_any()
+            }
+        }
     };
 
     let tour = Resource::new(year, |year: String| async move {
@@ -4014,7 +4343,8 @@ pub fn tour_year_page() -> impl IntoView {
 pub fn venue_detail_page() -> impl IntoView {
     let params = use_params_map();
     let venue_id = move || params.with(|p| p.get("venueId").unwrap_or_default());
-    let render = |venue: Option<Venue>| match venue {
+    let seed_data_state = use_seed_data_state();
+    let render = move |venue: Option<Venue>| match venue {
         Some(venue) => {
             let name = venue.name.clone();
             let location = format_location(&venue.city, &venue.state);
@@ -4073,13 +4403,24 @@ pub fn venue_detail_page() -> impl IntoView {
             }
             .into_any()
         }
-        None => empty_state_with_link(
-            "Venue not found",
-            "This venue ID was not found in the current dataset.",
-            "/venues",
-            "Browse venues",
-        )
-        .into_any(),
+        None => {
+            if seed_data_state.get() == crate::data::SeedDataState::Importing {
+                import_in_progress_state(
+                    "Venue details are still loading",
+                    "/offline",
+                    "Open offline help",
+                )
+                .into_any()
+            } else {
+                empty_state_with_link(
+                    "Venue not found",
+                    "This venue ID was not found in the current dataset.",
+                    "/venues",
+                    "Browse venues",
+                )
+                .into_any()
+            }
+        }
     };
 
     let venue = Resource::new(venue_id, |id: String| async move {
@@ -4167,9 +4508,36 @@ pub fn search_page() -> impl IntoView {
     let (query, set_query) = signal(String::new());
     let (active_filter, set_active_filter) = signal(String::from("all"));
     let results = RwSignal::new(Vec::<dmb_core::SearchResult>::new());
+    #[cfg(feature = "hydrate")]
+    let search_url_ready = RwSignal::new(false);
 
     #[cfg(feature = "hydrate")]
     {
+        let set_query_signal = set_query.clone();
+        let set_active_filter_signal = set_active_filter.clone();
+        let search_url_ready_signal = search_url_ready.clone();
+        Effect::new(move |_| {
+            let route_query = current_search_param("q").unwrap_or_default();
+            let route_filter =
+                normalize_search_filter(&current_search_param("type").unwrap_or_default());
+            set_query_signal.set(route_query);
+            set_active_filter_signal.set(route_filter);
+            search_url_ready_signal.set(true);
+        });
+
+        let query_signal_for_url = query.clone();
+        let active_filter_signal_for_url = active_filter.clone();
+        let search_url_ready_signal_for_url = search_url_ready.clone();
+        Effect::new(move |_| {
+            if !search_url_ready_signal_for_url.get() {
+                return;
+            }
+            sync_search_query_params(
+                &query_signal_for_url.get(),
+                &active_filter_signal_for_url.get(),
+            );
+        });
+
         let embedding_index = RwSignal::new(None::<std::sync::Arc<crate::ai::EmbeddingIndex>>);
         let query_signal = query.clone();
         let results_signal = results.clone();
@@ -4259,7 +4627,7 @@ pub fn search_page() -> impl IntoView {
                     let release_count = items.iter().filter(|item| item.result_type == "release").count();
                     let show_count = items.iter().filter(|item| item.result_type == "show").count();
 
-                    let selected_filter = active_filter.get();
+                    let selected_filter = normalize_search_filter(&active_filter.get());
                     let filtered_items: Vec<_> = items
                         .into_iter()
                         .filter(|item| {
@@ -5404,6 +5772,36 @@ pub fn my_shows_page() -> impl IntoView {
             items_signal.set(load_user_attended_shows().await);
             loading_signal.set(false);
         });
+
+        let input_signal = input.clone();
+        let message_signal = message.clone();
+        Effect::new(move |_| {
+            let raw_show_id = current_search_param("showId");
+            let Some(raw_show_id) = raw_show_id else {
+                return;
+            };
+            match parse_positive_i32_param(&raw_show_id, "showId") {
+                Ok(show_id) => {
+                    input_signal.set(show_id.to_string());
+                    if message_signal.get_untracked().is_none() {
+                        message_signal.set(Some((
+                            format!(
+                                "Show {show_id} prefilled from link. Click Add to save it locally."
+                            ),
+                            false,
+                        )));
+                    }
+                }
+                Err(_) => {
+                    if message_signal.get_untracked().is_none() {
+                        message_signal.set(Some((
+                            "Invalid showId query parameter. Enter a positive show ID.".to_string(),
+                            true,
+                        )));
+                    }
+                }
+            }
+        });
     }
 
     #[cfg(feature = "hydrate")]
@@ -6100,6 +6498,7 @@ pub fn curated_lists_page() -> impl IntoView {
 pub fn curated_list_detail_page() -> impl IntoView {
     let params = use_params_map();
     let list_id = move || params.with(|params| params.get("listId").unwrap_or_default());
+    let seed_data_state = use_seed_data_state();
     let active_filter = RwSignal::new("all".to_string());
     let query = RwSignal::new(String::new());
 
@@ -6162,6 +6561,13 @@ pub fn curated_list_detail_page() -> impl IntoView {
                                 <p><a class="result-label" href="/lists">"Browse curated lists"</a></p>
                             </section>
                         }
+                            .into_any()
+                    } else if seed_data_state.get() == crate::data::SeedDataState::Importing {
+                        import_in_progress_state(
+                            "Curated list details are still loading",
+                            "/offline",
+                            "Open offline help",
+                        )
                             .into_any()
                     } else {
                         empty_state_with_link(
@@ -6249,12 +6655,7 @@ pub fn protocol_page() -> impl IntoView {
         let value = RwSignal::new(None::<String>);
         let value_signal = value.clone();
         request_animation_frame(move || {
-            if let Some(window) = web_sys::window() {
-                if let Ok(url) = web_sys::Url::new(&window.location().href().unwrap_or_default()) {
-                    let param = url.search_params().get("url");
-                    value_signal.set(param);
-                }
-            }
+            value_signal.set(current_search_param("url"));
         });
         value
     };
@@ -6318,9 +6719,9 @@ pub fn test_wasm_page() -> impl IntoView {
 #[cfg(test)]
 mod tests {
     use super::{
-        normalize_guests, normalize_releases, normalize_show_summaries, normalize_songs,
-        normalize_tours, normalize_venues, release_track_disc_counts, release_track_matches_query,
-        setlist_set_counts, ShowSummary,
+        normalize_guests, normalize_releases, normalize_search_filter, normalize_show_summaries,
+        normalize_songs, normalize_tours, normalize_venues, release_track_disc_counts,
+        release_track_matches_query, setlist_set_counts, ShowSummary,
     };
     use dmb_core::{Guest, Release, ReleaseTrack, SetlistEntry, Song, Tour, Venue};
 
@@ -6664,5 +7065,14 @@ mod tests {
         assert!(release_track_matches_query(&live_track, "42"));
         assert!(!release_track_matches_query(&live_track, "studio"));
         assert!(release_track_matches_query(&studio_track, "studio"));
+    }
+
+    #[test]
+    fn normalize_search_filter_accepts_known_values() {
+        assert_eq!(normalize_search_filter("song"), "song");
+        assert_eq!(normalize_search_filter("SHOW"), "show");
+        assert_eq!(normalize_search_filter(" venue "), "venue");
+        assert_eq!(normalize_search_filter("invalid"), "all");
+        assert_eq!(normalize_search_filter(""), "all");
     }
 }

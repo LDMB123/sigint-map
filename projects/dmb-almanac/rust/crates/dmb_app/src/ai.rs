@@ -12,6 +12,10 @@ use leptos::task::spawn_local;
 use dmb_core::{EmbeddingChunk, EmbeddingManifest, CORE_SCHEMA_VERSION};
 #[cfg(feature = "hydrate")]
 use once_cell::sync::OnceCell;
+#[cfg(feature = "hydrate")]
+use wasm_bindgen::prelude::wasm_bindgen;
+#[cfg(feature = "hydrate")]
+use wasm_bindgen::JsValue;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub struct AiCapabilities {
@@ -24,24 +28,101 @@ pub struct AiCapabilities {
 }
 
 #[cfg(feature = "hydrate")]
-pub fn detect_ai_capabilities() -> AiCapabilities {
-    use js_sys::Reflect;
-    use wasm_bindgen::JsValue;
-    use web_sys::window;
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+struct WebgpuProbeResult {
+    #[serde(default)]
+    available: bool,
+}
 
-    let Some(window) = window() else {
+#[cfg(feature = "hydrate")]
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+struct WebgpuWarmResult {
+    #[serde(default)]
+    warmed: bool,
+    #[serde(default)]
+    reason: Option<String>,
+}
+
+#[cfg(feature = "hydrate")]
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+struct WorkerLimitsResult {
+    #[serde(default)]
+    max_floats: Option<f64>,
+}
+
+#[cfg(feature = "hydrate")]
+#[derive(Debug, Clone, Copy)]
+enum WebgpuScoreFn {
+    Direct,
+    Worker,
+}
+
+#[cfg(feature = "hydrate")]
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(method, getter, js_name = gpu)]
+    fn navigator_gpu(this: &web_sys::Navigator) -> JsValue;
+
+    #[wasm_bindgen(method, getter, js_name = ml)]
+    fn navigator_ml(this: &web_sys::Navigator) -> JsValue;
+
+    #[wasm_bindgen(method, getter, js_name = deviceMemory)]
+    fn navigator_device_memory(this: &web_sys::Navigator) -> JsValue;
+
+    #[wasm_bindgen(method, getter, js_name = dmbWebgpuScores)]
+    fn window_webgpu_scores(this: &web_sys::Window) -> JsValue;
+
+    #[wasm_bindgen(method, getter, js_name = dmbWebgpuScoresWorker)]
+    fn window_webgpu_scores_worker(this: &web_sys::Window) -> JsValue;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuProbe, catch)]
+    fn dmb_webgpu_probe() -> Result<js_sys::Promise, JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbWarmWebgpuWorker, catch)]
+    fn dmb_warm_webgpu_worker() -> Result<js_sys::Promise, JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbGetWorkerLimits, catch)]
+    fn dmb_get_worker_limits() -> Result<JsValue, JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbClearWorkerFailureStatus, catch)]
+    fn dmb_clear_worker_failure_status() -> Result<(), JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbSetWorkerThreshold, catch)]
+    fn dmb_set_worker_threshold(value: f64) -> Result<(), JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScores, catch)]
+    fn dmb_webgpu_scores_js(
+        query: &js_sys::Float32Array,
+        matrix: &js_sys::Float32Array,
+        dim: f64,
+    ) -> Result<js_sys::Promise, JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScoresWorker, catch)]
+    fn dmb_webgpu_scores_worker_js(
+        query: &js_sys::Float32Array,
+        matrix: &js_sys::Float32Array,
+        dim: f64,
+    ) -> Result<js_sys::Promise, JsValue>;
+}
+
+#[cfg(feature = "hydrate")]
+fn js_value_exists(value: &JsValue) -> bool {
+    !value.is_null() && !value.is_undefined()
+}
+
+#[cfg(feature = "hydrate")]
+pub fn detect_ai_capabilities() -> AiCapabilities {
+    let Some(window) = web_sys::window() else {
         return AiCapabilities::default();
     };
     ensure_default_worker_threshold();
     let navigator = window.navigator();
-    let nav_value: JsValue = navigator.into();
 
-    let webgpu = Reflect::has(&nav_value, &JsValue::from_str("gpu")).unwrap_or(false);
-    let webgpu_helper = Reflect::has(
-        &JsValue::from(window.clone()),
-        &JsValue::from_str("dmbWebgpuScores"),
-    )
-    .unwrap_or(false);
+    let webgpu = js_value_exists(&navigator_gpu(&navigator));
+    let webgpu_helper = window_webgpu_scores(&window).is_function();
     let webgpu_available = webgpu && webgpu_helper;
     if webgpu && !webgpu_helper {
         if let Ok(Some(storage)) = window.local_storage() {
@@ -60,19 +141,9 @@ pub fn detect_ai_capabilities() -> AiCapabilities {
         }
     }
     let webgpu_disabled = read_webgpu_disabled().unwrap_or(false);
-    let webgpu_worker = Reflect::has(
-        &JsValue::from(window.clone()),
-        &JsValue::from_str("dmbWebgpuScoresWorker"),
-    )
-    .unwrap_or(false);
-    let webnn = Reflect::has(&nav_value, &JsValue::from_str("ml")).unwrap_or(false);
-    let threads = Reflect::get(
-        &JsValue::from(window.clone()),
-        &JsValue::from_str("crossOriginIsolated"),
-    )
-    .ok()
-    .and_then(|value| value.as_bool())
-    .unwrap_or(false);
+    let webgpu_worker = window_webgpu_scores_worker(&window).is_function();
+    let webnn = js_value_exists(&navigator_ml(&navigator));
+    let threads = window.cross_origin_isolated();
 
     let webgpu_enabled = webgpu_available && !webgpu_disabled;
     AiCapabilities {
@@ -92,64 +163,28 @@ pub fn detect_ai_capabilities() -> AiCapabilities {
 
 #[cfg(feature = "hydrate")]
 pub async fn probe_webgpu_device() -> Option<bool> {
-    use js_sys::Promise;
-    use wasm_bindgen::JsCast;
-    use wasm_bindgen::JsValue;
     use wasm_bindgen_futures::JsFuture;
 
-    let window = web_sys::window()?;
-    let probe = js_sys::Reflect::get(&window, &JsValue::from_str("dmbWebgpuProbe")).ok()?;
-    if !probe.is_function() {
-        return None;
-    }
-    let func: js_sys::Function = probe.dyn_into().ok()?;
-    let promise: Promise = func.call0(&JsValue::NULL).ok()?.dyn_into().ok()?;
+    let promise = dmb_webgpu_probe().ok()?;
     let result = JsFuture::from(promise).await.ok()?;
-    js_sys::Reflect::get(&result, &JsValue::from_str("available"))
+    serde_wasm_bindgen::from_value::<WebgpuProbeResult>(result)
         .ok()
-        .and_then(|v| v.as_bool())
+        .map(|probe| probe.available)
 }
 
 #[cfg(feature = "hydrate")]
 async fn warm_webgpu_worker() {
-    use js_sys::Promise;
-    use wasm_bindgen::JsCast;
-    use wasm_bindgen::JsValue;
     use wasm_bindgen_futures::JsFuture;
 
-    let Some(window) = web_sys::window() else {
+    let Ok(promise) = dmb_warm_webgpu_worker() else {
         return;
-    };
-    let warm = js_sys::Reflect::get(&window, &JsValue::from_str("dmbWarmWebgpuWorker")).ok();
-    let Some(warm) = warm else {
-        return;
-    };
-    if !warm.is_function() {
-        return;
-    }
-    let func: js_sys::Function = match warm.dyn_into() {
-        Ok(func) => func,
-        Err(_) => return,
-    };
-    let promise: Promise = match func
-        .call0(&JsValue::NULL)
-        .ok()
-        .and_then(|v| v.dyn_into().ok())
-    {
-        Some(promise) => promise,
-        None => return,
     };
     let result = JsFuture::from(promise).await.ok();
     if let Some(value) = result {
-        let warmed = js_sys::Reflect::get(&value, &JsValue::from_str("warmed"))
-            .ok()
-            .and_then(|v| v.as_bool())
-            .unwrap_or(true);
-        if !warmed {
-            let reason = js_sys::Reflect::get(&value, &JsValue::from_str("reason"))
-                .ok()
-                .and_then(|v| v.as_string());
-            record_ai_warning("webgpu_worker_warm_failed", reason);
+        if let Ok(status) = serde_wasm_bindgen::from_value::<WebgpuWarmResult>(value) {
+            if !status.warmed {
+                record_ai_warning("webgpu_worker_warm_failed", status.reason);
+            }
         }
     }
 }
@@ -432,16 +467,11 @@ fn cap_policy_from_device_memory(device_memory: Option<f64>) -> CapPolicy {
 
 #[cfg(feature = "hydrate")]
 fn cap_policy_from_navigator() -> CapPolicy {
-    use js_sys::Reflect;
-    use wasm_bindgen::JsValue;
     let Some(window) = web_sys::window() else {
         return cap_policy_from_device_memory(None);
     };
     let navigator = window.navigator();
-    let nav_value: JsValue = navigator.into();
-    let device_memory = Reflect::get(&nav_value, &JsValue::from_str("deviceMemory"))
-        .ok()
-        .and_then(|value| value.as_f64());
+    let device_memory = navigator_device_memory(&navigator).as_f64();
     cap_policy_from_device_memory(device_memory)
 }
 
@@ -680,21 +710,11 @@ fn read_worker_threshold() -> Option<usize> {
 
 #[cfg(feature = "hydrate")]
 fn read_worker_max_floats() -> Option<usize> {
-    use js_sys::Reflect;
-    use wasm_bindgen::JsCast;
-    use wasm_bindgen::JsValue;
-
-    let window = web_sys::window()?;
-    let limits = Reflect::get(&window, &JsValue::from_str("dmbGetWorkerLimits")).ok()?;
-    if !limits.is_function() {
-        return None;
-    }
-    let func: js_sys::Function = limits.dyn_into().ok()?;
-    let value = func.call0(&JsValue::NULL).ok()?;
-    Reflect::get(&value, &JsValue::from_str("maxFloats"))
+    let value = dmb_get_worker_limits().ok()?;
+    serde_wasm_bindgen::from_value::<WorkerLimitsResult>(value)
         .ok()
-        .and_then(|v| v.as_f64())
-        .map(|v| v as usize)
+        .and_then(|limits| limits.max_floats)
+        .map(|max_floats| max_floats as usize)
 }
 
 #[cfg(feature = "hydrate")]
@@ -759,8 +779,6 @@ pub fn worker_failure_status() -> WorkerFailureStatus {
 
 #[cfg(feature = "hydrate")]
 pub fn clear_worker_failure_status() {
-    use wasm_bindgen::JsCast;
-    use wasm_bindgen::JsValue;
     let Some(window) = web_sys::window() else {
         return;
     };
@@ -769,16 +787,7 @@ pub fn clear_worker_failure_status() {
         let _ = storage.remove_item(WORKER_FAILURE_REASON_KEY);
         let _ = storage.remove_item(WORKER_COOLDOWN_WARN_KEY);
     }
-    if let Ok(func) = js_sys::Reflect::get(
-        &JsValue::from(window.clone()),
-        &JsValue::from_str("dmbClearWorkerFailureStatus"),
-    ) {
-        if func.is_function() {
-            let _ = func
-                .dyn_into::<js_sys::Function>()
-                .map(|f| f.call0(&JsValue::NULL));
-        }
-    }
+    let _ = dmb_clear_worker_failure_status();
 }
 
 #[cfg(feature = "hydrate")]
@@ -859,7 +868,6 @@ pub fn set_webgpu_disabled(disabled: bool) {
 
 #[cfg(feature = "hydrate")]
 fn store_worker_threshold(value: usize) {
-    use wasm_bindgen::JsCast;
     let Some(window) = web_sys::window() else {
         return;
     };
@@ -867,33 +875,14 @@ fn store_worker_threshold(value: usize) {
         return;
     };
     let _ = storage.set_item(WORKER_THRESHOLD_KEY, &value.to_string());
-    if let Ok(func) = js_sys::Reflect::get(
-        &window,
-        &wasm_bindgen::JsValue::from_str("dmbSetWorkerThreshold"),
-    ) {
-        if func.is_function() {
-            let Ok(func) = func.dyn_into::<js_sys::Function>() else {
-                return;
-            };
-            let _ = func.call1(
-                &wasm_bindgen::JsValue::NULL,
-                &wasm_bindgen::JsValue::from_f64(value as f64),
-            );
-        }
-    }
+    let _ = dmb_set_worker_threshold(value as f64);
 }
 
 #[cfg(feature = "hydrate")]
 fn auto_worker_threshold() -> Option<usize> {
-    use js_sys::Reflect;
-    use wasm_bindgen::JsValue;
-
     let window = web_sys::window()?;
     let navigator = window.navigator();
-    let nav_value: JsValue = navigator.into();
-    let device_memory = Reflect::get(&nav_value, &JsValue::from_str("deviceMemory"))
-        .ok()
-        .and_then(|value| value.as_f64());
+    let device_memory = navigator_device_memory(&navigator).as_f64();
     let cores = window.navigator().hardware_concurrency().max(1.0) as usize;
 
     let mut threshold = if device_memory.unwrap_or(0.0) >= 16.0 || cores >= 12 {
@@ -1960,33 +1949,21 @@ pub async fn benchmark_gpu(sample: &BenchmarkSample) -> (Option<f64>, String) {
 
 #[cfg(feature = "hydrate")]
 async fn measure_webgpu_scores(
-    func_name: &str,
+    variant: WebgpuScoreFn,
     query: &js_sys::Float32Array,
     matrix: &js_sys::Float32Array,
     dim: usize,
 ) -> Option<f64> {
-    use js_sys::{Function, Promise, Reflect};
     use wasm_bindgen::JsCast;
-    use wasm_bindgen::JsValue;
     use wasm_bindgen_futures::JsFuture;
 
     let window = web_sys::window()?;
-    let func = Reflect::get(&window, &JsValue::from_str(func_name)).ok()?;
-    if !func.is_function() {
-        return None;
-    }
-    let func: Function = func.dyn_into().ok()?;
     let perf = window.performance()?;
     let start = perf.now();
-    let promise = func
-        .call3(
-            &JsValue::NULL,
-            query,
-            matrix,
-            &JsValue::from_f64(dim as f64),
-        )
-        .ok()?;
-    let promise: Promise = promise.dyn_into().ok()?;
+    let promise = match variant {
+        WebgpuScoreFn::Direct => dmb_webgpu_scores_js(query, matrix, dim as f64).ok()?,
+        WebgpuScoreFn::Worker => dmb_webgpu_scores_worker_js(query, matrix, dim as f64).ok()?,
+    };
     let result = JsFuture::from(promise).await.ok()?;
     if result.is_null() || result.is_undefined() {
         return None;
@@ -2017,9 +1994,9 @@ pub async fn benchmark_worker_threshold() -> Option<AiWorkerBenchmark> {
     let matrix_array = js_sys::Float32Array::from(matrix_slice);
 
     let direct_ms =
-        measure_webgpu_scores("dmbWebgpuScores", &query_array, &matrix_array, dim).await;
+        measure_webgpu_scores(WebgpuScoreFn::Direct, &query_array, &matrix_array, dim).await;
     let worker_ms =
-        measure_webgpu_scores("dmbWebgpuScoresWorker", &query_array, &matrix_array, dim).await;
+        measure_webgpu_scores(WebgpuScoreFn::Worker, &query_array, &matrix_array, dim).await;
 
     let winner = match (direct_ms, worker_ms) {
         (Some(direct), Some(worker)) => Some(if worker < direct {

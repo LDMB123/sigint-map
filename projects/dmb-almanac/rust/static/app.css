@@ -324,6 +324,11 @@
 
   .detail-nav {
     margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    flex-wrap: wrap;
   }
 
   .detail-nav__link {
@@ -343,6 +348,10 @@
 
   .detail-nav__link:hover {
     color: var(--text);
+  }
+
+  .detail-nav__copy {
+    margin-left: auto;
   }
 
   .list-summary {
@@ -1125,6 +1134,7 @@
 
     .detail-nav {
       margin-bottom: 0.65rem;
+      align-items: flex-start;
     }
 
     .detail-list-head {
