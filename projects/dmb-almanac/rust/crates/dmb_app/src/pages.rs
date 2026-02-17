@@ -2583,6 +2583,83 @@ async fn load_show_context(id: i32) -> Option<ShowContext> {
     Some(ShowContext { show, venue, tour })
 }
 
+fn titleize_label(raw: &str) -> String {
+    let normalized = raw.trim().replace(['-', '_'], " ");
+    let mut words = normalized
+        .split_whitespace()
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                Some(first) => format!("{}{}", first.to_ascii_uppercase(), chars.as_str()),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>();
+    words.retain(|word| !word.is_empty());
+    if words.is_empty() {
+        "Unknown".to_string()
+    } else {
+        words.join(" ")
+    }
+}
+
+fn normalized_set_key(raw: Option<&str>) -> String {
+    let normalized = raw.unwrap_or_default().trim().to_ascii_lowercase();
+    if normalized.is_empty() {
+        "unspecified".to_string()
+    } else {
+        normalized
+    }
+}
+
+fn setlist_set_label(key: &str) -> String {
+    if key == "unspecified" {
+        "Unspecified".to_string()
+    } else {
+        titleize_label(key)
+    }
+}
+
+fn setlist_set_counts(items: &[SetlistEntry]) -> Vec<(String, usize)> {
+    let mut counts = Vec::<(String, usize)>::new();
+    for entry in items {
+        let key = normalized_set_key(entry.set_name.as_deref());
+        if let Some((_, count)) = counts.iter_mut().find(|(existing, _)| existing == &key) {
+            *count += 1;
+        } else {
+            counts.push((key, 1));
+        }
+    }
+    counts
+}
+
+fn setlist_entry_matches_query(entry: &SetlistEntry, query: &str) -> bool {
+    if query.is_empty() {
+        return true;
+    }
+    let in_song_title = entry
+        .song
+        .as_ref()
+        .map(|song| song.title.to_ascii_lowercase().contains(query))
+        .unwrap_or(false);
+    let in_slot = entry
+        .slot
+        .as_deref()
+        .map(|slot| slot.to_ascii_lowercase().contains(query))
+        .unwrap_or(false);
+    let in_set = entry
+        .set_name
+        .as_deref()
+        .map(|set| set.to_ascii_lowercase().contains(query))
+        .unwrap_or(false);
+    let in_notes = entry
+        .notes
+        .as_deref()
+        .map(|notes| notes.to_ascii_lowercase().contains(query))
+        .unwrap_or(false);
+    in_song_title || in_slot || in_set || in_notes
+}
+
 pub fn shows_page() -> impl IntoView {
     let render = |items: Vec<ShowSummary>| {
         if items.is_empty() {
@@ -2961,9 +3038,16 @@ fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
 pub fn show_detail_page() -> impl IntoView {
     let params = use_params_map();
     let show_id = move || params.with(|p| p.get("showId").unwrap_or_default());
+    let active_set = RwSignal::new("all".to_string());
+    let setlist_query = RwSignal::new(String::new());
     let render = |ctx: Option<ShowContext>| match ctx {
         Some(ctx) => {
             let show = ctx.show;
+            let venue_name = ctx
+                .venue
+                .as_ref()
+                .map(|venue| venue.name.clone())
+                .unwrap_or_else(|| format!("Venue #{}", show.venue_id));
             let venue_line = ctx
                 .venue
                 .as_ref()
@@ -2974,22 +3058,42 @@ pub fn show_detail_page() -> impl IntoView {
                         format_location(&venue.city, &venue.state)
                     )
                 })
-                .unwrap_or_else(|| format!("Venue #{}", show.venue_id));
+                .unwrap_or_else(|| venue_name.clone());
             let tour_line = ctx
                 .tour
                 .as_ref()
                 .map(|tour| format!("{} ({})", tour.name, tour.year))
                 .unwrap_or_else(|| "No tour".into());
+            let tour_href = ctx
+                .tour
+                .as_ref()
+                .map(|tour| format!("/tours/{}", tour.year));
+            let venue_href = format!("/venues/{}", show.venue_id);
             let song_count = show.song_count.unwrap_or(0);
             let rarity = show
                 .rarity_index
                 .map(|v| format!("{:.2}", v))
                 .unwrap_or_else(|| "-".into());
             view! {
+                <div class="detail-list-head">
+                    <div class="detail-list-head__copy">
+                        <h2>{show.date.clone()}</h2>
+                        <p class="muted">{format!("{venue_line} • {tour_line}")}</p>
+                    </div>
+                    <div class="pill-row detail-list-head__meta">
+                        <span class="pill">{format!("{song_count} songs")}</span>
+                        <span class="pill pill--ghost">{format!("Rarity {rarity}")}</span>
+                        <a class="pill pill--ghost" href=venue_href>"Venue details"</a>
+                        {tour_href.map(|href| view! {
+                            <a class="pill pill--ghost" href=href>"Tour details"</a>
+                        })}
+                    </div>
+                </div>
                 <div class="detail-grid">
                     <div><strong>"Date"</strong><span>{show.date}</span></div>
                     <div><strong>"Venue"</strong><span>{venue_line}</span></div>
                     <div><strong>"Tour"</strong><span>{tour_line}</span></div>
+                    <div><strong>"Year"</strong><span>{show.year}</span></div>
                     <div><strong>"Songs"</strong><span>{song_count}</span></div>
                     <div><strong>"Rarity Index"</strong><span>{rarity}</span></div>
                 </div>
@@ -3042,27 +3146,168 @@ pub fn show_detail_page() -> impl IntoView {
                                 )
                                 .into_any()
                             } else {
+                                let total_count = items.len();
+                                let set_counts = setlist_set_counts(&items);
+                                let active_key = active_set.get();
+                                let query_raw = setlist_query.get();
+                                let query_text = query_raw.trim().to_string();
+                                let query_normalized = query_text.to_ascii_lowercase();
+                                let filtered_items = items
+                                    .into_iter()
+                                    .filter(|entry| {
+                                        let set_key = normalized_set_key(entry.set_name.as_deref());
+                                        let matches_set = active_key == "all" || set_key == active_key;
+                                        matches_set && setlist_entry_matches_query(entry, &query_normalized)
+                                    })
+                                    .collect::<Vec<_>>();
+                                let filtered_count = filtered_items.len();
+                                let has_filters = active_key != "all" || !query_text.is_empty();
+                                let summary = if query_text.is_empty() {
+                                    format!("Showing {filtered_count} of {total_count} setlist entries")
+                                } else {
+                                    format!(
+                                        "Showing {filtered_count} of {total_count} setlist entries matching \"{query_text}\""
+                                    )
+                                };
                                 view! {
-                                    <ol class="setlist" aria-label="Show setlist">
-                                        {items
-                                            .into_iter()
-                                            .map(|entry| {
-                                                let label = entry
-                                                    .song
-                                                    .as_ref()
-                                                    .map(|song| song.title.clone())
-                                                    .unwrap_or_else(|| format!("Song #{}", entry.song_id));
-                                                let slot = entry.slot.unwrap_or_else(|| "song".to_string());
-                                                view! {
-                                                    <li class="setlist-item">
-                                                        <span class="setlist-pos">{entry.position}</span>
-                                                        <span class="setlist-title">{label}</span>
-                                                        <span class="setlist-slot">{slot}</span>
-                                                    </li>
-                                                }
-                                            })
-                                            .collect::<Vec<_>>()}
-                                    </ol>
+                                    <div class="detail-list-controls">
+                                        <label class="visually-hidden" for="show-setlist-filter">"Filter setlist entries"</label>
+                                        <input
+                                            id="show-setlist-filter"
+                                            class="search-input"
+                                            type="search"
+                                            placeholder="Filter by song, set name, slot, or notes"
+                                            prop:value=move || setlist_query.get()
+                                            on:input=move |ev| setlist_query.set(event_target_value(&ev))
+                                        />
+                                        <div class="result-filters" role="group" aria-label="Setlist filters">
+                                            <button
+                                                type="button"
+                                                class="result-filter pill pill--ghost"
+                                                class:result-filter--active=move || active_set.get() == "all"
+                                                on:click=move |_| active_set.set("all".to_string())
+                                            >
+                                                {format!("All ({total_count})")}
+                                            </button>
+                                            {set_counts
+                                                .into_iter()
+                                                .map(|(set_key, count)| {
+                                                    let label = setlist_set_label(&set_key);
+                                                    let key_for_class = set_key.clone();
+                                                    let key_for_click = set_key.clone();
+                                                    view! {
+                                                        <button
+                                                            type="button"
+                                                            class="result-filter pill pill--ghost"
+                                                            class:result-filter--active=move || active_set.get() == key_for_class
+                                                            on:click=move |_| active_set.set(key_for_click.clone())
+                                                        >
+                                                            {format!("{label} ({count})")}
+                                                        </button>
+                                                    }
+                                                })
+                                                .collect::<Vec<_>>()}
+                                        </div>
+                                    </div>
+                                    <p class="list-summary">{summary}</p>
+                                    {if filtered_items.is_empty() {
+                                        view! {
+                                            <section class="status-card status-card--empty">
+                                                <p class="status-title">"No setlist entries match this view"</p>
+                                                <p class="muted">"Try a different set filter or clear the search query."</p>
+                                                {has_filters.then(|| {
+                                                    view! {
+                                                        <div class="pill-row">
+                                                            <button
+                                                                type="button"
+                                                                class="pill pill--ghost"
+                                                                on:click=move |_| {
+                                                                    active_set.set("all".to_string());
+                                                                    setlist_query.set(String::new());
+                                                                }
+                                                            >
+                                                                "Clear filters"
+                                                            </button>
+                                                        </div>
+                                                    }
+                                                })}
+                                            </section>
+                                        }
+                                            .into_any()
+                                    } else {
+                                        view! {
+                                            <ol class="setlist" aria-label="Show setlist">
+                                                {filtered_items
+                                                    .into_iter()
+                                                    .map(|entry| {
+                                                        let label = entry
+                                                            .song
+                                                            .as_ref()
+                                                            .map(|song| song.title.clone())
+                                                            .unwrap_or_else(|| format!("Song #{}", entry.song_id));
+                                                        let slot = entry
+                                                            .slot
+                                                            .as_deref()
+                                                            .map(titleize_label)
+                                                            .unwrap_or_else(|| "Song".to_string());
+                                                        let set_label =
+                                                            setlist_set_label(&normalized_set_key(entry.set_name.as_deref()));
+                                                        let song_href = entry.song.as_ref().and_then(|song| {
+                                                            let slug = song.slug.trim();
+                                                            if slug.is_empty() {
+                                                                None
+                                                            } else {
+                                                                Some(format!("/songs/{slug}"))
+                                                            }
+                                                        });
+                                                        let title_view = match song_href {
+                                                            Some(href) => view! {
+                                                                <a class="setlist-title result-label" href=href>{label.clone()}</a>
+                                                            }
+                                                            .into_any(),
+                                                            None => view! { <span class="setlist-title">{label.clone()}</span> }.into_any(),
+                                                        };
+
+                                                        let mut context_parts = vec![format!("Set: {set_label}")];
+                                                        if entry.is_segue.unwrap_or(false) {
+                                                            context_parts.push("Segue".to_string());
+                                                        }
+                                                        if entry.is_tease.unwrap_or(false) {
+                                                            context_parts.push("Tease".to_string());
+                                                        }
+                                                        if let Some(duration) = entry.duration_seconds {
+                                                            if duration > 0 {
+                                                                context_parts
+                                                                    .push(format!("{}:{:02}", duration / 60, duration % 60));
+                                                            }
+                                                        }
+                                                        let context_line = context_parts.join(" • ");
+                                                        let notes = entry
+                                                            .notes
+                                                            .as_deref()
+                                                            .map(str::trim)
+                                                            .filter(|notes| !notes.is_empty())
+                                                            .map(ToString::to_string);
+
+                                                        view! {
+                                                            <li class="setlist-item">
+                                                                <span class="setlist-pos">{entry.position}</span>
+                                                                <div class="setlist-main">
+                                                                    {title_view}
+                                                                    <span class="setlist-context">{context_line}</span>
+                                                                    {notes.map(|notes_line| view! {
+                                                                        <span class="setlist-note">{notes_line}</span>
+                                                                    })}
+                                                                </div>
+                                                                <span class="setlist-slot">{slot}</span>
+                                                            </li>
+                                                        }
+                                                    })
+                                                    .collect::<Vec<_>>()}
+                                            </ol>
+                                        }
+                                            .into_any()
+                                    }}
                                 }
                                 .into_any()
                             }
@@ -3084,21 +3329,90 @@ pub fn show_detail_page() -> impl IntoView {
 pub fn song_detail_page() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
-    let render = |song: Option<Song>| {
-        match song {
-        Some(song) => view! {
-            <div class="detail-grid">
-                <div><strong>"Title"</strong><span>{song.title}</span></div>
-                <div><strong>"Total Plays"</strong><span>{song.total_performances.unwrap_or(0)}</span></div>
-                <div><strong>"Last Played"</strong><span>{song.last_played_date.unwrap_or_else(|| "-".into())}</span></div>
-            </div>
+    let render = |song: Option<Song>| match song {
+        Some(song) => {
+            let title = song.title.clone();
+            let sort_title = song.sort_title.unwrap_or_else(|| "-".to_string());
+            let song_slug = song.slug.clone();
+            let total_plays = song.total_performances.unwrap_or(0).max(0);
+            let last_played = song
+                .last_played_date
+                .clone()
+                .unwrap_or_else(|| "Unknown".to_string());
+            let is_liberated = song.is_liberated.unwrap_or(false);
+            let slot_rows = vec![
+                ("Opener", song.opener_count.unwrap_or(0).max(0)),
+                ("Closer", song.closer_count.unwrap_or(0).max(0)),
+                ("Encore", song.encore_count.unwrap_or(0).max(0)),
+            ];
+
+            view! {
+                <div class="detail-list-head">
+                    <div class="detail-list-head__copy">
+                        <h2>{title.clone()}</h2>
+                        <p class="muted">
+                            {if is_liberated {
+                                "Currently showing extended gap behavior in recent setlists."
+                            } else {
+                                "Active in the regular song rotation profile."
+                            }}
+                        </p>
+                    </div>
+                    <div class="pill-row detail-list-head__meta">
+                        <span class="pill">{format!("{total_plays} plays")}</span>
+                        <span class=if is_liberated { "pill" } else { "pill pill--ghost" }>
+                            {if is_liberated { "Liberated" } else { "In Rotation" }}
+                        </span>
+                        <a class="pill pill--ghost" href="/liberation">"View liberation list"</a>
+                    </div>
+                </div>
+                <div class="detail-grid">
+                    <div><strong>"Title"</strong><span>{title}</span></div>
+                    <div><strong>"Last Played"</strong><span>{last_played}</span></div>
+                    <div><strong>"Sort Title"</strong><span>{sort_title}</span></div>
+                    <div><strong>"Slug"</strong><span>{song_slug}</span></div>
+                </div>
+                <h2>"Slot Distribution"</h2>
+                <p class="list-summary">{format!("Based on {total_plays} tracked performances")}</p>
+                {if total_plays <= 0 {
+                    empty_state(
+                        "Slot distribution unavailable",
+                        "No performance totals are available yet for this song.",
+                    )
+                    .into_any()
+                } else {
+                    view! {
+                        <ul class="result-list">
+                            {slot_rows
+                                .into_iter()
+                                .map(|(slot, count)| {
+                                    let percentage = (count as f32 / total_plays as f32) * 100.0;
+                                    view! {
+                                        <li class="result-card">
+                                            <span class="pill pill--ghost">{slot}</span>
+                                            <div class="result-body">
+                                                <span class="result-label">{format!("{count} plays")}</span>
+                                                <span class="result-meta">{format!("{percentage:.1}% of tracked performances")}</span>
+                                            </div>
+                                            <span class="result-score">{format!("{percentage:.1}%")}</span>
+                                        </li>
+                                    }
+                                })
+                                .collect::<Vec<_>>()}
+                        </ul>
+                    }
+                    .into_any()
+                }}
+            }
+            .into_any()
         }
+        None => empty_state_with_link(
+            "Song not found",
+            "This song slug could not be resolved.",
+            "/songs",
+            "Browse songs",
+        )
         .into_any(),
-        None => {
-            empty_state_with_link("Song not found", "This song slug could not be resolved.", "/songs", "Browse songs")
-                .into_any()
-        }
-    }
     };
 
     let song = Resource::new(slug, |slug: String| async move {
