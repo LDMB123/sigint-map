@@ -4174,6 +4174,7 @@ pub fn search_page() -> impl IntoView {
         let query_signal = query.clone();
         let results_signal = results.clone();
         let index_signal = embedding_index.clone();
+        let search_run = RwSignal::new(0_u64);
         spawn_local(async move {
             index_signal.set(crate::ai::load_embedding_index().await);
         });
@@ -4181,19 +4182,37 @@ pub fn search_page() -> impl IntoView {
             let current_query = query_signal.get();
             let results_signal = results_signal.clone();
             let index_signal = index_signal.get();
+            let search_run_signal = search_run.clone();
+            let run_id = search_run_signal.get_untracked().wrapping_add(1);
+            search_run_signal.set(run_id);
             spawn_local(async move {
+                // Debounce keystrokes to reduce repeated prefix/semantic lookups.
+                wait_ms(120).await;
+                if search_run_signal.get_untracked() != run_id {
+                    return;
+                }
+
                 let trimmed = current_query.trim().to_string();
                 let items = if trimmed.is_empty() {
                     Vec::new()
                 } else {
                     let prefix = dmb_idb::search_global(&trimmed).await.unwrap_or_default();
-                    let semantic = if let Some(index) = index_signal {
-                        crate::ai::semantic_search(&trimmed, &index, 12).await
+                    let semantic = if trimmed.chars().count() >= 2 {
+                        if let Some(index) = index_signal {
+                            crate::ai::semantic_search(&trimmed, &index, 12).await
+                        } else {
+                            Vec::new()
+                        }
                     } else {
                         Vec::new()
                     };
                     merge_search_results(prefix, semantic, 40)
                 };
+
+                // Drop stale async results from superseded queries.
+                if search_run_signal.get_untracked() != run_id {
+                    return;
+                }
                 results_signal.set(items);
             });
         });
@@ -4473,23 +4492,45 @@ async fn load_stats_overview() -> StatsOverview {
     #[cfg(feature = "hydrate")]
     {
         let counts = spawn_local_to_send(async move {
-            let shows = dmb_idb::count_store(dmb_idb::TABLE_SHOWS)
-                .await
+            let stores = [
+                dmb_idb::TABLE_SHOWS,
+                dmb_idb::TABLE_SONGS,
+                dmb_idb::TABLE_VENUES,
+                dmb_idb::TABLE_TOURS,
+                dmb_idb::TABLE_GUESTS,
+                dmb_idb::TABLE_SETLIST_ENTRIES,
+            ];
+
+            let mut counts_by_store: HashMap<String, u32> = HashMap::new();
+            if let Ok((entries, _missing)) = dmb_idb::count_stores_with_missing(&stores).await {
+                for (store, count) in entries {
+                    counts_by_store.insert(store, count);
+                }
+            }
+
+            let shows = counts_by_store
+                .get(dmb_idb::TABLE_SHOWS)
+                .copied()
                 .unwrap_or(0);
-            let songs = dmb_idb::count_store(dmb_idb::TABLE_SONGS)
-                .await
+            let songs = counts_by_store
+                .get(dmb_idb::TABLE_SONGS)
+                .copied()
                 .unwrap_or(0);
-            let venues = dmb_idb::count_store(dmb_idb::TABLE_VENUES)
-                .await
+            let venues = counts_by_store
+                .get(dmb_idb::TABLE_VENUES)
+                .copied()
                 .unwrap_or(0);
-            let tours = dmb_idb::count_store(dmb_idb::TABLE_TOURS)
-                .await
+            let tours = counts_by_store
+                .get(dmb_idb::TABLE_TOURS)
+                .copied()
                 .unwrap_or(0);
-            let guests = dmb_idb::count_store(dmb_idb::TABLE_GUESTS)
-                .await
+            let guests = counts_by_store
+                .get(dmb_idb::TABLE_GUESTS)
+                .copied()
                 .unwrap_or(0);
-            let setlists = dmb_idb::count_store(dmb_idb::TABLE_SETLIST_ENTRIES)
-                .await
+            let setlists = counts_by_store
+                .get(dmb_idb::TABLE_SETLIST_ENTRIES)
+                .copied()
                 .unwrap_or(0);
             (shows, songs, venues, tours, guests, setlists)
         })
