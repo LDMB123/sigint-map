@@ -11,9 +11,13 @@ use futures::future::join_all;
 #[cfg(feature = "hydrate")]
 use std::collections::{HashMap, HashSet};
 #[cfg(feature = "hydrate")]
+use wasm_bindgen::closure::Closure;
+#[cfg(feature = "hydrate")]
 use wasm_bindgen::JsCast;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen::JsValue;
+#[cfg(feature = "hydrate")]
+use wasm_bindgen_futures::JsFuture;
 
 #[cfg(feature = "hydrate")]
 use dmb_core::GuestAppearance;
@@ -68,6 +72,26 @@ fn focus_stats_tab(idx: u8) {
 
 #[cfg(not(feature = "hydrate"))]
 fn focus_stats_tab(_idx: u8) {}
+
+#[cfg(feature = "hydrate")]
+async fn wait_ms(ms: i32) {
+    let promise = js_sys::Promise::new(&mut |resolve, _reject| {
+        if let Some(window) = web_sys::window() {
+            let resolve = resolve.clone();
+            let callback = Closure::once(move || {
+                let _ = resolve.call0(&JsValue::UNDEFINED);
+            });
+            let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
+                callback.as_ref().unchecked_ref(),
+                ms,
+            );
+            callback.forget();
+        } else {
+            let _ = resolve.call0(&JsValue::UNDEFINED);
+        }
+    });
+    let _ = JsFuture::from(promise).await;
+}
 
 pub fn home_page() -> impl IntoView {
     let stats = Resource::new(|| (), |_| async move { get_home_stats().await.ok() });
@@ -504,7 +528,8 @@ pub fn ai_diagnostics_page() -> impl IntoView {
             let _ = ai_config_generated_at_signal.try_set(crate::ai::ai_config_generated_at());
             let _ = embedding_sample_enabled_signal.try_set(crate::ai::embedding_sample_enabled());
             let _ = ai_warnings_signal.try_set(crate::ai::load_ai_warning_events());
-            let _ = worker_bench_timestamp_signal.try_set(crate::ai::webgpu_worker_bench_timestamp());
+            let _ =
+                worker_bench_timestamp_signal.try_set(crate::ai::webgpu_worker_bench_timestamp());
             let _ = webgpu_runtime_signal.try_set(load_webgpu_runtime_telemetry());
             let _ = apple_silicon_profile_signal.try_set(load_apple_silicon_profile());
             let _ = idb_runtime_metrics_signal.try_set(load_idb_runtime_metrics());
@@ -513,8 +538,8 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                 if let Ok(value) =
                     js_sys::Reflect::get(&window, &JsValue::from_str("crossOriginIsolated"))
                 {
-                    let _ =
-                        cross_origin_isolated_signal.try_set(Some(value.as_bool().unwrap_or(false)));
+                    let _ = cross_origin_isolated_signal
+                        .try_set(Some(value.as_bool().unwrap_or(false)));
                 }
                 if let Ok(Some(storage)) = window.local_storage() {
                     if let Ok(Some(value)) = storage.get_item("dmb-webgpu-worker-threshold") {
@@ -613,13 +638,47 @@ pub fn ai_diagnostics_page() -> impl IntoView {
             });
 
             let sqlite_parity_signal = sqlite_parity_signal.clone();
-            spawn_local(async move {
-                let _ = sqlite_parity_signal.try_set(crate::data::fetch_sqlite_parity_report().await);
-            });
-
             let integrity_report_signal = integrity_report_signal.clone();
             spawn_local(async move {
-                let _ = integrity_report_signal.try_set(crate::data::fetch_integrity_report().await);
+                let mut parity = crate::data::fetch_sqlite_parity_report().await;
+                let mut integrity = crate::data::fetch_integrity_report().await;
+                let mut parity_mismatches = parity
+                    .as_ref()
+                    .map(|report| report.total_mismatches)
+                    .unwrap_or(0);
+                let mut integrity_mismatches = integrity
+                    .as_ref()
+                    .map(|report| report.total_mismatches)
+                    .unwrap_or(0);
+
+                let _ = sqlite_parity_signal.try_set(parity.clone());
+                let _ = integrity_report_signal.try_set(integrity.clone());
+
+                if parity_mismatches == 0 && integrity_mismatches == 0 {
+                    return;
+                }
+
+                // Seed import can still be in progress when diagnostics first render.
+                for _ in 0..6 {
+                    wait_ms(12_000).await;
+                    parity = crate::data::fetch_sqlite_parity_report().await;
+                    integrity = crate::data::fetch_integrity_report().await;
+                    parity_mismatches = parity
+                        .as_ref()
+                        .map(|report| report.total_mismatches)
+                        .unwrap_or(0);
+                    integrity_mismatches = integrity
+                        .as_ref()
+                        .map(|report| report.total_mismatches)
+                        .unwrap_or(0);
+
+                    let _ = sqlite_parity_signal.try_set(parity.clone());
+                    let _ = integrity_report_signal.try_set(integrity.clone());
+
+                    if parity_mismatches == 0 && integrity_mismatches == 0 {
+                        break;
+                    }
+                }
             });
         });
 
