@@ -3091,6 +3091,16 @@ pub fn show_detail_page() -> impl IntoView {
     let show_id = move || params.with(|p| p.get("showId").unwrap_or_default());
     let active_set = RwSignal::new("all".to_string());
     let setlist_query = RwSignal::new(String::new());
+    let show_id_for_reset = show_id.clone();
+    {
+        let active_set_signal = active_set.clone();
+        let setlist_query_signal = setlist_query.clone();
+        Effect::new(move |_| {
+            let _ = show_id_for_reset();
+            active_set_signal.set("all".to_string());
+            setlist_query_signal.set(String::new());
+        });
+    }
     let render = |ctx: Option<ShowContext>| match ctx {
         Some(ctx) => {
             let show = ctx.show;
@@ -3236,6 +3246,7 @@ pub fn show_detail_page() -> impl IntoView {
                                                 type="button"
                                                 class="result-filter pill pill--ghost"
                                                 class:result-filter--active=move || active_set.get() == "all"
+                                                aria-pressed=move || active_set.get() == "all"
                                                 on:click=move |_| active_set.set("all".to_string())
                                             >
                                                 {format!("All ({total_count})")}
@@ -3245,12 +3256,14 @@ pub fn show_detail_page() -> impl IntoView {
                                                 .map(|(set_key, count)| {
                                                     let label = setlist_set_label(&set_key);
                                                     let key_for_class = set_key.clone();
+                                                    let key_for_aria = set_key.clone();
                                                     let key_for_click = set_key.clone();
                                                     view! {
                                                         <button
                                                             type="button"
                                                             class="result-filter pill pill--ghost"
                                                             class:result-filter--active=move || active_set.get() == key_for_class
+                                                            aria-pressed=move || active_set.get() == key_for_aria
                                                             on:click=move |_| active_set.set(key_for_click.clone())
                                                         >
                                                             {format!("{label} ({count})")}
@@ -3575,6 +3588,16 @@ pub fn release_detail_page() -> impl IntoView {
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
     let active_disc = RwSignal::new("all".to_string());
     let track_query = RwSignal::new(String::new());
+    let slug_for_reset = slug.clone();
+    {
+        let active_disc_signal = active_disc.clone();
+        let track_query_signal = track_query.clone();
+        Effect::new(move |_| {
+            let _ = slug_for_reset();
+            active_disc_signal.set("all".to_string());
+            track_query_signal.set(String::new());
+        });
+    }
 
     let render = |release: Option<Release>| match release {
         Some(release) => {
@@ -3696,6 +3719,7 @@ pub fn release_detail_page() -> impl IntoView {
                                             type="button"
                                             class="result-filter pill pill--ghost"
                                             class:result-filter--active=move || active_disc.get() == "all"
+                                            aria-pressed=move || active_disc.get() == "all"
                                             on:click=move |_| active_disc.set("all".to_string())
                                         >
                                             {format!("All ({total_count})")}
@@ -3705,12 +3729,14 @@ pub fn release_detail_page() -> impl IntoView {
                                             .map(|(disc_key, count)| {
                                                 let label = disc_key_label(&disc_key);
                                                 let key_for_class = disc_key.clone();
+                                                let key_for_aria = disc_key.clone();
                                                 let key_for_click = disc_key.clone();
                                                 view! {
                                                     <button
                                                         type="button"
                                                         class="result-filter pill pill--ghost"
                                                         class:result-filter--active=move || active_disc.get() == key_for_class
+                                                        aria-pressed=move || active_disc.get() == key_for_aria
                                                         on:click=move |_| active_disc.set(key_for_click.clone())
                                                     >
                                                         {format!("{label} ({count})")}
@@ -4158,6 +4184,7 @@ pub fn search_page() -> impl IntoView {
                                     type="button"
                                     class="result-filter pill pill--ghost"
                                     class:result-filter--active=move || active_filter.get() == "all"
+                                    aria-pressed=move || active_filter.get() == "all"
                                     on:click=move |_| set_active_filter.set("all".to_string())
                                 >
                                     {format!("All ({all_count})")}
@@ -4166,6 +4193,7 @@ pub fn search_page() -> impl IntoView {
                                     type="button"
                                     class="result-filter pill pill--ghost"
                                     class:result-filter--active=move || active_filter.get() == "song"
+                                    aria-pressed=move || active_filter.get() == "song"
                                     disabled=song_count == 0
                                     on:click=move |_| set_active_filter.set("song".to_string())
                                 >
@@ -4175,6 +4203,7 @@ pub fn search_page() -> impl IntoView {
                                     type="button"
                                     class="result-filter pill pill--ghost"
                                     class:result-filter--active=move || active_filter.get() == "show"
+                                    aria-pressed=move || active_filter.get() == "show"
                                     disabled=show_count == 0
                                     on:click=move |_| set_active_filter.set("show".to_string())
                                 >
@@ -4184,6 +4213,7 @@ pub fn search_page() -> impl IntoView {
                                     type="button"
                                     class="result-filter pill pill--ghost"
                                     class:result-filter--active=move || active_filter.get() == "venue"
+                                    aria-pressed=move || active_filter.get() == "venue"
                                     disabled=venue_count == 0
                                     on:click=move |_| set_active_filter.set("venue".to_string())
                                 >
@@ -4193,6 +4223,7 @@ pub fn search_page() -> impl IntoView {
                                     type="button"
                                     class="result-filter pill pill--ghost"
                                     class:result-filter--active=move || active_filter.get() == "tour"
+                                    aria-pressed=move || active_filter.get() == "tour"
                                     disabled=tour_count == 0
                                     on:click=move |_| set_active_filter.set("tour".to_string())
                                 >
@@ -4202,6 +4233,7 @@ pub fn search_page() -> impl IntoView {
                                     type="button"
                                     class="result-filter pill pill--ghost"
                                     class:result-filter--active=move || active_filter.get() == "guest"
+                                    aria-pressed=move || active_filter.get() == "guest"
                                     disabled=guest_count == 0
                                     on:click=move |_| set_active_filter.set("guest".to_string())
                                 >
@@ -4211,6 +4243,7 @@ pub fn search_page() -> impl IntoView {
                                     type="button"
                                     class="result-filter pill pill--ghost"
                                     class:result-filter--active=move || active_filter.get() == "release"
+                                    aria-pressed=move || active_filter.get() == "release"
                                     disabled=release_count == 0
                                     on:click=move |_| set_active_filter.set("release".to_string())
                                 >
@@ -5758,6 +5791,7 @@ fn render_curated_list_detail_content(
                     type="button"
                     class="result-filter pill pill--ghost"
                     class:result-filter--active=move || active_filter.get() == "all"
+                    aria-pressed=move || active_filter.get() == "all"
                     on:click=move |_| active_filter.set("all".to_string())
                 >
                     {format!("All ({total_count})")}
@@ -5767,12 +5801,14 @@ fn render_curated_list_detail_content(
                     .map(|(type_key, count)| {
                         let type_label = curated_item_type_label(&type_key);
                         let key_for_class = type_key.clone();
+                        let key_for_aria = type_key.clone();
                         let key_for_click = type_key.clone();
                         view! {
                             <button
                                 type="button"
                                 class="result-filter pill pill--ghost"
                                 class:result-filter--active=move || active_filter.get() == key_for_class
+                                aria-pressed=move || active_filter.get() == key_for_aria
                                 on:click=move |_| active_filter.set(key_for_click.clone())
                             >
                                 {format!("{type_label} ({count})")}

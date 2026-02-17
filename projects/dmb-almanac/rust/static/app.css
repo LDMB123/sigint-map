@@ -418,6 +418,12 @@
     border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   }
 
+  .result-filter[aria-pressed="true"] {
+    color: var(--text);
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+
   .status-card {
     margin-top: 1rem;
     padding: 1rem 1.1rem;
