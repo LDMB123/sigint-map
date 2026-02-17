@@ -484,44 +484,45 @@ pub fn ai_diagnostics_page() -> impl IntoView {
         let apple_silicon_profile_signal = apple_silicon_profile.clone();
         let idb_runtime_metrics_signal = idb_runtime_metrics.clone();
         request_animation_frame(move || {
-            caps_signal.set(crate::ai::detect_ai_capabilities());
+            let _ = caps_signal.try_set(crate::ai::detect_ai_capabilities());
 
-            worker_threshold_current_signal.set(crate::ai::worker_threshold_value());
-            worker_max_floats_signal.set(crate::ai::worker_max_floats_value());
+            let _ = worker_threshold_current_signal.try_set(crate::ai::worker_threshold_value());
+            let _ = worker_max_floats_signal.try_set(crate::ai::worker_max_floats_value());
 
             // If another page (eg. AI Warmup) already loaded embeddings, surface the cached cap
             // diagnostics without kicking off the heavy load here.
-            ann_caps_signal.set(crate::ai::ann_cap_diagnostics());
+            let _ = ann_caps_signal.try_set(crate::ai::ann_cap_diagnostics());
 
             let override_mb = crate::ai::ann_cap_override_mb();
-            ann_cap_override_value_signal.set(override_mb);
-            ann_cap_override_input_signal
-                .set(override_mb.map(|v| v.to_string()).unwrap_or_default());
+            let _ = ann_cap_override_value_signal.try_set(override_mb);
+            let _ = ann_cap_override_input_signal
+                .try_set(override_mb.map(|v| v.to_string()).unwrap_or_default());
 
-            worker_failure_signal.set(crate::ai::worker_failure_status());
-            ai_config_seeded_signal.set(crate::ai::ai_config_seeded());
-            ai_config_version_signal.set(crate::ai::ai_config_version());
-            ai_config_generated_at_signal.set(crate::ai::ai_config_generated_at());
-            embedding_sample_enabled_signal.set(crate::ai::embedding_sample_enabled());
-            ai_warnings_signal.set(crate::ai::load_ai_warning_events());
-            worker_bench_timestamp_signal.set(crate::ai::webgpu_worker_bench_timestamp());
-            webgpu_runtime_signal.set(load_webgpu_runtime_telemetry());
-            apple_silicon_profile_signal.set(load_apple_silicon_profile());
-            idb_runtime_metrics_signal.set(load_idb_runtime_metrics());
+            let _ = worker_failure_signal.try_set(crate::ai::worker_failure_status());
+            let _ = ai_config_seeded_signal.try_set(crate::ai::ai_config_seeded());
+            let _ = ai_config_version_signal.try_set(crate::ai::ai_config_version());
+            let _ = ai_config_generated_at_signal.try_set(crate::ai::ai_config_generated_at());
+            let _ = embedding_sample_enabled_signal.try_set(crate::ai::embedding_sample_enabled());
+            let _ = ai_warnings_signal.try_set(crate::ai::load_ai_warning_events());
+            let _ = worker_bench_timestamp_signal.try_set(crate::ai::webgpu_worker_bench_timestamp());
+            let _ = webgpu_runtime_signal.try_set(load_webgpu_runtime_telemetry());
+            let _ = apple_silicon_profile_signal.try_set(load_apple_silicon_profile());
+            let _ = idb_runtime_metrics_signal.try_set(load_idb_runtime_metrics());
 
             if let Some(window) = web_sys::window() {
                 if let Ok(value) =
                     js_sys::Reflect::get(&window, &JsValue::from_str("crossOriginIsolated"))
                 {
-                    cross_origin_isolated_signal.set(Some(value.as_bool().unwrap_or(false)));
+                    let _ =
+                        cross_origin_isolated_signal.try_set(Some(value.as_bool().unwrap_or(false)));
                 }
                 if let Ok(Some(storage)) = window.local_storage() {
                     if let Ok(Some(value)) = storage.get_item("dmb-webgpu-worker-threshold") {
-                        worker_threshold_input_signal.set(value);
+                        let _ = worker_threshold_input_signal.try_set(value);
                     }
                     if let Ok(Some(value)) = storage.get_item("dmb-webgpu-disabled") {
-                        webgpu_disabled_signal
-                            .set(value == "1" || value.eq_ignore_ascii_case("true"));
+                        let _ = webgpu_disabled_signal
+                            .try_set(value == "1" || value.eq_ignore_ascii_case("true"));
                     }
                 }
             }
@@ -539,15 +540,15 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                     };
                     let remote_version = normalize(remote.version.clone());
                     let remote_generated = normalize(remote.generated_at.clone());
-                    let mut version = normalize(local_version.get_untracked());
-                    let mut generated = normalize(local_generated_at.get_untracked());
+                    let mut version = normalize(local_version.try_get_untracked().flatten());
+                    let mut generated = normalize(local_generated_at.try_get_untracked().flatten());
                     if remote_version != version || remote_generated != generated {
                         // Attempt self-heal for stale local AI config metadata.
                         if crate::ai::refresh_ai_config().await {
                             version = normalize(crate::ai::ai_config_version());
                             generated = normalize(crate::ai::ai_config_generated_at());
-                            local_version.set(version.clone());
-                            local_generated_at.set(generated.clone());
+                            let _ = local_version.try_set(version.clone());
+                            let _ = local_generated_at.try_set(generated.clone());
                         }
                         if remote_version != version || remote_generated != generated {
                             // Fallback: sync metadata directly from remote response.
@@ -557,8 +558,8 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                             ) {
                                 version = remote_version.clone();
                                 generated = remote_generated.clone();
-                                local_version.set(version.clone());
-                                local_generated_at.set(generated.clone());
+                                let _ = local_version.try_set(version.clone());
+                                let _ = local_generated_at.try_set(generated.clone());
                             }
                         }
                         if remote_version != version || remote_generated != generated {
@@ -569,12 +570,12 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                     .clone()
                                     .unwrap_or_else(|| "n/a".to_string())
                             );
-                            mismatch_signal.set(Some(msg));
+                            let _ = mismatch_signal.try_set(Some(msg));
                         } else {
-                            mismatch_signal.set(None);
+                            let _ = mismatch_signal.try_set(None);
                         }
                     } else {
-                        mismatch_signal.set(None);
+                        let _ = mismatch_signal.try_set(None);
                     }
                 }
             });
@@ -583,42 +584,42 @@ pub fn ai_diagnostics_page() -> impl IntoView {
             // without racing long-running async tasks.
             let ann_meta_signal = ann_meta_signal.clone();
             spawn_local(async move {
-                ann_meta_signal.set(crate::ai::load_ann_meta().await);
+                let _ = ann_meta_signal.try_set(crate::ai::load_ann_meta().await);
             });
 
             let embed_signal = embed_signal.clone();
             spawn_local(async move {
-                embed_signal.set(crate::ai::load_embedding_manifest_meta().await);
+                let _ = embed_signal.try_set(crate::ai::load_embedding_manifest_meta().await);
             });
 
             let tuning_signal = tuning_signal.clone();
             spawn_local(async move {
-                tuning_signal.set(Some(crate::ai::load_ai_tuning().await));
+                let _ = tuning_signal.try_set(Some(crate::ai::load_ai_tuning().await));
             });
 
             let history_signal = history_signal.clone();
             spawn_local(async move {
-                history_signal.set(crate::ai::benchmark_history());
+                let _ = history_signal.try_set(crate::ai::benchmark_history());
             });
 
             let telemetry_signal = telemetry_signal.clone();
             spawn_local(async move {
-                telemetry_signal.set(crate::ai::load_ai_telemetry_snapshot());
+                let _ = telemetry_signal.try_set(crate::ai::load_ai_telemetry_snapshot());
             });
 
             let webgpu_probe_signal = webgpu_probe_signal.clone();
             spawn_local(async move {
-                webgpu_probe_signal.set(crate::ai::probe_webgpu_device().await);
+                let _ = webgpu_probe_signal.try_set(crate::ai::probe_webgpu_device().await);
             });
 
             let sqlite_parity_signal = sqlite_parity_signal.clone();
             spawn_local(async move {
-                sqlite_parity_signal.set(crate::data::fetch_sqlite_parity_report().await);
+                let _ = sqlite_parity_signal.try_set(crate::data::fetch_sqlite_parity_report().await);
             });
 
             let integrity_report_signal = integrity_report_signal.clone();
             spawn_local(async move {
-                integrity_report_signal.set(crate::data::fetch_integrity_report().await);
+                let _ = integrity_report_signal.try_set(crate::data::fetch_integrity_report().await);
             });
         });
 
@@ -1054,47 +1055,47 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                 <div class="card">
                     <h2>"Capabilities"</h2>
                     <ul class="list">
-                        <li>{format!("WebGPU available: {}", if caps.get().webgpu_available { "yes" } else { "no" })}</li>
-                        <li>{format!(
+                        <li>{move || format!("WebGPU available: {}", if caps.get().webgpu_available { "yes" } else { "no" })}</li>
+                        <li>{move || format!(
                             "WebGPU device probe: {}",
                             webgpu_probe
                                 .get()
                                 .map(|ok| if ok { "ready" } else { "failed" })
                                 .unwrap_or("n/a")
                         )}</li>
-                        <li>{format!("WebGPU enabled: {}", if caps.get().webgpu_enabled { "yes" } else { "no" })}</li>
-                        <li>{format!("GPU Worker: {}", if caps.get().webgpu_worker { "on" } else { "off" })}</li>
-                        <li>{format!("WebNN: {}", if caps.get().webnn { "on" } else { "off" })}</li>
-                        <li>{format!("SIMD: {}", if caps.get().wasm_simd { "on" } else { "off" })}</li>
-                        <li>{format!("Threads: {}", if caps.get().threads { "on" } else { "off" })}</li>
-                        <li>{format!(
+                        <li>{move || format!("WebGPU enabled: {}", if caps.get().webgpu_enabled { "yes" } else { "no" })}</li>
+                        <li>{move || format!("GPU Worker: {}", if caps.get().webgpu_worker { "on" } else { "off" })}</li>
+                        <li>{move || format!("WebNN: {}", if caps.get().webnn { "on" } else { "off" })}</li>
+                        <li>{move || format!("SIMD: {}", if caps.get().wasm_simd { "on" } else { "off" })}</li>
+                        <li>{move || format!("Threads: {}", if caps.get().threads { "on" } else { "off" })}</li>
+                        <li>{move || format!(
                             "Scoring backend: {}",
                             if caps.get().webgpu_enabled { "WebGPU" } else { "WASM SIMD" }
                         )}</li>
-                        <li>{format!(
+                        <li>{move || format!(
                             "Cross-Origin Isolated: {}",
                             cross_origin_isolated
                                 .get()
                                 .map(|v| if v { "on" } else { "off" })
                                 .unwrap_or("n/a")
                         )}</li>
-                        <li>{format!(
+                        <li>{move || format!(
                             "AI config seeded: {}",
                             if ai_config_seeded.get() { "yes" } else { "no" }
                         )}</li>
-                        <li>{format!(
+                        <li>{move || format!(
                             "AI config version: {}",
                             ai_config_version
                                 .get()
                                 .unwrap_or_else(|| "n/a".to_string())
                         )}</li>
-                        <li>{format!(
+                        <li>{move || format!(
                             "AI config generated: {}",
                             ai_config_generated_at
                                 .get()
                                 .unwrap_or_else(|| "n/a".to_string())
                         )}</li>
-                        <li>{format!(
+                        <li>{move || format!(
                             "Worker bench: {}",
                             worker_bench_timestamp
                                 .get()
@@ -1104,14 +1105,14 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                 })
                                 .unwrap_or_else(|| "n/a".to_string())
                         )}</li>
-                        <li>{format!(
+                        <li>{move || format!(
                             "Worker max floats: {}",
                             worker_max_floats
                                 .get()
                                 .map(|v| v.to_string())
                                 .unwrap_or_else(|| "n/a".to_string())
                         )}</li>
-                        <li>{format!(
+                        <li>{move || format!(
                             "Worker cooldown: {}",
                             worker_failure
                                 .get()
@@ -1119,7 +1120,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                 .map(|ms| format!("{:.0}s", (ms / 1000.0).max(0.0)))
                                 .unwrap_or_else(|| "none".to_string())
                         )}</li>
-                        <li>{format!(
+                        <li>{move || format!(
                             "Worker last error: {}",
                             worker_failure
                                 .get()
@@ -5934,163 +5935,64 @@ fn render_curated_list_detail_content(
 }
 
 pub fn liberation_page() -> impl IntoView {
-    #[cfg(feature = "hydrate")]
-    let (items, loading) = {
-        let items = RwSignal::new(Vec::<LiberationEntry>::new());
-        let loading = RwSignal::new(true);
-        let items_signal = items.clone();
-        let loading_signal = loading.clone();
-        spawn_local(async move {
-            items_signal.set(load_liberation_list(50).await);
-            loading_signal.set(false);
-        });
-        (items, loading)
-    };
-    #[cfg(not(feature = "hydrate"))]
     let items = Resource::new(|| (), |_| async move { load_liberation_list(50).await });
 
     view! {
         <section class="page">
             <h1>"Liberation List"</h1>
             <p class="lead">"Songs with the longest gaps since last play."</p>
-            {move || {
-                #[cfg(feature = "hydrate")]
-                {
-                    if loading.get() {
-                        loading_state(
-                            "Loading liberation list",
-                            "Computing gap durations and recent play context.",
-                        )
-                        .into_any()
-                    } else {
-                        render_liberation_items(items.get()).into_any()
-                    }
+            <Suspense
+                fallback=move || {
+                    loading_state(
+                        "Loading liberation list",
+                        "Computing gap durations and recent play context.",
+                    )
                 }
-                #[cfg(not(feature = "hydrate"))]
-                {
-                    view! {
-                        <Suspense
-                            fallback=move || {
-                                loading_state(
-                                    "Loading liberation list",
-                                    "Computing gap durations and recent play context.",
-                                )
-                            }
-                        >
-                            {move || render_liberation_items(items.get().unwrap_or_default())}
-                        </Suspense>
-                    }
-                        .into_any()
-                }
-            }}
+            >
+                {move || render_liberation_items(items.get().unwrap_or_default())}
+            </Suspense>
         </section>
     }
 }
 
 pub fn discography_page() -> impl IntoView {
-    #[cfg(feature = "hydrate")]
-    let (items, loading) = {
-        let items = RwSignal::new(Vec::<Release>::new());
-        let loading = RwSignal::new(true);
-        let items_signal = items.clone();
-        let loading_signal = loading.clone();
-        spawn_local(async move {
-            items_signal.set(load_all_releases().await);
-            loading_signal.set(false);
-        });
-        (items, loading)
-    };
-    #[cfg(not(feature = "hydrate"))]
     let items = Resource::new(|| (), |_| async move { load_all_releases().await });
 
     view! {
         <section class="page">
             <h1>"Discography"</h1>
             <p class="lead">"Complete release catalog."</p>
-            {move || {
-                #[cfg(feature = "hydrate")]
-                {
-                    if loading.get() {
-                        loading_state(
-                            "Loading discography",
-                            "Fetching full release catalog.",
-                        )
-                        .into_any()
-                    } else {
-                        render_discography_items(items.get()).into_any()
-                    }
+            <Suspense
+                fallback=move || {
+                    loading_state(
+                        "Loading discography",
+                        "Fetching full release catalog.",
+                    )
                 }
-                #[cfg(not(feature = "hydrate"))]
-                {
-                    view! {
-                        <Suspense
-                            fallback=move || {
-                                loading_state(
-                                    "Loading discography",
-                                    "Fetching full release catalog.",
-                                )
-                            }
-                        >
-                            {move || render_discography_items(items.get().unwrap_or_default())}
-                        </Suspense>
-                    }
-                        .into_any()
-                }
-            }}
+            >
+                {move || render_discography_items(items.get().unwrap_or_default())}
+            </Suspense>
         </section>
     }
 }
 
 pub fn curated_lists_page() -> impl IntoView {
-    #[cfg(feature = "hydrate")]
-    let (items, loading) = {
-        let items = RwSignal::new(Vec::<CuratedList>::new());
-        let loading = RwSignal::new(true);
-        let items_signal = items.clone();
-        let loading_signal = loading.clone();
-        spawn_local(async move {
-            items_signal.set(load_curated_lists().await);
-            loading_signal.set(false);
-        });
-        (items, loading)
-    };
-    #[cfg(not(feature = "hydrate"))]
     let items = Resource::new(|| (), |_| async move { load_curated_lists().await });
 
     view! {
         <section class="page">
             <h1>"Curated Lists"</h1>
             <p class="lead">"Featured playlists, fan picks, and themed collections."</p>
-            {move || {
-                #[cfg(feature = "hydrate")]
-                {
-                    if loading.get() {
-                        loading_state(
-                            "Loading curated lists",
-                            "Fetching featured and themed collections.",
-                        )
-                        .into_any()
-                    } else {
-                        render_curated_list_cards(items.get()).into_any()
-                    }
+            <Suspense
+                fallback=move || {
+                    loading_state(
+                        "Loading curated lists",
+                        "Fetching featured and themed collections.",
+                    )
                 }
-                #[cfg(not(feature = "hydrate"))]
-                {
-                    view! {
-                        <Suspense
-                            fallback=move || {
-                                loading_state(
-                                    "Loading curated lists",
-                                    "Fetching featured and themed collections.",
-                                )
-                            }
-                        >
-                            {move || render_curated_list_cards(items.get().unwrap_or_default())}
-                        </Suspense>
-                    }
-                        .into_any()
-                }
-            }}
+            >
+                {move || render_curated_list_cards(items.get().unwrap_or_default())}
+            </Suspense>
         </section>
     }
 }
@@ -6101,56 +6003,29 @@ pub fn curated_list_detail_page() -> impl IntoView {
     let active_filter = RwSignal::new("all".to_string());
     let query = RwSignal::new(String::new());
 
-    #[cfg(feature = "hydrate")]
-    let (list, items, loading) = {
-        let list = RwSignal::new(None::<CuratedList>);
-        let items = RwSignal::new(Vec::<CuratedListItem>::new());
-        let loading = RwSignal::new(true);
-        let list_signal = list.clone();
-        let items_signal = items.clone();
-        let loading_signal = loading.clone();
-        let active_filter_signal = active_filter.clone();
-        let query_signal = query.clone();
-        Effect::new(move |_| {
-            let id_raw = list_id();
-            let list_signal = list_signal.clone();
-            let items_signal = items_signal.clone();
-            let loading_signal = loading_signal.clone();
-            let active_filter_signal = active_filter_signal.clone();
-            let query_signal = query_signal.clone();
-            loading_signal.set(true);
-            active_filter_signal.set("all".to_string());
-            query_signal.set(String::new());
-            spawn_local(async move {
-                let parsed = parse_positive_i32_param(&id_raw, "listId").ok();
-                if let Some(id) = parsed {
-                    let lists = load_curated_lists().await;
-                    list_signal.set(lists.into_iter().find(|list| list.id == id));
-                    items_signal.set(load_curated_list_items(id, 200).await);
-                } else {
-                    list_signal.set(None);
-                    items_signal.set(Vec::new());
-                }
-                loading_signal.set(false);
-            });
-        });
-        (list, items, loading)
-    };
-
-    #[cfg(not(feature = "hydrate"))]
     let list = Resource::new(list_id, |id: String| async move {
         let id = parse_positive_i32_param(&id, "listId").ok()?;
         let lists = load_curated_lists().await;
         lists.into_iter().find(|list| list.id == id)
     });
 
-    #[cfg(not(feature = "hydrate"))]
     let items = Resource::new(list_id, |id: String| async move {
         let Ok(id) = parse_positive_i32_param(&id, "listId") else {
             return Vec::new();
         };
         load_curated_list_items(id, 200).await
     });
+
+    #[cfg(feature = "hydrate")]
+    {
+        let active_filter_signal = active_filter.clone();
+        let query_signal = query.clone();
+        Effect::new(move |_| {
+            let _ = list_id();
+            active_filter_signal.set("all".to_string());
+            query_signal.set(String::new());
+        });
+    }
 
     view! {
         <section class="page">
@@ -6163,97 +6038,42 @@ pub fn curated_list_detail_page() -> impl IntoView {
                     Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
                 }
             }}
-            {move || {
-                #[cfg(feature = "hydrate")]
-                {
-                    if loading.get() {
-                        loading_state(
-                            "Loading curated list",
-                            "Fetching list metadata and up to 200 ranked items.",
-                        )
-                        .into_any()
-                    } else {
-                        match list.get() {
-                            Some(list_val) => render_curated_list_detail_content(
-                                list_val,
-                                items.get(),
-                                active_filter,
-                                query,
-                            )
-                            .into_any(),
-                            None => {
-                                if parse_positive_i32_param(&list_id(), "listId").is_err() {
-                                    view! {
-                                        <section class="status-card status-card--empty">
-                                            <p class="status-title">"Invalid list id"</p>
-                                            <p class="muted">
-                                                "Use a positive integer list id in the URL to open list details."
-                                            </p>
-                                            <p><a class="result-label" href="/lists">"Browse curated lists"</a></p>
-                                        </section>
-                                    }
-                                        .into_any()
-                                } else {
-                                    empty_state_with_link(
-                                        "List not found",
-                                        "This curated list id could not be resolved.",
-                                        "/lists",
-                                        "Browse curated lists",
-                                    )
-                                        .into_any()
-                                }
-                            }
+            <Suspense
+                fallback=move || {
+                    loading_state(
+                        "Loading curated list",
+                        "Fetching list metadata and up to 200 ranked items.",
+                    )
+                }
+            >
+                {move || {
+                    let list_meta = list.get().unwrap_or(None);
+                    let list_items = items.get().unwrap_or_default();
+                    if let Some(list_val) = list_meta {
+                        render_curated_list_detail_content(list_val, list_items, active_filter, query)
+                            .into_any()
+                    } else if parse_positive_i32_param(&list_id(), "listId").is_err() {
+                        view! {
+                            <section class="status-card status-card--empty">
+                                <p class="status-title">"Invalid list id"</p>
+                                <p class="muted">
+                                    "Use a positive integer list id in the URL to open list details."
+                                </p>
+                                <p><a class="result-label" href="/lists">"Browse curated lists"</a></p>
+                            </section>
                         }
+                            .into_any()
+                    } else {
+                        empty_state_with_link(
+                            "List not found",
+                            "This curated list id could not be resolved.",
+                            "/lists",
+                            "Browse curated lists",
+                        )
+                            .into_any()
                     }
-                }
-                #[cfg(not(feature = "hydrate"))]
-                {
-                    view! {
-                        <Suspense
-                            fallback=move || {
-                                loading_state(
-                                    "Loading curated list",
-                                    "Fetching list metadata and up to 200 ranked items.",
-                                )
-                            }
-                        >
-                            {move || {
-                                let list_meta = list.get().unwrap_or(None);
-                                let list_items = items.get().unwrap_or_default();
-                                if let Some(list_val) = list_meta {
-                                    render_curated_list_detail_content(
-                                        list_val,
-                                        list_items,
-                                        active_filter,
-                                        query,
-                                    )
-                                        .into_any()
-                                } else if parse_positive_i32_param(&list_id(), "listId").is_err() {
-                                    view! {
-                                        <section class="status-card status-card--empty">
-                                            <p class="status-title">"Invalid list id"</p>
-                                            <p class="muted">
-                                                "Use a positive integer list id in the URL to open list details."
-                                            </p>
-                                            <p><a class="result-label" href="/lists">"Browse curated lists"</a></p>
-                                        </section>
-                                    }
-                                        .into_any()
-                                } else {
-                                    empty_state_with_link(
-                                        "List not found",
-                                        "This curated list id could not be resolved.",
-                                        "/lists",
-                                        "Browse curated lists",
-                                    )
-                                        .into_any()
-                                }
-                            }}
-                        </Suspense>
-                    }
-                        .into_any()
-                }
-            }}
+                }}
+            </Suspense>
         </section>
     }
 }

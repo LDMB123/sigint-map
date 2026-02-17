@@ -13,12 +13,23 @@ test.describe('Rust visual regression', () => {
   }
 
   async function waitForStableSearchPage(page) {
-    await page.locator('input[type="search"]').waitFor({ state: 'visible' });
+    const searchInput = page.locator('input[type="search"]');
+    await searchInput.waitFor({ state: 'visible' });
+    await searchInput.fill('');
+    await page.waitForFunction(() => {
+      const statusTitle = document.querySelector('.status-title')?.textContent || '';
+      const hasResults = Boolean(document.querySelector('.result-list'));
+      return !hasResults && /Start typing/i.test(statusTitle);
+    });
     await expect(page.locator('.page h1')).toContainText('Search');
   }
 
   async function waitForStableShowDetailPage(page) {
-    await page.locator('.detail-grid').first().waitFor({ state: 'visible' });
+    await page.waitForFunction(() => {
+      const hasDetailGrid = Boolean(document.querySelector('.detail-grid'));
+      const statusTitle = document.querySelector('.status-title')?.textContent || '';
+      return hasDetailGrid || /Show not found|Setlist unavailable/i.test(statusTitle);
+    });
     await expect(page.locator('.page h1')).toBeVisible();
   }
 
@@ -54,7 +65,7 @@ test.describe('Rust visual regression', () => {
   });
 
   test('show detail visual', async ({ page }) => {
-    await gotoHydrated(page, '/shows/1');
+    await gotoHydrated(page, '/shows/5015');
     await waitForStableShowDetailPage(page);
     await expectPageSnapshot(page, 'show-detail-page.png');
   });
