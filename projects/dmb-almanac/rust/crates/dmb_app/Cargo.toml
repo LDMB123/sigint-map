@@ -9,7 +9,6 @@ crate-type = ["rlib", "cdylib"]
 [dependencies]
 leptos = "0.8.5"
 leptos_router = "0.8.5"
-leptos_meta = "0.8.5"
 leptos_config = "0.8.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -30,6 +29,7 @@ sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio",
 
 [dev-dependencies]
 any_spawner = "0.3"
+leptos_meta = "0.8.5"
 
 [features]
 ssr = [
