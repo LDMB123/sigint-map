@@ -17,8 +17,8 @@ flate2 = "1.0"
 rand = "0.8"
 regex = "1.10"
 once_cell = "1.19"
-reqwest = { version = "0.12", features = ["blocking", "rustls-tls"] }
-scraper = "0.19"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls", "gzip", "brotli", "deflate", "charset"] }
+scraper = "0.25"
 rusqlite = { version = "0.32", features = ["bundled"] }
 sha2 = "0.10"
 
