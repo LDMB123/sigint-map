@@ -4,6 +4,7 @@ use leptos::tachys::view::any_view::IntoAny;
 #[cfg(feature = "hydrate")]
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_params_map;
+use std::collections::BTreeMap;
 
 #[cfg(feature = "hydrate")]
 use futures::future::join_all;
@@ -4463,8 +4464,11 @@ pub fn assistant_page() -> impl IntoView {
             let current_index = index_signal.get();
             let results_signal = results_signal.clone();
             spawn_local(async move {
-                let items = if let Some(index) = current_index {
-                    crate::ai::semantic_search(&current_query, &index, 8).await
+                let trimmed = current_query.trim().to_string();
+                let items = if trimmed.len() < 2 {
+                    Vec::new()
+                } else if let Some(index) = current_index {
+                    crate::ai::semantic_search(&trimmed, &index, 8).await
                 } else {
                     Vec::new()
                 };
@@ -4476,11 +4480,11 @@ pub fn assistant_page() -> impl IntoView {
     view! {
         <section class="page">
             <h1>"AI Assistant"</h1>
-            <p>"Offline-first semantic recommendations and answers."</p>
+            <p class="lead">"Offline-first semantic recommendations and answers."</p>
             {move || match embedding_index.get() {
-                None => view! { <p class="muted">"Loading embedding index..."</p> }.into_any(),
+                None => loading_state("Loading embedding index", "Preparing local vector search.").into_any(),
                 Some(index) => view! {
-                    <p class="muted">
+                    <p class="list-summary">
                         "Embedding vectors loaded: "
                         {index.records.len()}
                         " (dim "
@@ -4502,28 +4506,53 @@ pub fn assistant_page() -> impl IntoView {
             </div>
             {move || {
                 let items = results.get();
-                if items.is_empty() && !query.get().is_empty() {
-                    view! { <p class="muted">"No semantic matches yet."</p> }.into_any()
+                let current_query = query.get();
+                let trimmed = current_query.trim().to_string();
+                if trimmed.len() < 2 {
+                    empty_state(
+                        "Ask a question",
+                        "Type at least two characters to see semantic recommendations.",
+                    )
+                    .into_any()
                 } else if items.is_empty() {
-                    view! { <p class="muted">"Ask a question to see recommendations."</p> }.into_any()
+                    empty_state(
+                        "No semantic matches yet",
+                        "Try a broader phrase, song title, venue name, or year.",
+                    )
+                    .into_any()
                 } else {
+                    let count = items.len();
                     view! {
-                        <ul class="result-list">
-                            {items
-                                .into_iter()
-                                .map(|item| {
-                                    let label = item.label.clone();
-                                    let kind = item.result_type.clone();
-                                    view! {
-                                        <li class="result-card">
-                                            <span class="pill">{kind}</span>
-                                            <span class="result-label">{label}</span>
-                                            <span class="result-score">{format!("{:.2}", item.score)}</span>
-                                        </li>
-                                    }
-                                })
-                                .collect::<Vec<_>>()}
-                        </ul>
+                        <>
+                            <p class="list-summary">
+                                {format!("Showing {count} semantic matches for \"{trimmed}\"")}
+                            </p>
+                            <ul class="result-list">
+                                {items
+                                    .into_iter()
+                                    .map(|item| {
+                                        let label = item.label.clone();
+                                        let kind = item.result_type.clone();
+                                        let href = search_result_href(&item);
+                                        view! {
+                                            <li class="result-card">
+                                                <span class="pill">{kind}</span>
+                                                <div class="result-body">
+                                                    {move || match &href {
+                                                        Some(link) => view! {
+                                                            <a class="result-label" href=link.clone()>{label.clone()}</a>
+                                                        }
+                                                        .into_any(),
+                                                        None => view! { <span class="result-label">{label.clone()}</span> }.into_any(),
+                                                    }}
+                                                </div>
+                                                <span class="result-score">{format!("{:.2}", item.score)}</span>
+                                            </li>
+                                        }
+                                    })
+                                    .collect::<Vec<_>>()}
+                            </ul>
+                        </>
                     }
                     .into_any()
                 }
@@ -4558,13 +4587,17 @@ pub fn not_found_page() -> impl IntoView {
 pub fn my_shows_page() -> impl IntoView {
     let items = RwSignal::new(Vec::<UserAttendedShow>::new());
     let input = RwSignal::new(String::new());
-    let message = RwSignal::new(None::<String>);
+    let message = RwSignal::new(None::<(String, bool)>);
+    #[cfg(feature = "hydrate")]
+    let loading = RwSignal::new(true);
 
     #[cfg(feature = "hydrate")]
     {
         let items_signal = items.clone();
+        let loading_signal = loading.clone();
         spawn_local(async move {
             items_signal.set(load_user_attended_shows().await);
+            loading_signal.set(false);
         });
     }
 
@@ -4573,18 +4606,38 @@ pub fn my_shows_page() -> impl IntoView {
         let items = items.clone();
         let input = input.clone();
         let message = message.clone();
+        let loading = loading.clone();
         move |_| {
             let value = input.get();
             let Ok(show_id) = value.trim().parse::<i32>() else {
-                message.set(Some("Enter a numeric show id.".to_string()));
+                message.set(Some((
+                    "Enter a positive numeric show ID.".to_string(),
+                    true,
+                )));
                 return;
             };
+            if show_id <= 0 {
+                message.set(Some((
+                    "Enter a positive numeric show ID.".to_string(),
+                    true,
+                )));
+                return;
+            }
             message.set(None);
+            loading.set(true);
             spawn_local(async move {
                 let show_date = load_show(show_id).await.map(|show| show.date);
                 if add_user_attended_show(show_id, show_date).await {
                     items.set(load_user_attended_shows().await);
+                    input.set(String::new());
+                    message.set(Some((format!("Saved show {show_id} locally."), false)));
+                } else {
+                    message.set(Some((
+                        "Unable to save this show. Please try again.".to_string(),
+                        true,
+                    )));
                 }
+                loading.set(false);
             });
         }
     };
@@ -4595,11 +4648,24 @@ pub fn my_shows_page() -> impl IntoView {
     #[cfg(feature = "hydrate")]
     let on_remove = {
         let items = items.clone();
+        let message = message.clone();
+        let loading = loading.clone();
         move |show_id: i32| {
             let items = items.clone();
+            let message = message.clone();
+            let loading = loading.clone();
             spawn_local(async move {
-                let _ = remove_user_attended_show(show_id).await;
-                items.set(load_user_attended_shows().await);
+                loading.set(true);
+                if remove_user_attended_show(show_id).await {
+                    items.set(load_user_attended_shows().await);
+                    message.set(Some((format!("Removed show {show_id}."), false)));
+                } else {
+                    message.set(Some((
+                        "Unable to remove this show. Please try again.".to_string(),
+                        true,
+                    )));
+                }
+                loading.set(false);
             });
         }
     };
@@ -4608,7 +4674,7 @@ pub fn my_shows_page() -> impl IntoView {
     let on_remove = |_show_id: i32| {};
 
     #[cfg(not(feature = "hydrate"))]
-    let _ = (&items, &message, &on_remove);
+    let _ = (&items, &message, &on_remove, &input);
 
     view! {
         <section class="page">
@@ -4616,7 +4682,7 @@ pub fn my_shows_page() -> impl IntoView {
             <p class="lead">"Track shows you've attended, stored locally."</p>
             <div class="inline-form">
                 <input
-                    class="search-input"
+                    class="input"
                     type="number"
                     placeholder="Enter show id"
                     prop:value=move || input.get()
@@ -4627,49 +4693,525 @@ pub fn my_shows_page() -> impl IntoView {
             {move || {
                 #[cfg(feature = "hydrate")]
                 {
-                    message.get().map(|msg| view! { <p class="muted">{msg}</p> })
+                    message.get().map(|(msg, is_error)| {
+                        let class_name = if is_error {
+                            "form-message form-message--error"
+                        } else {
+                            "form-message"
+                        };
+                        view! { <p class=class_name>{msg}</p> }
+                    })
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
                     None::<leptos::prelude::View<leptos::prelude::AnyView>>
                 }
             }}
-            <ul class="result-list">
-                {move || {
-                    #[cfg(feature = "hydrate")]
-                    {
-                        if items.get().is_empty() {
-                            view! { <li class="muted">"No saved shows yet."</li> }.into_any()
-                        } else {
-                            items
-                                .get()
-                                .into_iter()
-                                .map(|item| {
-                                    let href = format!("/shows/{}", item.show_id);
-                                    let date = item
-                                        .show_date
-                                        .clone()
-                                        .unwrap_or_else(|| "Unknown date".to_string());
-                                    view! {
-                                        <li class="result-card">
-                                            <a class="result-label" href=href>{date}</a>
-                                            <button type="button" class="pill" on:click=move |_| on_remove(item.show_id)>
-                                                "Remove"
-                                            </button>
-                                        </li>
-                                    }
-                                })
-                                .collect::<Vec<_>>()
-                                .into_any()
+            {move || {
+                #[cfg(feature = "hydrate")]
+                {
+                    if loading.get() {
+                        loading_state("Loading saved shows", "Reading your local show list.")
+                            .into_any()
+                    } else if items.get().is_empty() {
+                        empty_state_with_link(
+                            "No saved shows yet",
+                            "Add a show ID to start tracking your attended history.",
+                            "/shows",
+                            "Browse shows",
+                        )
+                        .into_any()
+                    } else {
+                        let saved = items.get();
+                        let count = saved.len();
+                        view! {
+                            <>
+                                <p class="list-summary">{format!("Showing {count} saved shows")}</p>
+                                <ul class="result-list">
+                                    {saved
+                                        .into_iter()
+                                        .map(|item| {
+                                            let href = format!("/shows/{}", item.show_id);
+                                            let date = item
+                                                .show_date
+                                                .clone()
+                                                .unwrap_or_else(|| "Unknown date".to_string());
+                                            let show_id = item.show_id;
+                                            view! {
+                                                <li class="result-card">
+                                                    <span class="pill">{format!("#{}", show_id)}</span>
+                                                    <div class="result-body">
+                                                        <a class="result-label" href=href>{date}</a>
+                                                        <span class="result-meta">{format!("Show ID {show_id}")}</span>
+                                                    </div>
+                                                    <button type="button" class="pill pill--ghost" on:click=move |_| on_remove(show_id)>
+                                                        "Remove"
+                                                    </button>
+                                                </li>
+                                            }
+                                        })
+                                        .collect::<Vec<_>>()}
+                                </ul>
+                            </>
                         }
+                        .into_any()
                     }
-                    #[cfg(not(feature = "hydrate"))]
-                    {
-                        view! { <li class="muted">"Available after hydration."</li> }.into_any()
-                    }
-                }}
-            </ul>
+                }
+                #[cfg(not(feature = "hydrate"))]
+                {
+                    empty_state(
+                        "Available after hydration",
+                        "Local show tracking is enabled once the browser runtime is active.",
+                    )
+                    .into_any()
+                }
+            }}
         </section>
+    }
+}
+
+fn render_liberation_items(list: Vec<LiberationEntry>) -> impl IntoView {
+    if list.is_empty() {
+        return empty_state_with_link(
+            "No liberation data available",
+            "Gap calculations are currently unavailable.",
+            "/songs",
+            "Browse songs",
+        )
+        .into_any();
+    }
+    let count = list.len();
+    view! {
+        <>
+            <p class="list-summary">{format!("Showing top {count} longest song gaps")}</p>
+            <ul class="result-list">
+                {list
+                    .into_iter()
+                    .enumerate()
+                    .map(|(idx, entry)| {
+                        let label = entry
+                            .song
+                            .as_ref()
+                            .map(|song| song.title.clone())
+                            .unwrap_or_else(|| format!("Song #{}", entry.song_id));
+                        let days = entry.days_since.unwrap_or(0);
+                        let shows = entry.shows_since.unwrap_or(0);
+                        let last_played = entry
+                            .last_played_date
+                            .clone()
+                            .unwrap_or_else(|| "unknown".to_string());
+                        view! {
+                            <li class="result-card">
+                                <span class="pill">{format!("#{}", idx + 1)}</span>
+                                <div class="result-body">
+                                    <span class="result-label">{label}</span>
+                                    <span class="result-meta">{format!("{shows} shows since • last played {last_played}")}</span>
+                                </div>
+                                <span class="result-score">{format!("{days} days")}</span>
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </ul>
+        </>
+    }
+    .into_any()
+}
+
+fn render_discography_items(list: Vec<Release>) -> impl IntoView {
+    if list.is_empty() {
+        return empty_state_with_link(
+            "No releases available",
+            "Release catalog rows are currently unavailable.",
+            "/releases",
+            "Browse recent releases",
+        )
+        .into_any();
+    }
+    let count = list.len();
+    view! {
+        <>
+            <p class="list-summary">{format!("Showing {count} releases")}</p>
+            <ul class="result-list">
+                {list
+                    .into_iter()
+                    .map(|release| {
+                        let href = format!("/releases/{}", release.slug);
+                        let release_type = release
+                            .release_type
+                            .clone()
+                            .unwrap_or_else(|| "Release".to_string());
+                        let release_date = release
+                            .release_date
+                            .clone()
+                            .unwrap_or_else(|| "-".to_string());
+                        view! {
+                            <li class="result-card">
+                                <span class="pill">{release_type}</span>
+                                <div class="result-body">
+                                    <a class="result-label" href=href>{release.title}</a>
+                                </div>
+                                <span class="result-score">{release_date}</span>
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </ul>
+        </>
+    }
+    .into_any()
+}
+
+fn render_curated_list_cards(list: Vec<CuratedList>) -> impl IntoView {
+    if list.is_empty() {
+        return empty_state(
+            "No curated lists available",
+            "Featured list metadata is currently unavailable.",
+        )
+        .into_any();
+    }
+    let count = list.len();
+    view! {
+        <>
+            <p class="list-summary">{format!("Showing {count} curated lists")}</p>
+            <ul class="result-list">
+                {list
+                    .into_iter()
+                    .map(|list| {
+                        let href = format!("/lists/{}", list.id);
+                        let item_count = list.item_count.unwrap_or(0);
+                        view! {
+                            <li class="result-card">
+                                <span class="pill">{list.category.clone()}</span>
+                                <div class="result-body">
+                                    <a class="result-label" href=href>{list.title.clone()}</a>
+                                    <span class="result-meta">{list.description.clone().unwrap_or_default()}</span>
+                                </div>
+                                <span class="result-score">{format!("{item_count} items")}</span>
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </ul>
+        </>
+    }
+    .into_any()
+}
+
+fn normalized_curated_item_type(raw: &str) -> String {
+    let normalized = raw.trim().to_ascii_lowercase();
+    if normalized.is_empty() {
+        "other".to_string()
+    } else {
+        normalized
+    }
+}
+
+fn curated_item_type_label(type_key: &str) -> String {
+    match type_key {
+        "show" => "Show".to_string(),
+        "song" => "Song".to_string(),
+        "venue" => "Venue".to_string(),
+        "guest" => "Guest".to_string(),
+        "release" => "Release".to_string(),
+        "tour" => "Tour".to_string(),
+        "other" => "Other".to_string(),
+        custom => {
+            let cleaned = custom.replace(['-', '_'], " ");
+            let mut words = cleaned
+                .split_whitespace()
+                .map(|word| {
+                    let mut chars = word.chars();
+                    match chars.next() {
+                        Some(first) => {
+                            format!("{}{}", first.to_ascii_uppercase(), chars.as_str())
+                        }
+                        None => String::new(),
+                    }
+                })
+                .collect::<Vec<_>>();
+            words.retain(|word| !word.is_empty());
+            if words.is_empty() {
+                "Other".to_string()
+            } else {
+                words.join(" ")
+            }
+        }
+    }
+}
+
+fn curated_item_type_counts(items: &[CuratedListItem]) -> Vec<(String, usize)> {
+    let mut counts = BTreeMap::<String, usize>::new();
+    for item in items {
+        let key = normalized_curated_item_type(&item.item_type);
+        *counts.entry(key).or_insert(0) += 1;
+    }
+
+    let priority = ["show", "song", "venue", "guest", "release", "tour", "other"];
+    let mut ordered = Vec::with_capacity(counts.len());
+    for key in priority {
+        if let Some(count) = counts.remove(key) {
+            ordered.push((key.to_string(), count));
+        }
+    }
+    ordered.extend(counts);
+    ordered
+}
+
+fn curated_item_href(item: &CuratedListItem) -> Option<String> {
+    if let Some(link) = item.item_link.as_ref() {
+        let trimmed = link.trim();
+        if trimmed.starts_with('/') && !trimmed.starts_with("//") {
+            return Some(trimmed.to_string());
+        }
+        if let Some(path) = trimmed
+            .strip_prefix("https://dmbalmanac.com")
+            .or_else(|| trimmed.strip_prefix("http://dmbalmanac.com"))
+        {
+            if path.starts_with('/') {
+                return Some(path.to_string());
+            }
+        }
+    }
+
+    match normalized_curated_item_type(&item.item_type).as_str() {
+        "show" => item.show_id.map(|id| format!("/shows/{id}")),
+        "venue" => item.venue_id.map(|id| format!("/venues/{id}")),
+        _ => None,
+    }
+}
+
+fn curated_item_context(item: &CuratedListItem) -> Option<String> {
+    let mut pieces = Vec::new();
+    if let Some(show_id) = item.show_id {
+        pieces.push(format!("Show #{show_id}"));
+    }
+    if let Some(song_id) = item.song_id {
+        pieces.push(format!("Song #{song_id}"));
+    }
+    if let Some(venue_id) = item.venue_id {
+        pieces.push(format!("Venue #{venue_id}"));
+    }
+    if let Some(guest_id) = item.guest_id {
+        pieces.push(format!("Guest #{guest_id}"));
+    }
+    if let Some(release_id) = item.release_id {
+        pieces.push(format!("Release #{release_id}"));
+    }
+
+    if pieces.is_empty() {
+        None
+    } else {
+        Some(pieces.join(" • "))
+    }
+}
+
+fn curated_item_title(item: &CuratedListItem) -> String {
+    item.item_title
+        .as_deref()
+        .map(str::trim)
+        .filter(|title| !title.is_empty())
+        .map(ToString::to_string)
+        .unwrap_or_else(|| {
+            let type_label =
+                curated_item_type_label(&normalized_curated_item_type(&item.item_type));
+            format!("{type_label} #{id}", id = item.id)
+        })
+}
+
+fn curated_item_matches_query(item: &CuratedListItem, query: &str) -> bool {
+    if query.is_empty() {
+        return true;
+    }
+    let in_title = item
+        .item_title
+        .as_deref()
+        .map(|title| title.to_ascii_lowercase().contains(query))
+        .unwrap_or(false);
+    let in_notes = item
+        .notes
+        .as_deref()
+        .map(|notes| notes.to_ascii_lowercase().contains(query))
+        .unwrap_or(false);
+    let in_type = item.item_type.to_ascii_lowercase().contains(query);
+    in_title || in_notes || in_type
+}
+
+fn render_curated_list_detail_content(
+    list: CuratedList,
+    items: Vec<CuratedListItem>,
+    active_filter: RwSignal<String>,
+    query: RwSignal<String>,
+) -> impl IntoView {
+    let description = list
+        .description
+        .as_deref()
+        .map(str::trim)
+        .filter(|description| !description.is_empty())
+        .unwrap_or("No description is available for this list.")
+        .to_string();
+    let total_count = items.len();
+    let type_counts = curated_item_type_counts(&items);
+    let active_key = active_filter.get();
+    let query_raw = query.get();
+    let query_text = query_raw.trim().to_string();
+    let query_normalized = query_text.to_ascii_lowercase();
+
+    let filtered_items = items
+        .into_iter()
+        .filter(|item| {
+            let item_type = normalized_curated_item_type(&item.item_type);
+            let matches_type = active_key == "all" || item_type == active_key;
+            matches_type && curated_item_matches_query(item, &query_normalized)
+        })
+        .collect::<Vec<_>>();
+
+    let filtered_count = filtered_items.len();
+    let has_filters = active_key != "all" || !query_text.is_empty();
+    let active_label = if active_key == "all" {
+        "items".to_string()
+    } else {
+        let base = curated_item_type_label(&active_key).to_ascii_lowercase();
+        if filtered_count == 1 {
+            base
+        } else {
+            format!("{base}s")
+        }
+    };
+    let summary = if query_text.is_empty() {
+        format!("Showing {filtered_count} of {total_count} {active_label}")
+    } else {
+        format!(
+            "Showing {filtered_count} of {total_count} {active_label} matching \"{query_text}\""
+        )
+    };
+
+    view! {
+        <div class="detail-list-head">
+            <div class="detail-list-head__copy">
+                <h2>{list.title.clone()}</h2>
+                <p class="muted">{description}</p>
+            </div>
+            <div class="pill-row detail-list-head__meta">
+                <span class="pill">{list.category.clone()}</span>
+                {list.is_featured.unwrap_or(false).then(|| view! { <span class="pill">"Featured"</span> })}
+                <span class="pill pill--ghost">{format!("{total_count} items")}</span>
+            </div>
+        </div>
+
+        <div class="detail-list-controls">
+            <label class="visually-hidden" for="curated-list-search">"Filter list items"</label>
+            <input
+                id="curated-list-search"
+                class="search-input"
+                type="search"
+                placeholder="Filter by title, item type, or notes"
+                prop:value=move || query.get()
+                on:input=move |ev| query.set(event_target_value(&ev))
+            />
+            <div class="result-filters" role="group" aria-label="Curated list item filters">
+                <button
+                    type="button"
+                    class="result-filter pill pill--ghost"
+                    class:result-filter--active=move || active_filter.get() == "all"
+                    on:click=move |_| active_filter.set("all".to_string())
+                >
+                    {format!("All ({total_count})")}
+                </button>
+                {type_counts
+                    .into_iter()
+                    .map(|(type_key, count)| {
+                        let type_label = curated_item_type_label(&type_key);
+                        let key_for_class = type_key.clone();
+                        let key_for_click = type_key.clone();
+                        view! {
+                            <button
+                                type="button"
+                                class="result-filter pill pill--ghost"
+                                class:result-filter--active=move || active_filter.get() == key_for_class
+                                on:click=move |_| active_filter.set(key_for_click.clone())
+                            >
+                                {format!("{type_label} ({count})")}
+                            </button>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </div>
+        </div>
+
+        <p class="list-summary">{summary}</p>
+
+        {if filtered_items.is_empty() {
+            view! {
+                <section class="status-card status-card--empty">
+                    <p class="status-title">"No items match this view"</p>
+                    <p class="muted">"Try a different filter or clear the search query."</p>
+                    {has_filters.then(|| {
+                        view! {
+                            <div class="pill-row">
+                                <button
+                                    type="button"
+                                    class="pill pill--ghost"
+                                    on:click=move |_| {
+                                        active_filter.set("all".to_string());
+                                        query.set(String::new());
+                                    }
+                                >
+                                    "Clear filters"
+                                </button>
+                            </div>
+                        }
+                    })}
+                </section>
+            }
+                .into_any()
+        } else {
+            view! {
+                <ol class="tracklist" aria-label="Curated list items">
+                    {filtered_items
+                        .into_iter()
+                        .map(|item| {
+                            let item_type = normalized_curated_item_type(&item.item_type);
+                            let item_type_label = curated_item_type_label(&item_type);
+                            let title = curated_item_title(&item);
+                            let href = curated_item_href(&item);
+                            let context = curated_item_context(&item);
+                            let notes = item
+                                .notes
+                                .as_deref()
+                                .map(str::trim)
+                                .filter(|notes| !notes.is_empty())
+                                .map(ToString::to_string);
+
+                            let title_view = match href {
+                                Some(href) => view! {
+                                    <a class="tracklist-title result-label" href=href>{title.clone()}</a>
+                                }
+                                    .into_any(),
+                                None => view! { <span class="tracklist-title">{title.clone()}</span> }.into_any(),
+                            };
+
+                            view! {
+                                <li class="tracklist-item">
+                                    <span class="tracklist-pos">{item.position}</span>
+                                    <div class="tracklist-main">
+                                        {title_view}
+                                        {context.map(|context_line| view! {
+                                            <span class="tracklist-context">{context_line}</span>
+                                        })}
+                                        {notes.map(|notes_line| view! {
+                                            <span class="tracklist-note">{notes_line}</span>
+                                        })}
+                                    </div>
+                                    <span class="setlist-slot">{item_type_label}</span>
+                                </li>
+                            }
+                        })
+                        .collect::<Vec<_>>()}
+                </ol>
+            }
+                .into_any()
+        }}
     }
 }
 
@@ -4697,66 +5239,18 @@ pub fn liberation_page() -> impl IntoView {
                 #[cfg(feature = "hydrate")]
                 {
                     if loading.get() {
-                        view! { <p class="muted">"Loading liberation list..."</p> }.into_any()
-                    } else if items.get().is_empty() {
-                        view! { <p class="muted">"No liberation data available."</p> }.into_any()
-                    } else {
-                        let list = items.get();
-                        view! {
-                            <ul class="result-list">
-                                {list
-                                    .into_iter()
-                                    .map(|entry| {
-                                        let label = entry
-                                            .song
-                                            .as_ref()
-                                            .map(|song| song.title.clone())
-                                            .unwrap_or_else(|| format!("Song #{}", entry.song_id));
-                                        let days = entry.days_since.unwrap_or(0);
-                                        let shows = entry.shows_since.unwrap_or(0);
-                                        view! {
-                                            <li class="result-card">
-                                                <span class="result-label">{label}</span>
-                                                <span class="result-meta">{format!("{days} days / {shows} shows")}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
-                        }
+                        loading_state(
+                            "Loading liberation list",
+                            "Computing gap durations and recent play context.",
+                        )
                         .into_any()
+                    } else {
+                        render_liberation_items(items.get()).into_any()
                     }
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
-                    let list = items.get().unwrap_or_default();
-                    if list.is_empty() {
-                        view! { <p class="muted">"No liberation data available."</p> }.into_any()
-                    } else {
-                        view! {
-                            <ul class="result-list">
-                                {list
-                                    .into_iter()
-                                    .map(|entry| {
-                                        let label = entry
-                                            .song
-                                            .as_ref()
-                                            .map(|song| song.title.clone())
-                                            .unwrap_or_else(|| format!("Song #{}", entry.song_id));
-                                        let days = entry.days_since.unwrap_or(0);
-                                        let shows = entry.shows_since.unwrap_or(0);
-                                        view! {
-                                            <li class="result-card">
-                                                <span class="result-label">{label}</span>
-                                                <span class="result-meta">{format!("{days} days / {shows} shows")}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
-                        }
-                        .into_any()
-                    }
+                    render_liberation_items(items.get().unwrap_or_default()).into_any()
                 }
             }}
         </section>
@@ -4787,62 +5281,18 @@ pub fn discography_page() -> impl IntoView {
                 #[cfg(feature = "hydrate")]
                 {
                     if loading.get() {
-                        view! { <p class="muted">"Loading releases..."</p> }.into_any()
-                    } else if items.get().is_empty() {
-                        view! { <p class="muted">"No releases available."</p> }.into_any()
-                    } else {
-                        let list = items.get();
-                        view! {
-                            <ul class="result-list">
-                                {list
-                                    .into_iter()
-                                    .map(|release| {
-                                        let href = format!("/releases/{}", release.slug);
-                                        let meta = release
-                                            .release_date
-                                            .clone()
-                                            .unwrap_or_else(|| "-".into());
-                                        view! {
-                                            <li class="result-card">
-                                                <a class="result-label" href=href>{release.title}</a>
-                                                <span class="result-meta">{meta}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
-                        }
+                        loading_state(
+                            "Loading discography",
+                            "Fetching full release catalog.",
+                        )
                         .into_any()
+                    } else {
+                        render_discography_items(items.get()).into_any()
                     }
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
-                    let list = items.get().unwrap_or_default();
-                    if list.is_empty() {
-                        view! { <p class="muted">"No releases available."</p> }.into_any()
-                    } else {
-                        view! {
-                            <ul class="result-list">
-                                {list
-                                    .into_iter()
-                                    .map(|release| {
-                                        let href = format!("/releases/{}", release.slug);
-                                        let meta = release
-                                            .release_date
-                                            .clone()
-                                            .unwrap_or_else(|| "-".into());
-                                        view! {
-                                            <li class="result-card">
-                                                <a class="result-label" href=href>{release.title}</a>
-                                                <span class="result-meta">{meta}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
-                        }
-                        .into_any()
-                    }
+                    render_discography_items(items.get().unwrap_or_default()).into_any()
                 }
             }}
         </section>
@@ -4873,56 +5323,18 @@ pub fn curated_lists_page() -> impl IntoView {
                 #[cfg(feature = "hydrate")]
                 {
                     if loading.get() {
-                        view! { <p class="muted">"Loading lists..."</p> }.into_any()
-                    } else if items.get().is_empty() {
-                        view! { <p class="muted">"No curated lists available."</p> }.into_any()
-                    } else {
-                        let list = items.get();
-                        view! {
-                            <ul class="result-list">
-                                {list
-                                    .into_iter()
-                                    .map(|list| {
-                                        let href = format!("/lists/{}", list.id);
-                                        let meta = list.category.clone();
-                                        view! {
-                                            <li class="result-card">
-                                                <a class="result-label" href=href>{list.title}</a>
-                                                <span class="result-meta">{meta}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
-                        }
+                        loading_state(
+                            "Loading curated lists",
+                            "Fetching featured and themed collections.",
+                        )
                         .into_any()
+                    } else {
+                        render_curated_list_cards(items.get()).into_any()
                     }
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
-                    let list = items.get().unwrap_or_default();
-                    if list.is_empty() {
-                        view! { <p class="muted">"No curated lists available."</p> }.into_any()
-                    } else {
-                        view! {
-                            <ul class="result-list">
-                                {list
-                                    .into_iter()
-                                    .map(|list| {
-                                        let href = format!("/lists/{}", list.id);
-                                        let meta = list.category.clone();
-                                        view! {
-                                            <li class="result-card">
-                                                <a class="result-label" href=href>{list.title}</a>
-                                                <span class="result-meta">{meta}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
-                        }
-                        .into_any()
-                    }
+                    render_curated_list_cards(items.get().unwrap_or_default()).into_any()
                 }
             }}
         </section>
@@ -4932,6 +5344,8 @@ pub fn curated_lists_page() -> impl IntoView {
 pub fn curated_list_detail_page() -> impl IntoView {
     let params = use_params_map();
     let list_id = move || params.with(|params| params.get("listId").unwrap_or_default());
+    let active_filter = RwSignal::new("all".to_string());
+    let query = RwSignal::new(String::new());
 
     #[cfg(feature = "hydrate")]
     let (list, items, loading) = {
@@ -4941,15 +5355,21 @@ pub fn curated_list_detail_page() -> impl IntoView {
         let list_signal = list.clone();
         let items_signal = items.clone();
         let loading_signal = loading.clone();
+        let active_filter_signal = active_filter.clone();
+        let query_signal = query.clone();
         Effect::new(move |_| {
-            let id = list_id();
+            let id_raw = list_id();
             let list_signal = list_signal.clone();
             let items_signal = items_signal.clone();
             let loading_signal = loading_signal.clone();
+            let active_filter_signal = active_filter_signal.clone();
+            let query_signal = query_signal.clone();
             loading_signal.set(true);
+            active_filter_signal.set("all".to_string());
+            query_signal.set(String::new());
             spawn_local(async move {
-                let id_num = id.parse::<i32>().ok();
-                if let Some(id) = id_num {
+                let parsed = parse_positive_i32_param(&id_raw, "listId").ok();
+                if let Some(id) = parsed {
                     let lists = load_curated_lists().await;
                     list_signal.set(lists.into_iter().find(|list| list.id == id));
                     items_signal.set(load_curated_list_items(id, 200).await);
@@ -4965,14 +5385,14 @@ pub fn curated_list_detail_page() -> impl IntoView {
 
     #[cfg(not(feature = "hydrate"))]
     let list = Resource::new(list_id, |id: String| async move {
-        let id = id.parse::<i32>().ok()?;
+        let id = parse_positive_i32_param(&id, "listId").ok()?;
         let lists = load_curated_lists().await;
         lists.into_iter().find(|list| list.id == id)
     });
 
     #[cfg(not(feature = "hydrate"))]
     let items = Resource::new(list_id, |id: String| async move {
-        let Ok(id) = id.parse::<i32>() else {
+        let Ok(id) = parse_positive_i32_param(&id, "listId") else {
             return Vec::new();
         };
         load_curated_list_items(id, 200).await
@@ -4980,45 +5400,56 @@ pub fn curated_list_detail_page() -> impl IntoView {
 
     view! {
         <section class="page">
-            <h1>"Curated List"</h1>
-            <p class="lead">"Highlights and trackable picks."</p>
+            {detail_nav("/lists", "Back to curated lists")}
+            <h1>"Curated List Details"</h1>
+            <p class="lead">"Highlights, context, and quick filtering for every item in this collection."</p>
+            {move || {
+                match parse_positive_i32_param(&list_id(), "listId") {
+                    Ok(id) => view! { <p class="page-subhead">{format!("List ID: {id}")}</p> }.into_any(),
+                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
+                }
+            }}
             {move || {
                 #[cfg(feature = "hydrate")]
                 {
                     if loading.get() {
-                        view! { <p class="muted">"Loading list..."</p> }.into_any()
-                    } else if list.get().is_none() {
-                        view! { <p class="muted">"List not found."</p> }.into_any()
-                    } else {
-                        let list_meta = list.get();
-                        let list_items = items.get();
-                        view! {
-                            <div class="detail-grid">
-                                <div>
-                                    <h2>{list_meta.as_ref().map(|l| l.title.clone()).unwrap_or_default()}</h2>
-                                    <p class="muted">{list_meta.as_ref().and_then(|l| l.description.clone()).unwrap_or_default()}</p>
-                                </div>
-                            </div>
-                            <ol class="tracklist" aria-label="Curated list items">
-                                {list_items
-                                    .into_iter()
-                                    .map(|item| {
-                                        let label = item
-                                            .item_title
-                                            .clone()
-                                            .unwrap_or_else(|| "Untitled".to_string());
-                                        view! {
-                                            <li class="tracklist-item">
-                                                <span class="tracklist-pos">{item.position}</span>
-                                                <span class="tracklist-title">{label}</span>
-                                                <span class="setlist-slot">{item.item_type}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ol>
-                        }
+                        loading_state(
+                            "Loading curated list",
+                            "Fetching list metadata and up to 200 ranked items.",
+                        )
                         .into_any()
+                    } else {
+                        match list.get() {
+                            Some(list_val) => render_curated_list_detail_content(
+                                list_val,
+                                items.get(),
+                                active_filter,
+                                query,
+                            )
+                            .into_any(),
+                            None => {
+                                if parse_positive_i32_param(&list_id(), "listId").is_err() {
+                                    view! {
+                                        <section class="status-card status-card--empty">
+                                            <p class="status-title">"Invalid list id"</p>
+                                            <p class="muted">
+                                                "Use a positive integer list id in the URL to open list details."
+                                            </p>
+                                            <p><a class="result-label" href="/lists">"Browse curated lists"</a></p>
+                                        </section>
+                                    }
+                                        .into_any()
+                                } else {
+                                    empty_state_with_link(
+                                        "List not found",
+                                        "This curated list id could not be resolved.",
+                                        "/lists",
+                                        "Browse curated lists",
+                                    )
+                                        .into_any()
+                                }
+                            }
+                        }
                     }
                 }
                 #[cfg(not(feature = "hydrate"))]
@@ -5026,37 +5457,27 @@ pub fn curated_list_detail_page() -> impl IntoView {
                     let list_meta = list.get().unwrap_or(None);
                     let list_items = items.get().unwrap_or_default();
                     if let Some(list_val) = list_meta {
-                        let title = list_val.title;
-                        let description = list_val.description.unwrap_or_default();
+                        render_curated_list_detail_content(list_val, list_items, active_filter, query)
+                            .into_any()
+                    } else if parse_positive_i32_param(&list_id(), "listId").is_err() {
                         view! {
-                            <div class="detail-grid">
-                                <div>
-                                    <h2>{title}</h2>
-                                    <p class="muted">{description}</p>
-                                </div>
-                            </div>
-                            <ol class="tracklist" aria-label="Curated list items">
-                                {list_items
-                                    .into_iter()
-                                    .map(|item| {
-                                        let label = item
-                                            .item_title
-                                            .clone()
-                                            .unwrap_or_else(|| "Untitled".to_string());
-                                        view! {
-                                            <li class="tracklist-item">
-                                                <span class="tracklist-pos">{item.position}</span>
-                                                <span class="tracklist-title">{label}</span>
-                                                <span class="setlist-slot">{item.item_type}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ol>
+                            <section class="status-card status-card--empty">
+                                <p class="status-title">"Invalid list id"</p>
+                                <p class="muted">
+                                    "Use a positive integer list id in the URL to open list details."
+                                </p>
+                                <p><a class="result-label" href="/lists">"Browse curated lists"</a></p>
+                            </section>
                         }
-                        .into_any()
+                            .into_any()
                     } else {
-                        view! { <p class="muted">"List not found."</p> }.into_any()
+                        empty_state_with_link(
+                            "List not found",
+                            "This curated list id could not be resolved.",
+                            "/lists",
+                            "Browse curated lists",
+                        )
+                            .into_any()
                     }
                 }
             }}
