@@ -2892,8 +2892,14 @@ pub fn show_detail_page() -> impl IntoView {
             }
             .into_any()
         }
-        None => view! { <div class="detail-grid"><p class="muted">"Show not found."</p></div> }
-            .into_any(),
+        None => view! {
+            <section class="card card-warn">
+                <h2>"Show not found"</h2>
+                <p class="muted">"This show ID was not found in the current dataset."</p>
+                <p><a href="/shows" class="result-label">"Browse all shows"</a></p>
+            </section>
+        }
+        .into_any(),
     };
 
     let show = Resource::new(show_id, |id: String| async move {
@@ -2910,7 +2916,7 @@ pub fn show_detail_page() -> impl IntoView {
             <h1>"Show Details"</h1>
             {move || {
                 match parse_positive_i32_param(&show_id(), "showId") {
-                    Ok(id) => view! { <p class="muted">{format!("showId: {id}")}</p> }.into_any(),
+                    Ok(id) => view! { <p class="muted">{format!("Show ID: {id}")}</p> }.into_any(),
                     Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
                 }
             }}
@@ -2924,7 +2930,8 @@ pub fn show_detail_page() -> impl IntoView {
                     match setlist.get().unwrap_or(None) {
                         Some(items) => {
                             if items.is_empty() {
-                                view! { <p class="muted">"Setlist unavailable."</p> }.into_any()
+                                view! { <p class="muted">"Setlist unavailable for this show."</p> }
+                                    .into_any()
                             } else {
                                 view! {
                                     <ol class="setlist" aria-label="Show setlist">
@@ -2951,7 +2958,10 @@ pub fn show_detail_page() -> impl IntoView {
                                 .into_any()
                             }
                         }
-                        None => view! { <p class="muted">"Setlist unavailable."</p> }.into_any(),
+                        None => {
+                            view! { <p class="muted">"Setlist unavailable for this show."</p> }
+                                .into_any()
+                        }
                     }
                 }}
             </Suspense>
