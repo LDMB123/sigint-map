@@ -2660,6 +2660,57 @@ fn setlist_entry_matches_query(entry: &SetlistEntry, query: &str) -> bool {
     in_song_title || in_slot || in_set || in_notes
 }
 
+fn normalized_disc_key(disc_number: Option<i32>) -> String {
+    let disc = disc_number.unwrap_or(1).max(1);
+    format!("disc-{disc}")
+}
+
+fn disc_key_label(key: &str) -> String {
+    if let Some(raw) = key.strip_prefix("disc-") {
+        if let Ok(number) = raw.parse::<i32>() {
+            if number > 0 {
+                return format!("Disc {number}");
+            }
+        }
+    }
+    "Disc 1".to_string()
+}
+
+fn release_track_disc_counts(items: &[ReleaseTrack]) -> Vec<(String, usize)> {
+    let mut counts = BTreeMap::<i32, usize>::new();
+    for track in items {
+        let disc = track.disc_number.unwrap_or(1).max(1);
+        *counts.entry(disc).or_insert(0) += 1;
+    }
+    counts
+        .into_iter()
+        .map(|(disc, count)| (format!("disc-{disc}"), count))
+        .collect()
+}
+
+fn release_track_matches_query(track: &ReleaseTrack, query: &str) -> bool {
+    if query.is_empty() {
+        return true;
+    }
+    let in_notes = track
+        .notes
+        .as_deref()
+        .map(|notes| notes.to_ascii_lowercase().contains(query))
+        .unwrap_or(false);
+    let in_numbers = format!(
+        "{} {} {} {}",
+        track.song_id.unwrap_or(0),
+        track.show_id.unwrap_or(0),
+        track.disc_number.unwrap_or(0),
+        track.track_number.unwrap_or(0)
+    )
+    .contains(query);
+    let in_track_type = (query == "live" && track.show_id.is_some())
+        || (query == "studio" && track.show_id.is_none())
+        || (query == "release" && track.show_id.is_none());
+    in_notes || in_numbers || in_track_type
+}
+
 pub fn shows_page() -> impl IntoView {
     let render = |items: Vec<ShowSummary>| {
         if items.is_empty() {
@@ -3440,25 +3491,61 @@ pub fn song_detail_page() -> impl IntoView {
 pub fn guest_detail_page() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
-    let render = |guest: Option<Guest>| {
-        match guest {
-        Some(guest) => view! {
-            <div class="detail-grid">
-                <div><strong>"Name"</strong><span>{guest.name}</span></div>
-                <div><strong>"Appearances"</strong><span>{guest.total_appearances.unwrap_or(0)}</span></div>
-            </div>
-        }
-        .into_any(),
-        None => {
-            empty_state_with_link(
-                "Guest not found",
-                "This guest slug could not be resolved.",
-                "/guests",
-                "Browse guests",
-            )
+    let render = |guest: Option<Guest>| match guest {
+        Some(guest) => {
+            let name = guest.name.clone();
+            let guest_slug = guest.slug.clone();
+            let appearances = guest.total_appearances.unwrap_or(0).max(0);
+            let activity_note = if appearances > 0 {
+                format!("Tracked in {appearances} appearance records across the show history.")
+            } else {
+                "No appearance rows are currently indexed for this guest.".to_string()
+            };
+
+            view! {
+                <div class="detail-list-head">
+                    <div class="detail-list-head__copy">
+                        <h2>{name.clone()}</h2>
+                        <p class="muted">{activity_note}</p>
+                    </div>
+                    <div class="pill-row detail-list-head__meta">
+                        <span class="pill">{format!("{appearances} appearances")}</span>
+                        <span class="pill pill--ghost">{format!("Slug: {guest_slug}")}</span>
+                        <a class="pill pill--ghost" href="/shows">"Browse shows"</a>
+                    </div>
+                </div>
+                <div class="detail-grid">
+                    <div><strong>"Name"</strong><span>{name}</span></div>
+                    <div><strong>"Appearances"</strong><span>{appearances}</span></div>
+                    <div><strong>"Slug"</strong><span>{guest_slug}</span></div>
+                </div>
+                <h2>"Explore"</h2>
+                <ul class="result-list">
+                    <li class="result-card">
+                        <span class="pill pill--ghost">"Guests"</span>
+                        <div class="result-body">
+                            <a class="result-label" href="/guests">"Guest index"</a>
+                            <span class="result-meta">"Browse all guests and compare total appearances."</span>
+                        </div>
+                    </li>
+                    <li class="result-card">
+                        <span class="pill pill--ghost">"Search"</span>
+                        <div class="result-body">
+                            <a class="result-label" href="/search">"Global search"</a>
+                            <span class="result-meta">"Cross-check this guest against songs, shows, and venues."</span>
+                        </div>
+                    </li>
+                </ul>
+            }
             .into_any()
         }
-    }
+        None => empty_state_with_link(
+            "Guest not found",
+            "This guest slug could not be resolved.",
+            "/guests",
+            "Browse guests",
+        )
+        .into_any(),
     };
 
     let guest = Resource::new(slug, |slug: String| async move {
@@ -3486,26 +3573,49 @@ pub fn guest_detail_page() -> impl IntoView {
 pub fn release_detail_page() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
-    let render = |release: Option<Release>| {
-        match release {
-        Some(release) => view! {
-            <div class="detail-grid">
-                <div><strong>"Title"</strong><span>{release.title}</span></div>
-                <div><strong>"Type"</strong><span>{release.release_type.unwrap_or_else(|| "-".into())}</span></div>
-                <div><strong>"Date"</strong><span>{release.release_date.unwrap_or_else(|| "-".into())}</span></div>
-            </div>
-        }
-        .into_any(),
-        None => {
-            empty_state_with_link(
-                "Release not found",
-                "This release slug could not be resolved.",
-                "/releases",
-                "Browse releases",
-            )
+    let active_disc = RwSignal::new("all".to_string());
+    let track_query = RwSignal::new(String::new());
+
+    let render = |release: Option<Release>| match release {
+        Some(release) => {
+            let title = release.title.clone();
+            let release_slug = release.slug.clone();
+            let release_type = release
+                .release_type
+                .clone()
+                .unwrap_or_else(|| "Release".to_string());
+            let release_date = release
+                .release_date
+                .clone()
+                .unwrap_or_else(|| "Unknown".to_string());
+            view! {
+                <div class="detail-list-head">
+                    <div class="detail-list-head__copy">
+                        <h2>{title.clone()}</h2>
+                        <p class="muted">{format!("{release_type} • {release_date}")}</p>
+                    </div>
+                    <div class="pill-row detail-list-head__meta">
+                        <span class="pill">{release_type.clone()}</span>
+                        <span class="pill pill--ghost">{release_date.clone()}</span>
+                        <a class="pill pill--ghost" href="/discography">"Open discography"</a>
+                    </div>
+                </div>
+                <div class="detail-grid">
+                    <div><strong>"Title"</strong><span>{title}</span></div>
+                    <div><strong>"Type"</strong><span>{release_type}</span></div>
+                    <div><strong>"Date"</strong><span>{release_date}</span></div>
+                    <div><strong>"Slug"</strong><span>{release_slug}</span></div>
+                </div>
+            }
             .into_any()
         }
-    }
+        None => empty_state_with_link(
+            "Release not found",
+            "This release slug could not be resolved.",
+            "/releases",
+            "Browse releases",
+        )
+        .into_any(),
     };
 
     let release = Resource::new(slug, |slug: String| async move {
@@ -3546,26 +3656,156 @@ pub fn release_detail_page() -> impl IntoView {
                             empty_state("No tracks available", "Track rows were not found for this release.")
                                 .into_any()
                         } else {
+                            let total_count = items.len();
+                            let disc_counts = release_track_disc_counts(&items);
+                            let active_key = active_disc.get();
+                            let query_raw = track_query.get();
+                            let query_text = query_raw.trim().to_string();
+                            let query_normalized = query_text.to_ascii_lowercase();
+                            let filtered_tracks = items
+                                .into_iter()
+                                .filter(|track| {
+                                    let disc_key = normalized_disc_key(track.disc_number);
+                                    let matches_disc = active_key == "all" || disc_key == active_key;
+                                    matches_disc
+                                        && release_track_matches_query(track, &query_normalized)
+                                })
+                                .collect::<Vec<_>>();
+                            let filtered_count = filtered_tracks.len();
+                            let has_filters = active_key != "all" || !query_text.is_empty();
+                            let summary = if query_text.is_empty() {
+                                format!("Showing {filtered_count} of {total_count} tracks")
+                            } else {
+                                format!(
+                                    "Showing {filtered_count} of {total_count} tracks matching \"{query_text}\""
+                                )
+                            };
                             view! {
-                                <ol class="tracklist" aria-label="Release tracks">
-                                    {items
-                                        .into_iter()
-                                        .map(|track| {
-                                            let track_label = track
-                                                .song_id
-                                                .map(|id| format!("Song #{}", id))
-                                                .unwrap_or_else(|| "Unknown song".to_string());
-                                            let number = track.track_number.unwrap_or(0);
-                                            let disc = track.disc_number.unwrap_or(1);
-                                            view! {
-                                                <li class="tracklist-item">
-                                                    <span class="tracklist-pos">{format!("{}-{}", disc, number)}</span>
-                                                    <span class="tracklist-title">{track_label}</span>
-                                                </li>
-                                            }
-                                        })
-                                        .collect::<Vec<_>>()}
-                                </ol>
+                                <div class="detail-list-controls">
+                                    <label class="visually-hidden" for="release-track-filter">"Filter release tracks"</label>
+                                    <input
+                                        id="release-track-filter"
+                                        class="search-input"
+                                        type="search"
+                                        placeholder="Filter by song id, show id, disc, notes, or live/studio"
+                                        prop:value=move || track_query.get()
+                                        on:input=move |ev| track_query.set(event_target_value(&ev))
+                                    />
+                                    <div class="result-filters" role="group" aria-label="Track filters">
+                                        <button
+                                            type="button"
+                                            class="result-filter pill pill--ghost"
+                                            class:result-filter--active=move || active_disc.get() == "all"
+                                            on:click=move |_| active_disc.set("all".to_string())
+                                        >
+                                            {format!("All ({total_count})")}
+                                        </button>
+                                        {disc_counts
+                                            .into_iter()
+                                            .map(|(disc_key, count)| {
+                                                let label = disc_key_label(&disc_key);
+                                                let key_for_class = disc_key.clone();
+                                                let key_for_click = disc_key.clone();
+                                                view! {
+                                                    <button
+                                                        type="button"
+                                                        class="result-filter pill pill--ghost"
+                                                        class:result-filter--active=move || active_disc.get() == key_for_class
+                                                        on:click=move |_| active_disc.set(key_for_click.clone())
+                                                    >
+                                                        {format!("{label} ({count})")}
+                                                    </button>
+                                                }
+                                            })
+                                            .collect::<Vec<_>>()}
+                                    </div>
+                                </div>
+                                <p class="list-summary">{summary}</p>
+                                {if filtered_tracks.is_empty() {
+                                    view! {
+                                        <section class="status-card status-card--empty">
+                                            <p class="status-title">"No tracks match this view"</p>
+                                            <p class="muted">"Try another disc filter or clear the search query."</p>
+                                            {has_filters.then(|| view! {
+                                                <div class="pill-row">
+                                                    <button
+                                                        type="button"
+                                                        class="pill pill--ghost"
+                                                        on:click=move |_| {
+                                                            active_disc.set("all".to_string());
+                                                            track_query.set(String::new());
+                                                        }
+                                                    >
+                                                        "Clear filters"
+                                                    </button>
+                                                </div>
+                                            })}
+                                        </section>
+                                    }
+                                    .into_any()
+                                } else {
+                                    view! {
+                                        <ol class="tracklist" aria-label="Release tracks">
+                                            {filtered_tracks
+                                                .into_iter()
+                                                .map(|track| {
+                                                    let track_label = track
+                                                        .song_id
+                                                        .map(|id| format!("Song #{id}"))
+                                                        .unwrap_or_else(|| "Unknown song".to_string());
+                                                    let number = track.track_number.unwrap_or(0);
+                                                    let disc = track.disc_number.unwrap_or(1).max(1);
+                                                    let track_pos = if number > 0 {
+                                                        format!("{disc}-{number}")
+                                                    } else {
+                                                        format!("{disc}-?")
+                                                    };
+                                                    let mut context_parts = vec![disc_key_label(&normalized_disc_key(track.disc_number))];
+                                                    if let Some(duration) = track.duration_seconds {
+                                                        if duration > 0 {
+                                                            context_parts.push(format!("{}:{:02}", duration / 60, duration % 60));
+                                                        }
+                                                    }
+                                                    if track.show_id.is_some() {
+                                                        context_parts.push("Live source".to_string());
+                                                    }
+                                                    let context_line = context_parts.join(" • ");
+                                                    let notes = track
+                                                        .notes
+                                                        .as_deref()
+                                                        .map(str::trim)
+                                                        .filter(|notes| !notes.is_empty())
+                                                        .map(ToString::to_string);
+                                                    let show_link = track.show_id.map(|show_id| {
+                                                        let href = format!("/shows/{show_id}");
+                                                        view! { <a class="result-label" href=href>{format!("Open show #{show_id}")}</a> }
+                                                    });
+                                                    let slot_label = if track.show_id.is_some() {
+                                                        "Live"
+                                                    } else {
+                                                        "Release"
+                                                    };
+
+                                                    view! {
+                                                        <li class="tracklist-item">
+                                                            <span class="tracklist-pos">{track_pos}</span>
+                                                            <div class="tracklist-main">
+                                                                <span class="tracklist-title">{track_label}</span>
+                                                                <span class="tracklist-context">{context_line}</span>
+                                                                {show_link}
+                                                                {notes.map(|notes_line| view! {
+                                                                    <span class="tracklist-note">{notes_line}</span>
+                                                                })}
+                                                            </div>
+                                                            <span class="setlist-slot">{slot_label}</span>
+                                                        </li>
+                                                    }
+                                                })
+                                                .collect::<Vec<_>>()}
+                                        </ol>
+                                    }
+                                    .into_any()
+                                }}
                             }
                             .into_any()
                         }
@@ -3585,20 +3825,60 @@ pub fn release_detail_page() -> impl IntoView {
 pub fn tour_year_page() -> impl IntoView {
     let params = use_params_map();
     let year = move || params.with(|p| p.get("year").unwrap_or_default());
-    let render = |tour: Option<Tour>| {
-        match tour {
-        Some(tour) => view! {
-            <div class="detail-grid">
-                <div><strong>"Name"</strong><span>{tour.name}</span></div>
-                <div><strong>"Total Shows"</strong><span>{tour.total_shows.unwrap_or(0)}</span></div>
-            </div>
+    let render = |tour: Option<Tour>| match tour {
+        Some(tour) => {
+            let year = tour.year;
+            let name = tour.name.clone();
+            let total_shows = tour.total_shows.unwrap_or(0).max(0);
+            let activity_note = if total_shows > 0 {
+                format!("{total_shows} shows are currently tracked for this tour year.")
+            } else {
+                "No show rows are currently indexed for this tour year.".to_string()
+            };
+            view! {
+                <div class="detail-list-head">
+                    <div class="detail-list-head__copy">
+                        <h2>{name.clone()}</h2>
+                        <p class="muted">{activity_note}</p>
+                    </div>
+                    <div class="pill-row detail-list-head__meta">
+                        <span class="pill">{format!("{year}")}</span>
+                        <span class="pill pill--ghost">{format!("{total_shows} shows")}</span>
+                        <a class="pill pill--ghost" href="/shows">"Browse shows"</a>
+                    </div>
+                </div>
+                <div class="detail-grid">
+                    <div><strong>"Name"</strong><span>{name}</span></div>
+                    <div><strong>"Year"</strong><span>{year}</span></div>
+                    <div><strong>"Total Shows"</strong><span>{total_shows}</span></div>
+                </div>
+                <h2>"Explore"</h2>
+                <ul class="result-list">
+                    <li class="result-card">
+                        <span class="pill pill--ghost">"Shows"</span>
+                        <div class="result-body">
+                            <a class="result-label" href="/shows">"Browse all shows"</a>
+                            <span class="result-meta">"Use dates and venues to explore this era further."</span>
+                        </div>
+                    </li>
+                    <li class="result-card">
+                        <span class="pill pill--ghost">"Stats"</span>
+                        <div class="result-body">
+                            <a class="result-label" href="/stats">"Open stats dashboard"</a>
+                            <span class="result-meta">"Compare this tour year against broader catalog trends."</span>
+                        </div>
+                    </li>
+                </ul>
+            }
+            .into_any()
         }
+        None => empty_state_with_link(
+            "Tour not found",
+            "This year does not map to a tour record.",
+            "/tours",
+            "Browse tours",
+        )
         .into_any(),
-        None => {
-            empty_state_with_link("Tour not found", "This year does not map to a tour record.", "/tours", "Browse tours")
-                .into_any()
-        }
-    }
     };
 
     let tour = Resource::new(year, |year: String| async move {
@@ -3627,14 +3907,64 @@ pub fn venue_detail_page() -> impl IntoView {
     let params = use_params_map();
     let venue_id = move || params.with(|p| p.get("venueId").unwrap_or_default());
     let render = |venue: Option<Venue>| match venue {
-        Some(venue) => view! {
-            <div class="detail-grid">
-                <div><strong>"Name"</strong><span>{venue.name}</span></div>
-                <div><strong>"City"</strong><span>{venue.city}</span></div>
-                <div><strong>"Country"</strong><span>{venue.country}</span></div>
-            </div>
+        Some(venue) => {
+            let name = venue.name.clone();
+            let location = format_location(&venue.city, &venue.state);
+            let country = venue.country.clone();
+            let location_line = if location.is_empty() {
+                country.clone()
+            } else {
+                format!("{location} • {country}")
+            };
+            let venue_type = venue
+                .venue_type
+                .clone()
+                .unwrap_or_else(|| "Venue".to_string());
+            let total_shows = venue.total_shows.unwrap_or(0).max(0);
+            let country_code = venue.country_code.clone().unwrap_or_default();
+
+            view! {
+                <div class="detail-list-head">
+                    <div class="detail-list-head__copy">
+                        <h2>{name.clone()}</h2>
+                        <p class="muted">{location_line}</p>
+                    </div>
+                    <div class="pill-row detail-list-head__meta">
+                        <span class="pill">{venue_type.clone()}</span>
+                        <span class="pill pill--ghost">{format!("{total_shows} shows")}</span>
+                        {(!country_code.is_empty()).then(|| view! {
+                            <span class="pill pill--ghost">{country_code.clone()}</span>
+                        })}
+                        <a class="pill pill--ghost" href="/shows">"Browse shows"</a>
+                    </div>
+                </div>
+                <div class="detail-grid">
+                    <div><strong>"Name"</strong><span>{name}</span></div>
+                    <div><strong>"Location"</strong><span>{location}</span></div>
+                    <div><strong>"Country"</strong><span>{country}</span></div>
+                    <div><strong>"Type"</strong><span>{venue_type}</span></div>
+                    <div><strong>"Total Shows"</strong><span>{total_shows}</span></div>
+                </div>
+                <h2>"Explore"</h2>
+                <ul class="result-list">
+                    <li class="result-card">
+                        <span class="pill pill--ghost">"Venues"</span>
+                        <div class="result-body">
+                            <a class="result-label" href="/venues">"Venue index"</a>
+                            <span class="result-meta">"Compare this venue with other tour stops."</span>
+                        </div>
+                    </li>
+                    <li class="result-card">
+                        <span class="pill pill--ghost">"Search"</span>
+                        <div class="result-body">
+                            <a class="result-label" href="/search">"Global search"</a>
+                            <span class="result-meta">"Find related songs, tours, and shows from this location."</span>
+                        </div>
+                    </li>
+                </ul>
+            }
+            .into_any()
         }
-        .into_any(),
         None => empty_state_with_link(
             "Venue not found",
             "This venue ID was not found in the current dataset.",
