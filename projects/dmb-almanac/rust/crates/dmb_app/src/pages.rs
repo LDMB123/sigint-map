@@ -3241,7 +3241,12 @@ pub fn show_detail_page() -> impl IntoView {
                                             prop:value=move || setlist_query.get()
                                             on:input=move |ev| setlist_query.set(event_target_value(&ev))
                                         />
-                                        <div class="result-filters" role="group" aria-label="Setlist filters">
+                                        <div
+                                            class="result-filters"
+                                            role="group"
+                                            aria-label="Setlist filters"
+                                            aria-controls="show-setlist-results"
+                                        >
                                             <button
                                                 type="button"
                                                 class="result-filter pill pill--ghost"
@@ -3273,7 +3278,9 @@ pub fn show_detail_page() -> impl IntoView {
                                                 .collect::<Vec<_>>()}
                                         </div>
                                     </div>
-                                    <p class="list-summary">{summary}</p>
+                                    <p class="list-summary" role="status" aria-live="polite">
+                                        {summary}
+                                    </p>
                                     {if filtered_items.is_empty() {
                                         view! {
                                             <section class="status-card status-card--empty">
@@ -3300,7 +3307,11 @@ pub fn show_detail_page() -> impl IntoView {
                                             .into_any()
                                     } else {
                                         view! {
-                                            <ol class="setlist" aria-label="Show setlist">
+                                            <ol
+                                                id="show-setlist-results"
+                                                class="setlist"
+                                                aria-label="Show setlist"
+                                            >
                                                 {filtered_items
                                                     .into_iter()
                                                     .map(|entry| {
@@ -3714,7 +3725,12 @@ pub fn release_detail_page() -> impl IntoView {
                                         prop:value=move || track_query.get()
                                         on:input=move |ev| track_query.set(event_target_value(&ev))
                                     />
-                                    <div class="result-filters" role="group" aria-label="Track filters">
+                                    <div
+                                        class="result-filters"
+                                        role="group"
+                                        aria-label="Track filters"
+                                        aria-controls="release-track-results"
+                                    >
                                         <button
                                             type="button"
                                             class="result-filter pill pill--ghost"
@@ -3746,7 +3762,9 @@ pub fn release_detail_page() -> impl IntoView {
                                             .collect::<Vec<_>>()}
                                     </div>
                                 </div>
-                                <p class="list-summary">{summary}</p>
+                                <p class="list-summary" role="status" aria-live="polite">
+                                    {summary}
+                                </p>
                                 {if filtered_tracks.is_empty() {
                                     view! {
                                         <section class="status-card status-card--empty">
@@ -3771,7 +3789,11 @@ pub fn release_detail_page() -> impl IntoView {
                                     .into_any()
                                 } else {
                                     view! {
-                                        <ol class="tracklist" aria-label="Release tracks">
+                                        <ol
+                                            id="release-track-results"
+                                            class="tracklist"
+                                            aria-label="Release tracks"
+                                        >
                                             {filtered_tracks
                                                 .into_iter()
                                                 .map(|track| {
@@ -4179,7 +4201,12 @@ pub fn search_page() -> impl IntoView {
 
                     view! {
                         <>
-                            <div class="result-filters" role="group" aria-label="Search result filters">
+                            <div
+                                class="result-filters"
+                                role="group"
+                                aria-label="Search result filters"
+                                aria-controls="search-results-list"
+                            >
                                 <button
                                     type="button"
                                     class="result-filter pill pill--ghost"
@@ -4250,7 +4277,7 @@ pub fn search_page() -> impl IntoView {
                                     {format!("Releases ({release_count})")}
                                 </button>
                             </div>
-                            <p class="list-summary">
+                            <p class="list-summary" role="status" aria-live="polite">
                                 {format!(
                                     "Showing {filtered_count} {summary_label} for \"{current_query}\""
                                 )}
@@ -4276,7 +4303,7 @@ pub fn search_page() -> impl IntoView {
                                 .into_any()
                             } else {
                                 view! {
-                                    <ul class="result-list">
+                                    <ul id="search-results-list" class="result-list">
                                         {filtered_items
                                             .into_iter()
                                             .map(|item| {
@@ -5786,7 +5813,12 @@ fn render_curated_list_detail_content(
                 prop:value=move || query.get()
                 on:input=move |ev| query.set(event_target_value(&ev))
             />
-            <div class="result-filters" role="group" aria-label="Curated list item filters">
+            <div
+                class="result-filters"
+                role="group"
+                aria-label="Curated list item filters"
+                aria-controls="curated-list-results"
+            >
                 <button
                     type="button"
                     class="result-filter pill pill--ghost"
@@ -5819,7 +5851,9 @@ fn render_curated_list_detail_content(
             </div>
         </div>
 
-        <p class="list-summary">{summary}</p>
+        <p class="list-summary" role="status" aria-live="polite">
+            {summary}
+        </p>
 
         {if filtered_items.is_empty() {
             view! {
@@ -5847,7 +5881,11 @@ fn render_curated_list_detail_content(
                 .into_any()
         } else {
             view! {
-                <ol class="tracklist" aria-label="Curated list items">
+                <ol
+                    id="curated-list-results"
+                    class="tracklist"
+                    aria-label="Curated list items"
+                >
                     {filtered_items
                         .into_iter()
                         .map(|item| {
@@ -6306,9 +6344,10 @@ pub fn test_wasm_page() -> impl IntoView {
 mod tests {
     use super::{
         normalize_guests, normalize_releases, normalize_show_summaries, normalize_songs,
-        normalize_tours, normalize_venues, ShowSummary,
+        normalize_tours, normalize_venues, release_track_disc_counts, release_track_matches_query,
+        setlist_set_counts, ShowSummary,
     };
-    use dmb_core::{Guest, Release, Song, Tour, Venue};
+    use dmb_core::{Guest, Release, ReleaseTrack, SetlistEntry, Song, Tour, Venue};
 
     #[test]
     fn normalize_show_summaries_sorts_by_date_desc_then_id() {
@@ -6494,5 +6533,161 @@ mod tests {
         assert!(normalize_guests(Vec::new(), 10).is_empty());
         assert!(normalize_tours(Vec::new(), 10).is_empty());
         assert!(normalize_releases(Vec::new(), 10).is_empty());
+    }
+
+    #[test]
+    fn setlist_set_counts_groups_entries_by_set_name() {
+        let entries = vec![
+            SetlistEntry {
+                id: 1,
+                show_id: 1,
+                song_id: 1,
+                position: 1,
+                set_name: Some("main set".to_string()),
+                slot: None,
+                show_date: None,
+                year: None,
+                duration_seconds: None,
+                segue_into_song_id: None,
+                is_segue: None,
+                is_tease: None,
+                tease_of_song_id: None,
+                notes: None,
+                song: None,
+            },
+            SetlistEntry {
+                id: 2,
+                show_id: 1,
+                song_id: 2,
+                position: 2,
+                set_name: None,
+                slot: None,
+                show_date: None,
+                year: None,
+                duration_seconds: None,
+                segue_into_song_id: None,
+                is_segue: None,
+                is_tease: None,
+                tease_of_song_id: None,
+                notes: None,
+                song: None,
+            },
+            SetlistEntry {
+                id: 3,
+                show_id: 1,
+                song_id: 3,
+                position: 3,
+                set_name: Some("encore".to_string()),
+                slot: None,
+                show_date: None,
+                year: None,
+                duration_seconds: None,
+                segue_into_song_id: None,
+                is_segue: None,
+                is_tease: None,
+                tease_of_song_id: None,
+                notes: None,
+                song: None,
+            },
+            SetlistEntry {
+                id: 4,
+                show_id: 1,
+                song_id: 4,
+                position: 4,
+                set_name: Some("main set".to_string()),
+                slot: None,
+                show_date: None,
+                year: None,
+                duration_seconds: None,
+                segue_into_song_id: None,
+                is_segue: None,
+                is_tease: None,
+                tease_of_song_id: None,
+                notes: None,
+                song: None,
+            },
+        ];
+
+        let counts = setlist_set_counts(&entries);
+        assert_eq!(
+            counts,
+            vec![
+                ("main set".to_string(), 2),
+                ("unspecified".to_string(), 1),
+                ("encore".to_string(), 1),
+            ]
+        );
+    }
+
+    #[test]
+    fn release_track_disc_counts_returns_sorted_disc_counts() {
+        let tracks = vec![
+            ReleaseTrack {
+                id: 1,
+                release_id: 1,
+                song_id: Some(1),
+                show_id: None,
+                track_number: Some(1),
+                disc_number: Some(2),
+                duration_seconds: None,
+                notes: None,
+            },
+            ReleaseTrack {
+                id: 2,
+                release_id: 1,
+                song_id: Some(2),
+                show_id: None,
+                track_number: Some(2),
+                disc_number: Some(1),
+                duration_seconds: None,
+                notes: None,
+            },
+            ReleaseTrack {
+                id: 3,
+                release_id: 1,
+                song_id: Some(3),
+                show_id: None,
+                track_number: Some(3),
+                disc_number: Some(2),
+                duration_seconds: None,
+                notes: None,
+            },
+        ];
+
+        let counts = release_track_disc_counts(&tracks);
+        assert_eq!(
+            counts,
+            vec![("disc-1".to_string(), 1), ("disc-2".to_string(), 2),]
+        );
+    }
+
+    #[test]
+    fn release_track_matches_query_supports_keywords_and_notes() {
+        let live_track = ReleaseTrack {
+            id: 1,
+            release_id: 1,
+            song_id: Some(10),
+            show_id: Some(42),
+            track_number: Some(7),
+            disc_number: Some(1),
+            duration_seconds: Some(320),
+            notes: Some("Rare acoustic version".to_string()),
+        };
+        let studio_track = ReleaseTrack {
+            id: 2,
+            release_id: 1,
+            song_id: Some(11),
+            show_id: None,
+            track_number: Some(8),
+            disc_number: Some(1),
+            duration_seconds: Some(280),
+            notes: None,
+        };
+
+        assert!(release_track_matches_query(&live_track, "live"));
+        assert!(release_track_matches_query(&live_track, "acoustic"));
+        assert!(release_track_matches_query(&live_track, "42"));
+        assert!(!release_track_matches_query(&live_track, "studio"));
+        assert!(release_track_matches_query(&studio_track, "studio"));
     }
 }
