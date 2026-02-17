@@ -5,6 +5,7 @@ use dmb_app::App;
 use leptos::prelude::*;
 use leptos_meta::provide_meta_context;
 use leptos_router::location::RequestUrl;
+use std::collections::BTreeSet;
 
 fn render_app_at(path: &str) -> String {
     let _ = Executor::init_futures_executor();
@@ -16,53 +17,50 @@ fn render_app_at(path: &str) -> String {
     })
 }
 
+fn sample_path_for_route(route: &str) -> String {
+    if route == "/*" {
+        return "/route-not-found".to_string();
+    }
+    if route == "/" {
+        return "/".to_string();
+    }
+    let mut path = String::new();
+    for segment in route.split('/') {
+        if segment.is_empty() {
+            continue;
+        }
+        path.push('/');
+        if let Some(param) = segment.strip_prefix(':') {
+            let sample = match param {
+                "showId" | "venueId" | "listId" => "1",
+                "year" => "2024",
+                "slug" => "sample-slug",
+                _ => "1",
+            };
+            path.push_str(sample);
+        } else {
+            path.push_str(segment);
+        }
+    }
+    if path.is_empty() {
+        "/".to_string()
+    } else {
+        path
+    }
+}
+
 #[test]
 fn ssr_smoke_renders_all_route_paths() {
-    let cases = [
-        "/",
-        "/about",
-        "/contact",
-        "/faq",
-        "/shows",
-        "/shows/1",
-        "/songs",
-        "/songs/ants-marching",
-        "/venues",
-        "/venues/1",
-        "/guests",
-        "/guests/bela-fleck",
-        "/tours",
-        "/tours/2024",
-        "/releases",
-        "/releases/live-trax-vol-1",
-        "/discography",
-        "/search",
-        "/stats",
-        "/liberation",
-        "/lists",
-        "/lists/1",
-        "/my-shows",
-        "/open-file",
-        "/protocol",
-        "/test-wasm",
-        "/assistant",
-        "/ai-diagnostics",
-        "/ai-benchmark",
-        "/ai-warmup",
-        "/ai-smoke",
-        "/visualizations",
-        "/offline",
-        "/route-not-found",
-    ];
-
-    assert_eq!(
-        cases.len(),
-        dmb_app::RUST_ROUTES.len(),
-        "smoke route list should stay aligned with RUST_ROUTES",
-    );
-
-    for path in cases {
-        let html = render_app_at(path);
+    let mut sampled_paths = BTreeSet::new();
+    for route in dmb_app::RUST_ROUTES {
+        let path = sample_path_for_route(route);
+        assert!(
+            sampled_paths.insert(path.clone()),
+            "route {} mapped to duplicate sample path {}",
+            route,
+            path
+        );
+        let html = render_app_at(&path);
         assert!(
             html.contains("main-content"),
             "path {} missing app main content",
@@ -73,5 +71,6 @@ fn ssr_smoke_renders_all_route_paths() {
             "path {} missing page wrapper",
             path
         );
+        assert!(html.contains("<h1"), "path {} missing heading", path);
     }
 }

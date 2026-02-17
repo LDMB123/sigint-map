@@ -5968,7 +5968,19 @@ pub fn liberation_page() -> impl IntoView {
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
-                    render_liberation_items(items.get().unwrap_or_default()).into_any()
+                    view! {
+                        <Suspense
+                            fallback=move || {
+                                loading_state(
+                                    "Loading liberation list",
+                                    "Computing gap durations and recent play context.",
+                                )
+                            }
+                        >
+                            {move || render_liberation_items(items.get().unwrap_or_default())}
+                        </Suspense>
+                    }
+                        .into_any()
                 }
             }}
         </section>
@@ -6010,7 +6022,19 @@ pub fn discography_page() -> impl IntoView {
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
-                    render_discography_items(items.get().unwrap_or_default()).into_any()
+                    view! {
+                        <Suspense
+                            fallback=move || {
+                                loading_state(
+                                    "Loading discography",
+                                    "Fetching full release catalog.",
+                                )
+                            }
+                        >
+                            {move || render_discography_items(items.get().unwrap_or_default())}
+                        </Suspense>
+                    }
+                        .into_any()
                 }
             }}
         </section>
@@ -6052,7 +6076,19 @@ pub fn curated_lists_page() -> impl IntoView {
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
-                    render_curated_list_cards(items.get().unwrap_or_default()).into_any()
+                    view! {
+                        <Suspense
+                            fallback=move || {
+                                loading_state(
+                                    "Loading curated lists",
+                                    "Fetching featured and themed collections.",
+                                )
+                            }
+                        >
+                            {move || render_curated_list_cards(items.get().unwrap_or_default())}
+                        </Suspense>
+                    }
+                        .into_any()
                 }
             }}
         </section>
@@ -6172,31 +6208,50 @@ pub fn curated_list_detail_page() -> impl IntoView {
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
-                    let list_meta = list.get().unwrap_or(None);
-                    let list_items = items.get().unwrap_or_default();
-                    if let Some(list_val) = list_meta {
-                        render_curated_list_detail_content(list_val, list_items, active_filter, query)
-                            .into_any()
-                    } else if parse_positive_i32_param(&list_id(), "listId").is_err() {
-                        view! {
-                            <section class="status-card status-card--empty">
-                                <p class="status-title">"Invalid list id"</p>
-                                <p class="muted">
-                                    "Use a positive integer list id in the URL to open list details."
-                                </p>
-                                <p><a class="result-label" href="/lists">"Browse curated lists"</a></p>
-                            </section>
-                        }
-                            .into_any()
-                    } else {
-                        empty_state_with_link(
-                            "List not found",
-                            "This curated list id could not be resolved.",
-                            "/lists",
-                            "Browse curated lists",
-                        )
-                            .into_any()
+                    view! {
+                        <Suspense
+                            fallback=move || {
+                                loading_state(
+                                    "Loading curated list",
+                                    "Fetching list metadata and up to 200 ranked items.",
+                                )
+                            }
+                        >
+                            {move || {
+                                let list_meta = list.get().unwrap_or(None);
+                                let list_items = items.get().unwrap_or_default();
+                                if let Some(list_val) = list_meta {
+                                    render_curated_list_detail_content(
+                                        list_val,
+                                        list_items,
+                                        active_filter,
+                                        query,
+                                    )
+                                        .into_any()
+                                } else if parse_positive_i32_param(&list_id(), "listId").is_err() {
+                                    view! {
+                                        <section class="status-card status-card--empty">
+                                            <p class="status-title">"Invalid list id"</p>
+                                            <p class="muted">
+                                                "Use a positive integer list id in the URL to open list details."
+                                            </p>
+                                            <p><a class="result-label" href="/lists">"Browse curated lists"</a></p>
+                                        </section>
+                                    }
+                                        .into_any()
+                                } else {
+                                    empty_state_with_link(
+                                        "List not found",
+                                        "This curated list id could not be resolved.",
+                                        "/lists",
+                                        "Browse curated lists",
+                                    )
+                                        .into_any()
+                                }
+                            }}
+                        </Suspense>
                     }
+                        .into_any()
                 }
             }}
         </section>
