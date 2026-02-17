@@ -74,6 +74,26 @@ struct ScrapeWarningCounters {
     missing_fields: AtomicUsize,
 }
 
+#[derive(Clone, Default)]
+struct ScrapeReportSnapshot {
+    missing_by_field: HashMap<String, usize>,
+    missing_by_context: HashMap<String, usize>,
+    empty_by_selector: HashMap<String, usize>,
+    empty_by_context: HashMap<String, usize>,
+    http_status_counts: HashMap<String, usize>,
+    endpoint_timings: HashMap<String, u64>,
+    endpoint_retries: HashMap<String, usize>,
+    endpoint_retry_total: usize,
+    top_endpoint_retries: Vec<(String, usize)>,
+    top_missing_fields: Vec<(String, usize)>,
+    top_http_status: Vec<(String, usize)>,
+    error_counts: HashMap<String, usize>,
+    top_errors: Vec<(String, usize)>,
+    warning_events_summary: HashMap<String, usize>,
+    error_events_summary: HashMap<String, usize>,
+    signature: String,
+}
+
 fn regex(pattern: &str) -> &'static Regex {
     let normalized = if pattern.contains("\\\\") {
         pattern.replace("\\\\", "\\")
@@ -240,127 +260,172 @@ fn log_scrape_warning_summary() -> (usize, usize) {
     (empty, missing)
 }
 
+fn clone_locked_state<T: Clone>(state: &Lazy<Mutex<T>>, poisoned_msg: &str) -> T {
+    match state.lock() {
+        Ok(guard) => guard.clone(),
+        Err(poisoned) => {
+            tracing::warn!("{}", poisoned_msg);
+            poisoned.into_inner().clone()
+        }
+    }
+}
+
+fn summarize_by_context(values: &HashMap<String, usize>) -> HashMap<String, usize> {
+    let mut by_context: HashMap<String, usize> = HashMap::new();
+    for (key, count) in values {
+        let context = key.split('.').next().unwrap_or(key).to_string();
+        let entry = by_context.entry(context).or_insert(0);
+        *entry = entry.saturating_add(*count);
+    }
+    by_context
+}
+
+fn summarize_events_by_kind(events: &[Value]) -> HashMap<String, usize> {
+    let mut summary: HashMap<String, usize> = HashMap::new();
+    for event in events {
+        if let Some(kind) = event.get("kind").and_then(|v| v.as_str()) {
+            *summary.entry(kind.to_string()).or_insert(0) += 1;
+        }
+    }
+    summary
+}
+
+fn top_counts(values: &HashMap<String, usize>, limit: usize) -> Vec<(String, usize)> {
+    let mut top: Vec<(String, usize)> = values.iter().map(|(k, v)| (k.clone(), *v)).collect();
+    top.sort_by(|a, b| b.1.cmp(&a.1));
+    top.truncate(limit);
+    top
+}
+
+fn capture_scrape_report_snapshot() -> ScrapeReportSnapshot {
+    let missing_by_field = clone_locked_state(
+        &SCRAPE_WARNING_FIELDS,
+        "warning field map poisoned; continuing with recovered map",
+    );
+    let empty_by_selector = clone_locked_state(
+        &SCRAPE_WARNING_SELECTORS,
+        "warning selector map poisoned; continuing with recovered map",
+    );
+    let http_status_counts = clone_locked_state(
+        &SCRAPE_HTTP_STATUS,
+        "http status map poisoned; continuing with recovered map",
+    );
+    let endpoint_timings = clone_locked_state(
+        &SCRAPE_ENDPOINT_TIMINGS,
+        "endpoint timings map poisoned; continuing with recovered map",
+    );
+    let endpoint_retries = clone_locked_state(
+        &SCRAPE_ENDPOINT_RETRIES,
+        "endpoint retry map poisoned; continuing with recovered map",
+    );
+    let warning_events = clone_locked_state(
+        &SCRAPE_WARNING_EVENTS,
+        "warning events map poisoned; continuing with recovered map",
+    );
+    let error_events = clone_locked_state(
+        &SCRAPE_ERROR_EVENTS,
+        "error events map poisoned; continuing with recovered map",
+    );
+    let error_counts = clone_locked_state(
+        &SCRAPE_ERROR_COUNTS,
+        "error counter map poisoned; continuing with recovered map",
+    );
+
+    let missing_by_context = summarize_by_context(&missing_by_field);
+    let empty_by_context = summarize_by_context(&empty_by_selector);
+    let warning_events_summary = summarize_events_by_kind(&warning_events);
+    let error_events_summary = summarize_events_by_kind(&error_events);
+    let top_endpoint_retries = top_counts(&endpoint_retries, 10);
+    let top_missing_fields = top_counts(&missing_by_field, 5);
+    let top_http_status = top_counts(&http_status_counts, 5);
+    let top_errors = top_counts(&error_counts, 5);
+    let endpoint_retry_total: usize = endpoint_retries.values().copied().sum();
+    let signature = warning_signature(&missing_by_field, &empty_by_selector);
+
+    ScrapeReportSnapshot {
+        missing_by_field,
+        missing_by_context,
+        empty_by_selector,
+        empty_by_context,
+        http_status_counts,
+        endpoint_timings,
+        endpoint_retries,
+        endpoint_retry_total,
+        top_endpoint_retries,
+        top_missing_fields,
+        top_http_status,
+        error_counts,
+        top_errors,
+        warning_events_summary,
+        error_events_summary,
+        signature,
+    }
+}
+
+fn write_warning_artifacts(
+    path: &Path,
+    empty: usize,
+    missing: usize,
+    warnings_jsonl: Option<&Path>,
+) -> Result<()> {
+    let snapshot = capture_scrape_report_snapshot();
+    write_warning_report_with_snapshot(path, empty, missing, warnings_jsonl, &snapshot)?;
+    write_scrape_summary_with_snapshot(path, empty, missing, &snapshot)
+}
+
+#[cfg(test)]
 fn write_warning_report(
     path: &Path,
     empty: usize,
     missing: usize,
     warnings_jsonl: Option<&Path>,
 ) -> Result<()> {
+    let snapshot = capture_scrape_report_snapshot();
+    write_warning_report_with_snapshot(path, empty, missing, warnings_jsonl, &snapshot)
+}
+
+fn write_warning_report_with_snapshot(
+    path: &Path,
+    empty: usize,
+    missing: usize,
+    warnings_jsonl: Option<&Path>,
+    snapshot: &ScrapeReportSnapshot,
+) -> Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).with_context(|| format!("create {}", parent.display()))?;
     }
-    let missing_by_field = SCRAPE_WARNING_FIELDS
-        .lock()
-        .map(|map| map.clone())
-        .unwrap_or_default();
-    let empty_by_selector = SCRAPE_WARNING_SELECTORS
-        .lock()
-        .map(|map| map.clone())
-        .unwrap_or_default();
-    let mut missing_by_context: HashMap<String, usize> = HashMap::new();
-    for (key, count) in &missing_by_field {
-        let context = key.split('.').next().unwrap_or(key).to_string();
-        let entry = missing_by_context.entry(context).or_insert(0);
-        *entry = entry.saturating_add(*count);
-    }
-    let mut empty_by_context: HashMap<String, usize> = HashMap::new();
-    for (key, count) in &empty_by_selector {
-        let context = key.split('.').next().unwrap_or(key).to_string();
-        let entry = empty_by_context.entry(context).or_insert(0);
-        *entry = entry.saturating_add(*count);
-    }
-    let http_status_counts = SCRAPE_HTTP_STATUS
-        .lock()
-        .map(|map| map.clone())
-        .unwrap_or_default();
-    let endpoint_timings = SCRAPE_ENDPOINT_TIMINGS
-        .lock()
-        .map(|map| map.clone())
-        .unwrap_or_default();
-    let endpoint_retries = SCRAPE_ENDPOINT_RETRIES
-        .lock()
-        .map(|map| map.clone())
-        .unwrap_or_default();
-    let warning_events = SCRAPE_WARNING_EVENTS
-        .lock()
-        .map(|events| events.clone())
-        .unwrap_or_default();
-    let error_events = SCRAPE_ERROR_EVENTS
-        .lock()
-        .map(|events| events.clone())
-        .unwrap_or_default();
-    let error_counts = SCRAPE_ERROR_COUNTS
-        .lock()
-        .map(|map| map.clone())
-        .unwrap_or_default();
-    let mut warning_events_summary: HashMap<String, usize> = HashMap::new();
-    for event in &warning_events {
-        if let Some(kind) = event.get("kind").and_then(|v| v.as_str()) {
-            *warning_events_summary.entry(kind.to_string()).or_insert(0) += 1;
-        }
-    }
-    let mut error_events_summary: HashMap<String, usize> = HashMap::new();
-    for event in &error_events {
-        if let Some(kind) = event.get("kind").and_then(|v| v.as_str()) {
-            *error_events_summary.entry(kind.to_string()).or_insert(0) += 1;
-        }
-    }
-    let mut top_endpoint_retries: Vec<(String, usize)> = endpoint_retries
-        .iter()
-        .map(|(k, v)| (k.clone(), *v))
-        .collect();
-    top_endpoint_retries.sort_by(|a, b| b.1.cmp(&a.1));
-    top_endpoint_retries.truncate(10);
-    let endpoint_retry_total: usize = endpoint_retries.values().copied().sum();
-    let signature = warning_signature(&missing_by_field, &empty_by_selector);
-    let mut top_missing_fields: Vec<(String, usize)> = missing_by_field
-        .iter()
-        .map(|(k, v)| (k.clone(), *v))
-        .collect();
-    top_missing_fields.sort_by(|a, b| b.1.cmp(&a.1));
-    top_missing_fields.truncate(5);
-    let mut top_http_status: Vec<(String, usize)> = http_status_counts
-        .iter()
-        .map(|(k, v)| (k.clone(), *v))
-        .collect();
-    top_http_status.sort_by(|a, b| b.1.cmp(&a.1));
-    top_http_status.truncate(5);
-    let mut top_errors: Vec<(String, usize)> =
-        error_counts.iter().map(|(k, v)| (k.clone(), *v)).collect();
-    top_errors.sort_by(|a, b| b.1.cmp(&a.1));
-    top_errors.truncate(5);
     let report = json!({
         "generatedAt": Utc::now().to_rfc3339(),
         "emptySelectors": empty,
         "missingFields": missing,
-        "missingByField": missing_by_field,
-        "missingByContext": missing_by_context,
-        "topMissingFields": top_missing_fields
-            .into_iter()
+        "missingByField": &snapshot.missing_by_field,
+        "missingByContext": &snapshot.missing_by_context,
+        "topMissingFields": snapshot.top_missing_fields
+            .iter()
             .map(|(field, count)| json!({"field": field, "count": count}))
             .collect::<Vec<_>>(),
-        "emptyBySelector": empty_by_selector,
-        "emptyByContext": empty_by_context,
-        "httpStatusCounts": http_status_counts,
-        "errorCounts": error_counts,
-        "topErrors": top_errors
-            .into_iter()
+        "emptyBySelector": &snapshot.empty_by_selector,
+        "emptyByContext": &snapshot.empty_by_context,
+        "httpStatusCounts": &snapshot.http_status_counts,
+        "errorCounts": &snapshot.error_counts,
+        "topErrors": snapshot.top_errors
+            .iter()
             .map(|(kind, count)| json!({"kind": kind, "count": count}))
             .collect::<Vec<_>>(),
-        "topHttpStatus": top_http_status
-            .into_iter()
+        "topHttpStatus": snapshot.top_http_status
+            .iter()
             .map(|(status, count)| json!({"status": status, "count": count}))
             .collect::<Vec<_>>(),
-        "endpointTimingsMs": endpoint_timings,
-        "endpointRetries": endpoint_retries,
-        "endpointRetriesTotal": endpoint_retry_total,
-        "topEndpointRetries": top_endpoint_retries
-            .into_iter()
+        "endpointTimingsMs": &snapshot.endpoint_timings,
+        "endpointRetries": &snapshot.endpoint_retries,
+        "endpointRetriesTotal": snapshot.endpoint_retry_total,
+        "topEndpointRetries": snapshot.top_endpoint_retries
+            .iter()
             .map(|(endpoint, count)| json!({"endpoint": endpoint, "count": count}))
             .collect::<Vec<_>>(),
-        "warningEventsSummary": warning_events_summary,
-        "errorEventsSummary": error_events_summary,
-        "signature": signature
+        "warningEventsSummary": &snapshot.warning_events_summary,
+        "errorEventsSummary": &snapshot.error_events_summary,
+        "signature": &snapshot.signature
     });
     let file = fs::File::create(path).with_context(|| format!("write {}", path.display()))?;
     serde_json::to_writer_pretty(file, &report).context("serialize warning report")?;
@@ -370,7 +435,18 @@ fn write_warning_report(
     Ok(())
 }
 
+#[cfg(test)]
 fn write_scrape_summary(path: &Path, empty: usize, missing: usize) -> Result<()> {
+    let snapshot = capture_scrape_report_snapshot();
+    write_scrape_summary_with_snapshot(path, empty, missing, &snapshot)
+}
+
+fn write_scrape_summary_with_snapshot(
+    path: &Path,
+    empty: usize,
+    missing: usize,
+    snapshot: &ScrapeReportSnapshot,
+) -> Result<()> {
     let summary_path = path
         .parent()
         .map(|parent| parent.join("scrape-summary.json"))
@@ -378,74 +454,25 @@ fn write_scrape_summary(path: &Path, empty: usize, missing: usize) -> Result<()>
     if let Some(parent) = summary_path.parent() {
         fs::create_dir_all(parent).with_context(|| format!("create {}", parent.display()))?;
     }
-    let http_status_counts = SCRAPE_HTTP_STATUS
-        .lock()
-        .map(|map| map.clone())
-        .unwrap_or_default();
-    let endpoint_timings = SCRAPE_ENDPOINT_TIMINGS
-        .lock()
-        .map(|map| map.clone())
-        .unwrap_or_default();
-    let endpoint_retries = SCRAPE_ENDPOINT_RETRIES
-        .lock()
-        .map(|map| map.clone())
-        .unwrap_or_default();
-    let warning_events = SCRAPE_WARNING_EVENTS
-        .lock()
-        .map(|events| events.clone())
-        .unwrap_or_default();
-    let error_events = SCRAPE_ERROR_EVENTS
-        .lock()
-        .map(|events| events.clone())
-        .unwrap_or_default();
-    let error_counts = SCRAPE_ERROR_COUNTS
-        .lock()
-        .map(|map| map.clone())
-        .unwrap_or_default();
-    let mut warning_events_summary: HashMap<String, usize> = HashMap::new();
-    for event in &warning_events {
-        if let Some(kind) = event.get("kind").and_then(|v| v.as_str()) {
-            *warning_events_summary.entry(kind.to_string()).or_insert(0) += 1;
-        }
-    }
-    let mut error_events_summary: HashMap<String, usize> = HashMap::new();
-    for event in &error_events {
-        if let Some(kind) = event.get("kind").and_then(|v| v.as_str()) {
-            *error_events_summary.entry(kind.to_string()).or_insert(0) += 1;
-        }
-    }
-    let mut top_endpoint_retries: Vec<(String, usize)> = endpoint_retries
-        .iter()
-        .map(|(k, v)| (k.clone(), *v))
-        .collect();
-    top_endpoint_retries.sort_by(|a, b| b.1.cmp(&a.1));
-    top_endpoint_retries.truncate(10);
-    let mut top_http_status: Vec<(String, usize)> = http_status_counts
-        .iter()
-        .map(|(k, v)| (k.clone(), *v))
-        .collect();
-    top_http_status.sort_by(|a, b| b.1.cmp(&a.1));
-    top_http_status.truncate(5);
-    let endpoint_retry_total: usize = endpoint_retries.values().copied().sum();
     let summary = json!({
         "generatedAt": Utc::now().to_rfc3339(),
         "emptySelectors": empty,
         "missingFields": missing,
-        "httpStatusCounts": http_status_counts,
-        "errorCounts": error_counts,
-        "topHttpStatus": top_http_status
-            .into_iter()
+        "httpStatusCounts": &snapshot.http_status_counts,
+        "errorCounts": &snapshot.error_counts,
+        "topHttpStatus": snapshot.top_http_status
+            .iter()
             .map(|(status, count)| json!({"status": status, "count": count}))
             .collect::<Vec<_>>(),
-        "endpointTimingsMs": endpoint_timings,
-        "endpointRetries": endpoint_retries,
-        "endpointRetriesTotal": endpoint_retry_total,
-        "topEndpointRetries": top_endpoint_retries
-            .into_iter()
+        "endpointTimingsMs": &snapshot.endpoint_timings,
+        "endpointRetries": &snapshot.endpoint_retries,
+        "endpointRetriesTotal": snapshot.endpoint_retry_total,
+        "topEndpointRetries": snapshot.top_endpoint_retries
+            .iter()
             .map(|(endpoint, count)| json!({"endpoint": endpoint, "count": count}))
             .collect::<Vec<_>>(),
-        "warningEventsSummary": warning_events_summary,
-        "errorEventsSummary": error_events_summary
+        "warningEventsSummary": &snapshot.warning_events_summary,
+        "errorEventsSummary": &snapshot.error_events_summary
     });
     let file = fs::File::create(&summary_path)
         .with_context(|| format!("write {}", summary_path.display()))?;
@@ -719,15 +746,9 @@ impl ScrapeClient {
 
     fn fetch_html(&self, url: &str) -> Result<String> {
         let start = Instant::now();
-        let hash = blake3::hash(url.as_bytes()).to_hex().to_string();
+        let hash = blake3::hash(url.as_bytes()).to_hex();
         let cache_path = self.cache_dir.join(format!("{hash}.html"));
-        let endpoint = url
-            .split('/')
-            .next_back()
-            .unwrap_or("unknown")
-            .split('?')
-            .next()
-            .unwrap_or("unknown");
+        let endpoint = endpoint_name(url);
         if cache_path.exists() {
             if let Some(ttl_days) = self.cache_ttl_days {
                 if let Ok(metadata) = fs::metadata(&cache_path) {
@@ -1169,8 +1190,7 @@ pub fn scrape_live(config: ScrapeConfig) -> Result<()> {
     let (empty, missing) = log_scrape_warning_summary();
     log_scrape_http_summary();
     if let Some(path) = &config.warnings_output {
-        write_warning_report(path, empty, missing, config.warnings_jsonl.as_deref())?;
-        write_scrape_summary(path, empty, missing)?;
+        write_warning_artifacts(path, empty, missing, config.warnings_jsonl.as_deref())?;
     }
     let total_warnings = empty + missing;
     if config.fail_on_warning && total_warnings > 0 {
@@ -1238,8 +1258,7 @@ pub fn scrape_fixtures(
 
     let (empty, missing) = log_scrape_warning_summary();
     if let Some(path) = warnings_output.as_ref() {
-        write_warning_report(path, empty, missing, warnings_jsonl.as_deref())?;
-        write_scrape_summary(path, empty, missing)?;
+        write_warning_artifacts(path, empty, missing, warnings_jsonl.as_deref())?;
     }
     if fail_on_warning && (empty + missing) > 0 {
         bail!(
@@ -1269,14 +1288,17 @@ fn apply_max_items<T>(items: &mut Vec<T>, limit: Option<usize>) {
     }
 }
 
-fn increment_http_status(url: &str, status: Option<u16>) {
-    let endpoint = url
-        .split('/')
-        .next_back()
+fn endpoint_name(url: &str) -> &str {
+    url.rsplit('/')
+        .next()
         .unwrap_or("unknown")
         .split('?')
         .next()
-        .unwrap_or("unknown");
+        .unwrap_or("unknown")
+}
+
+fn increment_http_status(url: &str, status: Option<u16>) {
+    let endpoint = endpoint_name(url);
     let key = match status {
         Some(code) => format!("{endpoint}:{code}"),
         None => format!("{endpoint}:network"),
@@ -5205,8 +5227,7 @@ pub fn scrape_smoke(config: ScrapeConfig) -> Result<()> {
     let (empty, missing) = log_scrape_warning_summary();
     log_scrape_http_summary();
     if let Some(path) = &config.warnings_output {
-        write_warning_report(path, empty, missing, config.warnings_jsonl.as_deref())?;
-        write_scrape_summary(path, empty, missing)?;
+        write_warning_artifacts(path, empty, missing, config.warnings_jsonl.as_deref())?;
     }
     if let Some(max_allowed) = config.warnings_max {
         let total = empty + missing;

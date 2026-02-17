@@ -671,12 +671,9 @@ fn build_embeddings(input: &PathBuf, output_dir: &PathBuf, chunk_size: usize) ->
         let records = chunk
             .iter()
             .map(|item| {
-                let vector = if let Some(vector) = item.vector.clone() {
-                    vector
-                } else {
-                    let text = item.text.clone().unwrap_or_default();
-                    hashed_embedding(&text, EMBEDDING_DIM)
-                };
+                let vector = item.vector.clone().unwrap_or_else(|| {
+                    hashed_embedding(item.text.as_deref().unwrap_or(""), EMBEDDING_DIM)
+                });
 
                 EmbeddingRecord {
                     id: item.id,
@@ -684,9 +681,10 @@ fn build_embeddings(input: &PathBuf, output_dir: &PathBuf, chunk_size: usize) ->
                     slug: item.slug.clone(),
                     label: item
                         .label
-                        .clone()
-                        .or_else(|| item.text.clone())
-                        .filter(|v| !v.is_empty()),
+                        .as_ref()
+                        .or(item.text.as_ref())
+                        .filter(|v| !v.is_empty())
+                        .cloned(),
                     vector,
                 }
             })

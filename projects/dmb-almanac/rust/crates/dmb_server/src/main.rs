@@ -28,7 +28,14 @@ use tower_http::{
 };
 
 async fn cache_control_middleware(req: Request<Body>, next: Next) -> Response {
-    let path = req.uri().path().to_string();
+    let path = req.uri().path();
+    let is_no_cache = path == "/sw.js"
+        || path.starts_with("/pkg/")
+        || path == "/app.css"
+        || path == "/webgpu.js"
+        || path == "/webgpu-worker.js"
+        || path.starts_with("/data/")
+        || path == "/manifest.json";
     let accepts_html = req
         .headers()
         .get(header::ACCEPT)
@@ -37,16 +44,6 @@ async fn cache_control_middleware(req: Request<Body>, next: Next) -> Response {
         .unwrap_or(false);
 
     let mut res = next.run(req).await;
-
-    // Avoid "stale bundle" loops where the browser HTTP cache serves old WASM/JS
-    // and hydration fails. We want the SW + CacheStorage to be the primary cache.
-    let is_no_cache = path == "/sw.js"
-        || path.starts_with("/pkg/")
-        || path == "/app.css"
-        || path == "/webgpu.js"
-        || path == "/webgpu-worker.js"
-        || path.starts_with("/data/")
-        || path == "/manifest.json";
 
     if is_no_cache {
         res.headers_mut()
@@ -333,7 +330,7 @@ fn validate_event_payload(
 async fn main() {
     let log_filter = resolve_log_filter();
     tracing_subscriber::fmt()
-        .with_env_filter(log_filter.clone())
+        .with_env_filter(log_filter.as_str())
         .init();
     tracing::info!(log_filter = %log_filter, "tracing initialized");
 
@@ -386,8 +383,8 @@ async fn main() {
             {
                 let db_context = db_context.clone();
                 move || {
-                    if let Some(pool) = db_context.as_ref().clone() {
-                        provide_context(pool);
+                    if let Some(pool) = db_context.as_ref() {
+                        provide_context(pool.clone());
                     }
                 }
             },
