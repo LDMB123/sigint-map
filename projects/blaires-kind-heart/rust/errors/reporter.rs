@@ -70,6 +70,12 @@ async fn persist_error(error: AppError, timestamp: f64) -> Result<(), String> {
     Ok(())
 }
 
+/// Log a non-user-visible diagnostic warning to the browser console.
+/// Use for internal anomalies that don't require user feedback (e.g. unknown skill category).
+pub fn log_diagnostic(context: &str, msg: &str) {
+    console::warn_1(&format!("[BKH] {context}: {msg}").into());
+}
+
 /// Get recent errors from in-memory buffer (for debug panel).
 #[allow(dead_code)]
 pub fn get_recent_errors(limit: usize) -> Vec<(AppError, f64)> {

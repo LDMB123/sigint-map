@@ -1,7 +1,7 @@
 # API Architecture V1 - DMB Almanac
 
 ## Overview
-Task-driven API surface for shows, songs, venues, and telemetry. Public read endpoints focus on summary-first payloads; telemetry endpoints accept client performance data.
+Task-driven API surface for shows, songs, venues, and diagnostics. Public read endpoints focus on summary-first payloads.
 
 ## Versioning
 - URL versioning: /api/v1
@@ -34,19 +34,14 @@ Base path: /api/v1
 | GET | /venues/{id} | Venue summary | Public |
 | GET | /search?q= | Multi-type search | Public |
 
-### Telemetry (Current)
+### Runtime Diagnostics (Current)
 Base path: /api
 
 | Method | Path | Description | Auth |
 | --- | --- | --- | --- |
 | GET | /health | Health check | Public |
-| POST | /analytics | Web vitals metrics | Public |
-| POST | /telemetry/performance | Performance batches | Public |
-| POST | /telemetry/performance-metrics | Field metrics | Public |
-| POST | /telemetry/errors | Error batches | Public |
-| POST | /telemetry/business | Business events | Public |
-| POST | /csp-report | CSP violation reports | Public |
-| POST | /share-target | PWA share target | Public |
+| GET | /ai-health | AI health check | Public |
+| GET | /data-parity | SQLite/IDB parity diagnostics | Public |
 
 ## Response Shape
 
@@ -77,13 +72,8 @@ Base path: /api
 - `UNAUTHORIZED` (future)
 - `INTERNAL_ERROR`
 
-## Telemetry Payloads (Current)
-- `/api/analytics`: Core Web Vitals and LoAF
-- `/api/telemetry/performance`: batched performance metrics
-- `/api/telemetry/errors`: error batches
-- `/api/telemetry/business`: business events
-
-Each telemetry endpoint returns `{ data: { success: boolean }, requestId }`.
+## Deprecation Note
+Telemetry and share-target POST endpoints were removed from the runtime API surface in the 2026 cleanup program.
 
 ## Pagination
 - Cursor-based pagination for large lists
@@ -92,13 +82,11 @@ Each telemetry endpoint returns `{ data: { success: boolean }, requestId }`.
 
 ## Caching
 - Public endpoints: Cache-Control public, max-age=86400, stale-while-revalidate=604800
-- Telemetry endpoints: Cache-Control no-store
- - Health check: Cache-Control no-store
+- Health and diagnostics endpoints: Cache-Control no-store
 
 ## Rate Limits
 - Public: 1000 requests per hour
 - Authenticated: 10000 requests per hour
- - Telemetry: 60 requests per minute per IP
 
 ## Security
 - Input validation on all payloads

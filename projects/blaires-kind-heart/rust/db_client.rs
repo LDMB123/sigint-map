@@ -233,6 +233,17 @@ pub fn flush_sync() {
     }
 }
 
+/// Extract a COUNT(*) or integer column from the first row of a query result.
+/// SQLite integers arrive as serde_json f64 — converts via as_f64() then casts.
+/// Returns 0 if the key is missing or the query returned no rows.
+pub fn extract_count(rows: &serde_json::Value, key: &str) -> i64 {
+    rows.as_array()
+        .and_then(|arr| arr.first())
+        .and_then(|row| row.get(key))
+        .and_then(|v| v.as_f64())
+        .unwrap_or(0.0) as i64
+}
+
 /// Wait for the DB worker to finish initialization (Init response for request_id=0).
 /// Call once during boot instead of a fixed `sleep_ms(200)` delay.
 /// Times out after 5 seconds to prevent boot from hanging if the worker fails.

@@ -1,135 +1,96 @@
 {
-  "version": "1.0.0",
-  "timestamp": "2026-01-23T22:36:13.106Z",
-  "recordCounts": {
-    "venues": 2855,
-    "songs": 1240,
-    "tours": 194,
-    "shows": 3454,
-    "setlistEntries": 39949,
-    "guests": 1442,
-    "guestAppearances": 2011,
-    "liberationList": 62,
-    "songStatistics": 767,
-    "venueTopSongs": 30127,
-    "thisDayInHistory": 3454,
-    "showDetails": 3454,
-    "curatedLists": 39,
-    "curatedListItems": 2646,
-    "songStats": 1195,
-    "recentShows": 50,
-    "releases": 21,
-    "releaseTracks": 564
-  },
-  "totalSize": 37274503,
+  "version": "2026-02-04",
+  "generated_at": "2026-02-18T02:36:25.813921+00:00",
   "files": [
     {
-      "name": "venues.json",
-      "path": "data/static-data/venues.json",
-      "size": 1175662,
-      "recordCount": 2855
-    },
-    {
-      "name": "songs.json",
-      "path": "data/static-data/songs.json",
-      "size": 1164893,
-      "recordCount": 1240
-    },
-    {
-      "name": "tours.json",
-      "path": "data/static-data/tours.json",
-      "size": 45948,
-      "recordCount": 194
-    },
-    {
-      "name": "shows.json",
-      "path": "data/static-data/shows.json",
-      "size": 2185122,
-      "recordCount": 3454
-    },
-    {
-      "name": "setlist-entries.json",
-      "path": "data/static-data/setlist-entries.json",
-      "size": 22136575,
-      "recordCount": 39949
-    },
-    {
-      "name": "guests.json",
-      "path": "data/static-data/guests.json",
-      "size": 431578,
-      "recordCount": 1442
-    },
-    {
-      "name": "guest-appearances.json",
-      "path": "data/static-data/guest-appearances.json",
-      "size": 411715,
-      "recordCount": 2011
-    },
-    {
-      "name": "liberation-list.json",
-      "path": "data/static-data/liberation-list.json",
-      "size": 41030,
-      "recordCount": 62
-    },
-    {
-      "name": "song-statistics.json",
-      "path": "data/static-data/song-statistics.json",
-      "size": 728280,
-      "recordCount": 767
-    },
-    {
-      "name": "venue-top-songs.json",
-      "path": "data/static-data/venue-top-songs.json",
-      "size": 4462116,
-      "recordCount": 30127
-    },
-    {
-      "name": "this-day-in-history.json",
-      "path": "data/static-data/this-day-in-history.json",
-      "size": 1016459,
-      "recordCount": 3454
-    },
-    {
-      "name": "show-details.json",
-      "path": "data/static-data/show-details.json",
-      "size": 1310132,
-      "recordCount": 3454
-    },
-    {
-      "name": "curated-lists.json",
-      "path": "data/static-data/curated-lists.json",
-      "size": 15293,
-      "recordCount": 39
+      "name": "ai-config.json",
+      "size": 277,
+      "checksum": "72bf167b78dee529057201e44137cb77e6bc441a0d3e2449efcca967583f053f",
+      "count": null
     },
     {
       "name": "curated-list-items.json",
-      "path": "data/static-data/curated-list-items.json",
       "size": 1201443,
-      "recordCount": 2646
+      "checksum": "84423e783f2ed6ba85ad4e6fe47639e110a45442b8342d39061a56476ca0ef00",
+      "count": 2646
     },
     {
-      "name": "song-stats.json",
-      "path": "data/static-data/song-stats.json",
-      "size": 815777,
-      "recordCount": 1195
+      "name": "curated-lists.json",
+      "size": 15293,
+      "checksum": "6fcc0790b0b1f8c68bc7b35d5552989f6db4baf89456ab275dd0ad90a1077baf",
+      "count": 39
     },
     {
-      "name": "recent-shows.json",
-      "path": "data/static-data/recent-shows.json",
-      "size": 19186,
-      "recordCount": 50
+      "name": "guest-appearances.json",
+      "size": 411715,
+      "checksum": "a3664bc92dde3ad6351514165cfc838c0ea386b761762d231b9ee902763652f6",
+      "count": 2011
     },
     {
-      "name": "releases.json",
-      "path": "data/static-data/releases.json",
-      "size": 7691,
-      "recordCount": 21
+      "name": "guests.json",
+      "size": 431578,
+      "checksum": "1eb32d0a65e78abfb192bacaf1975b4bf6c4331dff6a5600c4ac7630ea36ee1c",
+      "count": 1442
+    },
+    {
+      "name": "liberation-list.json",
+      "size": 41030,
+      "checksum": "8f54b703fe8a4848cdf0567629538b6225db7248e3de24cca794524aa323fc11",
+      "count": 62
+    },
+    {
+      "name": "manifest.json",
+      "size": 3217,
+      "checksum": "dc44a421c7bb62374ec753c366e09c93611e11a504335cbb5ecc1df3a2453732",
+      "count": null
     },
     {
       "name": "release-tracks.json",
-      "path": "data/static-data/release-tracks.json",
       "size": 105603,
-      "recordCount": 564
+      "checksum": "c812c8f7d14892be4ea462bd9c5f0fa94b30a1cb77e7091992afa9c9532c05f5",
+      "count": 564
+    },
+    {
+      "name": "releases.json",
+      "size": 7691,
+      "checksum": "6b0fb0003d725ed22de07118a8bbc0d5bc6eb3e8228a2a5a277f1c7a06496ae9",
+      "count": 21
+    },
+    {
+      "name": "setlist-entries.json",
+      "size": 22136575,
+      "checksum": "f57c026444b7fd9c4e4e07f8b13fa16be04e5e0aa11c02ac5cc76ac7f57dfffa",
+      "count": 39949
+    },
+    {
+      "name": "shows.json",
+      "size": 2185122,
+      "checksum": "91f8685b734ee64b8038c62a99ec7ed680446972a4927a782ba67ab223b45349",
+      "count": 3454
+    },
+    {
+      "name": "song-statistics.json",
+      "size": 728280,
+      "checksum": "4a1507577c733f808e1ee89e2527a4066161f2ee679b3a162cf9d186c7e493e7",
+      "count": 767
+    },
+    {
+      "name": "songs.json",
+      "size": 1164893,
+      "checksum": "e75ac3e62007908ed80d7af13df346603bf78e1595a3e9c766c195af1834aec0",
+      "count": 1240
+    },
+    {
+      "name": "tours.json",
+      "size": 45948,
+      "checksum": "ef41684ede4c8cb8afdb48785afc1c06efdd0d306397d3a5b18be3360edadb23",
+      "count": 194
+    },
+    {
+      "name": "venues.json",
+      "size": 1175662,
+      "checksum": "061ca2fb19ed8b0b47be98327466e989e533d87275d58209992c59f6308d16df",
+      "count": 2855
     }
   ]
 }

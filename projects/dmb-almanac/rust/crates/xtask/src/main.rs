@@ -1,10 +1,7 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use serde::Serialize;
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use std::{fs, path::PathBuf};
-use walkdir::WalkDir;
 
 #[derive(Parser)]
 #[command(name = "xtask")]
@@ -16,8 +13,6 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    BuildManifest,
-    BuildAll,
     BuildHydratePkg {
         #[arg(long, default_value_t = true)]
         release: bool,
@@ -36,10 +31,6 @@ enum Command {
         #[arg(long, default_value_t = false)]
         skip_sw_bump: bool,
     },
-    BumpSwVersion {
-        #[arg(long)]
-        version: Option<String>,
-    },
     ScrapeQa {
         #[arg(long, default_value = "data/warnings-fixtures.json")]
         warnings_output: PathBuf,
@@ -50,38 +41,12 @@ enum Command {
         #[arg(long, default_value = "data/warnings.max-by-selector.json")]
         max_by_selector: PathBuf,
     },
-    OptimizeWasm {
-        #[arg(long)]
-        input: PathBuf,
-        #[arg(long)]
-        output: PathBuf,
-        #[arg(long, default_value = "O4")]
-        level: String,
-    },
-}
-
-#[derive(Serialize)]
-struct DataManifest {
-    version: String,
-    files: Vec<ManifestFile>,
-}
-
-#[derive(Serialize)]
-struct ManifestFile {
-    path: String,
-    sha256: String,
-    bytes: u64,
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::BuildManifest => build_manifest(),
-        Command::BuildAll => {
-            build_manifest()?;
-            Ok(())
-        }
         Command::BuildHydratePkg { release } => build_hydrate_pkg(release),
         Command::Verify {
             skip_wasm,
@@ -92,29 +57,17 @@ fn main() -> Result<()> {
             skip_parity,
             skip_sw_bump,
         } => data_release(&sqlite, skip_parity, skip_sw_bump),
-        Command::BumpSwVersion { version } => bump_sw_version(version),
         Command::ScrapeQa {
             warnings_output,
             baseline,
             max_by_field,
             max_by_selector,
         } => run_scrape_qa(&warnings_output, &baseline, &max_by_field, &max_by_selector),
-        Command::OptimizeWasm {
-            input,
-            output,
-            level,
-        } => optimize_wasm(&input, &output, &level),
     }
 }
 
 fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
-    let cwd = std::env::current_dir().context("read current dir")?;
-    let repo_root = if cwd.file_name().and_then(|v| v.to_str()) == Some("rust") {
-        cwd.parent().map(|p| p.to_path_buf()).unwrap_or(cwd.clone())
-    } else {
-        cwd.clone()
-    };
-    let rust_dir = repo_root.join("rust");
+    let rust_dir = rust_workspace_dir()?;
 
     run_command("cargo", &["fmt", "--all", "--", "--check"], &rust_dir, &[])?;
 
@@ -167,12 +120,7 @@ fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
 }
 
 fn build_hydrate_pkg(release: bool) -> Result<()> {
-    let cwd = std::env::current_dir().context("read current dir")?;
-    let repo_root = if cwd.file_name().and_then(|v| v.to_str()) == Some("rust") {
-        cwd.parent().map(|p| p.to_path_buf()).unwrap_or(cwd.clone())
-    } else {
-        cwd.clone()
-    };
+    let repo_root = repo_root_dir()?;
     let rust_dir = repo_root.join("rust");
     let app_dir = rust_dir.join("crates/dmb_app");
 
@@ -199,13 +147,7 @@ fn build_hydrate_pkg(release: bool) -> Result<()> {
 }
 
 fn data_release(sqlite: &PathBuf, skip_parity: bool, skip_sw_bump: bool) -> Result<()> {
-    let cwd = std::env::current_dir().context("read current dir")?;
-    let repo_root = if cwd.file_name().and_then(|v| v.to_str()) == Some("rust") {
-        cwd.parent().map(|p| p.to_path_buf()).unwrap_or(cwd.clone())
-    } else {
-        cwd.clone()
-    };
-    let rust_dir = repo_root.join("rust");
+    let rust_dir = rust_workspace_dir()?;
 
     if !skip_sw_bump {
         bump_sw_version(None)?;
@@ -296,12 +238,7 @@ fn data_release(sqlite: &PathBuf, skip_parity: bool, skip_sw_bump: bool) -> Resu
 }
 
 fn bump_sw_version(version: Option<String>) -> Result<()> {
-    let cwd = std::env::current_dir().context("read current dir")?;
-    let repo_root = if cwd.file_name().and_then(|v| v.to_str()) == Some("rust") {
-        cwd.parent().map(|p| p.to_path_buf()).unwrap_or(cwd.clone())
-    } else {
-        cwd.clone()
-    };
+    let repo_root = repo_root_dir()?;
     let sw_path = repo_root.join("rust/static/sw.js");
     let contents = fs::read_to_string(&sw_path).context("read sw.js")?;
 
@@ -331,79 +268,13 @@ fn bump_sw_version(version: Option<String>) -> Result<()> {
     Ok(())
 }
 
-fn build_manifest() -> Result<()> {
-    let data_root = PathBuf::from("rust/static/data");
-    fs::create_dir_all(&data_root).context("create data directory")?;
-
-    let mut files = Vec::new();
-    for entry in WalkDir::new(&data_root)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-    {
-        let path = entry.path();
-        if path.extension().and_then(|v| v.to_str()) != Some("json") {
-            continue;
-        }
-
-        let bytes = fs::read(path)?;
-        let mut hasher = Sha256::new();
-        hasher.update(&bytes);
-        let hash = format!("{:x}", hasher.finalize());
-
-        let rel_path = path
-            .strip_prefix("rust/static")?
-            .to_string_lossy()
-            .to_string();
-        files.push(ManifestFile {
-            path: rel_path,
-            sha256: hash,
-            bytes: bytes.len() as u64,
-        });
-    }
-
-    let manifest = DataManifest {
-        version: chrono::Utc::now().format("%Y%m%d%H%M").to_string(),
-        files,
-    };
-
-    let manifest_path = data_root.join("manifest.json");
-    fs::write(&manifest_path, serde_json::to_vec_pretty(&manifest)?)
-        .context("write data manifest")?;
-
-    println!("Wrote {}", manifest_path.display());
-    Ok(())
-}
-
-fn optimize_wasm(input: &PathBuf, output: &PathBuf, level: &str) -> Result<()> {
-    let status = std::process::Command::new("wasm-opt")
-        .arg(format!("-{level}"))
-        .arg(input)
-        .arg("-o")
-        .arg(output)
-        .status()
-        .context("spawn wasm-opt")?;
-
-    if !status.success() {
-        anyhow::bail!("wasm-opt failed with status: {status}");
-    }
-
-    println!("Optimized {} -> {}", input.display(), output.display());
-    Ok(())
-}
-
 fn run_scrape_qa(
     warnings_output: &PathBuf,
     baseline: &PathBuf,
     max_by_field: &PathBuf,
     max_by_selector: &PathBuf,
 ) -> Result<()> {
-    let cwd = std::env::current_dir().context("read current dir")?;
-    let repo_root = if cwd.file_name().and_then(|v| v.to_str()) == Some("rust") {
-        cwd.parent().map(|p| p.to_path_buf()).unwrap_or(cwd.clone())
-    } else {
-        cwd.clone()
-    };
+    let repo_root = repo_root_dir()?;
     let rust_dir = repo_root.join("rust");
     let warnings_output = rust_dir.join(warnings_output);
     let baseline = rust_dir.join(baseline);
@@ -585,4 +456,27 @@ fn run_command_optional(
     }
     run_command(program, args, cwd, envs)?;
     Ok(true)
+}
+
+fn repo_root_dir() -> Result<PathBuf> {
+    let cwd = std::env::current_dir().context("read current dir")?;
+    if cwd.join("rust/Cargo.toml").exists() {
+        return Ok(cwd);
+    }
+    if cwd.file_name().and_then(|v| v.to_str()) == Some("rust") && cwd.join("Cargo.toml").exists() {
+        return Ok(cwd.parent().map(|p| p.to_path_buf()).unwrap_or(cwd.clone()));
+    }
+    for ancestor in cwd.ancestors() {
+        if ancestor.join("rust/Cargo.toml").exists() {
+            return Ok(ancestor.to_path_buf());
+        }
+    }
+    anyhow::bail!(
+        "unable to locate repo root from {} (expected rust/Cargo.toml)",
+        cwd.display()
+    );
+}
+
+fn rust_workspace_dir() -> Result<PathBuf> {
+    Ok(repo_root_dir()?.join("rust"))
 }

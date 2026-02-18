@@ -4,9 +4,6 @@ use wasm_bindgen_futures::JsFuture;
 
 #[wasm_bindgen]
 extern "C" {
-    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuDot, catch)]
-    fn dmb_webgpu_dot_js(a: &Float32Array, b: &Float32Array) -> Result<js_sys::Promise, JsValue>;
-
     #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScoresWorker, catch)]
     fn dmb_webgpu_scores_worker_js(
         query: &Float32Array,
@@ -72,25 +69,6 @@ fn cpu_scores_subset(query: &[f32], matrix: &[f32], dim: usize, indices: &[u32])
         scores.push(cpu_dot(query, &matrix[start..end]));
     }
     scores
-}
-
-#[wasm_bindgen]
-pub async fn webgpu_dot_product(a: Vec<f32>, b: Vec<f32>) -> Result<f32, JsValue> {
-    if a.len() != b.len() {
-        return Err(JsValue::from_str("Input length mismatch"));
-    }
-
-    let _window = web_sys::window().ok_or_else(|| JsValue::from_str("window unavailable"))?;
-    let a_array = Float32Array::from(a.as_slice());
-    let b_array = Float32Array::from(b.as_slice());
-    let Ok(promise) = dmb_webgpu_dot_js(&a_array, &b_array) else {
-        return Ok(cpu_dot(&a, &b));
-    };
-    let result = JsFuture::from(promise).await?;
-    if result.is_null() {
-        return Ok(cpu_dot(&a, &b));
-    }
-    Ok(result.as_f64().unwrap_or_default() as f32)
 }
 
 #[wasm_bindgen]

@@ -150,11 +150,9 @@ const QUEST_POOL: &[QuestTemplate] = &[
 
 pub fn init(state: Rc<RefCell<AppState>>) {
     show_loading_skeleton();
-    // Brief delay to show skeleton, then render real quests
-    dom::set_timeout_once(100, move || {
-        wasm_bindgen_futures::spawn_local(async move {
-            render_daily_quests(state).await;
-        });
+    // Render as soon as DB resolves — skeleton stays visible until data is ready
+    wasm_bindgen_futures::spawn_local(async move {
+        render_daily_quests(state).await;
     });
 }
 

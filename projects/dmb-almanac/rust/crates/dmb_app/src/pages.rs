@@ -101,9 +101,7 @@ async fn copy_text_to_clipboard(text: &str) -> bool {
         return false;
     };
     let clipboard = window.navigator().clipboard();
-    let Ok(promise) = clipboard.write_text(text) else {
-        return false;
-    };
+    let promise = clipboard.write_text(text);
     JsFuture::from(promise).await.is_ok()
 }
 
@@ -172,7 +170,7 @@ fn sync_search_query_params(query: &str, active_filter: &str) {
     if filter != "all" {
         params.set("type", &filter);
     }
-    let encoded = params.to_string();
+    let encoded = params.to_string().as_string().unwrap_or_default();
     let query_string = if encoded.is_empty() {
         String::new()
     } else {
@@ -677,7 +675,14 @@ pub fn ai_diagnostics_page() -> impl IntoView {
             let _ = idb_runtime_metrics_signal.try_set(load_idb_runtime_metrics());
 
             if let Some(window) = web_sys::window() {
-                let _ = cross_origin_isolated_signal.try_set(Some(window.cross_origin_isolated()));
+                let isolated = js_sys::Reflect::get(
+                    window.as_ref(),
+                    &JsValue::from_str("crossOriginIsolated"),
+                )
+                .ok()
+                .and_then(|value| value.as_bool())
+                .unwrap_or(false);
+                let _ = cross_origin_isolated_signal.try_set(Some(isolated));
                 if let Ok(Some(storage)) = window.local_storage() {
                     if let Ok(Some(value)) = storage.get_item("dmb-webgpu-worker-threshold") {
                         let _ = worker_threshold_input_signal.try_set(value);

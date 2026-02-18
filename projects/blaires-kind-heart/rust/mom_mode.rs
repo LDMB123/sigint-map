@@ -198,9 +198,7 @@ fn bind_pin_interactions(is_setup: bool) {
             pin.pop();
             update_pin_dots(pin.len());
             // Hide error
-            if let Some(err) = dom::query("[data-pin-error]") {
-                let _ = err.set_attribute("hidden", "");
-            }
+            dom::hide("[data-pin-error]");
             return;
         }
 
@@ -292,9 +290,7 @@ async fn verify_pin(entered: &str) -> bool {
             return true;
         } else {
             // Wrong PIN — show error, reset dots
-            if let Some(err) = dom::query("[data-pin-error]") {
-                let _ = err.remove_attribute("hidden");
-            }
+            dom::show("[data-pin-error]");
             update_pin_dots(0);
             return false;
         }

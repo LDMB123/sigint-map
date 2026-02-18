@@ -65,10 +65,26 @@ test.describe('Rust service worker updates', () => {
       page.locator('.pwa-status__row--update[role="status"]')
     ).toBeVisible({ timeout: 15000 });
 
+    await page.waitForFunction(
+      async () => {
+        const reg = await navigator.serviceWorker.getRegistration();
+        return !!reg?.waiting;
+      },
+      { timeout: 15000 }
+    );
+
     await page.evaluate(async () => {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg?.waiting) {
-        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        const waiting = reg?.waiting;
+        if (!waiting) {
+          break;
+        }
+        waiting.postMessage({ type: 'SKIP_WAITING' });
+        waiting.postMessage('SKIP_WAITING');
+        if (attempt < 5) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
       }
     });
 

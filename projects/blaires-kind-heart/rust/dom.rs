@@ -53,6 +53,20 @@ pub fn set_text(selector: &str, text: &str) {
     }
 }
 
+/// Show an element by removing the `hidden` attribute (query by selector).
+pub fn show(selector: &str) {
+    if let Some(el) = query(selector) {
+        let _ = el.remove_attribute("hidden");
+    }
+}
+
+/// Hide an element by setting the `hidden` attribute (query by selector).
+pub fn hide(selector: &str) {
+    if let Some(el) = query(selector) {
+        let _ = el.set_attribute("hidden", "");
+    }
+}
+
 pub fn set_dataset(el: &Element, key: &str, value: &str) {
     if let Some(html) = el.dyn_ref::<HtmlElement>() {
         let _ = html.dataset().set(key, value);
@@ -246,6 +260,15 @@ pub fn delayed_remove(el: Element, ms: i32) {
     set_timeout_once(ms, move || {
         el.remove();
     });
+}
+
+/// Deactivate all elements with `active_class` and add it to `new_active`.
+/// Replaces the "for old in query_all(selector) { remove_1(class) }" pattern.
+pub fn set_active_class(active_class: &str, new_active: &Element) {
+    for old in query_all(&format!(".{active_class}")) {
+        let _ = old.class_list().remove_1(active_class);
+    }
+    let _ = new_active.class_list().add_1(active_class);
 }
 
 /// Remove a CSS class from an element after `ms` milliseconds.

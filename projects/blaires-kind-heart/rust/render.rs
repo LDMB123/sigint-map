@@ -20,6 +20,31 @@ pub fn create_button(doc: &Document, class: &str, text: &str) -> Element {
     btn
 }
 
+/// Build a game picker scaffold inside `#game-arena`.
+///
+/// Clears the arena, creates the `memory-select` container with title and
+/// empty `memory-select-buttons` div, appends everything, and returns
+/// `(arena, buttons_el)`.  Callers append their option buttons to `buttons_el`
+/// and then bind their own click/abort handlers on `arena`.
+///
+/// Returns `None` if `#game-arena` is not found in the DOM.
+pub fn build_game_picker(title: &str) -> Option<(web_sys::Element, web_sys::Element)> {
+    let arena = crate::dom::query("#game-arena")?;
+    let doc = crate::dom::document();
+    crate::dom::safe_set_inner_html(&arena, "");
+
+    let container = create_el_with_class(&doc, "div", "memory-select");
+    let title_el = create_el_with_class(&doc, "div", "memory-select-title");
+    title_el.set_text_content(Some(title));
+    let buttons = create_el_with_class(&doc, "div", "memory-select-buttons");
+
+    let _ = container.append_child(&title_el);
+    let _ = container.append_child(&buttons);
+    let _ = arena.append_child(&container);
+
+    Some((arena, buttons))
+}
+
 /// Create an <img> element with src, alt, and optional class.
 pub fn create_img(doc: &Document, src: &str, alt: &str, class: &str) -> Element {
     create_img_with_priority(doc, src, alt, class, "auto")
@@ -27,7 +52,7 @@ pub fn create_img(doc: &Document, src: &str, alt: &str, class: &str) -> Element 
 
 /// Create an <img> element with src, alt, optional class, and fetchpriority.
 /// priority: "high", "low", or "auto" (default)
-pub fn create_img_with_priority(
+fn create_img_with_priority(
     doc: &Document,
     src: &str,
     alt: &str,

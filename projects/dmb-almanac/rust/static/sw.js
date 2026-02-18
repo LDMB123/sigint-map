@@ -18,9 +18,7 @@ const SHELL_ASSETS = [
 const DATA_ASSETS = [
   '/data/manifest.json',
   '/data/ai-config.json',
-  '/data/idb-migration-dry-run.json',
-  '/data/embedding-sample.json',
-  '/data/ann-index.json'
+  '/data/idb-migration-dry-run.json'
 ];
 
 async function notifyClients(type, payload = {}) {
@@ -76,14 +74,18 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   const data = event.data || {};
+  const type = typeof data === 'string' ? data : data.type;
 
-  if (data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
+  if (type === 'SKIP_WAITING') {
+    const skipPromise = Promise.resolve(self.skipWaiting());
+    if (typeof event.waitUntil === 'function') {
+      event.waitUntil(skipPromise);
+    }
     return;
   }
 
   // Diagnostics: allows the app to verify the controlling SW is this Rust implementation.
-  if (data.type === 'PING') {
+  if (type === 'PING') {
     const source = event.source;
     if (source && typeof source.postMessage === 'function') {
       source.postMessage({

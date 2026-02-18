@@ -10,8 +10,8 @@ use wasm_bindgen::JsCast;
 use web_sys::{Element, Event};
 
 use crate::{
-    browser_apis, confetti, db_client, dom, games, native_apis, render, speech,
-    state::AppState, synth_audio, theme, ui, utils, weekly_goals,
+    browser_apis, confetti, dom, games, native_apis, render, speech,
+    state::AppState, synth_audio, theme, ui, weekly_goals,
 };
 
 // ── Theme packs ─────────────────────────────────────────────────
@@ -228,9 +228,7 @@ thread_local! {
 // ── Public API ──────────────────────────────────────────────────────
 
 fn show_theme_picker(state: Rc<RefCell<AppState>>) {
-    let Some(arena) = dom::query("#game-arena") else { return };
-    let doc = dom::document();
-    dom::safe_set_inner_html(&arena, "");
+    let Some((arena, buttons)) = render::build_game_picker("\u{1F496} Choose a Theme!") else { return };
 
     // Clean up previous picker listener if any
     PICKER_ABORT.with(|p| { p.borrow_mut().take(); });
@@ -238,23 +236,13 @@ fn show_theme_picker(state: Rc<RefCell<AppState>>) {
     let abort = browser_apis::new_abort_handle();
     let signal = abort.signal();
 
-    let container = render::create_el_with_class(&doc, "div", "memory-select");
-
-    let title = render::create_el_with_class(&doc, "div", "memory-select-title");
-    title.set_text_content(Some("\u{1F496} Choose a Theme!"));
-
-    let buttons = render::create_el_with_class(&doc, "div", "memory-select-buttons");
-
+    let doc = dom::document();
     for theme in [CatcherTheme::Classic, CatcherTheme::GardenParty, CatcherTheme::SweetTreats, CatcherTheme::StarryNight] {
         let label = format!("{} {}", theme.picker_emoji(), theme.name());
         let btn = render::create_button(&doc, "game-card game-card--catcher", &label);
         let _ = btn.set_attribute("data-catcher-theme", theme.attr());
         let _ = buttons.append_child(&btn);
     }
-
-    let _ = container.append_child(&title);
-    let _ = container.append_child(&buttons);
-    let _ = arena.append_child(&container);
 
     // Event delegation for theme selection
     let state_click = state.clone();
@@ -951,15 +939,7 @@ fn end_round() {
     });
 
     // Save score to DB
-    let id = utils::create_id();
-    let day_key = utils::today_key();
-    let now = utils::now_epoch_ms();
-    db_client::exec_fire_and_forget(
-        "catcher-save",
-        "INSERT INTO game_scores (id, game_id, score, level, duration_ms, played_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        vec![id, "catcher".into(), score.to_string(), level.to_string(),
-             duration_ms.to_string(), now.to_string(), day_key],
-    );
+    games::save_game_score("catcher-save", "catcher", score as u64, level as u64, duration_ms);
 
     // Award hearts + update state
     {
@@ -1009,19 +989,16 @@ fn show_end_screen(params: EndScreenParams) {
     let doc = dom::document();
     dom::safe_set_inner_html(&arena, "");
 
-    let screen = render::create_el_with_class(&doc, "div", "game-end-screen");
+    let (screen, title, stats) = games::build_end_screen();
 
     // Title
-    let title = render::create_el_with_class(&doc, "div", "game-end-title");
     if is_new_high {
         title.set_text_content(Some("\u{1F389} NEW HIGH SCORE! \u{1F389}"));
         let _ = title.class_list().add_1("game-end-title--new-record");
     } else {
         title.set_text_content(Some("\u{1F389} Great Catching! \u{1F389}"));
     }
-
-    // Stats
-    let stats = render::create_el_with_class(&doc, "div", "game-end-stats");
+    let _ = screen.append_child(&title);
 
     let score_line = render::create_el_with_class(&doc, "div", "game-end-stat");
     score_line.set_text_content(Some(&format!("\u{2B50} Score: {score}")));
@@ -1051,19 +1028,7 @@ fn show_end_screen(params: EndScreenParams) {
     hearts_line.set_text_content(Some(&format!("\u{1F49C} +{hearts} hearts earned!")));
     let _ = stats.append_child(&hearts_line);
 
-    // Buttons
-    let buttons = render::create_el_with_class(&doc, "div", "game-end-buttons");
-    let again_btn = render::create_button(&doc, "game-end-btn game-end-btn--again", "\u{1F504} Play Again");
-    let _ = again_btn.set_attribute("data-game-again", "catcher");
-    let back_btn = render::create_button(&doc, "game-end-btn game-end-btn--back", "\u{2190} Back to Games");
-    let _ = back_btn.set_attribute("data-game-back", "");
-    let _ = buttons.append_child(&again_btn);
-    let _ = buttons.append_child(&back_btn);
-
-    let _ = screen.append_child(&title);
-    let _ = screen.append_child(&stats);
-    let _ = screen.append_child(&buttons);
-    let _ = arena.append_child(&screen);
+    games::finish_end_screen(&screen, &stats, &arena, "catcher");
 
     bind_end_buttons(state, signal);
 }
@@ -1132,9 +1097,7 @@ fn show_powerup_indicator(text: &str, duration_ms: u32) {
 }
 
 fn hide_powerup_indicator() {
-    if let Some(el) = dom::query("[data-catcher-powerup]") {
-        let _ = el.set_attribute("hidden", "");
-    }
+    dom::hide("[data-catcher-powerup]");
 }
 
 // ── Visual juice ────────────────────────────────────────────────────

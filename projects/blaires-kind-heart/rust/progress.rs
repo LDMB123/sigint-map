@@ -289,9 +289,7 @@ fn verify_pin_and_show_insights() {
         // Future: Use Web Crypto SubtleCrypto.digest() for hashed PIN storage.
         if pin == "1234" || pin == stored_pin {
             // Hide PIN form
-            if let Some(form) = dom::query("[data-pin-form]") {
-                let _ = form.set_attribute("hidden", "");
-            }
+            dom::hide("[data-pin-form]");
 
             // Show insights area
             if let Some(insights) = dom::query("[data-insights-area]") {
@@ -329,9 +327,7 @@ fn verify_pin_and_show_insights() {
 
 fn reset_moms_view() {
     // Show PIN form again
-    if let Some(form) = dom::query("[data-pin-form]") {
-        let _ = form.remove_attribute("hidden");
-    }
+    dom::show("[data-pin-form]");
 
     // Hide insights area
     if let Some(insights) = dom::query("[data-insights-area]") {

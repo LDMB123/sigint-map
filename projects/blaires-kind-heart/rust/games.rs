@@ -7,7 +7,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{Element, Event};
 
-use crate::{companion, constants::*, dom, render, state, db_client, game_catcher, game_memory, game_hug, game_paint, game_unicorn};
+use crate::{companion, constants::*, dom, render, state, db_client, utils, game_catcher, game_memory, game_hug, game_paint, game_unicorn};
 
 /// Game definitions: (emoji_fallback, title, description, game_id, color_variant, image_path)
 const GAME_CARDS: &[(&str, &str, &str, &str, &str, &str)] = &[
@@ -258,6 +258,51 @@ pub fn return_to_menu() {
     }
     // Refresh stats when returning to hub
     hydrate_hub_stats();
+}
+
+/// Build the common end-screen scaffold used by all 5 games.
+/// Returns `(screen, title, stats)` — caller appends game-specific stat lines to `stats`,
+/// then calls `finish_end_screen(screen, stats, arena, game_id)` to attach buttons + insert.
+pub fn build_end_screen() -> (Element, Element, Element) {
+    let doc = dom::document();
+    let screen = render::create_el_with_class(&doc, "div", "game-end-screen");
+    let title  = render::create_el_with_class(&doc, "div", "game-end-title");
+    let stats  = render::create_el_with_class(&doc, "div", "game-end-stats");
+    (screen, title, stats)
+}
+
+/// Append buttons to `screen`, insert `screen` into `arena`.
+/// `game_id`: e.g. "catcher", "memory", "hug", "paint", "unicorn" — used for `data-game-again`.
+/// Caller must have already appended all stat children into `stats` and `title` into `screen`.
+pub fn finish_end_screen(screen: &Element, stats: &Element, arena: &Element, game_id: &str) {
+    let doc = dom::document();
+    let buttons = render::create_el_with_class(&doc, "div", "game-end-buttons");
+    let again_btn = render::create_button(&doc, "game-end-btn game-end-btn--again", "\u{1F504} Play Again");
+    let _ = again_btn.set_attribute("data-game-again", game_id);
+    let back_btn = render::create_button(&doc, "game-end-btn game-end-btn--back", "\u{2190} Back to Games");
+    let _ = back_btn.set_attribute("data-game-back", "");
+    let _ = buttons.append_child(&again_btn);
+    let _ = buttons.append_child(&back_btn);
+    let _ = screen.append_child(stats);
+    let _ = screen.append_child(&buttons);
+    let _ = arena.append_child(screen);
+}
+
+/// Save a completed game round to the `game_scores` table (fire-and-forget).
+/// Handles id/day_key/now generation and the shared SQL — callers only supply game-specific values.
+/// `op_name`: unique label for the DB operation (e.g. "catcher-save", "memory-save").
+/// `game_id`: stored in the `game_id` column — may include variant suffix (e.g. "memory_hard").
+/// `score`, `level`, `duration_ms`: game-specific numeric values.
+pub fn save_game_score(op_name: &'static str, game_id: &str, score: u64, level: u64, duration_ms: u64) {
+    let id = utils::create_id();
+    let day_key = utils::today_key();
+    let now = utils::now_epoch_ms();
+    db_client::exec_fire_and_forget(
+        op_name,
+        "INSERT INTO game_scores (id, game_id, score, level, duration_ms, played_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        vec![id, game_id.to_string(), score.to_string(), level.to_string(),
+             duration_ms.to_string(), now.to_string(), day_key],
+    );
 }
 
 /// Bind end-screen "Play Again" and "Back" buttons via event delegation on `#game-arena`.

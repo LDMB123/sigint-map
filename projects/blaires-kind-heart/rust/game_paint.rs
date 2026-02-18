@@ -8,8 +8,8 @@ use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, Element, Event, HtmlCanvasElement, PointerEvent};
 
 use crate::{
-    browser_apis, confetti, db_client, dom, games, native_apis, render,
-    speech, state::AppState, synth_audio, theme, ui, utils, weekly_goals,
+    browser_apis, confetti, dom, games, native_apis, render,
+    speech, state::AppState, synth_audio, theme, ui, weekly_goals,
 };
 
 // ── Colors ───────────────────────────────────────────────────────────────
@@ -150,9 +150,7 @@ pub fn start(state: Rc<RefCell<AppState>>) {
 }
 
 fn show_category_picker(state: Rc<RefCell<AppState>>) {
-    let Some(arena) = dom::query("#game-arena") else { return };
-    let doc = dom::document();
-    dom::safe_set_inner_html(&arena, "");
+    let Some((arena, buttons)) = render::build_game_picker("\u{1F3A8} What Do You Want to Paint?") else { return };
 
     // Clean up previous picker listener if any
     PICKER_ABORT.with(|p| { p.borrow_mut().take(); });
@@ -160,23 +158,13 @@ fn show_category_picker(state: Rc<RefCell<AppState>>) {
     let abort = browser_apis::new_abort_handle();
     let signal = abort.signal();
 
-    let container = render::create_el_with_class(&doc, "div", "memory-select");
-
-    let title = render::create_el_with_class(&doc, "div", "memory-select-title");
-    title.set_text_content(Some("\u{1F3A8} What Do You Want to Paint?"));
-
-    let buttons = render::create_el_with_class(&doc, "div", "memory-select-buttons");
-
+    let doc = dom::document();
     for &(id, emoji, label) in PAINT_CATEGORIES {
         let text = format!("{} {}", emoji, label);
         let btn = render::create_button(&doc, "game-card game-card--paint", &text);
         let _ = btn.set_attribute("data-paint-category", id);
         let _ = buttons.append_child(&btn);
     }
-
-    let _ = container.append_child(&title);
-    let _ = container.append_child(&buttons);
-    let _ = arena.append_child(&container);
 
     // Bind click handler for category selection
     let state_click = state.clone();
@@ -637,11 +625,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
             // Color swatch
             if let Ok(Some(swatch)) = el.closest("[data-paint-color]") {
                 let color = swatch.get_attribute("data-paint-color").unwrap_or_default();
-                // Update active class
-                for old in dom::query_all(".paint-swatch--active") {
-                    let _ = old.class_list().remove_1("paint-swatch--active");
-                }
-                let _ = swatch.class_list().add_1("paint-swatch--active");
+                dom::set_active_class("paint-swatch--active", &swatch);
                 GAME.with(|g| {
                     if let Some(game) = g.borrow_mut().as_mut() {
                         game.color = color;
@@ -660,10 +644,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
             if let Ok(Some(btn)) = el.closest("[data-paint-size]") {
                 let size: f64 = btn.get_attribute("data-paint-size")
                     .and_then(|s| s.parse().ok()).unwrap_or(12.0);
-                for old in dom::query_all(".paint-size-btn--active") {
-                    let _ = old.class_list().remove_1("paint-size-btn--active");
-                }
-                let _ = btn.class_list().add_1("paint-size-btn--active");
+                dom::set_active_class("paint-size-btn--active", &btn);
                 GAME.with(|g| {
                     if let Some(game) = g.borrow_mut().as_mut() {
                         game.brush_size = size;
@@ -677,10 +658,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
             if let Ok(Some(btn)) = el.closest("[data-paint-stamp-size]") {
                 let size: f64 = btn.get_attribute("data-paint-stamp-size")
                     .and_then(|s| s.parse().ok()).unwrap_or(40.0);
-                for old in dom::query_all(".paint-stamp-size--active") {
-                    let _ = old.class_list().remove_1("paint-stamp-size--active");
-                }
-                let _ = btn.class_list().add_1("paint-stamp-size--active");
+                dom::set_active_class("paint-stamp-size--active", &btn);
                 GAME.with(|g| {
                     if let Some(game) = g.borrow_mut().as_mut() {
                         game.stamp_size = size;
@@ -693,10 +671,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
             // Stamp selection
             if let Ok(Some(btn)) = el.closest("[data-paint-stamp]") {
                 let stamp = btn.get_attribute("data-paint-stamp").unwrap_or_default();
-                for old in dom::query_all(".paint-stamp-btn--active") {
-                    let _ = old.class_list().remove_1("paint-stamp-btn--active");
-                }
-                let _ = btn.class_list().add_1("paint-stamp-btn--active");
+                dom::set_active_class("paint-stamp-btn--active", &btn);
                 GAME.with(|g| {
                     if let Some(game) = g.borrow_mut().as_mut() {
                         game.tool = PaintTool::Stamp(stamp);
@@ -784,9 +759,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                 });
                 update_tool_active("pattern");
                 // Hide overlay
-                if let Some(overlay) = dom::query("[data-paint-pattern-overlay]") {
-                    let _ = overlay.set_attribute("hidden", "");
-                }
+                dom::hide("[data-paint-pattern-overlay]");
                 synth_audio::sparkle();
                 return;
             }
@@ -823,9 +796,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                 let tpl_id = btn.get_attribute("data-paint-tpl").unwrap_or_default();
                 apply_template(&tpl_id);
                 // Hide overlay
-                if let Some(overlay) = dom::query("[data-paint-tpl-overlay]") {
-                    let _ = overlay.set_attribute("hidden", "");
-                }
+                dom::hide("[data-paint-tpl-overlay]");
                 synth_audio::sparkle();
                 return;
             }
@@ -1675,14 +1646,7 @@ fn finish_painting(state: Rc<RefCell<AppState>>) {
     weekly_goals::increment_progress("hearts", hearts);
 
     // Save score
-    let id = utils::create_id();
-    let day_key = utils::today_key();
-    let now = utils::now_epoch_ms();
-    db_client::exec_fire_and_forget(
-        "paint-save",
-        "INSERT INTO game_scores (id, game_id, score, level, duration_ms, played_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        vec![id, "paint".into(), paintings_today.to_string(), "1".into(), "0".into(), now.to_string(), day_key],
-    );
+    games::save_game_score("paint-save", "paint", paintings_today as u64, 1, 0);
 
     // "Masterpiece!" celebration
     synth_audio::fanfare();
@@ -1711,12 +1675,9 @@ fn show_paint_end(state: Rc<RefCell<AppState>>) {
     let doc = dom::document();
     dom::safe_set_inner_html(&arena, "");
 
-    let screen = render::create_el_with_class(&doc, "div", "game-end-screen");
-
-    let title = render::create_el_with_class(&doc, "div", "game-end-title");
+    let (screen, title, stats) = games::build_end_screen();
     title.set_text_content(Some("\u{1F3A8} Masterpiece! \u{1F3A8}"));
-
-    let stats = render::create_el_with_class(&doc, "div", "game-end-stats");
+    let _ = screen.append_child(&title);
 
     let hearts_line = render::create_el_with_class(&doc, "div", "game-end-stat game-end-stat--hearts");
     hearts_line.set_text_content(Some(&format!("\u{1F49C} +{} hearts earned!", theme::HEARTS_PER_PAINTING)));
@@ -1738,18 +1699,7 @@ fn show_paint_end(state: Rc<RefCell<AppState>>) {
     sparkle_line.set_text_content(Some(msg));
     let _ = stats.append_child(&sparkle_line);
 
-    let buttons = render::create_el_with_class(&doc, "div", "game-end-buttons");
-    let again_btn = render::create_button(&doc, "game-end-btn game-end-btn--again", "\u{1F504} Paint Again");
-    let _ = again_btn.set_attribute("data-game-again", "paint");
-    let back_btn = render::create_button(&doc, "game-end-btn game-end-btn--back", "\u{2190} Back to Games");
-    let _ = back_btn.set_attribute("data-game-back", "");
-    let _ = buttons.append_child(&again_btn);
-    let _ = buttons.append_child(&back_btn);
-
-    let _ = screen.append_child(&title);
-    let _ = screen.append_child(&stats);
-    let _ = screen.append_child(&buttons);
-    let _ = arena.append_child(&screen);
+    games::finish_end_screen(&screen, &stats, &arena, "paint");
 
     // Bind end-screen buttons
     let end_signal = GAME.with(|g| {

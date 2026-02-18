@@ -161,3 +161,61 @@ fn log_kind_act(category: &str) {
         dom::dispatch_custom_event("kindheart-reflection-ready", detail.into());
     });
 }
+
+/// Record a kind act completed via a game, without UI/haptic/celebration side effects.
+/// Games handle their own celebrations — this just handles DB, quests, stickers, badges, skills.
+///
+/// `suppress_celebration` must be `true` from game call sites.
+/// When `false`, full celebration fires (same as `log_kind_act`) — reserved for future use.
+pub fn record_game_kind_act(category: &str, suppress_celebration: bool) {
+    let id = utils::create_id();
+    let day_key = utils::today_key();
+    let now = utils::now_epoch_ms();
+
+    // Map game category to skill category for mastery tracking
+    let skill_cat = match category {
+        "game-catcher"  => "helping",
+        "game-memory"   => "sharing",
+        "game-hug"      => "hug",
+        "game-paint"    => "sharing",
+        "game-unicorn"  => "unicorn",
+        other => {
+            crate::errors::log_diagnostic("skill_mapping", &format!("unknown game category: {other}"));
+            other
+        }
+    };
+    let skill_cat = skill_cat.to_string();
+
+    let (hearts, _is_first) = state::with_state_mut(|s| {
+        s.hearts_today += theme::HEARTS_PER_KIND_ACT;
+        s.hearts_total += theme::HEARTS_PER_KIND_ACT;
+        (s.hearts_total, s.hearts_today == theme::HEARTS_PER_KIND_ACT)
+    });
+
+    // SQLite write — same offline-safe path as manual acts
+    let cat = category.to_string();
+    wasm_bindgen_futures::spawn_local(async move {
+        let _ = crate::offline_queue::queued_exec(
+            "INSERT INTO kind_acts (id, category, hearts_earned, created_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5)",
+            vec![id, cat, theme::HEARTS_PER_KIND_ACT.to_string(), now.to_string(), day_key],
+        ).await;
+    });
+
+    // Sticker threshold check
+    if hearts.is_multiple_of(theme::STICKER_EVERY_N_HEARTS) {
+        if !suppress_celebration {
+            synth_audio::sparkle();
+            confetti::burst_stars();
+        }
+        rewards::award_sticker("game");
+    }
+
+    // Skill mastery tracking
+    wasm_bindgen_futures::spawn_local(async move {
+        skill_progression::track_skill_practice(&skill_cat).await;
+    });
+
+    // Weekly goals
+    weekly_goals::increment_progress("acts", 1);
+    weekly_goals::increment_progress("hearts", theme::HEARTS_PER_KIND_ACT);
+}

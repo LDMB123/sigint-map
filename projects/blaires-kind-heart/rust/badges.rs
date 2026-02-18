@@ -533,7 +533,7 @@ pub const SKILL_MASTERY_BADGES: &[Badge] = &[
 ];
 
 /// All badges combined (56 total)
-pub fn get_all_badges() -> Vec<&'static Badge> {
+fn get_all_badges() -> Vec<&'static Badge> {
     let mut badges = Vec::new();
     badges.extend(QUEST_CHAIN_BADGES.iter());
     badges.extend(STORY_BADGES.iter());
@@ -549,11 +549,8 @@ pub fn init() {
 }
 
 fn extract_count_i64(rows: &serde_json::Value, key: &str) -> i64 {
-    rows.as_array()
-        .and_then(|arr| arr.first())
-        .and_then(|row| row.get(key))
-        .and_then(|v| v.as_f64())
-        .unwrap_or(0.0) as i64
+    use crate::db_client;
+    db_client::extract_count(rows, key)
 }
 
 fn extract_bool_flag(rows: &serde_json::Value, key: &str) -> bool {

@@ -62,7 +62,6 @@ mod story_engine;
 mod story_data;
 mod rewards;
 mod streaks;
-mod audio;
 mod synth_audio;
 mod speech;
 mod companion;
@@ -194,7 +193,6 @@ async fn boot_async(state: Rc<RefCell<AppState>>) {
   metrics::mark("boot:batch3:start");
   web_sys::console::log_1(&"[boot] batch 3: audio/PWA/safari".into());
   visibility::init(); // Phase 4.6: Page Visibility API for animation pausing
-  audio::init();
   synth_audio::init();
   tap_ripple::init();
   pwa::init();
@@ -235,7 +233,6 @@ async fn boot_async(state: Rc<RefCell<AppState>>) {
   {
     let _state_vis = state.clone();
     browser_apis::on_visibility_change(move |visible| {
-      audio::on_visibility_change(visible);
       synth_audio::on_visibility_change(visible);
 
       // Flush queued writes when coming back online
@@ -408,7 +405,7 @@ async fn hydrate_state() {
             let earned_count = sticker_types.len();
 
             rewards::hydrate_stickers_batch(&sticker_types);
-            rewards::update_sticker_count_value(earned_count);
+            rewards::update_sticker_count(earned_count);
         }
     } else {
         web_sys::console::error_1(&"Sticker query failed during hydration".into());

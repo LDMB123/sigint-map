@@ -1,5 +1,9 @@
 # DMB Almanac (Rust-first) Developer Runbook
 
+## Project Scope
+
+**This project is ONLY the DMB Almanac.** Do not reference, suggest, or pull context from any other workspace project (emerson-violin-pwa, blaires-kind-heart, imagen-experiments, gemini-mcp-server). All Rust work under `rust/` belongs to this project only.
+
 ## Quick Commands
 
 ```bash

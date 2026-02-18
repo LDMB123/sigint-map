@@ -81,10 +81,10 @@ const STICKER_DESIGNS: &[StickerDesign] = &[
 
 pub fn init() {
     show_loading_skeleton();
-    // Delay actual render to show skeleton briefly
-    dom::set_timeout_once(100, move || {
-        render_sticker_grid();
-    });
+    // Render immediately — skeleton stays until hydrate_stickers_batch() is called by lib.rs
+    render_sticker_grid();
+    // App-lifetime listener — locked sticker tap feedback (single registration — init() called once at boot)
+    setup_locked_sticker_tap();
 }
 
 /// Show loading skeleton while stickers are being fetched/hydrated.
@@ -150,6 +150,14 @@ fn render_sticker_grid() {
     let _ = body.append_child(&grid);
 }
 
+/// Reveal a sticker cell at `idx` and play the sparkle animation.
+fn reveal_sticker_at(idx: usize, emoji: &str, image: Option<&str>) {
+    if let Some(cell) = dom::query(&format!("[data-sticker-idx=\"{idx}\"]")) {
+        reveal_sticker_cell(&cell, emoji, image, true);
+        animations::sparkle_reveal(&cell);
+    }
+}
+
 /// Award a sticker. Called by tracker (every 5th act), quests (all 3 complete), stories (completion).
 pub fn award_sticker(source: &str) {
     let next_idx = next_unlocked_sticker_index();
@@ -169,11 +177,7 @@ pub fn award_sticker(source: &str) {
     );
 
     // Reveal the sticker in the grid — prefer Imagen PNG over emoji
-    let selector = &format!("[data-sticker-idx=\"{idx}\"]");
-    if let Some(cell) = dom::query(selector) {
-        reveal_sticker_cell(&cell, design.emoji, design.image, true);
-        animations::sparkle_reveal(&cell);
-    }
+    reveal_sticker_at(idx, design.emoji, design.image);
 
     // Update count
     update_sticker_count(idx + 1);
@@ -188,12 +192,7 @@ pub fn award_sticker(source: &str) {
         // FIRST STICKER EVER — Great celebration!
         confetti::celebrate(confetti::CelebrationTier::Great);
         speech::celebrate("Your FIRST sticker! This is SO special!");
-    } else if idx % 5 == 0 && idx < 25 {
-        // Every 5th sticker (minor milestone) — Nice celebration
-        synth_audio::sparkle();
-        confetti::burst_unicorn();
     } else {
-        // Regular sticker — standard celebration
         synth_audio::sparkle();
         confetti::burst_unicorn();
     }
@@ -225,10 +224,7 @@ pub fn award_streak_sticker(streak_days: u32) {
         ).await;
     });
 
-    if let Some(cell) = dom::query(&format!("[data-sticker-idx=\"{idx}\"]")) {
-        reveal_sticker_cell(&cell, design.emoji, design.image, true);
-        animations::sparkle_reveal(&cell);
-    }
+    reveal_sticker_at(idx, design.emoji, design.image);
 
     // Toast only (celebration happens in streaks::check_milestones)
     dom::toast(&format!("{} day streak! {} {}", streak_days, design.emoji, design.name));
@@ -258,10 +254,7 @@ pub fn award_goal_sticker(goal_sticker: &str) {
         ).await;
     });
 
-    if let Some(cell) = dom::query(&format!("[data-sticker-idx=\"{idx}\"]")) {
-        reveal_sticker_cell(&cell, design.emoji, design.image, true);
-        animations::sparkle_reveal(&cell);
-    }
+    reveal_sticker_at(idx, design.emoji, design.image);
 
     synth_audio::fanfare();
     confetti::burst_party();
@@ -295,10 +288,7 @@ pub async fn award_mastery_sticker(sticker_type: &str, source: &str) {
         vec![id, sticker_type_owned, now.to_string(), source_owned],
     ).await;
 
-    if let Some(cell) = dom::query(&format!("[data-sticker-idx=\"{idx}\"]")) {
-        reveal_sticker_cell(&cell, design.emoji, design.image, true);
-        animations::sparkle_reveal(&cell);
-    }
+    reveal_sticker_at(idx, design.emoji, design.image);
 
     synth_audio::fanfare();
     confetti::burst_party();
@@ -361,13 +351,40 @@ fn next_unlocked_sticker_index() -> Option<usize> {
     None
 }
 
-fn update_sticker_count(earned: usize) {
+pub fn update_sticker_count(earned: usize) {
     dom::set_text("[data-sticker-count]", &format!("{earned} / 51 stickers earned!"));
+    // Bounce the count element to celebrate the new number
+    if let Some(el) = dom::query("[data-sticker-count]") {
+        let _ = el.class_list().add_1("counter-bounce");
+        dom::set_timeout_once(350, move || {
+            if let Some(el) = dom::query("[data-sticker-count]") {
+                let _ = el.class_list().remove_1("counter-bounce");
+            }
+        });
+    }
 }
 
-/// Public version for hydration (called from lib.rs).
-pub fn update_sticker_count_value(earned: usize) {
-    update_sticker_count(earned);
+/// Set up tap feedback for locked sticker slots.
+/// Uses event delegation on the rewards body — fires jelly_wobble + toast hint.
+fn setup_locked_sticker_tap() {
+    use wasm_bindgen::JsCast;
+    let Some(body) = dom::query(SELECTOR_REWARDS_BODY) else { return };
+    let target: web_sys::EventTarget = body.into();
+    dom::on(&target, "click", move |e| {
+        let Some(event) = e.dyn_ref::<web_sys::MouseEvent>() else { return };
+        let Some(el) = event.target() else { return };
+        let Some(elem) = el.dyn_ref::<web_sys::Element>() else { return };
+        // Walk up to find closest sticker cell (tap may land on img inside cell)
+        let cell = if elem.class_list().contains("sticker-cell--locked") {
+            elem.clone()
+        } else if let Some(parent) = elem.closest(".sticker-cell--locked").ok().flatten() {
+            parent
+        } else {
+            return;
+        };
+        animations::jelly_wobble(&cell);
+        dom::toast("Keep being kind to unlock! \u{1F495}");
+    });
 }
 
 /// Batch hydrate multiple stickers at once (O(n) instead of O(n²)).

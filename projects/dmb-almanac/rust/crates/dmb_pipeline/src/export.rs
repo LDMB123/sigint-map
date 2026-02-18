@@ -36,13 +36,8 @@ pub fn export_json(db_path: &Path, output_dir: &Path) -> Result<()> {
     let guest_appearances = export_guest_appearances(&conn, &shows)?;
     let liberation_list = export_liberation_list(&conn)?;
     let song_statistics = export_song_statistics(&conn)?;
-    let venue_top_songs = export_venue_top_songs(&conn)?;
-    let this_day = export_this_day_in_history(&conn)?;
-    let show_details = export_show_details(&conn)?;
     let curated_lists = export_curated_lists(&conn)?;
     let curated_list_items = export_curated_list_items(&conn)?;
-    let song_stats = export_song_stats(&conn)?;
-    let recent_shows = export_recent_shows(&conn)?;
     let releases = export_releases(&conn)?;
     let release_tracks = export_release_tracks(&conn)?;
 
@@ -56,13 +51,8 @@ pub fn export_json(db_path: &Path, output_dir: &Path) -> Result<()> {
         write_json_array(output_dir, "guest-appearances.json", &guest_appearances)?,
         write_json_array(output_dir, "liberation-list.json", &liberation_list)?,
         write_json_array(output_dir, "song-statistics.json", &song_statistics)?,
-        write_json_array(output_dir, "venue-top-songs.json", &venue_top_songs)?,
-        write_json_array(output_dir, "this-day-in-history.json", &this_day)?,
-        write_json_array(output_dir, "show-details.json", &show_details)?,
         write_json_array(output_dir, "curated-lists.json", &curated_lists)?,
         write_json_array(output_dir, "curated-list-items.json", &curated_list_items)?,
-        write_json_array(output_dir, "song-stats.json", &song_stats)?,
-        write_json_array(output_dir, "recent-shows.json", &recent_shows)?,
         write_json_array(output_dir, "releases.json", &releases)?,
         write_json_array(output_dir, "release-tracks.json", &release_tracks)?,
     ];
@@ -81,13 +71,8 @@ pub fn export_json(db_path: &Path, output_dir: &Path) -> Result<()> {
             "guestAppearances": guest_appearances.len(),
             "liberationList": liberation_list.len(),
             "songStatistics": song_statistics.len(),
-            "venueTopSongs": venue_top_songs.len(),
-            "thisDayInHistory": this_day.len(),
-            "showDetails": show_details.len(),
             "curatedLists": curated_lists.len(),
             "curatedListItems": curated_list_items.len(),
-            "songStats": song_stats.len(),
-            "recentShows": recent_shows.len(),
             "releases": releases.len(),
             "releaseTracks": release_tracks.len(),
         },
@@ -503,65 +488,6 @@ fn export_song_statistics(conn: &Connection) -> Result<Vec<Value>> {
     collect_rows(rows)
 }
 
-fn export_venue_top_songs(conn: &Connection) -> Result<Vec<Value>> {
-    let mut stmt = conn.prepare("SELECT * FROM venue_top_songs")?;
-    let rows = stmt.query_map([], |row| {
-        Ok(json!({
-            "venueId": row.get::<_, i64>("venue_id")?,
-            "venueName": row.get::<_, String>("venue_name")?,
-            "songId": row.get::<_, i64>("song_id")?,
-            "songTitle": row.get::<_, String>("song_title")?,
-            "playCount": row.get::<_, i64>("play_count")?,
-        }))
-    })?;
-    collect_rows(rows)
-}
-
-fn export_this_day_in_history(conn: &Connection) -> Result<Vec<Value>> {
-    let mut stmt = conn.prepare("SELECT * FROM this_day_in_history")?;
-    let rows = stmt.query_map([], |row| {
-        Ok(json!({
-            "id": row.get::<_, i64>("id")?,
-            "date": row.get::<_, String>("date")?,
-            "dateMonth": row.get::<_, i64>("date_month")?,
-            "dateDay": row.get::<_, i64>("date_day")?,
-            "year": row.get::<_, i64>("year")?,
-            "venueId": row.get::<_, i64>("venue_id")?,
-            "venueName": row.get::<_, String>("venue_name")?,
-            "venueCity": row.get::<_, String>("venue_city")?,
-            "venueState": row.get::<_, Option<String>>("venue_state")?,
-            "venueCountry": row.get::<_, String>("venue_country")?,
-            "notes": row.get::<_, Option<String>>("notes")?,
-            "songCount": row.get::<_, Option<i64>>("song_count")?,
-        }))
-    })?;
-    collect_rows(rows)
-}
-
-fn export_show_details(conn: &Connection) -> Result<Vec<Value>> {
-    let mut stmt = conn.prepare("SELECT * FROM show_details ORDER BY id")?;
-    let rows = stmt.query_map([], |row| {
-        Ok(json!({
-            "id": row.get::<_, i64>("id")?,
-            "date": row.get::<_, String>("date")?,
-            "notes": row.get::<_, Option<String>>("notes")?,
-            "soundcheck": row.get::<_, Option<String>>("soundcheck")?,
-            "rarityIndex": row.get::<_, Option<f64>>("rarity_index")?,
-            "songCount": row.get::<_, Option<i64>>("song_count")?,
-            "venueId": row.get::<_, i64>("venue_id")?,
-            "venueName": row.get::<_, String>("venue_name")?,
-            "venueCity": row.get::<_, String>("venue_city")?,
-            "venueState": row.get::<_, Option<String>>("venue_state")?,
-            "venueCountry": row.get::<_, String>("venue_country")?,
-            "venueType": row.get::<_, Option<String>>("venue_type")?,
-            "tourId": row.get::<_, i64>("tour_id")?,
-            "tourName": row.get::<_, String>("tour_name")?,
-            "tourYear": row.get::<_, i64>("tour_year")?,
-        }))
-    })?;
-    collect_rows(rows)
-}
-
 fn export_curated_lists(conn: &Connection) -> Result<Vec<Value>> {
     let mut stmt = conn.prepare("SELECT * FROM curated_lists ORDER BY sort_order, id")?;
     let rows = stmt.query_map([], |row| {
@@ -600,58 +526,6 @@ fn export_curated_list_items(conn: &Connection) -> Result<Vec<Value>> {
             "notes": row.get::<_, Option<String>>("notes")?,
             "metadata": row.get::<_, Option<String>>("metadata")?,
             "createdAt": row.get::<_, String>("created_at")?,
-        }))
-    })?;
-    collect_rows(rows)
-}
-
-fn export_song_stats(conn: &Connection) -> Result<Vec<Value>> {
-    let mut stmt = conn.prepare("SELECT * FROM song_stats ORDER BY id")?;
-    let rows = stmt.query_map([], |row| {
-        Ok(json!({
-            "id": row.get::<_, i64>("id")?,
-            "title": row.get::<_, String>("title")?,
-            "slug": row.get::<_, String>("slug")?,
-            "sortTitle": row.get::<_, Option<String>>("sort_title")?,
-            "originalArtist": row.get::<_, Option<String>>("original_artist")?,
-            "isCover": row.get::<_, i64>("is_cover")? != 0,
-            "isOriginal": row.get::<_, i64>("is_original")? != 0,
-            "firstPlayedDate": row.get::<_, Option<String>>("first_played_date")?,
-            "lastPlayedDate": row.get::<_, Option<String>>("last_played_date")?,
-            "totalPerformances": row.get::<_, Option<i64>>("total_performances")?,
-            "openerCount": row.get::<_, Option<i64>>("opener_count")?,
-            "closerCount": row.get::<_, Option<i64>>("closer_count")?,
-            "encoreCount": row.get::<_, Option<i64>>("encore_count")?,
-            "lyrics": row.get::<_, Option<String>>("lyrics")?,
-            "notes": row.get::<_, Option<String>>("notes")?,
-            "createdAt": row.get::<_, String>("created_at")?,
-            "updatedAt": row.get::<_, String>("updated_at")?,
-            "daysSinceLast": row.get::<_, Option<i64>>("days_since_last")?,
-            "showsSinceLast": row.get::<_, Option<i64>>("shows_since_last")?,
-        }))
-    })?;
-    collect_rows(rows)
-}
-
-fn export_recent_shows(conn: &Connection) -> Result<Vec<Value>> {
-    let mut stmt = conn.prepare("SELECT * FROM recent_shows")?;
-    let rows = stmt.query_map([], |row| {
-        Ok(json!({
-            "id": row.get::<_, i64>("id")?,
-            "date": row.get::<_, String>("date")?,
-            "notes": row.get::<_, Option<String>>("notes")?,
-            "soundcheck": row.get::<_, Option<String>>("soundcheck")?,
-            "rarityIndex": row.get::<_, Option<f64>>("rarity_index")?,
-            "songCount": row.get::<_, Option<i64>>("song_count")?,
-            "venueId": row.get::<_, i64>("venue_id")?,
-            "venueName": row.get::<_, String>("venue_name")?,
-            "venueCity": row.get::<_, String>("venue_city")?,
-            "venueState": row.get::<_, Option<String>>("venue_state")?,
-            "venueCountry": row.get::<_, String>("venue_country")?,
-            "venueType": row.get::<_, Option<String>>("venue_type")?,
-            "tourId": row.get::<_, i64>("tour_id")?,
-            "tourName": row.get::<_, String>("tour_name")?,
-            "tourYear": row.get::<_, i64>("tour_year")?,
         }))
     })?;
     collect_rows(rows)

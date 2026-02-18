@@ -12,8 +12,8 @@ use web_sys::{
 };
 
 use crate::{
-    browser_apis, confetti, db_client, dom, games, native_apis, render,
-    speech, state::AppState, synth_audio, ui, utils, weekly_goals,
+    browser_apis, confetti, dom, games, native_apis, render,
+    speech, state::AppState, synth_audio, ui, weekly_goals,
     game_unicorn_audio, game_unicorn_friends, game_unicorn_sparkles,
     game_unicorn_unicorn,
 };
@@ -435,12 +435,12 @@ fn update_game(game: &mut UnicornGameState, dt: f64) {
         }
 
         // Audio spawn sound for next friend
-        game_unicorn_audio::spawn();
+        synth_audio::sparkle();
 
         // Combo detection
         let combo = game_unicorn_audio::combo_count();
         if combo >= 2 {
-            game_unicorn_audio::combo();
+            synth_audio::level_up();
         }
 
         // Hearts integration
@@ -464,7 +464,7 @@ fn update_game(game: &mut UnicornGameState, dt: f64) {
 
     // Milestone every 5 friends
     if !collected.is_empty() && game.friends.total_collected.is_multiple_of(5) && game.friends.total_collected > 0 {
-        game_unicorn_audio::milestone();
+        synth_audio::fanfare();
         confetti::burst_stars();
         native_apis::vibrate_success();
         speech::speak(&format!("{} friends!", game.friends.total_collected));
@@ -569,7 +569,7 @@ fn bind_pointer_events(
                         // Tap on unicorn -> giggle
                         if game.unicorn.contains_point(x, y) {
                             game.unicorn.giggle();
-                            game_unicorn_audio::giggle();
+                            synth_audio::giggle();
                             native_apis::vibrate_tap();
                         } else {
                             // Tap on ground -> flower
@@ -650,7 +650,7 @@ fn bind_keyboard_events(signal: &web_sys::AbortSignal) {
                         " " => {
                             // Space = giggle
                             game.unicorn.giggle();
-                            game_unicorn_audio::giggle();
+                            synth_audio::giggle();
                             (0.0, 0.0)
                         }
                         _ => return,
@@ -686,7 +686,7 @@ fn bind_mute_button(signal: &web_sys::AbortSignal) {
 }
 
 fn spawn_flower(game: &mut UnicornGameState, x: f64, y: f64) {
-    game_unicorn_audio::flower();
+    synth_audio::gentle();
     let idx = (js_sys::Math::random() * FLOWER_EMOJIS.len() as f64) as usize;
     let emoji = FLOWER_EMOJIS[idx.min(FLOWER_EMOJIS.len() - 1)];
     if game.flowers.len() < 20 {
@@ -751,35 +751,19 @@ fn end_game(game: &mut UnicornGameState) {
     }
 
     // Save score to database
-    let id = utils::create_id();
-    let day_key = utils::today_key();
-    let now = utils::now_epoch_ms();
     let duration_ms = (SESSION_SECONDS * 1000.0) as u64;
-
-    db_client::exec_fire_and_forget(
-        "unicorn-save",
-        "INSERT INTO game_scores (id, game_id, score, level, duration_ms, played_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        vec![
-            id,
-            "unicorn".into(),
-            score.to_string(),
-            friends_collected.to_string(),
-            duration_ms.to_string(),
-            now.to_string(),
-            day_key,
-        ],
-    );
+    games::save_game_score("unicorn-save", "unicorn", score as u64, friends_collected as u64, duration_ms);
 
     // Stop audio
     game_unicorn_audio::stop_ambient();
 
     // Celebration
     if is_new_high && score > 0 {
-        game_unicorn_audio::milestone();
+        synth_audio::fanfare();
         confetti::burst_stars();
         native_apis::vibrate_success();
     } else {
-        game_unicorn_audio::transition();
+        synth_audio::chime();
     }
 
     speech::speak(&format!("{friends_collected} friends collected!"));
@@ -800,19 +784,16 @@ fn show_end_screen(
     let doc = dom::document();
     dom::safe_set_inner_html(&arena, "");
 
-    let screen = render::create_el_with_class(&doc, "div", "game-end-screen");
+    let (screen, title, stats) = games::build_end_screen();
 
     // Title
-    let title = render::create_el_with_class(&doc, "div", "game-end-title");
     if is_new_high && score > 0 {
         title.set_text_content(Some("\u{1F389} NEW HIGH SCORE! \u{1F389}"));
         let _ = title.class_list().add_1("game-end-title--new-record");
     } else {
         title.set_text_content(Some("\u{1F389} Great Adventure! \u{1F389}"));
     }
-
-    // Stats
-    let stats = render::create_el_with_class(&doc, "div", "game-end-stats");
+    let _ = screen.append_child(&title);
 
     let score_line = render::create_el_with_class(&doc, "div", "game-end-stat");
     score_line.set_text_content(Some(&format!("\u{2B50} Score: {score}")));
@@ -832,19 +813,7 @@ fn show_end_screen(
     hearts_line.set_text_content(Some(&format!("\u{1F49C} +{session_hearts} hearts earned!")));
     let _ = stats.append_child(&hearts_line);
 
-    // Buttons
-    let buttons = render::create_el_with_class(&doc, "div", "game-end-buttons");
-    let again_btn = render::create_button(&doc, "game-end-btn game-end-btn--again", "\u{1F504} Play Again");
-    let _ = again_btn.set_attribute("data-game-again", "unicorn");
-    let back_btn = render::create_button(&doc, "game-end-btn game-end-btn--back", "\u{2190} Back to Games");
-    let _ = back_btn.set_attribute("data-game-back", "");
-    let _ = buttons.append_child(&again_btn);
-    let _ = buttons.append_child(&back_btn);
-
-    let _ = screen.append_child(&title);
-    let _ = screen.append_child(&stats);
-    let _ = screen.append_child(&buttons);
-    let _ = arena.append_child(&screen);
+    games::finish_end_screen(&screen, &stats, &arena, "unicorn");
 
     bind_end_screen_buttons(state);
 }

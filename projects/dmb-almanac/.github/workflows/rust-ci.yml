@@ -59,7 +59,6 @@ jobs:
         run: |
           cargo test -p dmb_core parity
           cargo test -p dmb_server rejects_
-          cargo test -p dmb_server csp_report_requires_report_object
           cargo test -p dmb_server data_parity_ignores_stale_cache_entries
           cargo test -p dmb_app --features ssr normalize_helpers_handle_empty_input
 

@@ -35,46 +35,29 @@ const UNICORN: &[&str] = &[
 ];
 
 /// Burst confetti for a kind act (hearts).
-pub fn burst_hearts() {
-    if dom::prefers_reduced_motion() { return; }
-    if gpu::is_available() {
-        gpu_particles::burst(&gpu_particles::BURST_HEARTS);
-    } else {
-        native_apis::vibrate_tap();
-        spawn_burst(HEARTS, 8, 1200);
-    }
-}
-
+pub fn burst_hearts()  { do_burst(&gpu_particles::BURST_HEARTS,  false, HEARTS,   8, 1200); }
 /// Burst confetti for quest/sticker (stars).
-pub fn burst_stars() {
-    if dom::prefers_reduced_motion() { return; }
-    if gpu::is_available() {
-        gpu_particles::burst(&gpu_particles::BURST_STARS);
-    } else {
-        native_apis::vibrate_tap();
-        spawn_burst(STARS, 10, 1500);
-    }
-}
-
+pub fn burst_stars()   { do_burst(&gpu_particles::BURST_STARS,   false, STARS,   10, 1500); }
 /// Big party burst for celebrations (Show Mom, all quests).
-pub fn burst_party() {
-    if dom::prefers_reduced_motion() { return; }
-    if gpu::is_available() {
-        gpu_particles::burst(&gpu_particles::BURST_PARTY);
-    } else {
-        native_apis::vibrate_success();
-        spawn_burst(PARTY, 20, 2000);
-    }
-}
-
+pub fn burst_party()   { do_burst(&gpu_particles::BURST_PARTY,   true,  PARTY,   20, 2000); }
 /// Unicorn sparkle burst for Sparkle reactions.
-pub fn burst_unicorn() {
+pub fn burst_unicorn() { do_burst(&gpu_particles::BURST_UNICORN, false, UNICORN,  6, 1000); }
+
+/// Shared burst dispatch: reduced-motion guard + GPU path + DOM fallback.
+/// `success_vibrate` chooses `vibrate_success` (party) vs `vibrate_tap` (other).
+fn do_burst(
+    gpu_cfg: &'static gpu_particles::BurstConfig,
+    success_vibrate: bool,
+    emojis: &'static [&'static str],
+    count: usize,
+    duration_ms: u32,
+) {
     if dom::prefers_reduced_motion() { return; }
     if gpu::is_available() {
-        gpu_particles::burst(&gpu_particles::BURST_UNICORN);
+        gpu_particles::burst(gpu_cfg);
     } else {
-        native_apis::vibrate_tap();
-        spawn_burst(UNICORN, 6, 1000);
+        if success_vibrate { native_apis::vibrate_success(); } else { native_apis::vibrate_tap(); }
+        spawn_burst(emojis, count, duration_ms);
     }
 }
 

@@ -19,13 +19,104 @@ const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-09253436
 const LOCATION = 'global';
 const MODEL = 'gemini-3-pro-image-preview';
 const ENDPOINT = `https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}:generateContent`;
+const SCORER_MODEL = process.env.SCORER_MODEL || 'gemini-2.5-flash';
+const SCORER_ENDPOINT = `https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${SCORER_MODEL}:generateContent`;
 const OUTPUT_DIR = process.env.OUTPUT_DIR || path.join(process.env.HOME, 'nanobanana-output', 'pool-luxe-lace-v1');
 const PASSA_DIR = path.join(OUTPUT_DIR, 'passA');
 const INPUT_IMAGE = process.argv[2] || '/Users/louisherman/Documents/IMG_4385.jpeg';
-const RETRY_WAIT_S = parseInt(process.env.RETRY_WAIT_S || '91', 10);
+const MIN_WAIT_FLOOR_S = Math.max(1, parseInt(process.env.MIN_WAIT_FLOOR_S || '5', 10));
+const RETRY_WAIT_S = Math.max(MIN_WAIT_FLOOR_S, parseInt(process.env.RETRY_WAIT_S || '91', 10));
+const CACHE_REUSE_WAIT_S = Math.max(MIN_WAIT_FLOOR_S, parseInt(process.env.CACHE_REUSE_WAIT_S || '90', 10));
 const MAX_CONCEPT_ATTEMPTS = parseInt(process.env.MAX_CONCEPT_ATTEMPTS || '5', 10);
 const RATE_LIMIT_BACKOFF_MIN_S = parseInt(process.env.RATE_LIMIT_BACKOFF_MIN_S || '120', 10);
 const RATE_LIMIT_BACKOFF_MAX_S = parseInt(process.env.RATE_LIMIT_BACKOFF_MAX_S || '180', 10);
+const REQUEST_PACING_BASE_S = Math.max(MIN_WAIT_FLOOR_S, parseFloat(process.env.REQUEST_PACING_BASE_S || '90'));
+const REQUEST_PACING_MAX_S = Math.max(REQUEST_PACING_BASE_S, parseFloat(process.env.REQUEST_PACING_MAX_S || '180'));
+const MIN_API_ATTEMPT_INTERVAL_S = Math.max(
+  MIN_WAIT_FLOOR_S,
+  parseInt(process.env.MIN_API_ATTEMPT_INTERVAL_S || '90', 10)
+);
+const RATE_LIMIT_BACKOFF_STEP_S = Math.max(0, parseInt(process.env.RATE_LIMIT_BACKOFF_STEP_S || '45', 10));
+const RATE_LIMIT_STREAK_STEP_S = Math.max(0, parseInt(process.env.RATE_LIMIT_STREAK_STEP_S || '20', 10));
+const RATE_LIMIT_MAX_BACKOFF_S = Math.max(1, parseInt(process.env.RATE_LIMIT_MAX_BACKOFF_S || '64', 10));
+const RATE_LIMIT_RETRY_DEADLINE_S = Math.max(30, parseInt(process.env.RATE_LIMIT_RETRY_DEADLINE_S || '600', 10));
+const RATE_LIMIT_CONSECUTIVE_FAILFAST = Math.max(1, parseInt(process.env.RATE_LIMIT_CONSECUTIVE_FAILFAST || '3', 10));
+const RATE_LIMIT_PROFILE_NARROW_STREAK = Math.max(1, parseInt(process.env.RATE_LIMIT_PROFILE_NARROW_STREAK || '2', 10));
+const RATE_LIMIT_FORCE_CACHE_STREAK = Math.max(
+  RATE_LIMIT_PROFILE_NARROW_STREAK,
+  parseInt(process.env.RATE_LIMIT_FORCE_CACHE_STREAK || '3', 10)
+);
+const HEARTBEAT_INTERVAL_S = Math.max(5, parseInt(process.env.HEARTBEAT_INTERVAL_S || '20', 10));
+const AUTH_TIMEOUT_MS = Math.max(5000, parseInt(process.env.AUTH_TIMEOUT_MS || '45000', 10));
+const AUTH_RETRIES_MAX = Math.max(0, parseInt(process.env.AUTH_RETRIES_MAX || '2', 10));
+const AUTH_RETRY_WAIT_S = Math.max(1, parseInt(process.env.AUTH_RETRY_WAIT_S || '8', 10));
+const ACCESS_TOKEN_EARLY_REFRESH_S = Math.max(0, parseInt(process.env.ACCESS_TOKEN_EARLY_REFRESH_S || '90', 10));
+const REUSE_PASSA_ON_FAILURE = process.env.REUSE_PASSA_ON_FAILURE !== '0';
+const MULTIMODAL_FILE_FIRST = process.env.MULTIMODAL_FILE_FIRST !== '0';
+const FRONTIER_MODE = process.env.FRONTIER_MODE === '1';
+const FRONTIER_BEAM_ORDER = (process.env.FRONTIER_BEAM_ORDER || 'intimate,balanced,clean')
+  .split(',')
+  .map(s => s.trim().toLowerCase())
+  .filter(Boolean);
+const FRONTIER_ACCEPT_SCORE = parseFloat(process.env.FRONTIER_ACCEPT_SCORE || '8.6');
+const DUAL_STRATEGY_MODE = process.env.DUAL_STRATEGY_MODE
+  ? process.env.DUAL_STRATEGY_MODE === '1'
+  : FRONTIER_MODE;
+const AB_AUDIT_FILE = path.join(OUTPUT_DIR, 'ab-comparison-audit.jsonl');
+const AB_SUMMARY_FILE = path.join(OUTPUT_DIR, 'ab-comparison-summary.json');
+const LEARNING_AUDIT_FILE = path.join(OUTPUT_DIR, 'learning-audit.jsonl');
+const LEARNING_PLAN_FILE = path.join(OUTPUT_DIR, 'learning-plan.json');
+const TARGET_QUALITY_GAIN_PCT = parseFloat(process.env.TARGET_QUALITY_GAIN_PCT || '50');
+const STRATEGY_KEYS = ['A', 'B', 'C'];
+const LESSON_RECENCY_WINDOW = Math.max(8, parseInt(process.env.LESSON_RECENCY_WINDOW || '24', 10));
+const LESSON_MAX_PER_PROMPT = Math.max(8, parseInt(process.env.LESSON_MAX_PER_PROMPT || '12', 10));
+const C_STRATEGY_LESSON_MAX = Math.max(6, parseInt(process.env.C_STRATEGY_LESSON_MAX || '10', 10));
+const PROFILE_HISTORY_WINDOW = Math.max(12, parseInt(process.env.PROFILE_HISTORY_WINDOW || '40', 10));
+const WINNER_TIE_BAND = Math.max(0.05, parseFloat(process.env.WINNER_TIE_BAND || '0.12'));
+const IDENTITY_GUARDRAIL = Math.max(8.5, parseFloat(process.env.IDENTITY_GUARDRAIL || '9.0'));
+const COMPLIANCE_GUARDRAIL = Math.max(8.5, parseFloat(process.env.COMPLIANCE_GUARDRAIL || '9.0'));
+const C_PROFILE_FOLLOW_AB = process.env.C_PROFILE_FOLLOW_AB === '1';
+const ENABLE_AB_PHASE2_BOUNDARY = process.env.ENABLE_AB_PHASE2_BOUNDARY !== '0';
+const AB_PHASE2_INTENSITY = Math.max(1.05, parseFloat(process.env.AB_PHASE2_INTENSITY || '1.2'));
+const HAIL_MARY_MODE = process.env.HAIL_MARY_MODE !== '0';
+const PHASE2_VARIANTS_PER_ROUND = Math.max(1, parseInt(process.env.PHASE2_VARIANTS_PER_ROUND || '2', 10));
+const PHASE2_VARIANT_INTENSITY_STEP = Math.max(0.02, parseFloat(process.env.PHASE2_VARIANT_INTENSITY_STEP || '0.08'));
+const AB_ITERATION_ROUNDS_MAX = Math.max(1, parseInt(process.env.AB_ITERATION_ROUNDS_MAX || '2', 10));
+const AB_ITERATION_MIN_GAIN = Math.max(0.01, parseFloat(process.env.AB_ITERATION_MIN_GAIN || '0.08'));
+const APPROACH_SELF_ITERATION_ROUNDS_MAX = Math.max(0, parseInt(process.env.APPROACH_SELF_ITERATION_ROUNDS_MAX || '1', 10));
+const APPROACH_SELF_MIN_GAIN = Math.max(0.01, parseFloat(process.env.APPROACH_SELF_MIN_GAIN || '0.06'));
+const C_SELF_ITERATION_ROUNDS_MAX = Math.max(0, parseInt(process.env.C_SELF_ITERATION_ROUNDS_MAX || '1', 10));
+const C_SELF_MIN_GAIN = Math.max(0.01, parseFloat(process.env.C_SELF_MIN_GAIN || '0.05'));
+const FINAL_AUDIT_BOOST_ROUNDS_MAX = Math.max(0, parseInt(process.env.FINAL_AUDIT_BOOST_ROUNDS_MAX || '1', 10));
+const FINAL_AUDIT_BOOST_MIN_GAIN = Math.max(0.01, parseFloat(process.env.FINAL_AUDIT_BOOST_MIN_GAIN || '0.04'));
+const FINAL_AUDIT_SHORTFALL_STEP = Math.max(0.05, parseFloat(process.env.FINAL_AUDIT_SHORTFALL_STEP || '0.35'));
+const FINAL_AUDIT_SHORTFALL_EXTRA_ROUNDS_MAX = Math.max(0, parseInt(process.env.FINAL_AUDIT_SHORTFALL_EXTRA_ROUNDS_MAX || '2', 10));
+const LAST_PASS_REDO_ENABLED = process.env.LAST_PASS_REDO_ENABLED !== '0';
+const LAST_PASS_REDO_ROUNDS_MAX = Math.max(0, parseInt(process.env.LAST_PASS_REDO_ROUNDS_MAX || '1', 10));
+const LAST_PASS_REDO_TIE_BAND_ADD = Math.max(0.0, parseFloat(process.env.LAST_PASS_REDO_TIE_BAND_ADD || '0.08'));
+const LAST_PASS_REDO_SHORTFALL_TRIGGER = Math.max(0.0, parseFloat(process.env.LAST_PASS_REDO_SHORTFALL_TRIGGER || '0.15'));
+const HARDEN_ITERATION_PROCESS = process.env.HARDEN_ITERATION_PROCESS !== '0';
+const HARDEN_MAX_EXTRA_PHASE2_VARIANTS = Math.max(0, parseInt(process.env.HARDEN_MAX_EXTRA_PHASE2_VARIANTS || '2', 10));
+const HARDEN_MAX_EXTRA_ROUNDS = Math.max(0, parseInt(process.env.HARDEN_MAX_EXTRA_ROUNDS || '3', 10));
+const HARDEN_MAX_EXTRA_SELF_ROUNDS = Math.max(0, parseInt(process.env.HARDEN_MAX_EXTRA_SELF_ROUNDS || '2', 10));
+const HARDEN_MAX_EXTRA_LAST_PASS_ROUNDS = Math.max(0, parseInt(process.env.HARDEN_MAX_EXTRA_LAST_PASS_ROUNDS || '2', 10));
+const QUALITY_ESCALATION_ENABLE = process.env.QUALITY_ESCALATION_ENABLE !== '0';
+const QUALITY_ESCALATION_SCORE_TRIGGER = Math.max(8.5, parseFloat(process.env.QUALITY_ESCALATION_SCORE_TRIGGER || '9.35'));
+const QUALITY_ESCALATION_TIE_TRIGGER = Math.max(0.05, parseFloat(process.env.QUALITY_ESCALATION_TIE_TRIGGER || '0.18'));
+const QUALITY_ESCALATION_MAX_EXTRA_ROUNDS = Math.max(0, parseInt(process.env.QUALITY_ESCALATION_MAX_EXTRA_ROUNDS || '2', 10));
+const QUALITY_ESCALATION_MAX_EXTRA_VARIANTS = Math.max(0, parseInt(process.env.QUALITY_ESCALATION_MAX_EXTRA_VARIANTS || '2', 10));
+const ITER_ACCEPT_OVERALL_TOL = Math.max(0.0, parseFloat(process.env.ITER_ACCEPT_OVERALL_TOL || '0.02'));
+const ITER_ACCEPT_METRIC_TOL = Math.max(0.0, parseFloat(process.env.ITER_ACCEPT_METRIC_TOL || '0.05'));
+const LOCK_AB_VARIATION = process.env.LOCK_AB_VARIATION !== '0';
+const LOCK_C_VARIATION_TO_AB = process.env.LOCK_C_VARIATION_TO_AB !== '0';
+const INITIAL_QUALITY_TARGET_MULTIPLIER = Math.max(1.0, parseFloat(process.env.INITIAL_QUALITY_TARGET_MULTIPLIER || '3.0'));
+const REVISED_QUALITY_TARGET_MULTIPLIER = Math.max(1.0, parseFloat(process.env.REVISED_QUALITY_TARGET_MULTIPLIER || '1.5'));
+const FINAL_QUALITY_TARGET_MULTIPLIER = Math.max(1.0, parseFloat(process.env.FINAL_QUALITY_TARGET_MULTIPLIER || '3.0'));
+const MIN_FINAL_MULTIPLIER_GATE = Math.max(1.0, parseFloat(process.env.MIN_FINAL_MULTIPLIER_GATE || '2.0'));
+const STRICT_QUALITY_GATE = process.env.STRICT_QUALITY_GATE !== '0';
+const RESUME_SKIP_COMPLETED_AB = process.env.RESUME_SKIP_COMPLETED_AB !== '0';
+const PHASED_BATCH_MODE = process.env.PHASED_BATCH_MODE === '1';
+const PHASE_A_RESUME_FROM_NUM = Math.max(0, parseInt(process.env.PHASE_A_RESUME_FROM_NUM || '0', 10));
 const RATE_LIMIT_RETRIES_MAX = parseInt(process.env.RATE_LIMIT_RETRIES_MAX || '6', 10);
 const API_REQUEST_TIMEOUT_MS = parseInt(process.env.API_REQUEST_TIMEOUT_MS || '120000', 10);
 const NETWORK_RETRIES_MAX = parseInt(process.env.NETWORK_RETRIES_MAX || '1', 10);
@@ -39,6 +130,163 @@ const FORCE_SAFE_MODE = process.env.FORCE_SAFE_MODE === '1';
 const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
 await fs.mkdir(OUTPUT_DIR, { recursive: true });
 await fs.mkdir(PASSA_DIR, { recursive: true });
+
+let GLOBAL_RATE_LIMIT_STREAK = 0;
+let GLOBAL_NEXT_REQUEST_AT_MS = 0;
+let GLOBAL_LAST_API_ATTEMPT_ENDED_AT_MS = 0;
+let CURRENT_CONCEPT_ATTEMPT = 1;
+let CURRENT_CONCEPT_MAX_ATTEMPTS = MAX_CONCEPT_ATTEMPTS;
+let AUTH_CLIENT_PROMISE = null;
+let CACHED_ACCESS_TOKEN = null;
+
+function currentHardeningLevel() {
+  if (!HARDEN_ITERATION_PROCESS) return 0;
+  return Math.max(0, (Number(CURRENT_CONCEPT_ATTEMPT) || 1) - 1);
+}
+
+function effectivePhase2VariantsPerRound() {
+  return Math.max(
+    1,
+    PHASE2_VARIANTS_PER_ROUND + Math.min(HARDEN_MAX_EXTRA_PHASE2_VARIANTS, currentHardeningLevel())
+  );
+}
+
+async function waitWithHeartbeat(totalSeconds, label) {
+  const total = Math.max(0, Math.ceil(Number(totalSeconds) || 0));
+  if (total === 0) return;
+  if (total <= HEARTBEAT_INTERVAL_S) {
+    await new Promise(r => setTimeout(r, total * 1000));
+    return;
+  }
+  let elapsed = 0;
+  while (elapsed < total) {
+    const step = Math.min(HEARTBEAT_INTERVAL_S, total - elapsed);
+    await new Promise(r => setTimeout(r, step * 1000));
+    elapsed += step;
+    const remaining = total - elapsed;
+    if (remaining > 0) {
+      console.log(`WAIT ${label}: ${elapsed}s elapsed, ${remaining}s remaining`);
+    }
+  }
+}
+
+function withTimeout(promiseFactory, timeoutMs, label) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+    Promise.resolve()
+      .then(() => promiseFactory())
+      .then(result => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(result);
+      })
+      .catch(err => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
+function decodeJwtExpiryMs(tokenValue) {
+  if (typeof tokenValue !== 'string') return null;
+  const parts = tokenValue.split('.');
+  if (parts.length < 2) return null;
+  try {
+    const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(Buffer.from(normalized, 'base64').toString('utf8'));
+    const exp = Number(payload?.exp);
+    if (!Number.isFinite(exp) || exp <= 0) return null;
+    return exp * 1000;
+  } catch {
+    return null;
+  }
+}
+
+function extractTokenValue(tokenResponse) {
+  if (typeof tokenResponse === 'string') return tokenResponse;
+  if (!tokenResponse || typeof tokenResponse !== 'object') return null;
+  if (typeof tokenResponse.token === 'string' && tokenResponse.token.length > 0) return tokenResponse.token;
+  if (typeof tokenResponse.access_token === 'string' && tokenResponse.access_token.length > 0) return tokenResponse.access_token;
+  return null;
+}
+
+function extractTokenExpiryMs(tokenResponse, tokenValue) {
+  const explicitExpiry = Number(
+    tokenResponse?.res?.data?.expiry_date
+    || tokenResponse?.expiry_date
+    || tokenResponse?.expiryDate
+    || tokenResponse?.expires_at
+    || tokenResponse?.expiresAt
+  );
+  if (Number.isFinite(explicitExpiry) && explicitExpiry > Date.now()) {
+    return explicitExpiry;
+  }
+  const jwtExpiry = decodeJwtExpiryMs(tokenValue);
+  if (jwtExpiry && jwtExpiry > Date.now()) return jwtExpiry;
+  return Date.now() + (55 * 60 * 1000);
+}
+
+function hasUsableCachedToken() {
+  if (!CACHED_ACCESS_TOKEN?.token || !CACHED_ACCESS_TOKEN?.expiresAtMs) return false;
+  const refreshThresholdMs = ACCESS_TOKEN_EARLY_REFRESH_S * 1000;
+  return (CACHED_ACCESS_TOKEN.expiresAtMs - refreshThresholdMs) > Date.now();
+}
+
+async function getAuthClientWithTimeout() {
+  if (!AUTH_CLIENT_PROMISE) {
+    AUTH_CLIENT_PROMISE = withTimeout(() => auth.getClient(), AUTH_TIMEOUT_MS, 'auth.getClient');
+  }
+  try {
+    return await AUTH_CLIENT_PROMISE;
+  } catch (err) {
+    AUTH_CLIENT_PROMISE = null;
+    throw err;
+  }
+}
+
+async function getAccessTokenWithRetry() {
+  if (hasUsableCachedToken()) {
+    return CACHED_ACCESS_TOKEN.token;
+  }
+  let lastError = null;
+  for (let attempt = 0; attempt <= AUTH_RETRIES_MAX; attempt += 1) {
+    try {
+      const client = await getAuthClientWithTimeout();
+      const tokenResponse = await withTimeout(
+        () => client.getAccessToken(),
+        AUTH_TIMEOUT_MS,
+        'auth.getAccessToken'
+      );
+      const tokenValue = extractTokenValue(tokenResponse);
+      if (!tokenValue) {
+        throw new Error('EMPTY_ACCESS_TOKEN');
+      }
+      const expiresAtMs = extractTokenExpiryMs(tokenResponse, tokenValue);
+      CACHED_ACCESS_TOKEN = { token: tokenValue, expiresAtMs };
+      return tokenValue;
+    } catch (err) {
+      lastError = err;
+      AUTH_CLIENT_PROMISE = null;
+      CACHED_ACCESS_TOKEN = null;
+      if (attempt >= AUTH_RETRIES_MAX) break;
+      const wait = AUTH_RETRY_WAIT_S * (attempt + 1);
+      console.log(
+        `Auth token acquisition failed (${attempt + 1}/${AUTH_RETRIES_MAX + 1}): ` +
+        `${err?.message || err}. Waiting ${wait}s...`
+      );
+      await waitWithHeartbeat(wait, 'auth retry');
+    }
+  }
+  throw new Error(`AUTH_TOKEN_ACQUISITION_FAILED: ${lastError?.message || lastError}`);
+}
 
 function compactSafety(ratings) {
   if (!Array.isArray(ratings) || ratings.length === 0) return '';
@@ -61,6 +309,24 @@ function logModelDiagnostics(data, label) {
   if (finish || block || pfSafety || candSafety) {
     console.log(`DIAG ${label}: finish=${finish || 'n/a'} block=${block || 'n/a'} safety=[${candSafety || pfSafety || 'n/a'}]`);
   }
+}
+
+const POLICY_BLOCK_RE = /(IMAGE_PROHIBITED_CONTENT|IMAGE_SAFETY|SAFETY|PROHIBITED|BLOCK)/i;
+
+function extractBlockSignal(data) {
+  const pf = data?.promptFeedback;
+  const cand = data?.candidates?.[0];
+  const finish = String(cand?.finishReason || cand?.finish_reason || '').toUpperCase();
+  const block = String(
+    pf?.blockReason || pf?.block_reason || pf?.blockReasonMessage || pf?.block_reason_message || ''
+  ).toUpperCase();
+  const pfSafety = compactSafety(pf?.safetyRatings || pf?.safety_ratings);
+  const candSafety = compactSafety(cand?.safetyRatings || cand?.safety_ratings);
+  const safety = [candSafety, pfSafety].filter(Boolean).join(', ');
+  const policyBlocked = POLICY_BLOCK_RE.test(finish) || POLICY_BLOCK_RE.test(block);
+  const hardProhibited = finish.includes('IMAGE_PROHIBITED_CONTENT');
+  const safetyBlocked = finish.includes('IMAGE_SAFETY') || finish === 'SAFETY';
+  return { finish, block, safety, policyBlocked, hardProhibited, safetyBlocked };
 }
 
 const expressions = [
@@ -320,6 +586,18 @@ function buildVariation() {
   };
 }
 
+function variationFingerprint(variation) {
+  if (!variation || typeof variation !== 'object') return 'n/a';
+  const parts = [
+    variation?.theme?.name || '',
+    variation?.vibe?.name || '',
+    variation?.colorway?.name || '',
+    variation?.motif?.name || '',
+    variation?.laceMotif || '',
+  ].map(x => String(x || '').trim()).filter(Boolean);
+  return parts.length ? parts.join('|') : 'n/a';
+}
+
 function composeDesignSpec(concept, variation, fallback = false) {
   const materialBase = fallback ? concept.materialFallback : concept.material;
   const microBase = fallback ? concept.microFallback : concept.micro;
@@ -334,31 +612,45 @@ function composeDesignSpec(concept, variation, fallback = false) {
   return { color, brief, material, micro, physics };
 }
 
-const CAMERA_BLOCK = `CAMERA SENSOR PHYSICS: Canon EOS R5 II full-frame 45MP BSI-CMOS; RF 50mm f/1.2 (or 85mm) shot at f/1.4–f/2.0; focus distance matches framing (2–6m) with shallow DOF and natural bokeh. ISO 800–3200 with visible luminance grain and subtle chroma noise in shadows; shutter ~1/125s with slight motion blur on moving fingers. Dual-pixel AF locked on nearest iris. Mild vignetting; subtle CA at high-contrast edges. No flash; available light only.`;
+const IMAGE_INTENT_BLOCK = `IMAGE OUTPUT INTENT: generate one photoreal image (not text-only). Use explicit image language and keep the result as a raw editorial photograph.`;
+const ELITE_EDITORIAL_BLOCK = `ELITE PHOTO BAR: deliver Pulitzer-grade editorial realism with intentional composition, physically causal lighting, lens-faithful rendering, and premium storytelling polish.`;
+const IDENTITY_LOCK_BLOCK = `HIGH-FIDELITY IDENTITY LOCK: preserve eyebrow arcs, eyelid folds, iris color, nose bridge/tip geometry, lip contour, jawline, skin tone distribution, and age cues from the reference. Keep natural asymmetry; no beautification or face reshaping.`;
+const STEPWISE_SCENE_BUILD_BLOCK = `STEPWISE SCENE BUILD (MANDATORY): 1) lock architecture/time-of-day; 2) place subject with plausible balance and contact pressure; 3) apply garment geometry + seam/load map; 4) apply wet interactions (film, droplets, rivulets, caustics); 5) apply camera pipeline artifacts and final tonal response.`;
+const SEMANTIC_NEGATIVE_BLOCK = `SEMANTIC NEGATIVES (POSITIVE WORDING): depict clear limb counts, isolated shoulders, coherent reflections, continuous seams, stable lace scale, and artifact-free edges. Express desired clean states directly instead of long "do-not" lists.`;
+const REFINEMENT_ORDER_BLOCK = `REFINEMENT PRIORITY: identity fidelity -> pose biomechanics -> garment load paths -> wet optics/caustics -> sensor artifacts. If trade-offs occur, preserve this order.`;
+const FRONTIER_PROFILE_NOTES = {
+  intimate: 'high-fashion intimacy, magnetic confidence, tasteful sensuality with non-explicit framing',
+  balanced: 'cinematic luxury realism, poised confidence, restraint-first editorial tone',
+  clean: 'strictly elegant non-suggestive fashion portrait tone, high compliance robustness',
+};
 
-const LIGHT_BLOCK = `3D LIGHT TRANSPORT: underwater pool LEDs 4200–4800K (cool spill), warm candle/lantern/torch points 1800–2400K (warm spec), architectural uplights 2700–3200K, ambient sky/city 5000–6500K. Deep shadow side, warm bounce off wet stone, faint mist scatter, AO at body‑deck contact.`;
+const CAMERA_BLOCK = `CAMERA CONTROL: photoreal capture using portrait-focused lens language (24-35mm environmental portrait or 50/85mm compression), shallow depth of field, precise perspective, and clean subject separation. Canon EOS R5 II full-frame 45MP BSI-CMOS look; f/1.4-f/2.8; ISO 800-3200; shutter near 1/125s with subtle motion blur on moving extremities only. Dual-pixel AF on nearest iris. Visible grain, mild vignetting, subtle chromatic aberration at high-contrast edges. No flash; available-light realism only.`;
 
-const SKIN_BLOCK = `SKIN BIO-OPTICAL RENDERING: natural subsurface scattering, visible pores and fine expression lines, no smoothing. T-zone sheen, faint vellus hair rim-light, tiny perspiration micro-specs. Preserve face, bone structure, and eye color exactly.`;
+const LIGHT_BLOCK = `3D LIGHT TRANSPORT: physically causal mixed-CCT field with cool pool emitters (4200-4800K), warm practicals (1800-2400K), architectural support lights (2700-3200K), and ambient sky/city fill (5000-6500K). Maintain source-to-highlight consistency, soft indirect bounce from wet stone, depth-varying haze scatter, and AO at body-contact zones.`;
+
+const SKIN_BLOCK = `SKIN BIO-OPTICAL RENDERING: realistic subsurface scattering, visible pores and micro-lines, preserved natural asymmetry, and no smoothing. Keep T-zone sheen, faint vellus hair rim response, tiny perspiration micro-specs, and stable complexion under mixed lighting.`;
 
 const NO_TOUCH_BLOCK = `SUBJECT IS SOLO: No other people touching or overlapping her. No extra arms or hands near her shoulders or body. Keep both shoulders clear. No stray hands in frame behind her. Background patrons, if present, are distant and fully separated.`;
 
-const IMPERFECTIONS_BLOCK = `RAW IMPERFECTIONS: visible ISO grain, mild CA, faint flare ghosts, slight barrel distortion, tiny highlight bloom; no retouching.`;
+const IMPERFECTIONS_BLOCK = `RAW IMPERFECTIONS: visible ISO grain, mild chromatic aberration, faint flare ghosts, subtle lens distortion, soft highlight rolloff, and realistic compression noise in shadows; no retouching.`;
 
-const CLOTH_PHYSICS_BLOCK = `CLOTH + BODY PHYSICS (3x): orthotropic stretch with distinct warp/weft response; Poisson ratio 0.25–0.35; surface mass 180–260 g/m². Wet fabric adds 6–12% effective weight and dampens flutter; capillary adhesion from a thin water film (20–80um) increases cling along abdomen/hip. Leg openings show bias stretch and a 2–4mm outward curl with visible edge thickness; bonded edges keep curvature stable. Bending stiffness varies by panel; shear distortion appears where fabric wraps the hip and underbust; compressive buckling appears as shallow micro-folds on the inner waist. Strap bridges indent skin with subtle compression and rebound; strap-skin friction mu_s 0.45–0.60, mu_k 0.35–0.45; seam puckering at stitch lines under tension; microfold wavelengths 8–20mm at waist/hip. Tension gradients flow from strap anchors through neckline stays into the waist seam; no slack bridges. Satin shows anisotropic highlights aligned to weave; matte panels show broader diffuse lobes with lower peak spec.`;
+const CLOTH_PHYSICS_BLOCK = `CLOTH + BODY PHYSICS (3x): orthotropic stretch with distinct warp/weft response; Poisson ratio 0.25-0.35; surface mass 180-260 g/m^2. Wet state adds 6-12% effective mass and dampens flutter; capillary adhesion from a thin film (20-80um) increases cling at abdomen/hip transitions. Leg openings show bias stretch and 2-4mm controlled edge curl with visible thickness. Panel-level bend/shear variation must produce realistic strain localization near underbust, waist, and hip curvature. Strap bridges create subtle compression/rebound and stitch-line puckering; friction regimes remain plausible (mu_s 0.45-0.60, mu_k 0.35-0.45). Maintain continuous anchor-to-seam tension flow, no slack bridges, no impossible fabric buckling.`;
 
-const SCENE_PHYSICS_BLOCK = `ENVIRONMENT PHYSICS (3x): water surface uses multi-scale ripples (small capillary + low-frequency swell); meniscus curls at pool edge; caustics move across stone with wave curvature. Beer-Lambert absorption gives depth tint; shallow areas show brighter cyan with faster caustic motion. Wet deck shows glossy micro-puddles with sharp spec cores and roughness halos; reflections obey Fresnel and distort with ripples. Mist has depth-varying extinction; candle glow produces localized volumetric bloom; droplets on rails/loungers refract tiny highlights.`;
+const SCENE_PHYSICS_BLOCK = `ENVIRONMENT PHYSICS (3x): multi-scale water ripples (capillary + low-frequency swell), visible meniscus at boundaries, and wave-coupled caustics on stone. Beer-Lambert depth tinting: shallows are brighter/cyan with faster caustic drift. Wet deck micro-puddles produce tight spec cores plus roughness halos; reflection distortion tracks local normals and Fresnel gain. Mist/fog extinction varies with depth; warm practicals create localized volumetric bloom; droplets on rails/loungers refract punctual highlights.`;
 
-const OPTICS_BLOCK = `OPTICAL SURFACES: marble = glossy dielectric with sharp reflections; mirrors show slight distortion/ghosting; glass stems show caustic streaks and internal reflection; metal rails show tight specular bands with faint dispersion. IF the concept calls for an underwater or split-level waterline viewpoint: use a realistic underwater housing/port, respect refraction at the port and surface, show Snell's window and total internal reflection outside it, and keep underwater contrast slightly reduced with plausible color shift.`;
+const OPTICS_BLOCK = `OPTICAL SURFACES: marble behaves as glossy dielectric; mirrors show slight distortion and mild ghosting; glass exhibits internal reflection + refractive caustic streaks; metals carry narrow spec bands with controlled dispersion. For underwater/split-level viewpoints, enforce port refraction, Snell's window, total internal reflection outside the window, reduced underwater contrast, and plausible spectral attenuation.`;
 
-const MICROSTRUCTURE_BLOCK = `MATERIAL MICROSTRUCTURE: visible weave frequency, subtle moire; fiber sparkle in satin highlights; sheer inserts show clean edges and soft diffusion.`;
+const MICROSTRUCTURE_BLOCK = `MATERIAL MICROSTRUCTURE: resolve weave frequency, stitch pitch, lace relief depth, and subtle moire at distance. Satin filaments show directional sparkle; inserts maintain clean edge transitions and soft diffusion without aliasing.`;
 
-const CONTACT_PRESSURE_BLOCK = `CONTACT + PRESSURE: micro-occlusion at seams, slight skin displacement at strap anchors, pressure gradients soften toward edges; keep natural micro-shadowing.`;
+const CONTACT_PRESSURE_BLOCK = `CONTACT + PRESSURE: micro-occlusion at seams, realistic skin displacement at strap anchors, gradual pressure falloff toward edges, and anatomically plausible micro-shadowing at all contact points.`;
 
 const SPECTRAL_PHYSICS_BLOCK = `SPECTRAL + POLARIZATION: satin highlights show polarization dimming; thin-film areas show soft interference bands; haze scatters warmer near-field, cooler far-field.`;
 
-const SULTRY_MOOD_BLOCK = `GLAMOUR EDITORIAL MOOD: high-end poolside fashion editorial with confident gaze and natural expression; refined, cinematic, real-world candids (no exaggerated faces).`;
+const SULTRY_MOOD_BLOCK = `GLAMOUR EDITORIAL MOOD: high-end poolside fashion editorial with confident gaze, poised body language, and subtle sensual magnetism while remaining tasteful and non-explicit. Cinematic but documentary-real, with natural expression and zero caricature.`;
 
 const PHYSICS_INNOVATION_BLOCK = `PHYSICS INNOVATION PRIORITY (3x): energy-conserving GGX/Smith microfacet BRDF with correct Fresnel roll-off (IOR 1.38–1.50 for synthetic fibers), anisotropic lobes aligned to weave direction, and multi-scattering compensation (Heitz-style) to avoid energy loss. Multi-layer cloth: diffuse base + sheen lobe + clear-coat micro-gloss; spectral response stable under mixed tungsten/neon. Secondary bounce GI visible in metallic hardware and wet stone; subsurface diffusion in skin and stone is subtle but present. Cloth simulated as mass-spring with realistic bend + shear + in-plane stretch, including contact friction against skin (mu 0.35–0.45) and collision thickness; seam tape acts as stiffened beams with torsion resistance. Preserve micro-occlusion at seams, visible edge thickness at cutouts, and stitch-level shadowing. Water/stone interactions obey Fresnel and micro-roughness maps; caustics remain coherent with wave motion; water IOR 1.333 and surface normal micro-variance are respected.`;
+const SENSUAL_REALISM_BLOCK = `SENSUAL REALISM (TASTEFUL): emphasize confident eye contact, subtle clavicle/shoulder tension, natural breathing cues, damp skin sheen, and believable fabric cling. Keep the tone intimate and elegant, never explicit.`;
+const PHYSICS_FORENSICS_BLOCK = `PHYSICS FORENSICS (MANDATORY): every visible highlight must map to a plausible emitter; shadow families must share direction logic; seam tension must be continuous across panels; wet-vs-dry roughness separation must remain visible; reflections/refractions must respect local geometry and view angle.`;
 const WET_INTERACTION_BLOCK = `WET INTERACTION: thin water film on skin produces tight specular streaks; micro droplets bead on lace filaments and settle in concave weave cells; capillary bridges along cutout edges create darker wet lines; wet-to-dry transitions show a subtle roughness gradient.`;
 
 const MEASURED_CONSTRAINTS_BLOCK = `MEASURED CONSTRAINTS: strap compression 1–3mm; seam puckering 1–2mm; hem curl 2–4mm; cutout edge thickness 0.6–1.2mm; fabric thickness 0.3–0.6mm with lining 0.2–0.4mm; microfold wavelengths 8–20mm; specular roughness 0.08–0.22; negative‑space ratio 45–60% with continuous load paths; bridge span 22–45mm; neckline angle 78–90°.`;
@@ -490,6 +782,12 @@ INVARIANTS:
 ENVIRONMENT: ${SCENE_BASE} ${concept.scene}
 POSE DIRECTIVE (DIFFERENT EACH IMAGE): ${concept.pose}
 ${POSE_PHYSICS_BLOCK}
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+${SENSUAL_REALISM_BLOCK}
 
 ${moodBlock}
 ${invitationBlock}
@@ -534,6 +832,7 @@ ${SKIN_BLOCK}
 ${CLOTH_PHYSICS_BLOCK}
 ${WET_INTERACTION_BLOCK}
 ${CONTACT_PRESSURE_BLOCK}
+${PHYSICS_FORENSICS_BLOCK}
 
 ${PHYSICS_INNOVATION_BLOCK}
 
@@ -548,6 +847,12 @@ INVARIANTS:
 ENVIRONMENT: ${SCENE_BASE} ${concept.scene}
 POSE DIRECTIVE (DIFFERENT EACH IMAGE): ${concept.pose}
 ${POSE_PHYSICS_BLOCK}
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+${SENSUAL_REALISM_BLOCK}
 
 ${moodBlock}
 ${physicsMaxContractBlock}
@@ -588,6 +893,7 @@ ${SKIN_BLOCK}
 ${CLOTH_PHYSICS_BLOCK}
 ${WET_INTERACTION_BLOCK}
 ${CONTACT_PRESSURE_BLOCK}
+${PHYSICS_FORENSICS_BLOCK}
 
 ${SCENE_PHYSICS_BLOCK}
 
@@ -618,6 +924,12 @@ ${physicsMaxContractBlock}
 ${physicsStandardBlock}
 POSE (DIFFERENT EACH IMAGE): ${concept.pose}
 ${POSE_PHYSICS_BLOCK}
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+${SENSUAL_REALISM_BLOCK}
 
 ATTIRE (MANDATORY, LACE SWIMSUIT): ${SAFEST_ATTIRE_BLOCK}
 ${SWIMWEAR_PHYSICS_BLOCK}
@@ -627,7 +939,7 @@ GEOMETRY: ${concept.geometry}
 MATERIAL: ${design.material}
 
 CAMERA/LIGHT: ${CAMERA_BLOCK} ${LIGHT_BLOCK}
-PHYSICS: ${CLOTH_PHYSICS_BLOCK} ${WET_INTERACTION_BLOCK} ${CONTACT_PRESSURE_BLOCK} ${PHYSICS_INNOVATION_BLOCK}
+PHYSICS: ${CLOTH_PHYSICS_BLOCK} ${WET_INTERACTION_BLOCK} ${CONTACT_PRESSURE_BLOCK} ${PHYSICS_FORENSICS_BLOCK} ${PHYSICS_INNOVATION_BLOCK}
 RAW PIPELINE: ${SENSOR_PIPELINE_BLOCK}
 SAFETY: ${SAFETY_BLOCK}
 NO RETOUCHING; RAW LOOK.`;
@@ -663,6 +975,12 @@ ${physicsMaxContractBlock}
 ${physicsStandardBlock}
 POSE (DIFFERENT EACH IMAGE): ${concept.pose}
 ${POSE_PHYSICS_BLOCK}
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+${SENSUAL_REALISM_BLOCK}
 
 ATTIRE (MANDATORY): ${SAFEST_ATTIRE_BLOCK}
 ${SWIMWEAR_PHYSICS_BLOCK}
@@ -687,6 +1005,11 @@ function buildPromptPassASafeEmergency(concept, expression, variation) {
 SCENE: ${SCENE_BASE} ${concept.scene}
 POSE (DIFFERENT EACH IMAGE): ${concept.pose}
 ${POSE_PHYSICS_BLOCK}
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
 
 MOOD: calm, poised, tasteful high-fashion editorial portrait; strictly non-sexual framing.
 ATTIRE (MANDATORY SAFE): conservative couture one-piece swimsuit with fully opaque lining under lace overlay. Neckline stays above sternum, side panels remain closed, full back panel to waist, moderate leg line, no plunge, no transparent zones, no explicit or suggestive styling.
@@ -698,9 +1021,37 @@ MATERIAL: ${design.material}
 CAMERA/LIGHT: ${CAMERA_BLOCK} ${LIGHT_BLOCK}
 RAW PIPELINE: ${SENSOR_PIPELINE_BLOCK}
 IMPERFECTIONS: ${IMPERFECTIONS_BLOCK}
-PHYSICS: ${CLOTH_PHYSICS_BLOCK} ${WET_INTERACTION_BLOCK} ${CONTACT_PRESSURE_BLOCK}
+PHYSICS: ${CLOTH_PHYSICS_BLOCK} ${WET_INTERACTION_BLOCK} ${CONTACT_PRESSURE_BLOCK} ${PHYSICS_FORENSICS_BLOCK}
 ${NO_TOUCH_BLOCK}
 SAFETY: fully covered; no explicit nudity; no see-through; no suggestive framing.`;
+}
+
+function buildPromptPassASafetyRecovery(concept, expression, variation) {
+  const design = variation ? composeDesignSpec(concept, variation, true) : { color: '', brief: '', material: concept.materialFallback };
+  return `Generate an image of this photograph edited into a physically realistic luxury pool fashion editorial image. Subject is an adult woman (21+). Preserve exact identity, face, bone structure, eyes, nose, mouth, and age. Use the reference photo for identity; allow a different full-body pose. Expression: ${expression}. Subject is solo.
+
+SCENE: ${SCENE_BASE} ${concept.scene}
+POSE (DIFFERENT EACH IMAGE): ${concept.pose}
+${POSE_PHYSICS_BLOCK}
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+
+STYLE INTENT: premium couture pool fashion realism with elegant, non-suggestive framing. Prioritize realism, engineering detail, and optical coherence.
+ATTIRE (MANDATORY): coverage-safe couture lace one-piece with opaque lining, stable seams, and plausible support geometry.
+DESIGN: ${design.brief}
+COLOR: ${design.color}
+GEOMETRY: ${concept.geometry}
+MATERIAL: ${design.material}
+
+CAMERA/LIGHT: ${CAMERA_BLOCK} ${LIGHT_BLOCK}
+RAW PIPELINE: ${SENSOR_PIPELINE_BLOCK}
+IMPERFECTIONS: ${IMPERFECTIONS_BLOCK}
+PHYSICS: ${CLOTH_PHYSICS_BLOCK} ${WET_INTERACTION_BLOCK} ${CONTACT_PRESSURE_BLOCK} ${PHYSICS_FORENSICS_BLOCK}
+${NO_TOUCH_BLOCK}
+SAFETY: fully covered, opaque panels, and non-suggestive framing.`;
 }
 
 function buildPromptPassAPhysicsMax(concept, expression, variation, fallback = false) {
@@ -724,6 +1075,12 @@ SCENE: ${SCENE_BASE} ${concept.scene}
 POSE (DIFFERENT EACH IMAGE): ${concept.pose}
 ${POSE_PHYSICS_BLOCK}
 ${PHYSICS_MAX_TONE_BLOCK}
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+${SENSUAL_REALISM_BLOCK}
 
 ${PHYSICS_DRIVER_LOCK_BLOCK}
 ${PHYSICS_CAUSAL_CHAIN_BLOCK}
@@ -750,7 +1107,7 @@ CAMERA: ${PHYSICS_CAMERA_COMPACT_BLOCK}
 LIGHT: ${PHYSICS_LIGHT_COMPACT_BLOCK}
 RAW PIPELINE: ${PHYSICS_SENSOR_COMPACT_BLOCK}
 IMPERFECTIONS: ${IMPERFECTIONS_BLOCK}
-PHYSICS: ${PHYSICS_CLOTH_COMPACT_BLOCK} ${WET_INTERACTION_BLOCK} ${PHYSICS_FLUID_CAL_BLOCK} ${PHYSICS_OPTICS_CAL_BLOCK}
+PHYSICS: ${PHYSICS_CLOTH_COMPACT_BLOCK} ${WET_INTERACTION_BLOCK} ${PHYSICS_FLUID_CAL_BLOCK} ${PHYSICS_OPTICS_CAL_BLOCK} ${PHYSICS_FORENSICS_BLOCK}
 
 ${PHYSICS_CAMERA_EVIDENCE_BLOCK}
 ${PHYSICS_ARTIFACT_EXCLUSION_BLOCK}
@@ -787,6 +1144,12 @@ function buildPromptPassB(concept, expression, variation, fallback = false) {
 
 REFINEMENT LOCKS: do not change pose/framing/lighting; preserve garment geometry + coverage.
 SCENE (LOCKED): ${SCENE_BASE} ${concept.scene}
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+${SENSUAL_REALISM_BLOCK}
 
 ${moodBlock}
 ${invitationBlock}
@@ -830,6 +1193,7 @@ ${SKIN_BLOCK}
 
 ${CLOTH_PHYSICS_BLOCK}
 ${WET_INTERACTION_BLOCK}
+${PHYSICS_FORENSICS_BLOCK}
 
 ${OPTICS_BLOCK}
 
@@ -841,6 +1205,12 @@ ${SAFETY_BLOCK}`;
 
 REFINEMENT LOCKS: do not change pose/framing/lighting; preserve garment geometry + coverage.
 SCENE (LOCKED): ${SCENE_BASE} ${concept.scene}
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+${SENSUAL_REALISM_BLOCK}
 
 ${CREATIVE_ATTIRE_BLOCK}
 ${PHYSICS_ONLY_ATTIRE_BLOCK}
@@ -883,6 +1253,7 @@ ${SKIN_BLOCK}
 
 ${CLOTH_PHYSICS_BLOCK}
 ${WET_INTERACTION_BLOCK}
+${PHYSICS_FORENSICS_BLOCK}
 
 ${SCENE_PHYSICS_BLOCK}
 
@@ -914,6 +1285,12 @@ ${PHYSICS_MAX_TONE_BLOCK}
 ${PHYSICS_DRIVER_LOCK_BLOCK}
 ${PHYSICS_CAUSAL_CHAIN_BLOCK}
 ${PHYSICS_STANDARD_V2_BLOCK}
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+${SENSUAL_REALISM_BLOCK}
 
 ATTIRE (LOCKED GEOMETRY, REFINED MICRO): ${allureBlock}
 ${swimsuitBlock}
@@ -932,11 +1309,4266 @@ ${CONTACT_PRESSURE_BLOCK}
 ${MEASURED_CONSTRAINTS_BLOCK}
 
 OPTICS + FLUID: ${PHYSICS_FLUID_CAL_BLOCK} ${PHYSICS_OPTICS_CAL_BLOCK} ${SCENE_PHYSICS_BLOCK} ${OPTICS_BLOCK}
+PHYSICS FORENSICS: ${PHYSICS_FORENSICS_BLOCK}
 CAMERA EVIDENCE: ${PHYSICS_CAMERA_EVIDENCE_BLOCK}
 NO ARTIFACTS: ${PHYSICS_ARTIFACT_EXCLUSION_BLOCK}
 VALIDATION: ${PHYSICS_VALIDATION_GATE_BLOCK}
 ${NO_TOUCH_BLOCK}
 ${SAFETY_BLOCK}`;
+}
+
+function buildPromptPassBSafetyRecovery(concept, expression, variation) {
+  const design = variation ? composeDesignSpec(concept, variation, true) : { color: '', brief: '', micro: concept.microFallback };
+  return `Generate an image of this photograph edited from the previous pass. Preserve identity, face, pose, framing, scene, camera, and lighting exactly. Refine only garment microstructure and physically causal wet/optical details. Expression remains: ${expression}.
+
+SCENE (LOCKED): ${SCENE_BASE} ${concept.scene}
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+
+STYLE INTENT: premium fashion realism with elegant, non-suggestive framing.
+ATTIRE: coverage-safe couture lace one-piece with opaque support zones and stable seam architecture.
+GEOMETRY (UNCHANGED): ${concept.geometry}
+COLOR (LOCKED): ${design.color}
+MICRO MATERIAL PHYSICS: ${design.micro}
+${MICROSTRUCTURE_BLOCK}
+${CONTACT_PRESSURE_BLOCK}
+
+CAMERA/LIGHT LOCK: ${CAMERA_BLOCK} ${LIGHT_BLOCK}
+RAW PIPELINE: ${SENSOR_PIPELINE_BLOCK}
+IMPERFECTIONS: ${IMPERFECTIONS_BLOCK}
+PHYSICS: ${CLOTH_PHYSICS_BLOCK} ${WET_INTERACTION_BLOCK} ${PHYSICS_FORENSICS_BLOCK}
+${NO_TOUCH_BLOCK}
+SAFETY: fully covered, opaque panels, and non-suggestive framing.`;
+}
+
+function normalizeFrontierProfile(profile) {
+  const key = String(profile || '').toLowerCase().trim();
+  if (key in FRONTIER_PROFILE_NOTES) return key;
+  return 'balanced';
+}
+
+function getFrontierProfiles() {
+  const ordered = FRONTIER_BEAM_ORDER.map(normalizeFrontierProfile);
+  const unique = [...new Set(ordered)];
+  if (HAIL_MARY_MODE) {
+    const idx = unique.indexOf('intimate');
+    if (idx >= 0) unique.splice(idx, 1);
+    unique.unshift('intimate');
+  }
+  if (!unique.includes('balanced')) unique.push('balanced');
+  if (!unique.includes('clean')) unique.push('clean');
+  return unique;
+}
+
+function normalizeApproach(approach, fallback = 'A') {
+  const key = String(approach || fallback).toUpperCase().trim();
+  if (STRATEGY_KEYS.includes(key)) return key;
+  return fallback;
+}
+
+function normalizeLessons(lessons, max = 8) {
+  if (!Array.isArray(lessons)) return [];
+  return [...new Set(
+    lessons
+      .map(x => String(x || '').trim())
+      .filter(Boolean)
+      .map(x => x.replace(/\s+/g, ' '))
+  )].slice(0, max);
+}
+
+function mergeLessonsByPriority(priorityLessons = [], carryLessons = [], max = LESSON_MAX_PER_PROMPT) {
+  const cap = Math.max(1, parseInt(max, 10) || LESSON_MAX_PER_PROMPT);
+  const primary = normalizeLessons(priorityLessons, Math.max(cap * 3, 24));
+  const carry = normalizeLessons(carryLessons, Math.max(cap * 3, 24));
+  const merged = [];
+  for (const lesson of primary) {
+    if (merged.length >= cap) break;
+    if (!merged.includes(lesson)) merged.push(lesson);
+  }
+  for (const lesson of carry) {
+    if (merged.length >= cap) break;
+    if (!merged.includes(lesson)) merged.push(lesson);
+  }
+  return merged;
+}
+
+function formatLessonsForPrompt(lessons) {
+  const base = normalizeLessons(lessons, LESSON_MAX_PER_PROMPT);
+  const hailMaryDirective = HAIL_MARY_MODE
+    ? ['HAIL MARY OBJECTIVE: pursue a breakthrough quality leap in detail/realism while preserving strict identity, pose, and compliance locks.']
+    : [];
+  const list = normalizeLessons([...hailMaryDirective, ...base], LESSON_MAX_PER_PROMPT);
+  if (!list.length) {
+    return '- Maintain strict identity lock, physically causal optics, and compliance-safe framing.';
+  }
+  return list.map((item, idx) => `- P${idx + 1}: ${item}`).join('\n');
+}
+
+function prioritizeProfiles(baseProfiles, preferredProfiles = []) {
+  const base = [...new Set((baseProfiles || []).map(normalizeFrontierProfile))];
+  const preferred = normalizeLessons(
+    (preferredProfiles || []).map(p => normalizeFrontierProfile(p)),
+    8
+  ).filter(p => base.includes(p));
+  const ordered = [...preferred, ...base.filter(p => !preferred.includes(p))];
+  if (!ordered.includes('balanced')) ordered.push('balanced');
+  if (!ordered.includes('clean')) ordered.push('clean');
+  return [...new Set(ordered)];
+}
+
+function buildApproachProfileOrder(approach, records) {
+  const approachKey = normalizeApproach(approach, 'A');
+  const baseProfiles = getFrontierProfiles();
+  const profileScores = new Map(baseProfiles.map(p => [p, 0]));
+  const failurePenalties = new Map(baseProfiles.map(p => [p, 0]));
+  const recent = (records || []).slice(Math.max(0, (records || []).length - PROFILE_HISTORY_WINDOW));
+  const total = Math.max(1, recent.length);
+
+  for (let i = 0; i < recent.length; i++) {
+    const rec = recent[i];
+    const recency = 1 + ((i + 1) / total);
+    const strat = rec?.strategies?.[approachKey];
+    const profile = normalizeFrontierProfile(strat?.passA_profile || '');
+    if (!profileScores.has(profile)) continue;
+    const overall = Number(strat?.score?.overall);
+    const quality = Number.isFinite(overall) ? (overall / 10) : 0.4;
+    const winBoost = normalizeApproach(rec?.winner?.approach, 'A') === approachKey ? 1.25 : 0;
+    const next = (profileScores.get(profile) || 0) + ((1 + quality + winBoost) * recency);
+    profileScores.set(profile, next);
+
+    const passAAttempts = Array.isArray(strat?.attempts?.passA) ? strat.attempts.passA : [];
+    for (const attempt of passAAttempts) {
+      const attemptProfile = normalizeFrontierProfile(attempt?.profile || profile);
+      if (!failurePenalties.has(attemptProfile)) continue;
+      const status = String(attempt?.status || '').toLowerCase();
+      if (status === 'no_image' || status === 'request_error') {
+        const penalty = (status === 'request_error' ? 0.85 : 0.65) * recency;
+        failurePenalties.set(attemptProfile, (failurePenalties.get(attemptProfile) || 0) + penalty);
+      }
+    }
+  }
+
+  const ordered = [...baseProfiles].sort((a, b) => {
+    const scoreA = (profileScores.get(a) || 0) - (failurePenalties.get(a) || 0);
+    const scoreB = (profileScores.get(b) || 0) - (failurePenalties.get(b) || 0);
+    return scoreB - scoreA;
+  });
+  return prioritizeProfiles(ordered);
+}
+
+function buildPromptPassAFrontier(concept, expression, variation, profile, approach = 'A', lessons = []) {
+  const key = normalizeFrontierProfile(profile);
+  const conservative = key === 'clean';
+  const approachKey = normalizeApproach(approach, 'A');
+  const design = variation ? composeDesignSpec(concept, variation, conservative) : { color: '', brief: '', material: conservative ? concept.materialFallback : concept.material };
+  const tone = FRONTIER_PROFILE_NOTES[key];
+  const lessonBlock = formatLessonsForPrompt(lessons);
+  if (approachKey === 'B') {
+    const directionTone = key === 'intimate'
+      ? 'intimate high-fashion confidence without explicit framing'
+      : (key === 'balanced'
+        ? 'cinematic restrained luxury with strong realism'
+        : 'strictly elegant and compliance-forward editorial framing');
+    return `Generate an image of this photograph edited into a premium luxury pool fashion photograph. Subject is an adult woman (21+). Preserve exact identity and age from the reference. Expression: ${expression}. Subject is solo.
+
+APPROACH B (DIRECTORIAL + FAILURE-TESTED):
+Create one decisive frame that feels captured, not rendered. Use a photo-director brief followed by a realism QA checklist.
+
+DIRECTOR BRIEF:
+- Visual target: ${directionTone}
+- Scene anchor: ${SCENE_BASE} ${concept.scene}
+- Pose target (different per image): ${concept.pose}
+- Wardrobe target: couture lace one-piece with engineered support and opaque coverage-safe zones
+- Colorway and design DNA: ${design.color} ${design.brief}
+
+SHOT GRAMMAR:
+1) Establish architecture + time-of-day and lock horizon lines.
+2) Place subject with believable weight transfer and contact pressure.
+3) Resolve wardrobe silhouette and support geometry from macro to micro.
+4) Resolve wet optics (film, droplets, rivulets, caustics) under causal lighting.
+5) Finish with sensor-level realism and restrained grading.
+
+IDENTITY + ANATOMY LOCK:
+${IDENTITY_LOCK_BLOCK}
+${POSE_PHYSICS_BLOCK}
+${NO_TOUCH_BLOCK}
+
+WARDROBE ENGINEERING:
+GEOMETRY: ${concept.geometry}
+MATERIAL: ${design.material}
+${SWIMWEAR_PHYSICS_BLOCK}
+${CONTACT_PRESSURE_BLOCK}
+
+LIGHT/CAMERA PIPELINE:
+${LIGHT_BLOCK}
+${CAMERA_BLOCK}
+${SENSOR_PIPELINE_BLOCK}
+
+REALISM QA (PASS ALL):
+${SEMANTIC_NEGATIVE_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${PHYSICS_FORENSICS_BLOCK}
+${WET_INTERACTION_BLOCK}
+
+LESSON DIRECTIVES:
+${lessonBlock}
+
+COMPLIANCE:
+Fully covered, opaque support zones, non-explicit framing, tasteful editorial tone.
+${ELITE_EDITORIAL_BLOCK}`;
+  }
+
+  if (approachKey === 'C') {
+    return `Generate an image of this photograph edited into a premium luxury pool fashion photograph. Subject is an adult woman (21+). Preserve exact identity and age from the reference. Expression: ${expression}. Subject is solo.
+
+APPROACH C (A/B LESSON-FUSION):
+Combine A's physics rigor with B's directorial decisiveness. Produce one image that increases joint quality for identity, garment physics, optics, and realism while preserving compliance.
+
+TARGET QUALITY LIFT:
+- Aim for a substantial quality gain versus the best A/B attempt for this concept.
+- Do not trade compliance for detail.
+
+LESSON DIRECTIVES (APPLY ALL):
+${lessonBlock}
+
+FUSION EXECUTION ORDER:
+1) Lock geometry, framing, and identity before style.
+2) Borrow strongest macro composition logic from the better A/B result.
+3) Borrow strongest microphysics (seam tension, wet response, optical coherence) from the other result.
+4) Resolve conflicts in favor of realism + compliance.
+
+SCENE: ${SCENE_BASE} ${concept.scene}
+POSE (DIFFERENT EACH IMAGE): ${concept.pose}
+${POSE_PHYSICS_BLOCK}
+
+TONE: ${tone}
+DESIGN: ${design.brief}
+COLOR: ${design.color}
+GEOMETRY: ${concept.geometry}
+MATERIAL: ${design.material}
+${SWIMWEAR_PHYSICS_BLOCK}
+${CONTACT_PRESSURE_BLOCK}
+${MICROSTRUCTURE_BLOCK}
+
+CAMERA: ${CAMERA_BLOCK}
+LIGHT: ${LIGHT_BLOCK}
+RAW PIPELINE: ${SENSOR_PIPELINE_BLOCK}
+PHYSICS: ${CLOTH_PHYSICS_BLOCK} ${WET_INTERACTION_BLOCK} ${PHYSICS_FORENSICS_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+${NO_TOUCH_BLOCK}
+SAFETY: fully covered, opaque support zones, non-explicit framing.
+${ELITE_EDITORIAL_BLOCK}`;
+  }
+
+  const styling = key === 'intimate'
+    ? 'elegant sensual confidence with non-explicit editorial framing'
+    : (key === 'balanced'
+      ? 'confident cinematic fashion posture with controlled glam energy'
+      : 'strictly elegant, restrained, and compliance-robust fashion framing');
+  const attireIntent = conservative
+    ? 'coverage-safe couture lace one-piece with opaque lining, stabilized seams, and restrained aperture geometry'
+    : 'architectural couture lace one-piece with engineered plunge/cutouts, stable load paths, and opaque support zones';
+  return `Generate an image of this photograph edited into a premium luxury pool fashion photograph. Subject is an adult woman (21+). Preserve exact identity and age from the reference. Expression: ${expression}. Subject is solo.
+
+APPROACH A (PHYSICS-FIRST SPEC):
+
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+
+SCENE: ${SCENE_BASE} ${concept.scene}
+POSE (DIFFERENT EACH IMAGE): ${concept.pose}
+${POSE_PHYSICS_BLOCK}
+
+TONE: ${tone}
+STYLING: ${styling}
+ATTIRE INTENT: ${attireIntent}
+DESIGN: ${design.brief}
+COLOR: ${design.color}
+GEOMETRY: ${concept.geometry}
+MATERIAL: ${design.material}
+${SWIMWEAR_PHYSICS_BLOCK}
+
+CAMERA: ${CAMERA_BLOCK}
+LIGHT: ${LIGHT_BLOCK}
+RAW PIPELINE: ${SENSOR_PIPELINE_BLOCK}
+PHYSICS: ${CLOTH_PHYSICS_BLOCK} ${WET_INTERACTION_BLOCK} ${CONTACT_PRESSURE_BLOCK} ${PHYSICS_FORENSICS_BLOCK}
+LESSON DIRECTIVES:
+${lessonBlock}
+${NO_TOUCH_BLOCK}
+SAFETY: fully covered, opaque support zones, non-explicit framing.
+${ELITE_EDITORIAL_BLOCK}`;
+}
+
+function buildPromptPassBFrontier(concept, expression, variation, profile, approach = 'A', lessons = []) {
+  const key = normalizeFrontierProfile(profile);
+  const approachKey = normalizeApproach(approach, 'A');
+  const design = variation ? composeDesignSpec(concept, variation, key === 'clean') : { color: '', brief: '', micro: concept.microFallback };
+  const tone = FRONTIER_PROFILE_NOTES[key];
+  const lessonBlock = formatLessonsForPrompt(lessons);
+  if (approachKey === 'B') {
+    return `Generate an image of this photograph edited from the previous pass. Preserve identity, face, pose, framing, scene, camera, and lighting. Refine only microstructure and physical realism while keeping the same expression: ${expression}.
+
+APPROACH B REFINEMENT (MICRO-EDITORIAL QA):
+Treat this as a controlled finishing pass that preserves all macro decisions and only improves micro-believability.
+
+LOCKS:
+- Identity, pose, framing, scene, and light are immutable.
+- Tone remains: ${tone}
+- Geometry remains: ${concept.geometry}
+- Colorway remains: ${design.color}
+
+MICRO FINISH TARGETS:
+${MICROSTRUCTURE_BLOCK}
+${CONTACT_PRESSURE_BLOCK}
+${SWIMWEAR_PHYSICS_BLOCK}
+${WET_INTERACTION_BLOCK}
+
+OPTICAL + SENSOR CONSISTENCY:
+${LIGHT_BLOCK}
+${CAMERA_BLOCK}
+${SENSOR_PIPELINE_BLOCK}
+
+FAILURE CHECKLIST:
+${SEMANTIC_NEGATIVE_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${PHYSICS_FORENSICS_BLOCK}
+
+LESSON DIRECTIVES:
+${lessonBlock}
+${NO_TOUCH_BLOCK}
+
+COMPLIANCE:
+Fully covered, opaque support zones, non-explicit framing.
+${ELITE_EDITORIAL_BLOCK}`;
+  }
+
+  if (approachKey === 'C') {
+    return `Generate an image of this photograph edited from the previous pass. Preserve identity, face, pose, framing, scene, camera, and lighting. Refine only microstructure and physically causal realism while keeping expression fixed: ${expression}.
+
+APPROACH C REFINEMENT (LESSON-FUSION QA):
+This pass exists to fuse the strongest A/B details into one coherent result without drift.
+
+LOCKS:
+- Identity, pose, framing, scene, and light are immutable.
+- Geometry and color remain locked.
+- Tone remains: ${tone}
+
+LESSON DIRECTIVES (HIGHEST PRIORITY):
+${lessonBlock}
+
+MICRO FINISH TARGETS:
+${MICROSTRUCTURE_BLOCK}
+${CONTACT_PRESSURE_BLOCK}
+${SWIMWEAR_PHYSICS_BLOCK}
+${WET_INTERACTION_BLOCK}
+
+OPTICAL + SENSOR CONSISTENCY:
+${LIGHT_BLOCK}
+${CAMERA_BLOCK}
+${SENSOR_PIPELINE_BLOCK}
+
+FAILURE CHECKLIST:
+${SEMANTIC_NEGATIVE_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${PHYSICS_FORENSICS_BLOCK}
+${NO_TOUCH_BLOCK}
+
+COMPLIANCE:
+Fully covered, opaque support zones, non-explicit framing.
+${ELITE_EDITORIAL_BLOCK}`;
+  }
+
+  return `Generate an image of this photograph edited from the previous pass. Preserve identity, face, pose, framing, scene, camera, and lighting. Refine only microstructure and physical realism while keeping the same expression: ${expression}.
+
+APPROACH A REFINEMENT (PHYSICS-FIRST SPEC):
+
+${IMAGE_INTENT_BLOCK}
+${IDENTITY_LOCK_BLOCK}
+${STEPWISE_SCENE_BUILD_BLOCK}
+${REFINEMENT_ORDER_BLOCK}
+${SEMANTIC_NEGATIVE_BLOCK}
+
+SCENE (LOCKED): ${SCENE_BASE} ${concept.scene}
+TONE (LOCKED): ${tone}
+GEOMETRY (UNCHANGED): ${concept.geometry}
+COLOR (LOCKED): ${design.color}
+MICRO MATERIAL PHYSICS: ${design.micro}
+${MICROSTRUCTURE_BLOCK}
+${CONTACT_PRESSURE_BLOCK}
+${SWIMWEAR_PHYSICS_BLOCK}
+
+CAMERA/LIGHT LOCK: ${CAMERA_BLOCK} ${LIGHT_BLOCK}
+RAW PIPELINE: ${SENSOR_PIPELINE_BLOCK}
+PHYSICS FORENSICS: ${PHYSICS_FORENSICS_BLOCK}
+LESSON DIRECTIVES:
+${lessonBlock}
+${NO_TOUCH_BLOCK}
+SAFETY: fully covered, opaque support zones, non-explicit framing.
+${ELITE_EDITORIAL_BLOCK}`;
+}
+
+function buildPromptPassBPhase2Boundary(concept, expression, variation, profile, approach = 'A', lessons = [], options = {}) {
+  const approachKey = normalizeApproach(approach, 'A');
+  const intensity = Math.max(1.0, Number(options?.intensity) || AB_PHASE2_INTENSITY);
+  const tactic = String(options?.tactic || '').trim();
+  const basePrompt = buildPromptPassBFrontier(concept, expression, variation, profile, approachKey, lessons);
+  const modeLine = approachKey === 'A'
+    ? 'Phase-2 mode: physics-edge amplification with strict geometry lock.'
+    : (approachKey === 'B'
+      ? 'Phase-2 mode: directorial-edge amplification with strict realism/compliance lock.'
+      : 'Phase-2 mode: fusion-edge amplification to surpass best A/B while preserving hard identity/compliance locks.');
+  return `${basePrompt}
+
+PHASE-2 AGGRESSIVE BOUNDARY ATTEMPT:
+${modeLine}
+- Increase only micro-detail intensity by ~${Math.round((intensity - 1) * 100)}% versus the current image.
+- Allowed gains: seam/load-path readability, lace filament separation, edge fidelity, droplet morphology, caustic consistency.
+- Forbidden changes: pose, framing, identity geometry, coverage, exposure balance, scene layout.
+- If constraints cannot be preserved exactly, keep the current image characteristics unchanged.
+- Quality bar: Pulitzer-grade editorial photography standards in composition, lighting intent, and optical realism.
+${tactic ? `- Variant tactic: ${tactic}` : ''}
+`;
+}
+
+function parseFirstJsonObject(text) {
+  const src = String(text || '');
+  const start = src.indexOf('{');
+  const end = src.lastIndexOf('}');
+  if (start < 0 || end <= start) return null;
+  try {
+    return JSON.parse(src.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
+
+async function loadAuditRecords() {
+  try {
+    const txt = await fs.readFile(AB_AUDIT_FILE, 'utf8');
+    return txt
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map(line => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+async function loadAuditSummary() {
+  try {
+    const txt = await fs.readFile(AB_SUMMARY_FILE, 'utf8');
+    const parsed = JSON.parse(txt);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+async function loadLearningAuditRecords() {
+  try {
+    const txt = await fs.readFile(LEARNING_AUDIT_FILE, 'utf8');
+    return txt
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map(line => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function buildLearningAuditRecord(auditRecord) {
+  const winner = normalizeApproach(auditRecord?.winner?.approach, 'A');
+  const strategies = auditRecord?.strategies || {};
+  const scoreA = strategies?.A?.score;
+  const scoreB = strategies?.B?.score;
+  const scoreC = strategies?.C?.score;
+  const baselineA = strategies?.A?.baseline_score;
+  const baselineB = strategies?.B?.baseline_score;
+  const baselineC = strategies?.C?.baseline_score;
+  const winnerScore = strategies?.[winner]?.score;
+
+  const metricKeys = Object.keys(METRIC_GAP_DIRECTIVES);
+  const weakest = metricKeys
+    .map(key => ({ key, value: metricValue(winnerScore, key) }))
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 3);
+  const photographerWeak = [
+    { key: 'composition_score', label: 'composition' },
+    { key: 'lighting_intent_score', label: 'lighting_intent' },
+    { key: 'editorial_consistency_score', label: 'editorial_consistency' },
+  ]
+    .map(item => ({ ...item, value: metricValue(winnerScore, item.key) }))
+    .sort((a, b) => a.value - b.value);
+  const deltaA = (Number(scoreA?.overall) || 0) - (Number(baselineA?.overall) || 0);
+  const deltaB = (Number(scoreB?.overall) || 0) - (Number(baselineB?.overall) || 0);
+  const deltaC = (Number(scoreC?.overall) || 0) - (Number(baselineC?.overall) || 0);
+  const cDelta = Number(auditRecord?.comparisons?.c_vs_best_ab) || 0;
+  const phaseMultipliers = auditRecord?.comparisons?.phase_multipliers || {};
+  const phaseTargets = phaseMultipliers?.targets || {};
+  const phaseHits = phaseMultipliers?.target_hits || {};
+  const process = auditRecord?.process || {};
+  const variationControl = auditRecord?.deep_audit?.variation_control || {};
+  const auditQuality = auditRecord?.audit_quality || {};
+  const auditConfidence = Number(auditQuality?.confidence) || 0;
+  const auditRiskFlags = normalizeLessons(auditQuality?.risk_flags || [], 12);
+  const summarizePhase2 = rounds => {
+    const list = Array.isArray(rounds) ? rounds : [];
+    return {
+      total: list.length,
+      accepted: list.filter(r => r?.accepted === true).length,
+      rejected: list.filter(r => r?.accepted === false).length,
+      request_errors: list.filter(r => r?.status === 'request_error').length,
+      no_image: list.filter(r => r?.status === 'no_image' || r?.status === 'no_viable_variant').length,
+    };
+  };
+  const phase2Stats = {
+    A: summarizePhase2(strategies?.A?.attempts?.phase2),
+    B: summarizePhase2(strategies?.B?.attempts?.phase2),
+    C: summarizePhase2(strategies?.C?.attempts?.phase2),
+    final_winner_boost: summarizePhase2(auditRecord?.deep_audit?.final_audit_boost?.rounds),
+  };
+  const phase2Total = phase2Stats.A.total + phase2Stats.B.total + phase2Stats.C.total + phase2Stats.final_winner_boost.total;
+  const phase2Rejected = phase2Stats.A.rejected + phase2Stats.B.rejected + phase2Stats.C.rejected + phase2Stats.final_winner_boost.rejected;
+  const phase2RequestErrors = phase2Stats.A.request_errors + phase2Stats.B.request_errors + phase2Stats.C.request_errors + phase2Stats.final_winner_boost.request_errors;
+  const phase2NoImage = phase2Stats.A.no_image + phase2Stats.B.no_image + phase2Stats.C.no_image + phase2Stats.final_winner_boost.no_image;
+  const phase2RejectRate = phase2Total > 0 ? (phase2Rejected / phase2Total) : 0;
+  const phase2FailureRate = phase2Total > 0 ? ((phase2RequestErrors + phase2NoImage) / phase2Total) : 0;
+  const recommendedActions = normalizeLessons([
+    ...weakest.map(m => `Next round (${winner}) ${m.key}: ${METRIC_GAP_DIRECTIVES[m.key]}`),
+    ...(auditRecord?.lessons?.deep_audit || []).slice(0, 3),
+    ...(auditRecord?.hints || []).slice(0, 3),
+    ...(cDelta < 0.2 ? ['Increase C fusion specificity: fewer but harder priority directives tied to weakest winner metrics.'] : []),
+    ...(deltaC < 0.06 ? ['Increase C self-iteration depth and phase-2 fusion tactics to lift C beyond best A/B.'] : []),
+    ...((deltaA < 0.08 || deltaB < 0.08) ? ['Increase boundary search depth (more phase2 variants or rounds) for A/B.'] : []),
+    ...(phase2RejectRate > 0.5 ? ['Phase-2 rejection rate is high; bias candidate selection toward viability-safe variants before escalation.'] : []),
+    ...(phase2FailureRate > 0.25 ? ['Phase-2 no-image/request-error rate is high; reduce intensity step and stabilize prompts before adding rounds.'] : []),
+    ...(variationControl?.a_equals_b === false ? ['Lock A/B to identical variation inputs; remove confounds before comparing strategy performance.'] : []),
+    ...(variationControl?.c_equals_ab === false ? ['Lock C variation to A/B when measuring fusion lift against best A/B baseline.'] : []),
+    ...(phaseHits?.initial === false ? [`Initial phase multiplier missed target (${(Number(phaseTargets?.initial) || INITIAL_QUALITY_TARGET_MULTIPLIER).toFixed(2)}x); strengthen pass A/B candidate quality floor.`] : []),
+    ...(phaseHits?.revised === false ? [`Revised phase multiplier missed target (${(Number(phaseTargets?.revised) || REVISED_QUALITY_TARGET_MULTIPLIER).toFixed(2)}x); increase A/B iterative boundary depth.`] : []),
+    ...(phaseHits?.final === false ? [`Final phase multiplier missed target (${(Number(phaseTargets?.final) || FINAL_QUALITY_TARGET_MULTIPLIER).toFixed(2)}x); increase final audit boost rounds and C optimization pressure.`] : []),
+    ...(photographerWeak[0]?.value < 9.4 ? [`Photographer bar (${photographerWeak[0].label}) below elite threshold; enforce stronger editorial art-direction consistency.`] : []),
+    ...(photographerWeak[1]?.value < 9.4 ? [`Photographer bar (${photographerWeak[1].label}) below elite threshold; tighten lighting intent and source hierarchy.`] : []),
+    ...(auditConfidence < 0.55 ? ['Audit confidence is low; reduce exploratory variance and prioritize deterministic gain directives.'] : []),
+    ...(auditRiskFlags.includes('winner_margin_tight') ? ['Winner margin is tight; run extra tie-break rounds with stricter identity/compliance guardrails.'] : []),
+    ...(auditRiskFlags.includes('phase2_failure_rate_high') ? ['Phase-2 failures are high; reduce intensity step and use simpler, higher-viability prompt deltas.'] : []),
+    ...(auditRiskFlags.includes('identity_below_guardrail') ? ['Identity guardrail risk detected; bias all next-round actions toward landmark-lock and asymmetry preservation.'] : []),
+    ...(auditRiskFlags.includes('compliance_below_guardrail') ? ['Compliance guardrail risk detected; tighten wording and remove ambiguous directorial intensity language.'] : []),
+  ], 10);
+
+  return {
+    timestamp: new Date().toISOString(),
+    concept: auditRecord?.concept,
+    process,
+    winner: {
+      approach: winner,
+      score: Number(winnerScore?.overall) || 0,
+    },
+    performance: {
+      baseline: {
+        A: Number(baselineA?.overall) || 0,
+        B: Number(baselineB?.overall) || 0,
+        C: Number(baselineC?.overall) || 0,
+      },
+      final: {
+        A: Number(scoreA?.overall) || 0,
+        B: Number(scoreB?.overall) || 0,
+        C: Number(scoreC?.overall) || 0,
+      },
+      deltas: {
+        A: deltaA,
+        B: deltaB,
+        C: deltaC,
+        C_vs_best_ab: cDelta,
+      },
+    },
+    phase2_stats: phase2Stats,
+    variation_control: variationControl,
+    audit_quality: {
+      confidence: auditConfidence,
+      winner_margin: Number(auditQuality?.winner_margin) || 0,
+      score_spread: Number(auditQuality?.score_spread) || 0,
+      risk_flags: auditRiskFlags,
+      phase2: {
+        total: Number(auditQuality?.phase2?.total) || 0,
+        accepted_rate: Number(auditQuality?.phase2?.accepted_rate) || 0,
+        failure_rate: Number(auditQuality?.phase2?.failure_rate) || 0,
+      },
+    },
+    photographer_metrics: {
+      composition_score: metricValue(winnerScore, 'composition_score'),
+      lighting_intent_score: metricValue(winnerScore, 'lighting_intent_score'),
+      editorial_consistency_score: metricValue(winnerScore, 'editorial_consistency_score'),
+    },
+    phase_multipliers: {
+      initial_from_seed: Number(phaseMultipliers?.initial_from_seed) || 0,
+      revised_from_initial: Number(phaseMultipliers?.revised_from_initial) || 0,
+      final_from_revised: Number(phaseMultipliers?.final_from_revised) || 0,
+      final_c_from_revised: Number(phaseMultipliers?.final_c_from_revised) || 0,
+      targets: {
+        initial: Number(phaseTargets?.initial) || INITIAL_QUALITY_TARGET_MULTIPLIER,
+        revised: Number(phaseTargets?.revised) || REVISED_QUALITY_TARGET_MULTIPLIER,
+        final: Number(phaseTargets?.final) || FINAL_QUALITY_TARGET_MULTIPLIER,
+      },
+      target_hits: {
+        initial: phaseHits?.initial === true,
+        revised: phaseHits?.revised === true,
+        final: phaseHits?.final === true,
+      },
+    },
+    weak_metrics: weakest.map(m => ({ metric: m.key, score: m.value })),
+    recommended_actions: recommendedActions,
+  };
+}
+
+function normalizeLearningPlan(records) {
+  const plan = {
+    rounds: records.length,
+    groundbreaking_mode_seen: false,
+    avg_deltas: { A: 0, B: 0, C: 0, C_vs_best_ab: 0 },
+    avg_winner_score: 0,
+    audit_quality: {
+      avg_confidence: 0,
+      risk_flags: {},
+    },
+    variation_control: {
+      ab_locked_count: 0,
+      c_locked_count: 0,
+      ab_locked_rate: 0,
+      c_locked_rate: 0,
+    },
+    phase2: {
+      total: 0,
+      accepted: 0,
+      rejected: 0,
+      request_errors: 0,
+      no_image: 0,
+      accepted_rate: 0,
+      rejected_rate: 0,
+      failure_rate: 0,
+    },
+    phase_multipliers: {
+      avg: {
+        initial_from_seed: 0,
+        revised_from_initial: 0,
+        final_from_revised: 0,
+        final_c_from_revised: 0,
+      },
+      hit_rates: {
+        initial: 0,
+        revised: 0,
+        final: 0,
+      },
+      targets: {
+        initial: INITIAL_QUALITY_TARGET_MULTIPLIER,
+        revised: REVISED_QUALITY_TARGET_MULTIPLIER,
+        final: FINAL_QUALITY_TARGET_MULTIPLIER,
+      },
+    },
+    top_actions: [],
+    avoid_actions: [],
+    next_round_objectives: [],
+    recommended_config: {},
+  };
+  if (!records.length) return plan;
+
+  let sumDeltaA = 0;
+  let sumDeltaB = 0;
+  let sumDeltaCSelf = 0;
+  let sumDeltaC = 0;
+  let sumWinnerScore = 0;
+  let sumMultInitial = 0;
+  let sumMultRevised = 0;
+  let sumMultFinal = 0;
+  let sumMultFinalC = 0;
+  let hitInitial = 0;
+  let hitRevised = 0;
+  let hitFinal = 0;
+  let sumConfidence = 0;
+  const riskFlagCounts = new Map();
+  const actionStats = new Map();
+  const bumpAction = (action, { weight = 1, avoid = false } = {}) => {
+    const key = String(action || '').trim();
+    if (!key) return;
+    const current = actionStats.get(key) || {
+      action: key,
+      count: 0,
+      weighted_score: 0,
+      avoid_score: 0,
+    };
+    current.count += 1;
+    current.weighted_score += Number(weight) || 0;
+    if (avoid) current.avoid_score += Math.abs(Number(weight) || 0);
+    actionStats.set(key, current);
+  };
+  for (const rec of records) {
+    const deltaA = Number(rec?.performance?.deltas?.A) || 0;
+    const deltaB = Number(rec?.performance?.deltas?.B) || 0;
+    const deltaCSelf = Number(rec?.performance?.deltas?.C) || 0;
+    const deltaC = Number(rec?.performance?.deltas?.C_vs_best_ab) || 0;
+    const winnerScore = Number(rec?.winner?.score) || 0;
+    const auditConfidence = Number(rec?.audit_quality?.confidence);
+    const confidence = Number.isFinite(auditConfidence) ? auditConfidence : 0.5;
+    const riskFlags = normalizeLessons(rec?.audit_quality?.risk_flags || [], 12);
+
+    sumDeltaA += deltaA;
+    sumDeltaB += deltaB;
+    sumDeltaCSelf += deltaCSelf;
+    sumDeltaC += deltaC;
+    sumWinnerScore += winnerScore;
+    sumConfidence += confidence;
+    for (const flag of riskFlags) {
+      riskFlagCounts.set(flag, (riskFlagCounts.get(flag) || 0) + 1);
+    }
+
+    const mult = rec?.phase_multipliers || {};
+    sumMultInitial += Number(mult?.initial_from_seed) || 0;
+    sumMultRevised += Number(mult?.revised_from_initial) || 0;
+    sumMultFinal += Number(mult?.final_from_revised) || 0;
+    sumMultFinalC += Number(mult?.final_c_from_revised) || 0;
+    if (mult?.target_hits?.initial === true) hitInitial += 1;
+    if (mult?.target_hits?.revised === true) hitRevised += 1;
+    if (mult?.target_hits?.final === true) hitFinal += 1;
+    if (rec?.process?.groundbreaking_mode) plan.groundbreaking_mode_seen = true;
+
+    let recPhase2Total = 0;
+    let recPhase2Accepted = 0;
+    let recPhase2Failures = 0;
+    for (const key of ['A', 'B', 'C', 'final_winner_boost']) {
+      const stats = rec?.phase2_stats?.[key];
+      plan.phase2.total += Number(stats?.total) || 0;
+      plan.phase2.accepted += Number(stats?.accepted) || 0;
+      plan.phase2.rejected += Number(stats?.rejected) || 0;
+      plan.phase2.request_errors += Number(stats?.request_errors) || 0;
+      plan.phase2.no_image += Number(stats?.no_image) || 0;
+      recPhase2Total += Number(stats?.total) || 0;
+      recPhase2Accepted += Number(stats?.accepted) || 0;
+      recPhase2Failures += (Number(stats?.request_errors) || 0) + (Number(stats?.no_image) || 0);
+    }
+    if (rec?.variation_control?.a_equals_b === true) plan.variation_control.ab_locked_count += 1;
+    if (rec?.variation_control?.c_equals_ab === true) plan.variation_control.c_locked_count += 1;
+
+    const recPhase2FailureRate = recPhase2Total > 0 ? (recPhase2Failures / recPhase2Total) : 0;
+    const outcomeWeight = Math.max(
+      0.2,
+      1
+      + (0.75 * deltaC)
+      + (0.20 * Math.max(deltaA, deltaB, deltaCSelf))
+      + (0.30 * (winnerScore - 9.0))
+      + (0.55 * (confidence - 0.5))
+      - (0.60 * recPhase2FailureRate)
+    );
+    const poorOutcome = (
+      deltaC < 0.05
+      || confidence < 0.45
+      || recPhase2FailureRate > 0.35
+      || riskFlags.includes('phase2_failure_rate_high')
+    );
+    for (const action of normalizeLessons(rec?.recommended_actions || [], 20)) {
+      bumpAction(action, { weight: outcomeWeight, avoid: false });
+      if (poorOutcome) {
+        bumpAction(action, { weight: 0.8 + recPhase2FailureRate, avoid: true });
+      }
+    }
+  }
+
+  const n = records.length;
+  plan.avg_deltas.A = sumDeltaA / n;
+  plan.avg_deltas.B = sumDeltaB / n;
+  plan.avg_deltas.C = sumDeltaCSelf / n;
+  plan.avg_deltas.C_vs_best_ab = sumDeltaC / n;
+  plan.avg_winner_score = sumWinnerScore / n;
+  plan.phase_multipliers.avg.initial_from_seed = sumMultInitial / n;
+  plan.phase_multipliers.avg.revised_from_initial = sumMultRevised / n;
+  plan.phase_multipliers.avg.final_from_revised = sumMultFinal / n;
+  plan.phase_multipliers.avg.final_c_from_revised = sumMultFinalC / n;
+  plan.phase_multipliers.hit_rates.initial = hitInitial / n;
+  plan.phase_multipliers.hit_rates.revised = hitRevised / n;
+  plan.phase_multipliers.hit_rates.final = hitFinal / n;
+  plan.audit_quality.avg_confidence = sumConfidence / n;
+  plan.audit_quality.risk_flags = Object.fromEntries(
+    [...riskFlagCounts.entries()].sort((a, b) => b[1] - a[1])
+  );
+  plan.variation_control.ab_locked_rate = plan.variation_control.ab_locked_count / n;
+  plan.variation_control.c_locked_rate = plan.variation_control.c_locked_count / n;
+  if (plan.phase2.total > 0) {
+    plan.phase2.accepted_rate = plan.phase2.accepted / plan.phase2.total;
+    plan.phase2.rejected_rate = plan.phase2.rejected / plan.phase2.total;
+    plan.phase2.failure_rate = (plan.phase2.request_errors + plan.phase2.no_image) / plan.phase2.total;
+  }
+  const actionRanked = [...actionStats.values()];
+  plan.top_actions = actionRanked
+    .sort((a, b) => {
+      const aScore = (a.weighted_score - (a.avoid_score * 0.5));
+      const bScore = (b.weighted_score - (b.avoid_score * 0.5));
+      if (bScore !== aScore) return bScore - aScore;
+      return b.count - a.count;
+    })
+    .slice(0, 8)
+    .map(item => ({
+      action: item.action,
+      count: item.count,
+      weighted_score: item.weighted_score,
+      avoid_score: item.avoid_score,
+    }));
+  plan.avoid_actions = actionRanked
+    .filter(item => item.avoid_score >= 1.0)
+    .sort((a, b) => b.avoid_score - a.avoid_score)
+    .slice(0, 6)
+    .map(item => ({
+      action: item.action,
+      count: item.count,
+      weighted_score: item.weighted_score,
+      avoid_score: item.avoid_score,
+    }));
+  plan.next_round_objectives = [
+    ...plan.top_actions
+      .filter(item => item.avoid_score < (item.weighted_score * 0.8))
+      .slice(0, 3)
+      .map(item => item.action),
+    ...(plan.avoid_actions.length > 0
+      ? [`Avoid repeating low-yield directives: ${plan.avoid_actions[0].action}`]
+      : []),
+  ].slice(0, 4);
+
+  const cNeedsHelp = plan.avg_deltas.C_vs_best_ab < 0.2;
+  const abNeedsHelp = plan.avg_deltas.A < 0.08 || plan.avg_deltas.B < 0.08;
+  const cSelfNeedsHelp = plan.avg_deltas.C < 0.06;
+  const initialPhaseNeedsHelp = plan.phase_multipliers.avg.initial_from_seed < INITIAL_QUALITY_TARGET_MULTIPLIER;
+  const revisedPhaseNeedsHelp = plan.phase_multipliers.avg.revised_from_initial < REVISED_QUALITY_TARGET_MULTIPLIER;
+  const finalPhaseNeedsHelp = plan.phase_multipliers.avg.final_from_revised < FINAL_QUALITY_TARGET_MULTIPLIER;
+  const highPhase2Failure = plan.phase2.failure_rate > 0.35;
+  const highPhase2Reject = plan.phase2.rejected_rate > 0.55;
+  const lowConfidence = plan.audit_quality.avg_confidence < 0.55;
+  const tightWinnerRate = (plan.audit_quality.risk_flags.winner_margin_tight || 0) / Math.max(1, n);
+  plan.recommended_config = {
+    lock_ab_variation: 1,
+    lock_c_variation_to_ab: cNeedsHelp ? 1 : (plan.variation_control.c_locked_rate >= 0.5 ? 1 : 0),
+    resume_skip_completed_ab: 1,
+    phase2_variants_per_round: (cNeedsHelp || initialPhaseNeedsHelp || revisedPhaseNeedsHelp || lowConfidence)
+      ? (highPhase2Failure ? 2 : (tightWinnerRate > 0.4 ? 4 : 3))
+      : 2,
+    phase2_variant_intensity_step: (highPhase2Reject || lowConfidence) ? 0.06 : 0.08,
+    approach_self_iteration_rounds_max: (abNeedsHelp || revisedPhaseNeedsHelp || lowConfidence) ? (highPhase2Failure ? 1 : 2) : 1,
+    c_self_iteration_rounds_max: (cSelfNeedsHelp || cNeedsHelp) ? (highPhase2Failure ? 1 : 2) : 1,
+    ab_iteration_rounds_max: (cNeedsHelp || tightWinnerRate > 0.4) ? (highPhase2Failure ? 2 : 3) : 2,
+    final_audit_boost_rounds_max: (finalPhaseNeedsHelp || lowConfidence) ? (highPhase2Failure ? 1 : 2) : 1,
+  };
+  return plan;
+}
+
+function bestOfScores(scoreMap, keys) {
+  let best = { key: null, score: -Infinity };
+  for (const key of keys) {
+    const value = Number(scoreMap?.[key]);
+    if (Number.isFinite(value) && value > best.score) {
+      best = { key, score: value };
+    }
+  }
+  return best;
+}
+
+function qualityPower(scoreLike) {
+  const s = Math.max(0, Math.min(9.999, Number(scoreLike?.overall ?? scoreLike) || 0));
+  return s / Math.max(0.01, 10 - s);
+}
+
+function qualityMultiplier(toScoreLike, fromScoreLike) {
+  const from = qualityPower(fromScoreLike);
+  const to = qualityPower(toScoreLike);
+  return to / Math.max(0.01, from);
+}
+
+async function scoreFrontierCandidate({ referenceMimeType, referenceB64, candidateMimeType, candidateB64, concept, expression, profile }) {
+  const scorerPrompt = `You are a strict world-class fashion and portrait photographer acting as an image quality judge.
+First image is the identity reference photo. Second image is the generated candidate.
+Score each metric from 0.0 to 10.0 (10 is best):
+- identity_score
+- anatomy_score
+- garment_physics_score
+- optics_score
+- realism_score
+- compliance_score
+- composition_score
+- lighting_intent_score
+- editorial_consistency_score
+Return only one JSON object with all keys above and one additional key overall_score.
+Context: concept=${concept.name}; expression=${expression}; profile=${profile}.`;
+
+  const parts = MULTIMODAL_FILE_FIRST
+    ? [
+      { inlineData: { mimeType: referenceMimeType, data: referenceB64 } },
+      { inlineData: { mimeType: candidateMimeType, data: candidateB64 } },
+      { text: scorerPrompt },
+    ]
+    : [
+      { text: scorerPrompt },
+      { inlineData: { mimeType: referenceMimeType, data: referenceB64 } },
+      { inlineData: { mimeType: candidateMimeType, data: candidateB64 } },
+    ];
+
+  try {
+    const data = await callModel([{ role: 'user', parts }], 0, false, ['TEXT'], SCORER_ENDPOINT);
+    const texts = (data?.candidates?.[0]?.content?.parts || [])
+      .map(p => p?.text)
+      .filter(Boolean);
+    const parsed = parseFirstJsonObject(texts.join('\n'));
+    if (!parsed) {
+      return {
+        overall: 5.0,
+        metrics: {},
+        raw: texts.join('\n'),
+      };
+    }
+    const num = key => {
+      const value = Number(parsed?.[key]);
+      return Number.isFinite(value) ? value : 5.0;
+    };
+    const identity = num('identity_score');
+    const anatomy = num('anatomy_score');
+    const garment = num('garment_physics_score');
+    const optics = num('optics_score');
+    const realism = num('realism_score');
+    const compliance = num('compliance_score');
+    const composition = num('composition_score');
+    const lightingIntent = num('lighting_intent_score');
+    const editorialConsistency = num('editorial_consistency_score');
+    const overallModel = Number(parsed?.overall_score);
+    const overallWeightedCore = (
+      identity * 0.26 +
+      anatomy * 0.14 +
+      garment * 0.22 +
+      optics * 0.14 +
+      realism * 0.16 +
+      compliance * 0.08
+    );
+    const overallPhotographer = (
+      composition * 0.40 +
+      lightingIntent * 0.40 +
+      editorialConsistency * 0.20
+    );
+    const overallWeighted = (
+      overallWeightedCore * 0.82 +
+      overallPhotographer * 0.18
+    );
+    const overall = Number.isFinite(overallModel)
+      ? ((overallWeighted + overallModel) / 2)
+      : overallWeighted;
+    return {
+      overall,
+      metrics: {
+        identity_score: identity,
+        anatomy_score: anatomy,
+        garment_physics_score: garment,
+        optics_score: optics,
+        realism_score: realism,
+        compliance_score: compliance,
+        composition_score: composition,
+        lighting_intent_score: lightingIntent,
+        editorial_consistency_score: editorialConsistency,
+      },
+      raw: texts.join('\n'),
+    };
+  } catch (err) {
+    return {
+      overall: 5.0,
+      metrics: {},
+      raw: `scorer_error: ${err.message}`,
+    };
+  }
+}
+
+async function pathExists(fp) {
+  try {
+    await fs.access(fp);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function passADirForApproach(approachKey) {
+  return DUAL_STRATEGY_MODE ? path.join(PASSA_DIR, `approach-${approachKey}`) : PASSA_DIR;
+}
+
+function strategyDirForApproach(approachKey) {
+  return DUAL_STRATEGY_MODE ? path.join(OUTPUT_DIR, `strategy-${approachKey}`) : OUTPUT_DIR;
+}
+
+function conceptNumberFromName(name) {
+  const parsed = parseInt(String(name || '').split('-')[0], 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+async function loadResumePassAFrontier({
+  concept,
+  inputImage,
+  index,
+  approach = 'A',
+  variation = null,
+  lessons = [],
+  profileOrder = [],
+}) {
+  if (!RESUME_SKIP_COMPLETED_AB) return null;
+  const approachKey = normalizeApproach(approach, 'A');
+  const fp = path.join(passADirForApproach(approachKey), `${concept.name}.png`);
+  if (!(await pathExists(fp))) return null;
+
+  const expression = expressions[index % expressions.length];
+  const resolvedVariation = variation && typeof variation === 'object' ? variation : buildVariation();
+  const profile = normalizeFrontierProfile((profileOrder || [])[0] || 'balanced');
+  const prompt = buildPromptPassAFrontier(
+    concept,
+    expression,
+    resolvedVariation,
+    profile,
+    approachKey,
+    normalizeLessons(lessons || [], 10)
+  );
+  const inputMimeType = mimeTypeFromPath(inputImage);
+
+  console.log(`RESUME CACHE: using cached passA approach=${approachKey} path=${fp}`);
+  return {
+    fp,
+    mimeType: mimeTypeFromPath(fp) || inputMimeType,
+    modelParts: [{ text: prompt }],
+    variation: resolvedVariation,
+    promptUsed: prompt,
+    frontierProfile: profile,
+    frontierApproach: approachKey,
+    frontierPassAScore: { overall: 0, metrics: {} },
+    attemptLog: [{
+      profile,
+      stage: 'passA',
+      status: 'reused_cached_resume',
+      path: fp,
+    }],
+    lessonsApplied: normalizeLessons(lessons || [], 10),
+    reusedCachedPassA: true,
+    resumedFromCache: true,
+  };
+}
+
+async function loadResumeFinalFrontier({
+  concept,
+  approach = 'A',
+  profileHint = 'balanced',
+  lessons = [],
+}) {
+  if (!RESUME_SKIP_COMPLETED_AB) return null;
+  const approachKey = normalizeApproach(approach, 'A');
+  const fp = path.join(strategyDirForApproach(approachKey), `${concept.name}.png`);
+  if (!(await pathExists(fp))) return null;
+
+  const profileUsed = `${normalizeFrontierProfile(profileHint)}+cached-resume`;
+  console.log(`RESUME CACHE: using cached final approach=${approachKey} path=${fp}`);
+  return {
+    path: fp,
+    profileUsed,
+    approach: approachKey,
+    promptUsed: null,
+    attemptLog: [{
+      profile: normalizeFrontierProfile(profileHint),
+      stage: 'passB',
+      status: 'reused_cached_resume',
+      path: fp,
+    }],
+    lessonsApplied: normalizeLessons(lessons || [], 10),
+    resumedFromCache: true,
+  };
+}
+
+async function generatePassAFrontier(concept, inputImage, index, approach = 'A', options = {}) {
+  const approachKey = normalizeApproach(approach, 'A');
+  const expression = expressions[index % expressions.length];
+  const variation = options?.variation && typeof options.variation === 'object'
+    ? options.variation
+    : buildVariation();
+  const lessons = normalizeLessons(options?.lessons || [], 10);
+  const imageBuffer = await fs.readFile(inputImage);
+  const base64Image = imageBuffer.toString('base64');
+  const ext = path.extname(inputImage).toLowerCase();
+  const mimeType = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.webp' ? 'image/webp' : 'image/png';
+  const profiles = prioritizeProfiles(
+    Array.isArray(options?.profileOrder) && options.profileOrder.length
+      ? options.profileOrder
+      : getFrontierProfiles()
+  );
+  const passADir = DUAL_STRATEGY_MODE ? path.join(PASSA_DIR, `approach-${approachKey}`) : PASSA_DIR;
+  const cachedPassAPath = path.join(passADir, `${concept.name}.png`);
+  const attemptLog = [];
+  const rateLimitPressure = GLOBAL_RATE_LIMIT_STREAK >= RATE_LIMIT_PROFILE_NARROW_STREAK;
+  const shouldForceCachedPassA = REUSE_PASSA_ON_FAILURE && GLOBAL_RATE_LIMIT_STREAK >= RATE_LIMIT_FORCE_CACHE_STREAK;
+  const activeProfiles = rateLimitPressure && profiles.length > 1 ? [profiles[0]] : profiles;
+
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`[${index + 1}/20] PASS A ${concept.name} (FRONTIER MODE, APPROACH ${approachKey})`);
+  console.log(`${'='.repeat(60)}`);
+  console.log(`Variation: ${variation.colorway.name} | ${variation.theme.name}`);
+  if (options?.variation) {
+    console.log(`Variation source: shared-lock (${variationFingerprint(variation)})`);
+  }
+  console.log(`Profiles: ${profiles.join(', ')}`);
+  if (rateLimitPressure && activeProfiles.length < profiles.length) {
+    console.log(
+      `Rate-limit pressure detected (streak=${GLOBAL_RATE_LIMIT_STREAK}); ` +
+      `narrowing Pass A search to profile=${activeProfiles[0]}.`
+    );
+  }
+
+  let best = null;
+  const cIdentitySelectFloor = Math.max(7.5, IDENTITY_GUARDRAIL - 1.0);
+  const cComplianceSelectFloor = Math.max(8.0, COMPLIANCE_GUARDRAIL - 0.5);
+
+  if (shouldForceCachedPassA) {
+    try {
+      await fs.access(cachedPassAPath);
+      const cachedProfile = normalizeFrontierProfile(activeProfiles[0] || profiles[0] || 'balanced');
+      const cachedPrompt = buildPromptPassAFrontier(
+        concept,
+        expression,
+        variation,
+        cachedProfile,
+        approachKey,
+        lessons
+      );
+      console.log(
+        `Rate-limit force-cache active (streak=${GLOBAL_RATE_LIMIT_STREAK}); ` +
+        `reusing cached passA artifact ${cachedPassAPath}.`
+      );
+      attemptLog.push({
+        profile: cachedProfile,
+        stage: 'passA',
+        status: 'reused_cached_forced',
+        path: cachedPassAPath,
+      });
+      return {
+        fp: cachedPassAPath,
+        mimeType: mimeTypeFromPath(cachedPassAPath),
+        modelParts: [{ text: cachedPrompt }],
+        variation,
+        promptUsed: cachedPrompt,
+        frontierProfile: cachedProfile,
+        frontierApproach: approachKey,
+        frontierPassAScore: { overall: 0, metrics: {} },
+        attemptLog,
+        lessonsApplied: lessons,
+        reusedCachedPassA: true,
+      };
+    } catch {
+      // continue with normal generation path when no cached artifact exists
+    }
+  }
+
+  for (const profile of activeProfiles) {
+    const prompt = buildPromptPassAFrontier(concept, expression, variation, profile, approachKey, lessons);
+    const wc = wordCount(prompt);
+    console.log(`Frontier A approach=${approachKey} profile=${profile} | words=${wc}`);
+    validatePrompt(prompt, `Pass A Frontier (${approachKey}/${profile})`);
+    const contents = [{ role: 'user', parts: buildImageEditParts(prompt, mimeType, base64Image) }];
+    let data;
+    try {
+      data = await callModel(contents, 0, true);
+    } catch (err) {
+      console.log(`Frontier A approach=${approachKey} profile=${profile} request error: ${err.message}`);
+      attemptLog.push({
+        profile,
+        stage: 'passA',
+        status: 'request_error',
+        error: err.message,
+      });
+      continue;
+    }
+    logModelDiagnostics(data, `Pass A Frontier (${approachKey}/${profile})`);
+
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    let imageData = null;
+    const modelParts = [];
+    for (const part of parts) {
+      if (part.text && !part.thought) {
+        console.log(`Model A(${profile}): ${part.text.substring(0, 100)}...`);
+      }
+      if (part.inlineData?.data) {
+        imageData = part.inlineData;
+      }
+      modelParts.push(partWithThoughtSignature(part));
+    }
+
+    if (!imageData?.data) {
+      const signal = extractBlockSignal(data);
+      console.log(`Frontier A approach=${approachKey} profile=${profile} produced no image (finish=${signal.finish || 'n/a'}, block=${signal.block || 'n/a'}).`);
+      attemptLog.push({
+        profile,
+        stage: 'passA',
+        status: 'no_image',
+        finish: signal.finish || null,
+        block: signal.block || null,
+        safety: signal.safety || null,
+      });
+      continue;
+    }
+
+    const candidateMimeType = imageData.mimeType || 'image/png';
+    const score = await scoreFrontierCandidate({
+      referenceMimeType: mimeType,
+      referenceB64: base64Image,
+      candidateMimeType,
+      candidateB64: imageData.data,
+      concept,
+      expression,
+      profile: `${approachKey}/${profile}`,
+    });
+    const identityMetric = Number(score?.metrics?.identity_score ?? 5);
+    const complianceMetric = Number(score?.metrics?.compliance_score ?? 5);
+    const cIdentityPenalty = approachKey === 'C'
+      ? Math.max(0, cIdentitySelectFloor - identityMetric)
+      : 0;
+    const cCompliancePenalty = approachKey === 'C'
+      ? Math.max(0, cComplianceSelectFloor - complianceMetric)
+      : 0;
+    const rankingObjective = Number(score?.overall || 0) - (cIdentityPenalty * 1.35) - (cCompliancePenalty * 0.6);
+    const cMeetsEarlyAcceptGate = approachKey !== 'C'
+      || (identityMetric >= cIdentitySelectFloor && complianceMetric >= cComplianceSelectFloor);
+    console.log(
+      `Frontier score approach=${approachKey} profile=${profile}: ` +
+      `overall=${score.overall.toFixed(2)} id=${identityMetric.toFixed(2)} ` +
+      `phys=${(score.metrics.garment_physics_score ?? 5).toFixed(2)} ` +
+      `real=${(score.metrics.realism_score ?? 5).toFixed(2)} ` +
+      `comp=${complianceMetric.toFixed(2)} objective=${rankingObjective.toFixed(2)}`
+    );
+    attemptLog.push({
+      profile,
+      stage: 'passA',
+      status: 'scored',
+      score_overall: score.overall,
+      score_metrics: score.metrics,
+      ranking_objective: rankingObjective,
+    });
+
+    if (!best || rankingObjective > best.rankingObjective) {
+      best = { profile, prompt, imageData, modelParts, score, rankingObjective };
+    }
+    if (score.overall >= FRONTIER_ACCEPT_SCORE) {
+      if (cMeetsEarlyAcceptGate) {
+        console.log(`Frontier early-accept approach=${approachKey} profile=${profile} at score=${score.overall.toFixed(2)}.`);
+        break;
+      }
+      console.log(
+        `Frontier early-accept skipped approach=${approachKey} profile=${profile}: ` +
+        `identity/compliance below C gate (id=${identityMetric.toFixed(2)} floor=${cIdentitySelectFloor.toFixed(2)}, ` +
+        `comp=${complianceMetric.toFixed(2)} floor=${cComplianceSelectFloor.toFixed(2)}).`
+      );
+    }
+  }
+
+  if (!best) {
+    if (REUSE_PASSA_ON_FAILURE) {
+      try {
+        await fs.access(cachedPassAPath);
+        const cachedProfile = normalizeFrontierProfile(profiles[0] || 'balanced');
+        const cachedPrompt = buildPromptPassAFrontier(
+          concept,
+          expression,
+          variation,
+          cachedProfile,
+          approachKey,
+          lessons
+        );
+        console.log(
+          `Frontier A approach=${approachKey}: reusing cached passA artifact ` +
+          `${cachedPassAPath} to continue deeper iterations.`
+        );
+        attemptLog.push({
+          profile: cachedProfile,
+          stage: 'passA',
+          status: 'reused_cached',
+          path: cachedPassAPath,
+        });
+        return {
+          fp: cachedPassAPath,
+          mimeType: mimeTypeFromPath(cachedPassAPath),
+          modelParts: [{ text: cachedPrompt }],
+          variation,
+          promptUsed: cachedPrompt,
+          frontierProfile: cachedProfile,
+          frontierApproach: approachKey,
+          frontierPassAScore: { overall: 0, metrics: {} },
+          attemptLog,
+          lessonsApplied: lessons,
+          reusedCachedPassA: true,
+        };
+      } catch {
+        // no cached passA artifact available for this concept/approach
+      }
+    }
+
+    console.log('Frontier mode did not yield an image; attempting compliance emergency prompt.');
+    const fallbackPrompt = buildPromptPassASafeEmergency(concept, expression, variation);
+    let emergencyImageData = null;
+    let emergencyModelParts = [{ text: fallbackPrompt }];
+
+    try {
+      const contents = [{ role: 'user', parts: buildImageEditParts(fallbackPrompt, mimeType, base64Image) }];
+      const data = await callModel(contents, 0, true);
+      logModelDiagnostics(data, 'Pass A Frontier (emergency)');
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      emergencyModelParts = [];
+      for (const part of parts) {
+        if (part.inlineData?.data) emergencyImageData = part.inlineData;
+        emergencyModelParts.push(partWithThoughtSignature(part));
+      }
+      if (emergencyImageData?.data) {
+        attemptLog.push({
+          profile: 'emergency',
+          stage: 'passA',
+          status: 'generated',
+          score_overall: 0,
+        });
+        best = {
+          profile: 'clean',
+          prompt: fallbackPrompt,
+          imageData: emergencyImageData,
+          modelParts: emergencyModelParts,
+          score: { overall: 0, metrics: {} },
+        };
+      } else {
+        attemptLog.push({
+          profile: 'emergency',
+          stage: 'passA',
+          status: 'no_image',
+        });
+      }
+    } catch (err) {
+      console.log(`Emergency pass-A request failed: ${err.message}`);
+      attemptLog.push({
+        profile: 'emergency',
+        stage: 'passA',
+        status: 'request_error',
+        error: err.message,
+      });
+    }
+
+    if (!best) {
+      console.log(
+        `Frontier A approach=${approachKey}: emergency fallback produced no image; ` +
+        'using input image scaffold to preserve deep iteration flow.'
+      );
+      attemptLog.push({
+        profile: 'input-scaffold',
+        stage: 'passA',
+        status: 'input_scaffold_fallback',
+      });
+      best = {
+        profile: 'input-scaffold',
+        prompt: fallbackPrompt,
+        imageData: { mimeType, data: base64Image },
+        modelParts: emergencyModelParts,
+        score: { overall: 0, metrics: {} },
+      };
+    }
+  }
+
+  const img = Buffer.from(best.imageData.data, 'base64');
+  await fs.mkdir(passADir, { recursive: true });
+  const fp = cachedPassAPath;
+  await fs.writeFile(fp, img);
+  console.log(`SAVED PASS A (FRONTIER): ${fp} (${(img.length / 1024 / 1024).toFixed(2)} MB) | approach=${approachKey} profile=${best.profile} score=${best.score.overall.toFixed(2)}`);
+  attemptLog.push({
+    profile: best.profile,
+    stage: 'passA',
+    status: 'selected',
+    score_overall: best.score.overall,
+  });
+  return {
+    fp,
+    mimeType: best.imageData.mimeType || 'image/png',
+    modelParts: best.modelParts,
+    variation,
+    promptUsed: best.prompt,
+    frontierProfile: best.profile,
+    frontierApproach: approachKey,
+    frontierPassAScore: best.score,
+    attemptLog,
+    lessonsApplied: lessons,
+  };
+}
+
+async function generatePassBFrontier(concept, passA, inputImage, index, approach = 'A', options = {}) {
+  const approachKey = normalizeApproach(approach || passA?.frontierApproach || 'A', 'A');
+  const expression = expressions[index % expressions.length];
+  const variation = passA.variation || buildVariation();
+  const primaryProfile = normalizeFrontierProfile(passA.frontierProfile || 'balanced');
+  const profileQueue = [...new Set([primaryProfile, 'balanced', 'clean'])];
+  const rateLimitPressure = GLOBAL_RATE_LIMIT_STREAK >= RATE_LIMIT_PROFILE_NARROW_STREAK;
+  const shouldForceCachedFinal = REUSE_PASSA_ON_FAILURE && GLOBAL_RATE_LIMIT_STREAK >= RATE_LIMIT_FORCE_CACHE_STREAK;
+  const activeProfileQueue = rateLimitPressure && profileQueue.length > 1 ? [profileQueue[0]] : profileQueue;
+  const lessons = normalizeLessons(options?.lessons || passA?.lessonsApplied || [], 10);
+  const attemptLog = [];
+
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`[${index + 1}/20] PASS B ${concept.name} (FRONTIER MODE, APPROACH ${approachKey})`);
+  console.log(`${'='.repeat(60)}`);
+  console.log(`Profiles: ${profileQueue.join(', ')}`);
+  if (rateLimitPressure && activeProfileQueue.length < profileQueue.length) {
+    console.log(
+      `Rate-limit pressure detected (streak=${GLOBAL_RATE_LIMIT_STREAK}); ` +
+      `narrowing Pass B search to profile=${activeProfileQueue[0]}.`
+    );
+  }
+
+  const baseImageBuffer = await fs.readFile(inputImage);
+  const base64Image = baseImageBuffer.toString('base64');
+  const baseExt = path.extname(inputImage).toLowerCase();
+  const baseMimeType = baseExt === '.jpg' || baseExt === '.jpeg' ? 'image/jpeg' : baseExt === '.webp' ? 'image/webp' : 'image/png';
+  const passAImageBuffer = await fs.readFile(passA.fp);
+  const passAB64 = passAImageBuffer.toString('base64');
+  const passAPromptForContext = passA.promptUsed || buildPromptPassAFrontier(concept, expression, variation, primaryProfile, approachKey);
+  const strategyDir = DUAL_STRATEGY_MODE ? path.join(OUTPUT_DIR, `strategy-${approachKey}`) : OUTPUT_DIR;
+  await fs.mkdir(strategyDir, { recursive: true });
+  const strategyPath = path.join(strategyDir, `${concept.name}.png`);
+  const enableAggressiveBoundary = options?.enableAggressiveBoundary === true
+    && ENABLE_AB_PHASE2_BOUNDARY
+    && (approachKey === 'A' || approachKey === 'B');
+
+  if (shouldForceCachedFinal) {
+    try {
+      await fs.access(strategyPath);
+      console.log(
+        `Rate-limit force-cache active (streak=${GLOBAL_RATE_LIMIT_STREAK}); ` +
+        `reusing cached final artifact ${strategyPath}.`
+      );
+      attemptLog.push({
+        profile: primaryProfile,
+        stage: 'passB',
+        status: 'reused_cached_forced',
+        path: strategyPath,
+      });
+      return { path: strategyPath, profileUsed: `${primaryProfile}+cached`, approach: approachKey, promptUsed: null, attemptLog, lessonsApplied: lessons };
+    } catch {
+      // no cached final image available; continue with normal generation
+    }
+  }
+
+  for (const profile of activeProfileQueue) {
+    const prompt = buildPromptPassBFrontier(concept, expression, variation, profile, approachKey, lessons);
+    validatePrompt(prompt, `Pass B Frontier (${approachKey}/${profile})`);
+    const contents = buildPassBConversation({
+      passAPromptForContext,
+      baseMimeType,
+      base64Image,
+      passAModelParts: passA.modelParts,
+      prompt,
+      passAMimeType: passA.mimeType,
+      passAB64,
+    });
+    let data;
+    try {
+      data = await callModel(contents, 0, true);
+    } catch (err) {
+      console.log(`Frontier B approach=${approachKey} profile=${profile} request error: ${err.message}`);
+      attemptLog.push({
+        profile,
+        stage: 'passB',
+        status: 'request_error',
+        error: err.message,
+      });
+      continue;
+    }
+    logModelDiagnostics(data, `Pass B Frontier (${approachKey}/${profile})`);
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    for (const part of parts) {
+      if (part.text && !part.thought) {
+        console.log(`Model B(${approachKey}/${profile}): ${part.text.substring(0, 100)}...`);
+      }
+      if (part.inlineData?.data) {
+        const img = Buffer.from(part.inlineData.data, 'base64');
+        const fp = strategyPath;
+        await fs.writeFile(fp, img);
+        console.log(`SAVED FINAL (FRONTIER): ${fp} (${(img.length / 1024 / 1024).toFixed(2)} MB) | approach=${approachKey} profile=${profile}`);
+        attemptLog.push({
+          profile,
+          stage: 'passB',
+          status: 'generated_phase1',
+        });
+
+        if (enableAggressiveBoundary) {
+          const phase2Prompt = buildPromptPassBPhase2Boundary(concept, expression, variation, profile, approachKey, lessons);
+          validatePrompt(phase2Prompt, `Pass B Phase2 (${approachKey}/${profile})`);
+          console.log(`Phase-2 aggressive boundary attempt approach=${approachKey} profile=${profile} intensity=${AB_PHASE2_INTENSITY.toFixed(2)}x`);
+          const phase2Contents = [{
+            role: 'user',
+            parts: buildImageEditParts(phase2Prompt, part.inlineData.mimeType || 'image/png', part.inlineData.data),
+          }];
+          try {
+            const phase2Data = await callModel(phase2Contents, 0, true);
+            logModelDiagnostics(phase2Data, `Pass B Phase2 (${approachKey}/${profile})`);
+            const phase2Parts = phase2Data.candidates?.[0]?.content?.parts || [];
+            let phase2Image = null;
+            for (const phase2Part of phase2Parts) {
+              if (phase2Part.inlineData?.data) {
+                phase2Image = phase2Part.inlineData;
+                break;
+              }
+            }
+            if (phase2Image?.data) {
+              const phase2Img = Buffer.from(phase2Image.data, 'base64');
+              await fs.writeFile(fp, phase2Img);
+              console.log(`SAVED FINAL (PHASE2): ${fp} (${(phase2Img.length / 1024 / 1024).toFixed(2)} MB) | approach=${approachKey} profile=${profile}`);
+              attemptLog.push({
+                profile,
+                stage: 'passB_phase2',
+                status: 'generated',
+              });
+              return { path: fp, profileUsed: `${profile}+phase2`, approach: approachKey, promptUsed: phase2Prompt, attemptLog, lessonsApplied: lessons };
+            }
+
+            const phase2Signal = extractBlockSignal(phase2Data);
+            console.log(`Phase-2 boundary attempt failed (no image, finish=${phase2Signal.finish || 'n/a'}); keeping phase1 baseline.`);
+            attemptLog.push({
+              profile,
+              stage: 'passB_phase2',
+              status: 'no_image',
+              finish: phase2Signal.finish || null,
+              block: phase2Signal.block || null,
+              safety: phase2Signal.safety || null,
+            });
+          } catch (phase2Err) {
+            console.log(`Phase-2 boundary attempt request error: ${phase2Err.message}; keeping phase1 baseline.`);
+            attemptLog.push({
+              profile,
+              stage: 'passB_phase2',
+              status: 'request_error',
+              error: phase2Err.message,
+            });
+          }
+        }
+
+        return { path: fp, profileUsed: profile, approach: approachKey, promptUsed: prompt, attemptLog, lessonsApplied: lessons };
+      }
+    }
+    const signal = extractBlockSignal(data);
+    console.log(`Frontier B approach=${approachKey} profile=${profile} produced no image (finish=${signal.finish || 'n/a'}, block=${signal.block || 'n/a'}).`);
+    attemptLog.push({
+      profile,
+      stage: 'passB',
+      status: 'no_image',
+      finish: signal.finish || null,
+      block: signal.block || null,
+      safety: signal.safety || null,
+    });
+  }
+
+  console.log('Frontier B fallback failed - using Pass A output as final.');
+  const passAImg = await fs.readFile(passA.fp);
+  const fp = strategyPath;
+  await fs.writeFile(fp, passAImg);
+  console.log(`SAVED FINAL (PASS A): ${fp} (${(passAImg.length / 1024 / 1024).toFixed(2)} MB) | approach=${approachKey}`);
+  attemptLog.push({
+    profile: 'passA-fallback',
+    stage: 'passB',
+    status: 'generated',
+  });
+  return { path: fp, profileUsed: 'passA-fallback', approach: approachKey, promptUsed: null, attemptLog, lessonsApplied: lessons };
+}
+
+function metricValue(score, key) {
+  const v = Number(score?.metrics?.[key]);
+  return Number.isFinite(v) ? v : 5.0;
+}
+
+function evaluateIterationCandidate(candidateScore, baselineScore) {
+  const overallDelta = (Number(candidateScore?.overall) || 0) - (Number(baselineScore?.overall) || 0);
+  const identityDelta = metricValue(candidateScore, 'identity_score') - metricValue(baselineScore, 'identity_score');
+  const complianceDelta = metricValue(candidateScore, 'compliance_score') - metricValue(baselineScore, 'compliance_score');
+  const overallSafe = overallDelta >= -ITER_ACCEPT_OVERALL_TOL;
+  const identitySafe = identityDelta >= -ITER_ACCEPT_METRIC_TOL;
+  const complianceSafe = complianceDelta >= -ITER_ACCEPT_METRIC_TOL;
+  return {
+    acceptable: overallSafe && identitySafe && complianceSafe,
+    overallDelta,
+    identityDelta,
+    complianceDelta,
+    overallSafe,
+    identitySafe,
+    complianceSafe,
+  };
+}
+
+function summarizeGenerationHealth(attemptLog = []) {
+  const list = Array.isArray(attemptLog) ? attemptLog : [];
+  const summary = {
+    total: list.length,
+    generated: 0,
+    selected: 0,
+    scored: 0,
+    request_error: 0,
+    no_image: 0,
+    reused_cached: 0,
+    emergency: 0,
+  };
+  for (const item of list) {
+    const status = String(item?.status || '');
+    if (status === 'generated' || status === 'generated_phase1') summary.generated += 1;
+    if (status === 'selected') summary.selected += 1;
+    if (status === 'scored') summary.scored += 1;
+    if (status === 'request_error') summary.request_error += 1;
+    if (status === 'no_image' || status === 'no_viable_variant') summary.no_image += 1;
+    if (status.includes('reused_cached')) summary.reused_cached += 1;
+    if (String(item?.profile || '').includes('emergency') || status.includes('input_scaffold')) summary.emergency += 1;
+  }
+  return summary;
+}
+
+function buildAuditQualitySignals({
+  scoreByApproach = {},
+  winnerApproach = 'A',
+  phase2Rounds = {},
+}) {
+  const ranked = STRATEGY_KEYS
+    .map(key => ({ key, overall: Number(scoreByApproach?.[key]?.overall) || 0 }))
+    .sort((a, b) => b.overall - a.overall);
+  const top = ranked[0] || { key: winnerApproach, overall: 0 };
+  const second = ranked[1] || { key: winnerApproach, overall: top.overall };
+  const margin = Math.max(0, (Number(top.overall) || 0) - (Number(second.overall) || 0));
+  const spread = Math.max(0, (ranked[0]?.overall || 0) - (ranked[ranked.length - 1]?.overall || 0));
+  const winnerScore = scoreByApproach?.[winnerApproach] || {};
+  const identity = metricValue(winnerScore, 'identity_score');
+  const compliance = metricValue(winnerScore, 'compliance_score');
+
+  const phase2All = [
+    ...(Array.isArray(phase2Rounds?.A) ? phase2Rounds.A : []),
+    ...(Array.isArray(phase2Rounds?.B) ? phase2Rounds.B : []),
+    ...(Array.isArray(phase2Rounds?.C) ? phase2Rounds.C : []),
+  ];
+  const phase2Accepted = phase2All.filter(r => r?.accepted === true).length;
+  const phase2Rejected = phase2All.filter(r => r?.accepted === false).length;
+  const phase2Errors = phase2All.filter(r => String(r?.status || '') === 'request_error').length;
+  const phase2NoImage = phase2All.filter(r => {
+    const st = String(r?.status || '');
+    return st === 'no_image' || st === 'no_viable_variant';
+  }).length;
+  const phase2Total = phase2All.length;
+  const phase2AcceptedRate = phase2Total > 0 ? phase2Accepted / phase2Total : 0.5;
+  const phase2FailureRate = phase2Total > 0 ? (phase2Errors + phase2NoImage) / phase2Total : 0;
+
+  const marginNorm = Math.max(0, Math.min(1, margin / Math.max(0.01, WINNER_TIE_BAND * 2)));
+  const safeguardNorm = Math.max(0, Math.min(1, ((identity + compliance) / 2 - 8.5) / 1.5));
+  const stabilityNorm = Math.max(0, Math.min(1, phase2AcceptedRate));
+  const confidence = Math.max(
+    0,
+    Math.min(1, (0.45 * marginNorm) + (0.35 * safeguardNorm) + (0.20 * stabilityNorm))
+  );
+
+  const riskFlags = [];
+  if (margin < WINNER_TIE_BAND) riskFlags.push('winner_margin_tight');
+  if (identity < IDENTITY_GUARDRAIL) riskFlags.push('identity_below_guardrail');
+  if (compliance < COMPLIANCE_GUARDRAIL) riskFlags.push('compliance_below_guardrail');
+  if (phase2FailureRate > 0.25) riskFlags.push('phase2_failure_rate_high');
+  if (phase2Total > 0 && phase2Rejected / phase2Total > 0.55) riskFlags.push('phase2_rejection_rate_high');
+
+  return {
+    winner_margin: margin,
+    score_spread: spread,
+    confidence,
+    phase2: {
+      total: phase2Total,
+      accepted: phase2Accepted,
+      rejected: phase2Rejected,
+      request_errors: phase2Errors,
+      no_image: phase2NoImage,
+      accepted_rate: phase2AcceptedRate,
+      failure_rate: phase2FailureRate,
+    },
+    safeguards: {
+      identity_score: identity,
+      compliance_score: compliance,
+    },
+    risk_flags: riskFlags,
+  };
+}
+
+function betterPhase2Candidate(nextCandidate, bestCandidate) {
+  const nextSafe = !!nextCandidate?.viability?.acceptable;
+  const bestSafe = !!bestCandidate?.viability?.acceptable;
+  if (nextSafe !== bestSafe) return nextSafe;
+  if ((nextCandidate?.score || 0) !== (bestCandidate?.score || 0)) {
+    return (nextCandidate?.score || 0) > (bestCandidate?.score || 0);
+  }
+  const nextStability = (
+    (nextCandidate?.viability?.identityDelta || 0) +
+    (nextCandidate?.viability?.complianceDelta || 0)
+  );
+  const bestStability = (
+    (bestCandidate?.viability?.identityDelta || 0) +
+    (bestCandidate?.viability?.complianceDelta || 0)
+  );
+  return nextStability > bestStability;
+}
+
+const METRIC_GAP_DIRECTIVES = {
+  identity_score: 'Enforce stronger facial geometry lock (landmarks, inter-feature spacing, asymmetry preservation).',
+  anatomy_score: 'Tighten pose biomechanics and contact-pressure consistency (no impossible limb/torso transitions).',
+  garment_physics_score: 'Increase seam/load-path specificity, edge-thickness realism, and wet-state tension continuity.',
+  optics_score: 'Strengthen source-to-highlight mapping, Fresnel behavior, and caustic/reflection family coherence.',
+  realism_score: 'Improve sensor-level realism (micro-noise, natural skin texture, non-plastic rendering cues).',
+  compliance_score: 'Use restrained editorial wording and maintain fully covered, non-explicit framing language.',
+};
+
+function deriveMetricGapLessons(scoreA, scoreB) {
+  const metricKeys = Object.keys(METRIC_GAP_DIRECTIVES);
+  const weakest = metricKeys
+    .map(key => ({ key, value: Math.max(metricValue(scoreA, key), metricValue(scoreB, key)) }))
+    .sort((a, b) => a.value - b.value);
+
+  const lessons = [];
+  for (const item of weakest.slice(0, 3)) {
+    if (item.value <= 9.45) {
+      lessons.push(METRIC_GAP_DIRECTIVES[item.key]);
+    }
+  }
+  return normalizeLessons(lessons, 4);
+}
+
+function weightedHistoricalLessons(summary, records) {
+  const weights = new Map();
+  const add = (text, delta) => {
+    const key = String(text || '').trim().replace(/\s+/g, ' ');
+    if (!key) return;
+    weights.set(key, (weights.get(key) || 0) + delta);
+  };
+
+  for (const item of (summary?.top_lessons || [])) {
+    const lesson = item?.lesson || item?.hint;
+    const count = Number(item?.count) || 1;
+    add(lesson, 2 + (count * 0.35));
+  }
+  for (const item of (summary?.top_hints || [])) {
+    const hint = item?.hint || item?.lesson;
+    const count = Number(item?.count) || 1;
+    add(hint, 1 + (count * 0.25));
+  }
+
+  const recent = (records || []).slice(Math.max(0, (records || []).length - LESSON_RECENCY_WINDOW));
+  const total = Math.max(1, recent.length);
+  for (let i = 0; i < recent.length; i++) {
+    const rec = recent[i];
+    const recency = 1 + ((i + 1) / total);
+    const winner = normalizeApproach(rec?.winner?.approach, 'A');
+    const winnerLessons = normalizeLessons(rec?.strategies?.[winner]?.lessons_applied || [], 24);
+    const targetHit = !!rec?.comparisons?.target_gain_hit;
+    const hitBoost = targetHit ? 1.1 : 0;
+
+    for (const lesson of normalizeLessons(rec?.lessons?.all || [], 40)) {
+      let delta = (0.9 * recency) + hitBoost;
+      if (winnerLessons.includes(lesson)) delta += 0.8;
+      if (normalizeApproach(winner, 'A') === 'C' && normalizeLessons(rec?.lessons?.c_prompt_plan || [], 20).includes(lesson)) {
+        delta += 0.4;
+      }
+      add(lesson, delta);
+    }
+    for (const hint of normalizeLessons(rec?.hints || [], 20)) {
+      add(hint, 0.55 * recency);
+    }
+  }
+
+  return [...weights.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([lesson]) => lesson)
+    .slice(0, LESSON_MAX_PER_PROMPT);
+}
+
+function selectWinnerWithGuardrails(strategyScores) {
+  const candidates = STRATEGY_KEYS.map(key => {
+    const score = strategyScores[key];
+    const overall = Number(score?.overall) || 0;
+    const identity = metricValue(score, 'identity_score');
+    const compliance = metricValue(score, 'compliance_score');
+    const garment = metricValue(score, 'garment_physics_score');
+    const blended = (
+      overall * 0.68 +
+      identity * 0.16 +
+      garment * 0.10 +
+      compliance * 0.06
+    );
+    return { key, overall, identity, compliance, garment, blended };
+  }).sort((a, b) => b.overall - a.overall);
+
+  if (!candidates.length) {
+    return { key: 'A', reason: 'default_fallback', shortlist: [] };
+  }
+
+  const top = candidates[0];
+  const withinBand = candidates.filter(c => (top.overall - c.overall) <= WINNER_TIE_BAND);
+  let filtered = [...withinBand];
+
+  const bestCompliance = Math.max(...filtered.map(c => c.compliance));
+  if (bestCompliance >= COMPLIANCE_GUARDRAIL) {
+    filtered = filtered.filter(c => c.compliance >= COMPLIANCE_GUARDRAIL || (top.overall - c.overall) <= 0.03);
+  }
+
+  const bestIdentity = Math.max(...filtered.map(c => c.identity));
+  if (bestIdentity >= IDENTITY_GUARDRAIL) {
+    filtered = filtered.filter(c => c.identity >= IDENTITY_GUARDRAIL || (top.overall - c.overall) <= 0.03);
+  }
+
+  const selected = [...filtered].sort((a, b) => {
+    if (b.blended !== a.blended) return b.blended - a.blended;
+    return b.overall - a.overall;
+  })[0] || top;
+
+  const reason = filtered.length > 1
+    ? `tie_band_${WINNER_TIE_BAND}_guardrail_blended`
+    : 'overall_leader';
+
+  return {
+    key: selected.key,
+    reason,
+    shortlist: filtered.map(c => ({
+      approach: c.key,
+      overall: c.overall,
+      blended: c.blended,
+      identity: c.identity,
+      compliance: c.compliance,
+    })),
+  };
+}
+
+function deriveABIterationHints(scoreA, scoreB) {
+  const hints = [];
+  const aId = metricValue(scoreA, 'identity_score');
+  const bId = metricValue(scoreB, 'identity_score');
+  const aPhys = metricValue(scoreA, 'garment_physics_score');
+  const bPhys = metricValue(scoreB, 'garment_physics_score');
+  const aOpt = metricValue(scoreA, 'optics_score');
+  const bOpt = metricValue(scoreB, 'optics_score');
+  const aComp = metricValue(scoreA, 'compliance_score');
+  const bComp = metricValue(scoreB, 'compliance_score');
+
+  if (aId + 0.8 < bId) hints.push('Approach A: strengthen identity anchors and reduce stylistic drift in facial geometry.');
+  if (bId + 0.8 < aId) hints.push('Approach B: tighten identity lock and preserve reference asymmetry more explicitly.');
+  if (aPhys + 0.8 < bPhys) hints.push('Approach A: increase seam/load-path specificity and wet-state cloth constraints.');
+  if (bPhys + 0.8 < aPhys) hints.push('Approach B: add explicit tension gradient and edge-thickness constraints.');
+  if (aOpt + 0.8 < bOpt) hints.push('Approach A: improve source-to-highlight mapping and Fresnel-consistent reflections.');
+  if (bOpt + 0.8 < aOpt) hints.push('Approach B: strengthen optical coherence checks (caustics/refraction/shadow families).');
+  if (aComp + 0.8 < bComp) hints.push('Approach A: reduce suggestive phrasing and favor restrained editorial framing.');
+  if (bComp + 0.8 < aComp) hints.push('Approach B: keep directionality but remove ambiguous intensity language.');
+
+  if (hints.length === 0) {
+    hints.push('Both approaches are close; iterate with finer profile-specific tuning rather than structural changes.');
+  }
+  return normalizeLessons(hints, 8);
+}
+
+function deepAuditABBaseline(scoreA, scoreB) {
+  const metricLabels = {
+    identity_score: 'identity',
+    anatomy_score: 'anatomy',
+    garment_physics_score: 'garment_physics',
+    optics_score: 'optics',
+    realism_score: 'realism',
+    compliance_score: 'compliance',
+  };
+
+  const metrics = Object.keys(metricLabels).map(key => {
+    const a = metricValue(scoreA, key);
+    const b = metricValue(scoreB, key);
+    const delta = a - b;
+    return {
+      key,
+      label: metricLabels[key],
+      a,
+      b,
+      delta,
+      absDelta: Math.abs(delta),
+      leader: delta >= 0 ? 'A' : 'B',
+    };
+  }).sort((x, y) => y.absDelta - x.absDelta);
+
+  const lessonsA = [];
+  const lessonsB = [];
+  const sharedLessons = [];
+  const lines = metrics.map(m => `${m.label}: A=${m.a.toFixed(2)} B=${m.b.toFixed(2)} leader=${m.leader} Δ=${m.absDelta.toFixed(2)}`);
+
+  for (const m of metrics) {
+    if (m.a + 0.25 < m.b) lessonsA.push(`Phase-2 A focus (${m.label}): ${METRIC_GAP_DIRECTIVES[m.key]}`);
+    if (m.b + 0.25 < m.a) lessonsB.push(`Phase-2 B focus (${m.label}): ${METRIC_GAP_DIRECTIVES[m.key]}`);
+    if (m.absDelta < 0.2) sharedLessons.push(`A/B ${m.label} are near-parity; seek incremental improvement without introducing new drift.`);
+  }
+
+  if (!lessonsA.length) lessonsA.push('Phase-2 A: preserve current strengths and push micro-detail edge only where deterministic and compliance-safe.');
+  if (!lessonsB.length) lessonsB.push('Phase-2 B: preserve current strengths and push micro-detail edge only where deterministic and compliance-safe.');
+
+  return {
+    metrics,
+    lines,
+    lessonsA: normalizeLessons(lessonsA, 8),
+    lessonsB: normalizeLessons(lessonsB, 8),
+    sharedLessons: normalizeLessons(sharedLessons, 4),
+  };
+}
+
+async function runPhase2BoundaryRefinement({
+  concept,
+  index,
+  variation,
+  approachKey,
+  profile,
+  baselinePath,
+  lessons = [],
+  referenceMimeType = null,
+  referenceB64 = null,
+  previousScore = null,
+}) {
+  const expression = expressions[index % expressions.length];
+  const normalizedProfile = normalizeFrontierProfile(profile || 'balanced');
+  const mimeType = mimeTypeFromPath(baselinePath);
+  const baseB64 = (await fs.readFile(baselinePath)).toString('base64');
+  const variantCount = effectivePhase2VariantsPerRound();
+  let tactics;
+  if (approachKey === 'A') {
+    tactics = [
+      'push seam/load-path clarity and wet-state constraint consistency',
+      'maximize optics causality and Fresnel-consistent highlights',
+      'amplify microtexture realism while preserving strict coverage geometry',
+    ];
+  } else if (approachKey === 'B') {
+    tactics = [
+      'push directorial edge while preserving compliance-safe framing',
+      'maximize tactile lace detail and contact-pressure credibility',
+      'amplify sensor-level realism and anti-render artifacts',
+    ];
+  } else {
+    tactics = [
+      'fuse A-level seam physics with B-level texture richness without changing framing',
+      'maximize cross-domain coherence: identity lock + optics causality + garment load paths',
+      'push only deterministic micro-detail gains while preserving compliance-safe directionality',
+    ];
+  }
+
+  let best = null;
+  const variants = [];
+  console.log(`Phase-2 aggressive boundary beam approach=${approachKey} profile=${profile || 'n/a'} variants=${variantCount}`);
+
+  for (let i = 0; i < variantCount; i++) {
+    const intensity = AB_PHASE2_INTENSITY + (i * PHASE2_VARIANT_INTENSITY_STEP);
+    const tactic = tactics[i % tactics.length];
+    const phase2Prompt = buildPromptPassBPhase2Boundary(
+      concept,
+      expression,
+      variation || buildVariation(),
+      normalizedProfile,
+      approachKey,
+      lessons,
+      { intensity, tactic }
+    );
+    validatePrompt(phase2Prompt, `Pass B Phase2 (${approachKey}/${profile}/v${i + 1})`);
+    const contents = [{ role: 'user', parts: buildImageEditParts(phase2Prompt, mimeType, baseB64) }];
+
+    console.log(`Phase-2 v${i + 1}/${variantCount} approach=${approachKey} intensity=${intensity.toFixed(2)}x tactic=${tactic}`);
+    try {
+      const data = await callModel(contents, 0, true);
+      logModelDiagnostics(data, `Pass B Phase2 (${approachKey}/${profile}/v${i + 1})`);
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      let imagePart = null;
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          imagePart = part.inlineData;
+          break;
+        }
+      }
+      if (!imagePart?.data) {
+        const signal = extractBlockSignal(data);
+        variants.push({
+          variant: i + 1,
+          intensity,
+          tactic,
+          status: 'no_image',
+          finish: signal.finish || null,
+          block: signal.block || null,
+        });
+        continue;
+      }
+
+      let scoreObj = previousScore;
+      if (referenceMimeType && referenceB64) {
+        scoreObj = await scoreFrontierCandidate({
+          referenceMimeType,
+          referenceB64,
+          candidateMimeType: imagePart.mimeType || 'image/png',
+          candidateB64: imagePart.data,
+          concept,
+          expression,
+          profile: `${approachKey}-phase2-v${i + 1}/${normalizedProfile}`,
+        });
+      }
+      const overall = Number(scoreObj?.overall) || 0;
+      const viability = previousScore ? evaluateIterationCandidate(scoreObj, previousScore) : {
+        acceptable: true,
+        overallDelta: 0,
+        identityDelta: 0,
+        complianceDelta: 0,
+        overallSafe: true,
+        identitySafe: true,
+        complianceSafe: true,
+      };
+      variants.push({
+        variant: i + 1,
+        intensity,
+        tactic,
+        status: 'generated',
+        score: overall,
+        acceptable: viability.acceptable,
+        deltas: {
+          overall: viability.overallDelta,
+          identity: viability.identityDelta,
+          compliance: viability.complianceDelta,
+        },
+      });
+      const candidate = {
+        variant: i + 1,
+        intensity,
+        tactic,
+        prompt: phase2Prompt,
+        imagePart,
+        score: overall,
+        scoreObj,
+        viability,
+      };
+      if (!best || betterPhase2Candidate(candidate, best)) best = candidate;
+    } catch (err) {
+      variants.push({
+        variant: i + 1,
+        intensity,
+        tactic,
+        status: 'request_error',
+        error: err.message,
+      });
+    }
+  }
+
+  if (best && best.imagePart?.data) {
+    if (previousScore && best.viability && !best.viability.acceptable) {
+      console.log('Phase-2 boundary beam produced no viable variant under identity/compliance/overall gates; keeping baseline output.');
+      return {
+        path: baselinePath,
+        applied: false,
+        status: 'no_viable_variant',
+        promptUsed: null,
+        profileUsed: normalizedProfile,
+        selected_variant: best.variant,
+        variants,
+      };
+    }
+
+    const img = Buffer.from(best.imagePart.data, 'base64');
+    await fs.writeFile(baselinePath, img);
+    console.log(`SAVED FINAL (PHASE2 BEST v${best.variant}): ${baselinePath} (${(img.length / 1024 / 1024).toFixed(2)} MB) | approach=${approachKey} profile=${profile || 'n/a'} score=${(best.scoreObj?.overall || 0).toFixed(2)}`);
+    return {
+      path: baselinePath,
+      applied: true,
+      status: 'generated',
+      promptUsed: best.prompt,
+      profileUsed: `${normalizedProfile}+phase2-v${best.variant}`,
+      score: best.scoreObj || previousScore,
+      selected_variant: best.variant,
+      variants,
+    };
+  }
+
+  const hasRequestError = variants.some(v => v.status === 'request_error');
+  if (hasRequestError) {
+    console.log('Phase-2 boundary beam had no usable image due to request errors; keeping baseline output.');
+    return {
+      path: baselinePath,
+      applied: false,
+      status: 'request_error',
+      promptUsed: null,
+      profileUsed: normalizedProfile,
+      variants,
+    };
+  }
+  console.log('Phase-2 boundary beam produced no image; keeping baseline output.');
+  return {
+    path: baselinePath,
+    applied: false,
+    status: 'no_image',
+    promptUsed: null,
+    profileUsed: normalizedProfile,
+    variants,
+  };
+}
+
+function deriveApproachSelfLessons(score, approachKey) {
+  const metrics = Object.keys(METRIC_GAP_DIRECTIVES)
+    .map(key => ({ key, value: metricValue(score, key) }))
+    .sort((a, b) => a.value - b.value);
+  const lessons = [
+    `Approach ${approachKey} self-iteration: preserve framing and identity while improving weakest metrics only.`,
+  ];
+  for (const metric of metrics.slice(0, 3)) {
+    if (metric.value <= 9.6) {
+      lessons.push(METRIC_GAP_DIRECTIVES[metric.key]);
+    }
+  }
+  if (metricValue(score, 'compliance_score') < COMPLIANCE_GUARDRAIL) {
+    lessons.push(`Approach ${approachKey}: prioritize compliance-safe wording and restrained editorial framing before additional detail.`);
+  }
+  return normalizeLessons(lessons, LESSON_MAX_PER_PROMPT);
+}
+
+async function runApproachSelfIteration({
+  concept,
+  index,
+  variation,
+  approachKey,
+  profileTag,
+  path: initialPath,
+  score: initialScore,
+  historicalLessons = [],
+  referenceMimeType,
+  referenceB64,
+  maxRounds = APPROACH_SELF_ITERATION_ROUNDS_MAX,
+  minGain = APPROACH_SELF_MIN_GAIN,
+}) {
+  if (maxRounds <= 0) {
+    return {
+      path: initialPath,
+      score: initialScore,
+      profileTag,
+      rounds: [],
+      lessonsLast: normalizeLessons(historicalLessons, LESSON_MAX_PER_PROMPT),
+    };
+  }
+
+  let currentPath = initialPath;
+  let currentScore = initialScore;
+  let currentProfileTag = profileTag;
+  let lessonsLast = normalizeLessons(historicalLessons, LESSON_MAX_PER_PROMPT);
+  const rounds = [];
+
+  for (let round = 1; round <= maxRounds; round++) {
+    const selfLessons = deriveApproachSelfLessons(currentScore, approachKey);
+    const lessons = mergeLessonsByPriority(selfLessons, historicalLessons, LESSON_MAX_PER_PROMPT);
+    lessonsLast = lessons;
+
+    const backupPath = `${currentPath}.self-round-${round}.bak`;
+    await fs.copyFile(currentPath, backupPath);
+    const prevScore = currentScore;
+
+    const phase2 = await runPhase2BoundaryRefinement({
+      concept,
+      index,
+      variation,
+      approachKey,
+      profile: currentProfileTag,
+      baselinePath: currentPath,
+      lessons,
+      referenceMimeType,
+      referenceB64,
+      previousScore: prevScore,
+    });
+
+    let accepted = false;
+    let gain = 0;
+    let candidateScore = prevScore;
+    let candidateEval = evaluateIterationCandidate(prevScore, prevScore);
+    if (phase2.applied) {
+      if (Number.isFinite(Number(phase2?.score?.overall))) {
+        candidateScore = phase2.score;
+      } else {
+        const candidateB64 = (await fs.readFile(currentPath)).toString('base64');
+        candidateScore = await scoreFrontierCandidate({
+          referenceMimeType,
+          referenceB64,
+          candidateMimeType: mimeTypeFromPath(currentPath),
+          candidateB64,
+          concept,
+          expression: expressions[index % expressions.length],
+          profile: `${approachKey}-self-round${round}/${currentProfileTag}`,
+        });
+      }
+      candidateEval = evaluateIterationCandidate(candidateScore, prevScore);
+      if (candidateEval.acceptable) {
+        accepted = true;
+        currentScore = candidateScore;
+        if (phase2.profileUsed) currentProfileTag = phase2.profileUsed;
+        gain = currentScore.overall - prevScore.overall;
+      } else {
+        await fs.copyFile(backupPath, currentPath);
+        candidateScore = prevScore;
+      }
+    }
+
+    await fs.unlink(backupPath).catch(() => {});
+    rounds.push({
+      round,
+      ...phase2,
+      accepted,
+      score_before: prevScore.overall,
+      score_after: candidateScore.overall,
+      gain,
+      candidate_eval: candidateEval,
+    });
+
+    console.log(`${approachKey} SELF ITER ROUND ${round}: ${prevScore.overall.toFixed(2)} -> ${candidateScore.overall.toFixed(2)} (gain ${gain.toFixed(2)})`);
+    if (gain < minGain) {
+      console.log(`${approachKey} SELF ITER STOP: gain ${gain.toFixed(2)} < threshold ${minGain.toFixed(2)}.`);
+      break;
+    }
+  }
+
+  return {
+    path: currentPath,
+    score: currentScore,
+    profileTag: currentProfileTag,
+    rounds,
+    lessonsLast,
+  };
+}
+
+async function runAuditGuidedFinalBoost({
+  concept,
+  index,
+  variation,
+  approachKey,
+  profileTag,
+  path: initialPath,
+  score: initialScore,
+  lessons = [],
+  referenceMimeType,
+  referenceB64,
+  maxRounds = FINAL_AUDIT_BOOST_ROUNDS_MAX,
+  minGain = FINAL_AUDIT_BOOST_MIN_GAIN,
+}) {
+  if (maxRounds <= 0) {
+    return {
+      path: initialPath,
+      score: initialScore,
+      profileTag,
+      rounds: [],
+      applied: false,
+      gain_total: 0,
+    };
+  }
+
+  let currentPath = initialPath;
+  let currentScore = initialScore;
+  let currentProfileTag = profileTag;
+  const rounds = [];
+  let gainTotal = 0;
+
+  for (let round = 1; round <= maxRounds; round++) {
+    const prev = currentScore;
+    const backupPath = `${currentPath}.audit-final-round-${round}.bak`;
+    await fs.copyFile(currentPath, backupPath);
+    const roundLessons = normalizeLessons([
+      ...lessons,
+      `Final audit boost (${approachKey}) round ${round}: preserve exact identity/compliance while maximizing deterministic microphysics gains.`,
+      'Prioritize physically causal refinements that increase score without changing composition.',
+    ], LESSON_MAX_PER_PROMPT + 4);
+
+    const phase2 = await runPhase2BoundaryRefinement({
+      concept,
+      index,
+      variation,
+      approachKey,
+      profile: currentProfileTag,
+      baselinePath: currentPath,
+      lessons: roundLessons,
+      referenceMimeType,
+      referenceB64,
+      previousScore: prev,
+    });
+
+    let candidate = prev;
+    if (phase2.applied) {
+      if (Number.isFinite(Number(phase2?.score?.overall))) {
+        candidate = phase2.score;
+      } else {
+        const candidateB64 = (await fs.readFile(currentPath)).toString('base64');
+        candidate = await scoreFrontierCandidate({
+          referenceMimeType,
+          referenceB64,
+          candidateMimeType: mimeTypeFromPath(currentPath),
+          candidateB64,
+          concept,
+          expression: expressions[index % expressions.length],
+          profile: `${approachKey}-final-audit-round${round}/${currentProfileTag}`,
+        });
+      }
+    }
+
+    const evalRes = evaluateIterationCandidate(candidate, prev);
+    const gain = (Number(candidate?.overall) || 0) - (Number(prev?.overall) || 0);
+    let accepted = false;
+    if (phase2.applied && evalRes.acceptable && gain >= minGain) {
+      accepted = true;
+      currentScore = candidate;
+      if (phase2.profileUsed) currentProfileTag = phase2.profileUsed;
+      gainTotal += gain;
+    } else {
+      await fs.copyFile(backupPath, currentPath);
+    }
+    await fs.unlink(backupPath).catch(() => {});
+
+    rounds.push({
+      round,
+      ...phase2,
+      accepted,
+      gain,
+      score_before: Number(prev?.overall) || 0,
+      score_after: accepted ? (Number(currentScore?.overall) || 0) : (Number(prev?.overall) || 0),
+      candidate_eval: evalRes,
+    });
+
+    console.log(`FINAL AUDIT BOOST ${approachKey} ROUND ${round}: ${prev.overall.toFixed(2)} -> ${(accepted ? currentScore.overall : prev.overall).toFixed(2)} (gain ${accepted ? gain.toFixed(2) : '0.00'})`);
+    if (!accepted || gain < minGain) {
+      console.log(`FINAL AUDIT BOOST STOP (${approachKey}): gain ${gain.toFixed(2)} < threshold ${minGain.toFixed(2)} or candidate rejected.`);
+      break;
+    }
+  }
+
+  return {
+    path: currentPath,
+    score: currentScore,
+    profileTag: currentProfileTag,
+    rounds,
+    applied: rounds.some(r => r.accepted),
+    gain_total: gainTotal,
+  };
+}
+
+function deriveStrategyCLessons(scoreA, scoreB, baseLessons = [], options = {}) {
+  const winnerAB = scoreA.overall >= scoreB.overall ? 'A' : 'B';
+  const loserAB = winnerAB === 'A' ? 'B' : 'A';
+  const winnerScore = winnerAB === 'A' ? scoreA : scoreB;
+  const loserScore = loserAB === 'A' ? scoreA : scoreB;
+  const deepAudit = options?.deepAudit || null;
+  const concept = options?.concept || null;
+  const variation = options?.variation || null;
+  const overallDelta = Math.abs((Number(scoreA?.overall) || 0) - (Number(scoreB?.overall) || 0));
+
+  const metricOrder = [
+    'identity_score',
+    'anatomy_score',
+    'garment_physics_score',
+    'optics_score',
+    'realism_score',
+    'compliance_score',
+  ];
+  const metricLabel = {
+    identity_score: 'identity',
+    anatomy_score: 'anatomy',
+    garment_physics_score: 'garment physics',
+    optics_score: 'optics',
+    realism_score: 'realism',
+    compliance_score: 'compliance',
+  };
+  const auditMetrics = Array.isArray(deepAudit?.metrics) && deepAudit.metrics.length
+    ? deepAudit.metrics
+    : metricOrder.map(key => {
+      const a = metricValue(scoreA, key);
+      const b = metricValue(scoreB, key);
+      const delta = a - b;
+      return {
+        key,
+        a,
+        b,
+        delta,
+        absDelta: Math.abs(delta),
+        leader: delta >= 0 ? 'A' : 'B',
+      };
+    });
+
+  const winnerLeadMetrics = auditMetrics
+    .filter(m => normalizeApproach(m?.leader, 'A') === winnerAB && Number(m?.absDelta) >= 0.25)
+    .sort((x, y) => (Number(y?.absDelta) || 0) - (Number(x?.absDelta) || 0))
+    .slice(0, 3);
+  const loserLeadMetrics = auditMetrics
+    .filter(m => normalizeApproach(m?.leader, 'A') === loserAB && Number(m?.absDelta) >= 0.20)
+    .sort((x, y) => (Number(y?.absDelta) || 0) - (Number(x?.absDelta) || 0))
+    .slice(0, 3);
+  const weakWinnerMetrics = metricOrder
+    .map(key => ({ key, value: metricValue(winnerScore, key) }))
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 3);
+
+  const lessons = [
+    `C first-principles scaffold: start from ${winnerAB} because it leads overall quality and preserves identity/compliance stability.`,
+    `C assumption test: do not merge A/B globally. Merge only traits with measurable metric advantage and visible in-frame causal evidence.`,
+    `C hard objective: maximize deterministic lift over best(A,B) while preserving exact identity topology, plausible anatomy, and compliance-safe framing.`,
+    `C Pass A plan: lock ${winnerAB} macro composition and event hierarchy first; reject any change that alters framing or subject identity.`,
+    `C Pass B plan: import only validated micro-gains from ${loserAB} (optics/seam/contact/sensor) where ${loserAB} has audited lead.`,
+    'C conflict rule: if A/B directives conflict, keep the option with stronger causal realism and guardrail safety, not stylistic intensity.',
+  ];
+
+  if (concept?.name) {
+    lessons.push(`C narrative anchor: keep "${concept.name}" as one premium hero moment with one dominant spectacle cue and one restrained support cue.`);
+  }
+  if (variation?.motif?.name) {
+    lessons.push(`C event motif anchor: preserve ${variation.motif.name} as the dominant spectacle signal while keeping subject prominence first.`);
+  }
+
+  for (const m of winnerLeadMetrics) {
+    const key = String(m?.key || '').trim();
+    if (!METRIC_GAP_DIRECTIVES[key]) continue;
+    lessons.push(
+      `C keep-${winnerAB} advantage (${metricLabel[key] || key}, Δ=${Number(m.absDelta || 0).toFixed(2)}): retain ${winnerAB} baseline behavior.`
+    );
+  }
+  for (const m of loserLeadMetrics) {
+    const key = String(m?.key || '').trim();
+    if (!METRIC_GAP_DIRECTIVES[key]) continue;
+    lessons.push(
+      `C import-from-${loserAB} (${metricLabel[key] || key}, Δ=${Number(m.absDelta || 0).toFixed(2)}): ${METRIC_GAP_DIRECTIVES[key]}`
+    );
+  }
+  for (const m of weakWinnerMetrics) {
+    if (m.value <= 9.6 && METRIC_GAP_DIRECTIVES[m.key]) {
+      lessons.push(`C close-${winnerAB}-weakness (${metricLabel[m.key] || m.key}=${m.value.toFixed(2)}): ${METRIC_GAP_DIRECTIVES[m.key]}`);
+    }
+  }
+
+  if (overallDelta < 0.2) {
+    lessons.push(
+      'A/B are near-tied: reduce stylistic exploration, increase audit strictness, and prioritize physics/compliance gains that are provable in-frame.'
+    );
+  } else {
+    lessons.push(
+      `A/B separation is meaningful (Δ=${overallDelta.toFixed(2)}): preserve ${winnerAB} backbone and use ${loserAB} only as targeted micro-upgrade source.`
+    );
+  }
+
+  const gapLessons = deriveMetricGapLessons(scoreA, scoreB);
+  const maxLessons = Math.max(6, parseInt(options?.maxLessons || C_STRATEGY_LESSON_MAX, 10));
+  const cCoreLessons = normalizeLessons([...lessons, ...gapLessons], Math.max(maxLessons * 3, 30));
+  return mergeLessonsByPriority(cCoreLessons, baseLessons, maxLessons);
+}
+
+function deriveABCIterationHints(scoreA, scoreB, scoreC) {
+  const hints = [];
+  const bestAB = Math.max(scoreA.overall, scoreB.overall);
+  const cGain = scoreC.overall - bestAB;
+  if (cGain > 0.25) {
+    hints.push('Approach C fusion is outperforming; increase C weighting in future batches.');
+  } else if (cGain < -0.25) {
+    hints.push('Approach C fusion is underperforming; reduce lesson count and prioritize top 3 directives only.');
+  } else {
+    hints.push('Approach C is close to A/B; keep fusion but tighten lesson specificity and conflict resolution.');
+  }
+
+  if (metricValue(scoreC, 'identity_score') < Math.max(metricValue(scoreA, 'identity_score'), metricValue(scoreB, 'identity_score')) - 0.4) {
+    hints.push('Approach C: strengthen identity lock in both passes before micro-detail optimization.');
+  }
+  if (metricValue(scoreC, 'garment_physics_score') < Math.max(metricValue(scoreA, 'garment_physics_score'), metricValue(scoreB, 'garment_physics_score')) - 0.4) {
+    hints.push('Approach C: add stronger seam/load-path constraints and wet-state tension checks.');
+  }
+  if (metricValue(scoreC, 'compliance_score') < Math.max(metricValue(scoreA, 'compliance_score'), metricValue(scoreB, 'compliance_score')) - 0.4) {
+    hints.push('Approach C: trim directional intensity language to protect compliance score.');
+  }
+  return normalizeLessons(hints, 8);
+}
+
+function deriveFinalBoostLessons(winnerScore, challengerScore) {
+  const lessons = [
+    'Final boost objective: maximize deterministic quality gain while preserving exact framing, identity, and compliance.',
+    'Do not alter composition; improve only physically causal micro-detail and optical consistency.',
+  ];
+  for (const key of Object.keys(METRIC_GAP_DIRECTIVES)) {
+    const w = metricValue(winnerScore, key);
+    const c = metricValue(challengerScore, key);
+    if (w + 0.15 < c) {
+      lessons.push(`Final boost (${key}): ${METRIC_GAP_DIRECTIVES[key]}`);
+    } else if (w < 9.7) {
+      lessons.push(`Final polish (${key}): ${METRIC_GAP_DIRECTIVES[key]}`);
+    }
+  }
+  return normalizeLessons(lessons, LESSON_MAX_PER_PROMPT + 4);
+}
+
+function bestChallengerForFinalBoost(winnerApproach, scoreByApproach) {
+  const ranked = STRATEGY_KEYS
+    .filter(key => key !== winnerApproach)
+    .map(key => ({ key, score: scoreByApproach?.[key] }))
+    .filter(item => Number.isFinite(Number(item?.score?.overall)))
+    .sort((a, b) => (Number(b?.score?.overall) || 0) - (Number(a?.score?.overall) || 0));
+  if (ranked.length > 0) return ranked[0];
+  return { key: winnerApproach, score: scoreByApproach?.[winnerApproach] };
+}
+
+function finalBoostRoundsFromShortfall(preFinalMultiplier, targetMultiplier, baseRounds = FINAL_AUDIT_BOOST_ROUNDS_MAX) {
+  const shortfall = Math.max(0, (Number(targetMultiplier) || 0) - (Number(preFinalMultiplier) || 0));
+  const extraRounds = Math.min(
+    FINAL_AUDIT_SHORTFALL_EXTRA_ROUNDS_MAX,
+    Math.ceil(shortfall / Math.max(0.01, FINAL_AUDIT_SHORTFALL_STEP))
+  );
+  return {
+    shortfall,
+    extra_rounds: Math.max(0, Number(extraRounds) || 0),
+    max_rounds: Math.max(0, Number(baseRounds) || 0) + Math.max(0, Number(extraRounds) || 0),
+  };
+}
+
+function deriveFinalBoostCrossChallengerLessons(winnerApproach, winnerScore, scoreByApproach) {
+  const lessons = [];
+  const leaders = {};
+  for (const metricKey of Object.keys(METRIC_GAP_DIRECTIVES)) {
+    let leaderApproach = winnerApproach;
+    let leaderValue = metricValue(winnerScore, metricKey);
+    for (const key of STRATEGY_KEYS) {
+      if (key === winnerApproach) continue;
+      const value = metricValue(scoreByApproach?.[key], metricKey);
+      if (value > leaderValue) {
+        leaderApproach = key;
+        leaderValue = value;
+      }
+    }
+    leaders[metricKey] = { approach: leaderApproach, score: leaderValue };
+    const winnerValue = metricValue(winnerScore, metricKey);
+    if (leaderApproach !== winnerApproach && winnerValue + 0.15 < leaderValue) {
+      lessons.push(
+        `Metric chase (${metricKey}): close ${leaderApproach} lead while preserving ${winnerApproach} identity/compliance lock. ` +
+        `${METRIC_GAP_DIRECTIVES[metricKey]}`
+      );
+    }
+  }
+  return {
+    lessons: normalizeLessons(lessons, LESSON_MAX_PER_PROMPT + 4),
+    leaders,
+  };
+}
+
+function extractHistoricalLessons(summary, records) {
+  const ranked = weightedHistoricalLessons(summary, records);
+  if (ranked.length) return normalizeLessons(ranked, LESSON_MAX_PER_PROMPT);
+  const fromSummary = [
+    ...(summary?.top_lessons || []).map(x => x?.lesson || x?.hint || ''),
+    ...(summary?.top_hints || []).map(x => x?.hint || ''),
+  ];
+  const fromRecent = (records || [])
+    .slice(Math.max(0, (records || []).length - 10))
+    .flatMap(r => [...(r?.lessons?.all || []), ...(r?.hints || [])]);
+  return normalizeLessons([...fromSummary, ...fromRecent], LESSON_MAX_PER_PROMPT);
+}
+
+function normalizeAuditSummary(records) {
+  const emptyMetrics = () => ({
+    identity: 0,
+    anatomy: 0,
+    garment_physics: 0,
+    optics: 0,
+    realism: 0,
+    compliance: 0,
+    composition: 0,
+    lighting_intent: 0,
+    editorial_consistency: 0,
+  });
+  const empty = {
+    concepts: 0,
+    wins: Object.fromEntries(STRATEGY_KEYS.map(k => [k, 0])),
+    strategy_counts: Object.fromEntries(STRATEGY_KEYS.map(k => [k, 0])),
+    avg_overall: Object.fromEntries(STRATEGY_KEYS.map(k => [k, 0])),
+    avg_metrics: Object.fromEntries(STRATEGY_KEYS.map(k => [k, emptyMetrics()])),
+    c_gain_percent_vs_best_ab: {
+      avg: 0,
+      max: 0,
+      min: 0,
+      target: TARGET_QUALITY_GAIN_PCT,
+      target_hit_count: 0,
+    },
+    profile_performance: Object.fromEntries(STRATEGY_KEYS.map(k => [k, {}])),
+    top_hints: [],
+    top_lessons: [],
+  };
+  if (!records.length) return empty;
+
+  const sums = Object.fromEntries(STRATEGY_KEYS.map(k => [k, { overall: 0, ...emptyMetrics() }]));
+  const hintCounts = new Map();
+  const lessonCounts = new Map();
+  const cGains = [];
+
+  for (const r of records) {
+    const winner = normalizeApproach(r?.winner?.approach, 'A');
+    empty.wins[winner] += 1;
+
+    for (const key of STRATEGY_KEYS) {
+      const score = r?.strategies?.[key]?.score;
+      if (!score || !Number.isFinite(Number(score.overall))) continue;
+      empty.strategy_counts[key] += 1;
+      sums[key].overall += Number(score.overall) || 0;
+      sums[key].identity += metricValue(score, 'identity_score');
+      sums[key].anatomy += metricValue(score, 'anatomy_score');
+      sums[key].garment_physics += metricValue(score, 'garment_physics_score');
+      sums[key].optics += metricValue(score, 'optics_score');
+      sums[key].realism += metricValue(score, 'realism_score');
+      sums[key].compliance += metricValue(score, 'compliance_score');
+      sums[key].composition += metricValue(score, 'composition_score');
+      sums[key].lighting_intent += metricValue(score, 'lighting_intent_score');
+      sums[key].editorial_consistency += metricValue(score, 'editorial_consistency_score');
+
+      const profileKey = normalizeFrontierProfile(r?.strategies?.[key]?.passA_profile || '');
+      if (!empty.profile_performance[key][profileKey]) {
+        empty.profile_performance[key][profileKey] = { count: 0, wins: 0, sum_overall: 0, avg_overall: 0, win_rate: 0 };
+      }
+      const profileStats = empty.profile_performance[key][profileKey];
+      profileStats.count += 1;
+      profileStats.sum_overall += Number(score.overall) || 0;
+      if (winner === key) profileStats.wins += 1;
+    }
+
+    for (const hint of normalizeLessons(r?.hints || [], 20)) {
+      hintCounts.set(hint, (hintCounts.get(hint) || 0) + 1);
+    }
+    for (const lesson of normalizeLessons(r?.lessons?.all || [], 30)) {
+      lessonCounts.set(lesson, (lessonCounts.get(lesson) || 0) + 1);
+    }
+
+    const cGain = Number(r?.comparisons?.c_gain_percent_vs_best_ab);
+    if (Number.isFinite(cGain)) cGains.push(cGain);
+  }
+
+  empty.concepts = records.length;
+  for (const key of STRATEGY_KEYS) {
+    const n = empty.strategy_counts[key];
+    if (!n) continue;
+    empty.avg_overall[key] = sums[key].overall / n;
+    empty.avg_metrics[key].identity = sums[key].identity / n;
+    empty.avg_metrics[key].anatomy = sums[key].anatomy / n;
+    empty.avg_metrics[key].garment_physics = sums[key].garment_physics / n;
+    empty.avg_metrics[key].optics = sums[key].optics / n;
+    empty.avg_metrics[key].realism = sums[key].realism / n;
+    empty.avg_metrics[key].compliance = sums[key].compliance / n;
+    empty.avg_metrics[key].composition = sums[key].composition / n;
+    empty.avg_metrics[key].lighting_intent = sums[key].lighting_intent / n;
+    empty.avg_metrics[key].editorial_consistency = sums[key].editorial_consistency / n;
+
+    for (const profile of Object.keys(empty.profile_performance[key])) {
+      const stats = empty.profile_performance[key][profile];
+      if (!stats.count) continue;
+      stats.avg_overall = stats.sum_overall / stats.count;
+      stats.win_rate = stats.wins / stats.count;
+      delete stats.sum_overall;
+    }
+  }
+
+  if (cGains.length) {
+    const total = cGains.reduce((acc, n) => acc + n, 0);
+    empty.c_gain_percent_vs_best_ab.avg = total / cGains.length;
+    empty.c_gain_percent_vs_best_ab.max = Math.max(...cGains);
+    empty.c_gain_percent_vs_best_ab.min = Math.min(...cGains);
+    empty.c_gain_percent_vs_best_ab.target_hit_count = cGains.filter(v => v >= TARGET_QUALITY_GAIN_PCT).length;
+  }
+
+  empty.top_hints = [...hintCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([hint, count]) => ({ hint, count }));
+
+  empty.top_lessons = [...lessonCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12)
+    .map(([lesson, count]) => ({ lesson, count }));
+
+  return empty;
+}
+
+async function runDualStrategyConcept(concept, inputImage, index) {
+  const expression = expressions[index % expressions.length];
+  const inputMimeType = mimeTypeFromPath(inputImage);
+  const inputB64 = (await fs.readFile(inputImage)).toString('base64');
+  const historicalRecords = await loadAuditRecords();
+  const historicalSummary = normalizeAuditSummary(historicalRecords);
+  const historicalLessons = extractHistoricalLessons(historicalSummary, historicalRecords);
+  const hardeningLevel = currentHardeningLevel();
+  let effectiveABRounds = Math.max(1, AB_ITERATION_ROUNDS_MAX + Math.min(HARDEN_MAX_EXTRA_ROUNDS, hardeningLevel));
+  let effectiveSelfRounds = Math.max(0, APPROACH_SELF_ITERATION_ROUNDS_MAX + Math.min(HARDEN_MAX_EXTRA_SELF_ROUNDS, hardeningLevel));
+  let effectiveCSelfRounds = Math.max(0, C_SELF_ITERATION_ROUNDS_MAX + Math.min(HARDEN_MAX_EXTRA_SELF_ROUNDS, hardeningLevel));
+  let effectiveFinalAuditBaseRounds = Math.max(0, FINAL_AUDIT_BOOST_ROUNDS_MAX + Math.min(HARDEN_MAX_EXTRA_ROUNDS, hardeningLevel));
+  let effectiveLastPassRedoRounds = Math.max(0, LAST_PASS_REDO_ROUNDS_MAX + Math.min(HARDEN_MAX_EXTRA_LAST_PASS_ROUNDS, hardeningLevel));
+  let effectivePhase2Variants = effectivePhase2VariantsPerRound();
+  let qualityEscalationLevel = 0;
+  const qualityEscalationReasons = [];
+
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`[${index + 1}/20] MULTI STRATEGY A/B/C ${concept.name}`);
+  console.log(`${'='.repeat(60)}`);
+  if (HAIL_MARY_MODE) {
+    console.log('HAIL MARY MODE: ON (all attempts prioritize breakthrough gains under hard safety/identity locks).');
+  }
+  if (historicalLessons.length) {
+    console.log(`Historical lessons loaded (${historicalLessons.length}):`);
+    historicalLessons.slice(0, 5).forEach((l, idx2) => console.log(`  ${idx2 + 1}. ${l}`));
+  }
+  console.log(
+    `ITERATION HARDENING: attempt=${CURRENT_CONCEPT_ATTEMPT}/${CURRENT_CONCEPT_MAX_ATTEMPTS} level=${hardeningLevel} ` +
+    `phase2_variants=${effectivePhase2Variants} self_rounds=${effectiveSelfRounds} c_self_rounds=${effectiveCSelfRounds} ` +
+    `ab_rounds=${effectiveABRounds} final_audit_base=${effectiveFinalAuditBaseRounds} last_pass_rounds=${effectiveLastPassRedoRounds}`
+  );
+
+  const profileOrderA = buildApproachProfileOrder('A', historicalRecords);
+  const profileOrderB = buildApproachProfileOrder('B', historicalRecords);
+  const profileOrderCBase = buildApproachProfileOrder('C', historicalRecords);
+  const sharedVariation = LOCK_AB_VARIATION ? buildVariation() : null;
+  const variationForA = sharedVariation || buildVariation();
+  const variationForB = sharedVariation || buildVariation();
+  const variationForC = (LOCK_C_VARIATION_TO_AB && sharedVariation) ? sharedVariation : buildVariation();
+  const cacheAwareWaitSeconds = items => {
+    const reused = (items || []).some(item => {
+      if (!item) return false;
+      if (item.reusedCachedPassA === true) return true;
+      if (String(item.profileUsed || '').includes('cached')) return true;
+      if (Array.isArray(item.attemptLog)) {
+        return item.attemptLog.some(a => String(a?.status || '').includes('reused_cached'));
+      }
+      return false;
+    });
+    return reused ? Math.min(RETRY_WAIT_S, CACHE_REUSE_WAIT_S) : RETRY_WAIT_S;
+  };
+  if (sharedVariation) {
+    console.log(`Controlled variation lock (A/B): ${variationFingerprint(sharedVariation)}`);
+    if (LOCK_C_VARIATION_TO_AB) {
+      console.log('Controlled variation lock (C): reusing A/B variation for fair fusion comparison.');
+    }
+  }
+
+  const passA_A = (await loadResumePassAFrontier({
+    concept,
+    inputImage,
+    index,
+    approach: 'A',
+    lessons: historicalLessons,
+    profileOrder: profileOrderA,
+    variation: variationForA,
+  })) || await generatePassAFrontier(concept, inputImage, index, 'A', {
+    lessons: historicalLessons,
+    profileOrder: profileOrderA,
+    variation: variationForA,
+  });
+  const waitAfterPassAA = cacheAwareWaitSeconds([passA_A]);
+  console.log(`Waiting ${waitAfterPassAA}s between strategy A passes...`);
+  await waitWithHeartbeat(waitAfterPassAA, 'between strategy A passes');
+  const finalA_baseline = (await loadResumeFinalFrontier({
+    concept,
+    approach: 'A',
+    profileHint: passA_A.frontierProfile,
+    lessons: historicalLessons,
+  })) || await generatePassBFrontier(concept, passA_A, inputImage, index, 'A', {
+    lessons: historicalLessons,
+    enableAggressiveBoundary: false,
+  });
+
+  const waitBeforeStrategyB = cacheAwareWaitSeconds([passA_A, finalA_baseline]);
+  console.log(`Waiting ${waitBeforeStrategyB}s before strategy B...`);
+  await waitWithHeartbeat(waitBeforeStrategyB, 'before strategy B');
+  const passA_B = (await loadResumePassAFrontier({
+    concept,
+    inputImage,
+    index,
+    approach: 'B',
+    lessons: historicalLessons,
+    profileOrder: profileOrderB,
+    variation: variationForB,
+  })) || await generatePassAFrontier(concept, inputImage, index, 'B', {
+    lessons: historicalLessons,
+    profileOrder: profileOrderB,
+    variation: variationForB,
+  });
+  const waitAfterPassAB = cacheAwareWaitSeconds([passA_B]);
+  console.log(`Waiting ${waitAfterPassAB}s between strategy B passes...`);
+  await waitWithHeartbeat(waitAfterPassAB, 'between strategy B passes');
+  const finalB_baseline = (await loadResumeFinalFrontier({
+    concept,
+    approach: 'B',
+    profileHint: passA_B.frontierProfile,
+    lessons: historicalLessons,
+  })) || await generatePassBFrontier(concept, passA_B, inputImage, index, 'B', {
+    lessons: historicalLessons,
+    enableAggressiveBoundary: false,
+  });
+
+  const baselineAPath = finalA_baseline.path;
+  const baselineBPath = finalB_baseline.path;
+  const baselineAB64 = (await fs.readFile(baselineAPath)).toString('base64');
+  const baselineBB64 = (await fs.readFile(baselineBPath)).toString('base64');
+  const baselineAMime = mimeTypeFromPath(baselineAPath);
+  const baselineBMime = mimeTypeFromPath(baselineBPath);
+
+  const scoreA_baseline = await scoreFrontierCandidate({
+    referenceMimeType: inputMimeType,
+    referenceB64: inputB64,
+    candidateMimeType: baselineAMime,
+    candidateB64: baselineAB64,
+    concept,
+    expression,
+    profile: `A-baseline/${passA_A.frontierProfile}/${finalA_baseline.profileUsed}`,
+  });
+  const scoreB_baseline = await scoreFrontierCandidate({
+    referenceMimeType: inputMimeType,
+    referenceB64: inputB64,
+    candidateMimeType: baselineBMime,
+    candidateB64: baselineBB64,
+    concept,
+    expression,
+    profile: `B-baseline/${passA_B.frontierProfile}/${finalB_baseline.profileUsed}`,
+  });
+
+  if (QUALITY_ESCALATION_ENABLE && QUALITY_ESCALATION_MAX_EXTRA_ROUNDS > 0) {
+    const baselineMax = Math.max(Number(scoreA_baseline?.overall) || 0, Number(scoreB_baseline?.overall) || 0);
+    const baselineDelta = Math.abs((Number(scoreA_baseline?.overall) || 0) - (Number(scoreB_baseline?.overall) || 0));
+    const underTarget = baselineMax < QUALITY_ESCALATION_SCORE_TRIGGER;
+    const nearTie = baselineDelta <= QUALITY_ESCALATION_TIE_TRIGGER;
+    const rateLimitConstrained = GLOBAL_RATE_LIMIT_STREAK >= RATE_LIMIT_PROFILE_NARROW_STREAK;
+
+    if (!rateLimitConstrained) {
+      if (underTarget) qualityEscalationReasons.push(`baseline_max ${baselineMax.toFixed(2)} < trigger ${QUALITY_ESCALATION_SCORE_TRIGGER.toFixed(2)}`);
+      if (nearTie) qualityEscalationReasons.push(`baseline_delta ${baselineDelta.toFixed(2)} <= tie_trigger ${QUALITY_ESCALATION_TIE_TRIGGER.toFixed(2)}`);
+      qualityEscalationLevel = Math.min(
+        QUALITY_ESCALATION_MAX_EXTRA_ROUNDS,
+        qualityEscalationReasons.length
+      );
+      if (qualityEscalationLevel > 0) {
+        effectiveABRounds += qualityEscalationLevel;
+        effectiveSelfRounds += Math.min(qualityEscalationLevel, 2);
+        effectiveCSelfRounds += Math.min(qualityEscalationLevel, 1);
+        effectiveFinalAuditBaseRounds += qualityEscalationLevel;
+        effectiveLastPassRedoRounds += qualityEscalationLevel;
+        effectivePhase2Variants += Math.min(QUALITY_ESCALATION_MAX_EXTRA_VARIANTS, qualityEscalationLevel);
+        console.log(
+          `QUALITY ESCALATION: level=${qualityEscalationLevel} reasons=${qualityEscalationReasons.join(' | ')} ` +
+          `=> phase2_variants=${effectivePhase2Variants} self_rounds=${effectiveSelfRounds} ` +
+          `c_self_rounds=${effectiveCSelfRounds} ab_rounds=${effectiveABRounds} ` +
+          `final_audit_base=${effectiveFinalAuditBaseRounds} last_pass_rounds=${effectiveLastPassRedoRounds}`
+        );
+      }
+    } else {
+      console.log(
+        `QUALITY ESCALATION SKIPPED: rate-limit pressure streak=${GLOBAL_RATE_LIMIT_STREAK} ` +
+        `>= narrow_threshold=${RATE_LIMIT_PROFILE_NARROW_STREAK}`
+      );
+    }
+  }
+
+  const selfIterA = await runApproachSelfIteration({
+    concept,
+    index,
+    variation: passA_A.variation,
+    approachKey: 'A',
+    profileTag: finalA_baseline.profileUsed,
+    path: baselineAPath,
+    score: scoreA_baseline,
+    historicalLessons,
+    referenceMimeType: inputMimeType,
+    referenceB64: inputB64,
+    maxRounds: effectiveSelfRounds,
+  });
+  const selfIterB = await runApproachSelfIteration({
+    concept,
+    index,
+    variation: passA_B.variation,
+    approachKey: 'B',
+    profileTag: finalB_baseline.profileUsed,
+    path: baselineBPath,
+    score: scoreB_baseline,
+    historicalLessons,
+    referenceMimeType: inputMimeType,
+    referenceB64: inputB64,
+    maxRounds: effectiveSelfRounds,
+  });
+
+  let currentAPath = selfIterA.path;
+  let currentBPath = selfIterB.path;
+  let scoreA = selfIterA.score;
+  let scoreB = selfIterB.score;
+  let profileTagA = selfIterA.profileTag;
+  let profileTagB = selfIterB.profileTag;
+  let phase2LessonsA = selfIterA.lessonsLast || normalizeLessons(historicalLessons, LESSON_MAX_PER_PROMPT);
+  let phase2LessonsB = selfIterB.lessonsLast || normalizeLessons(historicalLessons, LESSON_MAX_PER_PROMPT);
+  const phase2RoundsA = (selfIterA.rounds || []).map(r => ({ stage: 'self', ...r }));
+  const phase2RoundsB = (selfIterB.rounds || []).map(r => ({ stage: 'self', ...r }));
+
+  const baselineHints = deriveABIterationHints(scoreA, scoreB);
+  let deepAudit = deepAuditABBaseline(scoreA, scoreB);
+  console.log('DEEP A/B BASELINE AUDIT:');
+  deepAudit.lines.slice(0, 6).forEach((line, idx2) => console.log(`  ${idx2 + 1}. ${line}`));
+  const abIterationRounds = [];
+
+  for (let round = 1; round <= effectiveABRounds; round++) {
+    const roundHints = deriveABIterationHints(scoreA, scoreB);
+    deepAudit = deepAuditABBaseline(scoreA, scoreB);
+    phase2LessonsA = normalizeLessons(
+      [...historicalLessons, ...baselineHints, ...roundHints, ...deepAudit.lessonsA, ...deepAudit.sharedLessons],
+      LESSON_MAX_PER_PROMPT
+    );
+    phase2LessonsB = normalizeLessons(
+      [...historicalLessons, ...baselineHints, ...roundHints, ...deepAudit.lessonsB, ...deepAudit.sharedLessons],
+      LESSON_MAX_PER_PROMPT
+    );
+
+    const prevA = scoreA;
+    const prevB = scoreB;
+
+    const backupAPath = `${currentAPath}.round-${round}.bak`;
+    const backupBPath = `${currentBPath}.round-${round}.bak`;
+    await fs.copyFile(currentAPath, backupAPath);
+    await fs.copyFile(currentBPath, backupBPath);
+
+    const phase2A = await runPhase2BoundaryRefinement({
+      concept,
+      index,
+      variation: passA_A.variation,
+      approachKey: 'A',
+      profile: profileTagA,
+      baselinePath: currentAPath,
+      lessons: phase2LessonsA,
+      referenceMimeType: inputMimeType,
+      referenceB64: inputB64,
+      previousScore: prevA,
+    });
+    const phase2B = await runPhase2BoundaryRefinement({
+      concept,
+      index,
+      variation: passA_B.variation,
+      approachKey: 'B',
+      profile: profileTagB,
+      baselinePath: currentBPath,
+      lessons: phase2LessonsB,
+      referenceMimeType: inputMimeType,
+      referenceB64: inputB64,
+      previousScore: prevB,
+    });
+
+    let scoreA_candidate = prevA;
+    let scoreB_candidate = prevB;
+    if (phase2A.applied) {
+      if (Number.isFinite(Number(phase2A?.score?.overall))) {
+        scoreA_candidate = phase2A.score;
+      } else {
+        const aB64 = (await fs.readFile(currentAPath)).toString('base64');
+        scoreA_candidate = await scoreFrontierCandidate({
+          referenceMimeType: inputMimeType,
+          referenceB64: inputB64,
+          candidateMimeType: mimeTypeFromPath(currentAPath),
+          candidateB64: aB64,
+          concept,
+          expression,
+          profile: `A-round${round}/${passA_A.frontierProfile}/${phase2A.profileUsed || profileTagA}`,
+        });
+      }
+    }
+    if (phase2B.applied) {
+      if (Number.isFinite(Number(phase2B?.score?.overall))) {
+        scoreB_candidate = phase2B.score;
+      } else {
+        const bB64 = (await fs.readFile(currentBPath)).toString('base64');
+        scoreB_candidate = await scoreFrontierCandidate({
+          referenceMimeType: inputMimeType,
+          referenceB64: inputB64,
+          candidateMimeType: mimeTypeFromPath(currentBPath),
+          candidateB64: bB64,
+          concept,
+          expression,
+          profile: `B-round${round}/${passA_B.frontierProfile}/${phase2B.profileUsed || profileTagB}`,
+        });
+      }
+    }
+
+    const evalA = evaluateIterationCandidate(scoreA_candidate, prevA);
+    const evalB = evaluateIterationCandidate(scoreB_candidate, prevB);
+
+    let acceptedA = true;
+    let acceptedB = true;
+    if (!evalA.acceptable) {
+      await fs.copyFile(backupAPath, currentAPath);
+      scoreA_candidate = prevA;
+      acceptedA = false;
+    }
+    if (!evalB.acceptable) {
+      await fs.copyFile(backupBPath, currentBPath);
+      scoreB_candidate = prevB;
+      acceptedB = false;
+    }
+
+    await fs.unlink(backupAPath).catch(() => {});
+    await fs.unlink(backupBPath).catch(() => {});
+
+    scoreA = scoreA_candidate;
+    scoreB = scoreB_candidate;
+    if (acceptedA && phase2A.applied && phase2A.profileUsed) profileTagA = phase2A.profileUsed;
+    if (acceptedB && phase2B.applied && phase2B.profileUsed) profileTagB = phase2B.profileUsed;
+
+    const gainA = scoreA.overall - prevA.overall;
+    const gainB = scoreB.overall - prevB.overall;
+    const roundRecordA = {
+      stage: 'cross',
+      round,
+      ...phase2A,
+      accepted: acceptedA,
+      gain: gainA,
+      score_before: prevA.overall,
+      score_after: scoreA.overall,
+      candidate_eval: evalA,
+    };
+    const roundRecordB = {
+      stage: 'cross',
+      round,
+      ...phase2B,
+      accepted: acceptedB,
+      gain: gainB,
+      score_before: prevB.overall,
+      score_after: scoreB.overall,
+      candidate_eval: evalB,
+    };
+    phase2RoundsA.push(roundRecordA);
+    phase2RoundsB.push(roundRecordB);
+    abIterationRounds.push({
+      round,
+      gain_A: gainA,
+      gain_B: gainB,
+      score_A: scoreA.overall,
+      score_B: scoreB.overall,
+      accepted_A: acceptedA,
+      accepted_B: acceptedB,
+    });
+
+    console.log(`AB ITER ROUND ${round}: A ${prevA.overall.toFixed(2)} -> ${scoreA.overall.toFixed(2)} (gain ${gainA.toFixed(2)}), B ${prevB.overall.toFixed(2)} -> ${scoreB.overall.toFixed(2)} (gain ${gainB.toFixed(2)})`);
+
+    if (Math.max(gainA, gainB) < AB_ITERATION_MIN_GAIN) {
+      console.log(`AB ITER STOP: max gain ${Math.max(gainA, gainB).toFixed(2)} < threshold ${AB_ITERATION_MIN_GAIN.toFixed(2)}.`);
+      break;
+    }
+  }
+
+  let finalAPath = currentAPath;
+  let finalBPath = currentBPath;
+  deepAudit = deepAuditABBaseline(scoreA, scoreB);
+
+  const abHints = deriveABIterationHints(scoreA, scoreB);
+  const strategyCLessons = deriveStrategyCLessons(
+    scoreA,
+    scoreB,
+    [...historicalLessons, ...baselineHints, ...deepAudit.sharedLessons, ...abHints],
+    {
+      deepAudit,
+      concept,
+      variation: variationForC,
+    }
+  );
+  console.log('C PROMPT SYNTHESIS (A/B audit -> first-principles fusion):');
+  strategyCLessons.slice(0, 6).forEach((lesson, idx2) => console.log(`  C${idx2 + 1}. ${lesson}`));
+  const cPreferredProfiles = C_PROFILE_FOLLOW_AB
+    ? [passA_A.frontierProfile, passA_B.frontierProfile]
+    : [];
+  const profileOrderC = prioritizeProfiles(profileOrderCBase, cPreferredProfiles);
+  console.log(`C PROFILE ORDER: ${profileOrderC.join(', ')} (follow_ab=${C_PROFILE_FOLLOW_AB ? 'on' : 'off'})`);
+
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`[${index + 1}/20] PASS C ${concept.name} (FUSION STRATEGY)`);
+  console.log(`${'='.repeat(60)}`);
+  const waitBeforeStrategyC = cacheAwareWaitSeconds([passA_A, finalA_baseline, passA_B, finalB_baseline]);
+  console.log(`Waiting ${waitBeforeStrategyC}s before strategy C...`);
+  await waitWithHeartbeat(waitBeforeStrategyC, 'before strategy C');
+  const passA_C = await generatePassAFrontier(concept, inputImage, index, 'C', {
+    lessons: strategyCLessons,
+    profileOrder: profileOrderC,
+    variation: variationForC,
+  });
+  const waitAfterPassAC = cacheAwareWaitSeconds([passA_C]);
+  console.log(`Waiting ${waitAfterPassAC}s between strategy C passes...`);
+  await waitWithHeartbeat(waitAfterPassAC, 'between strategy C passes');
+  console.log(`PASS C baseline refinement: profile=${passA_C.frontierProfile}`);
+  const finalC = await generatePassBFrontier(concept, passA_C, inputImage, index, 'C', {
+    lessons: strategyCLessons,
+    enableAggressiveBoundary: false,
+  });
+
+  const finalCBaselinePath = finalC.path;
+  const finalCBaselineB64 = (await fs.readFile(finalCBaselinePath)).toString('base64');
+  const finalCBaselineMime = mimeTypeFromPath(finalCBaselinePath);
+  const scoreC_baseline = await scoreFrontierCandidate({
+    referenceMimeType: inputMimeType,
+    referenceB64: inputB64,
+    candidateMimeType: finalCBaselineMime,
+    candidateB64: finalCBaselineB64,
+    concept,
+    expression,
+    profile: `C/${passA_C.frontierProfile}/${finalC.profileUsed}`,
+  });
+  const selfIterC = await runApproachSelfIteration({
+    concept,
+    index,
+    variation: passA_C.variation,
+    approachKey: 'C',
+    profileTag: finalC.profileUsed,
+    path: finalCBaselinePath,
+    score: scoreC_baseline,
+    historicalLessons: mergeLessonsByPriority(strategyCLessons, historicalLessons, LESSON_MAX_PER_PROMPT),
+    referenceMimeType: inputMimeType,
+    referenceB64: inputB64,
+    maxRounds: effectiveCSelfRounds,
+    minGain: C_SELF_MIN_GAIN,
+  });
+  let finalCPath = selfIterC.path;
+  let scoreC = selfIterC.score;
+  let profileTagC = selfIterC.profileTag;
+  const phase2RoundsC = (selfIterC.rounds || []).map(r => ({ stage: 'self', ...r }));
+
+  // Hard guard: if C identity drifts or C ends on passA-fallback, anchor C to the best A/B identity-stable artifact.
+  const cPassAAttempts = Array.isArray(passA_C?.attemptLog) ? passA_C.attemptLog : [];
+  const cUsedEmergencyPassA = cPassAAttempts.some(a =>
+    String(a?.profile || '') === 'emergency'
+    || String(a?.profile || '') === 'input-scaffold'
+    || String(a?.status || '') === 'input_scaffold_fallback'
+  );
+  const cUsedPassAFallbackFinal = String(finalC?.profileUsed || '').includes('passA-fallback');
+  const cIdentityScore = metricValue(scoreC, 'identity_score');
+  const abBestIdentityScore = Math.max(
+    metricValue(scoreA, 'identity_score'),
+    metricValue(scoreB, 'identity_score')
+  );
+  const cIdentityRisk = (
+    cIdentityScore + 0.35 < abBestIdentityScore
+    || cIdentityScore < Math.max(8.0, IDENTITY_GUARDRAIL - 0.5)
+  );
+  const shouldAnchorCToAB = cUsedPassAFallbackFinal || cIdentityRisk;
+  if (shouldAnchorCToAB) {
+    const anchorApproach = (Number(scoreA?.overall) || 0) >= (Number(scoreB?.overall) || 0) ? 'A' : 'B';
+    const anchorPath = anchorApproach === 'A' ? finalAPath : finalBPath;
+    const anchorScore = anchorApproach === 'A' ? scoreA : scoreB;
+    const anchorProfileTag = anchorApproach === 'A' ? profileTagA : profileTagB;
+    try {
+      await fs.copyFile(anchorPath, finalCPath);
+      scoreC = {
+        overall: Number(anchorScore?.overall) || 0,
+        metrics: { ...(anchorScore?.metrics || {}) },
+        raw: `[identity-anchor:${anchorApproach}] ${String(anchorScore?.raw || '')}`.trim(),
+      };
+      profileTagC = `${anchorProfileTag}+identity-anchor-${anchorApproach}`;
+      phase2RoundsC.push({
+        stage: 'guardrail',
+        round: 0,
+        status: 'identity_anchor_from_ab',
+        source: anchorApproach,
+        applied: true,
+        accepted: true,
+        gain: 0,
+      });
+      console.log(
+        `C IDENTITY GUARD: anchored strategy C to strategy ${anchorApproach} ` +
+        `(emergency=${cUsedEmergencyPassA}, passA_fallback=${cUsedPassAFallbackFinal}, identity_risk=${cIdentityRisk}, ` +
+        `c_identity=${cIdentityScore.toFixed(2)}, ab_best_identity=${abBestIdentityScore.toFixed(2)}).`
+      );
+    } catch (anchorErr) {
+      console.log(`C IDENTITY GUARD: failed to anchor strategy C to A/B artifact: ${anchorErr.message}`);
+    }
+  }
+
+  const seedABScore = Math.max(
+    Number(passA_A?.frontierPassAScore?.overall) || 0,
+    Number(passA_B?.frontierPassAScore?.overall) || 0
+  );
+  const initialABScore = Math.max(
+    Number(scoreA_baseline?.overall) || 0,
+    Number(scoreB_baseline?.overall) || 0
+  );
+  const revisedABScore = Math.max(
+    Number(scoreA?.overall) || 0,
+    Number(scoreB?.overall) || 0
+  );
+  const preFinalBoostLessons = normalizeLessons(
+    [
+      ...historicalLessons,
+      ...(selfIterA.lessonsLast || []),
+      ...(selfIterB.lessonsLast || []),
+      ...(selfIterC.lessonsLast || []),
+      ...baselineHints,
+      ...deepAudit.lessonsA,
+      ...deepAudit.lessonsB,
+      ...deepAudit.sharedLessons,
+      ...abHints,
+      ...strategyCLessons,
+      'Final-stage target: maximize final output quality after audit, with strict identity/compliance locks.',
+    ],
+    Math.max(18, LESSON_MAX_PER_PROMPT + 6)
+  );
+
+  let scoreByApproach = {
+    A: scoreA,
+    B: scoreB,
+    C: scoreC,
+  };
+  let winner = selectWinnerWithGuardrails(scoreByApproach);
+  let winnerApproach = normalizeApproach(winner.key, 'A');
+  const contextForApproach = approach => (
+    approach === 'A'
+      ? { profileTag: profileTagA, path: finalAPath, score: scoreA, variation: passA_A.variation }
+      : (approach === 'B'
+        ? { profileTag: profileTagB, path: finalBPath, score: scoreB, variation: passA_B.variation }
+        : { profileTag: profileTagC, path: finalCPath, score: scoreC, variation: passA_C.variation })
+  );
+  const preFinalRanking = STRATEGY_KEYS
+    .map(key => ({ key, overall: Number(scoreByApproach?.[key]?.overall) || 0 }))
+    .sort((a, b) => b.overall - a.overall);
+  const preFinalGapToRunnerUp = (preFinalRanking[0]?.overall || 0) - (preFinalRanking[1]?.overall || 0);
+  const preFinalWinnerApproach = winnerApproach;
+  const winnerContext = contextForApproach(winnerApproach);
+  const preFinalMultiplier = qualityMultiplier(winnerContext.score, revisedABScore);
+  const finalBoostBudget = finalBoostRoundsFromShortfall(
+    preFinalMultiplier,
+    FINAL_QUALITY_TARGET_MULTIPLIER,
+    effectiveFinalAuditBaseRounds
+  );
+  const finalBoostChallenger = bestChallengerForFinalBoost(winnerApproach, scoreByApproach);
+  const finalBoostCrossChallenger = deriveFinalBoostCrossChallengerLessons(
+    winnerApproach,
+    winnerContext.score,
+    scoreByApproach
+  );
+  const finalBoostLessons = normalizeLessons(
+    [
+      ...preFinalBoostLessons,
+      ...deriveFinalBoostLessons(winnerContext.score, finalBoostChallenger.score),
+      ...finalBoostCrossChallenger.lessons,
+      `Final boost challenger anchor: match/exceed ${finalBoostChallenger.key} on metrics where it leads while preserving ${winnerApproach} identity/compliance lock.`,
+    ],
+    Math.max(20, LESSON_MAX_PER_PROMPT + 8)
+  );
+  console.log(
+    `FINAL BOOST PLAN ${concept.name}: winner=${winnerApproach} challenger=${finalBoostChallenger.key} ` +
+    `pre=${preFinalMultiplier.toFixed(2)}x target=${FINAL_QUALITY_TARGET_MULTIPLIER.toFixed(2)}x ` +
+    `rounds=${finalBoostBudget.max_rounds} (base=${FINAL_AUDIT_BOOST_ROUNDS_MAX}, extra=${finalBoostBudget.extra_rounds})`
+  );
+
+  const finalAuditBoost = await runAuditGuidedFinalBoost({
+    concept,
+    index,
+    variation: winnerContext.variation,
+    approachKey: winnerApproach,
+    profileTag: winnerContext.profileTag,
+    path: winnerContext.path,
+    score: winnerContext.score,
+    lessons: finalBoostLessons,
+    referenceMimeType: inputMimeType,
+    referenceB64: inputB64,
+    maxRounds: finalBoostBudget.max_rounds,
+  });
+  let finalAuditBoostRunnerUp = { attempted: false, applied: false, rounds: [] };
+
+  if (finalAuditBoost.applied) {
+    if (winnerApproach === 'A') {
+      finalAPath = finalAuditBoost.path;
+      scoreA = finalAuditBoost.score;
+      profileTagA = finalAuditBoost.profileTag;
+      phase2RoundsA.push(...(finalAuditBoost.rounds || []).map(r => ({ stage: 'final_audit', ...r })));
+    } else if (winnerApproach === 'B') {
+      finalBPath = finalAuditBoost.path;
+      scoreB = finalAuditBoost.score;
+      profileTagB = finalAuditBoost.profileTag;
+      phase2RoundsB.push(...(finalAuditBoost.rounds || []).map(r => ({ stage: 'final_audit', ...r })));
+    } else {
+      finalCPath = finalAuditBoost.path;
+      scoreC = finalAuditBoost.score;
+      profileTagC = finalAuditBoost.profileTag;
+      phase2RoundsC.push(...(finalAuditBoost.rounds || []).map(r => ({ stage: 'final_audit', ...r })));
+    }
+  }
+
+  scoreByApproach = {
+    A: scoreA,
+    B: scoreB,
+    C: scoreC,
+  };
+  const postWinner = selectWinnerWithGuardrails(scoreByApproach);
+  const postWinnerApproach = normalizeApproach(postWinner.key, 'A');
+  const postWinnerRanking = STRATEGY_KEYS
+    .map(key => ({ key, overall: Number(scoreByApproach?.[key]?.overall) || 0 }))
+    .sort((a, b) => b.overall - a.overall);
+  const postWinnerRunnerUp = postWinnerRanking.find(item => item.key !== postWinnerApproach);
+  const postWinnerGap = (postWinnerRanking[0]?.overall || 0) - (postWinnerRunnerUp?.overall || 0);
+  const shouldBoostRunnerUp = Boolean(
+    postWinnerRunnerUp &&
+    (
+      finalBoostBudget.shortfall >= 0.2 ||
+      postWinnerGap <= (WINNER_TIE_BAND + 0.05)
+    )
+  );
+  if (shouldBoostRunnerUp) {
+    const runnerUpApproach = postWinnerRunnerUp.key;
+    const runnerUpContext = contextForApproach(runnerUpApproach);
+    const runnerUpChallenger = bestChallengerForFinalBoost(runnerUpApproach, scoreByApproach);
+    const runnerUpCrossChallenger = deriveFinalBoostCrossChallengerLessons(
+      runnerUpApproach,
+      runnerUpContext.score,
+      scoreByApproach
+    );
+    const runnerUpMaxRounds = Math.max(1, Math.min(finalBoostBudget.max_rounds, effectiveFinalAuditBaseRounds + 1));
+    const runnerUpLessons = normalizeLessons(
+      [
+        ...preFinalBoostLessons,
+        ...deriveFinalBoostLessons(runnerUpContext.score, runnerUpChallenger.score),
+        ...runnerUpCrossChallenger.lessons,
+        `Runner-up audit boost: test latent upside in ${runnerUpApproach} while preserving strict identity/compliance invariants.`,
+      ],
+      Math.max(18, LESSON_MAX_PER_PROMPT + 7)
+    );
+    console.log(
+      `FINAL BOOST RUNNER-UP ${concept.name}: approach=${runnerUpApproach} gap=${postWinnerGap.toFixed(2)} ` +
+      `shortfall=${finalBoostBudget.shortfall.toFixed(2)} rounds=${runnerUpMaxRounds}`
+    );
+    const runnerUpBoost = await runAuditGuidedFinalBoost({
+      concept,
+      index,
+      variation: runnerUpContext.variation,
+      approachKey: runnerUpApproach,
+      profileTag: runnerUpContext.profileTag,
+      path: runnerUpContext.path,
+      score: runnerUpContext.score,
+      lessons: runnerUpLessons,
+      referenceMimeType: inputMimeType,
+      referenceB64: inputB64,
+      maxRounds: runnerUpMaxRounds,
+    });
+    finalAuditBoostRunnerUp = {
+      ...runnerUpBoost,
+      attempted: true,
+      approach: runnerUpApproach,
+      gap_before: postWinnerGap,
+      max_rounds: runnerUpMaxRounds,
+    };
+    if (runnerUpBoost.applied) {
+      if (runnerUpApproach === 'A') {
+        finalAPath = runnerUpBoost.path;
+        scoreA = runnerUpBoost.score;
+        profileTagA = runnerUpBoost.profileTag;
+        phase2RoundsA.push(...(runnerUpBoost.rounds || []).map(r => ({ stage: 'final_audit_runner_up', ...r })));
+      } else if (runnerUpApproach === 'B') {
+        finalBPath = runnerUpBoost.path;
+        scoreB = runnerUpBoost.score;
+        profileTagB = runnerUpBoost.profileTag;
+        phase2RoundsB.push(...(runnerUpBoost.rounds || []).map(r => ({ stage: 'final_audit_runner_up', ...r })));
+      } else {
+        finalCPath = runnerUpBoost.path;
+        scoreC = runnerUpBoost.score;
+        profileTagC = runnerUpBoost.profileTag;
+        phase2RoundsC.push(...(runnerUpBoost.rounds || []).map(r => ({ stage: 'final_audit_runner_up', ...r })));
+      }
+    }
+  }
+
+  let lastPassRedo = {
+    attempted: false,
+    triggered: false,
+    reason: '',
+    candidates: [],
+    shortfall: 0,
+    pre_gap: 0,
+    results: [],
+  };
+  const preRedoScores = {
+    A: scoreA,
+    B: scoreB,
+    C: scoreC,
+  };
+  const preRedoRanking = STRATEGY_KEYS
+    .map(key => ({ key, overall: Number(preRedoScores?.[key]?.overall) || 0 }))
+    .sort((a, b) => b.overall - a.overall);
+  const preRedoTop = preRedoRanking[0] || { key: 'A', overall: 0 };
+  const preRedoSecond = preRedoRanking[1] || { key: preRedoTop.key, overall: preRedoTop.overall };
+  const preRedoGap = (Number(preRedoTop.overall) || 0) - (Number(preRedoSecond.overall) || 0);
+  const preRedoMultiplier = qualityMultiplier(preRedoScores[preRedoTop.key], revisedABScore);
+  const preRedoShortfall = Math.max(0, FINAL_QUALITY_TARGET_MULTIPLIER - preRedoMultiplier);
+  const triggerLastPassRedo = LAST_PASS_REDO_ENABLED
+    && effectiveLastPassRedoRounds > 0
+    && (
+      preRedoShortfall >= LAST_PASS_REDO_SHORTFALL_TRIGGER
+      || preRedoGap <= (WINNER_TIE_BAND + LAST_PASS_REDO_TIE_BAND_ADD)
+    );
+
+  if (triggerLastPassRedo) {
+    const redoCandidates = preRedoRanking
+      .filter((item, idx) => idx < 2 || ((Number(preRedoTop.overall) || 0) - Number(item.overall || 0)) <= WINNER_TIE_BAND)
+      .map(item => item.key);
+    const redoMaxRounds = effectiveLastPassRedoRounds + Math.min(
+      1,
+      Math.ceil(preRedoShortfall / Math.max(0.01, LAST_PASS_REDO_SHORTFALL_TRIGGER))
+    );
+    const redoReason = preRedoShortfall >= LAST_PASS_REDO_SHORTFALL_TRIGGER
+      ? `target shortfall ${preRedoShortfall.toFixed(2)}`
+      : `tight gap ${preRedoGap.toFixed(2)}`;
+    lastPassRedo = {
+      ...lastPassRedo,
+      attempted: true,
+      triggered: true,
+      reason: redoReason,
+      candidates: redoCandidates,
+      shortfall: preRedoShortfall,
+      pre_gap: preRedoGap,
+    };
+    console.log(
+      `LAST PASS REDO PLAN ${concept.name}: reason=${redoReason} candidates=${redoCandidates.join(',')} ` +
+      `rounds=${redoMaxRounds}`
+    );
+    for (const redoApproach of redoCandidates) {
+      const currentScores = { A: scoreA, B: scoreB, C: scoreC };
+      const redoContext = contextForApproach(redoApproach);
+      const redoChallenger = bestChallengerForFinalBoost(redoApproach, currentScores);
+      const redoCross = deriveFinalBoostCrossChallengerLessons(
+        redoApproach,
+        redoContext.score,
+        currentScores
+      );
+      const redoLessons = normalizeLessons(
+        [
+          ...preFinalBoostLessons,
+          ...deriveFinalBoostLessons(redoContext.score, redoChallenger.score),
+          ...redoCross.lessons,
+          `Redo last pass (${redoApproach}): preserve identity/compliance and push final deterministic gain beyond current frontier.`,
+        ],
+        Math.max(18, LESSON_MAX_PER_PROMPT + 8)
+      );
+      const redoBoost = await runAuditGuidedFinalBoost({
+        concept,
+        index,
+        variation: redoContext.variation,
+        approachKey: redoApproach,
+        profileTag: redoContext.profileTag,
+        path: redoContext.path,
+        score: redoContext.score,
+        lessons: redoLessons,
+        referenceMimeType: inputMimeType,
+        referenceB64: inputB64,
+        maxRounds: redoMaxRounds,
+      });
+      lastPassRedo.results.push({
+        approach: redoApproach,
+        applied: redoBoost.applied === true,
+        gain_total: Number(redoBoost.gain_total) || 0,
+        rounds: Array.isArray(redoBoost.rounds) ? redoBoost.rounds.length : 0,
+      });
+      if (redoBoost.applied) {
+        if (redoApproach === 'A') {
+          finalAPath = redoBoost.path;
+          scoreA = redoBoost.score;
+          profileTagA = redoBoost.profileTag;
+          phase2RoundsA.push(...(redoBoost.rounds || []).map(r => ({ stage: 'redo_last_pass', ...r })));
+        } else if (redoApproach === 'B') {
+          finalBPath = redoBoost.path;
+          scoreB = redoBoost.score;
+          profileTagB = redoBoost.profileTag;
+          phase2RoundsB.push(...(redoBoost.rounds || []).map(r => ({ stage: 'redo_last_pass', ...r })));
+        } else {
+          finalCPath = redoBoost.path;
+          scoreC = redoBoost.score;
+          profileTagC = redoBoost.profileTag;
+          phase2RoundsC.push(...(redoBoost.rounds || []).map(r => ({ stage: 'redo_last_pass', ...r })));
+        }
+      }
+    }
+  }
+
+  scoreByApproach = {
+    A: scoreA,
+    B: scoreB,
+    C: scoreC,
+  };
+  const overallByApproach = {
+    A: scoreA.overall,
+    B: scoreB.overall,
+    C: scoreC.overall,
+  };
+  winner = selectWinnerWithGuardrails(scoreByApproach);
+  winnerApproach = normalizeApproach(winner.key, 'A');
+  const winnerPath = winnerApproach === 'A'
+    ? finalAPath
+    : (winnerApproach === 'B' ? finalBPath : finalCPath);
+  const canonicalPath = path.join(OUTPUT_DIR, `${concept.name}.png`);
+  await fs.copyFile(winnerPath, canonicalPath);
+
+  const bestAB = Math.max(overallByApproach.A, overallByApproach.B);
+  const cGainVsBestABBaseline = scoreC_baseline.overall - bestAB;
+  const cGainVsBestAB = scoreC.overall - bestAB;
+  const cGainVsBestABPct = bestAB > 0 ? ((cGainVsBestAB / bestAB) * 100) : 0;
+  const finalWinnerScore = Number(scoreByApproach[winnerApproach]?.overall) || 0;
+  const phaseMultipliers = {
+    initial_from_seed: qualityMultiplier(initialABScore, seedABScore),
+    revised_from_initial: qualityMultiplier(revisedABScore, initialABScore),
+    final_from_revised: qualityMultiplier(finalWinnerScore, revisedABScore),
+    final_c_from_revised: qualityMultiplier(scoreC, revisedABScore),
+    targets: {
+      initial: INITIAL_QUALITY_TARGET_MULTIPLIER,
+      revised: REVISED_QUALITY_TARGET_MULTIPLIER,
+      final: FINAL_QUALITY_TARGET_MULTIPLIER,
+    },
+  };
+  phaseMultipliers.target_hits = {
+    initial: phaseMultipliers.initial_from_seed >= phaseMultipliers.targets.initial,
+    revised: phaseMultipliers.revised_from_initial >= phaseMultipliers.targets.revised,
+    final: phaseMultipliers.final_from_revised >= phaseMultipliers.targets.final,
+  };
+  const qualityGate = {
+    min_final_multiplier: MIN_FINAL_MULTIPLIER_GATE,
+    final_from_revised: Number(phaseMultipliers.final_from_revised) || 0,
+    pass: (Number(phaseMultipliers.final_from_revised) || 0) >= MIN_FINAL_MULTIPLIER_GATE,
+    strict: STRICT_QUALITY_GATE,
+  };
+  const auditQualitySignals = buildAuditQualitySignals({
+    scoreByApproach,
+    winnerApproach,
+    phase2Rounds: {
+      A: phase2RoundsA,
+      B: phase2RoundsB,
+      C: phase2RoundsC,
+    },
+  });
+  const hints = deriveABCIterationHints(scoreA, scoreB, scoreC);
+  const allLessons = mergeLessonsByPriority(
+    [
+      ...strategyCLessons,
+      ...hints,
+      ...(selfIterC.lessonsLast || []),
+      ...(selfIterA.lessonsLast || []),
+      ...(selfIterB.lessonsLast || []),
+      ...abHints,
+    ],
+    [
+      ...historicalLessons,
+      ...baselineHints,
+      ...deepAudit.lessonsA,
+      ...deepAudit.lessonsB,
+      ...deepAudit.sharedLessons,
+    ],
+    Math.max(16, LESSON_MAX_PER_PROMPT + 4)
+  );
+  const auditRecord = {
+    timestamp: new Date().toISOString(),
+    concept: concept.name,
+    process: {
+      groundbreaking_mode: HAIL_MARY_MODE,
+      self_iteration_rounds_max: APPROACH_SELF_ITERATION_ROUNDS_MAX,
+      cross_iteration_rounds_max: AB_ITERATION_ROUNDS_MAX,
+      phase2_variants_per_round: PHASE2_VARIANTS_PER_ROUND,
+      phase2_base_intensity: AB_PHASE2_INTENSITY,
+      phase2_intensity_step: PHASE2_VARIANT_INTENSITY_STEP,
+      c_self_iteration_rounds_max: C_SELF_ITERATION_ROUNDS_MAX,
+      c_self_min_gain: C_SELF_MIN_GAIN,
+      final_audit_boost_rounds_max: FINAL_AUDIT_BOOST_ROUNDS_MAX,
+      final_audit_boost_min_gain: FINAL_AUDIT_BOOST_MIN_GAIN,
+      final_audit_shortfall_step: FINAL_AUDIT_SHORTFALL_STEP,
+      final_audit_shortfall_extra_rounds_max: FINAL_AUDIT_SHORTFALL_EXTRA_ROUNDS_MAX,
+      last_pass_redo_enabled: LAST_PASS_REDO_ENABLED,
+      last_pass_redo_rounds_max: LAST_PASS_REDO_ROUNDS_MAX,
+      last_pass_redo_tie_band_add: LAST_PASS_REDO_TIE_BAND_ADD,
+      last_pass_redo_shortfall_trigger: LAST_PASS_REDO_SHORTFALL_TRIGGER,
+      harden_iteration_process: HARDEN_ITERATION_PROCESS,
+      harden_max_extra_phase2_variants: HARDEN_MAX_EXTRA_PHASE2_VARIANTS,
+      harden_max_extra_rounds: HARDEN_MAX_EXTRA_ROUNDS,
+      harden_max_extra_self_rounds: HARDEN_MAX_EXTRA_SELF_ROUNDS,
+      harden_max_extra_last_pass_rounds: HARDEN_MAX_EXTRA_LAST_PASS_ROUNDS,
+      quality_escalation_enable: QUALITY_ESCALATION_ENABLE,
+      quality_escalation_score_trigger: QUALITY_ESCALATION_SCORE_TRIGGER,
+      quality_escalation_tie_trigger: QUALITY_ESCALATION_TIE_TRIGGER,
+      quality_escalation_max_extra_rounds: QUALITY_ESCALATION_MAX_EXTRA_ROUNDS,
+      quality_escalation_max_extra_variants: QUALITY_ESCALATION_MAX_EXTRA_VARIANTS,
+      quality_escalation_level: qualityEscalationLevel,
+      quality_escalation_reasons: qualityEscalationReasons,
+      current_attempt: CURRENT_CONCEPT_ATTEMPT,
+      max_attempts: CURRENT_CONCEPT_MAX_ATTEMPTS,
+      hardening_level: hardeningLevel,
+      effective_phase2_variants_per_round: effectivePhase2Variants,
+      effective_self_iteration_rounds_max: effectiveSelfRounds,
+      effective_c_self_iteration_rounds_max: effectiveCSelfRounds,
+      effective_ab_iteration_rounds_max: effectiveABRounds,
+      effective_final_audit_boost_rounds_base: effectiveFinalAuditBaseRounds,
+      effective_last_pass_redo_rounds_max: effectiveLastPassRedoRounds,
+      request_pacing_base_s: REQUEST_PACING_BASE_S,
+      request_pacing_max_s: REQUEST_PACING_MAX_S,
+      rate_limit_backoff_step_s: RATE_LIMIT_BACKOFF_STEP_S,
+      rate_limit_streak_step_s: RATE_LIMIT_STREAK_STEP_S,
+      rate_limit_max_backoff_s: RATE_LIMIT_MAX_BACKOFF_S,
+      rate_limit_retry_deadline_s: RATE_LIMIT_RETRY_DEADLINE_S,
+      rate_limit_consecutive_failfast: RATE_LIMIT_CONSECUTIVE_FAILFAST,
+      rate_limit_profile_narrow_streak: RATE_LIMIT_PROFILE_NARROW_STREAK,
+      rate_limit_force_cache_streak: RATE_LIMIT_FORCE_CACHE_STREAK,
+      auth_timeout_ms: AUTH_TIMEOUT_MS,
+      auth_retries_max: AUTH_RETRIES_MAX,
+      auth_retry_wait_s: AUTH_RETRY_WAIT_S,
+      access_token_early_refresh_s: ACCESS_TOKEN_EARLY_REFRESH_S,
+      reuse_passa_on_failure: REUSE_PASSA_ON_FAILURE,
+      resume_skip_completed_ab: RESUME_SKIP_COMPLETED_AB,
+      scorer_model: SCORER_MODEL,
+      quality_targets: {
+        initial_multiplier: INITIAL_QUALITY_TARGET_MULTIPLIER,
+        revised_multiplier: REVISED_QUALITY_TARGET_MULTIPLIER,
+        final_multiplier: FINAL_QUALITY_TARGET_MULTIPLIER,
+      },
+      quality_gate: {
+        min_final_multiplier: MIN_FINAL_MULTIPLIER_GATE,
+        strict: STRICT_QUALITY_GATE,
+      },
+      iter_accept_overall_tol: ITER_ACCEPT_OVERALL_TOL,
+      iter_accept_metric_tol: ITER_ACCEPT_METRIC_TOL,
+      lock_ab_variation: LOCK_AB_VARIATION,
+      lock_c_variation_to_ab: LOCK_C_VARIATION_TO_AB,
+      variation_fingerprints: {
+        A: variationFingerprint(passA_A.variation),
+        B: variationFingerprint(passA_B.variation),
+        C: variationFingerprint(passA_C.variation),
+      },
+    },
+    winner: {
+      approach: winnerApproach,
+      path: winnerPath,
+      score: overallByApproach[winnerApproach],
+      reason: winner.reason,
+    },
+    strategies: {
+      A: {
+        passA_profile: passA_A.frontierProfile,
+        passB_profile: profileTagA,
+        output_path: finalAPath,
+        baseline_score: scoreA_baseline,
+        score: scoreA,
+        attempts: {
+          passA: passA_A.attemptLog || [],
+          passB: finalA_baseline.attemptLog || [],
+          phase2: phase2RoundsA,
+        },
+        generation_health: {
+          passA: summarizeGenerationHealth(passA_A.attemptLog),
+          passB: summarizeGenerationHealth(finalA_baseline.attemptLog),
+          phase2: summarizeGenerationHealth(phase2RoundsA),
+          resumed_from_cache: Boolean(passA_A?.resumedFromCache || finalA_baseline?.resumedFromCache),
+        },
+        lessons_applied: phase2LessonsA,
+      },
+      B: {
+        passA_profile: passA_B.frontierProfile,
+        passB_profile: profileTagB,
+        output_path: finalBPath,
+        baseline_score: scoreB_baseline,
+        score: scoreB,
+        attempts: {
+          passA: passA_B.attemptLog || [],
+          passB: finalB_baseline.attemptLog || [],
+          phase2: phase2RoundsB,
+        },
+        generation_health: {
+          passA: summarizeGenerationHealth(passA_B.attemptLog),
+          passB: summarizeGenerationHealth(finalB_baseline.attemptLog),
+          phase2: summarizeGenerationHealth(phase2RoundsB),
+          resumed_from_cache: Boolean(passA_B?.resumedFromCache || finalB_baseline?.resumedFromCache),
+        },
+        lessons_applied: phase2LessonsB,
+      },
+      C: {
+        passA_profile: passA_C.frontierProfile,
+        passB_profile: profileTagC,
+        output_path: finalCPath,
+        baseline_score: scoreC_baseline,
+        score: scoreC,
+        attempts: {
+          passA: passA_C.attemptLog || [],
+          passB: finalC.attemptLog || [],
+          phase2: phase2RoundsC,
+        },
+        generation_health: {
+          passA: summarizeGenerationHealth(passA_C.attemptLog),
+          passB: summarizeGenerationHealth(finalC.attemptLog),
+          phase2: summarizeGenerationHealth(phase2RoundsC),
+          resumed_from_cache: Boolean(passA_C?.resumedFromCache || finalC?.resumedFromCache),
+        },
+        lessons_applied: selfIterC.lessonsLast || passA_C.lessonsApplied || strategyCLessons,
+      },
+    },
+    deep_audit: {
+      variation_control: {
+        lock_ab_variation: LOCK_AB_VARIATION,
+        lock_c_variation_to_ab: LOCK_C_VARIATION_TO_AB,
+        a_equals_b: variationFingerprint(passA_A.variation) === variationFingerprint(passA_B.variation),
+        c_equals_ab: variationFingerprint(passA_C.variation) === variationFingerprint(passA_A.variation),
+      },
+      baseline_scores: {
+        A: scoreA_baseline,
+        B: scoreB_baseline,
+      },
+      post_self_scores: {
+        A: selfIterA.score,
+        B: selfIterB.score,
+        C: selfIterC.score,
+      },
+      findings: deepAudit.lines,
+      phase2_lessons: {
+        A: phase2LessonsA,
+        B: phase2LessonsB,
+        C: selfIterC.lessonsLast || [],
+      },
+      self_iteration_rounds: {
+        A: selfIterA.rounds || [],
+        B: selfIterB.rounds || [],
+        C: selfIterC.rounds || [],
+      },
+      iteration_rounds: abIterationRounds,
+      final_audit_boost_plan: {
+        winner_approach: preFinalWinnerApproach,
+        challenger_approach: finalBoostChallenger.key,
+        challenger_metric_leaders: finalBoostCrossChallenger.leaders,
+        pre_final_multiplier: preFinalMultiplier,
+        target_multiplier: FINAL_QUALITY_TARGET_MULTIPLIER,
+        shortfall: finalBoostBudget.shortfall,
+        base_rounds: effectiveFinalAuditBaseRounds,
+        extra_rounds: finalBoostBudget.extra_rounds,
+        max_rounds: finalBoostBudget.max_rounds,
+        pre_final_gap_to_runner_up: preFinalGapToRunnerUp,
+        runner_up_boost_attempted: finalAuditBoostRunnerUp.attempted === true,
+        runner_up_boost_applied: finalAuditBoostRunnerUp.applied === true,
+        runner_up_boost_approach: finalAuditBoostRunnerUp.approach || null,
+        runner_up_boost_gap_before: Number(finalAuditBoostRunnerUp.gap_before) || 0,
+        runner_up_boost_max_rounds: Number(finalAuditBoostRunnerUp.max_rounds) || 0,
+        last_pass_redo_attempted: lastPassRedo.attempted === true,
+        last_pass_redo_triggered: lastPassRedo.triggered === true,
+        last_pass_redo_reason: lastPassRedo.reason || '',
+        last_pass_redo_candidates: lastPassRedo.candidates || [],
+        last_pass_redo_shortfall: Number(lastPassRedo.shortfall) || 0,
+        last_pass_redo_pre_gap: Number(lastPassRedo.pre_gap) || 0,
+      },
+      final_audit_boost: finalAuditBoost || { applied: false, rounds: [] },
+      final_audit_boost_runner_up: finalAuditBoostRunnerUp || { applied: false, rounds: [] },
+      last_pass_redo: lastPassRedo || { attempted: false, triggered: false, results: [] },
+    },
+    audit_quality: auditQualitySignals,
+    comparisons: {
+      score_delta_ab_baseline: scoreA_baseline.overall - scoreB_baseline.overall,
+      score_delta_ab_post_self: selfIterA.score.overall - selfIterB.score.overall,
+      score_delta_ab: scoreA.overall - scoreB.overall,
+      score_delta_c_self: scoreC.overall - scoreC_baseline.overall,
+      c_vs_best_ab_baseline: cGainVsBestABBaseline,
+      c_vs_best_ab: cGainVsBestAB,
+      c_gain_percent_vs_best_ab: cGainVsBestABPct,
+      phase_multipliers: phaseMultipliers,
+      quality_gate: qualityGate,
+      target_gain_percent: TARGET_QUALITY_GAIN_PCT,
+      target_gain_hit: cGainVsBestABPct >= TARGET_QUALITY_GAIN_PCT,
+      winner_shortlist: winner.shortlist || [],
+      winner_tie_band: WINNER_TIE_BAND,
+      ab_iteration_rounds_count: abIterationRounds.length,
+    },
+    hints,
+    lessons: {
+      historical: historicalLessons,
+      self_iteration: {
+        A: selfIterA.lessonsLast || [],
+        B: selfIterB.lessonsLast || [],
+        C: selfIterC.lessonsLast || [],
+      },
+      baseline_ab_derived: baselineHints,
+      ab_derived: abHints,
+      deep_audit: [...deepAudit.lessonsA, ...deepAudit.lessonsB, ...deepAudit.sharedLessons],
+      c_prompt_plan: strategyCLessons,
+      all: allLessons,
+    },
+  };
+  await fs.appendFile(AB_AUDIT_FILE, `${JSON.stringify(auditRecord)}\n`);
+  const allRecords = await loadAuditRecords();
+  const liveSummary = normalizeAuditSummary(allRecords);
+  await fs.writeFile(AB_SUMMARY_FILE, `${JSON.stringify(liveSummary, null, 2)}\n`);
+  const learningAudit = buildLearningAuditRecord(auditRecord);
+  await fs.appendFile(LEARNING_AUDIT_FILE, `${JSON.stringify(learningAudit)}\n`);
+  const learningRecords = await loadLearningAuditRecords();
+  const learningPlan = normalizeLearningPlan(learningRecords);
+  await fs.writeFile(LEARNING_PLAN_FILE, `${JSON.stringify(learningPlan, null, 2)}\n`);
+  console.log(
+    `ABC AUDIT ${concept.name}: winner=${winnerApproach} reason=${winner.reason} scoreA=${scoreA.overall.toFixed(2)} scoreB=${scoreB.overall.toFixed(2)} scoreC=${scoreC.overall.toFixed(2)} Cgain=${cGainVsBestABPct.toFixed(1)}% saved=${canonicalPath}`
+  );
+  console.log(
+    `AUDIT CONFIDENCE ${concept.name}: confidence=${(Number(auditQualitySignals.confidence) || 0).toFixed(2)} ` +
+    `margin=${(Number(auditQualitySignals.winner_margin) || 0).toFixed(2)} ` +
+    `risk_flags=${(auditQualitySignals.risk_flags || []).join(',') || 'none'}`
+  );
+  console.log(
+    `PHASE TARGETS ${concept.name}: initial=${phaseMultipliers.initial_from_seed.toFixed(2)}x/${phaseMultipliers.targets.initial.toFixed(2)}x ` +
+    `revised=${phaseMultipliers.revised_from_initial.toFixed(2)}x/${phaseMultipliers.targets.revised.toFixed(2)}x ` +
+    `final=${phaseMultipliers.final_from_revised.toFixed(2)}x/${phaseMultipliers.targets.final.toFixed(2)}x`
+  );
+  if (learningAudit.recommended_actions.length > 0) {
+    console.log(`LEARNING AUDIT ${concept.name}: next=${learningAudit.recommended_actions.slice(0, 2).join(' | ')}`);
+  }
+  const recCfg = learningPlan?.recommended_config || {};
+  if (Object.keys(recCfg).length > 0) {
+    console.log(
+      `LEARNING PLAN CONFIG: phase2_variants=${recCfg.phase2_variants_per_round ?? 'n/a'} ` +
+      `phase2_step=${recCfg.phase2_variant_intensity_step ?? 'n/a'} ` +
+      `self_rounds=${recCfg.approach_self_iteration_rounds_max ?? 'n/a'} ` +
+      `c_self_rounds=${recCfg.c_self_iteration_rounds_max ?? 'n/a'} ` +
+      `ab_rounds=${recCfg.ab_iteration_rounds_max ?? 'n/a'} ` +
+      `final_audit_rounds=${recCfg.final_audit_boost_rounds_max ?? 'n/a'} ` +
+      `lock_ab=${recCfg.lock_ab_variation ?? 'n/a'} ` +
+      `lock_c=${recCfg.lock_c_variation_to_ab ?? 'n/a'}`
+    );
+  }
+
+  return { path: canonicalPath, audit: auditRecord, learningAudit, qualityGate };
+}
+
+function cacheAwareWaitSecondsFromEntries(items = []) {
+  const reused = (items || []).some(item => {
+    if (!item) return false;
+    if (item.reusedCachedPassA === true) return true;
+    if (item.resumedFromCache === true) return true;
+    if (String(item.profileUsed || '').includes('cached')) return true;
+    if (Array.isArray(item.attemptLog)) {
+      return item.attemptLog.some(a => String(a?.status || '').includes('reused_cached'));
+    }
+    return false;
+  });
+  return reused ? Math.min(RETRY_WAIT_S, CACHE_REUSE_WAIT_S) : RETRY_WAIT_S;
+}
+
+async function scoreFrontierCandidateFromPath({
+  candidatePath,
+  referenceMimeType,
+  referenceB64,
+  concept,
+  expression,
+  profile,
+}) {
+  const candidateB64 = (await fs.readFile(candidatePath)).toString('base64');
+  return scoreFrontierCandidate({
+    referenceMimeType,
+    referenceB64,
+    candidateMimeType: mimeTypeFromPath(candidatePath),
+    candidateB64,
+    concept,
+    expression,
+    profile,
+  });
+}
+
+async function ensureApproachFrontierOutput({
+  concept,
+  inputImage,
+  index,
+  approachKey,
+  lessons = [],
+  profileOrder = [],
+  variation = null,
+  phaseLabel = '',
+}) {
+  const resumedPassA = await loadResumePassAFrontier({
+    concept,
+    inputImage,
+    index,
+    approach: approachKey,
+    lessons,
+    profileOrder,
+    variation,
+  });
+  const passA = resumedPassA || await generatePassAFrontier(concept, inputImage, index, approachKey, {
+    lessons,
+    profileOrder,
+    variation,
+  });
+
+  const resumedFinal = await loadResumeFinalFrontier({
+    concept,
+    approach: approachKey,
+    profileHint: passA.frontierProfile,
+    lessons,
+  });
+
+  // Fast-path: both artifacts already cached, so skip redundant wait/generation.
+  if (resumedPassA && resumedFinal) {
+    console.log(
+      `PHASE ${phaseLabel} ${concept.name}: using cached strategy ${approachKey} artifacts (passA+final).`
+    );
+    return { passA, final: resumedFinal };
+  }
+
+  const waitAfterPassA = cacheAwareWaitSecondsFromEntries([passA]);
+  console.log(
+    `PHASE ${phaseLabel} ${concept.name}: waiting ${waitAfterPassA}s between strategy ${approachKey} passes...`
+  );
+  await waitWithHeartbeat(waitAfterPassA, `phase-${phaseLabel.toLowerCase()}-strategy-${approachKey.toLowerCase()}-between-passes`);
+
+  const final = resumedFinal || await generatePassBFrontier(concept, passA, inputImage, index, approachKey, {
+    lessons,
+    enableAggressiveBoundary: false,
+  });
+
+  return { passA, final };
+}
+
+async function runPhasedDualStrategyBatches({ startIndex, endIndex, inputImage }) {
+  const start = Math.max(0, Number(startIndex) || 0);
+  const upper = Math.min(Number(endIndex) || concepts.length, concepts.length);
+  const indices = [];
+  for (let i = start; i < upper; i++) indices.push(i);
+
+  const referenceMimeType = mimeTypeFromPath(inputImage);
+  const referenceB64 = (await fs.readFile(inputImage)).toString('base64');
+  const historicalRecords = await loadAuditRecords();
+  const historicalSummary = normalizeAuditSummary(historicalRecords);
+  const historicalLessons = extractHistoricalLessons(historicalSummary, historicalRecords);
+  const profileOrderA = buildApproachProfileOrder('A', historicalRecords);
+  const profileOrderB = buildApproachProfileOrder('B', historicalRecords);
+  const profileOrderCBase = buildApproachProfileOrder('C', historicalRecords);
+
+  const stateByConcept = new Map();
+  const results = [];
+
+  const getState = conceptName => {
+    if (!stateByConcept.has(conceptName)) stateByConcept.set(conceptName, {});
+    return stateByConcept.get(conceptName);
+  };
+
+  console.log(`\n${'='.repeat(60)}`);
+  console.log('PHASED BATCH MODE');
+  console.log(`${'='.repeat(60)}`);
+  console.log(`Range: ${start + 1}-${upper} (count=${indices.length})`);
+  console.log('Phase order: A(all) -> B(all) -> C(all + final best-of-3)');
+
+  console.log(`\n${'='.repeat(60)}`);
+  console.log('PHASE A START');
+  console.log(`${'='.repeat(60)}`);
+  for (let p = 0; p < indices.length; p++) {
+    const idx = indices[p];
+    const concept = concepts[idx];
+    const st = getState(concept.name);
+    if (!st.sharedVariation) st.sharedVariation = LOCK_AB_VARIATION ? buildVariation() : null;
+    if (!st.variationA) st.variationA = st.sharedVariation || buildVariation();
+    try {
+      const conceptNum = conceptNumberFromName(concept.name);
+      const skipBeforeResume =
+        PHASE_A_RESUME_FROM_NUM > 0 &&
+        conceptNum !== null &&
+        conceptNum < PHASE_A_RESUME_FROM_NUM;
+
+      if (skipBeforeResume) {
+        const cachedFinalA = await loadResumeFinalFrontier({
+          concept,
+          approach: 'A',
+          profileHint: 'balanced',
+          lessons: historicalLessons,
+        });
+        if (cachedFinalA?.path && (await pathExists(cachedFinalA.path))) {
+          st.passA_A = await loadResumePassAFrontier({
+            concept,
+            inputImage,
+            index: idx,
+            approach: 'A',
+            lessons: historicalLessons,
+            profileOrder: profileOrderA,
+            variation: st.variationA,
+          });
+          st.finalA = cachedFinalA;
+          console.log(
+            `PHASE A SKIP [${p + 1}/${indices.length}] ${concept.name} ` +
+            `(resume_from=${PHASE_A_RESUME_FROM_NUM}, strategy-A cached)`
+          );
+          continue;
+        }
+        console.log(
+          `PHASE A RESUME NOTICE ${concept.name}: resume_from=${PHASE_A_RESUME_FROM_NUM} ` +
+          `but strategy-A cache missing; generating to repair continuity.`
+        );
+      }
+
+      const outA = await ensureApproachFrontierOutput({
+        concept,
+        inputImage,
+        index: idx,
+        approachKey: 'A',
+        lessons: historicalLessons,
+        profileOrder: profileOrderA,
+        variation: st.variationA,
+        phaseLabel: 'A',
+      });
+      st.passA_A = outA.passA;
+      st.finalA = outA.final;
+      console.log(`PHASE A DONE [${p + 1}/${indices.length}] ${concept.name}`);
+    } catch (err) {
+      st.errorA = err?.message || 'unknown A-stage failure';
+      console.error(`PHASE A FAIL ${concept.name}: ${st.errorA}`);
+    }
+  }
+
+  console.log(`\n${'='.repeat(60)}`);
+  console.log('PHASE B START');
+  console.log(`${'='.repeat(60)}`);
+  for (let p = 0; p < indices.length; p++) {
+    const idx = indices[p];
+    const concept = concepts[idx];
+    const st = getState(concept.name);
+    if (!st.sharedVariation) st.sharedVariation = LOCK_AB_VARIATION ? buildVariation() : null;
+    if (!st.variationB) st.variationB = st.sharedVariation || buildVariation();
+    try {
+      const outB = await ensureApproachFrontierOutput({
+        concept,
+        inputImage,
+        index: idx,
+        approachKey: 'B',
+        lessons: historicalLessons,
+        profileOrder: profileOrderB,
+        variation: st.variationB,
+        phaseLabel: 'B',
+      });
+      st.passA_B = outB.passA;
+      st.finalB = outB.final;
+      console.log(`PHASE B DONE [${p + 1}/${indices.length}] ${concept.name}`);
+    } catch (err) {
+      st.errorB = err?.message || 'unknown B-stage failure';
+      console.error(`PHASE B FAIL ${concept.name}: ${st.errorB}`);
+    }
+  }
+
+  console.log(`\n${'='.repeat(60)}`);
+  console.log('PHASE C + FINAL AUDIT START');
+  console.log(`${'='.repeat(60)}`);
+  for (let p = 0; p < indices.length; p++) {
+    const idx = indices[p];
+    const concept = concepts[idx];
+    const st = getState(concept.name);
+    const expression = expressions[idx % expressions.length];
+    try {
+      if (!st.finalA?.path || !(await pathExists(st.finalA.path))) {
+        const fallbackA = await ensureApproachFrontierOutput({
+          concept,
+          inputImage,
+          index: idx,
+          approachKey: 'A',
+          lessons: historicalLessons,
+          profileOrder: profileOrderA,
+          variation: st.variationA || st.sharedVariation || buildVariation(),
+          phaseLabel: 'A(recover)',
+        });
+        st.passA_A = fallbackA.passA;
+        st.finalA = fallbackA.final;
+      }
+      if (!st.finalB?.path || !(await pathExists(st.finalB.path))) {
+        const fallbackB = await ensureApproachFrontierOutput({
+          concept,
+          inputImage,
+          index: idx,
+          approachKey: 'B',
+          lessons: historicalLessons,
+          profileOrder: profileOrderB,
+          variation: st.variationB || st.sharedVariation || buildVariation(),
+          phaseLabel: 'B(recover)',
+        });
+        st.passA_B = fallbackB.passA;
+        st.finalB = fallbackB.final;
+      }
+
+      const finalAPath = st.finalA.path;
+      const finalBPath = st.finalB.path;
+      const scoreA = await scoreFrontierCandidateFromPath({
+        candidatePath: finalAPath,
+        referenceMimeType,
+        referenceB64,
+        concept,
+        expression,
+        profile: `A-phased/${st.finalA.profileUsed || st.passA_A?.frontierProfile || 'balanced'}`,
+      });
+      const scoreB = await scoreFrontierCandidateFromPath({
+        candidatePath: finalBPath,
+        referenceMimeType,
+        referenceB64,
+        concept,
+        expression,
+        profile: `B-phased/${st.finalB.profileUsed || st.passA_B?.frontierProfile || 'balanced'}`,
+      });
+
+      const baselineHints = deriveABIterationHints(scoreA, scoreB);
+      const deepAudit = deepAuditABBaseline(scoreA, scoreB);
+      if (!st.sharedVariation) st.sharedVariation = LOCK_AB_VARIATION ? buildVariation() : null;
+      if (!st.variationC) st.variationC = (LOCK_C_VARIATION_TO_AB && st.sharedVariation)
+        ? st.sharedVariation
+        : buildVariation();
+      const variationForC = st.variationC || st.sharedVariation || null;
+      const strategyCLessons = deriveStrategyCLessons(
+        scoreA,
+        scoreB,
+        [...historicalLessons, ...baselineHints, ...deepAudit.lessonsA, ...deepAudit.lessonsB, ...deepAudit.sharedLessons],
+        {
+          deepAudit,
+          concept,
+          variation: variationForC,
+        }
+      );
+      console.log('PHASE C SYNTHESIS (A/B audit -> first-principles fusion):');
+      strategyCLessons.slice(0, 6).forEach((lesson, idx2) => console.log(`  C${idx2 + 1}. ${lesson}`));
+      const cPreferredProfiles = C_PROFILE_FOLLOW_AB
+        ? [st.passA_A?.frontierProfile, st.passA_B?.frontierProfile]
+        : [];
+      const profileOrderC = prioritizeProfiles(profileOrderCBase, cPreferredProfiles);
+      console.log(`PHASE C PROFILE ORDER ${concept.name}: ${profileOrderC.join(', ')} (follow_ab=${C_PROFILE_FOLLOW_AB ? 'on' : 'off'})`);
+
+      const outC = await ensureApproachFrontierOutput({
+        concept,
+        inputImage,
+        index: idx,
+        approachKey: 'C',
+        lessons: strategyCLessons,
+        profileOrder: profileOrderC,
+        variation: variationForC,
+        phaseLabel: 'C',
+      });
+      st.passA_C = outC.passA;
+      st.finalC = outC.final;
+
+      const finalCPath = st.finalC.path;
+      const scoreC = await scoreFrontierCandidateFromPath({
+        candidatePath: finalCPath,
+        referenceMimeType,
+        referenceB64,
+        concept,
+        expression,
+        profile: `C-phased/${st.finalC.profileUsed || st.passA_C?.frontierProfile || 'balanced'}`,
+      });
+
+      const scoreByApproach = { A: scoreA, B: scoreB, C: scoreC };
+      const winner = selectWinnerWithGuardrails(scoreByApproach);
+      const winnerApproach = normalizeApproach(winner.key, 'A');
+      const winnerPath = winnerApproach === 'A'
+        ? finalAPath
+        : (winnerApproach === 'B' ? finalBPath : finalCPath);
+      const canonicalPath = path.join(OUTPUT_DIR, `${concept.name}.png`);
+      await fs.copyFile(winnerPath, canonicalPath);
+
+      const bestAB = Math.max(Number(scoreA?.overall) || 0, Number(scoreB?.overall) || 0);
+      const cGainVsBestAB = (Number(scoreC?.overall) || 0) - bestAB;
+      const cGainVsBestABPct = bestAB > 0 ? ((cGainVsBestAB / bestAB) * 100) : 0;
+      const hints = deriveABCIterationHints(scoreA, scoreB, scoreC);
+      const allLessons = mergeLessonsByPriority(
+        [...strategyCLessons, ...hints],
+        historicalLessons,
+        LESSON_MAX_PER_PROMPT + 4
+      );
+
+      const auditRecord = {
+        timestamp: new Date().toISOString(),
+        concept: concept.name,
+        process: {
+          phased_batch_mode: true,
+          phase_order: ['A', 'B', 'C'],
+          lock_ab_variation: LOCK_AB_VARIATION,
+          lock_c_variation_to_ab: LOCK_C_VARIATION_TO_AB,
+          request_pacing_base_s: REQUEST_PACING_BASE_S,
+          request_pacing_max_s: REQUEST_PACING_MAX_S,
+        },
+        winner: {
+          approach: winnerApproach,
+          path: winnerPath,
+          score: Number(scoreByApproach[winnerApproach]?.overall) || 0,
+          reason: winner.reason,
+        },
+        strategies: {
+          A: {
+            passA_profile: st.passA_A?.frontierProfile || 'n/a',
+            passB_profile: st.finalA?.profileUsed || 'n/a',
+            output_path: finalAPath,
+            baseline_score: scoreA,
+            score: scoreA,
+            attempts: {
+              passA: st.passA_A?.attemptLog || [],
+              passB: st.finalA?.attemptLog || [],
+              phase2: [],
+            },
+            lessons_applied: historicalLessons,
+          },
+          B: {
+            passA_profile: st.passA_B?.frontierProfile || 'n/a',
+            passB_profile: st.finalB?.profileUsed || 'n/a',
+            output_path: finalBPath,
+            baseline_score: scoreB,
+            score: scoreB,
+            attempts: {
+              passA: st.passA_B?.attemptLog || [],
+              passB: st.finalB?.attemptLog || [],
+              phase2: [],
+            },
+            lessons_applied: historicalLessons,
+          },
+          C: {
+            passA_profile: st.passA_C?.frontierProfile || 'n/a',
+            passB_profile: st.finalC?.profileUsed || 'n/a',
+            output_path: finalCPath,
+            baseline_score: scoreC,
+            score: scoreC,
+            attempts: {
+              passA: st.passA_C?.attemptLog || [],
+              passB: st.finalC?.attemptLog || [],
+              phase2: [],
+            },
+            lessons_applied: strategyCLessons,
+          },
+        },
+        comparisons: {
+          c_vs_best_ab: cGainVsBestAB,
+          c_gain_percent_vs_best_ab: cGainVsBestABPct,
+          target_gain_percent: TARGET_QUALITY_GAIN_PCT,
+          target_gain_hit: cGainVsBestABPct >= TARGET_QUALITY_GAIN_PCT,
+        },
+        hints,
+        lessons: {
+          historical: historicalLessons,
+          c_prompt_plan: strategyCLessons,
+          all: allLessons,
+        },
+      };
+      await fs.appendFile(AB_AUDIT_FILE, `${JSON.stringify(auditRecord)}\n`);
+      const learningAudit = buildLearningAuditRecord(auditRecord);
+      await fs.appendFile(LEARNING_AUDIT_FILE, `${JSON.stringify(learningAudit)}\n`);
+
+      console.log(
+        `PHASE C AUDIT ${concept.name}: winner=${winnerApproach} ` +
+        `scoreA=${scoreA.overall.toFixed(2)} scoreB=${scoreB.overall.toFixed(2)} scoreC=${scoreC.overall.toFixed(2)} ` +
+        `Cgain=${cGainVsBestABPct.toFixed(1)}% saved=${canonicalPath}`
+      );
+
+      results.push({
+        name: concept.name,
+        path: canonicalPath,
+        ok: true,
+        winner: winnerApproach,
+        final_multiplier: null,
+      });
+    } catch (err) {
+      console.error(`PHASE C FAIL ${concept.name}: ${err.message}`);
+      results.push({ name: concept.name, path: null, ok: false, err: err.message });
+    }
+  }
+
+  const allRecords = await loadAuditRecords();
+  const summary = normalizeAuditSummary(allRecords);
+  await fs.writeFile(AB_SUMMARY_FILE, `${JSON.stringify(summary, null, 2)}\n`);
+  const learningRecords = await loadLearningAuditRecords();
+  if (learningRecords.length > 0) {
+    const learningPlan = normalizeLearningPlan(learningRecords);
+    await fs.writeFile(LEARNING_PLAN_FILE, `${JSON.stringify(learningPlan, null, 2)}\n`);
+  }
+
+  return results;
 }
 
 function wordCount(text) {
@@ -957,7 +5589,8 @@ function validatePrompt(prompt, label) {
   if (hits.length > 0) {
     console.log(`WARN: ${label} contains banned tokens: ${hits.join(', ')}`);
   }
-  if (!FORCE_SAFE_MODE && !lower.includes('navel') && !lower.includes('high-cut')) {
+  const frontierLabel = String(label || '').toLowerCase().includes('frontier');
+  if (!FORCE_SAFE_MODE && !frontierLabel && !lower.includes('navel') && !lower.includes('high-cut')) {
     console.log(`WARN: ${label} missing navel-line or high-cut anchor.`);
   }
   if (!lower.includes('generate an image of')) {
@@ -974,6 +5607,96 @@ function partWithThoughtSignature(part) {
   return out;
 }
 
+function buildImageEditParts(text, mimeType, data) {
+  if (MULTIMODAL_FILE_FIRST) {
+    return [{ inlineData: { mimeType, data } }, { text }];
+  }
+  return [{ text }, { inlineData: { mimeType, data } }];
+}
+
+function hasRenderablePart_legacy1(part) {
+  if (!part || typeof part !== 'object') return false;
+  const text = typeof part.text === 'string' ? part.text.trim() : '';
+  const inlineData = part.inlineData;
+  const inlineOk = !!(inlineData && typeof inlineData.data === 'string' && inlineData.data.length > 0);
+  return text.length > 0 || inlineOk;
+}
+
+function sanitizeModelParts_legacy1(parts) {
+  if (!Array.isArray(parts)) return [];
+  return parts.filter(hasRenderablePart);
+}
+
+function buildPassBConversation_legacy1({
+  passAPromptForContext,
+  baseMimeType,
+  base64Image,
+  passAModelParts,
+  prompt,
+  passAMimeType,
+  passAB64,
+}) {
+  const contents = [
+    { role: 'user', parts: buildImageEditParts(passAPromptForContext, baseMimeType, base64Image) },
+  ];
+  const modelParts = sanitizeModelParts(passAModelParts);
+  if (modelParts.length > 0) {
+    contents.push({ role: 'model', parts: modelParts });
+  } else {
+    console.log('Pass B context notice: missing passA model parts; using two-turn context.');
+  }
+  contents.push({
+    role: 'user',
+    parts: buildImageEditParts(prompt, passAMimeType || baseMimeType, passAB64),
+  });
+  return contents;
+}
+
+function hasRenderablePart(part) {
+  if (!part || typeof part !== 'object') return false;
+  const text = typeof part.text === 'string' ? part.text.trim() : '';
+  const inlineData = part.inlineData;
+  const inlineOk = !!(inlineData && typeof inlineData.data === 'string' && inlineData.data.length > 0);
+  return text.length > 0 || inlineOk;
+}
+
+function sanitizeModelParts(parts) {
+  if (!Array.isArray(parts)) return [];
+  return parts.filter(hasRenderablePart);
+}
+
+function buildPassBConversation({
+  passAPromptForContext,
+  baseMimeType,
+  base64Image,
+  passAModelParts,
+  prompt,
+  passAMimeType,
+  passAB64,
+}) {
+  const contents = [
+    { role: 'user', parts: buildImageEditParts(passAPromptForContext, baseMimeType, base64Image) },
+  ];
+  const modelParts = sanitizeModelParts(passAModelParts);
+  if (modelParts.length > 0) {
+    contents.push({ role: 'model', parts: modelParts });
+  } else {
+    console.log('Pass B context notice: missing passA model parts; using two-turn context.');
+  }
+  contents.push({
+    role: 'user',
+    parts: buildImageEditParts(prompt, passAMimeType || baseMimeType, passAB64),
+  });
+  return contents;
+}
+
+function mimeTypeFromPath(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+  if (ext === '.webp') return 'image/webp';
+  return 'image/png';
+}
+
 function jitteredRateLimitWaitSeconds() {
   const min = Math.min(RATE_LIMIT_BACKOFF_MIN_S, RATE_LIMIT_BACKOFF_MAX_S);
   const max = Math.max(RATE_LIMIT_BACKOFF_MIN_S, RATE_LIMIT_BACKOFF_MAX_S);
@@ -982,29 +5705,79 @@ function jitteredRateLimitWaitSeconds() {
   return min + jitter;
 }
 
-async function callModel(contents, retries = 0, imageOnly = false) {
+function adaptivePacingSeconds() {
+  const streakBoost = Math.max(0, GLOBAL_RATE_LIMIT_STREAK - 1) * 2;
+  return Math.min(REQUEST_PACING_MAX_S, REQUEST_PACING_BASE_S + streakBoost);
+}
+
+function truncatedExponentialBackoffSeconds(retries) {
+  const n = Math.max(0, Number(retries) || 0);
+  const exp = Math.pow(2, n) + Math.random();
+  return Math.min(RATE_LIMIT_MAX_BACKOFF_S, exp);
+}
+
+function adaptiveRateLimitWaitSeconds(retries) {
+  const legacyJitter = jitteredRateLimitWaitSeconds();
+  const expJitter = truncatedExponentialBackoffSeconds(retries);
+  const smoothing = REQUEST_PACING_BASE_S + Math.max(0, GLOBAL_RATE_LIMIT_STREAK - 1);
+  return Math.max(expJitter, smoothing, Math.min(legacyJitter, RATE_LIMIT_MAX_BACKOFF_S));
+}
+
+async function callModel(contents, retries = 0, imageOnly = false, modalitiesOverride = null, endpointOverride = ENDPOINT, rateLimitStartMs = Date.now()) {
+  const responseModalities = modalitiesOverride
+    || (imageOnly
+      ? ['IMAGE']
+      : (INCLUDE_TEXT_MODALITY ? ['TEXT', 'IMAGE'] : ['IMAGE']));
+  const generationConfig = { responseModalities };
+  if (responseModalities.includes('IMAGE')) {
+    generationConfig.imageConfig = { aspectRatio: '4:5', imageSize: '1K' };
+  }
   const requestBody = {
     contents,
-    generationConfig: {
-      responseModalities: INCLUDE_TEXT_MODALITY ? ['TEXT', 'IMAGE'] : ['IMAGE'],
-      imageConfig: { aspectRatio: '4:5', imageSize: '1K' },
-    },
+    generationConfig,
   };
 
-  const client = await auth.getClient();
-  const token = await client.getAccessToken();
+  const token = await getAccessTokenWithRetry();
+  const now = Date.now();
+  if (GLOBAL_LAST_API_ATTEMPT_ENDED_AT_MS > 0) {
+    const sinceLastAttemptSeconds = (now - GLOBAL_LAST_API_ATTEMPT_ENDED_AT_MS) / 1000;
+    if (sinceLastAttemptSeconds < MIN_API_ATTEMPT_INTERVAL_S) {
+      const waitSeconds = Math.max(1, Math.ceil(MIN_API_ATTEMPT_INTERVAL_S - sinceLastAttemptSeconds));
+      console.log(`Attempt cooldown: waiting ${waitSeconds}s before next API call.`);
+      await waitWithHeartbeat(waitSeconds, 'attempt cooldown');
+    }
+  }
+
+  const nowAfterAttemptCooldown = Date.now();
+  if (nowAfterAttemptCooldown < GLOBAL_NEXT_REQUEST_AT_MS) {
+    const waitSeconds = Math.max(1, Math.ceil((GLOBAL_NEXT_REQUEST_AT_MS - nowAfterAttemptCooldown) / 1000));
+    console.log(`Request pacing cooldown: waiting ${waitSeconds}s before next API call.`);
+    await waitWithHeartbeat(waitSeconds, 'request pacing');
+  }
+  const pacingSeconds = Math.max(MIN_API_ATTEMPT_INTERVAL_S, adaptivePacingSeconds());
+  GLOBAL_NEXT_REQUEST_AT_MS = Date.now() + Math.ceil(pacingSeconds * 1000);
   let response;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+  const requestStartedAt = Date.now();
+  const requestHeartbeat = API_REQUEST_TIMEOUT_MS > (HEARTBEAT_INTERVAL_S * 1000)
+    ? setInterval(() => {
+      const elapsed = Math.floor((Date.now() - requestStartedAt) / 1000);
+      const timeoutSeconds = Math.floor(API_REQUEST_TIMEOUT_MS / 1000);
+      console.log(`API request in flight: ${elapsed}s elapsed (timeout ${timeoutSeconds}s)`);
+    }, HEARTBEAT_INTERVAL_S * 1000)
+    : null;
   try {
-    response = await fetch(ENDPOINT, {
+    response = await fetch(endpointOverride, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token.token}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
       signal: controller.signal,
     });
   } catch (err) {
+    if (requestHeartbeat) clearInterval(requestHeartbeat);
     clearTimeout(timeout);
+    GLOBAL_LAST_API_ATTEMPT_ENDED_AT_MS = Date.now();
     if (retries >= NETWORK_RETRIES_MAX) {
       throw err;
     }
@@ -1013,35 +5786,58 @@ async function callModel(contents, retries = 0, imageOnly = false) {
       ? `Request timeout after ${API_REQUEST_TIMEOUT_MS}ms`
       : `Network error`;
     console.log(`${reason} (${retries + 1}/${NETWORK_RETRIES_MAX}) - waiting ${wait}s...`);
-    await new Promise(r => setTimeout(r, wait * 1000));
-    return callModel(contents, retries + 1);
+    await waitWithHeartbeat(wait, 'network retry');
+    return callModel(contents, retries + 1, imageOnly, modalitiesOverride, endpointOverride, rateLimitStartMs);
   }
+  if (requestHeartbeat) clearInterval(requestHeartbeat);
   clearTimeout(timeout);
+  GLOBAL_LAST_API_ATTEMPT_ENDED_AT_MS = Date.now();
 
   if (!response.ok) {
     const error = await response.text();
     if (response.status === 429) {
+      GLOBAL_RATE_LIMIT_STREAK += 1;
+      if (GLOBAL_RATE_LIMIT_STREAK >= RATE_LIMIT_CONSECUTIVE_FAILFAST) {
+        const elapsedFast = Math.floor((Date.now() - rateLimitStartMs) / 1000);
+        throw new Error(
+          `RATE_LIMIT_FAILFAST streak=${GLOBAL_RATE_LIMIT_STREAK} elapsed=${elapsedFast}s threshold=${RATE_LIMIT_CONSECUTIVE_FAILFAST}`
+        );
+      }
       if (retries >= RATE_LIMIT_RETRIES_MAX) {
         throw new Error(`RATE_LIMIT_RETRY_EXHAUSTED after ${RATE_LIMIT_RETRIES_MAX + 1} attempts`);
       }
-      const wait = jitteredRateLimitWaitSeconds();
-      console.log(`Rate limited (${retries + 1}/${RATE_LIMIT_RETRIES_MAX}) - waiting ${wait}s (adaptive backoff)...`);
-      await new Promise(r => setTimeout(r, wait * 1000));
-      return callModel(contents, retries + 1);
+      const elapsed = Math.floor((Date.now() - rateLimitStartMs) / 1000);
+      if (elapsed >= RATE_LIMIT_RETRY_DEADLINE_S) {
+        throw new Error(`RATE_LIMIT_RETRY_DEADLINE_EXCEEDED after ${elapsed}s (limit ${RATE_LIMIT_RETRY_DEADLINE_S}s)`);
+      }
+      const wait = adaptiveRateLimitWaitSeconds(retries);
+      GLOBAL_NEXT_REQUEST_AT_MS = Date.now() + (wait * 1000);
+      console.log(
+        `Rate limited (${retries + 1}/${RATE_LIMIT_RETRIES_MAX}) - waiting ${wait}s ` +
+        `(truncated exp backoff, streak=${GLOBAL_RATE_LIMIT_STREAK}, elapsed=${elapsed}s)...`
+      );
+      await waitWithHeartbeat(wait, 'rate-limit backoff');
+      return callModel(contents, retries + 1, imageOnly, modalitiesOverride, endpointOverride, rateLimitStartMs);
     }
     if (response.status >= 500 && retries < SERVER_RETRIES_MAX) {
       const wait = SERVER_RETRY_WAIT_S;
       console.log(`Server error ${response.status} (${retries + 1}/${SERVER_RETRIES_MAX}) - waiting ${wait}s...`);
-      await new Promise(r => setTimeout(r, wait * 1000));
-      return callModel(contents, retries + 1);
+      await waitWithHeartbeat(wait, 'server retry');
+      return callModel(contents, retries + 1, imageOnly, modalitiesOverride, endpointOverride, rateLimitStartMs);
     }
     throw new Error(`API ${response.status}: ${error.substring(0, 300)}`);
   }
 
+  if (GLOBAL_RATE_LIMIT_STREAK > 0) {
+    GLOBAL_RATE_LIMIT_STREAK = Math.max(0, GLOBAL_RATE_LIMIT_STREAK - 1);
+  }
   return response.json();
 }
 
 async function generatePassA(concept, inputImage, index) {
+  if (FRONTIER_MODE) {
+    return generatePassAFrontier(concept, inputImage, index);
+  }
   const expression = expressions[index % expressions.length];
   const variation = buildVariation();
   const physicsMax = isPhysicsMaxConcept(concept);
@@ -1051,7 +5847,7 @@ async function generatePassA(concept, inputImage, index) {
   let promptUsed = prompt;
   const wc = wordCount(prompt);
   const passAMin = (FORCE_ULTRA_PASS_A || physicsMax) ? 500 : 1400;
-  const passAMax = (FORCE_ULTRA_PASS_A || physicsMax) ? 1100 : 1500;
+  const passAMax = (FORCE_ULTRA_PASS_A || physicsMax) ? 1250 : 1950;
   if (wc < passAMin || wc > passAMax) {
       console.log(`WARN: Pass A word count ${wc} outside ${passAMin}-${passAMax} target.`);
     }
@@ -1070,10 +5866,7 @@ async function generatePassA(concept, inputImage, index) {
 
   const contents = [{
     role: 'user',
-    parts: [
-      { text: prompt },
-      { inlineData: { mimeType, data: base64Image } },
-    ],
+    parts: buildImageEditParts(prompt, mimeType, base64Image),
   }];
 
   let data = await callModel(contents, 0, true);
@@ -1093,27 +5886,31 @@ async function generatePassA(concept, inputImage, index) {
   }
 
   if (!imageData?.data) {
-    if (physicsMax) {
+    const initialSignal = extractBlockSignal(data);
+    const policyBlockedInitial = initialSignal.policyBlocked;
+    if (policyBlockedInitial) {
+      console.log(`Pass A policy block detected (finish=${initialSignal.finish || 'n/a'}, block=${initialSignal.block || 'n/a'}). Using compliance recovery prompt...`);
+    } else if (physicsMax) {
       console.log('Pass A physics-max fallback: dense causal prompt...');
     } else {
       console.log('Pass A fallback: simplifying material phrasing...');
     }
     const promptFallback = FORCE_SAFE_MODE
       ? buildPromptPassASafeEmergency(concept, expression, variation)
-      : (physicsMax
-        ? buildPromptPassAPhysicsMax(concept, expression, variation)
-        : buildPromptPassA(concept, expression, variation, true));
+      : (policyBlockedInitial
+        ? buildPromptPassASafetyRecovery(concept, expression, variation)
+        : (physicsMax
+          ? buildPromptPassAPhysicsMax(concept, expression, variation)
+          : buildPromptPassA(concept, expression, variation, true)));
+    const fallbackLabel = policyBlockedInitial ? 'Pass A (policy-recovery)' : 'Pass A (fallback)';
     promptUsed = promptFallback;
-    validatePrompt(promptFallback, 'Pass A (fallback)');
+    validatePrompt(promptFallback, fallbackLabel);
     const contentsFallback = [{
       role: 'user',
-      parts: [
-        { text: promptFallback },
-        { inlineData: { mimeType, data: base64Image } },
-      ],
+      parts: buildImageEditParts(promptFallback, mimeType, base64Image),
     }];
     data = await callModel(contentsFallback, 0, true);
-    logModelDiagnostics(data, 'Pass A (fallback)');
+    logModelDiagnostics(data, fallbackLabel);
     const partsFb = data.candidates?.[0]?.content?.parts || [];
     imageData = null;
     modelParts = [];
@@ -1127,21 +5924,26 @@ async function generatePassA(concept, inputImage, index) {
       modelParts.push(partWithThoughtSignature(part));
     }
     if (!imageData?.data && (FORCE_ULTRA_PASS_A || physicsMax)) {
-      console.log('Pass A physics-max safety fallback: conservative constraints...');
+      const signalAfterFallback = extractBlockSignal(data);
+      if (signalAfterFallback.policyBlocked) {
+        console.log('Pass A physics-max policy fallback: compliance-first constraints...');
+      } else {
+        console.log('Pass A physics-max safety fallback: conservative constraints...');
+      }
       const promptSafe = FORCE_SAFE_MODE
         ? buildPromptPassASafeEmergency(concept, expression, variation)
-        : buildPromptPassAPhysicsMax(concept, expression, variation, true);
+        : (signalAfterFallback.policyBlocked
+          ? buildPromptPassASafetyRecovery(concept, expression, variation)
+          : buildPromptPassAPhysicsMax(concept, expression, variation, true));
+      const safeLabel = signalAfterFallback.policyBlocked ? 'Pass A (policy-safety)' : 'Pass A (safety)';
       promptUsed = promptSafe;
-      validatePrompt(promptSafe, 'Pass A (safety)');
+      validatePrompt(promptSafe, safeLabel);
       const contentsSafe = [{
         role: 'user',
-        parts: [
-          { text: promptSafe },
-          { inlineData: { mimeType, data: base64Image } },
-        ],
+        parts: buildImageEditParts(promptSafe, mimeType, base64Image),
       }];
       data = await callModel(contentsSafe, 0, true);
-      logModelDiagnostics(data, 'Pass A (safety)');
+      logModelDiagnostics(data, safeLabel);
       const partsSafe = data.candidates?.[0]?.content?.parts || [];
       imageData = null;
       modelParts = [];
@@ -1158,19 +5960,25 @@ async function generatePassA(concept, inputImage, index) {
         throw new Error('NO IMAGE generated in pass A (physics-max)');
       }
     } else if (!imageData?.data && !physicsMax) {
-      console.log('Pass A compact fallback: minimal prompt + hard constraints...');
-      const promptCompact = buildPromptPassACompact(concept, expression, variation);
+      const signalBeforeCompact = extractBlockSignal(data);
+      const useComplianceCompact = FORCE_SAFE_MODE || signalBeforeCompact.policyBlocked;
+      if (useComplianceCompact) {
+        console.log('Pass A compliance fallback: safety-oriented realism prompt...');
+      } else {
+        console.log('Pass A compact fallback: minimal prompt + hard constraints...');
+      }
+      const promptCompact = useComplianceCompact
+        ? buildPromptPassASafetyRecovery(concept, expression, variation)
+        : buildPromptPassACompact(concept, expression, variation);
+      const compactLabel = useComplianceCompact ? 'Pass A (compliance)' : 'Pass A (compact)';
       promptUsed = promptCompact;
-      validatePrompt(promptCompact, 'Pass A (compact)');
+      validatePrompt(promptCompact, compactLabel);
       const contentsCompact = [{
         role: 'user',
-        parts: [
-          { text: promptCompact },
-          { inlineData: { mimeType, data: base64Image } },
-        ],
+        parts: buildImageEditParts(promptCompact, mimeType, base64Image),
       }];
       data = await callModel(contentsCompact, 0, true);
-      logModelDiagnostics(data, 'Pass A (compact)');
+      logModelDiagnostics(data, compactLabel);
       const partsC = data.candidates?.[0]?.content?.parts || [];
       imageData = null;
       modelParts = [];
@@ -1184,33 +5992,59 @@ async function generatePassA(concept, inputImage, index) {
         modelParts.push(partWithThoughtSignature(part));
       }
       if (!imageData?.data) {
-        console.log('Pass A ULTRA fallback: shortest prompt...');
-        const promptUltra = buildPromptPassAUltra(concept, expression, variation);
-        promptUsed = promptUltra;
-        validatePrompt(promptUltra, 'Pass A (ultra)');
-        const contentsUltra = [{
-          role: 'user',
-          parts: [
-            { text: promptUltra },
-            { inlineData: { mimeType, data: base64Image } },
-          ],
-        }];
-        data = await callModel(contentsUltra, 0, true);
-        logModelDiagnostics(data, 'Pass A (ultra)');
-        const partsU = data.candidates?.[0]?.content?.parts || [];
-        imageData = null;
-        modelParts = [];
-        for (const part of partsU) {
-          if (part.text && !part.thought) {
-            console.log(`Model A(ULTRA): ${part.text.substring(0, 100)}...`);
+        const signalBeforeUltra = extractBlockSignal(data);
+        if (useComplianceCompact || signalBeforeUltra.policyBlocked) {
+          console.log('Pass A safe-final fallback: maximum compliance prompt...');
+          const promptSafeFinal = buildPromptPassASafeEmergency(concept, expression, variation);
+          promptUsed = promptSafeFinal;
+          validatePrompt(promptSafeFinal, 'Pass A (safe-final)');
+          const contentsSafeFinal = [{
+            role: 'user',
+            parts: buildImageEditParts(promptSafeFinal, mimeType, base64Image),
+          }];
+          data = await callModel(contentsSafeFinal, 0, true);
+          logModelDiagnostics(data, 'Pass A (safe-final)');
+          const partsSafeFinal = data.candidates?.[0]?.content?.parts || [];
+          imageData = null;
+          modelParts = [];
+          for (const part of partsSafeFinal) {
+            if (part.text && !part.thought) {
+              console.log(`Model A(SAFE-FINAL): ${part.text.substring(0, 100)}...`);
+            }
+            if (part.inlineData?.data) {
+              imageData = part.inlineData;
+            }
+            modelParts.push(partWithThoughtSignature(part));
           }
-          if (part.inlineData?.data) {
-            imageData = part.inlineData;
+          if (!imageData?.data) {
+            throw new Error('NO IMAGE generated in pass A (safe-final)');
           }
-          modelParts.push(partWithThoughtSignature(part));
-        }
-        if (!imageData?.data) {
-          throw new Error('NO IMAGE generated in pass A (ultra)');
+        } else {
+          console.log('Pass A ULTRA fallback: shortest prompt...');
+          const promptUltra = buildPromptPassAUltra(concept, expression, variation);
+          promptUsed = promptUltra;
+          validatePrompt(promptUltra, 'Pass A (ultra)');
+          const contentsUltra = [{
+            role: 'user',
+            parts: buildImageEditParts(promptUltra, mimeType, base64Image),
+          }];
+          data = await callModel(contentsUltra, 0, true);
+          logModelDiagnostics(data, 'Pass A (ultra)');
+          const partsU = data.candidates?.[0]?.content?.parts || [];
+          imageData = null;
+          modelParts = [];
+          for (const part of partsU) {
+            if (part.text && !part.thought) {
+              console.log(`Model A(ULTRA): ${part.text.substring(0, 100)}...`);
+            }
+            if (part.inlineData?.data) {
+              imageData = part.inlineData;
+            }
+            modelParts.push(partWithThoughtSignature(part));
+          }
+          if (!imageData?.data) {
+            throw new Error('NO IMAGE generated in pass A (ultra)');
+          }
         }
       }
     }
@@ -1225,6 +6059,9 @@ async function generatePassA(concept, inputImage, index) {
 }
 
 async function generatePassB(concept, passA, inputImage, index) {
+  if (FRONTIER_MODE) {
+    return generatePassBFrontier(concept, passA, inputImage, index);
+  }
   const expression = expressions[index % expressions.length];
   const variation = passA.variation || buildVariation();
   const physicsMax = isPhysicsMaxConcept(concept);
@@ -1233,7 +6070,7 @@ async function generatePassB(concept, passA, inputImage, index) {
     : buildPromptPassB(concept, expression, variation);
   const wc = wordCount(prompt);
   const passBMin = physicsMax ? 700 : 1400;
-  const passBMax = physicsMax ? 1150 : 1500;
+  const passBMax = physicsMax ? 1350 : 1900;
   if (wc < passBMin || wc > passBMax) {
       console.log(`WARN: Pass B word count ${wc} outside ${passBMin}-${passBMax} target.`);
     }
@@ -1255,11 +6092,15 @@ async function generatePassB(concept, passA, inputImage, index) {
     ? buildPromptPassAUltra(concept, expression, variation)
     : buildPromptPassA(concept, expression, variation));
 
-  const contents = [
-    { role: 'user', parts: [{ text: passAPromptForContext }, { inlineData: { mimeType: baseMimeType, data: base64Image } }] },
-    { role: 'model', parts: passA.modelParts },
-    { role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: passA.mimeType, data: passAB64 } }] },
-  ];
+  const contents = buildPassBConversation({
+    passAPromptForContext,
+    baseMimeType,
+    base64Image,
+    passAModelParts: passA.modelParts,
+    prompt,
+    passAMimeType: passA.mimeType,
+    passAB64,
+  });
 
   let data;
   try {
@@ -1287,16 +6128,29 @@ async function generatePassB(concept, passA, inputImage, index) {
       return fp;
     }
   }
-  console.log('Pass B fallback: simplifying microstructure phrasing...');
-  const promptFallback = physicsMax
-    ? buildPromptPassBPhysicsMax(concept, expression, variation, true)
-    : buildPromptPassB(concept, expression, variation, true);
-  validatePrompt(promptFallback, 'Pass B (fallback)');
-  const contentsFallback = [
-    { role: 'user', parts: [{ text: passAPromptForContext }, { inlineData: { mimeType: baseMimeType, data: base64Image } }] },
-    { role: 'model', parts: passA.modelParts },
-    { role: 'user', parts: [{ text: promptFallback }, { inlineData: { mimeType: passA.mimeType, data: passAB64 } }] },
-  ];
+  const passBSignal = extractBlockSignal(data);
+  const policyBlocked = passBSignal.policyBlocked;
+  if (policyBlocked) {
+    console.log(`Pass B policy block detected (finish=${passBSignal.finish || 'n/a'}, block=${passBSignal.block || 'n/a'}). Using compliance recovery refinement...`);
+  } else {
+    console.log('Pass B fallback: simplifying microstructure phrasing...');
+  }
+  const promptFallback = policyBlocked
+    ? buildPromptPassBSafetyRecovery(concept, expression, variation)
+    : (physicsMax
+      ? buildPromptPassBPhysicsMax(concept, expression, variation, true)
+      : buildPromptPassB(concept, expression, variation, true));
+  const fallbackLabel = policyBlocked ? 'Pass B (policy-recovery)' : 'Pass B (fallback)';
+  validatePrompt(promptFallback, fallbackLabel);
+  const contentsFallback = buildPassBConversation({
+    passAPromptForContext,
+    baseMimeType,
+    base64Image,
+    passAModelParts: passA.modelParts,
+    prompt: promptFallback,
+    passAMimeType: passA.mimeType,
+    passAB64,
+  });
   try {
     data = await callModel(contentsFallback, 0, true);
   } catch (err) {
@@ -1307,7 +6161,7 @@ async function generatePassB(concept, passA, inputImage, index) {
     console.log(`SAVED FINAL (PASS A after fallback error): ${fp} (${(passAImg.length / 1024 / 1024).toFixed(2)} MB)`);
     return fp;
   }
-  logModelDiagnostics(data, 'Pass B (fallback)');
+  logModelDiagnostics(data, fallbackLabel);
   parts = data.candidates?.[0]?.content?.parts || [];
   for (const part of parts) {
     if (part.text && !part.thought) {
@@ -1319,6 +6173,40 @@ async function generatePassB(concept, passA, inputImage, index) {
       await fs.writeFile(fp, img);
       console.log(`SAVED FINAL: ${fp} (${(img.length / 1024 / 1024).toFixed(2)} MB)`);
       return fp;
+    }
+  }
+
+  if (!policyBlocked) {
+    console.log('Pass B safe-final fallback: strict compliance micro-refinement...');
+    const promptSafeFinal = buildPromptPassBSafetyRecovery(concept, expression, variation);
+    validatePrompt(promptSafeFinal, 'Pass B (safe-final)');
+    const contentsSafeFinal = buildPassBConversation({
+      passAPromptForContext,
+      baseMimeType,
+      base64Image,
+      passAModelParts: passA.modelParts,
+      prompt: promptSafeFinal,
+      passAMimeType: passA.mimeType,
+      passAB64,
+    });
+    try {
+      data = await callModel(contentsSafeFinal, 0, true);
+      logModelDiagnostics(data, 'Pass B (safe-final)');
+      parts = data.candidates?.[0]?.content?.parts || [];
+      for (const part of parts) {
+        if (part.text && !part.thought) {
+          console.log(`Model B(SAFE): ${part.text.substring(0, 100)}...`);
+        }
+        if (part.inlineData?.data) {
+          const img = Buffer.from(part.inlineData.data, 'base64');
+          const fp = path.join(OUTPUT_DIR, `${concept.name}.png`);
+          await fs.writeFile(fp, img);
+          console.log(`SAVED FINAL: ${fp} (${(img.length / 1024 / 1024).toFixed(2)} MB)`);
+          return fp;
+        }
+      }
+    } catch (err) {
+      console.log(`Pass B safe-final fallback error: ${err.message}. Using Pass A output as final.`);
     }
   }
 
@@ -2337,12 +7225,44 @@ const concepts = [
 const s = parseInt(process.argv[3] || '0');
 const e = parseInt(process.argv[4] || String(concepts.length));
 const results = [];
+const abAuditRecords = [];
 
 if (process.env.DRY_RUN === '1') {
   console.log(`DRY_RUN=1: printing prompt wordcounts only (no API calls).`);
   for (let i = s; i < Math.min(e, concepts.length); i++) {
     const expression = expressions[i % expressions.length];
     const variation = buildVariation();
+    if (FRONTIER_MODE) {
+      const profiles = getFrontierProfiles();
+      console.log(`[${i + 1}/${concepts.length}] ${concepts[i].name}`);
+      console.log(`  Mode  : frontier${DUAL_STRATEGY_MODE ? ' + multi-strategy A/B/C' : ''}`);
+      for (const profile of profiles) {
+        if (DUAL_STRATEGY_MODE) {
+          const seedLessons = [
+            'Fuse strongest identity lock with strongest optics while preserving compliance.',
+            'Keep seam/load-path physics explicit and avoid geometry drift.',
+          ];
+          const aPassA = buildPromptPassAFrontier(concepts[i], expression, variation, profile, 'A', seedLessons);
+          const aPassB = buildPromptPassBFrontier(concepts[i], expression, variation, profile, 'A', seedLessons);
+          const bPassA = buildPromptPassAFrontier(concepts[i], expression, variation, profile, 'B', seedLessons);
+          const bPassB = buildPromptPassBFrontier(concepts[i], expression, variation, profile, 'B', seedLessons);
+          const cPassA = buildPromptPassAFrontier(concepts[i], expression, variation, profile, 'C', seedLessons);
+          const cPassB = buildPromptPassBFrontier(concepts[i], expression, variation, profile, 'C', seedLessons);
+          console.log(`  S-A PassA ${profile.padEnd(9)} ${wordCount(aPassA)} words`);
+          console.log(`  S-A PassB ${profile.padEnd(9)} ${wordCount(aPassB)} words`);
+          console.log(`  S-B PassA ${profile.padEnd(9)} ${wordCount(bPassA)} words`);
+          console.log(`  S-B PassB ${profile.padEnd(9)} ${wordCount(bPassB)} words`);
+          console.log(`  S-C PassA ${profile.padEnd(9)} ${wordCount(cPassA)} words`);
+          console.log(`  S-C PassB ${profile.padEnd(9)} ${wordCount(cPassB)} words`);
+        } else {
+          const promptAFrontier = buildPromptPassAFrontier(concepts[i], expression, variation, profile, 'A');
+          const promptBFrontier = buildPromptPassBFrontier(concepts[i], expression, variation, profile, 'A');
+          console.log(`  PassA:${profile.padEnd(9)} ${wordCount(promptAFrontier)} words`);
+          console.log(`  PassB:${profile.padEnd(9)} ${wordCount(promptBFrontier)} words`);
+        }
+      }
+      continue;
+    }
     const physicsMax = isPhysicsMaxConcept(concepts[i]);
     const promptA = (FORCE_ULTRA_PASS_A || physicsMax) ? buildPromptPassAUltra(concepts[i], expression, variation) : buildPromptPassA(concepts[i], expression, variation);
     const promptB = physicsMax ? buildPromptPassBPhysicsMax(concepts[i], expression, variation) : buildPromptPassB(concepts[i], expression, variation);
@@ -2354,6 +7274,32 @@ if (process.env.DRY_RUN === '1') {
     console.log(`  Ultra : ${wordCount(promptU)} words`);
   }
   process.exit(0);
+}
+
+if (PHASED_BATCH_MODE) {
+  if (!(FRONTIER_MODE && DUAL_STRATEGY_MODE) || process.env.PASS_A_ONLY === '1') {
+    console.error('PHASED_BATCH_MODE requires FRONTIER_MODE=1, DUAL_STRATEGY_MODE=1, and PASS_A_ONLY not set.');
+    process.exit(1);
+  }
+
+  const phasedResults = await runPhasedDualStrategyBatches({
+    startIndex: s,
+    endIndex: e,
+    inputImage: INPUT_IMAGE,
+  });
+
+  console.log(`\n${'='.repeat(60)}`);
+  console.log('V29 APEX PHASED RESULTS');
+  console.log(`${'='.repeat(60)}`);
+  const ok = phasedResults.filter(r => r.ok);
+  console.log(`Success: ${ok.length}/${phasedResults.length}`);
+  phasedResults.forEach(r => {
+    const winnerInfo = r.winner ? ` winner=${r.winner}` : '';
+    console.log(`  ${r.ok ? 'OK' : '!!'} ${r.name}${winnerInfo}${r.err ? ': ' + r.err : ''}`);
+  });
+
+  const failed = phasedResults.length - ok.length;
+  process.exit(failed > 0 ? 1 : 0);
 }
 
 const existingFiles = await fs.readdir(OUTPUT_DIR).catch(() => []);
@@ -2380,8 +7326,54 @@ for (let i = s; i < Math.min(e, concepts.length); i++) {
   let ok = false;
   let lastErr = null;
   for (let attempt = 1; attempt <= MAX_CONCEPT_ATTEMPTS; attempt++) {
+    CURRENT_CONCEPT_ATTEMPT = attempt;
+    CURRENT_CONCEPT_MAX_ATTEMPTS = MAX_CONCEPT_ATTEMPTS;
+    GLOBAL_RATE_LIMIT_STREAK = 0;
+    GLOBAL_NEXT_REQUEST_AT_MS = 0;
     try {
       console.log(`\n--- ATTEMPT ${attempt}/${MAX_CONCEPT_ATTEMPTS} for ${concepts[i].name} ---`);
+      if (FRONTIER_MODE && DUAL_STRATEGY_MODE && process.env.PASS_A_ONLY !== '1') {
+        const dual = await runDualStrategyConcept(concepts[i], INPUT_IMAGE, i);
+        const gate = dual?.qualityGate || {};
+        const gatePass = gate?.pass !== false;
+        if (STRICT_QUALITY_GATE && !gatePass) {
+          const finalMult = Number(gate?.final_from_revised) || 0;
+          const minMult = Number(gate?.min_final_multiplier) || MIN_FINAL_MULTIPLIER_GATE;
+          if (dual?.path) {
+            console.log(
+              `QUALITY GATE FAIL ${concepts[i].name}: final=${finalMult.toFixed(2)}x < required=${minMult.toFixed(2)}x; ` +
+              `keeping generated output and proceeding.`
+            );
+            results.push({
+              name: concepts[i].name,
+              path: dual.path,
+              ok: true,
+              attempt,
+              winner: dual.audit?.winner?.approach || 'n/a',
+              final_multiplier: finalMult,
+              quality_gate_failed: true,
+            });
+            if (dual.audit) abAuditRecords.push(dual.audit);
+            ok = true;
+            break;
+          }
+          console.log(
+            `QUALITY GATE FAIL ${concepts[i].name}: final=${finalMult.toFixed(2)}x < required=${minMult.toFixed(2)}x; retrying (no output artifact).`
+          );
+          throw new Error(`QUALITY_GATE_FAIL final=${finalMult.toFixed(2)}x required=${minMult.toFixed(2)}x`);
+        }
+        results.push({
+          name: concepts[i].name,
+          path: dual.path,
+          ok: !!dual.path,
+          attempt,
+          winner: dual.audit?.winner?.approach || 'n/a',
+          final_multiplier: Number(gate?.final_from_revised) || null,
+        });
+        if (dual.audit) abAuditRecords.push(dual.audit);
+        ok = true;
+        break;
+      }
       const passA = await generatePassA(concepts[i], INPUT_IMAGE, i);
       if (process.env.PASS_A_ONLY === '1') {
         const passAImg = await fs.readFile(passA.fp);
@@ -2393,8 +7385,9 @@ for (let i = s; i < Math.min(e, concepts.length); i++) {
         break;
       }
       console.log(`Waiting ${RETRY_WAIT_S}s between passes...`);
-      await new Promise(r => setTimeout(r, RETRY_WAIT_S * 1000));
-      const fp = await generatePassB(concepts[i], passA, INPUT_IMAGE, i);
+      await waitWithHeartbeat(RETRY_WAIT_S, 'between passes');
+      const passBResult = await generatePassB(concepts[i], passA, INPUT_IMAGE, i);
+      const fp = typeof passBResult === 'string' ? passBResult : passBResult?.path;
       results.push({ name: concepts[i].name, path: fp, ok: !!fp, attempt });
       ok = true;
       break;
@@ -2403,7 +7396,7 @@ for (let i = s; i < Math.min(e, concepts.length); i++) {
       console.error(`FAIL attempt ${attempt}/${MAX_CONCEPT_ATTEMPTS}: ${concepts[i].name} - ${err.message}`);
       if (attempt < MAX_CONCEPT_ATTEMPTS) {
         console.log(`Retrying ${concepts[i].name} after ${RETRY_WAIT_S}s...`);
-        await new Promise(r => setTimeout(r, RETRY_WAIT_S * 1000));
+        await waitWithHeartbeat(RETRY_WAIT_S, 'concept retry');
       }
     }
   }
@@ -2412,7 +7405,7 @@ for (let i = s; i < Math.min(e, concepts.length); i++) {
   }
   if (i < Math.min(e, concepts.length) - 1) {
     console.log(`Waiting ${RETRY_WAIT_S}s...`);
-    await new Promise(r => setTimeout(r, RETRY_WAIT_S * 1000));
+    await waitWithHeartbeat(RETRY_WAIT_S, 'between concepts');
   }
 }
 
@@ -2421,5 +7414,59 @@ console.log('V29 APEX RESULTS');
 console.log(`${'='.repeat(60)}`);
 const ok = results.filter(r => r.ok);
 console.log(`Success: ${ok.length}/${results.length}`);
-results.forEach(r => console.log(`  ${r.ok ? 'OK' : '!!'} ${r.name}${r.err ? ': ' + r.err : ''}`));
+results.forEach(r => {
+  const winnerInfo = r.winner ? ` winner=${r.winner}` : '';
+  console.log(`  ${r.ok ? 'OK' : '!!'} ${r.name}${winnerInfo}${r.err ? ': ' + r.err : ''}`);
+});
+if (abAuditRecords.length > 0) {
+  const allLines = (await fs.readFile(AB_AUDIT_FILE, 'utf8'))
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+  const allRecords = allLines.map(line => {
+    try {
+      return JSON.parse(line);
+    } catch {
+      return null;
+    }
+  }).filter(Boolean);
+  const summary = normalizeAuditSummary(allRecords);
+  await fs.writeFile(AB_SUMMARY_FILE, `${JSON.stringify(summary, null, 2)}\n`);
+  console.log('\nA/B/C AUDIT SUMMARY');
+  console.log(`  Concepts audited: ${summary.concepts}`);
+  console.log(`  Wins: A=${summary.wins.A || 0} | B=${summary.wins.B || 0} | C=${summary.wins.C || 0}`);
+  console.log(
+    `  Avg overall: A=${(summary.avg_overall.A || 0).toFixed(2)} | B=${(summary.avg_overall.B || 0).toFixed(2)} | C=${(summary.avg_overall.C || 0).toFixed(2)}`
+  );
+  console.log(
+    `  C gain vs best(A/B): avg=${(summary.c_gain_percent_vs_best_ab?.avg || 0).toFixed(1)}% target=${summary.c_gain_percent_vs_best_ab?.target ?? TARGET_QUALITY_GAIN_PCT}% hits=${summary.c_gain_percent_vs_best_ab?.target_hit_count || 0}`
+  );
+  if (Array.isArray(summary.top_lessons) && summary.top_lessons.length > 0) {
+    console.log('  Top lessons:');
+    summary.top_lessons.slice(0, 6).forEach((item, idx2) => {
+      const lesson = item?.lesson || item?.hint || 'n/a';
+      const count = Number(item?.count) || 0;
+      console.log(`    ${idx2 + 1}. (${count}x) ${lesson}`);
+    });
+  }
+  console.log(`  Audit JSONL: ${AB_AUDIT_FILE}`);
+  console.log(`  Audit Summary: ${AB_SUMMARY_FILE}`);
+
+  const learningRecords = await loadLearningAuditRecords();
+  if (learningRecords.length > 0) {
+    const learningPlan = normalizeLearningPlan(learningRecords);
+    await fs.writeFile(LEARNING_PLAN_FILE, `${JSON.stringify(learningPlan, null, 2)}\n`);
+    console.log('  Learning Plan:');
+    console.log(`    Rounds: ${learningPlan.rounds}`);
+    console.log(`    Avg delta A=${(learningPlan.avg_deltas.A || 0).toFixed(2)} | B=${(learningPlan.avg_deltas.B || 0).toFixed(2)} | C_vs_best_ab=${(learningPlan.avg_deltas.C_vs_best_ab || 0).toFixed(2)}`);
+    if (Array.isArray(learningPlan.next_round_objectives) && learningPlan.next_round_objectives.length > 0) {
+      console.log('    Next objectives:');
+      learningPlan.next_round_objectives.slice(0, 4).forEach((item, idx2) => {
+        console.log(`      ${idx2 + 1}. ${item}`);
+      });
+    }
+    console.log(`    Learning Audit JSONL: ${LEARNING_AUDIT_FILE}`);
+    console.log(`    Learning Plan JSON: ${LEARNING_PLAN_FILE}`);
+  }
+}
 console.log(`\nOutput: ${OUTPUT_DIR}`);

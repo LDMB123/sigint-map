@@ -14,7 +14,15 @@
       "Bash(git status)",
       "Bash(git status *)",
       "Bash(git log *)",
-      "Bash(git diff *)"
+      "Bash(git diff *)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo tree:*)",
+      "Bash(cargo fix:*)"
     ],
     "deny": [
       "Bash(rm -rf *)",

@@ -8,10 +8,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use dmb_core::{
-    hashed_embedding, AnnIndexMeta, AnnIvfIndex, EmbeddingChunk, EmbeddingChunkMeta,
-    EmbeddingManifest, EmbeddingRecord, CORE_SCHEMA_VERSION, EMBEDDING_DIM,
-};
+use dmb_core::{AnnIndexMeta, AnnIvfIndex, EmbeddingChunk, EmbeddingManifest, CORE_SCHEMA_VERSION};
 use once_cell::sync::Lazy;
 mod export;
 mod runtime_db;
@@ -109,7 +106,6 @@ enum Command {
         #[arg(long, default_value_t = false)]
         fail_on_warning: bool,
     },
-    Transform,
     BuildDb {
         #[arg(long, default_value = "data/dmb-almanac.db")]
         source: PathBuf,
@@ -154,14 +150,6 @@ enum Command {
         #[arg(long, default_value_t = false)]
         strict_tables: bool,
     },
-    Embeddings {
-        #[arg(long)]
-        input: PathBuf,
-        #[arg(long)]
-        output_dir: PathBuf,
-        #[arg(long, default_value_t = 1000)]
-        chunk_size: usize,
-    },
     BuildEmbeddingInput {
         #[arg(long, default_value = "static/data")]
         source_dir: PathBuf,
@@ -192,14 +180,6 @@ enum Command {
         #[arg(long, default_value = "linear")]
         method: String,
     },
-    EmbeddingSample {
-        #[arg(long, default_value = "data/embedding-input.json")]
-        input: PathBuf,
-        #[arg(long, default_value = "static/data/embedding-sample.json")]
-        output: PathBuf,
-        #[arg(long, default_value_t = 400)]
-        limit: usize,
-    },
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -228,6 +208,44 @@ struct DataFile {
 }
 
 static PIPELINE_WARN_ONCE: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+
+const IDB_REQUIRED_DATA_FILES: &[&str] = &[
+    "venues.json",
+    "songs.json",
+    "tours.json",
+    "shows.json",
+    "setlist-entries.json",
+    "guests.json",
+    "guest-appearances.json",
+    "liberation-list.json",
+    "song-statistics.json",
+    "releases.json",
+    "release-tracks.json",
+    "curated-lists.json",
+    "curated-list-items.json",
+    "ai-config.json",
+    "manifest.json",
+    "idb-migration-dry-run.json",
+    "ann-index.json",
+    "ann-index.bin",
+    "ann-index.ivf.json",
+    "embedding-manifest.json",
+    "embedding-sample.json",
+];
+
+fn normalized_data_asset_name(name: &str) -> &str {
+    name.strip_suffix(".json.br")
+        .or_else(|| name.strip_suffix(".json.gz"))
+        .unwrap_or(name)
+}
+
+fn is_supported_data_asset(name: &str) -> bool {
+    let normalized = normalized_data_asset_name(name);
+    if IDB_REQUIRED_DATA_FILES.contains(&normalized) {
+        return true;
+    }
+    normalized.starts_with("embedding-chunk-") && normalized.ends_with(".json")
+}
 
 fn warn_once(key: String, f: impl FnOnce()) {
     let mut guard = match PIPELINE_WARN_ONCE.lock() {
@@ -545,10 +563,6 @@ fn main() -> Result<()> {
             })?;
             tracing::info!("scrape-smoke: completed");
         }
-        Command::Transform => {
-            transform_seed_data()?;
-            tracing::info!("transform: normalized data bundles");
-        }
         Command::BuildDb { source, output } => {
             build_db(&source, &output)?;
             tracing::info!(
@@ -601,14 +615,6 @@ fn main() -> Result<()> {
             validate_sqlite_parity(&manifest, &sqlite, strict_manifest, strict_tables)?;
             tracing::info!("validate-parity: checks complete");
         }
-        Command::Embeddings {
-            input,
-            output_dir,
-            chunk_size,
-        } => {
-            build_embeddings(&input, &output_dir, chunk_size)?;
-            tracing::info!("embeddings: completed");
-        }
         Command::BuildEmbeddingInput { source_dir, output } => {
             build_embedding_input(&source_dir, &output)?;
             tracing::info!("embedding-input: wrote {}", output.display());
@@ -634,89 +640,7 @@ fn main() -> Result<()> {
             build_ann_index(&input_dir, &output, &method)?;
             tracing::info!("ann-index: completed");
         }
-        Command::EmbeddingSample {
-            input,
-            output,
-            limit,
-        } => {
-            build_embedding_sample(&input, &output, limit)?;
-            tracing::info!("embedding-sample: wrote {}", output.display());
-        }
     }
-
-    Ok(())
-}
-
-fn build_embeddings(input: &PathBuf, output_dir: &PathBuf, chunk_size: usize) -> Result<()> {
-    let file =
-        File::open(input).with_context(|| format!("open embedding input {}", input.display()))?;
-    let items: Vec<EmbeddingInput> =
-        serde_json::from_reader(file).context("parse embedding input JSON")?;
-
-    std::fs::create_dir_all(output_dir)
-        .with_context(|| format!("create output dir {}", output_dir.display()))?;
-
-    let mut manifest = EmbeddingManifest {
-        version: CORE_SCHEMA_VERSION.to_string(),
-        dim: EMBEDDING_DIM as u32,
-        chunk_count: 0,
-        chunks: Vec::new(),
-    };
-
-    for (index, chunk) in items.chunks(chunk_size.max(1)).enumerate() {
-        let chunk_id = index as u32;
-        let file_name = format!("embedding-chunk-{chunk_id:04}.json");
-        let chunk_path = output_dir.join(&file_name);
-
-        let records = chunk
-            .iter()
-            .map(|item| {
-                let vector = item.vector.clone().unwrap_or_else(|| {
-                    hashed_embedding(item.text.as_deref().unwrap_or(""), EMBEDDING_DIM)
-                });
-
-                EmbeddingRecord {
-                    id: item.id,
-                    kind: item.kind.clone(),
-                    slug: item.slug.clone(),
-                    label: item
-                        .label
-                        .as_ref()
-                        .or(item.text.as_ref())
-                        .filter(|v| !v.is_empty())
-                        .cloned(),
-                    vector,
-                }
-            })
-            .collect::<Vec<_>>();
-
-        let payload = EmbeddingChunk {
-            chunk_id,
-            dim: EMBEDDING_DIM as u32,
-            records,
-        };
-
-        serde_json::to_writer_pretty(
-            File::create(&chunk_path).with_context(|| format!("write {}", chunk_path.display()))?,
-            &payload,
-        )
-        .context("serialize embedding chunk")?;
-
-        manifest.chunks.push(EmbeddingChunkMeta {
-            chunk_id,
-            file: file_name,
-            count: payload.records.len() as u32,
-        });
-    }
-
-    manifest.chunk_count = manifest.chunks.len() as u32;
-    let manifest_path = output_dir.join("embedding-manifest.json");
-    serde_json::to_writer_pretty(
-        File::create(&manifest_path)
-            .with_context(|| format!("write {}", manifest_path.display()))?,
-        &manifest,
-    )
-    .context("serialize embedding manifest")?;
 
     Ok(())
 }
@@ -994,6 +918,10 @@ fn build_data_manifest(source_dir: &Path, output: &Path) -> Result<()> {
             Some(name) => name.to_string(),
             None => continue,
         };
+        if !is_supported_data_asset(&name) {
+            tracing::debug!(file = %name, "build-data-manifest: skipping unsupported file");
+            continue;
+        }
         let is_json =
             name.ends_with(".json") || name.ends_with(".json.gz") || name.ends_with(".json.br");
         let is_bin = name.ends_with(".bin");
@@ -1094,21 +1022,6 @@ fn idb_migration_dry_run(manifest_path: &Path, output: &Path) -> Result<()> {
     Ok(())
 }
 
-fn build_embedding_sample(input: &Path, output: &Path, limit: usize) -> Result<()> {
-    let file = File::open(input).with_context(|| format!("open {}", input.display()))?;
-    let items: Vec<EmbeddingInput> =
-        serde_json::from_reader(file).context("parse embedding input JSON")?;
-    let sample: Vec<EmbeddingInput> = items.into_iter().take(limit.max(1)).collect();
-    if let Some(parent) = output.parent() {
-        std::fs::create_dir_all(parent)
-            .with_context(|| format!("create output dir {}", parent.display()))?;
-    }
-    let file = File::create(output)
-        .with_context(|| format!("write embedding sample {}", output.display()))?;
-    serde_json::to_writer_pretty(file, &sample).context("serialize embedding sample")?;
-    Ok(())
-}
-
 fn validate_data_manifest(manifest: &DataManifest) -> Result<()> {
     if manifest.version.trim().is_empty() {
         anyhow::bail!("manifest version is empty");
@@ -1126,6 +1039,9 @@ fn validate_data_manifest(manifest: &DataManifest) -> Result<()> {
         }
         if file.size == 0 {
             anyhow::bail!("manifest file size is zero for {}", file.name);
+        }
+        if !is_supported_data_asset(&file.name) {
+            anyhow::bail!("manifest includes unsupported data asset: {}", file.name);
         }
     }
 
@@ -1554,6 +1470,10 @@ fn build_idb(source_dir: &Path, output_dir: &Path) -> Result<()> {
             Some(name) => name.to_string(),
             None => continue,
         };
+        if !is_supported_data_asset(&name) {
+            tracing::debug!(file = %name, "build-idb: skipping unsupported file");
+            continue;
+        }
         let is_json =
             name.ends_with(".json") || name.ends_with(".json.gz") || name.ends_with(".json.br");
         let is_bin = name.ends_with(".bin");
@@ -1769,49 +1689,6 @@ mod tests {
         validate_sqlite_parity(&manifest_path, &sqlite_path, true, true)?;
         Ok(())
     }
-}
-
-fn transform_seed_data() -> Result<()> {
-    let input_dir = PathBuf::from("data/raw");
-    let output_dir = PathBuf::from("data/normalized");
-    if !input_dir.exists() {
-        anyhow::bail!(
-            "raw data not found at {} (run scrape first)",
-            input_dir.display()
-        );
-    }
-    std::fs::create_dir_all(&output_dir)
-        .with_context(|| format!("create {}", output_dir.display()))?;
-
-    for entry in
-        std::fs::read_dir(&input_dir).with_context(|| format!("read {}", input_dir.display()))?
-    {
-        let entry = entry?;
-        let path = entry.path();
-        if !path.is_file() {
-            continue;
-        }
-        let name = match path.file_name().and_then(|n| n.to_str()) {
-            Some(name) => name,
-            None => continue,
-        };
-
-        if name.ends_with(".json.gz") {
-            let file = File::open(&path).with_context(|| format!("open {}", path.display()))?;
-            let mut decoder = flate2::read::GzDecoder::new(file);
-            let mut contents = String::new();
-            decoder.read_to_string(&mut contents)?;
-            let dest_name = name.trim_end_matches(".gz");
-            let dest = output_dir.join(dest_name);
-            std::fs::write(&dest, contents).with_context(|| format!("write {}", dest.display()))?;
-        } else if name.ends_with(".json") {
-            let dest = output_dir.join(name);
-            std::fs::copy(&path, &dest)
-                .with_context(|| format!("copy {} -> {}", path.display(), dest.display()))?;
-        }
-    }
-
-    Ok(())
 }
 
 fn validate_data(

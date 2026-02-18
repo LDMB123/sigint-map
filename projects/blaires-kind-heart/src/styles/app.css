@@ -27,15 +27,15 @@ html {
   outline: none;
 }
 
-/* Enhanced focus states for interactive cards — 3px ring + glow */
+/* Enhanced focus states for interactive cards — double-ring pattern (3px outline + 6px halo) */
 .quest-card:focus-visible,
 .game-card:focus-visible,
 .sticker-card:focus-visible,
 .story-card:focus-visible,
 .kind-grid button:focus-visible {
   outline: 3px solid var(--color-purple);
-  outline-offset: 3px;
-  box-shadow: 0 0 0 6px rgba(181, 126, 255, 0.2);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(181, 126, 255, 0.15), 0 0 0 8px rgba(181, 126, 255, 0.08);
   border-radius: var(--radius-md);
 }
 
@@ -234,7 +234,7 @@ body[data-animations-paused] * {
   animation: toast-pop var(--duration-normal) var(--ease-elastic);
 
   &--exit {
-    animation: toast-exit var(--duration-normal) var(--ease-smooth) forwards;
+    animation: toast-exit var(--duration-normal) var(--ease-snap) forwards;
   }
 }
 
@@ -300,8 +300,8 @@ body[data-animations-paused] * {
   position: sticky;
   top: 0;
   z-index: 1;
-  /* Slow shimmer animation */
-  animation: panel-header-shimmer 8s ease-in-out infinite;
+  /* Shimmer animation — 4s for livelier feel */
+  animation: panel-header-shimmer 4s ease-in-out infinite;
 }
 
 @keyframes panel-header-shimmer {

@@ -155,30 +155,6 @@ pub fn collect_friend(type_id: &str) {
     });
 }
 
-pub fn spawn() {
-    crate::synth_audio::sparkle();
-}
-
-pub fn giggle() {
-    crate::synth_audio::giggle();
-}
-
-pub fn flower() {
-    crate::synth_audio::gentle();
-}
-
-pub fn combo() {
-    crate::synth_audio::level_up();
-}
-
-pub fn milestone() {
-    crate::synth_audio::fanfare();
-}
-
-pub fn transition() {
-    crate::synth_audio::chime();
-}
-
 pub fn is_muted_state() -> bool {
     MUTED.with(|m| *m.borrow())
 }

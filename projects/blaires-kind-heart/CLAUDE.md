@@ -1,5 +1,9 @@
 # Blaire's Kind Heart
 
+## Project Scope
+
+**This project is ONLY Blaire's Kind Heart.** Do not reference, suggest, or pull context from any other workspace project (dmb-almanac, emerson-violin-pwa, imagen-experiments, gemini-mcp-server). All Rust/WASM work here is scoped exclusively to this repository.
+
 Fully offline kindness PWA for a 4-year-old. iPad mini 6 (A15, 4GB RAM), iPadOS 26.2, Safari 26.2.
 
 ## Tech Stack

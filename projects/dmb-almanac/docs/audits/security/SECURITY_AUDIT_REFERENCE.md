@@ -10,8 +10,6 @@ The Rust server is `rust/crates/dmb_server` (Axum + Leptos SSR). It exposes:
 
 - Health: `GET /api/health`, `GET /api/ai-health`
 - Diagnostics: `GET /api/data-parity`
-- Telemetry (local logging): `POST /api/analytics`, `POST /api/telemetry/*`, `POST /api/csp-report`
-- Share target (local echo): `POST /api/share-target`
 - Sitemaps: `GET /sitemap*.xml`
 
 ## Cache Safety (Prevents Stale-Bundle Loops)
@@ -36,13 +34,12 @@ For `SharedArrayBuffer` and worker SIMD/threads, `dmb_server` can set COOP/COEP:
 
 ## Local-Only Warnings (Before Any Public Exposure)
 
-The current telemetry/share-target handlers accept arbitrary JSON and log it. Before exposing the server beyond localhost, add:
+Before exposing the server beyond localhost, add:
 
 - Request body size limits for JSON endpoints.
-- Input validation and explicit schemas for telemetry payloads.
 - CORS policy decisions (currently unspecified here, because local-only).
 - Rate limiting (if you add any expensive endpoints).
-- CSP header policy (there is a CSP report endpoint, but this doc does not claim CSP is currently enforced via headers).
+- CSP header policy (this doc does not claim CSP is currently enforced via headers).
 
 ## Quick Verification
 

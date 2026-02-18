@@ -31,6 +31,10 @@ ClaudeCodeProjects/
 └── _archived/           # Historical files
 ```
 
+## Project Isolation
+
+**Each project is fully independent.** When working inside a project directory, treat that project as the entire scope — do not reference, suggest, or pull context from sibling projects. Each project's own CLAUDE.md defines its stack, commands, and architecture. Multiple projects share Rust/WASM tooling but have completely separate codebases, repos, and purposes.
+
 ## Workspace Rules
 
 ### Organization
@@ -40,7 +44,7 @@ ClaudeCodeProjects/
 
 ### Skills & Agents
 - **Skills format**: `skill-name/SKILL.md` with YAML frontmatter
-- **Agents location**: `.claude/agents/` only
+- **Agents location**: Shared agents in `.claude/agents/`; project-specific agents in `projects/<name>/.claude/agents/`
 - **Large skills**: Extract references to separate files
 
 ### Report Writing

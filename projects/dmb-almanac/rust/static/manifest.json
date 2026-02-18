@@ -12,16 +12,6 @@
     {"src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
     {"src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png"}
   ],
-  "share_target": {
-    "action": "/api/share-target",
-    "method": "POST",
-    "enctype": "application/json",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  },
   "protocol_handlers": [
     {"protocol": "web+dmb", "url": "/protocol?url=%s"}
   ],

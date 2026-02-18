@@ -238,6 +238,8 @@
   margin-bottom: var(--space-md);
   color: var(--color-pink-dark);
   text-shadow: 0 1px 6px rgba(255, 143, 171, 0.25);
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--color-pink-light);
 }
 
 .acts-list {
@@ -261,8 +263,10 @@
     0 4px 12px rgba(45, 27, 48, 0.07),
     inset 0 1px 0 rgba(255, 255, 255, 0.7);
   animation: act-slide-in 0.3s var(--ease-smooth) both;
+  animation-delay: calc(sibling-index() * 0.04s);
   transition: transform var(--duration-fast) var(--ease-smooth),
-              box-shadow var(--duration-fast) var(--ease-smooth);
+              box-shadow var(--duration-fast) var(--ease-smooth),
+              border-color var(--duration-fast) var(--ease-smooth);
   position: relative;
   overflow: visible;
   min-height: var(--touch-min);

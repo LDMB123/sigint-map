@@ -21,7 +21,14 @@ pub fn AiStatus() -> impl IntoView {
 
             // Used only for better user-facing messaging; the actual gating is via capabilities.
             if let Some(window) = web_sys::window() {
-                cross_origin_isolated.set(Some(window.cross_origin_isolated()));
+                let isolated = js_sys::Reflect::get(
+                    window.as_ref(),
+                    &wasm_bindgen::JsValue::from_str("crossOriginIsolated"),
+                )
+                .ok()
+                .and_then(|value| value.as_bool())
+                .unwrap_or(false);
+                cross_origin_isolated.set(Some(isolated));
                 is_secure_context.set(Some(window.is_secure_context()));
             }
         });

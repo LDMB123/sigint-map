@@ -9,7 +9,7 @@ use wasm_bindgen::JsCast;
 use web_sys::{Element, Event, PointerEvent};
 
 use crate::{
-    animations, browser_apis, confetti, db_client, dom, games, native_apis, render, speech,
+    animations, browser_apis, confetti, dom, games, native_apis, render, speech,
     state, state::AppState, synth_audio, theme, ui, utils, weekly_goals,
 };
 
@@ -63,6 +63,9 @@ fn complete_peekaboo()       { synth_audio::giggle(); confetti::burst_party(); }
 fn complete_pattykake()      { synth_audio::tap(); confetti::burst_stars(); }
 fn complete_blowkisses()     { synth_audio::dreamy(); confetti::burst_hearts(); }
 fn complete_magicspell()     { synth_audio::magic_wand(); confetti::burst_unicorn(); }
+
+/// Float an emoji from Sparkle's body element.
+fn sparkle_float(emoji: &str) { confetti::float_emoji("[data-hug-sparkle]", emoji); }
 
 const STAGE_DATA: [StageData; 15] = [
     // GentlePat
@@ -701,7 +704,7 @@ fn on_sparkle_tap(state: Rc<RefCell<AppState>>) {
     if let Some(sparkle) = sparkle {
                     animations::float_up_heart(&sparkle);
                 }
-                confetti::float_emoji("[data-hug-sparkle]", "\u{1F49C}");
+                sparkle_float("\u{1F49C}");
 
                 // Show bubble on tap 3+
                 if game.tap_count >= 3 {
@@ -733,7 +736,7 @@ fn on_sparkle_tap(state: Rc<RefCell<AppState>>) {
 
                 // Float laugh emoji every 3 taps
                 if game.tap_count % 3 == 0 {
-                    confetti::float_emoji("[data-hug-sparkle]", "\u{1F602}");
+                    sparkle_float("\u{1F602}");
                 }
 
                 dom::set_text("[data-hug-counter]", &format!("{} / 10 tickles", game.tap_count));
@@ -745,7 +748,7 @@ fn on_sparkle_tap(state: Rc<RefCell<AppState>>) {
             HugStage::WakeUpKiss => {
                 stage.pulse_sound();
                 native_apis::vibrate_success();
-                confetti::float_emoji("[data-hug-sparkle]", "\u{1F48B}");
+                sparkle_float("\u{1F48B}");
                 show_bubble();
                 complete_stage(game, state);
             }
@@ -762,7 +765,7 @@ fn on_sparkle_tap(state: Rc<RefCell<AppState>>) {
                         sparkle.set_text_content(Some("\u{1F648}")); // see-no-evil (hiding)
                     } else {
                         sparkle.set_text_content(Some("\u{1F601}")); // grinning (found!)
-                        confetti::float_emoji("[data-hug-sparkle]", "\u{2728}");
+                        sparkle_float("\u{2728}");
                     }
                     animations::jelly_wobble(&sparkle);
                 }
@@ -791,7 +794,7 @@ fn on_sparkle_tap(state: Rc<RefCell<AppState>>) {
                     animations::bounce(&sparkle);
                 }
 
-                confetti::float_emoji("[data-hug-sparkle]", "\u{1F44F}");
+                sparkle_float("\u{1F44F}");
                 if game.tap_count >= 4 { show_bubble(); }
                 dom::set_text("[data-hug-counter]", &format!("{} / 8 claps", game.tap_count));
 
@@ -804,7 +807,7 @@ fn on_sparkle_tap(state: Rc<RefCell<AppState>>) {
                 stage.pulse_sound();
                 native_apis::vibrate_tap();
 
-                confetti::float_emoji("[data-hug-sparkle]", "\u{1F48B}");
+                sparkle_float("\u{1F48B}");
 
                 let sparkle = state::get_cached_hug_sparkle()
                     .or_else(|| dom::query("[data-hug-sparkle]"));
@@ -1042,7 +1045,7 @@ fn on_pointer_move(pe: PointerEvent, state: Rc<RefCell<AppState>>) {
                             animations::jelly_wobble(&sparkle);
                         }
 
-                        confetti::float_emoji("[data-hug-sparkle]", "\u{1F300}");
+                        sparkle_float("\u{1F300}");
                         dom::set_text("[data-hug-counter]", &format!("{} / 3 spins", game.spin_count));
 
                         if game.spin_count == 2 {
@@ -1086,7 +1089,7 @@ fn on_pointer_move(pe: PointerEvent, state: Rc<RefCell<AppState>>) {
                     let tilt = if new_direction == -1 { -15.0 } else { 15.0 };
                     let _ = sparkle.set_attribute("style", &format!("transform: rotate({}deg)", tilt));
 
-                    confetti::float_emoji("[data-hug-sparkle]", "\u{1F49C}");
+                    sparkle_float("\u{1F49C}");
 
                     if game.rock_count == 4 {
                         show_bubble();
@@ -1122,7 +1125,7 @@ fn on_pointer_move(pe: PointerEvent, state: Rc<RefCell<AppState>>) {
                             animations::bounce(&sparkle);
                         }
 
-                        confetti::float_emoji("[data-hug-sparkle]", "\u{2728}");
+                        sparkle_float("\u{2728}");
                         dom::set_text("[data-hug-counter]", &format!("{} / 3 spells", game.circle_count));
 
                         if game.circle_count == 2 { show_bubble(); }
@@ -1304,7 +1307,7 @@ fn complete_stage(game: &mut HugState, state: Rc<RefCell<AppState>>) {
     ui::update_heart_counter(total);
 
     // Float heart from Sparkle to progress bar
-    confetti::float_emoji("[data-hug-sparkle]", "\u{1F49C}");
+    sparkle_float("\u{1F49C}");
 
     // Animate the progress dot for this completed stage
     let dot_idx = game.stages_completed - 1;
@@ -1464,22 +1467,7 @@ fn show_hug_end(state: Rc<RefCell<AppState>>, stages_seen_mask: u16) {
     let hearts_earned = theme::HEARTS_HUG_PER_STAGE * theme::HUG_STAGES_PER_GAME as u32;
 
     // Save to DB
-    let id = utils::create_id();
-    let day_key = utils::today_key();
-    let now = utils::now_epoch_ms();
-    db_client::exec_fire_and_forget(
-        "hug-save",
-        "INSERT INTO game_scores (id, game_id, score, level, duration_ms, played_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        vec![
-            id,
-            "hug".into(),
-            hearts_earned.to_string(),
-            theme::HUG_STAGES_PER_GAME.to_string(),
-            "0".into(),
-            now.to_string(),
-            day_key,
-        ],
-    );
+    games::save_game_score("hug-save", "hug", hearts_earned as u64, theme::HUG_STAGES_PER_GAME as u64, 0);
 
     // Update state
     let unique_seen = stages_seen_mask.count_ones();
@@ -1495,12 +1483,9 @@ fn show_hug_end(state: Rc<RefCell<AppState>>, stages_seen_mask: u16) {
     weekly_goals::increment_progress("hearts", hearts_earned);
 
     // Build end screen
-    let screen = render::create_el_with_class(&doc, "div", "game-end-screen");
-
-    let title = render::create_el_with_class(&doc, "div", "game-end-title");
+    let (screen, title, stats) = games::build_end_screen();
     title.set_text_content(Some("\u{1F49C} Sparkle Loves You! \u{1F49C}"));
-
-    let stats = render::create_el_with_class(&doc, "div", "game-end-stats");
+    let _ = screen.append_child(&title);
 
     // Hearts earned
     let hearts_line = render::create_el_with_class(&doc, "div", "game-end-stat game-end-stat--hearts");
@@ -1524,19 +1509,7 @@ fn show_hug_end(state: Rc<RefCell<AppState>>, stages_seen_mask: u16) {
     comp_line.set_text_content(Some(&format!("\u{1F917} Hug sessions: {}", completions)));
     let _ = stats.append_child(&comp_line);
 
-    // Buttons
-    let buttons = render::create_el_with_class(&doc, "div", "game-end-buttons");
-    let again_btn = render::create_button(&doc, "game-end-btn game-end-btn--again", "\u{1F504} Play Again");
-    let _ = again_btn.set_attribute("data-game-again", "hug");
-    let back_btn = render::create_button(&doc, "game-end-btn game-end-btn--back", "\u{2190} Back to Games");
-    let _ = back_btn.set_attribute("data-game-back", "");
-    let _ = buttons.append_child(&again_btn);
-    let _ = buttons.append_child(&back_btn);
-
-    let _ = screen.append_child(&title);
-    let _ = screen.append_child(&stats);
-    let _ = screen.append_child(&buttons);
-    let _ = arena.append_child(&screen);
+    games::finish_end_screen(&screen, &stats, &arena, "hug");
 
     // Bind end-screen buttons
     let end_signal = GAME.with(|g| {

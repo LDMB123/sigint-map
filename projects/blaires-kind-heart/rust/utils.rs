@@ -105,7 +105,7 @@ fn day_of_year(y: i32, m: u32, d: u32) -> u32 {
 }
 
 /// Number of days in a given month (1-indexed).
-pub fn days_in_month(y: i32, m: u32) -> u32 {
+fn days_in_month(y: i32, m: u32) -> u32 {
     match m {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
         4 | 6 | 9 | 11 => 30,

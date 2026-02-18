@@ -61,6 +61,7 @@
   --shadow-sm: 0 1px 3px rgba(37, 19, 32, 0.06), 0 2px 6px rgba(37, 19, 32, 0.08);
   --shadow-md: 0 2px 4px rgba(37, 19, 32, 0.04), 0 4px 12px rgba(37, 19, 32, 0.08), 0 8px 20px rgba(37, 19, 32, 0.06);
   --shadow-lg: 0 4px 8px rgba(37, 19, 32, 0.06), 0 8px 24px rgba(37, 19, 32, 0.1), 0 16px 40px rgba(37, 19, 32, 0.08);
+  --shadow-elevated: 0 2px 4px rgba(0,0,0,.08), 0 6px 16px rgba(0,0,0,.10), 0 12px 28px rgba(0,0,0,.06); /* 3-layer depth */
   --shadow-glow: 0 0 16px rgba(255, 143, 171, 0.5), 0 0 32px rgba(255, 143, 171, 0.2);
   --shadow-glow-purple: 0 0 16px rgba(181, 126, 255, 0.45), 0 0 32px rgba(181, 126, 255, 0.15);
   --shadow-glow-yellow: 0 0 16px rgba(255, 211, 45, 0.55), 0 0 32px rgba(255, 211, 45, 0.2);
@@ -111,9 +112,13 @@
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.68, -0.55, 0.265, 1.55);
   --ease-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+  --ease-snap: cubic-bezier(0.4, 0, 1, 1);       /* fast exit — snappy out */
+  --ease-entrance: cubic-bezier(.32,.73,.45,1.32); /* anticipatory entrance with slight overshoot */
   --duration-instant: 80ms;
   --duration-fast: 200ms;
   --duration-normal: 350ms;
+  --duration-medium: 300ms;   /* exact 300ms alias used by fade-out-remove */
+  --duration-leisurely: 500ms; /* companion view-transition timing */
   --duration-slow: 600ms;
   --duration-dramatic: 1000ms;
 

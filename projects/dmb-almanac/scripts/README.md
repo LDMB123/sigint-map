@@ -9,27 +9,19 @@
 | `scripts/deploy.sh` | Local deploy helper for Rust server | `bash scripts/deploy.sh local` |
 | `scripts/a11y-keyboard-spotcheck.sh` | Generate dated manual keyboard accessibility spot-check template | `bash scripts/a11y-keyboard-spotcheck.sh` |
 
-## CI and Environment
-
-| Script | Purpose |
-|---|---|
-| `scripts/setup-ci.sh` | Print CI setup expectations |
-| `scripts/verify-ci-setup.sh` | Validate required CI/workflow files and local tooling |
-| `scripts/validate-env.sh` | Validate required environment variables |
-
 ## Data / Warning Utilities
 
 | Script | Purpose |
 |---|---|
 | `scripts/update-warning-baseline.sh` | Regenerate warning report baseline |
 | `scripts/compare-warning-reports.py` | Compare two warning report JSON files |
-| `scripts/validate-cache-metadata.js` | Validate `.claude/cache-metadata.json` and related references |
 
 ## Repo Hygiene Utilities
 
 | Script | Purpose | Typical Use |
 |---|---|---|
 | `scripts/check-doc-integrity.py` | Validate markdown references, docs section landing pages, docs index links, and script catalog drift | `python3 scripts/check-doc-integrity.py` |
+| `scripts/check-dead-surface-drift.sh` | Guard removed API/CLI/static-data surfaces from reintroduction and re-run doc integrity checks | `bash scripts/check-dead-surface-drift.sh` |
 | `scripts/check-repo-hygiene.sh` | Fail on tracked generated artifacts and legacy root clutter | `bash scripts/check-repo-hygiene.sh` |
 | `scripts/clean-workspace.sh` | Remove local runtime/build artifacts and optional generated data duplicates | `bash scripts/clean-workspace.sh --include-generated-data` |
 | `scripts/clean-global-test-caches.sh` | Remove global Playwright/Cypress browser caches from user cache dirs | `bash scripts/clean-global-test-caches.sh` |

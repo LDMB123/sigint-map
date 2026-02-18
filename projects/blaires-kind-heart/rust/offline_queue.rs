@@ -6,7 +6,7 @@ use std::cell::RefCell;
 
 use wasm_bindgen::JsValue;
 use serde::{Deserialize, Serialize};
-use crate::db_client;
+use crate::{db_client, dom};
 
 /// Queued mutation that failed to execute.
 #[derive(Serialize, Deserialize, Clone)]
@@ -148,6 +148,11 @@ async fn flush_queue_locked() -> Result<(), JsValue> {
         "[offline_queue] Flushed {} mutations ({} failed, will retry later)",
         success_count, fail_count
     ).into());
+
+    // Show user-visible error if any mutations failed to flush
+    if fail_count > 0 {
+        dom::toast("Couldn't save right now \u{2014} tap again later \u{1F495}");
+    }
 
     Ok(())
 }

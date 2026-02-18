@@ -11,8 +11,8 @@ use wasm_bindgen::JsCast;
 use web_sys::{Element, Event};
 
 use crate::{
-    browser_apis, confetti, db_client, dom, games, native_apis, render, speech,
-    state::AppState, synth_audio, theme, ui, utils, weekly_goals,
+    browser_apis, confetti, dom, games, native_apis, render, speech,
+    state::AppState, synth_audio, theme, ui, weekly_goals,
 };
 
 #[derive(Clone, Copy, PartialEq)]
@@ -90,6 +90,21 @@ impl CardTheme {
             Self::YummyFood => "\u{1F355} Yummy Food",
             Self::MusicParty => "\u{1F3B8} Music Party",
         }
+    }
+
+    fn attr(&self) -> &'static str {
+        match self {
+            Self::MagicalForest => "forest",
+            Self::OceanFriends => "ocean",
+            Self::SpaceAdventure => "space",
+            Self::GardenBugs => "bugs",
+            Self::YummyFood => "food",
+            Self::MusicParty => "music",
+        }
+    }
+
+    fn class_suffix(&self) -> &'static str {
+        self.attr()
     }
 
     fn faces(&self) -> &[(&str, &str, f32)] {
@@ -347,9 +362,7 @@ fn bind_unified_click_handler(state: Rc<RefCell<AppState>>, signal: &web_sys::Ab
 }
 
 fn show_theme_select(_state: Rc<RefCell<AppState>>) {
-    let Some(arena) = dom::query("#game-arena") else { return };
-    let doc = dom::document();
-    dom::safe_set_inner_html(&arena, "");
+    let Some((_arena, buttons)) = render::build_game_picker("\u{1F0CF} Choose Your Theme!") else { return };
 
     GAME.with(|g| {
         if let Some(game) = g.borrow_mut().as_mut() {
@@ -357,60 +370,31 @@ fn show_theme_select(_state: Rc<RefCell<AppState>>) {
         }
     });
 
-    let container = render::create_el_with_class(&doc, "div", "memory-select");
-
-    let title = render::create_el_with_class(&doc, "div", "memory-select-title");
-    title.set_text_content(Some("\u{1F0CF} Choose Your Theme!"));
-
-    let buttons = render::create_el_with_class(&doc, "div", "memory-select-buttons");
-
-    let forest_btn = render::create_button(&doc, "game-card game-card--forest", CardTheme::MagicalForest.name());
-    let _ = forest_btn.set_attribute("data-memory-theme", "forest");
-
-    let ocean_btn = render::create_button(&doc, "game-card game-card--ocean", CardTheme::OceanFriends.name());
-    let _ = ocean_btn.set_attribute("data-memory-theme", "ocean");
-
-    let space_btn = render::create_button(&doc, "game-card game-card--space", CardTheme::SpaceAdventure.name());
-    let _ = space_btn.set_attribute("data-memory-theme", "space");
-
-    let bugs_btn = render::create_button(&doc, "game-card game-card--bugs", CardTheme::GardenBugs.name());
-    let _ = bugs_btn.set_attribute("data-memory-theme", "bugs");
-
-    let food_btn = render::create_button(&doc, "game-card game-card--food", CardTheme::YummyFood.name());
-    let _ = food_btn.set_attribute("data-memory-theme", "food");
-
-    let music_btn = render::create_button(&doc, "game-card game-card--music", CardTheme::MusicParty.name());
-    let _ = music_btn.set_attribute("data-memory-theme", "music");
-
-    let _ = buttons.append_child(&forest_btn);
-    let _ = buttons.append_child(&ocean_btn);
-    let _ = buttons.append_child(&space_btn);
-    let _ = buttons.append_child(&bugs_btn);
-    let _ = buttons.append_child(&food_btn);
-    let _ = buttons.append_child(&music_btn);
-
-    let _ = container.append_child(&title);
-    let _ = container.append_child(&buttons);
-    let _ = arena.append_child(&container);
+    let doc = dom::document();
+    for theme in [
+        CardTheme::MagicalForest,
+        CardTheme::OceanFriends,
+        CardTheme::SpaceAdventure,
+        CardTheme::GardenBugs,
+        CardTheme::YummyFood,
+        CardTheme::MusicParty,
+    ] {
+        let css = format!("game-card game-card--{}", theme.class_suffix());
+        let btn = render::create_button(&doc, &css, theme.name());
+        let _ = btn.set_attribute("data-memory-theme", theme.attr());
+        let _ = buttons.append_child(&btn);
+    }
 }
 
 fn show_difficulty_select(state: Rc<RefCell<AppState>>) {
-    let Some(arena) = dom::query("#game-arena") else { return };
+    let Some((_arena, buttons)) = render::build_game_picker("\u{1F0CF} Pick a Level!") else { return };
     let doc = dom::document();
-    dom::safe_set_inner_html(&arena, "");
 
     GAME.with(|g| {
         if let Some(game) = g.borrow_mut().as_mut() {
             game.phase = MemoryPhase::DifficultySelect;
         }
     });
-
-    let container = render::create_el_with_class(&doc, "div", "memory-select");
-
-    let title = render::create_el_with_class(&doc, "div", "memory-select-title");
-    title.set_text_content(Some("\u{1F0CF} Pick a Level!"));
-
-    let buttons = render::create_el_with_class(&doc, "div", "memory-select-buttons");
 
     // Show best times on buttons if available
     let (best_easy, best_med, best_hard, medium_wins) = {
@@ -452,10 +436,6 @@ fn show_difficulty_select(state: Rc<RefCell<AppState>>) {
     let _ = buttons.append_child(&easy_btn);
     let _ = buttons.append_child(&medium_btn);
     let _ = buttons.append_child(&hard_btn);
-
-    let _ = container.append_child(&title);
-    let _ = container.append_child(&buttons);
-    let _ = arena.append_child(&container);
 }
 
 fn start_game(difficulty: Difficulty, _state: Rc<RefCell<AppState>>) {
@@ -1105,19 +1085,12 @@ fn on_win(
     weekly_goals::increment_progress("hearts", total_hearts);
 
     // Save score
-    let id = utils::create_id();
-    let day_key = utils::today_key();
-    let now = utils::now_epoch_ms();
     let diff_str = match difficulty {
         Difficulty::Easy => "easy",
         Difficulty::Medium => "medium",
         Difficulty::Hard => "hard",
     };
-    db_client::exec_fire_and_forget(
-        "memory-save",
-        "INSERT INTO game_scores (id, game_id, score, level, duration_ms, played_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        vec![id, format!("memory_{diff_str}"), moves.to_string(), stars.to_string(), (elapsed_s * 1000).to_string(), now.to_string(), day_key],
-    );
+    games::save_game_score("memory-save", &format!("memory_{diff_str}"), moves as u64, stars as u64, (elapsed_s as f64 * 1000.0) as u64);
 
     // Celebration sounds
     if is_new_best {
@@ -1184,27 +1157,24 @@ fn show_memory_end(params: MemoryEndParams) {
         }
     });
 
-    let screen = render::create_el_with_class(&doc, "div", "game-end-screen");
+    let (screen, title, stats) = games::build_end_screen();
 
     // Title
-    let title = render::create_el_with_class(&doc, "div", "game-end-title");
     if is_new_best {
         title.set_text_content(Some("\u{1F3C6} New Best Time! \u{1F3C6}"));
         let _ = title.set_attribute("class", "game-end-title game-end-title--record");
     } else {
         title.set_text_content(Some("\u{1F389} All Matched! \u{1F389}"));
     }
+    let _ = screen.append_child(&title);
 
-    // Stars display
+    // Stars display (memory-only — inserted between title and stats)
     let stars_el = render::create_el_with_class(&doc, "div", "memory-end-stars");
     let star_str: String = (0..3).map(|i| {
         if i < stars { "\u{2B50}" } else { "\u{2606}" }
     }).collect();
     stars_el.set_text_content(Some(&star_str));
-    let _ = stars_el.set_attribute("class", "memory-end-stars");
-
-    // Stats
-    let stats = render::create_el_with_class(&doc, "div", "game-end-stats");
+    let _ = screen.append_child(&stars_el);
 
     // Time
     let time_line = render::create_el_with_class(&doc, "div", "game-end-stat");
@@ -1246,20 +1216,7 @@ fn show_memory_end(params: MemoryEndParams) {
     let _ = stats.append_child(&streak_line);
     let _ = stats.append_child(&hearts_line);
 
-    // Buttons
-    let buttons = render::create_el_with_class(&doc, "div", "game-end-buttons");
-    let again_btn = render::create_button(&doc, "game-end-btn game-end-btn--again", "\u{1F504} Play Again");
-    let _ = again_btn.set_attribute("data-game-again", "memory");
-    let back_btn = render::create_button(&doc, "game-end-btn game-end-btn--back", "\u{2190} Back to Games");
-    let _ = back_btn.set_attribute("data-game-back", "");
-    let _ = buttons.append_child(&again_btn);
-    let _ = buttons.append_child(&back_btn);
-
-    let _ = screen.append_child(&title);
-    let _ = screen.append_child(&stars_el);
-    let _ = screen.append_child(&stats);
-    let _ = screen.append_child(&buttons);
-    let _ = arena.append_child(&screen);
+    games::finish_end_screen(&screen, &stats, &arena, "memory");
 }
 
 pub fn cleanup() {

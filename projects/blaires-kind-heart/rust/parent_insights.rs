@@ -55,7 +55,7 @@ pub async fn get_weekly_insights(week_key: &str) -> Option<WeeklyInsight> {
 }
 
 /// Generate fresh weekly insights and cache them
-pub async fn generate_weekly_insights(week_key: &str) -> Option<WeeklyInsight> {
+async fn generate_weekly_insights(week_key: &str) -> Option<WeeklyInsight> {
     let week_key_str = week_key.to_string();
 
     // Calculate skill breakdown and get timestamps in a single query
@@ -302,11 +302,9 @@ async fn calculate_reflection_rate(week_key: &str) -> u32 {
         vec![week_start.clone(), week_end.clone()],
     ).await;
 
-    let total = total_result
-        .ok()
-        .and_then(|data| data.as_array().and_then(|a| a.first().cloned()))
-        .and_then(|row| row.get("c").and_then(|v| v.as_f64()))
-        .unwrap_or(0.0) as u32;
+    let total = total_result.ok()
+        .map(|rows| db_client::extract_count(&rows, "c") as u32)
+        .unwrap_or(0);
 
     if total == 0 { return 0 }
 
@@ -316,11 +314,9 @@ async fn calculate_reflection_rate(week_key: &str) -> u32 {
         vec![week_start, week_end],
     ).await;
 
-    let reflected = reflected_result
-        .ok()
-        .and_then(|data| data.as_array().and_then(|a| a.first().cloned()))
-        .and_then(|row| row.get("c").and_then(|v| v.as_f64()))
-        .unwrap_or(0.0) as u32;
+    let reflected = reflected_result.ok()
+        .map(|rows| db_client::extract_count(&rows, "c") as u32)
+        .unwrap_or(0);
 
     (reflected * 100) / total
 }

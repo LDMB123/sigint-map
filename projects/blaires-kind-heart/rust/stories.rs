@@ -7,7 +7,10 @@ use web_sys::{Element, Event};
 use crate::{animations, constants::SELECTOR_STORIES_BODY, db_client, dom, navigation, story_data, story_engine, ui};
 
 pub fn init() {
-    render_library();
+    // Fetch completed story IDs before first render so done states are correct from the start
+    wasm_bindgen_futures::spawn_local(async {
+        render_library_async().await;
+    });
     bind_story_clicks();
     bind_story_done_event();
 }
@@ -21,12 +24,6 @@ fn bind_story_done_event() {
             render_library_async().await;
         });
     });
-}
-
-fn render_library() {
-    // Initial render — no async, all stories shown as not-done.
-    // Hydration from lib.rs will mark completed ones after DB is ready.
-    render_library_sync(&[]);
 }
 
 /// Async re-render that queries DB for completed story IDs first.

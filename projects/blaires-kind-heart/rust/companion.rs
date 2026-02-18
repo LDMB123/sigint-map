@@ -435,10 +435,10 @@ fn start_idle_loop() {
             let wait = 15000 + (pick_index(15000, 7919) as i32);
             browser_apis::sleep_ms(wait).await;
 
-            // Only do idle behavior if on the home panel
-            let on_home = dom::query("[data-panel='home']:not([hidden])")
-                .is_some();
-            if !on_home { continue; }
+            // Only do idle behavior if on the home panel and not mid-transition
+            let on_home = dom::query("[data-panel='home']:not([hidden])").is_some();
+            let transitioning = dom::query("[data-panel='home'][data-transitioning]").is_some();
+            if !on_home || transitioning { continue; }
 
             // Pick a random behavior
             let idx = pick_index(IDLE_BEHAVIORS.len(), 3571);

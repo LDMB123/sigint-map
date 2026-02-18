@@ -1,13 +1,7 @@
 mod debuts;
 mod histogram;
-mod multi_field;
 mod percentile;
-mod top_songs;
-mod unique;
 
-pub use debuts::*;
-pub use histogram::*;
-pub use multi_field::*;
-pub use percentile::*;
-pub use top_songs::*;
-pub use unique::*;
+pub use debuts::calculate_song_debuts_with_count;
+pub use histogram::{aggregate_by_decade, aggregate_by_year};
+pub use percentile::calculate_quartiles;

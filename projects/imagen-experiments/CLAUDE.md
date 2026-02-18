@@ -1,5 +1,9 @@
 # Imagen Experiments
 
+## Project Scope
+
+**This project is ONLY the Imagen Experiments scripts.** Do not reference, suggest, or pull context from any other workspace project (dmb-almanac, emerson-violin-pwa, blaires-kind-heart, gemini-mcp-server).
+
 Google Imagen API experimentation and batch generation scripts.
 
 ## Quick Start

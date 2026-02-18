@@ -239,11 +239,7 @@ pub async fn seed_companion_skins() {
     // Check if already seeded
     let check_sql = "SELECT COUNT(*) as count FROM companion_skins";
     let count = match db_client::query(check_sql, vec![]).await {
-        Ok(rows) => rows.as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|row| row.get("count"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.0),
+        Ok(rows) => db_client::extract_count(&rows, "count") as f64,
         Err(_) => 0.0,
     };
 

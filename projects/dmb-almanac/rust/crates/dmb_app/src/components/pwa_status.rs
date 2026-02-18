@@ -375,6 +375,8 @@ pub fn PwaStatus() -> impl IntoView {
                                 reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>()
                             {
                                 if let Some(worker) = reg.waiting() {
+                                    // Waiting workers can be timing-sensitive during heavy fetch/import
+                                    // activity. Send both payload shapes for compatibility.
                                     let msg = js_sys::Object::new();
                                     let _ = js_sys::Reflect::set(
                                         &msg,
@@ -382,6 +384,7 @@ pub fn PwaStatus() -> impl IntoView {
                                         &JsValue::from_str("SKIP_WAITING"),
                                     );
                                     let _ = worker.post_message(&msg);
+                                    let _ = worker.post_message(&JsValue::from_str("SKIP_WAITING"));
                                 } else {
                                     update_error.set(Some(
                                         "No waiting service worker. Try again in a moment."
@@ -1060,21 +1063,11 @@ pub fn PwaStatus() -> impl IntoView {
                                         if let Some(version) =
                                             payload.get("version").and_then(|v| v.as_str())
                                         {
-                                            let current = sw_version_signal.get_untracked();
-                                            if current.as_deref() != Some(version)
-                                                && current.is_some()
-                                            {
-                                                update_version_signal
-                                                    .set(Some(version.to_string()));
-                                                if !update_notice_suppressed() {
-                                                    update_signal.set(true);
-                                                    update_state_signal.set(Some(
-                                                        "Update ready to install.".to_string(),
-                                                    ));
-                                                }
-                                                update_error_signal.set(None);
-                                                update_applying_signal.set(false);
-                                            }
+                                            // Mark the candidate version but avoid raising
+                                            // "Update ready" until registration state confirms
+                                            // a waiting worker. This keeps UI state aligned with
+                                            // `reg.waiting` and avoids premature E2E transitions.
+                                            update_version_signal.set(Some(version.to_string()));
                                         }
                                     }
                                 }
@@ -1159,19 +1152,11 @@ pub fn PwaStatus() -> impl IntoView {
                                     if let Some(version) =
                                         payload.get("version").and_then(|v| v.as_str())
                                     {
-                                        let current = sw_version_signal.get_untracked();
-                                        if current.as_deref() != Some(version) && current.is_some()
-                                        {
-                                            update_version_signal.set(Some(version.to_string()));
-                                            if !update_notice_suppressed() {
-                                                update_signal.set(true);
-                                                update_state_signal.set(Some(
-                                                    "Update ready to install.".to_string(),
-                                                ));
-                                            }
-                                            update_error_signal.set(None);
-                                            update_applying_signal.set(false);
-                                        }
+                                        // Mark the candidate version but avoid raising
+                                        // "Update ready" until registration state confirms
+                                        // a waiting worker. This keeps UI state aligned with
+                                        // `reg.waiting` and avoids premature E2E transitions.
+                                        update_version_signal.set(Some(version.to_string()));
                                     }
                                 }
                             }

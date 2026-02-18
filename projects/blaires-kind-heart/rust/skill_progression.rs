@@ -153,7 +153,7 @@ pub async fn get_focus_skill() -> Option<String> {
 }
 
 /// Recalculate focus priorities for all skills based on 7-day counts
-pub async fn recalculate_focus_priorities() {
+async fn recalculate_focus_priorities() {
     let seven_days_ago = utils::day_key_n_days_ago(7);
 
     // Get all skills
@@ -174,11 +174,9 @@ pub async fn recalculate_focus_priorities() {
             vec![skill_str.to_string(), seven_days_ago.clone()],
         ).await;
 
-        let recent_count = count_result
-            .ok()
-            .and_then(|data| data.as_array().and_then(|a| a.first().cloned()))
-            .and_then(|row| row.get("c").and_then(|v| v.as_f64()))
-            .unwrap_or(0.0) as u32;
+        let recent_count = count_result.ok()
+            .map(|rows| db_client::extract_count(&rows, "c") as u32)
+            .unwrap_or(0);
 
         // Priority = 100 - (recent_count * 10), capped at 0-100
         let priority = if recent_count >= 10 {

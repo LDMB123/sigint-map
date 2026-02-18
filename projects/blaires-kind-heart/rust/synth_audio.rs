@@ -534,174 +534,167 @@ fn is_enabled() -> bool {
     ENABLED.with(|e| *e.borrow())
 }
 
-/// Cheerful ascending chime — played on kind act logged
-pub fn chime() {
+/// Guard + resume + preset lookup in one call. Returns early if audio is disabled.
+/// All public sound functions delegate through this to avoid repeating the 3-line preamble.
+fn with_audio(name: &str, f: impl FnOnce(SoundPreset)) {
     if !is_enabled() { return; }
     ensure_resumed();
-    let preset = get_sound_preset("chime");
-    play_layered_note(523.25, 0.08, 0.0, &preset);  // C5
-    play_layered_note(659.25, 0.08, 0.08, &preset); // E5
-    play_layered_note(783.99, 0.12, 0.16, &preset); // G5
+    f(get_sound_preset(name));
+}
+
+/// Cheerful ascending chime — played on kind act logged
+pub fn chime() {
+    with_audio("chime", |preset| {
+        play_layered_note(523.25, 0.08, 0.0, &preset);  // C5
+        play_layered_note(659.25, 0.08, 0.08, &preset); // E5
+        play_layered_note(783.99, 0.12, 0.16, &preset); // G5
+    });
 }
 
 /// Sparkle sound — high tinkle for sticker earned
 pub fn sparkle() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("sparkle");
-    play_layered_note(1046.5, 0.06, 0.0, &preset);   // C6
-    play_layered_note(1318.5, 0.06, 0.05, &preset);  // E6
-    play_layered_note(1568.0, 0.06, 0.1, &preset);   // G6
-    play_layered_note(2093.0, 0.1, 0.15, &preset);   // C7
+    with_audio("sparkle", |preset| {
+        play_layered_note(1046.5, 0.06, 0.0, &preset);   // C6
+        play_layered_note(1318.5, 0.06, 0.05, &preset);  // E6
+        play_layered_note(1568.0, 0.06, 0.1, &preset);   // G6
+        play_layered_note(2093.0, 0.1, 0.15, &preset);   // C7
+    });
 }
 
 /// Celebration fanfare — played on quest completion / Show Mom
 pub fn fanfare() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("fanfare");
-    play_layered_note(523.25, 0.15, 0.0, &preset);   // C5
-    play_layered_note(659.25, 0.15, 0.12, &preset);  // E5
-    play_layered_note(783.99, 0.15, 0.24, &preset);  // G5
-    play_layered_note(1046.5, 0.25, 0.36, &preset);  // C6 (hold)
+    with_audio("fanfare", |preset| {
+        play_layered_note(523.25, 0.15, 0.0, &preset);   // C5
+        play_layered_note(659.25, 0.15, 0.12, &preset);  // E5
+        play_layered_note(783.99, 0.15, 0.24, &preset);  // G5
+        play_layered_note(1046.5, 0.25, 0.36, &preset);  // C6 (hold)
+    });
 }
 
 /// Soft tap sound — button press feedback
 pub fn tap() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("tap");
-    play_layered_note(880.0, 0.03, 0.0, &preset); // A5, very short
+    with_audio("tap", |preset| {
+        play_layered_note(880.0, 0.03, 0.0, &preset); // A5, very short
+    });
 }
 
 /// Gentle whoosh — panel transitions
 pub fn whoosh() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("whoosh");
-    play_sweep(400.0, 200.0, 0.15, 0.0, &preset);
+    with_audio("whoosh", |preset| {
+        play_sweep(400.0, 200.0, 0.15, 0.0, &preset);
+    });
 }
 
 /// Sad/gentle tone — for when a story choice isn't the kindest
 pub fn gentle() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("gentle");
-    play_layered_note(440.0, 0.15, 0.0, &preset); // A4
-    play_layered_note(392.0, 0.2, 0.1, &preset);  // G4 (descending)
+    with_audio("gentle", |preset| {
+        play_layered_note(440.0, 0.15, 0.0, &preset); // A4
+        play_layered_note(392.0, 0.2, 0.1, &preset);  // G4 (descending)
+    });
 }
 
 /// Ascending harp-like arpeggio — magic moment / wand wave
 pub fn magic_wand() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("magic_wand");
-    play_layered_note(523.25, 0.10, 0.0, &preset);   // C5
-    play_layered_note(659.25, 0.10, 0.06, &preset);  // E5
-    play_layered_note(783.99, 0.10, 0.12, &preset);  // G5
-    play_layered_note(987.77, 0.10, 0.18, &preset);  // B5
-    play_layered_note(1046.5, 0.18, 0.24, &preset);  // C6 shimmer
+    with_audio("magic_wand", |preset| {
+        play_layered_note(523.25, 0.10, 0.0, &preset);   // C5
+        play_layered_note(659.25, 0.10, 0.06, &preset);  // E5
+        play_layered_note(783.99, 0.10, 0.12, &preset);  // G5
+        play_layered_note(987.77, 0.10, 0.18, &preset);  // B5
+        play_layered_note(1046.5, 0.18, 0.24, &preset);  // C6 shimmer
+    });
 }
 
 /// Triumphant ascending scale — level up / milestone reached
 pub fn level_up() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("level_up");
-    let notes: &[(f64, f64, f64)] = &[
-        (523.25, 0.08, 0.0),   // C5
-        (587.33, 0.08, 0.06),  // D5
-        (659.25, 0.08, 0.12),  // E5
-        (698.46, 0.08, 0.18),  // F5
-        (783.99, 0.08, 0.24),  // G5
-        (880.00, 0.08, 0.30),  // A5
-        (987.77, 0.08, 0.36),  // B5
-        (1046.5, 0.30, 0.42),  // C6 (hold!)
-    ];
-    for &(freq, dur, delay) in notes {
-        play_layered_note(freq, dur, delay, &preset);
-    }
+    with_audio("level_up", |preset| {
+        let notes: &[(f64, f64, f64)] = &[
+            (523.25, 0.08, 0.0),   // C5
+            (587.33, 0.08, 0.06),  // D5
+            (659.25, 0.08, 0.12),  // E5
+            (698.46, 0.08, 0.18),  // F5
+            (783.99, 0.08, 0.24),  // G5
+            (880.00, 0.08, 0.30),  // A5
+            (987.77, 0.08, 0.36),  // B5
+            (1046.5, 0.30, 0.42),  // C6 (hold!)
+        ];
+        for &(freq, dur, delay) in notes {
+            play_layered_note(freq, dur, delay, &preset);
+        }
+    });
 }
 
 /// Playful descending boing — incorrect/retry feedback
 pub fn whoops() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("whoops");
-    play_sweep(800.0, 200.0, 0.25, 0.0, &preset);
-    play_layered_note(200.0, 0.08, 0.22, &preset);
+    with_audio("whoops", |preset| {
+        play_sweep(800.0, 200.0, 0.25, 0.0, &preset);
+        play_layered_note(200.0, 0.08, 0.22, &preset);
+    });
 }
 
 /// Soft pad chord — dreamy/calm atmosphere
 pub fn dreamy() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("dreamy");
-    // Simultaneous chord notes
-    play_layered_note(261.63, 1.2, 0.0, &preset); // C4
-    play_layered_note(329.63, 1.2, 0.0, &preset); // E4
-    play_layered_note(392.00, 1.2, 0.0, &preset); // G4
+    with_audio("dreamy", |preset| {
+        // Simultaneous chord notes
+        play_layered_note(261.63, 1.2, 0.0, &preset); // C4
+        play_layered_note(329.63, 1.2, 0.0, &preset); // E4
+        play_layered_note(392.00, 1.2, 0.0, &preset); // G4
+    });
 }
 
 /// Rapid alternating high notes — simulates laughter/giggle
 pub fn giggle() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("giggle");
-    let hi = 1318.5; // E6
-    let lo = 1175.0; // D6
-    for i in 0..6 {
-        let freq = if i % 2 == 0 { hi } else { lo };
-        play_layered_note(freq, 0.04, i as f64 * 0.05, &preset);
-    }
+    with_audio("giggle", |preset| {
+        let hi = 1318.5; // E6
+        let lo = 1175.0; // D6
+        for i in 0..6 {
+            let freq = if i % 2 == 0 { hi } else { lo };
+            play_layered_note(freq, 0.04, i as f64 * 0.05, &preset);
+        }
+    });
 }
 
 /// Gentle 2-bar melody — sleepy/calm/bedtime
 pub fn lullaby() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("lullaby");
-    let melody: &[(f64, f64, f64)] = &[
-        (659.25, 0.20, 0.0),   // E5
-        (587.33, 0.20, 0.22),  // D5
-        (523.25, 0.20, 0.44),  // C5
-        (587.33, 0.20, 0.66),  // D5
-        (523.25, 0.35, 0.88),  // C5 (hold)
-    ];
-    for &(freq, dur, delay) in melody {
-        play_layered_note(freq, dur, delay, &preset);
-    }
+    with_audio("lullaby", |preset| {
+        let melody: &[(f64, f64, f64)] = &[
+            (659.25, 0.20, 0.0),   // E5
+            (587.33, 0.20, 0.22),  // D5
+            (523.25, 0.20, 0.44),  // C5
+            (587.33, 0.20, 0.66),  // D5
+            (523.25, 0.35, 0.88),  // C5 (hold)
+        ];
+        for &(freq, dur, delay) in melody {
+            play_layered_note(freq, dur, delay, &preset);
+        }
+    });
 }
 
 /// Rapid chromatic run C5→C6 — rainbow burst / celebration explosion
 pub fn rainbow_burst() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("rainbow_burst");
-    let base = 523.25_f64; // C5
-    let step_time = 0.04;
-    for i in 0..13 {
-        let freq = base * 2.0_f64.powf(i as f64 / 12.0);
-        play_layered_note(freq, 0.05, i as f64 * step_time, &preset);
-    }
+    with_audio("rainbow_burst", |preset| {
+        let base = 523.25_f64; // C5
+        let step_time = 0.04;
+        for i in 0..13 {
+            let freq = base * 2.0_f64.powf(i as f64 / 12.0);
+            play_layered_note(freq, 0.05, i as f64 * step_time, &preset);
+        }
+    });
 }
 
 /// Two-beat pulse sound — heartbeat rhythm (not in original, added for completeness)
 #[allow(dead_code)]
 pub fn heartbeat() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("heartbeat");
-    play_layered_note(130.81, 0.12, 0.0, &preset);  // C3 (thump)
-    play_layered_note(130.81, 0.08, 0.15, &preset); // C3 (thump)
+    with_audio("heartbeat", |preset| {
+        play_layered_note(130.81, 0.12, 0.0, &preset);  // C3 (thump)
+        play_layered_note(130.81, 0.08, 0.15, &preset); // C3 (thump)
+    });
 }
 
 /// Short rustling burst — page turn / card flip
 pub fn page_turn() {
-    if !is_enabled() { return; }
-    ensure_resumed();
-    let preset = get_sound_preset("page_turn");
-    play_sweep(3000.0, 500.0, 0.08, 0.0, &preset);
+    with_audio("page_turn", |preset| {
+        play_sweep(3000.0, 500.0, 0.08, 0.0, &preset);
+    });
 }
 
 // ── Public API utilities ────────────────────────────────────────

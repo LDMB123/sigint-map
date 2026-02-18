@@ -39,6 +39,9 @@
 }
 
 /* ====== FLOAT UP (for "+1 heart" indicators) — with scale ====== */
+/* Note: float-up and float-up-fade are intentionally different:
+   float-up — emoji hearts that grow as they rise (heart floats up and expands)
+   float-up-fade — text/score popups that appear small, grow, then fade (score pop) */
 .float-up {
   animation: float-up 1s var(--ease-smooth) forwards;
   pointer-events: none;
@@ -497,9 +500,51 @@
   50% { transform: scale(1.05); opacity: 0.9; }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Animation Duration Guide:
+   Brief reactions  (< 1s)  — heart-bounce, jelly-wobble, sparkle-pop, wiggle, shake
+   Sustained states (≥ 1.5s) — companion-float, glow-breathe, gentle-pulse, pulse-glow
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ====== FADE OUT REMOVE — for empty-state element dismissal ====== */
+/* Apply class then remove element after var(--duration-medium) = 300ms */
+.fade-out-remove {
+  animation: fade-out-remove var(--duration-medium) var(--ease-smooth) forwards;
+  pointer-events: none;
+}
+@keyframes fade-out-remove {
+  to { opacity: 0; transform: scale(.95); }
+}
+
+/* ====== COUNTER BOUNCE — for count value updates ====== */
+/* Apply then remove after var(--duration-normal) = 350ms */
+.counter-bounce {
+  animation: counter-bounce var(--duration-normal) var(--ease-bounce);
+}
+@keyframes counter-bounce {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.25); }
+}
+
+/* ====== SCALE POP OUT — paired exit for scale-pop-in ====== */
+.scale-pop-out {
+  animation: scale-pop-out var(--duration-normal) var(--ease-smooth) forwards;
+}
+@keyframes scale-pop-out {
+  from { transform: scale(1); opacity: 1; }
+  to   { transform: scale(0); opacity: 0; }
+}
+
+/* ====== IDLE STAGGER — for groups of idle-animating elements ====== */
+/* Apply to parent to stagger children's idle animation delays */
+.idle-staggered > * {
+  animation-delay: calc(sibling-index() * 150ms);
+}
+
 /* ====== REDUCED MOTION ====== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
+    animation-play-state: paused !important; /* paused wins: animationend won't fire — use set_timeout_once for cleanup */
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -516,7 +561,7 @@
 
 ::view-transition-old(companion-transform),
 ::view-transition-new(companion-transform) {
-  animation-duration: 600ms;
+  animation-duration: var(--duration-leisurely);
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 

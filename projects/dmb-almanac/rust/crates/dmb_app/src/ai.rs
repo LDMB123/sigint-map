@@ -63,21 +63,6 @@ enum WebgpuScoreFn {
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen]
 extern "C" {
-    #[wasm_bindgen(method, getter, js_name = gpu)]
-    fn navigator_gpu(this: &web_sys::Navigator) -> JsValue;
-
-    #[wasm_bindgen(method, getter, js_name = ml)]
-    fn navigator_ml(this: &web_sys::Navigator) -> JsValue;
-
-    #[wasm_bindgen(method, getter, js_name = deviceMemory)]
-    fn navigator_device_memory(this: &web_sys::Navigator) -> JsValue;
-
-    #[wasm_bindgen(method, getter, js_name = dmbWebgpuScores)]
-    fn window_webgpu_scores(this: &web_sys::Window) -> JsValue;
-
-    #[wasm_bindgen(method, getter, js_name = dmbWebgpuScoresWorker)]
-    fn window_webgpu_scores_worker(this: &web_sys::Window) -> JsValue;
-
     #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuProbe, catch)]
     fn dmb_webgpu_probe() -> Result<js_sys::Promise, JsValue>;
 
@@ -114,6 +99,28 @@ fn js_value_exists(value: &JsValue) -> bool {
 }
 
 #[cfg(feature = "hydrate")]
+fn get_js_property(target: &JsValue, name: &str) -> JsValue {
+    js_sys::Reflect::get(target, &JsValue::from_str(name)).unwrap_or(JsValue::UNDEFINED)
+}
+
+#[cfg(feature = "hydrate")]
+fn navigator_property(navigator: &web_sys::Navigator, name: &str) -> JsValue {
+    get_js_property(navigator.as_ref(), name)
+}
+
+#[cfg(feature = "hydrate")]
+fn window_property(window: &web_sys::Window, name: &str) -> JsValue {
+    get_js_property(window.as_ref(), name)
+}
+
+#[cfg(feature = "hydrate")]
+fn window_cross_origin_isolated(window: &web_sys::Window) -> bool {
+    window_property(window, "crossOriginIsolated")
+        .as_bool()
+        .unwrap_or(false)
+}
+
+#[cfg(feature = "hydrate")]
 pub fn detect_ai_capabilities() -> AiCapabilities {
     let Some(window) = web_sys::window() else {
         return AiCapabilities::default();
@@ -121,8 +128,8 @@ pub fn detect_ai_capabilities() -> AiCapabilities {
     ensure_default_worker_threshold();
     let navigator = window.navigator();
 
-    let webgpu = js_value_exists(&navigator_gpu(&navigator));
-    let webgpu_helper = window_webgpu_scores(&window).is_function();
+    let webgpu = js_value_exists(&navigator_property(&navigator, "gpu"));
+    let webgpu_helper = window_property(&window, "dmbWebgpuScores").is_function();
     let webgpu_available = webgpu && webgpu_helper;
     if webgpu && !webgpu_helper {
         if let Ok(Some(storage)) = window.local_storage() {
@@ -141,9 +148,9 @@ pub fn detect_ai_capabilities() -> AiCapabilities {
         }
     }
     let webgpu_disabled = read_webgpu_disabled().unwrap_or(false);
-    let webgpu_worker = window_webgpu_scores_worker(&window).is_function();
-    let webnn = js_value_exists(&navigator_ml(&navigator));
-    let threads = window.cross_origin_isolated();
+    let webgpu_worker = window_property(&window, "dmbWebgpuScoresWorker").is_function();
+    let webnn = js_value_exists(&navigator_property(&navigator, "ml"));
+    let threads = window_cross_origin_isolated(&window);
 
     let webgpu_enabled = webgpu_available && !webgpu_disabled;
     AiCapabilities {
@@ -471,7 +478,7 @@ fn cap_policy_from_navigator() -> CapPolicy {
         return cap_policy_from_device_memory(None);
     };
     let navigator = window.navigator();
-    let device_memory = navigator_device_memory(&navigator).as_f64();
+    let device_memory = navigator_property(&navigator, "deviceMemory").as_f64();
     cap_policy_from_device_memory(device_memory)
 }
 
@@ -882,7 +889,7 @@ fn store_worker_threshold(value: usize) {
 fn auto_worker_threshold() -> Option<usize> {
     let window = web_sys::window()?;
     let navigator = window.navigator();
-    let device_memory = navigator_device_memory(&navigator).as_f64();
+    let device_memory = navigator_property(&navigator, "deviceMemory").as_f64();
     let cores = window.navigator().hardware_concurrency().max(1.0) as usize;
 
     let mut threshold = if device_memory.unwrap_or(0.0) >= 16.0 || cores >= 12 {

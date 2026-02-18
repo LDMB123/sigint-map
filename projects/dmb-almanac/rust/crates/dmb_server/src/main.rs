@@ -6,7 +6,7 @@ use axum::{
     http::{header, HeaderName, HeaderValue, Request, StatusCode},
     middleware::Next,
     response::{IntoResponse, Response},
-    routing::{get, post},
+    routing::get,
     Json, Router,
 };
 use dmb_core::{is_supported_sqlite_parity_table, sqlite_parity_tables};
@@ -222,110 +222,6 @@ fn resolve_log_filter() -> String {
     "info".to_string()
 }
 
-fn payload_size_bytes(payload: &serde_json::Value) -> usize {
-    serde_json::to_vec(payload)
-        .map(|bytes| bytes.len())
-        .unwrap_or(0)
-}
-
-fn payload_top_level_keys(payload: &serde_json::Value) -> usize {
-    payload.as_object().map(|map| map.len()).unwrap_or(0)
-}
-
-fn payload_event_name(payload: &serde_json::Value) -> &'static str {
-    for key in ["event", "eventName", "name", "type"] {
-        if payload
-            .get(key)
-            .and_then(serde_json::Value::as_str)
-            .is_some()
-        {
-            return key;
-        }
-    }
-    "unknown"
-}
-
-const MAX_JSON_POST_PAYLOAD_BYTES: usize = 64 * 1024;
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct ApiErrorResponse {
-    status: &'static str,
-    endpoint: &'static str,
-    code: &'static str,
-    message: String,
-}
-
-fn api_error(
-    status: StatusCode,
-    endpoint: &'static str,
-    code: &'static str,
-    message: impl Into<String>,
-) -> Response {
-    (
-        status,
-        Json(ApiErrorResponse {
-            status: "error",
-            endpoint,
-            code,
-            message: message.into(),
-        }),
-    )
-        .into_response()
-}
-
-#[allow(clippy::result_large_err)]
-fn validate_json_object_payload(
-    endpoint: &'static str,
-    payload: &serde_json::Value,
-) -> Result<(), Response> {
-    let payload_bytes = payload_size_bytes(payload);
-    if payload_bytes > MAX_JSON_POST_PAYLOAD_BYTES {
-        return Err(api_error(
-            StatusCode::PAYLOAD_TOO_LARGE,
-            endpoint,
-            "payload_too_large",
-            format!(
-                "Payload exceeds {} bytes (received {}).",
-                MAX_JSON_POST_PAYLOAD_BYTES, payload_bytes
-            ),
-        ));
-    }
-    if !payload.is_object() {
-        return Err(api_error(
-            StatusCode::BAD_REQUEST,
-            endpoint,
-            "invalid_payload",
-            "Expected JSON object payload.",
-        ));
-    }
-    Ok(())
-}
-
-#[allow(clippy::result_large_err)]
-fn validate_event_payload(
-    endpoint: &'static str,
-    payload: &serde_json::Value,
-) -> Result<(), Response> {
-    validate_json_object_payload(endpoint, payload)?;
-    let has_event_key = ["event", "eventName", "name", "type"].iter().any(|key| {
-        payload
-            .get(*key)
-            .and_then(serde_json::Value::as_str)
-            .map(|value| !value.trim().is_empty())
-            .unwrap_or(false)
-    });
-    if !has_event_key {
-        return Err(api_error(
-            StatusCode::BAD_REQUEST,
-            endpoint,
-            "missing_event_name",
-            "Expected one of event/eventName/name/type as non-empty string.",
-        ));
-    }
-    Ok(())
-}
-
 #[tokio::main]
 async fn main() {
     let log_filter = resolve_log_filter();
@@ -363,14 +259,7 @@ async fn main() {
     let app = Router::new()
         .route("/api/health", get(api_health))
         .route("/api/ai-health", get(api_ai_health))
-        .route("/api/analytics", post(api_analytics))
         .route("/api/data-parity", get(api_data_parity))
-        .route("/api/telemetry/performance", post(api_telemetry))
-        .route("/api/telemetry/errors", post(api_telemetry))
-        .route("/api/telemetry/performance-metrics", post(api_telemetry))
-        .route("/api/telemetry/business", post(api_telemetry))
-        .route("/api/csp-report", post(api_csp_report))
-        .route("/api/share-target", post(api_share_target))
         .route("/sitemap.xml", get(sitemap))
         .route("/sitemap-static.xml", get(sitemap))
         .route("/sitemap-shows.xml", get(sitemap))
@@ -883,62 +772,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn analytics_rejects_non_object_payload() {
-        let response = api_analytics(Json(serde_json::json!(["bad"]))).await;
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-        let payload = parse_json_body(response).await;
-        assert_eq!(payload.get("status").and_then(Value::as_str), Some("error"));
-        assert_eq!(
-            payload.get("code").and_then(Value::as_str),
-            Some("invalid_payload")
-        );
-    }
-
-    #[tokio::test]
-    async fn telemetry_rejects_missing_event_name() {
-        let response = api_telemetry(Json(serde_json::json!({
-            "foo": "bar"
-        })))
-        .await;
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-        let payload = parse_json_body(response).await;
-        assert_eq!(
-            payload.get("code").and_then(Value::as_str),
-            Some("missing_event_name")
-        );
-    }
-
-    #[tokio::test]
-    async fn csp_report_requires_report_object() {
-        let response = api_csp_report(Json(serde_json::json!({
-            "violated-directive": "script-src"
-        })))
-        .await;
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-        let payload = parse_json_body(response).await;
-        assert_eq!(
-            payload.get("code").and_then(Value::as_str),
-            Some("missing_csp_report")
-        );
-    }
-
-    #[tokio::test]
-    async fn analytics_rejects_oversized_payload() {
-        let oversized = "a".repeat(MAX_JSON_POST_PAYLOAD_BYTES + 1);
-        let response = api_analytics(Json(serde_json::json!({
-            "event": "analytics_event",
-            "payload": oversized
-        })))
-        .await;
-        assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
-        let payload = parse_json_body(response).await;
-        assert_eq!(
-            payload.get("code").and_then(Value::as_str),
-            Some("payload_too_large")
-        );
-    }
-
-    #[tokio::test]
     async fn data_parity_ignores_stale_cache_entries() {
         let leptos = LeptosOptions::builder()
             .output_name("dmb_app")
@@ -1238,77 +1071,6 @@ async fn api_ai_health(
         static_ai_config_present: ai_config_present,
         static_idb_migration_present: migration_present,
     })
-}
-
-async fn api_analytics(Json(payload): Json<serde_json::Value>) -> Response {
-    if let Err(response) = validate_event_payload("analytics", &payload) {
-        return response;
-    }
-    tracing::info!(
-        endpoint = "analytics",
-        payload_bytes = payload_size_bytes(&payload),
-        top_level_keys = payload_top_level_keys(&payload),
-        event_key = payload_event_name(&payload),
-        "analytics event received"
-    );
-    StatusCode::NO_CONTENT.into_response()
-}
-
-async fn api_csp_report(Json(payload): Json<serde_json::Value>) -> Response {
-    if let Err(response) = validate_json_object_payload("csp_report", &payload) {
-        return response;
-    }
-    let has_report = payload
-        .get("csp-report")
-        .and_then(serde_json::Value::as_object)
-        .is_some();
-    if !has_report {
-        return api_error(
-            StatusCode::BAD_REQUEST,
-            "csp_report",
-            "missing_csp_report",
-            "Expected `csp-report` object in payload.",
-        );
-    }
-    let violated_directive = payload
-        .get("csp-report")
-        .and_then(|report| report.get("violated-directive"))
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or("unknown");
-    tracing::warn!(
-        endpoint = "csp_report",
-        payload_bytes = payload_size_bytes(&payload),
-        violated_directive = violated_directive,
-        "csp report received"
-    );
-    StatusCode::NO_CONTENT.into_response()
-}
-
-async fn api_share_target(Json(payload): Json<serde_json::Value>) -> Response {
-    if let Err(response) = validate_json_object_payload("share_target", &payload) {
-        return response;
-    }
-    tracing::info!(
-        endpoint = "share_target",
-        payload_bytes = payload_size_bytes(&payload),
-        top_level_keys = payload_top_level_keys(&payload),
-        "share-target payload received"
-    );
-    (StatusCode::OK, Json(payload)).into_response()
-}
-
-async fn api_telemetry(Json(payload): Json<serde_json::Value>) -> Response {
-    if let Err(response) = validate_event_payload("telemetry", &payload) {
-        return response;
-    }
-    tracing::info!(
-        endpoint = "telemetry",
-        payload_bytes = payload_size_bytes(&payload),
-        top_level_keys = payload_top_level_keys(&payload),
-        event_key = payload_event_name(&payload),
-        "telemetry payload received"
-    );
-    StatusCode::NO_CONTENT.into_response()
 }
 
 async fn sitemap() -> impl IntoResponse {
