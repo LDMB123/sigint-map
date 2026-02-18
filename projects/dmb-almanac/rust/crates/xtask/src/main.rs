@@ -113,6 +113,24 @@ fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
     }
 
     if !skip_tests {
+        // Hydrate-only logic (manifest parsing/import integrity) is not exercised by the
+        // default workspace test run because dmb_app tests compile in SSR mode by default.
+        // Run hydrate lib tests explicitly so parity/import regressions are caught pre-cutover.
+        run_command(
+            "cargo",
+            &[
+                "test",
+                "-p",
+                "dmb_app",
+                "--features",
+                "hydrate",
+                "--lib",
+                "data::tests::",
+            ],
+            &rust_dir,
+            &[],
+        )?;
+
         run_command("cargo", &["test", "--workspace"], &rust_dir, &[])?;
     }
 
