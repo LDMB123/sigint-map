@@ -5,17 +5,27 @@
 
 ## Current State
 
-The shared workspace `.claude/agents/` directory contains **no active agents**. All agents have been migrated to project-specific directories or archived.
+The shared workspace `.claude/agents/` directory contains **no active agents**. All agents have been migrated to project-specific directories or the user scope (`~/.claude/agents/`).
 
 ## Active Agents (Project-Specific)
 
-### DMB Almanac — `projects/dmb-almanac/.claude/agents/` (3 agents)
+### DMB Almanac — `projects/dmb-almanac/.claude/agents/` (14 agents)
 
 | Agent | Purpose |
 |---|---|
 | dmb-analyst.md | Concert analysis and statistics |
 | dmbalmanac-scraper.md | Web scraping specialist |
 | dmbalmanac-site-expert.md | Site structure and data organization |
+| dmb-expert.md | DMB band history, discography, live performance |
+| dmb-data-validator.md | Data quality and consistency checks |
+| dmb-dexie-architect.md | Dexie.js schema for concert database |
+| dmb-offline-first-architect.md | Offline-first PWA architecture |
+| dmb-scraper-debugger.md | Scraper debugging, Playwright/Cheerio |
+| dmb-show-analyzer.md | Individual show analysis, rarity scoring |
+| dmb-sqlite-specialist.md | SQLite optimization for concert DB |
+| dexie-specialist.md | Dexie.js 4.x (DMB-optimized) |
+| svelte5-specialist.md | Svelte 5 runes (DMB PWA-optimized) |
+| sveltekit-specialist.md | SvelteKit 2 routing (dmb-almanac) |
 
 ### Blaire's Kind Heart — `projects/blaires-kind-heart/.claude/agents/` (7 agents)
 
@@ -52,9 +62,12 @@ ClaudeCodeProjects/
     └── _archived/         # 16 deprecated agents (see below)
 
 projects/dmb-almanac/.claude/agents/
-    ├── dmb-analyst.md
-    ├── dmbalmanac-scraper.md
-    └── dmbalmanac-site-expert.md
+    ├── dmb-analyst.md, dmb-expert.md, dmb-data-validator.md
+    ├── dmb-dexie-architect.md, dmb-offline-first-architect.md
+    ├── dmb-scraper-debugger.md, dmb-show-analyzer.md, dmb-sqlite-specialist.md
+    ├── dmbalmanac-scraper.md, dmbalmanac-site-expert.md
+    ├── dexie-specialist.md, svelte5-specialist.md, sveltekit-specialist.md
+    └── _archived/  (20 additional deprecated agents)
 
 projects/blaires-kind-heart/.claude/agents/
     ├── safari-expert.md
@@ -74,13 +87,4 @@ projects/gemini-mcp-server/.claude/agents/
 
 ## Archived Agents
 
-`_archived/` contains 16 agents deprecated on 2026-02-01. These were workspace-scoped copies of agents that already exist in user scope (`~/.claude/agents/`), with only minor YAML differences. Archived to eliminate duplication:
-
-- best-practices-enforcer, bug-triager, code-generator, dependency-analyzer
-- dexie-specialist, documentation-writer, error-debugger, migration-agent
-- performance-auditor, performance-profiler, refactoring-agent, security-scanner
-- svelte5-specialist, sveltekit-specialist, test-generator, token-optimizer
-
-## Known Issue: route-table.json
-
-`/Users/louisherman/ClaudeCodeProjects/.claude/config/route-table.json` (v1.3.0, generated 2026-01-31) still references agents by name (code-generator, error-debugger, dependency-analyzer, etc.) that no longer exist in this workspace directory. Those routes now resolve against user-scope `~/.claude/agents/` instead. The route table should be audited or removed if no longer in use.
+`_archived/` contains agents deprecated on 2026-02-01. These were workspace-scoped copies of agents that already exist in user scope (`~/.claude/agents/`), with only minor YAML differences. Archived to eliminate duplication.
