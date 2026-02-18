@@ -26,10 +26,18 @@ test.describe('Rust visual regression', () => {
 
   async function waitForStableShowDetailPage(page) {
     await page.waitForFunction(() => {
-      const hasDetailGrid = Boolean(document.querySelector('.detail-grid'));
-      const statusTitle = document.querySelector('.status-title')?.textContent || '';
-      return hasDetailGrid || /Show not found|Setlist unavailable/i.test(statusTitle);
-    });
+      const detailPage = document.querySelector('.page');
+      if (!detailPage) return false;
+      const text = detailPage.textContent || '';
+      if (/show not found/i.test(text)) return false;
+
+      const requiredRows = ['Date', 'Venue', 'Tour', 'Year', 'Songs', 'Rarity Index'];
+      const rowLabels = Array.from(detailPage.querySelectorAll('strong'))
+        .map((label) => label.textContent?.trim())
+        .filter(Boolean);
+
+      return requiredRows.every((label) => rowLabels.includes(label));
+    }, { timeout: 120_000 });
     await expect(page.locator('.page h1')).toBeVisible();
   }
 
