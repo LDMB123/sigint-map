@@ -1205,4 +1205,57 @@ mod tests {
         assert_eq!(report.total_mismatches, 0);
         assert!(report.mismatches.is_empty());
     }
+
+    #[cfg(feature = "hydrate")]
+    #[test]
+    fn record_counts_prefers_setlist_single_file_over_chunks() {
+        let manifest = DataManifest {
+            version: "2026-02-04".to_string(),
+            record_counts: HashMap::new(),
+            files: vec![
+                ManifestFile {
+                    name: "setlist-entries.json".to_string(),
+                    count: Some(3),
+                },
+                ManifestFile {
+                    name: "setlist-entries-chunk-0001.json".to_string(),
+                    count: Some(4),
+                },
+                ManifestFile {
+                    name: "setlist-entries-chunk-0002.json".to_string(),
+                    count: Some(5),
+                },
+                ManifestFile {
+                    name: "songs.json".to_string(),
+                    count: Some(2),
+                },
+            ],
+        };
+
+        let counts = manifest.record_counts_map();
+        assert_eq!(counts.get("setlist-entries"), Some(&3));
+        assert_eq!(counts.get("songs"), Some(&2));
+    }
+
+    #[cfg(feature = "hydrate")]
+    #[test]
+    fn record_counts_uses_setlist_chunk_sum_when_single_file_missing() {
+        let manifest = DataManifest {
+            version: "2026-02-04".to_string(),
+            record_counts: HashMap::new(),
+            files: vec![
+                ManifestFile {
+                    name: "setlist-entries-chunk-0001.json".to_string(),
+                    count: Some(4),
+                },
+                ManifestFile {
+                    name: "setlist-entries-chunk-0002.json".to_string(),
+                    count: Some(5),
+                },
+            ],
+        };
+
+        let counts = manifest.record_counts_map();
+        assert_eq!(counts.get("setlist-entries"), Some(&9));
+    }
 }
