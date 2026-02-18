@@ -867,20 +867,8 @@ pub fn PwaStatus() -> impl IntoView {
                 cache_entries_signal.set(count_cache_entries().await);
             });
 
-            let manifest_diff_signal = manifest_diff.clone();
-            spawn_local(async move {
-                manifest_diff_signal.set(crate::data::fetch_manifest_diff().await);
-            });
-
-            let integrity_report_signal = integrity_report.clone();
-            spawn_local(async move {
-                integrity_report_signal.set(crate::data::fetch_integrity_report().await);
-            });
-
-            let sqlite_parity_signal = sqlite_parity.clone();
-            spawn_local(async move {
-                sqlite_parity_signal.set(crate::data::fetch_sqlite_parity_report().await);
-            });
+            // Diagnostics are refreshed after seed import completes above. Avoid issuing
+            // duplicate startup probes that perform the same integrity/parity work twice.
 
             let ai_status_signal = ai_config_status.clone();
             let local_version = ai_config_version.clone();

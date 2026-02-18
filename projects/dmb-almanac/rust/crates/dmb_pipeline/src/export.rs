@@ -5,6 +5,9 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+const SETLIST_CHUNK_PREFIX: &str = "setlist-entries-chunk-";
+const SETLIST_CHUNK_RECORDS: usize = 10_000;
+
 #[derive(Debug, Clone)]
 struct FileMeta {
     name: String,
@@ -41,12 +44,19 @@ pub fn export_json(db_path: &Path, output_dir: &Path) -> Result<()> {
     let releases = export_releases(&conn)?;
     let release_tracks = export_release_tracks(&conn)?;
 
-    let files = vec![
+    let mut files = vec![
         write_json_array(output_dir, "venues.json", &venues)?,
         write_json_array(output_dir, "songs.json", &songs)?,
         write_json_array(output_dir, "tours.json", &tours)?,
         write_json_array(output_dir, "shows.json", &shows)?,
-        write_json_array(output_dir, "setlist-entries.json", &setlist_entries)?,
+    ];
+    files.extend(write_json_array_chunks(
+        output_dir,
+        SETLIST_CHUNK_PREFIX,
+        &setlist_entries,
+        SETLIST_CHUNK_RECORDS,
+    )?);
+    files.extend(vec![
         write_json_array(output_dir, "guests.json", &guests)?,
         write_json_array(output_dir, "guest-appearances.json", &guest_appearances)?,
         write_json_array(output_dir, "liberation-list.json", &liberation_list)?,
@@ -55,7 +65,7 @@ pub fn export_json(db_path: &Path, output_dir: &Path) -> Result<()> {
         write_json_array(output_dir, "curated-list-items.json", &curated_list_items)?,
         write_json_array(output_dir, "releases.json", &releases)?,
         write_json_array(output_dir, "release-tracks.json", &release_tracks)?,
-    ];
+    ]);
 
     let total_size: u64 = files.iter().map(|f| f.size).sum();
     let manifest = json!({
@@ -639,6 +649,23 @@ fn write_json_array(output_dir: &Path, name: &str, data: &[Value]) -> Result<Fil
         size,
         record_count: data.len(),
     })
+}
+
+fn write_json_array_chunks(
+    output_dir: &Path,
+    prefix: &str,
+    data: &[Value],
+    chunk_size: usize,
+) -> Result<Vec<FileMeta>> {
+    let chunk_total = data.len().max(1).div_ceil(chunk_size.max(1));
+    let mut chunks = Vec::with_capacity(chunk_total);
+    for chunk_index in 0..chunk_total {
+        let start = chunk_index * chunk_size;
+        let end = (start + chunk_size).min(data.len());
+        let name = format!("{prefix}{:04}.json", chunk_index + 1);
+        chunks.push(write_json_array(output_dir, &name, &data[start..end])?);
+    }
+    Ok(chunks)
 }
 
 fn write_json_value(output_dir: &Path, name: &str, data: &Value) -> Result<FileMeta> {

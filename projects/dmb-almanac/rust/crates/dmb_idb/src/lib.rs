@@ -972,7 +972,9 @@ cfg_if::cfg_if! {
             if values.is_empty() {
                 return Ok(0);
             }
-            const BULK_PUT_BATCH_SIZE: usize = 500;
+            // Larger write batches reduce transaction overhead during initial offline import
+            // while remaining small enough to avoid long UI jank windows on Chromium.
+            const BULK_PUT_BATCH_SIZE: usize = 2000;
             let db = open_db().await?;
             let mut total: u32 = 0;
             for chunk in values.chunks(BULK_PUT_BATCH_SIZE) {
@@ -981,7 +983,8 @@ cfg_if::cfg_if! {
                     .js()?;
                 let store = tx.object_store(store_name).js()?;
                 for value in chunk {
-                    store.put(value, None).js()?.await.js()?;
+                    // Queue writes and rely on transaction commit to validate success.
+                    store.put(value, None).js()?;
                 }
                 tx.await.js()?;
                 total += chunk.len() as u32;
@@ -1002,7 +1005,8 @@ cfg_if::cfg_if! {
                 .js()?;
             let store_write = tx_write.object_store(store_name).js()?;
             for value in values {
-                store_write.put(value, None).js()?.await.js()?;
+                // Queue writes and rely on transaction commit to validate success.
+                store_write.put(value, None).js()?;
             }
             tx_write.await.js()?;
             Ok(())

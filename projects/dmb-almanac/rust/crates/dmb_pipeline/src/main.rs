@@ -4,15 +4,26 @@ use rusqlite::Connection;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use dmb_core::{AnnIndexMeta, AnnIvfIndex, EmbeddingChunk, EmbeddingManifest, CORE_SCHEMA_VERSION};
 use once_cell::sync::Lazy;
+mod data_utils;
 mod export;
 mod runtime_db;
 mod scrape;
+mod warning_checks;
+
+use self::data_utils::{
+    checksum_file, collect_ids, compare_counts, count_json_entries, ensure_required_fields,
+    ensure_unique, load_json_array,
+};
+use self::warning_checks::{
+    compare_endpoint_timings, compare_warning_reports, enforce_empty_by_context,
+    enforce_endpoint_retries, enforce_missing_by_context, enforce_missing_by_context_map,
+    enforce_warning_thresholds, read_warning_report, read_warning_thresholds,
+};
 
 fn env_u64_or_warn(name: &str) -> Option<u64> {
     match std::env::var(name) {
@@ -209,6 +220,10 @@ struct DataFile {
 
 static PIPELINE_WARN_ONCE: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 
+const SETLIST_ENTRIES_FILE: &str = "setlist-entries.json";
+const SETLIST_CHUNK_PREFIX: &str = "setlist-entries-chunk-";
+const SETLIST_CHUNK_RECORDS: usize = 10_000;
+
 const IDB_REQUIRED_DATA_FILES: &[&str] = &[
     "venues.json",
     "songs.json",
@@ -239,8 +254,25 @@ fn normalized_data_asset_name(name: &str) -> &str {
         .unwrap_or(name)
 }
 
+fn is_setlist_chunk_asset_name(normalized_name: &str) -> bool {
+    normalized_name.starts_with(SETLIST_CHUNK_PREFIX) && normalized_name.ends_with(".json")
+}
+
+fn manifest_record_key(name: &str) -> String {
+    let normalized = normalized_data_asset_name(name);
+    let stem = normalized.strip_suffix(".json").unwrap_or(normalized);
+    if stem.starts_with(SETLIST_CHUNK_PREFIX) {
+        "setlist-entries".to_string()
+    } else {
+        stem.to_string()
+    }
+}
+
 fn is_supported_data_asset(name: &str) -> bool {
     let normalized = normalized_data_asset_name(name);
+    if is_setlist_chunk_asset_name(normalized) {
+        return true;
+    }
     if IDB_REQUIRED_DATA_FILES.contains(&normalized) {
         return true;
     }
@@ -319,13 +351,8 @@ fn manifest_counts(manifest: &DataManifest) -> HashMap<String, u64> {
     let mut counts = HashMap::new();
     for file in &manifest.files {
         let Some(count) = file.count else { continue };
-        let name = file
-            .name
-            .strip_suffix(".json.br")
-            .or_else(|| file.name.strip_suffix(".json.gz"))
-            .or_else(|| file.name.strip_suffix(".json"))
-            .unwrap_or(&file.name);
-        counts.insert(name.to_string(), count);
+        let key = manifest_record_key(&file.name);
+        *counts.entry(key).or_insert(0) += count;
     }
     counts
 }
@@ -1457,7 +1484,7 @@ fn build_idb(source_dir: &Path, output_dir: &Path) -> Result<()> {
         .with_context(|| format!("create output dir {}", output_dir.display()))?;
 
     let mut files: Vec<DataFile> = Vec::new();
-
+    let mut source_files: Vec<(String, PathBuf)> = Vec::new();
     for entry in std::fs::read_dir(source_dir)
         .with_context(|| format!("read dir {}", source_dir.display()))?
     {
@@ -1470,10 +1497,54 @@ fn build_idb(source_dir: &Path, output_dir: &Path) -> Result<()> {
             Some(name) => name.to_string(),
             None => continue,
         };
+        source_files.push((name, path));
+    }
+    let has_setlist_chunks = source_files
+        .iter()
+        .any(|(name, _)| is_setlist_chunk_asset_name(normalized_data_asset_name(name)));
+
+    for (name, path) in source_files {
         if !is_supported_data_asset(&name) {
             tracing::debug!(file = %name, "build-idb: skipping unsupported file");
             continue;
         }
+
+        let normalized = normalized_data_asset_name(&name);
+        if normalized == SETLIST_ENTRIES_FILE {
+            if has_setlist_chunks {
+                tracing::info!(
+                    file = %name,
+                    "build-idb: skipping legacy setlist file because chunk files are present"
+                );
+                continue;
+            }
+
+            let setlist_rows = load_json_array(&path)?;
+            let chunk_total = setlist_rows.len().max(1).div_ceil(SETLIST_CHUNK_RECORDS);
+            for chunk_index in 0..chunk_total {
+                let start = chunk_index * SETLIST_CHUNK_RECORDS;
+                let end = (start + SETLIST_CHUNK_RECORDS).min(setlist_rows.len());
+                let chunk = &setlist_rows[start..end];
+                let chunk_name = format!("{SETLIST_CHUNK_PREFIX}{:04}.json", chunk_index + 1);
+                let chunk_path = output_dir.join(&chunk_name);
+                serde_json::to_writer_pretty(
+                    File::create(&chunk_path)
+                        .with_context(|| format!("write {}", chunk_path.display()))?,
+                    chunk,
+                )
+                .with_context(|| format!("serialize {}", chunk_path.display()))?;
+
+                files.push(DataFile {
+                    name: chunk_name,
+                    size: chunk_path.metadata()?.len(),
+                    checksum: checksum_file(&chunk_path)?,
+                    count: Some(chunk.len() as u64),
+                });
+            }
+
+            continue;
+        }
+
         let is_json =
             name.ends_with(".json") || name.ends_with(".json.gz") || name.ends_with(".json.br");
         let is_bin = name.ends_with(".bin");
@@ -1689,6 +1760,75 @@ mod tests {
         validate_sqlite_parity(&manifest_path, &sqlite_path, true, true)?;
         Ok(())
     }
+
+    #[test]
+    fn sqlite_parity_accepts_setlist_chunk_counts() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+
+        let sqlite_path = dir.path().join("parity.db");
+        let conn = Connection::open(&sqlite_path)?;
+        let tables = [
+            "venues",
+            "songs",
+            "tours",
+            "shows",
+            "setlist_entries",
+            "guests",
+            "guest_appearances",
+            "liberation_list",
+            "song_statistics",
+            "releases",
+            "release_tracks",
+            "curated_lists",
+            "curated_list_items",
+        ];
+        for table in tables {
+            conn.execute(
+                &format!("CREATE TABLE {table} (id INTEGER PRIMARY KEY)"),
+                [],
+            )?;
+            for id in 1..=3 {
+                conn.execute(&format!("INSERT INTO {table} (id) VALUES (?1)"), [id])?;
+            }
+        }
+
+        let mapping_files = [
+            ("venues.json", 3),
+            ("songs.json", 3),
+            ("tours.json", 3),
+            ("shows.json", 3),
+            ("setlist-entries-chunk-0001.json", 1),
+            ("setlist-entries-chunk-0002.json", 2),
+            ("guests.json", 3),
+            ("guest-appearances.json", 3),
+            ("liberation-list.json", 3),
+            ("song-statistics.json", 3),
+            ("releases.json", 3),
+            ("release-tracks.json", 3),
+            ("curated-lists.json", 3),
+            ("curated-list-items.json", 3),
+        ];
+        let files = mapping_files
+            .into_iter()
+            .map(|(name, count)| DataFile {
+                name: name.to_string(),
+                size: 1,
+                checksum: "fixture".to_string(),
+                count: Some(count),
+            })
+            .collect();
+        let manifest = DataManifest {
+            version: CORE_SCHEMA_VERSION.to_string(),
+            generated_at: "2026-02-01T00:00:00Z".to_string(),
+            files,
+        };
+
+        let manifest_path = dir.path().join("manifest.json");
+        serde_json::to_writer_pretty(File::create(&manifest_path)?, &manifest)?;
+
+        validate_sqlite_parity(&manifest_path, &sqlite_path, true, true)?;
+        Ok(())
+    }
 }
 
 fn validate_data(
@@ -1811,10 +1951,36 @@ fn validate_data(
         }
     }
 
-    // setlist entries optional
-    let setlist_path = data_dir.join("setlist-entries.json");
-    if setlist_path.exists() {
-        let setlist = load_json_array(&setlist_path)?;
+    // setlist entries optional (accept either single file or chunked files)
+    let setlist_path = data_dir.join(SETLIST_ENTRIES_FILE);
+    let setlist = if setlist_path.exists() {
+        load_json_array(&setlist_path)?
+    } else {
+        let mut chunk_paths = std::fs::read_dir(&data_dir)
+            .with_context(|| format!("read dir {}", data_dir.display()))?
+            .filter_map(|entry| entry.ok())
+            .filter_map(|entry| {
+                let path = entry.path();
+                if !path.is_file() {
+                    return None;
+                }
+                let name = path.file_name()?.to_str()?.to_string();
+                if is_setlist_chunk_asset_name(normalized_data_asset_name(&name)) {
+                    Some((name, path))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        chunk_paths.sort_by(|a, b| a.0.cmp(&b.0));
+
+        let mut merged = Vec::new();
+        for (_, chunk_path) in chunk_paths {
+            merged.extend(load_json_array(&chunk_path)?);
+        }
+        merged
+    };
+    if !setlist.is_empty() {
         ensure_unique(&setlist, "id", "setlistEntries")?;
         ensure_required_fields(
             &setlist,
@@ -2126,455 +2292,4 @@ fn validate_ai_config(path: &Path) -> Result<()> {
         }
     }
     Ok(())
-}
-
-fn read_warning_report(path: &Path) -> Result<WarningReport> {
-    let contents = std::fs::read_to_string(path)
-        .with_context(|| format!("read warning report {}", path.display()))?;
-    let report: serde_json::Value =
-        serde_json::from_str(&contents).context("parse warning report")?;
-    let report_path = path.display().to_string();
-    let empty = match report.get("emptySelectors").and_then(|v| v.as_u64()) {
-        Some(v) => v,
-        None => {
-            tracing::warn!(
-                report_path,
-                field = "emptySelectors",
-                "warning report missing or invalid field; defaulting to 0"
-            );
-            0
-        }
-    };
-    let missing = match report.get("missingFields").and_then(|v| v.as_u64()) {
-        Some(v) => v,
-        None => {
-            tracing::warn!(
-                report_path,
-                field = "missingFields",
-                "warning report missing or invalid field; defaulting to 0"
-            );
-            0
-        }
-    };
-    let missing_by_field = report
-        .get("missingByField")
-        .and_then(|v| v.as_object())
-        .map(|obj| {
-            obj.iter()
-                .filter_map(|(k, v)| v.as_u64().map(|val| (k.clone(), val)))
-                .collect::<HashMap<_, _>>()
-        })
-        .unwrap_or_default();
-    let missing_by_context = report
-        .get("missingByContext")
-        .and_then(|v| v.as_object())
-        .map(|obj| {
-            obj.iter()
-                .filter_map(|(k, v)| v.as_u64().map(|val| (k.clone(), val)))
-                .collect::<HashMap<_, _>>()
-        })
-        .unwrap_or_default();
-    let empty_by_selector = report
-        .get("emptyBySelector")
-        .and_then(|v| v.as_object())
-        .map(|obj| {
-            obj.iter()
-                .filter_map(|(k, v)| v.as_u64().map(|val| (k.clone(), val)))
-                .collect::<HashMap<_, _>>()
-        })
-        .unwrap_or_default();
-    let empty_by_context = report
-        .get("emptyByContext")
-        .and_then(|v| v.as_object())
-        .map(|obj| {
-            obj.iter()
-                .filter_map(|(k, v)| v.as_u64().map(|val| (k.clone(), val)))
-                .collect::<HashMap<_, _>>()
-        })
-        .unwrap_or_default();
-    let endpoint_timings_ms = report
-        .get("endpointTimingsMs")
-        .and_then(|v| v.as_object())
-        .map(|obj| {
-            obj.iter()
-                .filter_map(|(k, v)| v.as_u64().map(|val| (k.clone(), val)))
-                .collect::<HashMap<_, _>>()
-        })
-        .unwrap_or_default();
-    let endpoint_retries = report
-        .get("endpointRetries")
-        .and_then(|v| v.as_object())
-        .map(|obj| {
-            obj.iter()
-                .filter_map(|(k, v)| v.as_u64().map(|val| (k.clone(), val)))
-                .collect::<HashMap<_, _>>()
-        })
-        .unwrap_or_default();
-    let endpoint_retries_total = report
-        .get("endpointRetriesTotal")
-        .and_then(|v| v.as_u64())
-        .unwrap_or_else(|| endpoint_retries.values().copied().sum());
-    let top_endpoint_retries = report
-        .get("topEndpointRetries")
-        .and_then(|v| v.as_array())
-        .map(|items| {
-            items
-                .iter()
-                .filter_map(|item| {
-                    let endpoint = item.get("endpoint")?.as_str()?.to_string();
-                    let count = item.get("count")?.as_u64()?;
-                    Some(EndpointRetrySummary { endpoint, count })
-                })
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-    let signature = report
-        .get("signature")
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string());
-    let warning_events_summary = report
-        .get("warningEventsSummary")
-        .and_then(|v| v.as_object())
-        .map(|obj| {
-            obj.iter()
-                .filter_map(|(k, v)| v.as_u64().map(|val| (k.clone(), val)))
-                .collect::<HashMap<_, _>>()
-        })
-        .unwrap_or_default();
-    Ok(WarningReport {
-        empty,
-        missing,
-        missing_by_field,
-        missing_by_context,
-        empty_by_selector,
-        empty_by_context,
-        endpoint_timings_ms,
-        endpoint_retries,
-        endpoint_retries_total,
-        top_endpoint_retries,
-        warning_events_summary,
-        signature,
-    })
-}
-
-fn compare_warning_reports(current: &WarningReport, baseline: &WarningReport) -> Result<()> {
-    if current.empty > baseline.empty {
-        anyhow::bail!(
-            "warning regression: emptySelectors {} > baseline {}",
-            current.empty,
-            baseline.empty
-        );
-    }
-    if current.missing > baseline.missing {
-        anyhow::bail!(
-            "warning regression: missingFields {} > baseline {}",
-            current.missing,
-            baseline.missing
-        );
-    }
-
-    for (key, &count) in &current.missing_by_field {
-        let baseline_count = baseline.missing_by_field.get(key).copied().unwrap_or(0);
-        if count > baseline_count {
-            anyhow::bail!(
-                "warning regression: missingByField {} = {} > baseline {}",
-                key,
-                count,
-                baseline_count
-            );
-        }
-    }
-    for (key, &count) in &current.missing_by_context {
-        let baseline_count = baseline.missing_by_context.get(key).copied().unwrap_or(0);
-        if count > baseline_count {
-            anyhow::bail!(
-                "warning regression: missingByContext {} = {} > baseline {}",
-                key,
-                count,
-                baseline_count
-            );
-        }
-    }
-
-    for (key, &count) in &current.empty_by_selector {
-        let baseline_count = baseline.empty_by_selector.get(key).copied().unwrap_or(0);
-        if count > baseline_count {
-            anyhow::bail!(
-                "warning regression: emptyBySelector {} = {} > baseline {}",
-                key,
-                count,
-                baseline_count
-            );
-        }
-    }
-    for (key, &count) in &current.empty_by_context {
-        let baseline_count = baseline.empty_by_context.get(key).copied().unwrap_or(0);
-        if count > baseline_count {
-            anyhow::bail!(
-                "warning regression: emptyByContext {} = {} > baseline {}",
-                key,
-                count,
-                baseline_count
-            );
-        }
-    }
-
-    Ok(())
-}
-
-fn compare_endpoint_timings(
-    current: &WarningReport,
-    baseline: &WarningReport,
-    max_pct: u64,
-) -> Result<()> {
-    if max_pct == 0 {
-        return Ok(());
-    }
-    for (endpoint, &timing) in &current.endpoint_timings_ms {
-        let Some(baseline_timing) = baseline.endpoint_timings_ms.get(endpoint) else {
-            continue;
-        };
-        if *baseline_timing == 0 {
-            continue;
-        }
-        let allowed = baseline_timing.saturating_add(baseline_timing.saturating_mul(max_pct) / 100);
-        if timing > allowed {
-            anyhow::bail!(
-                "endpoint timing regression: {} {}ms > baseline {}ms (max +{}%)",
-                endpoint,
-                timing,
-                baseline_timing,
-                max_pct
-            );
-        }
-    }
-    Ok(())
-}
-
-fn enforce_endpoint_retries(current: &HashMap<String, u64>, max: u64) -> Result<()> {
-    if max == 0 {
-        return Ok(());
-    }
-    for (endpoint, &count) in current {
-        if count > max {
-            anyhow::bail!(
-                "endpoint retry budget exceeded: {} retries {} > max {}",
-                endpoint,
-                count,
-                max
-            );
-        }
-    }
-    Ok(())
-}
-
-fn enforce_empty_by_context(
-    empty_by_selector: &HashMap<String, u64>,
-    thresholds: &HashMap<String, u64>,
-) -> Result<()> {
-    for (context, max) in thresholds {
-        let prefix = format!("{context}.");
-        let total: u64 = empty_by_selector
-            .iter()
-            .filter(|(key, _)| key.starts_with(&prefix))
-            .map(|(_, value)| *value)
-            .sum();
-        if total > *max {
-            anyhow::bail!(
-                "empty selector budget exceeded: {} total {} > max {}",
-                context,
-                total,
-                max
-            );
-        }
-    }
-    Ok(())
-}
-
-fn enforce_missing_by_context(
-    missing_by_field: &HashMap<String, u64>,
-    thresholds: &HashMap<String, u64>,
-) -> Result<()> {
-    for (context, max) in thresholds {
-        let prefix = format!("{context}.");
-        let total: u64 = missing_by_field
-            .iter()
-            .filter(|(key, _)| key.starts_with(&prefix))
-            .map(|(_, value)| *value)
-            .sum();
-        if total > *max {
-            anyhow::bail!(
-                "missing field budget exceeded: {} total {} > max {}",
-                context,
-                total,
-                max
-            );
-        }
-    }
-    Ok(())
-}
-
-fn enforce_missing_by_context_map(
-    missing_by_context: &HashMap<String, u64>,
-    thresholds: &HashMap<String, u64>,
-) -> Result<()> {
-    for (context, max) in thresholds {
-        let total = missing_by_context.get(context).copied().unwrap_or(0);
-        if total > *max {
-            anyhow::bail!(
-                "missing field budget exceeded: {} total {} > max {}",
-                context,
-                total,
-                max
-            );
-        }
-    }
-    Ok(())
-}
-
-fn read_warning_thresholds(path: &Path) -> Result<HashMap<String, u64>> {
-    let contents = std::fs::read_to_string(path)
-        .with_context(|| format!("read warning thresholds {}", path.display()))?;
-    let parsed: serde_json::Value =
-        serde_json::from_str(&contents).context("parse warning thresholds")?;
-    let Some(map) = parsed.as_object() else {
-        tracing::warn!(
-            path = %path.display(),
-            "warning thresholds json is not an object; ignoring"
-        );
-        return Ok(HashMap::new());
-    };
-    let mut out = HashMap::new();
-    for (k, v) in map {
-        if let Some(val) = v.as_u64() {
-            out.insert(k.clone(), val);
-        } else {
-            tracing::warn!(
-                path = %path.display(),
-                key = k.as_str(),
-                "warning threshold value is not a u64; skipping"
-            );
-        }
-    }
-    Ok(out)
-}
-
-fn enforce_warning_thresholds(
-    current: &HashMap<String, u64>,
-    thresholds: &HashMap<String, u64>,
-) -> Result<()> {
-    for (key, max) in thresholds {
-        let value = current.get(key).copied().unwrap_or(0);
-        if value > *max {
-            anyhow::bail!(
-                "warning threshold exceeded: {} = {} (max {})",
-                key,
-                value,
-                max
-            );
-        }
-    }
-    Ok(())
-}
-
-fn load_json_array(path: &Path) -> Result<Vec<serde_json::Value>> {
-    if !path.exists() {
-        tracing::warn!("missing data file: {}", path.display());
-        return Ok(Vec::new());
-    }
-    let file = File::open(path).with_context(|| format!("open {}", path.display()))?;
-    let value: serde_json::Value =
-        serde_json::from_reader(file).with_context(|| format!("parse {}", path.display()))?;
-    Ok(value.as_array().cloned().unwrap_or_default())
-}
-
-fn collect_ids(items: &[serde_json::Value], field: &str) -> std::collections::HashSet<i32> {
-    items
-        .iter()
-        .filter_map(|item| item.get(field))
-        .filter_map(|value| value.as_i64())
-        .map(|id| id as i32)
-        .collect()
-}
-
-fn ensure_unique(items: &[serde_json::Value], field: &str, label: &str) -> Result<()> {
-    let mut seen = std::collections::HashSet::new();
-    for item in items {
-        let Some(value) = item.get(field).and_then(|v| v.as_i64()) else {
-            anyhow::bail!("{label}: missing {field}");
-        };
-        if !seen.insert(value) {
-            anyhow::bail!("{label}: duplicate {field}={value}");
-        }
-    }
-    Ok(())
-}
-
-fn ensure_required_fields(items: &[serde_json::Value], fields: &[&str], label: &str) -> Result<()> {
-    for (idx, item) in items.iter().enumerate() {
-        for field in fields {
-            let value = item.get(*field);
-            if value.is_none() || value == Some(&serde_json::Value::Null) {
-                anyhow::bail!("{label}: missing {field} at index {idx}");
-            }
-            if let Some(text) = value.and_then(|v| v.as_str()) {
-                if text.trim().is_empty() {
-                    anyhow::bail!("{label}: empty {field} at index {idx}");
-                }
-            }
-        }
-    }
-    Ok(())
-}
-
-fn compare_counts(
-    primary: &Path,
-    baseline: &Path,
-    label: &str,
-    allow_mismatch: bool,
-) -> Result<()> {
-    if !primary.exists() || !baseline.exists() {
-        return Ok(());
-    }
-    let primary_count = load_json_array(primary)?.len();
-    let baseline_count = load_json_array(baseline)?.len();
-    if primary_count != baseline_count {
-        let message = format!(
-            "{label}: count mismatch primary={} baseline={}",
-            primary_count, baseline_count
-        );
-        if allow_mismatch {
-            tracing::warn!("{message}");
-        } else {
-            anyhow::bail!("{message}");
-        }
-    }
-    Ok(())
-}
-
-fn checksum_file(path: &Path) -> Result<String> {
-    let mut file = File::open(path).with_context(|| format!("open {}", path.display()))?;
-    let mut hasher = blake3::Hasher::new();
-    let mut buffer = [0u8; 8192];
-    loop {
-        let read = file.read(&mut buffer)?;
-        if read == 0 {
-            break;
-        }
-        hasher.update(&buffer[..read]);
-    }
-    Ok(hasher.finalize().to_hex().to_string())
-}
-
-fn count_json_entries(path: &Path) -> Result<Option<u64>> {
-    let file = File::open(path).with_context(|| format!("open {}", path.display()))?;
-    let mut reader: Box<dyn Read> = if path.extension().and_then(|e| e.to_str()) == Some("gz") {
-        Box::new(flate2::read::GzDecoder::new(file))
-    } else {
-        Box::new(file)
-    };
-    let mut contents = String::new();
-    reader.read_to_string(&mut contents)?;
-    let value: serde_json::Value = serde_json::from_str(&contents).context("parse data json")?;
-    Ok(value.as_array().map(|arr| arr.len() as u64))
 }

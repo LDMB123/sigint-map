@@ -161,9 +161,26 @@ impl DataManifest {
             let Some(name) = normalized_manifest_name(&file.name) else {
                 continue;
             };
-            counts.insert(name, count);
+            *counts.entry(name).or_insert(0) += count;
         }
         counts
+    }
+
+    fn chunk_files_with_prefix(&self, prefix: &str) -> Vec<String> {
+        let mut files = self
+            .files
+            .iter()
+            .filter_map(|file| {
+                let stem = manifest_name_stem(&file.name)?;
+                if stem.starts_with(prefix) {
+                    Some(file.name.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        files.sort();
+        files
     }
 }
 
@@ -421,12 +438,20 @@ pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
 }
 
 #[cfg(feature = "hydrate")]
-fn normalized_manifest_name(name: &str) -> Option<String> {
-    let trimmed = name
-        .strip_suffix(".json.br")
+fn manifest_name_stem(name: &str) -> Option<&str> {
+    name.strip_suffix(".json.br")
         .or_else(|| name.strip_suffix(".json.gz"))
-        .or_else(|| name.strip_suffix(".json"))?;
-    Some(trimmed.to_string())
+        .or_else(|| name.strip_suffix(".json"))
+}
+
+#[cfg(feature = "hydrate")]
+fn normalized_manifest_name(name: &str) -> Option<String> {
+    let stem = manifest_name_stem(name)?;
+    if stem.starts_with(SETLIST_CHUNK_PREFIX) {
+        Some("setlist-entries".to_string())
+    } else {
+        Some(stem.to_string())
+    }
 }
 
 #[cfg(feature = "hydrate")]
@@ -457,6 +482,15 @@ struct ImportCheckpoint {
 struct ImportSpec {
     file: &'static str,
     store: &'static str,
+    chunk_prefix: Option<&'static str>,
+}
+
+#[cfg(feature = "hydrate")]
+#[derive(Debug, Clone)]
+struct ImportWorkItem {
+    label: String,
+    url: String,
+    store: &'static str,
 }
 
 #[cfg(feature = "hydrate")]
@@ -464,7 +498,15 @@ const IMPORT_MARKER_ID: &str = "data_import_v1";
 #[cfg(feature = "hydrate")]
 const IMPORT_CHECKPOINT_ID: &str = "data_import_checkpoint_v1";
 #[cfg(feature = "hydrate")]
-const CHUNK_SIZE: usize = 1000;
+const SETLIST_CHUNK_PREFIX: &str = "setlist-entries-chunk-";
+#[cfg(feature = "hydrate")]
+const DEFAULT_IMPORT_CHUNK_SIZE: usize = 1000;
+#[cfg(feature = "hydrate")]
+const LARGE_IMPORT_CHUNK_SIZE: usize = 10_000;
+#[cfg(feature = "hydrate")]
+const LARGE_IMPORT_RECORD_THRESHOLD: usize = 20_000;
+#[cfg(feature = "hydrate")]
+const CHECKPOINT_INTERVAL_CHUNKS: usize = 4;
 pub const STORAGE_PRESSURE_THRESHOLD: f64 = 0.85;
 #[cfg(feature = "hydrate")]
 const AI_CACHE_PATHS: [&str; 4] = [
@@ -473,6 +515,16 @@ const AI_CACHE_PATHS: [&str; 4] = [
     "/data/ann-index.ivf.json",
     "/data/embedding-manifest.json",
 ];
+
+#[cfg(feature = "hydrate")]
+#[inline]
+fn import_chunk_size(total_records: usize) -> usize {
+    if total_records >= LARGE_IMPORT_RECORD_THRESHOLD {
+        LARGE_IMPORT_CHUNK_SIZE
+    } else {
+        DEFAULT_IMPORT_CHUNK_SIZE
+    }
+}
 
 #[cfg(feature = "hydrate")]
 pub async fn detect_seed_data_state() -> SeedDataState {
@@ -507,56 +559,96 @@ const IMPORT_SPECS: &[ImportSpec] = &[
     ImportSpec {
         file: "venues.json",
         store: TABLE_VENUES,
+        chunk_prefix: None,
     },
     ImportSpec {
         file: "songs.json",
         store: TABLE_SONGS,
+        chunk_prefix: None,
     },
     ImportSpec {
         file: "tours.json",
         store: TABLE_TOURS,
+        chunk_prefix: None,
     },
     ImportSpec {
         file: "shows.json",
         store: TABLE_SHOWS,
+        chunk_prefix: None,
     },
     ImportSpec {
         file: "setlist-entries.json",
         store: TABLE_SETLIST_ENTRIES,
+        chunk_prefix: Some(SETLIST_CHUNK_PREFIX),
     },
     ImportSpec {
         file: "guests.json",
         store: TABLE_GUESTS,
+        chunk_prefix: None,
     },
     ImportSpec {
         file: "guest-appearances.json",
         store: TABLE_GUEST_APPEARANCES,
+        chunk_prefix: None,
     },
     ImportSpec {
         file: "liberation-list.json",
         store: TABLE_LIBERATION_LIST,
+        chunk_prefix: None,
     },
     ImportSpec {
         file: "song-statistics.json",
         store: TABLE_SONG_STATS,
+        chunk_prefix: None,
     },
     ImportSpec {
         file: "releases.json",
         store: TABLE_RELEASES,
+        chunk_prefix: None,
     },
     ImportSpec {
         file: "release-tracks.json",
         store: TABLE_RELEASE_TRACKS,
+        chunk_prefix: None,
     },
     ImportSpec {
         file: "curated-lists.json",
         store: TABLE_CURATED_LISTS,
+        chunk_prefix: None,
     },
     ImportSpec {
         file: "curated-list-items.json",
         store: TABLE_CURATED_LIST_ITEMS,
+        chunk_prefix: None,
     },
 ];
+
+#[cfg(feature = "hydrate")]
+fn build_import_work_items(manifest: &DataManifest) -> Vec<ImportWorkItem> {
+    let mut items = Vec::new();
+    for spec in IMPORT_SPECS {
+        if let Some(prefix) = spec.chunk_prefix {
+            let chunk_files = manifest.chunk_files_with_prefix(prefix);
+            if !chunk_files.is_empty() {
+                for name in chunk_files {
+                    items.push(ImportWorkItem {
+                        label: name.clone(),
+                        url: format!("/data/{name}"),
+                        store: spec.store,
+                    });
+                }
+                continue;
+            }
+        }
+
+        items.push(ImportWorkItem {
+            label: spec.file.to_string(),
+            url: format!("/data/{}", spec.file),
+            store: spec.store,
+        });
+    }
+    items
+}
 
 #[cfg(feature = "hydrate")]
 pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
@@ -656,19 +748,21 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
         }
     }
 
-    let total_files = IMPORT_SPECS.len().max(1) as f32;
+    let import_work = build_import_work_items(&manifest);
+    let total_work_items = import_work.len();
+    let total_files = total_work_items.max(1) as f32;
     let mut resume_file_index = 0usize;
     let mut resume_chunk_index = 0usize;
     if let Ok(Some(checkpoint)) =
         dmb_idb::get_sync_meta::<ImportCheckpoint>(IMPORT_CHECKPOINT_ID).await
     {
         if checkpoint.manifest_version == manifest.version && !checkpoint.completed {
-            resume_file_index = checkpoint.file_index.min(IMPORT_SPECS.len());
+            resume_file_index = checkpoint.file_index.min(total_work_items);
             resume_chunk_index = checkpoint.chunk_index;
         }
     }
 
-    for (file_index, spec) in IMPORT_SPECS.iter().enumerate() {
+    for (file_index, work_item) in import_work.iter().enumerate() {
         if file_index < resume_file_index {
             continue;
         }
@@ -677,19 +771,16 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
         update(
             format!(
                 "Importing {} ({}/{})",
-                spec.file,
-                file_number,
-                IMPORT_SPECS.len()
+                work_item.label, file_number, total_work_items
             ),
             progress_base,
         );
 
-        let url = format!("/data/{}", spec.file);
-        let values = match fetch_json_array(&url).await {
+        let values = match fetch_json_array(&work_item.url).await {
             Ok(values) => values,
             Err(err) => {
                 status.set(ImportStatus {
-                    message: format!("Failed to load {}", spec.file),
+                    message: format!("Failed to load {}", work_item.label),
                     progress: progress_base,
                     done: false,
                     error: Some(err.as_string().unwrap_or_default()),
@@ -700,7 +791,8 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
         };
 
         let total_records = values.length() as usize;
-        let chunk_total = (total_records + CHUNK_SIZE - 1).max(1) / CHUNK_SIZE;
+        let chunk_size = import_chunk_size(total_records);
+        let chunk_total = total_records.div_ceil(chunk_size).max(1);
         let start_chunk = if file_index == resume_file_index {
             resume_chunk_index.min(chunk_total.saturating_sub(1))
         } else {
@@ -713,25 +805,25 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
             update(
                 format!(
                     "Importing {} ({}/{}) • chunk {}/{}",
-                    spec.file,
+                    work_item.label,
                     file_number,
-                    IMPORT_SPECS.len(),
+                    total_work_items,
                     chunk_index + 1,
                     chunk_total
                 ),
                 progress,
             );
 
-            let start = chunk_index * CHUNK_SIZE;
-            let end = (start + CHUNK_SIZE).min(total_records);
+            let start = chunk_index * chunk_size;
+            let end = (start + chunk_size).min(total_records);
             let mut chunk: Vec<JsValue> = Vec::with_capacity(end.saturating_sub(start));
             for idx in start..end {
                 chunk.push(values.get(idx as u32));
             }
 
-            if let Err(err) = dmb_idb::bulk_put(spec.store, &chunk).await {
+            if let Err(err) = dmb_idb::bulk_put(work_item.store, &chunk).await {
                 status.set(ImportStatus {
-                    message: format!("Import failed: {}", spec.file),
+                    message: format!("Import failed: {}", work_item.label),
                     progress,
                     done: false,
                     error: Some(format!("{err:?}")),
@@ -740,17 +832,23 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
                 return;
             }
 
-            let checkpoint = ImportCheckpoint {
-                id: IMPORT_CHECKPOINT_ID.to_string(),
-                manifest_version: manifest.version.clone(),
-                file_index,
-                chunk_index: chunk_index + 1,
-                total_files: IMPORT_SPECS.len(),
-                chunk_total,
-                updated_at: Date::new_0().to_string().into(),
-                completed: false,
-            };
-            let _ = dmb_idb::put_sync_meta(&checkpoint).await;
+            let chunk_number = chunk_index + 1;
+            let should_persist_checkpoint = chunk_total <= CHECKPOINT_INTERVAL_CHUNKS
+                || chunk_number == chunk_total
+                || chunk_number % CHECKPOINT_INTERVAL_CHUNKS == 0;
+            if should_persist_checkpoint {
+                let checkpoint = ImportCheckpoint {
+                    id: IMPORT_CHECKPOINT_ID.to_string(),
+                    manifest_version: manifest.version.clone(),
+                    file_index,
+                    chunk_index: chunk_number,
+                    total_files: total_work_items,
+                    chunk_total,
+                    updated_at: Date::new_0().to_string().into(),
+                    completed: false,
+                };
+                let _ = dmb_idb::put_sync_meta(&checkpoint).await;
+            }
 
             let _ = JsFuture::from(Promise::resolve(&JsValue::NULL)).await;
         }
@@ -768,9 +866,9 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
     let checkpoint = ImportCheckpoint {
         id: IMPORT_CHECKPOINT_ID.to_string(),
         manifest_version,
-        file_index: IMPORT_SPECS.len(),
+        file_index: total_work_items,
         chunk_index: 0,
-        total_files: IMPORT_SPECS.len(),
+        total_files: total_work_items,
         chunk_total: 0,
         updated_at: Date::new_0().to_string().into(),
         completed: true,
@@ -820,6 +918,25 @@ struct DryRunReport {
 fn dry_run_store_counts(report: &DryRunReport) -> std::collections::HashMap<String, u64> {
     let mut store_counts = std::collections::HashMap::new();
     for spec in IMPORT_SPECS {
+        if let Some(prefix) = spec.chunk_prefix {
+            let chunk_total = report
+                .file_counts
+                .iter()
+                .filter_map(|(name, count)| {
+                    let stem = manifest_name_stem(name)?;
+                    if stem.starts_with(prefix) {
+                        Some(*count)
+                    } else {
+                        None
+                    }
+                })
+                .sum::<u64>();
+            if chunk_total > 0 {
+                store_counts.insert(spec.store.to_string(), chunk_total);
+                continue;
+            }
+        }
+
         if let Some(count) = report.file_counts.get(spec.file) {
             store_counts.insert(spec.store.to_string(), *count);
         }
