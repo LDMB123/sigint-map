@@ -156,12 +156,32 @@ impl DataManifest {
         }
 
         let mut counts = HashMap::new();
+        let mut setlist_single_count = None;
+        let mut setlist_chunk_count = 0u64;
+
         for file in &self.files {
             let Some(count) = file.count else { continue };
-            let Some(name) = normalized_manifest_name(&file.name) else {
+            let Some(stem) = manifest_name_stem(&file.name) else {
                 continue;
             };
+            if stem == "setlist-entries" {
+                let total = setlist_single_count.unwrap_or(0u64).saturating_add(count);
+                setlist_single_count = Some(total);
+                continue;
+            }
+            if stem.starts_with(SETLIST_CHUNK_PREFIX) {
+                setlist_chunk_count = setlist_chunk_count.saturating_add(count);
+                continue;
+            }
+
+            let name = stem.to_string();
             *counts.entry(name).or_insert(0) += count;
+        }
+
+        if let Some(single_count) = setlist_single_count {
+            counts.insert("setlist-entries".to_string(), single_count);
+        } else if setlist_chunk_count > 0 {
+            counts.insert("setlist-entries".to_string(), setlist_chunk_count);
         }
         counts
     }

@@ -349,11 +349,35 @@ struct EndpointRetrySummary {
 
 fn manifest_counts(manifest: &DataManifest) -> HashMap<String, u64> {
     let mut counts = HashMap::new();
+    let mut setlist_single_count = None;
+    let mut setlist_chunk_count = 0u64;
+
     for file in &manifest.files {
         let Some(count) = file.count else { continue };
+        let normalized = normalized_data_asset_name(&file.name);
+
+        // When both legacy and chunked setlist files are present, runtime DB import
+        // reads the legacy file. Parity must mirror that selection and avoid double counting.
+        if normalized == SETLIST_ENTRIES_FILE {
+            let total = setlist_single_count.unwrap_or(0u64).saturating_add(count);
+            setlist_single_count = Some(total);
+            continue;
+        }
+        if is_setlist_chunk_asset_name(normalized) {
+            setlist_chunk_count = setlist_chunk_count.saturating_add(count);
+            continue;
+        }
+
         let key = manifest_record_key(&file.name);
         *counts.entry(key).or_insert(0) += count;
     }
+
+    if let Some(single_count) = setlist_single_count {
+        counts.insert("setlist-entries".to_string(), single_count);
+    } else if setlist_chunk_count > 0 {
+        counts.insert("setlist-entries".to_string(), setlist_chunk_count);
+    }
+
     counts
 }
 
@@ -1799,6 +1823,76 @@ mod tests {
             ("shows.json", 3),
             ("setlist-entries-chunk-0001.json", 1),
             ("setlist-entries-chunk-0002.json", 2),
+            ("guests.json", 3),
+            ("guest-appearances.json", 3),
+            ("liberation-list.json", 3),
+            ("song-statistics.json", 3),
+            ("releases.json", 3),
+            ("release-tracks.json", 3),
+            ("curated-lists.json", 3),
+            ("curated-list-items.json", 3),
+        ];
+        let files = mapping_files
+            .into_iter()
+            .map(|(name, count)| DataFile {
+                name: name.to_string(),
+                size: 1,
+                checksum: "fixture".to_string(),
+                count: Some(count),
+            })
+            .collect();
+        let manifest = DataManifest {
+            version: CORE_SCHEMA_VERSION.to_string(),
+            generated_at: "2026-02-01T00:00:00Z".to_string(),
+            files,
+        };
+
+        let manifest_path = dir.path().join("manifest.json");
+        serde_json::to_writer_pretty(File::create(&manifest_path)?, &manifest)?;
+
+        validate_sqlite_parity(&manifest_path, &sqlite_path, true, true)?;
+        Ok(())
+    }
+
+    #[test]
+    fn sqlite_parity_prefers_setlist_single_file_when_chunks_also_present() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+
+        let sqlite_path = dir.path().join("parity.db");
+        let conn = Connection::open(&sqlite_path)?;
+        let tables = [
+            "venues",
+            "songs",
+            "tours",
+            "shows",
+            "setlist_entries",
+            "guests",
+            "guest_appearances",
+            "liberation_list",
+            "song_statistics",
+            "releases",
+            "release_tracks",
+            "curated_lists",
+            "curated_list_items",
+        ];
+        for table in tables {
+            conn.execute(
+                &format!("CREATE TABLE {table} (id INTEGER PRIMARY KEY)"),
+                [],
+            )?;
+            for id in 1..=3 {
+                conn.execute(&format!("INSERT INTO {table} (id) VALUES (?1)"), [id])?;
+            }
+        }
+
+        let mapping_files = [
+            ("venues.json", 3),
+            ("songs.json", 3),
+            ("tours.json", 3),
+            ("shows.json", 3),
+            ("setlist-entries.json", 3),
+            ("setlist-entries-chunk-0001.json", 4),
+            ("setlist-entries-chunk-0002.json", 5),
             ("guests.json", 3),
             ("guest-appearances.json", 3),
             ("liberation-list.json", 3),
