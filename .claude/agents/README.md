@@ -29,6 +29,18 @@ The shared workspace `.claude/agents/` directory contains **no active agents**. 
 | safari-gpu-specialist.md | Sub-agent: Media/GPU/WebXR (Haiku) |
 | safari-debug-specialist.md | Sub-agent: DevTools/SafariDriver (Haiku) |
 
+### Emerson Violin PWA — `projects/emerson-violin-pwa/.claude/agents/` (1 agent)
+
+| Agent | Purpose |
+|---|---|
+| web-audio-specialist.md | Web Audio API, pitch detection, microphone input, WASM audio pipeline |
+
+### Gemini MCP Server — `projects/gemini-mcp-server/.claude/agents/` (1 agent)
+
+| Agent | Purpose |
+|---|---|
+| gemini-api-specialist.md | Gemini API integration, MCP tool impl, rate limiting, session management |
+
 ## Architecture
 
 Project-specific agents only activate when Claude Code is opened in that project's directory. This prevents cross-project agent pollution and ensures agents only load with their relevant project context.
@@ -52,6 +64,12 @@ projects/blaires-kind-heart/.claude/agents/
     ├── safari-pwa-specialist.md
     ├── safari-gpu-specialist.md
     └── safari-debug-specialist.md
+
+projects/emerson-violin-pwa/.claude/agents/
+    └── web-audio-specialist.md
+
+projects/gemini-mcp-server/.claude/agents/
+    └── gemini-api-specialist.md
 ```
 
 ## Archived Agents
