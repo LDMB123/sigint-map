@@ -71,6 +71,7 @@ pub fn build_runtime_db(source_dir: &Path, output: &Path) -> Result<()> {
     insert_curated_lists(&tx, &curated_lists)?;
     insert_curated_list_items(&tx, &curated_list_items)?;
     insert_meta(&tx)?;
+    validate_runtime_integrity(&tx)?;
 
     tx.commit().context("commit sqlite transaction")?;
 
@@ -114,6 +115,8 @@ fn create_schema(tx: &Transaction<'_>) -> Result<()> {
           search_text TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_venues_name ON venues(name);
+        CREATE INDEX IF NOT EXISTS idx_venues_top_shows_name
+          ON venues(COALESCE(total_shows, 0) DESC, name ASC);
 
         CREATE TABLE IF NOT EXISTS songs (
           id INTEGER PRIMARY KEY,
@@ -128,7 +131,9 @@ fn create_schema(tx: &Transaction<'_>) -> Result<()> {
           is_liberated INTEGER,
           search_text TEXT
         );
-        CREATE INDEX IF NOT EXISTS idx_songs_slug ON songs(slug);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_songs_slug ON songs(slug);
+        CREATE INDEX IF NOT EXISTS idx_songs_top_performances_title
+          ON songs(COALESCE(total_performances, 0) DESC, title ASC);
 
         CREATE TABLE IF NOT EXISTS tours (
           id INTEGER PRIMARY KEY,
@@ -138,6 +143,8 @@ fn create_schema(tx: &Transaction<'_>) -> Result<()> {
           search_text TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_tours_year ON tours(year);
+        CREATE INDEX IF NOT EXISTS idx_tours_recent_order
+          ON tours(year DESC, total_shows DESC, id DESC);
 
         CREATE TABLE IF NOT EXISTS shows (
           id INTEGER PRIMARY KEY,
@@ -175,7 +182,9 @@ fn create_schema(tx: &Transaction<'_>) -> Result<()> {
           total_appearances INTEGER,
           search_text TEXT
         );
-        CREATE INDEX IF NOT EXISTS idx_guests_slug ON guests(slug);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_guests_slug ON guests(slug);
+        CREATE INDEX IF NOT EXISTS idx_guests_top_appearances_name
+          ON guests(COALESCE(total_appearances, 0) DESC, name ASC);
 
         CREATE TABLE IF NOT EXISTS guest_appearances (
           id INTEGER PRIMARY KEY,
@@ -202,6 +211,8 @@ fn create_schema(tx: &Transaction<'_>) -> Result<()> {
           liberated_show_id INTEGER
         );
         CREATE INDEX IF NOT EXISTS idx_liberation_list_song_id ON liberation_list(song_id);
+        CREATE INDEX IF NOT EXISTS idx_liberation_list_days_since_id
+          ON liberation_list(days_since DESC, id DESC);
 
         CREATE TABLE IF NOT EXISTS song_statistics (
           id INTEGER PRIMARY KEY,
@@ -219,7 +230,9 @@ fn create_schema(tx: &Transaction<'_>) -> Result<()> {
           release_date TEXT,
           search_text TEXT
         );
-        CREATE INDEX IF NOT EXISTS idx_releases_slug ON releases(slug);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_releases_slug ON releases(slug);
+        CREATE INDEX IF NOT EXISTS idx_releases_release_date_id
+          ON releases(release_date DESC, id DESC);
 
         CREATE TABLE IF NOT EXISTS release_tracks (
           id INTEGER PRIMARY KEY,
@@ -246,7 +259,9 @@ fn create_schema(tx: &Transaction<'_>) -> Result<()> {
           created_at TEXT,
           updated_at TEXT
         );
-        CREATE INDEX IF NOT EXISTS idx_curated_lists_slug ON curated_lists(slug);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_curated_lists_slug ON curated_lists(slug);
+        CREATE INDEX IF NOT EXISTS idx_curated_lists_sort_order_id
+          ON curated_lists(sort_order, id);
 
         CREATE TABLE IF NOT EXISTS curated_list_items (
           id INTEGER PRIMARY KEY,
@@ -608,4 +623,193 @@ fn insert_meta(tx: &Transaction<'_>) -> Result<()> {
     )
     .context("insert meta generated_at")?;
     Ok(())
+}
+
+fn expect_zero_violations(tx: &Transaction<'_>, label: &str, sql: &str) -> Result<()> {
+    let count: i64 = tx
+        .query_row(sql, [], |row| row.get(0))
+        .with_context(|| format!("run integrity check {label}"))?;
+    if count != 0 {
+        anyhow::bail!("runtime sqlite integrity check failed ({label}): {count} violation(s)");
+    }
+    Ok(())
+}
+
+fn validate_runtime_integrity(tx: &Transaction<'_>) -> Result<()> {
+    // Keep logical referential integrity checks explicit because bulk load runs with
+    // foreign_keys disabled for throughput.
+    expect_zero_violations(
+        tx,
+        "shows.venue_id references venues.id",
+        "SELECT COUNT(*)
+         FROM shows s
+         LEFT JOIN venues v ON v.id = s.venue_id
+         WHERE v.id IS NULL",
+    )?;
+    expect_zero_violations(
+        tx,
+        "shows.tour_id references tours.id",
+        "SELECT COUNT(*)
+         FROM shows s
+         LEFT JOIN tours t ON t.id = s.tour_id
+         WHERE s.tour_id IS NOT NULL AND t.id IS NULL",
+    )?;
+    expect_zero_violations(
+        tx,
+        "setlist_entries.show_id references shows.id",
+        "SELECT COUNT(*)
+         FROM setlist_entries se
+         LEFT JOIN shows s ON s.id = se.show_id
+         WHERE s.id IS NULL",
+    )?;
+    expect_zero_violations(
+        tx,
+        "setlist_entries.song_id references songs.id",
+        "SELECT COUNT(*)
+         FROM setlist_entries se
+         LEFT JOIN songs so ON so.id = se.song_id
+         WHERE so.id IS NULL",
+    )?;
+    expect_zero_violations(
+        tx,
+        "guest_appearances.guest_id references guests.id",
+        "SELECT COUNT(*)
+         FROM guest_appearances ga
+         LEFT JOIN guests g ON g.id = ga.guest_id
+         WHERE g.id IS NULL",
+    )?;
+    expect_zero_violations(
+        tx,
+        "guest_appearances.show_id references shows.id",
+        "SELECT COUNT(*)
+         FROM guest_appearances ga
+         LEFT JOIN shows s ON s.id = ga.show_id
+         WHERE s.id IS NULL",
+    )?;
+    expect_zero_violations(
+        tx,
+        "release_tracks.release_id references releases.id",
+        "SELECT COUNT(*)
+         FROM release_tracks rt
+         LEFT JOIN releases r ON r.id = rt.release_id
+         WHERE r.id IS NULL",
+    )?;
+    expect_zero_violations(
+        tx,
+        "curated_list_items.list_id references curated_lists.id",
+        "SELECT COUNT(*)
+         FROM curated_list_items cli
+         LEFT JOIN curated_lists cl ON cl.id = cli.list_id
+         WHERE cl.id IS NULL",
+    )?;
+    expect_zero_violations(
+        tx,
+        "required textual fields are non-empty",
+        "SELECT
+            (SELECT COUNT(*) FROM shows WHERE date IS NULL OR TRIM(date) = '') +
+            (SELECT COUNT(*) FROM songs WHERE title IS NULL OR TRIM(title) = '') +
+            (SELECT COUNT(*) FROM venues WHERE name IS NULL OR TRIM(name) = '') +
+            (SELECT COUNT(*) FROM tours WHERE name IS NULL OR TRIM(name) = '')",
+    )?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn index_is_unique(conn: &Connection, table: &str, index_name: &str) -> Result<bool> {
+        let pragma = format!("PRAGMA index_list({table})");
+        let mut stmt = conn
+            .prepare(&pragma)
+            .with_context(|| format!("prepare {pragma}"))?;
+        let rows = stmt
+            .query_map([], |row| {
+                Ok((row.get::<_, String>(1)?, row.get::<_, i64>(2)?))
+            })
+            .context("query pragma index_list (unique)")?;
+        for row in rows {
+            let (name, is_unique) = row.context("read unique row")?;
+            if name == index_name {
+                return Ok(is_unique != 0);
+            }
+        }
+        Ok(false)
+    }
+
+    fn index_names(conn: &Connection, table: &str) -> Result<Vec<String>> {
+        let pragma = format!("PRAGMA index_list({table})");
+        let mut stmt = conn
+            .prepare(&pragma)
+            .with_context(|| format!("prepare {pragma}"))?;
+        let rows = stmt
+            .query_map([], |row| row.get::<_, String>(1))
+            .context("query pragma index_list")?;
+        let mut out = Vec::new();
+        for row in rows {
+            out.push(row.context("read index_list row")?);
+        }
+        Ok(out)
+    }
+
+    #[test]
+    fn create_schema_includes_hot_path_indexes() -> Result<()> {
+        let mut conn = Connection::open_in_memory().context("open in-memory sqlite")?;
+        let tx = conn.transaction().context("start schema transaction")?;
+        create_schema(&tx)?;
+        tx.commit().context("commit schema transaction")?;
+
+        let checks: [(&str, &str); 7] = [
+            ("venues", "idx_venues_top_shows_name"),
+            ("songs", "idx_songs_top_performances_title"),
+            ("tours", "idx_tours_recent_order"),
+            ("guests", "idx_guests_top_appearances_name"),
+            ("liberation_list", "idx_liberation_list_days_since_id"),
+            ("releases", "idx_releases_release_date_id"),
+            ("curated_lists", "idx_curated_lists_sort_order_id"),
+        ];
+
+        for (table, index_name) in checks {
+            let indexes = index_names(&conn, table)?;
+            assert!(
+                indexes.iter().any(|name| name == index_name),
+                "missing expected index {index_name} on table {table}; indexes={indexes:?}"
+            );
+        }
+
+        let unique_checks: [(&str, &str); 4] = [
+            ("songs", "idx_songs_slug"),
+            ("guests", "idx_guests_slug"),
+            ("releases", "idx_releases_slug"),
+            ("curated_lists", "idx_curated_lists_slug"),
+        ];
+        for (table, index_name) in unique_checks {
+            assert!(
+                index_is_unique(&conn, table, index_name)?,
+                "expected unique index {index_name} on table {table}"
+            );
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn runtime_integrity_detects_orphan_show_venue() -> Result<()> {
+        let mut conn = Connection::open_in_memory().context("open in-memory sqlite")?;
+        let tx = conn.transaction().context("start schema transaction")?;
+        create_schema(&tx)?;
+        tx.execute(
+            "INSERT INTO shows (id, date, year, venue_id, tour_id, song_count, rarity_index)
+             VALUES (1, '2026-05-23', 2026, 999999, NULL, 0, NULL)",
+            [],
+        )
+        .context("insert orphaned show row")?;
+        let err = validate_runtime_integrity(&tx).expect_err("expected integrity failure");
+        let message = err.to_string();
+        assert!(
+            message.contains("shows.venue_id references venues.id"),
+            "unexpected integrity error: {message}"
+        );
+        Ok(())
+    }
 }

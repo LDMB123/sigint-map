@@ -14,7 +14,7 @@ use leptos::context::provide_context;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use leptos_config::LeptosOptions;
 use serde::Serialize;
-use sqlx::sqlite::SqliteConnectOptions;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::SqlitePool;
 use std::collections::{HashMap, HashSet};
 use std::env;
@@ -66,6 +66,12 @@ struct AppState {
 }
 
 const DATA_PARITY_CACHE_TTL: Duration = Duration::from_secs(10);
+const SQLITE_POOL_MAX_CONNECTIONS: u32 = 8;
+const SQLITE_POOL_MIN_CONNECTIONS: u32 = 1;
+const SQLITE_POOL_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(5);
+const SQLITE_POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(300);
+const SQLITE_POOL_MAX_LIFETIME: Duration = Duration::from_secs(1800);
+const SQLITE_BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(Clone)]
 struct DataParityCacheEntry {
@@ -893,12 +899,30 @@ mod tests {
 }
 
 async fn init_db_pool() -> Option<SqlitePool> {
+    async fn connect_sqlite(path: &str) -> Result<SqlitePool, sqlx::Error> {
+        let options = SqliteConnectOptions::new()
+            .filename(path)
+            .read_only(true)
+            .busy_timeout(SQLITE_BUSY_TIMEOUT)
+            .pragma("query_only", "ON")
+            .pragma("temp_store", "MEMORY")
+            .pragma("cache_size", "-20000");
+
+        SqlitePoolOptions::new()
+            .max_connections(SQLITE_POOL_MAX_CONNECTIONS)
+            .min_connections(SQLITE_POOL_MIN_CONNECTIONS)
+            .acquire_timeout(SQLITE_POOL_ACQUIRE_TIMEOUT)
+            .idle_timeout(Some(SQLITE_POOL_IDLE_TIMEOUT))
+            .max_lifetime(Some(SQLITE_POOL_MAX_LIFETIME))
+            .connect_with(options)
+            .await
+    }
+
     if let Ok(path) = std::env::var("DMB_SQLITE_PATH") {
         let path = path.trim();
         if !path.is_empty() {
             if std::path::Path::new(path).exists() {
-                let options = SqliteConnectOptions::new().filename(path).read_only(true);
-                match SqlitePool::connect_with(options).await {
+                match connect_sqlite(path).await {
                     Ok(pool) => {
                         tracing::info!("connected to sqlite at {} (DMB_SQLITE_PATH)", path);
                         return Some(pool);
@@ -921,8 +945,7 @@ async fn init_db_pool() -> Option<SqlitePool> {
         if !std::path::Path::new(path).exists() {
             continue;
         }
-        let options = SqliteConnectOptions::new().filename(path).read_only(true);
-        match SqlitePool::connect_with(options).await {
+        match connect_sqlite(path).await {
             Ok(pool) => {
                 tracing::info!("connected to sqlite at {}", path);
                 return Some(pool);
