@@ -20,11 +20,11 @@ Multi-project Claude Code workspace.
 
 ```
 ClaudeCodeProjects/
-├── .claude/              # Shared agent infrastructure
+├── .claude/              # Workspace infrastructure (no active agents here)
 │   ├── skills/          # Reusable skills
-│   ├── agents/          # Agent definitions
+│   ├── agents/          # README + _archived only — NO active agents
 │   ├── config/          # Routing, caching
-│   └── scripts/         # Validation and audit scripts
+│   └── scripts/         # Validation and audit scripts (check-contamination.sh)
 ├── apple-mcp-server/    # macOS native MCP server (active)
 ├── google-mcp-server/   # Google APIs MCP server (active)
 ├── projects/            # Individual projects
@@ -44,7 +44,9 @@ ClaudeCodeProjects/
 
 ### Skills & Agents
 - **Skills format**: `skill-name/SKILL.md` with YAML frontmatter
-- **Agents location**: Shared agents in `.claude/agents/`; project-specific agents in `projects/<name>/.claude/agents/`
+- **Agents location**: Project-specific agents ONLY in `projects/<name>/.claude/agents/` — NEVER in workspace `.claude/agents/`
+- **Workspace `.claude/agents/`**: Contains README and `_archived/` only. Do not add active agents here.
+- **Global `~/.claude/agents/`**: Generic reusable agents only. Never add project-specific agents (dmb-*, safari-*, svelte*, dexie*, etc.)
 - **Large skills**: Extract references to separate files
 
 ### Report Writing
