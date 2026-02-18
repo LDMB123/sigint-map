@@ -45,6 +45,9 @@ jobs:
       - name: Run xtask verify
         run: cargo run -p xtask -- verify
 
+      - name: Hydrate data integrity invariants
+        run: cargo test -p dmb_app --features hydrate --lib data::tests::
+
       - name: Enforce rustfmt
         run: cargo fmt --all -- --check
 
