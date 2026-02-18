@@ -562,7 +562,7 @@ fn cap_embedding_index_with_policy(
         if bytes > cap {
             ivf = None;
             ivf_dropped = true;
-            #[cfg(feature = "hydrate")]
+            #[cfg(all(feature = "hydrate", target_arch = "wasm32"))]
             record_ai_warning(
                 "ivf_cap_exceeded",
                 Some(format!("{bytes} bytes > {cap} bytes")),
@@ -634,7 +634,7 @@ fn cap_embedding_index_with_policy(
     }
 
     let vectors_after = if dim == 0 { 0 } else { new_matrix.len() / dim };
-    #[cfg(feature = "hydrate")]
+    #[cfg(all(feature = "hydrate", target_arch = "wasm32"))]
     record_ai_warning(
         "ann_cap_exceeded",
         Some(format!("{matrix_bytes} bytes > {cap_bytes} bytes")),
@@ -659,7 +659,7 @@ fn cap_embedding_index_with_policy(
         budget_capped: true,
     };
 
-    #[cfg(feature = "hydrate")]
+    #[cfg(all(feature = "hydrate", target_arch = "wasm32"))]
     web_sys::console::warn_1(&wasm_bindgen::JsValue::from_str(&format!(
         "Embedding matrix capped to {} vectors ({:.1}MB).",
         new_records.len(),

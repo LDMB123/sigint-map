@@ -118,15 +118,7 @@ fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
         // Run hydrate lib tests explicitly so parity/import regressions are caught pre-cutover.
         run_command(
             "cargo",
-            &[
-                "test",
-                "-p",
-                "dmb_app",
-                "--features",
-                "hydrate",
-                "--lib",
-                "data::tests::",
-            ],
+            &["test", "-p", "dmb_app", "--features", "hydrate", "--lib"],
             &rust_dir,
             &[],
         )?;
