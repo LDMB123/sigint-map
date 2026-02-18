@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Output/generated
+output/
+generated/
+images/output/
+*.json
+!src/**/*.json
+
+# Logs
+*.log
+logs/
+
+# Temp
+*.tmp
+*.temp
+.cache/
+
+# macOS
+.DS_Store
+._*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Claude
+.claude/*
+!.claude/agents/
+
+# Claude local
+.claude/settings.local.json

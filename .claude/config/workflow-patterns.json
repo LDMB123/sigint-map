@@ -6,12 +6,10 @@
   "validation": {
     "target_accuracy": 0.75,
     "confidence_threshold": 0.7,
-    "total_patterns": 46,
+    "total_patterns": 38,
     "domains_covered": [
       "rust",
       "wasm",
-      "svelte",
-      "sveltekit",
       "security",
       "optimization",
       "testing",
@@ -20,19 +18,17 @@
     ]
   },
   "metadata": {
-    "total_patterns": 46,
+    "total_patterns": 38,
     "avg_confidence": 0.81,
     "highest_confidence": 0.94,
     "most_common_contexts": [
       "rust",
       "wasm",
-      "svelte",
       "performance",
       "testing"
     ],
     "pattern_categories": {
       "rust_wasm": 12,
-      "frontend_svelte": 8,
       "optimization": 8,
       "security": 6,
       "testing": 6,
@@ -1180,7 +1176,6 @@
       "session_context": {
         "item_threshold": "> 1000 items",
         "libraries": [
-          "svelte-virtual",
           "react-window"
         ]
       }
@@ -1882,8 +1877,7 @@
       "contextMatch": [
         "state",
         "redux",
-        "zustand",
-        "svelte-store"
+        "zustand"
       ],
       "triggers": [
         "state management",
@@ -1916,7 +1910,6 @@
       "domain": "frontend",
       "session_context": {
         "solutions": [
-          "Svelte stores",
           "Redux",
           "Zustand",
           "Jotai"
@@ -2304,7 +2297,6 @@
       "domain": "frontend",
       "session_context": {
         "libraries": [
-          "svelte-i18n",
           "i18next",
           "Format.js"
         ],

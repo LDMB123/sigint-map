@@ -1,0 +1,39 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# TypeScript build
+dist/
+build/
+*.tsbuildinfo
+.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Temp
+*.tmp
+.cache/
+
+# macOS
+.DS_Store
+._*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Claude
+.claude/*
+!.claude/agents/
+
+# Claude local
+.claude/settings.local.json
