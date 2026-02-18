@@ -59,6 +59,7 @@ PATH_PREFIXES = (
 )
 
 OPTIONAL_GENERATED_PREFIXES = (
+    "e2e/node_modules/",
     "rust/target/",
     "rust/static/pkg/",
     "rust/static/data/",
