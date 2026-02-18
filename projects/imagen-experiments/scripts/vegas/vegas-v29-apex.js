@@ -67,10 +67,15 @@ const AB_SUMMARY_FILE = path.join(OUTPUT_DIR, 'ab-comparison-summary.json');
 const LEARNING_AUDIT_FILE = path.join(OUTPUT_DIR, 'learning-audit.jsonl');
 const LEARNING_PLAN_FILE = path.join(OUTPUT_DIR, 'learning-plan.json');
 const TARGET_QUALITY_GAIN_PCT = parseFloat(process.env.TARGET_QUALITY_GAIN_PCT || '50');
+const QUALITY_SCORE_CEILING = Math.max(9.0, parseFloat(process.env.QUALITY_SCORE_CEILING || '10'));
+const C_GAIN_TARGET_HARD_GATE = process.env.C_GAIN_TARGET_HARD_GATE !== '0';
 const STRATEGY_KEYS = ['A', 'B', 'C'];
 const LESSON_RECENCY_WINDOW = Math.max(8, parseInt(process.env.LESSON_RECENCY_WINDOW || '24', 10));
 const LESSON_MAX_PER_PROMPT = Math.max(8, parseInt(process.env.LESSON_MAX_PER_PROMPT || '12', 10));
 const C_STRATEGY_LESSON_MAX = Math.max(6, parseInt(process.env.C_STRATEGY_LESSON_MAX || '10', 10));
+const DEFAULT_IMAGE_SIZE = String(process.env.DEFAULT_IMAGE_SIZE || '1K').trim();
+const C_IMAGE_SIZE = String(process.env.C_IMAGE_SIZE || '2K').trim();
+const ENABLE_C_HIGH_RES = process.env.ENABLE_C_HIGH_RES !== '0';
 const PROFILE_HISTORY_WINDOW = Math.max(12, parseInt(process.env.PROFILE_HISTORY_WINDOW || '40', 10));
 const WINNER_TIE_BAND = Math.max(0.05, parseFloat(process.env.WINNER_TIE_BAND || '0.12'));
 const IDENTITY_GUARDRAIL = Math.max(8.5, parseFloat(process.env.IDENTITY_GUARDRAIL || '9.0'));
@@ -105,6 +110,21 @@ const QUALITY_ESCALATION_SCORE_TRIGGER = Math.max(8.5, parseFloat(process.env.QU
 const QUALITY_ESCALATION_TIE_TRIGGER = Math.max(0.05, parseFloat(process.env.QUALITY_ESCALATION_TIE_TRIGGER || '0.18'));
 const QUALITY_ESCALATION_MAX_EXTRA_ROUNDS = Math.max(0, parseInt(process.env.QUALITY_ESCALATION_MAX_EXTRA_ROUNDS || '2', 10));
 const QUALITY_ESCALATION_MAX_EXTRA_VARIANTS = Math.max(0, parseInt(process.env.QUALITY_ESCALATION_MAX_EXTRA_VARIANTS || '2', 10));
+const PHASED_C_MAX_RETRIES = Math.max(1, parseInt(process.env.PHASED_C_MAX_RETRIES || '3', 10));
+const PHASED_C_FORCE_PHASE2 = process.env.PHASED_C_FORCE_PHASE2 !== '0';
+const PHASED_C_RETRY_WAIT_S = Math.max(0, parseInt(process.env.PHASED_C_RETRY_WAIT_S || '45', 10));
+const PHASED_C_SKIP_POST_PASSB_PHASE2 = process.env.PHASED_C_SKIP_POST_PASSB_PHASE2 !== '0';
+const PHASED_C_RESCUE_ENABLE = process.env.PHASED_C_RESCUE_ENABLE !== '0';
+const PHASED_C_RESCUE_BASE_ROUNDS = Math.max(0, parseInt(
+  process.env.PHASED_C_RESCUE_BASE_ROUNDS || String(Math.max(1, FINAL_AUDIT_BOOST_ROUNDS_MAX)),
+  10
+));
+const PHASED_C_RESCUE_EXTRA_ROUNDS_MAX = Math.max(0, parseInt(process.env.PHASED_C_RESCUE_EXTRA_ROUNDS_MAX || '3', 10));
+const PHASED_C_RESCUE_SHORTFALL_STEP_PCT = Math.max(1, parseFloat(process.env.PHASED_C_RESCUE_SHORTFALL_STEP_PCT || '10'));
+const PHASED_C_RESCUE_MIN_GAIN = Math.max(0.01, parseFloat(process.env.PHASED_C_RESCUE_MIN_GAIN || '0.01'));
+const PHASED_C_NEAR_MISS_MARGIN_PCT = Math.max(0, parseFloat(process.env.PHASED_C_NEAR_MISS_MARGIN_PCT || '1.5'));
+const PHASED_C_NEAR_MISS_EXTRA_ROUNDS = Math.max(0, parseInt(process.env.PHASED_C_NEAR_MISS_EXTRA_ROUNDS || '1', 10));
+const PHASED_C_NEAR_MISS_MIN_GAIN = Math.max(0.001, parseFloat(process.env.PHASED_C_NEAR_MISS_MIN_GAIN || '0.002'));
 const ITER_ACCEPT_OVERALL_TOL = Math.max(0.0, parseFloat(process.env.ITER_ACCEPT_OVERALL_TOL || '0.02'));
 const ITER_ACCEPT_METRIC_TOL = Math.max(0.0, parseFloat(process.env.ITER_ACCEPT_METRIC_TOL || '0.05'));
 const LOCK_AB_VARIATION = process.env.LOCK_AB_VARIATION !== '0';
@@ -1369,6 +1389,14 @@ function normalizeApproach(approach, fallback = 'A') {
   return fallback;
 }
 
+function imageSizeForApproach(approach = 'A', override = null) {
+  const explicit = String(override || '').trim();
+  if (explicit) return explicit;
+  const approachKey = normalizeApproach(approach, 'A');
+  if (ENABLE_C_HIGH_RES && approachKey === 'C') return C_IMAGE_SIZE || DEFAULT_IMAGE_SIZE;
+  return DEFAULT_IMAGE_SIZE;
+}
+
 function normalizeLessons(lessons, max = 8) {
   if (!Array.isArray(lessons)) return [];
   return [...new Set(
@@ -1405,6 +1433,12 @@ function formatLessonsForPrompt(lessons) {
     return '- Maintain strict identity lock, physically causal optics, and compliance-safe framing.';
   }
   return list.map((item, idx) => `- P${idx + 1}: ${item}`).join('\n');
+}
+
+function formatCSynthesisCharterBlock(charter) {
+  const text = String(charter || '').trim();
+  if (!text) return '- No charter provided; derive all decisions from explicit A/B audit evidence and keep shared outcome goals fixed.';
+  return text;
 }
 
 function prioritizeProfiles(baseProfiles, preferredProfiles = []) {
@@ -1459,13 +1493,14 @@ function buildApproachProfileOrder(approach, records) {
   return prioritizeProfiles(ordered);
 }
 
-function buildPromptPassAFrontier(concept, expression, variation, profile, approach = 'A', lessons = []) {
+function buildPromptPassAFrontier(concept, expression, variation, profile, approach = 'A', lessons = [], synthesisCharter = '') {
   const key = normalizeFrontierProfile(profile);
   const conservative = key === 'clean';
   const approachKey = normalizeApproach(approach, 'A');
   const design = variation ? composeDesignSpec(concept, variation, conservative) : { color: '', brief: '', material: conservative ? concept.materialFallback : concept.material };
   const tone = FRONTIER_PROFILE_NOTES[key];
   const lessonBlock = formatLessonsForPrompt(lessons);
+  const charterBlock = formatCSynthesisCharterBlock(synthesisCharter);
   if (approachKey === 'B') {
     const directionTone = key === 'intimate'
       ? 'intimate high-fashion confidence without explicit framing'
@@ -1526,6 +1561,15 @@ ${ELITE_EDITORIAL_BLOCK}`;
 
 APPROACH C (A/B LESSON-FUSION):
 Combine A's physics rigor with B's directorial decisiveness. Produce one image that increases joint quality for identity, garment physics, optics, and realism while preserving compliance.
+
+C SYNTHESIS MANDATE (HARD REQUIREMENT):
+- A and B are alternate prompting approaches for the same outcome goal; do not change that goal.
+- Author an entirely new C prompt plan from A/B audit findings; do NOT copy, paraphrase, or stitch A/B prompt text.
+- Use only validated audit signals (metric deltas + causal evidence) to decide what to keep/import/remove.
+- Success criterion: deliver at least ${TARGET_QUALITY_GAIN_PCT.toFixed(1)}% headroom gain over best(A,B) toward score ceiling.
+
+C SYNTHESIS CHARTER (AUDIT-DERIVED, FOLLOW STRICTLY):
+${charterBlock}
 
 TARGET QUALITY LIFT:
 - Aim for a substantial quality gain versus the best A/B attempt for this concept.
@@ -1605,12 +1649,13 @@ SAFETY: fully covered, opaque support zones, non-explicit framing.
 ${ELITE_EDITORIAL_BLOCK}`;
 }
 
-function buildPromptPassBFrontier(concept, expression, variation, profile, approach = 'A', lessons = []) {
+function buildPromptPassBFrontier(concept, expression, variation, profile, approach = 'A', lessons = [], synthesisCharter = '') {
   const key = normalizeFrontierProfile(profile);
   const approachKey = normalizeApproach(approach, 'A');
   const design = variation ? composeDesignSpec(concept, variation, key === 'clean') : { color: '', brief: '', micro: concept.microFallback };
   const tone = FRONTIER_PROFILE_NOTES[key];
   const lessonBlock = formatLessonsForPrompt(lessons);
+  const charterBlock = formatCSynthesisCharterBlock(synthesisCharter);
   if (approachKey === 'B') {
     return `Generate an image of this photograph edited from the previous pass. Preserve identity, face, pose, framing, scene, camera, and lighting. Refine only microstructure and physical realism while keeping the same expression: ${expression}.
 
@@ -1653,6 +1698,15 @@ ${ELITE_EDITORIAL_BLOCK}`;
 
 APPROACH C REFINEMENT (LESSON-FUSION QA):
 This pass exists to fuse the strongest A/B details into one coherent result without drift.
+
+C REFINEMENT MANDATE:
+- Keep the same A/B outcome goal and preserve all macro locks.
+- Treat this as a newly authored audit-driven refinement contract, not a reuse of A/B wording.
+- Only apply changes traceable to explicit A/B audit wins (measurable and causally visible in-frame).
+- Maintain trajectory toward >= ${TARGET_QUALITY_GAIN_PCT.toFixed(1)}% headroom gain over best(A,B).
+
+C SYNTHESIS CHARTER (AUDIT-DERIVED, FOLLOW STRICTLY):
+${charterBlock}
 
 LOCKS:
 - Identity, pose, framing, scene, and light are immutable.
@@ -1713,11 +1767,11 @@ SAFETY: fully covered, opaque support zones, non-explicit framing.
 ${ELITE_EDITORIAL_BLOCK}`;
 }
 
-function buildPromptPassBPhase2Boundary(concept, expression, variation, profile, approach = 'A', lessons = [], options = {}) {
+function buildPromptPassBPhase2Boundary(concept, expression, variation, profile, approach = 'A', lessons = [], options = {}, synthesisCharter = '') {
   const approachKey = normalizeApproach(approach, 'A');
   const intensity = Math.max(1.0, Number(options?.intensity) || AB_PHASE2_INTENSITY);
   const tactic = String(options?.tactic || '').trim();
-  const basePrompt = buildPromptPassBFrontier(concept, expression, variation, profile, approachKey, lessons);
+  const basePrompt = buildPromptPassBFrontier(concept, expression, variation, profile, approachKey, lessons, synthesisCharter);
   const modeLine = approachKey === 'A'
     ? 'Phase-2 mode: physics-edge amplification with strict geometry lock.'
     : (approachKey === 'B'
@@ -1825,6 +1879,12 @@ function buildLearningAuditRecord(auditRecord) {
   const deltaB = (Number(scoreB?.overall) || 0) - (Number(baselineB?.overall) || 0);
   const deltaC = (Number(scoreC?.overall) || 0) - (Number(baselineC?.overall) || 0);
   const cDelta = Number(auditRecord?.comparisons?.c_vs_best_ab) || 0;
+  const cGainPctRaw = Number(auditRecord?.comparisons?.c_gain_percent_vs_best_ab);
+  const cGainPctHeadroom = Number(auditRecord?.comparisons?.c_headroom_gain_percent_vs_best_ab);
+  const cGainPct = Number.isFinite(cGainPctHeadroom) ? cGainPctHeadroom : cGainPctRaw;
+  const cGainTargetPct = Number.isFinite(Number(auditRecord?.comparisons?.target_gain_percent))
+    ? Number(auditRecord?.comparisons?.target_gain_percent)
+    : TARGET_QUALITY_GAIN_PCT;
   const phaseMultipliers = auditRecord?.comparisons?.phase_multipliers || {};
   const phaseTargets = phaseMultipliers?.targets || {};
   const phaseHits = phaseMultipliers?.target_hits || {};
@@ -1871,6 +1931,9 @@ function buildLearningAuditRecord(auditRecord) {
     ...(phaseHits?.final === false ? [`Final phase multiplier missed target (${(Number(phaseTargets?.final) || FINAL_QUALITY_TARGET_MULTIPLIER).toFixed(2)}x); increase final audit boost rounds and C optimization pressure.`] : []),
     ...(photographerWeak[0]?.value < 9.4 ? [`Photographer bar (${photographerWeak[0].label}) below elite threshold; enforce stronger editorial art-direction consistency.`] : []),
     ...(photographerWeak[1]?.value < 9.4 ? [`Photographer bar (${photographerWeak[1].label}) below elite threshold; tighten lighting intent and source hierarchy.`] : []),
+    ...(Number.isFinite(cGainPct) && cGainPct < cGainTargetPct
+      ? [`C headroom-gain target miss: achieved ${cGainPct.toFixed(1)}% vs required ${cGainTargetPct.toFixed(1)}%; tighten C fusion directives and enforce stronger deterministic uplift tactics.`]
+      : []),
     ...(auditConfidence < 0.55 ? ['Audit confidence is low; reduce exploratory variance and prioritize deterministic gain directives.'] : []),
     ...(auditRiskFlags.includes('winner_margin_tight') ? ['Winner margin is tight; run extra tie-break rounds with stricter identity/compliance guardrails.'] : []),
     ...(auditRiskFlags.includes('phase2_failure_rate_high') ? ['Phase-2 failures are high; reduce intensity step and use simpler, higher-viability prompt deltas.'] : []),
@@ -2201,6 +2264,20 @@ function qualityMultiplier(toScoreLike, fromScoreLike) {
   return to / Math.max(0.01, from);
 }
 
+function qualityHeadroomGainPercent(toScoreLike, fromScoreLike, ceiling = QUALITY_SCORE_CEILING) {
+  const cap = Math.max(1, Number(ceiling) || 10);
+  const fromScore = Math.max(0, Math.min(cap, Number(fromScoreLike?.overall ?? fromScoreLike) || 0));
+  const toScore = Math.max(0, Math.min(cap, Number(toScoreLike?.overall ?? toScoreLike) || 0));
+  const fromGap = Math.max(0, cap - fromScore);
+  const toGap = Math.max(0, cap - toScore);
+  if (fromGap <= 1e-6) {
+    if (toScore > fromScore + 1e-6) return 100;
+    if (toScore + 1e-6 < fromScore) return -100;
+    return 0;
+  }
+  return ((fromGap - toGap) / fromGap) * 100;
+}
+
 async function scoreFrontierCandidate({ referenceMimeType, referenceB64, candidateMimeType, candidateB64, concept, expression, profile }) {
   const scorerPrompt = `You are a strict world-class fashion and portrait photographer acting as an image quality judge.
 First image is the identity reference photo. Second image is the generated candidate.
@@ -2330,6 +2407,7 @@ async function loadResumePassAFrontier({
   variation = null,
   lessons = [],
   profileOrder = [],
+  synthesisCharter = '',
 }) {
   if (!RESUME_SKIP_COMPLETED_AB) return null;
   const approachKey = normalizeApproach(approach, 'A');
@@ -2345,7 +2423,8 @@ async function loadResumePassAFrontier({
     resolvedVariation,
     profile,
     approachKey,
-    normalizeLessons(lessons || [], 10)
+    normalizeLessons(lessons || [], 10),
+    synthesisCharter
   );
   const inputMimeType = mimeTypeFromPath(inputImage);
 
@@ -2366,6 +2445,7 @@ async function loadResumePassAFrontier({
       path: fp,
     }],
     lessonsApplied: normalizeLessons(lessons || [], 10),
+    synthesisCharter: String(synthesisCharter || '').trim(),
     reusedCachedPassA: true,
     resumedFromCache: true,
   };
@@ -2402,11 +2482,13 @@ async function loadResumeFinalFrontier({
 
 async function generatePassAFrontier(concept, inputImage, index, approach = 'A', options = {}) {
   const approachKey = normalizeApproach(approach, 'A');
+  const imageSize = imageSizeForApproach(approachKey, options?.imageSize);
   const expression = expressions[index % expressions.length];
   const variation = options?.variation && typeof options.variation === 'object'
     ? options.variation
     : buildVariation();
   const lessons = normalizeLessons(options?.lessons || [], 10);
+  const synthesisCharter = String(options?.synthesisCharter || '').trim();
   const imageBuffer = await fs.readFile(inputImage);
   const base64Image = imageBuffer.toString('base64');
   const ext = path.extname(inputImage).toLowerCase();
@@ -2452,7 +2534,8 @@ async function generatePassAFrontier(concept, inputImage, index, approach = 'A',
         variation,
         cachedProfile,
         approachKey,
-        lessons
+        lessons,
+        synthesisCharter
       );
       console.log(
         `Rate-limit force-cache active (streak=${GLOBAL_RATE_LIMIT_STREAK}); ` +
@@ -2475,6 +2558,7 @@ async function generatePassAFrontier(concept, inputImage, index, approach = 'A',
         frontierPassAScore: { overall: 0, metrics: {} },
         attemptLog,
         lessonsApplied: lessons,
+        synthesisCharter,
         reusedCachedPassA: true,
       };
     } catch {
@@ -2483,14 +2567,14 @@ async function generatePassAFrontier(concept, inputImage, index, approach = 'A',
   }
 
   for (const profile of activeProfiles) {
-    const prompt = buildPromptPassAFrontier(concept, expression, variation, profile, approachKey, lessons);
+    const prompt = buildPromptPassAFrontier(concept, expression, variation, profile, approachKey, lessons, synthesisCharter);
     const wc = wordCount(prompt);
     console.log(`Frontier A approach=${approachKey} profile=${profile} | words=${wc}`);
     validatePrompt(prompt, `Pass A Frontier (${approachKey}/${profile})`);
     const contents = [{ role: 'user', parts: buildImageEditParts(prompt, mimeType, base64Image) }];
     let data;
     try {
-      data = await callModel(contents, 0, true);
+      data = await callModel(contents, 0, true, null, ENDPOINT, Date.now(), imageSize);
     } catch (err) {
       console.log(`Frontier A approach=${approachKey} profile=${profile} request error: ${err.message}`);
       attemptLog.push({
@@ -2594,7 +2678,8 @@ async function generatePassAFrontier(concept, inputImage, index, approach = 'A',
           variation,
           cachedProfile,
           approachKey,
-          lessons
+          lessons,
+          synthesisCharter
         );
         console.log(
           `Frontier A approach=${approachKey}: reusing cached passA artifact ` +
@@ -2617,6 +2702,7 @@ async function generatePassAFrontier(concept, inputImage, index, approach = 'A',
           frontierPassAScore: { overall: 0, metrics: {} },
           attemptLog,
           lessonsApplied: lessons,
+          synthesisCharter,
           reusedCachedPassA: true,
         };
       } catch {
@@ -2631,7 +2717,7 @@ async function generatePassAFrontier(concept, inputImage, index, approach = 'A',
 
     try {
       const contents = [{ role: 'user', parts: buildImageEditParts(fallbackPrompt, mimeType, base64Image) }];
-      const data = await callModel(contents, 0, true);
+      const data = await callModel(contents, 0, true, null, ENDPOINT, Date.now(), imageSize);
       logModelDiagnostics(data, 'Pass A Frontier (emergency)');
       const parts = data.candidates?.[0]?.content?.parts || [];
       emergencyModelParts = [];
@@ -2712,13 +2798,16 @@ async function generatePassAFrontier(concept, inputImage, index, approach = 'A',
     frontierPassAScore: best.score,
     attemptLog,
     lessonsApplied: lessons,
+    synthesisCharter,
   };
 }
 
 async function generatePassBFrontier(concept, passA, inputImage, index, approach = 'A', options = {}) {
   const approachKey = normalizeApproach(approach || passA?.frontierApproach || 'A', 'A');
+  const imageSize = imageSizeForApproach(approachKey, options?.imageSize);
   const expression = expressions[index % expressions.length];
   const variation = passA.variation || buildVariation();
+  const synthesisCharter = String(options?.synthesisCharter || passA?.synthesisCharter || '').trim();
   const primaryProfile = normalizeFrontierProfile(passA.frontierProfile || 'balanced');
   const profileQueue = [...new Set([primaryProfile, 'balanced', 'clean'])];
   const rateLimitPressure = GLOBAL_RATE_LIMIT_STREAK >= RATE_LIMIT_PROFILE_NARROW_STREAK;
@@ -2744,13 +2833,20 @@ async function generatePassBFrontier(concept, passA, inputImage, index, approach
   const baseMimeType = baseExt === '.jpg' || baseExt === '.jpeg' ? 'image/jpeg' : baseExt === '.webp' ? 'image/webp' : 'image/png';
   const passAImageBuffer = await fs.readFile(passA.fp);
   const passAB64 = passAImageBuffer.toString('base64');
-  const passAPromptForContext = passA.promptUsed || buildPromptPassAFrontier(concept, expression, variation, primaryProfile, approachKey);
+  const passAPromptForContext = passA.promptUsed || buildPromptPassAFrontier(
+    concept,
+    expression,
+    variation,
+    primaryProfile,
+    approachKey,
+    [],
+    synthesisCharter
+  );
   const strategyDir = DUAL_STRATEGY_MODE ? path.join(OUTPUT_DIR, `strategy-${approachKey}`) : OUTPUT_DIR;
   await fs.mkdir(strategyDir, { recursive: true });
   const strategyPath = path.join(strategyDir, `${concept.name}.png`);
   const enableAggressiveBoundary = options?.enableAggressiveBoundary === true
-    && ENABLE_AB_PHASE2_BOUNDARY
-    && (approachKey === 'A' || approachKey === 'B');
+    && ENABLE_AB_PHASE2_BOUNDARY;
 
   if (shouldForceCachedFinal) {
     try {
@@ -2765,14 +2861,22 @@ async function generatePassBFrontier(concept, passA, inputImage, index, approach
         status: 'reused_cached_forced',
         path: strategyPath,
       });
-      return { path: strategyPath, profileUsed: `${primaryProfile}+cached`, approach: approachKey, promptUsed: null, attemptLog, lessonsApplied: lessons };
+      return {
+        path: strategyPath,
+        profileUsed: `${primaryProfile}+cached`,
+        approach: approachKey,
+        promptUsed: null,
+        attemptLog,
+        lessonsApplied: lessons,
+        synthesisCharter,
+      };
     } catch {
       // no cached final image available; continue with normal generation
     }
   }
 
   for (const profile of activeProfileQueue) {
-    const prompt = buildPromptPassBFrontier(concept, expression, variation, profile, approachKey, lessons);
+    const prompt = buildPromptPassBFrontier(concept, expression, variation, profile, approachKey, lessons, synthesisCharter);
     validatePrompt(prompt, `Pass B Frontier (${approachKey}/${profile})`);
     const contents = buildPassBConversation({
       passAPromptForContext,
@@ -2785,7 +2889,7 @@ async function generatePassBFrontier(concept, passA, inputImage, index, approach
     });
     let data;
     try {
-      data = await callModel(contents, 0, true);
+      data = await callModel(contents, 0, true, null, ENDPOINT, Date.now(), imageSize);
     } catch (err) {
       console.log(`Frontier B approach=${approachKey} profile=${profile} request error: ${err.message}`);
       attemptLog.push({
@@ -2814,7 +2918,16 @@ async function generatePassBFrontier(concept, passA, inputImage, index, approach
         });
 
         if (enableAggressiveBoundary) {
-          const phase2Prompt = buildPromptPassBPhase2Boundary(concept, expression, variation, profile, approachKey, lessons);
+          const phase2Prompt = buildPromptPassBPhase2Boundary(
+            concept,
+            expression,
+            variation,
+            profile,
+            approachKey,
+            lessons,
+            {},
+            synthesisCharter
+          );
           validatePrompt(phase2Prompt, `Pass B Phase2 (${approachKey}/${profile})`);
           console.log(`Phase-2 aggressive boundary attempt approach=${approachKey} profile=${profile} intensity=${AB_PHASE2_INTENSITY.toFixed(2)}x`);
           const phase2Contents = [{
@@ -2822,7 +2935,7 @@ async function generatePassBFrontier(concept, passA, inputImage, index, approach
             parts: buildImageEditParts(phase2Prompt, part.inlineData.mimeType || 'image/png', part.inlineData.data),
           }];
           try {
-            const phase2Data = await callModel(phase2Contents, 0, true);
+            const phase2Data = await callModel(phase2Contents, 0, true, null, ENDPOINT, Date.now(), imageSize);
             logModelDiagnostics(phase2Data, `Pass B Phase2 (${approachKey}/${profile})`);
             const phase2Parts = phase2Data.candidates?.[0]?.content?.parts || [];
             let phase2Image = null;
@@ -2841,7 +2954,15 @@ async function generatePassBFrontier(concept, passA, inputImage, index, approach
                 stage: 'passB_phase2',
                 status: 'generated',
               });
-              return { path: fp, profileUsed: `${profile}+phase2`, approach: approachKey, promptUsed: phase2Prompt, attemptLog, lessonsApplied: lessons };
+              return {
+                path: fp,
+                profileUsed: `${profile}+phase2`,
+                approach: approachKey,
+                promptUsed: phase2Prompt,
+                attemptLog,
+                lessonsApplied: lessons,
+                synthesisCharter,
+              };
             }
 
             const phase2Signal = extractBlockSignal(phase2Data);
@@ -2865,7 +2986,15 @@ async function generatePassBFrontier(concept, passA, inputImage, index, approach
           }
         }
 
-        return { path: fp, profileUsed: profile, approach: approachKey, promptUsed: prompt, attemptLog, lessonsApplied: lessons };
+        return {
+          path: fp,
+          profileUsed: profile,
+          approach: approachKey,
+          promptUsed: prompt,
+          attemptLog,
+          lessonsApplied: lessons,
+          synthesisCharter,
+        };
       }
     }
     const signal = extractBlockSignal(data);
@@ -2890,7 +3019,15 @@ async function generatePassBFrontier(concept, passA, inputImage, index, approach
     stage: 'passB',
     status: 'generated',
   });
-  return { path: fp, profileUsed: 'passA-fallback', approach: approachKey, promptUsed: null, attemptLog, lessonsApplied: lessons };
+  return {
+    path: fp,
+    profileUsed: 'passA-fallback',
+    approach: approachKey,
+    promptUsed: null,
+    attemptLog,
+    lessonsApplied: lessons,
+    synthesisCharter,
+  };
 }
 
 function metricValue(score, key) {
@@ -3243,6 +3380,7 @@ async function runPhase2BoundaryRefinement({
 }) {
   const expression = expressions[index % expressions.length];
   const normalizedProfile = normalizeFrontierProfile(profile || 'balanced');
+  const imageSize = imageSizeForApproach(approachKey);
   const mimeType = mimeTypeFromPath(baselinePath);
   const baseB64 = (await fs.readFile(baselinePath)).toString('base64');
   const variantCount = effectivePhase2VariantsPerRound();
@@ -3288,7 +3426,7 @@ async function runPhase2BoundaryRefinement({
 
     console.log(`Phase-2 v${i + 1}/${variantCount} approach=${approachKey} intensity=${intensity.toFixed(2)}x tactic=${tactic}`);
     try {
-      const data = await callModel(contents, 0, true);
+      const data = await callModel(contents, 0, true, null, ENDPOINT, Date.now(), imageSize);
       logModelDiagnostics(data, `Pass B Phase2 (${approachKey}/${profile}/v${i + 1})`);
       const parts = data.candidates?.[0]?.content?.parts || [];
       let imagePart = null;
@@ -3660,35 +3798,319 @@ async function runAuditGuidedFinalBoost({
   };
 }
 
+const C_GOAL_METRIC_ORDER = [
+  'identity_score',
+  'anatomy_score',
+  'garment_physics_score',
+  'optics_score',
+  'realism_score',
+  'compliance_score',
+];
+
+const C_GOAL_METRIC_LABEL = {
+  identity_score: 'identity',
+  anatomy_score: 'anatomy',
+  garment_physics_score: 'garment physics',
+  optics_score: 'optics',
+  realism_score: 'realism',
+  compliance_score: 'compliance',
+};
+
+function deriveABGoalSignature(scoreA, scoreB, deepAudit = null) {
+  const winnerAB = (Number(scoreA?.overall) || 0) >= (Number(scoreB?.overall) || 0) ? 'A' : 'B';
+  const loserAB = winnerAB === 'A' ? 'B' : 'A';
+  const winnerScore = winnerAB === 'A' ? scoreA : scoreB;
+  const auditMetrics = Array.isArray(deepAudit?.metrics) && deepAudit.metrics.length
+    ? deepAudit.metrics
+    : C_GOAL_METRIC_ORDER.map(key => {
+      const a = metricValue(scoreA, key);
+      const b = metricValue(scoreB, key);
+      const delta = a - b;
+      return {
+        key,
+        a,
+        b,
+        delta,
+        absDelta: Math.abs(delta),
+        leader: delta >= 0 ? 'A' : 'B',
+      };
+    });
+
+  const winnerLeadKeys = auditMetrics
+    .filter(m => normalizeApproach(m?.leader, 'A') === winnerAB && Number(m?.absDelta) >= 0.2)
+    .sort((x, y) => (Number(y?.absDelta) || 0) - (Number(x?.absDelta) || 0))
+    .slice(0, 2)
+    .map(m => String(m?.key || '').trim())
+    .filter(Boolean);
+
+  const loserLeadKeys = auditMetrics
+    .filter(m => normalizeApproach(m?.leader, 'A') === loserAB && Number(m?.absDelta) >= 0.2)
+    .sort((x, y) => (Number(y?.absDelta) || 0) - (Number(x?.absDelta) || 0))
+    .slice(0, 2)
+    .map(m => String(m?.key || '').trim())
+    .filter(Boolean);
+
+  const weakWinnerKeys = C_GOAL_METRIC_ORDER
+    .map(key => ({ key, value: metricValue(winnerScore, key) }))
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 2)
+    .map(item => item.key);
+
+  return {
+    winnerAB,
+    loserAB,
+    winnerLeadKeys,
+    loserLeadKeys,
+    weakWinnerKeys,
+  };
+}
+
+function goalSignatureSimilarity(currentSignature, candidateSignature) {
+  const overlapCount = (a = [], b = []) => {
+    const setB = new Set(b);
+    return a.filter(item => setB.has(item)).length;
+  };
+  let score = 0;
+  if (currentSignature?.winnerAB === candidateSignature?.winnerAB) score += 1.2;
+  score += overlapCount(currentSignature?.winnerLeadKeys, candidateSignature?.winnerLeadKeys) * 0.75;
+  score += overlapCount(currentSignature?.loserLeadKeys, candidateSignature?.loserLeadKeys) * 0.6;
+  score += overlapCount(currentSignature?.weakWinnerKeys, candidateSignature?.weakWinnerKeys) * 0.45;
+  return score;
+}
+
+function deriveGoalConditionedCLessons(records, scoreA, scoreB, deepAudit = null, options = {}) {
+  const window = Math.max(6, parseInt(options?.window || LESSON_RECENCY_WINDOW, 10));
+  const maxLessons = Math.max(2, parseInt(options?.maxLessons || 4, 10));
+  const avoidMax = Math.max(1, parseInt(options?.avoidMax || 3, 10));
+  const similarityThreshold = Math.max(1.0, Number(options?.similarityThreshold) || 1.25);
+  const sourceRecords = Array.isArray(records)
+    ? records.slice(Math.max(0, records.length - window))
+    : [];
+  const currentSignature = deriveABGoalSignature(scoreA, scoreB, deepAudit);
+
+  const positive = new Map();
+  const negative = new Map();
+  let matchedRecords = 0;
+  let positiveCases = 0;
+  let negativeCases = 0;
+
+  const addWeight = (bucket, lesson, weight) => {
+    const key = String(lesson || '').trim().replace(/\s+/g, ' ');
+    if (!key) return;
+    bucket.set(key, (bucket.get(key) || 0) + weight);
+  };
+
+  for (const rec of sourceRecords) {
+    const recScoreA = rec?.strategies?.A?.score;
+    const recScoreB = rec?.strategies?.B?.score;
+    if (!recScoreA || !recScoreB) continue;
+    const recSignature = deriveABGoalSignature(recScoreA, recScoreB, rec?.deep_audit || null);
+    const similarity = goalSignatureSimilarity(currentSignature, recSignature);
+    if (similarity < similarityThreshold) continue;
+    matchedRecords += 1;
+
+    let cGain = Number(rec?.comparisons?.c_vs_best_ab);
+    if (!Number.isFinite(cGain)) {
+      const pct = Number(rec?.comparisons?.c_gain_percent_vs_best_ab);
+      cGain = Number.isFinite(pct) ? (pct / 100) : 0;
+    }
+    const gainMagnitude = Math.min(2.5, Math.max(0.25, Math.abs(cGain) * 2 + 0.5));
+
+    const candidateLessons = normalizeLessons([
+      ...(rec?.lessons?.c_prompt_plan || []),
+      ...(rec?.strategies?.C?.lessons_applied || []),
+      ...normalizeLessons(rec?.hints || [], 12).filter(h => /^Approach C|^C /i.test(String(h))),
+    ], 24);
+    if (!candidateLessons.length) continue;
+
+    if (cGain > 0.05) {
+      positiveCases += 1;
+      for (const lesson of candidateLessons) addWeight(positive, lesson, similarity * gainMagnitude);
+    } else if (cGain < -0.05) {
+      negativeCases += 1;
+      for (const lesson of candidateLessons) addWeight(negative, lesson, similarity * gainMagnitude);
+    } else {
+      for (const lesson of candidateLessons.slice(0, 4)) addWeight(positive, lesson, similarity * 0.25);
+    }
+  }
+
+  const scored = [];
+  const allKeys = new Set([...positive.keys(), ...negative.keys()]);
+  for (const key of allKeys) {
+    const pos = positive.get(key) || 0;
+    const neg = negative.get(key) || 0;
+    const net = pos - (neg * 0.95);
+    scored.push({ lesson: key, positive: pos, negative: neg, net });
+  }
+
+  const priorityLessons = scored
+    .filter(item => item.net > 0.2)
+    .sort((a, b) => b.net - a.net)
+    .slice(0, maxLessons)
+    .map(item => item.lesson);
+
+  const avoidLessons = scored
+    .filter(item => item.negative > item.positive && item.negative >= 1)
+    .sort((a, b) => (b.negative - b.positive) - (a.negative - a.positive))
+    .slice(0, avoidMax)
+    .map(item => item.lesson);
+
+  let adaptiveMaxLessons = C_STRATEGY_LESSON_MAX;
+  if (negativeCases >= Math.max(2, positiveCases + 1)) {
+    adaptiveMaxLessons = Math.max(6, C_STRATEGY_LESSON_MAX - 3);
+  } else if (positiveCases >= Math.max(2, negativeCases + 1)) {
+    adaptiveMaxLessons = Math.min(LESSON_MAX_PER_PROMPT, C_STRATEGY_LESSON_MAX + 2);
+  }
+
+  return {
+    matched_records: matchedRecords,
+    positive_cases: positiveCases,
+    negative_cases: negativeCases,
+    priority_lessons: priorityLessons,
+    avoid_lessons: avoidLessons,
+    adaptive_max_lessons: adaptiveMaxLessons,
+    goal_signature: currentSignature,
+  };
+}
+
+function pruneLowYieldCLessons(lessons = [], avoidLessons = [], minKeep = 6) {
+  const base = normalizeLessons(lessons, Math.max(minKeep, LESSON_MAX_PER_PROMPT + 4));
+  const avoidSet = new Set(
+    normalizeLessons(avoidLessons, LESSON_MAX_PER_PROMPT + 4)
+      .map(s => String(s || '').trim().replace(/\s+/g, ' '))
+      .filter(Boolean)
+  );
+  if (!avoidSet.size) return base;
+  const pruned = base.filter(item => !avoidSet.has(String(item || '').trim().replace(/\s+/g, ' ')));
+  if (pruned.length < minKeep) return base.slice(0, minKeep);
+  return pruned;
+}
+
+function deconstructABComparisonFirstPrinciples(scoreA, scoreB, deepAudit = null) {
+  const winnerAB = (Number(scoreA?.overall) || 0) >= (Number(scoreB?.overall) || 0) ? 'A' : 'B';
+  const loserAB = winnerAB === 'A' ? 'B' : 'A';
+  const metrics = Array.isArray(deepAudit?.metrics) && deepAudit.metrics.length
+    ? deepAudit.metrics
+    : C_GOAL_METRIC_ORDER.map(key => {
+      const a = metricValue(scoreA, key);
+      const b = metricValue(scoreB, key);
+      const delta = a - b;
+      return {
+        key,
+        delta,
+        absDelta: Math.abs(delta),
+        leader: delta >= 0 ? 'A' : 'B',
+      };
+    });
+  const topWinnerMetric = metrics
+    .filter(m => normalizeApproach(m?.leader, 'A') === winnerAB)
+    .sort((x, y) => (Number(y?.absDelta) || 0) - (Number(x?.absDelta) || 0))[0];
+  const topLoserMetric = metrics
+    .filter(m => normalizeApproach(m?.leader, 'A') === loserAB)
+    .sort((x, y) => (Number(y?.absDelta) || 0) - (Number(x?.absDelta) || 0))[0];
+  const winnerIdentity = metricValue(winnerAB === 'A' ? scoreA : scoreB, 'identity_score');
+  const winnerCompliance = metricValue(winnerAB === 'A' ? scoreA : scoreB, 'compliance_score');
+
+  return normalizeLessons([
+    `FP problem decomposition: optimize C for deterministic gain vs best(A,B), not stylistic novelty.`,
+    'FP assumption challenge: higher detail is not automatically better; reject any gain that weakens identity/compliance stability.',
+    `FP fundamental truth: ${winnerAB} is the current backbone; preserve its causal structure before importing any foreign traits.`,
+    `FP fundamental truth: keep ${winnerAB} safeguards (identity=${winnerIdentity.toFixed(2)}, compliance=${winnerCompliance.toFixed(2)}) as non-negotiable floors.`,
+    topWinnerMetric
+      ? `FP evidence: ${winnerAB} leads on ${C_GOAL_METRIC_LABEL[topWinnerMetric.key] || topWinnerMetric.key}; this remains locked.`
+      : '',
+    topLoserMetric
+      ? `FP evidence: ${loserAB} only contributes targeted gain on ${C_GOAL_METRIC_LABEL[topLoserMetric.key] || topLoserMetric.key}; import locally, not globally.`
+      : '',
+    'FP rebuild rule: if imported change cannot be linked to an in-frame causal improvement, drop it.',
+  ], 7);
+}
+
+function buildCSynthesisCharter({
+  concept = null,
+  scoreA,
+  scoreB,
+  deepAudit = null,
+  goalConditionedLearning = null,
+  targetHeadroomPct = TARGET_QUALITY_GAIN_PCT,
+}) {
+  const winnerAB = (Number(scoreA?.overall) || 0) >= (Number(scoreB?.overall) || 0) ? 'A' : 'B';
+  const loserAB = winnerAB === 'A' ? 'B' : 'A';
+  const winnerScore = winnerAB === 'A' ? scoreA : scoreB;
+  const loserScore = loserAB === 'A' ? scoreA : scoreB;
+  const bestAB = Math.max(Number(scoreA?.overall) || 0, Number(scoreB?.overall) || 0);
+  const targetScore = bestAB + ((Math.max(0, Number(targetHeadroomPct) || 0) / 100) * Math.max(0, QUALITY_SCORE_CEILING - bestAB));
+
+  const auditMetrics = Array.isArray(deepAudit?.metrics) && deepAudit.metrics.length
+    ? deepAudit.metrics
+    : C_GOAL_METRIC_ORDER.map(key => {
+      const a = metricValue(scoreA, key);
+      const b = metricValue(scoreB, key);
+      const delta = a - b;
+      return {
+        key,
+        a,
+        b,
+        delta,
+        absDelta: Math.abs(delta),
+        leader: delta >= 0 ? 'A' : 'B',
+      };
+    });
+
+  const keepFromWinner = auditMetrics
+    .filter(m => normalizeApproach(m?.leader, 'A') === winnerAB && Number(m?.absDelta) >= 0.2)
+    .sort((x, y) => (Number(y?.absDelta) || 0) - (Number(x?.absDelta) || 0))
+    .slice(0, 3)
+    .map(m => `${C_GOAL_METRIC_LABEL[m.key] || m.key} (Δ=${Number(m.absDelta || 0).toFixed(2)})`);
+  const importFromLoser = auditMetrics
+    .filter(m => normalizeApproach(m?.leader, 'A') === loserAB && Number(m?.absDelta) >= 0.2)
+    .sort((x, y) => (Number(y?.absDelta) || 0) - (Number(x?.absDelta) || 0))
+    .slice(0, 3)
+    .map(m => `${C_GOAL_METRIC_LABEL[m.key] || m.key} (Δ=${Number(m.absDelta || 0).toFixed(2)})`);
+  const weakWinner = C_GOAL_METRIC_ORDER
+    .map(key => ({ key, value: metricValue(winnerScore, key) }))
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 2)
+    .map(item => `${C_GOAL_METRIC_LABEL[item.key] || item.key}=${item.value.toFixed(2)}`);
+  const goalLearn = normalizeLessons(goalConditionedLearning?.priority_lessons || [], 3);
+
+  const charterLines = [
+    `Shared outcome goal lock: C must pursue the same end-state as A/B (identity-accurate, physically plausible, compliance-safe luxury editorial result).`,
+    `Backbone selection: keep ${winnerAB} macro structure as default (A=${Number(scoreA?.overall || 0).toFixed(2)}, B=${Number(scoreB?.overall || 0).toFixed(2)}).`,
+    `Improvement target: beat best(A,B) by >= ${Math.max(0, Number(targetHeadroomPct) || 0).toFixed(1)}% headroom; practical score target >= ${targetScore.toFixed(2)}.`,
+    `Keep from ${winnerAB}: ${keepFromWinner.length ? keepFromWinner.join(', ') : 'all current winner strengths unless contradicted by causal evidence'}.`,
+    `Import from ${loserAB} only where audited superior: ${importFromLoser.length ? importFromLoser.join(', ') : 'no mandatory imports; preserve winner baseline'}.`,
+    `Weakness closure priority on ${winnerAB}: ${weakWinner.length ? weakWinner.join(', ') : 'none identified'}.`,
+    `Novelty control: do not merge or paraphrase A/B prompt text; generate a new instruction plan from audit evidence only.`,
+    `Conflict rule: when directives conflict, preserve identity/compliance and choose the option with stronger in-frame causal realism.`,
+  ];
+
+  if (concept?.name) charterLines.push(`Concept lock: maintain concept identity for "${concept.name}" with unchanged narrative intent.`);
+  if (goalLearn.length) charterLines.push(`Goal-conditioned hints: ${goalLearn.join(' | ')}`);
+  charterLines.push(
+    `Loser guardrail: avoid importing any ${loserAB} trait that lowers identity below ${IDENTITY_GUARDRAIL.toFixed(2)} or compliance below ${COMPLIANCE_GUARDRAIL.toFixed(2)}.`
+  );
+  return charterLines.map((line, idx) => `- CH${idx + 1}: ${line}`).join('\n');
+}
+
 function deriveStrategyCLessons(scoreA, scoreB, baseLessons = [], options = {}) {
   const winnerAB = scoreA.overall >= scoreB.overall ? 'A' : 'B';
   const loserAB = winnerAB === 'A' ? 'B' : 'A';
   const winnerScore = winnerAB === 'A' ? scoreA : scoreB;
-  const loserScore = loserAB === 'A' ? scoreA : scoreB;
   const deepAudit = options?.deepAudit || null;
   const concept = options?.concept || null;
   const variation = options?.variation || null;
   const overallDelta = Math.abs((Number(scoreA?.overall) || 0) - (Number(scoreB?.overall) || 0));
 
-  const metricOrder = [
-    'identity_score',
-    'anatomy_score',
-    'garment_physics_score',
-    'optics_score',
-    'realism_score',
-    'compliance_score',
-  ];
-  const metricLabel = {
-    identity_score: 'identity',
-    anatomy_score: 'anatomy',
-    garment_physics_score: 'garment physics',
-    optics_score: 'optics',
-    realism_score: 'realism',
-    compliance_score: 'compliance',
-  };
   const auditMetrics = Array.isArray(deepAudit?.metrics) && deepAudit.metrics.length
-    ? deepAudit.metrics
-    : metricOrder.map(key => {
+    ? deepAudit.metrics.map(m => ({
+      ...m,
+      key: String(m?.key || '').trim(),
+      absDelta: Number.isFinite(Number(m?.absDelta))
+        ? Number(m.absDelta)
+        : Math.abs(Number(m?.delta) || 0),
+    }))
+    : C_GOAL_METRIC_ORDER.map(key => {
       const a = metricValue(scoreA, key);
       const b = metricValue(scoreB, key);
       const delta = a - b;
@@ -3710,12 +4132,17 @@ function deriveStrategyCLessons(scoreA, scoreB, baseLessons = [], options = {}) 
     .filter(m => normalizeApproach(m?.leader, 'A') === loserAB && Number(m?.absDelta) >= 0.20)
     .sort((x, y) => (Number(y?.absDelta) || 0) - (Number(x?.absDelta) || 0))
     .slice(0, 3);
-  const weakWinnerMetrics = metricOrder
+  const weakWinnerMetrics = C_GOAL_METRIC_ORDER
     .map(key => ({ key, value: metricValue(winnerScore, key) }))
     .sort((a, b) => a.value - b.value)
     .slice(0, 3);
+  const deconstructionLessons = deconstructABComparisonFirstPrinciples(scoreA, scoreB, deepAudit);
 
   const lessons = [
+    ...deconstructionLessons,
+    `C mandate: A/B share one outcome goal; C must preserve that same goal while changing only method.`,
+    'C mandate: write a new audit-derived instruction plan; do not copy/paraphrase A or B prompt text.',
+    `C mandate: target >= ${TARGET_QUALITY_GAIN_PCT.toFixed(1)}% headroom gain over best(A,B); if uncertain, prefer deterministic realism gains over stylistic novelty.`,
     `C first-principles scaffold: start from ${winnerAB} because it leads overall quality and preserves identity/compliance stability.`,
     `C assumption test: do not merge A/B globally. Merge only traits with measurable metric advantage and visible in-frame causal evidence.`,
     `C hard objective: maximize deterministic lift over best(A,B) while preserving exact identity topology, plausible anatomy, and compliance-safe framing.`,
@@ -3730,24 +4157,30 @@ function deriveStrategyCLessons(scoreA, scoreB, baseLessons = [], options = {}) 
   if (variation?.motif?.name) {
     lessons.push(`C event motif anchor: preserve ${variation.motif.name} as the dominant spectacle signal while keeping subject prominence first.`);
   }
+  lessons.push(
+    'C audience-readability rule: keep one instantly legible focal beat (silhouette/light/reflection) that parses within a one-second glance without sacrificing realism.'
+  );
+  lessons.push(
+    'C production-feasibility rule: cap spectacle to one dominant driver plus one support effect; reject stacked effects that break physical plausibility.'
+  );
 
   for (const m of winnerLeadMetrics) {
     const key = String(m?.key || '').trim();
     if (!METRIC_GAP_DIRECTIVES[key]) continue;
     lessons.push(
-      `C keep-${winnerAB} advantage (${metricLabel[key] || key}, Δ=${Number(m.absDelta || 0).toFixed(2)}): retain ${winnerAB} baseline behavior.`
+      `C keep-${winnerAB} advantage (${C_GOAL_METRIC_LABEL[key] || key}, Δ=${Number(m.absDelta || 0).toFixed(2)}): retain ${winnerAB} baseline behavior.`
     );
   }
   for (const m of loserLeadMetrics) {
     const key = String(m?.key || '').trim();
     if (!METRIC_GAP_DIRECTIVES[key]) continue;
     lessons.push(
-      `C import-from-${loserAB} (${metricLabel[key] || key}, Δ=${Number(m.absDelta || 0).toFixed(2)}): ${METRIC_GAP_DIRECTIVES[key]}`
+      `C import-from-${loserAB} (${C_GOAL_METRIC_LABEL[key] || key}, Δ=${Number(m.absDelta || 0).toFixed(2)}): ${METRIC_GAP_DIRECTIVES[key]}`
     );
   }
   for (const m of weakWinnerMetrics) {
     if (m.value <= 9.6 && METRIC_GAP_DIRECTIVES[m.key]) {
-      lessons.push(`C close-${winnerAB}-weakness (${metricLabel[m.key] || m.key}=${m.value.toFixed(2)}): ${METRIC_GAP_DIRECTIVES[m.key]}`);
+      lessons.push(`C close-${winnerAB}-weakness (${C_GOAL_METRIC_LABEL[m.key] || m.key}=${m.value.toFixed(2)}): ${METRIC_GAP_DIRECTIVES[m.key]}`);
     }
   }
 
@@ -3826,6 +4259,23 @@ function finalBoostRoundsFromShortfall(preFinalMultiplier, targetMultiplier, bas
   );
   return {
     shortfall,
+    extra_rounds: Math.max(0, Number(extraRounds) || 0),
+    max_rounds: Math.max(0, Number(baseRounds) || 0) + Math.max(0, Number(extraRounds) || 0),
+  };
+}
+
+function phasedCRescueRoundsFromHeadroomShortfall(
+  headroomGainPct,
+  targetPct,
+  baseRounds = PHASED_C_RESCUE_BASE_ROUNDS
+) {
+  const shortfallPct = Math.max(0, (Number(targetPct) || 0) - (Number(headroomGainPct) || 0));
+  const extraRounds = Math.min(
+    PHASED_C_RESCUE_EXTRA_ROUNDS_MAX,
+    Math.ceil(shortfallPct / Math.max(1, PHASED_C_RESCUE_SHORTFALL_STEP_PCT))
+  );
+  return {
+    shortfall_pct: shortfallPct,
     extra_rounds: Math.max(0, Number(extraRounds) || 0),
     max_rounds: Math.max(0, Number(baseRounds) || 0) + Math.max(0, Number(extraRounds) || 0),
   };
@@ -3945,7 +4395,9 @@ function normalizeAuditSummary(records) {
       lessonCounts.set(lesson, (lessonCounts.get(lesson) || 0) + 1);
     }
 
-    const cGain = Number(r?.comparisons?.c_gain_percent_vs_best_ab);
+    const cGain = Number.isFinite(Number(r?.comparisons?.c_headroom_gain_percent_vs_best_ab))
+      ? Number(r?.comparisons?.c_headroom_gain_percent_vs_best_ab)
+      : Number(r?.comparisons?.c_gain_percent_vs_best_ab);
     if (Number.isFinite(cGain)) cGains.push(cGain);
   }
 
@@ -3998,9 +4450,9 @@ async function runDualStrategyConcept(concept, inputImage, index) {
   const expression = expressions[index % expressions.length];
   const inputMimeType = mimeTypeFromPath(inputImage);
   const inputB64 = (await fs.readFile(inputImage)).toString('base64');
-  const historicalRecords = await loadAuditRecords();
-  const historicalSummary = normalizeAuditSummary(historicalRecords);
-  const historicalLessons = extractHistoricalLessons(historicalSummary, historicalRecords);
+  let historicalRecords = await loadAuditRecords();
+  let historicalSummary = normalizeAuditSummary(historicalRecords);
+  let historicalLessons = extractHistoricalLessons(historicalSummary, historicalRecords);
   const hardeningLevel = currentHardeningLevel();
   let effectiveABRounds = Math.max(1, AB_ITERATION_ROUNDS_MAX + Math.min(HARDEN_MAX_EXTRA_ROUNDS, hardeningLevel));
   let effectiveSelfRounds = Math.max(0, APPROACH_SELF_ITERATION_ROUNDS_MAX + Math.min(HARDEN_MAX_EXTRA_SELF_ROUNDS, hardeningLevel));
@@ -4365,18 +4817,47 @@ async function runDualStrategyConcept(concept, inputImage, index) {
   deepAudit = deepAuditABBaseline(scoreA, scoreB);
 
   const abHints = deriveABIterationHints(scoreA, scoreB);
-  const strategyCLessons = deriveStrategyCLessons(
+  const goalConditionedCLearning = deriveGoalConditionedCLessons(
+    historicalRecords,
     scoreA,
     scoreB,
-    [...historicalLessons, ...baselineHints, ...deepAudit.sharedLessons, ...abHints],
+    deepAudit,
+    {
+      maxLessons: 6,
+      avoidMax: 4,
+    }
+  );
+  let strategyCLessons = deriveStrategyCLessons(
+    scoreA,
+    scoreB,
+    [
+      ...historicalLessons,
+      ...baselineHints,
+      ...deepAudit.sharedLessons,
+      ...abHints,
+      ...goalConditionedCLearning.priority_lessons,
+    ],
     {
       deepAudit,
       concept,
       variation: variationForC,
+      maxLessons: goalConditionedCLearning.adaptive_max_lessons,
     }
+  );
+  strategyCLessons = pruneLowYieldCLessons(
+    strategyCLessons,
+    goalConditionedCLearning.avoid_lessons,
+    Math.max(6, Math.min(goalConditionedCLearning.adaptive_max_lessons, C_STRATEGY_LESSON_MAX))
   );
   console.log('C PROMPT SYNTHESIS (A/B audit -> first-principles fusion):');
   strategyCLessons.slice(0, 6).forEach((lesson, idx2) => console.log(`  C${idx2 + 1}. ${lesson}`));
+  if (goalConditionedCLearning.matched_records > 0) {
+    console.log(
+      `C GOAL LEARNING: matched=${goalConditionedCLearning.matched_records} ` +
+      `positive=${goalConditionedCLearning.positive_cases} negative=${goalConditionedCLearning.negative_cases} ` +
+      `adaptive_max=${goalConditionedCLearning.adaptive_max_lessons}`
+    );
+  }
   const cPreferredProfiles = C_PROFILE_FOLLOW_AB
     ? [passA_A.frontierProfile, passA_B.frontierProfile]
     : [];
@@ -4809,6 +5290,7 @@ async function runDualStrategyConcept(concept, inputImage, index) {
   const cGainVsBestABBaseline = scoreC_baseline.overall - bestAB;
   const cGainVsBestAB = scoreC.overall - bestAB;
   const cGainVsBestABPct = bestAB > 0 ? ((cGainVsBestAB / bestAB) * 100) : 0;
+  const cHeadroomGainVsBestABPct = qualityHeadroomGainPercent(scoreC, bestAB, QUALITY_SCORE_CEILING);
   const finalWinnerScore = Number(scoreByApproach[winnerApproach]?.overall) || 0;
   const phaseMultipliers = {
     initial_from_seed: qualityMultiplier(initialABScore, seedABScore),
@@ -4826,11 +5308,32 @@ async function runDualStrategyConcept(concept, inputImage, index) {
     revised: phaseMultipliers.revised_from_initial >= phaseMultipliers.targets.revised,
     final: phaseMultipliers.final_from_revised >= phaseMultipliers.targets.final,
   };
+  const finalFromRevised = Number(phaseMultipliers.final_from_revised) || 0;
+  const finalMultiplierPass = finalFromRevised >= MIN_FINAL_MULTIPLIER_GATE;
+  const cGainPass = cHeadroomGainVsBestABPct >= TARGET_QUALITY_GAIN_PCT;
+  const qualityGateFailureReasons = [];
+  if (!finalMultiplierPass) {
+    qualityGateFailureReasons.push(
+      `final_multiplier ${finalFromRevised.toFixed(2)}x < required ${MIN_FINAL_MULTIPLIER_GATE.toFixed(2)}x`
+    );
+  }
+  if (C_GAIN_TARGET_HARD_GATE && !cGainPass) {
+    qualityGateFailureReasons.push(
+      `c_headroom_gain ${cHeadroomGainVsBestABPct.toFixed(1)}% < target ${TARGET_QUALITY_GAIN_PCT.toFixed(1)}%`
+    );
+  }
   const qualityGate = {
     min_final_multiplier: MIN_FINAL_MULTIPLIER_GATE,
-    final_from_revised: Number(phaseMultipliers.final_from_revised) || 0,
-    pass: (Number(phaseMultipliers.final_from_revised) || 0) >= MIN_FINAL_MULTIPLIER_GATE,
+    final_from_revised: finalFromRevised,
+    target_c_gain_percent: TARGET_QUALITY_GAIN_PCT,
+    target_c_headroom_gain_percent: TARGET_QUALITY_GAIN_PCT,
+    c_gain_percent_vs_best_ab: cGainVsBestABPct,
+    c_headroom_gain_percent_vs_best_ab: cHeadroomGainVsBestABPct,
+    c_gain_hard_gate: C_GAIN_TARGET_HARD_GATE,
+    c_gain_pass: cGainPass,
+    pass: qualityGateFailureReasons.length === 0,
     strict: STRICT_QUALITY_GATE,
+    failure_reasons: qualityGateFailureReasons,
   };
   const auditQualitySignals = buildAuditQualitySignals({
     scoreByApproach,
@@ -4921,10 +5424,13 @@ async function runDualStrategyConcept(concept, inputImage, index) {
         initial_multiplier: INITIAL_QUALITY_TARGET_MULTIPLIER,
         revised_multiplier: REVISED_QUALITY_TARGET_MULTIPLIER,
         final_multiplier: FINAL_QUALITY_TARGET_MULTIPLIER,
+        c_gain_percent_vs_best_ab: TARGET_QUALITY_GAIN_PCT,
+        c_headroom_gain_percent_vs_best_ab: TARGET_QUALITY_GAIN_PCT,
       },
       quality_gate: {
         min_final_multiplier: MIN_FINAL_MULTIPLIER_GATE,
         strict: STRICT_QUALITY_GATE,
+        c_gain_hard_gate: C_GAIN_TARGET_HARD_GATE,
       },
       iter_accept_overall_tol: ITER_ACCEPT_OVERALL_TOL,
       iter_accept_metric_tol: ITER_ACCEPT_METRIC_TOL,
@@ -5065,10 +5571,11 @@ async function runDualStrategyConcept(concept, inputImage, index) {
       c_vs_best_ab_baseline: cGainVsBestABBaseline,
       c_vs_best_ab: cGainVsBestAB,
       c_gain_percent_vs_best_ab: cGainVsBestABPct,
+      c_headroom_gain_percent_vs_best_ab: cHeadroomGainVsBestABPct,
       phase_multipliers: phaseMultipliers,
       quality_gate: qualityGate,
       target_gain_percent: TARGET_QUALITY_GAIN_PCT,
-      target_gain_hit: cGainVsBestABPct >= TARGET_QUALITY_GAIN_PCT,
+      target_gain_hit: cHeadroomGainVsBestABPct >= TARGET_QUALITY_GAIN_PCT,
       winner_shortlist: winner.shortlist || [],
       winner_tie_band: WINNER_TIE_BAND,
       ab_iteration_rounds_count: abIterationRounds.length,
@@ -5084,6 +5591,7 @@ async function runDualStrategyConcept(concept, inputImage, index) {
       baseline_ab_derived: baselineHints,
       ab_derived: abHints,
       deep_audit: [...deepAudit.lessonsA, ...deepAudit.lessonsB, ...deepAudit.sharedLessons],
+      goal_conditioned: goalConditionedCLearning,
       c_prompt_plan: strategyCLessons,
       all: allLessons,
     },
@@ -5098,7 +5606,9 @@ async function runDualStrategyConcept(concept, inputImage, index) {
   const learningPlan = normalizeLearningPlan(learningRecords);
   await fs.writeFile(LEARNING_PLAN_FILE, `${JSON.stringify(learningPlan, null, 2)}\n`);
   console.log(
-    `ABC AUDIT ${concept.name}: winner=${winnerApproach} reason=${winner.reason} scoreA=${scoreA.overall.toFixed(2)} scoreB=${scoreB.overall.toFixed(2)} scoreC=${scoreC.overall.toFixed(2)} Cgain=${cGainVsBestABPct.toFixed(1)}% saved=${canonicalPath}`
+    `ABC AUDIT ${concept.name}: winner=${winnerApproach} reason=${winner.reason} ` +
+    `scoreA=${scoreA.overall.toFixed(2)} scoreB=${scoreB.overall.toFixed(2)} scoreC=${scoreC.overall.toFixed(2)} ` +
+    `CgainRaw=${cGainVsBestABPct.toFixed(1)}% CgainHeadroom=${cHeadroomGainVsBestABPct.toFixed(1)}% saved=${canonicalPath}`
   );
   console.log(
     `AUDIT CONFIDENCE ${concept.name}: confidence=${(Number(auditQualitySignals.confidence) || 0).toFixed(2)} ` +
@@ -5172,29 +5682,40 @@ async function ensureApproachFrontierOutput({
   lessons = [],
   profileOrder = [],
   variation = null,
+  synthesisCharter = '',
   phaseLabel = '',
+  allowResume = true,
+  enableAggressiveBoundary = false,
+  imageSize = null,
 }) {
-  const resumedPassA = await loadResumePassAFrontier({
-    concept,
-    inputImage,
-    index,
-    approach: approachKey,
-    lessons,
-    profileOrder,
-    variation,
-  });
+  const resumedPassA = allowResume
+    ? await loadResumePassAFrontier({
+      concept,
+      inputImage,
+      index,
+      approach: approachKey,
+      lessons,
+      profileOrder,
+      variation,
+      synthesisCharter,
+    })
+    : null;
   const passA = resumedPassA || await generatePassAFrontier(concept, inputImage, index, approachKey, {
     lessons,
     profileOrder,
     variation,
+    synthesisCharter,
+    imageSize,
   });
 
-  const resumedFinal = await loadResumeFinalFrontier({
-    concept,
-    approach: approachKey,
-    profileHint: passA.frontierProfile,
-    lessons,
-  });
+  const resumedFinal = allowResume
+    ? await loadResumeFinalFrontier({
+      concept,
+      approach: approachKey,
+      profileHint: passA.frontierProfile,
+      lessons,
+    })
+    : null;
 
   // Fast-path: both artifacts already cached, so skip redundant wait/generation.
   if (resumedPassA && resumedFinal) {
@@ -5212,7 +5733,9 @@ async function ensureApproachFrontierOutput({
 
   const final = resumedFinal || await generatePassBFrontier(concept, passA, inputImage, index, approachKey, {
     lessons,
-    enableAggressiveBoundary: false,
+    synthesisCharter,
+    enableAggressiveBoundary,
+    imageSize,
   });
 
   return { passA, final };
@@ -5226,12 +5749,11 @@ async function runPhasedDualStrategyBatches({ startIndex, endIndex, inputImage }
 
   const referenceMimeType = mimeTypeFromPath(inputImage);
   const referenceB64 = (await fs.readFile(inputImage)).toString('base64');
-  const historicalRecords = await loadAuditRecords();
-  const historicalSummary = normalizeAuditSummary(historicalRecords);
-  const historicalLessons = extractHistoricalLessons(historicalSummary, historicalRecords);
+  let historicalRecords = await loadAuditRecords();
+  let historicalSummary = normalizeAuditSummary(historicalRecords);
+  let historicalLessons = extractHistoricalLessons(historicalSummary, historicalRecords);
   const profileOrderA = buildApproachProfileOrder('A', historicalRecords);
   const profileOrderB = buildApproachProfileOrder('B', historicalRecords);
-  const profileOrderCBase = buildApproachProfileOrder('C', historicalRecords);
 
   const stateByConcept = new Map();
   const results = [];
@@ -5350,6 +5872,10 @@ async function runPhasedDualStrategyBatches({ startIndex, endIndex, inputImage }
     const st = getState(concept.name);
     const expression = expressions[idx % expressions.length];
     try {
+      historicalRecords = await loadAuditRecords();
+      historicalSummary = normalizeAuditSummary(historicalRecords);
+      historicalLessons = extractHistoricalLessons(historicalSummary, historicalRecords);
+
       if (!st.finalA?.path || !(await pathExists(st.finalA.path))) {
         const fallbackA = await ensureApproachFrontierOutput({
           concept,
@@ -5400,51 +5926,390 @@ async function runPhasedDualStrategyBatches({ startIndex, endIndex, inputImage }
 
       const baselineHints = deriveABIterationHints(scoreA, scoreB);
       const deepAudit = deepAuditABBaseline(scoreA, scoreB);
+      const goalConditionedCLearning = deriveGoalConditionedCLessons(
+        historicalRecords,
+        scoreA,
+        scoreB,
+        deepAudit,
+        {
+          maxLessons: 6,
+          avoidMax: 4,
+        }
+      );
       if (!st.sharedVariation) st.sharedVariation = LOCK_AB_VARIATION ? buildVariation() : null;
       if (!st.variationC) st.variationC = (LOCK_C_VARIATION_TO_AB && st.sharedVariation)
         ? st.sharedVariation
         : buildVariation();
       const variationForC = st.variationC || st.sharedVariation || null;
-      const strategyCLessons = deriveStrategyCLessons(
+      let strategyCLessons = deriveStrategyCLessons(
         scoreA,
         scoreB,
-        [...historicalLessons, ...baselineHints, ...deepAudit.lessonsA, ...deepAudit.lessonsB, ...deepAudit.sharedLessons],
+        [
+          ...historicalLessons,
+          ...baselineHints,
+          ...deepAudit.lessonsA,
+          ...deepAudit.lessonsB,
+          ...deepAudit.sharedLessons,
+          ...goalConditionedCLearning.priority_lessons,
+        ],
         {
           deepAudit,
           concept,
           variation: variationForC,
+          maxLessons: goalConditionedCLearning.adaptive_max_lessons,
         }
+      );
+      strategyCLessons = pruneLowYieldCLessons(
+        strategyCLessons,
+        goalConditionedCLearning.avoid_lessons,
+        Math.max(6, Math.min(goalConditionedCLearning.adaptive_max_lessons, C_STRATEGY_LESSON_MAX))
       );
       console.log('PHASE C SYNTHESIS (A/B audit -> first-principles fusion):');
       strategyCLessons.slice(0, 6).forEach((lesson, idx2) => console.log(`  C${idx2 + 1}. ${lesson}`));
+      if (goalConditionedCLearning.matched_records > 0) {
+        console.log(
+          `PHASE C GOAL LEARNING ${concept.name}: matched=${goalConditionedCLearning.matched_records} ` +
+          `positive=${goalConditionedCLearning.positive_cases} negative=${goalConditionedCLearning.negative_cases} ` +
+          `adaptive_max=${goalConditionedCLearning.adaptive_max_lessons}`
+        );
+      }
       const cPreferredProfiles = C_PROFILE_FOLLOW_AB
         ? [st.passA_A?.frontierProfile, st.passA_B?.frontierProfile]
         : [];
-      const profileOrderC = prioritizeProfiles(profileOrderCBase, cPreferredProfiles);
+      const profileOrderC = prioritizeProfiles(buildApproachProfileOrder('C', historicalRecords), cPreferredProfiles);
       console.log(`PHASE C PROFILE ORDER ${concept.name}: ${profileOrderC.join(', ')} (follow_ab=${C_PROFILE_FOLLOW_AB ? 'on' : 'off'})`);
-
-      const outC = await ensureApproachFrontierOutput({
+      const cSynthesisCharterBase = buildCSynthesisCharter({
         concept,
-        inputImage,
-        index: idx,
-        approachKey: 'C',
-        lessons: strategyCLessons,
-        profileOrder: profileOrderC,
-        variation: variationForC,
-        phaseLabel: 'C',
+        scoreA,
+        scoreB,
+        deepAudit,
+        goalConditionedLearning: goalConditionedCLearning,
+        targetHeadroomPct: TARGET_QUALITY_GAIN_PCT,
       });
-      st.passA_C = outC.passA;
-      st.finalC = outC.final;
+      st.cSynthesisCharter = cSynthesisCharterBase;
+      console.log('PHASE C CHARTER (A/B audit -> new prompt contract):');
+      cSynthesisCharterBase.split('\n').slice(0, 6).forEach((line, idx2) => console.log(`  H${idx2 + 1}. ${line}`));
+
+      const maxCRetries = Math.max(1, PHASED_C_MAX_RETRIES);
+      let cLessonsActive = [...strategyCLessons];
+      let cProfileOrderActive = [...profileOrderC];
+      let bestCAttempt = null;
+      const cRetryDiagnostics = [];
+      const bestABScoreObj = (Number(scoreA?.overall) || 0) >= (Number(scoreB?.overall) || 0) ? scoreA : scoreB;
+
+      for (let cAttempt = 1; cAttempt <= maxCRetries; cAttempt++) {
+        const cAttemptCharter = [
+          cSynthesisCharterBase,
+          `- CHX: Retry context ${cAttempt}/${maxCRetries}: keep shared A/B outcome goal fixed; change only method based on audit evidence.`,
+          `- CHY: Retry objective ${cAttempt}/${maxCRetries}: reach >= ${TARGET_QUALITY_GAIN_PCT.toFixed(1)}% headroom gain vs best(A,B) without identity/compliance regression.`,
+          bestCAttempt
+            ? `- CHZ: Current best C score=${Number(bestCAttempt.overall || 0).toFixed(2)}; only accept changes with measurable deterministic improvement.`
+            : '- CHZ: This is first C synthesis attempt; establish clean audit-derived baseline before aggressive imports.',
+        ].join('\n');
+        const outCAttempt = await ensureApproachFrontierOutput({
+          concept,
+          inputImage,
+          index: idx,
+          approachKey: 'C',
+          lessons: cLessonsActive,
+          profileOrder: cProfileOrderActive,
+          variation: variationForC,
+          synthesisCharter: cAttemptCharter,
+          phaseLabel: `C[r${cAttempt}]`,
+          allowResume: cAttempt === 1,
+          enableAggressiveBoundary: PHASED_C_FORCE_PHASE2,
+        });
+
+        let candidatePath = outCAttempt.final.path;
+        let candidateProfile = outCAttempt.final.profileUsed || outCAttempt.passA?.frontierProfile || 'balanced';
+        let candidateScore = await scoreFrontierCandidateFromPath({
+          candidatePath,
+          referenceMimeType,
+          referenceB64,
+          concept,
+          expression,
+          profile: `C-phased/r${cAttempt}/${candidateProfile}`,
+        });
+        let phase2Applied = String(candidateProfile || '').includes('+phase2');
+
+        if (PHASED_C_FORCE_PHASE2 && !(PHASED_C_SKIP_POST_PASSB_PHASE2 && phase2Applied)) {
+          const cPhase2 = await runPhase2BoundaryRefinement({
+            concept,
+            index: idx,
+            variation: variationForC,
+            approachKey: 'C',
+            profile: candidateProfile,
+            baselinePath: candidatePath,
+            lessons: cLessonsActive,
+            referenceMimeType,
+            referenceB64,
+            previousScore: candidateScore,
+          });
+          if (cPhase2.applied && Number(cPhase2?.score?.overall) > Number(candidateScore?.overall)) {
+            candidatePath = cPhase2.path;
+            candidateProfile = cPhase2.profileUsed || candidateProfile;
+            candidateScore = cPhase2.score;
+            phase2Applied = true;
+          }
+        }
+
+        const bestAB = Math.max(Number(scoreA?.overall) || 0, Number(scoreB?.overall) || 0);
+        const candidateOverall = Number(candidateScore?.overall) || 0;
+        const cRawGainAttemptPct = bestAB > 0 ? (((candidateOverall - bestAB) / bestAB) * 100) : 0;
+        const cHeadroomGainAttemptPct = qualityHeadroomGainPercent(candidateScore, bestAB, QUALITY_SCORE_CEILING);
+        cRetryDiagnostics.push({
+          attempt: cAttempt,
+          overall: candidateOverall,
+          c_gain_raw_pct: cRawGainAttemptPct,
+          c_gain_headroom_pct: cHeadroomGainAttemptPct,
+          profile: candidateProfile,
+          phase2_applied: phase2Applied,
+        });
+
+        const shouldReplaceBest =
+          !bestCAttempt ||
+          candidateOverall > bestCAttempt.overall ||
+          (Math.abs(candidateOverall - bestCAttempt.overall) <= 0.01 &&
+            cHeadroomGainAttemptPct > bestCAttempt.c_gain_headroom_pct);
+        if (shouldReplaceBest) {
+          bestCAttempt = {
+            passA: outCAttempt.passA,
+            final: { ...outCAttempt.final, path: candidatePath, profileUsed: candidateProfile },
+            score: candidateScore,
+            overall: candidateOverall,
+            c_gain_raw_pct: cRawGainAttemptPct,
+            c_gain_headroom_pct: cHeadroomGainAttemptPct,
+            attempt: cAttempt,
+            phase2Applied,
+            lessonsUsed: [...cLessonsActive],
+          };
+        }
+
+        console.log(
+          `PHASE C RETRY ${concept.name}: attempt=${cAttempt}/${maxCRetries} ` +
+          `scoreC=${candidateOverall.toFixed(2)} raw=${cRawGainAttemptPct.toFixed(1)}% ` +
+          `headroom=${cHeadroomGainAttemptPct.toFixed(1)}% phase2=${phase2Applied ? 'on' : 'off'}`
+        );
+
+        if (cHeadroomGainAttemptPct >= TARGET_QUALITY_GAIN_PCT) {
+          console.log(
+            `PHASE C TARGET HIT ${concept.name}: attempt=${cAttempt} ` +
+            `headroom_gain=${cHeadroomGainAttemptPct.toFixed(1)}%`
+          );
+          break;
+        }
+
+        if (cAttempt < maxCRetries) {
+          const retryPressureLessons = normalizeLessons([
+            `C retry ${cAttempt + 1}: close at least ${TARGET_QUALITY_GAIN_PCT.toFixed(1)}% of remaining score headroom versus best(A,B); avoid cosmetic novelty.`,
+            `C retry ${cAttempt + 1}: preserve identity >= ${IDENTITY_GUARDRAIL.toFixed(2)} and compliance >= ${COMPLIANCE_GUARDRAIL.toFixed(2)} while forcing deterministic gain.`,
+            ...deriveABCIterationHints(scoreA, scoreB, candidateScore),
+            ...deriveMetricGapLessons(bestABScoreObj, candidateScore),
+            ...cLessonsActive,
+          ], C_STRATEGY_LESSON_MAX + 6);
+          cLessonsActive = retryPressureLessons;
+          const retryProfilePriority = (cAttempt % 2 === 1)
+            ? ['clean', 'balanced', 'intimate']
+            : ['balanced', 'intimate', 'clean'];
+          cProfileOrderActive = prioritizeProfiles(buildApproachProfileOrder('C', historicalRecords), retryProfilePriority);
+          console.log(
+            `PHASE C RETRY PLAN ${concept.name}: next_profiles=${cProfileOrderActive.join(', ')} ` +
+            `next_lessons=${cLessonsActive.length}`
+          );
+          if (PHASED_C_RETRY_WAIT_S > 0) {
+            await waitWithHeartbeat(PHASED_C_RETRY_WAIT_S, `phase-c-retry-${concept.name}-r${cAttempt + 1}`);
+          }
+        }
+      }
+
+      if (!bestCAttempt) {
+        throw new Error('C optimization produced no viable attempt');
+      }
+
+      let cRescuePlan = null;
+      let cRescueBoost = { attempted: false, applied: false, rounds: [], gain_total: 0 };
+      let cNearMissBoost = { attempted: false, applied: false, rounds: [], gain_total: 0, eligible: false, shortfall_pct: 0 };
+      const bestABForRescue = Math.max(Number(scoreA?.overall) || 0, Number(scoreB?.overall) || 0);
+      const cHeadroomBeforeRescue = qualityHeadroomGainPercent(
+        bestCAttempt.score,
+        bestABForRescue,
+        QUALITY_SCORE_CEILING
+      );
+
+      if (PHASED_C_RESCUE_ENABLE && cHeadroomBeforeRescue < TARGET_QUALITY_GAIN_PCT) {
+        cRescuePlan = phasedCRescueRoundsFromHeadroomShortfall(
+          cHeadroomBeforeRescue,
+          TARGET_QUALITY_GAIN_PCT,
+          PHASED_C_RESCUE_BASE_ROUNDS
+        );
+        if (cRescuePlan.max_rounds > 0) {
+          const rescueLessons = normalizeLessons(
+            [
+              ...(bestCAttempt.lessonsUsed || cLessonsActive),
+              ...deriveABCIterationHints(scoreA, scoreB, bestCAttempt.score),
+              ...deriveMetricGapLessons(bestABScoreObj, bestCAttempt.score),
+              `C rescue objective: close at least ${TARGET_QUALITY_GAIN_PCT.toFixed(1)}% of headroom gap versus best(A,B) while preserving identity/compliance floors.`,
+              'Prioritize deterministic in-frame microphysics and optics gains; avoid compositional drift or novelty-only changes.',
+            ],
+            Math.max(24, LESSON_MAX_PER_PROMPT + 10)
+          );
+          console.log(
+            `PHASE C RESCUE PLAN ${concept.name}: headroom=${cHeadroomBeforeRescue.toFixed(1)}% ` +
+            `target=${TARGET_QUALITY_GAIN_PCT.toFixed(1)}% rounds=${cRescuePlan.max_rounds} ` +
+            `(base=${PHASED_C_RESCUE_BASE_ROUNDS}, extra=${cRescuePlan.extra_rounds})`
+          );
+          cRescueBoost = await runAuditGuidedFinalBoost({
+            concept,
+            index: idx,
+            variation: variationForC,
+            approachKey: 'C',
+            profileTag: bestCAttempt.final?.profileUsed || bestCAttempt.passA?.frontierProfile || 'balanced',
+            path: bestCAttempt.final.path,
+            score: bestCAttempt.score,
+            lessons: rescueLessons,
+            referenceMimeType,
+            referenceB64,
+            maxRounds: cRescuePlan.max_rounds,
+            minGain: PHASED_C_RESCUE_MIN_GAIN,
+          });
+          cRescueBoost.attempted = true;
+          if (cRescueBoost.applied && Number(cRescueBoost?.score?.overall) > bestCAttempt.overall) {
+            bestCAttempt.final = {
+              ...bestCAttempt.final,
+              path: cRescueBoost.path,
+              profileUsed: cRescueBoost.profileTag || bestCAttempt.final?.profileUsed,
+            };
+            bestCAttempt.score = cRescueBoost.score;
+            bestCAttempt.overall = Number(cRescueBoost?.score?.overall) || bestCAttempt.overall;
+            bestCAttempt.phase2Applied = true;
+            const rescueRawGainPct = bestABForRescue > 0
+              ? (((bestCAttempt.overall - bestABForRescue) / bestABForRescue) * 100)
+              : 0;
+            const rescueHeadroomGainPct = qualityHeadroomGainPercent(
+              bestCAttempt.score,
+              bestABForRescue,
+              QUALITY_SCORE_CEILING
+            );
+            bestCAttempt.c_gain_raw_pct = rescueRawGainPct;
+            bestCAttempt.c_gain_headroom_pct = rescueHeadroomGainPct;
+            cRetryDiagnostics.push({
+              attempt: 'rescue',
+              overall: bestCAttempt.overall,
+              c_gain_raw_pct: rescueRawGainPct,
+              c_gain_headroom_pct: rescueHeadroomGainPct,
+              profile: bestCAttempt.final.profileUsed || 'balanced',
+              phase2_applied: true,
+              rescue_rounds_applied: (cRescueBoost.rounds || []).filter(r => r?.accepted).length,
+            });
+            console.log(
+              `PHASE C RESCUE RESULT ${concept.name}: scoreC=${bestCAttempt.overall.toFixed(2)} ` +
+              `raw=${rescueRawGainPct.toFixed(1)}% headroom=${rescueHeadroomGainPct.toFixed(1)}% ` +
+              `accepted_rounds=${(cRescueBoost.rounds || []).filter(r => r?.accepted).length}`
+            );
+          } else {
+            console.log(`PHASE C RESCUE RESULT ${concept.name}: no accepted gain; keeping retry-best candidate.`);
+          }
+        }
+      }
+
+      const cHeadroomAfterRescue = qualityHeadroomGainPercent(
+        bestCAttempt.score,
+        bestABForRescue,
+        QUALITY_SCORE_CEILING
+      );
+      const cNearMissShortfallPct = Math.max(0, TARGET_QUALITY_GAIN_PCT - cHeadroomAfterRescue);
+      const cNearMissEligible = (
+        PHASED_C_RESCUE_ENABLE &&
+        PHASED_C_NEAR_MISS_EXTRA_ROUNDS > 0 &&
+        cNearMissShortfallPct > 0 &&
+        cNearMissShortfallPct <= PHASED_C_NEAR_MISS_MARGIN_PCT
+      );
+      cNearMissBoost.eligible = cNearMissEligible;
+      cNearMissBoost.shortfall_pct = cNearMissShortfallPct;
+      if (cNearMissEligible) {
+        const nearMissLessons = normalizeLessons(
+          [
+            ...(bestCAttempt.lessonsUsed || cLessonsActive),
+            ...deriveABCIterationHints(scoreA, scoreB, bestCAttempt.score),
+            ...deriveMetricGapLessons(bestABScoreObj, bestCAttempt.score),
+            `C near-miss objective: recover the final ${cNearMissShortfallPct.toFixed(2)}% headroom shortfall versus best(A,B) without any identity/compliance regression.`,
+            `C near-miss policy: prioritize micro-adjustments with deterministic realism lift; avoid broad stylistic rewrites.`,
+          ],
+          Math.max(24, LESSON_MAX_PER_PROMPT + 8)
+        );
+        console.log(
+          `PHASE C NEAR-MISS PLAN ${concept.name}: shortfall=${cNearMissShortfallPct.toFixed(2)}% ` +
+          `margin=${PHASED_C_NEAR_MISS_MARGIN_PCT.toFixed(2)}% rounds=${PHASED_C_NEAR_MISS_EXTRA_ROUNDS} ` +
+          `min_gain=${PHASED_C_NEAR_MISS_MIN_GAIN.toFixed(3)}`
+        );
+        cNearMissBoost = await runAuditGuidedFinalBoost({
+          concept,
+          index: idx,
+          variation: variationForC,
+          approachKey: 'C',
+          profileTag: bestCAttempt.final?.profileUsed || bestCAttempt.passA?.frontierProfile || 'balanced',
+          path: bestCAttempt.final.path,
+          score: bestCAttempt.score,
+          lessons: nearMissLessons,
+          referenceMimeType,
+          referenceB64,
+          maxRounds: PHASED_C_NEAR_MISS_EXTRA_ROUNDS,
+          minGain: PHASED_C_NEAR_MISS_MIN_GAIN,
+        });
+        cNearMissBoost.attempted = true;
+        cNearMissBoost.eligible = true;
+        cNearMissBoost.shortfall_pct = cNearMissShortfallPct;
+        if (cNearMissBoost.applied && Number(cNearMissBoost?.score?.overall) > bestCAttempt.overall) {
+          bestCAttempt.final = {
+            ...bestCAttempt.final,
+            path: cNearMissBoost.path,
+            profileUsed: cNearMissBoost.profileTag || bestCAttempt.final?.profileUsed,
+          };
+          bestCAttempt.score = cNearMissBoost.score;
+          bestCAttempt.overall = Number(cNearMissBoost?.score?.overall) || bestCAttempt.overall;
+          bestCAttempt.phase2Applied = true;
+          const nearMissRawGainPct = bestABForRescue > 0
+            ? (((bestCAttempt.overall - bestABForRescue) / bestABForRescue) * 100)
+            : 0;
+          const nearMissHeadroomGainPct = qualityHeadroomGainPercent(
+            bestCAttempt.score,
+            bestABForRescue,
+            QUALITY_SCORE_CEILING
+          );
+          bestCAttempt.c_gain_raw_pct = nearMissRawGainPct;
+          bestCAttempt.c_gain_headroom_pct = nearMissHeadroomGainPct;
+          cRetryDiagnostics.push({
+            attempt: 'near_miss',
+            overall: bestCAttempt.overall,
+            c_gain_raw_pct: nearMissRawGainPct,
+            c_gain_headroom_pct: nearMissHeadroomGainPct,
+            profile: bestCAttempt.final.profileUsed || 'balanced',
+            phase2_applied: true,
+            near_miss_rounds_applied: (cNearMissBoost.rounds || []).filter(r => r?.accepted).length,
+          });
+          console.log(
+            `PHASE C NEAR-MISS RESULT ${concept.name}: scoreC=${bestCAttempt.overall.toFixed(2)} ` +
+            `raw=${nearMissRawGainPct.toFixed(1)}% headroom=${nearMissHeadroomGainPct.toFixed(1)}% ` +
+            `accepted_rounds=${(cNearMissBoost.rounds || []).filter(r => r?.accepted).length}`
+          );
+        } else {
+          console.log(`PHASE C NEAR-MISS RESULT ${concept.name}: no accepted gain; keeping rescue-best candidate.`);
+        }
+      }
+
+      strategyCLessons = normalizeLessons(
+        bestCAttempt.lessonsUsed || strategyCLessons,
+        Math.max(C_STRATEGY_LESSON_MAX, LESSON_MAX_PER_PROMPT)
+      );
+      st.passA_C = bestCAttempt.passA;
+      st.finalC = bestCAttempt.final;
+      st.cRetryDiagnostics = cRetryDiagnostics;
+      st.cRescuePlan = cRescuePlan;
+      st.cRescueBoost = cRescueBoost;
+      st.cNearMissBoost = cNearMissBoost;
 
       const finalCPath = st.finalC.path;
-      const scoreC = await scoreFrontierCandidateFromPath({
-        candidatePath: finalCPath,
-        referenceMimeType,
-        referenceB64,
-        concept,
-        expression,
-        profile: `C-phased/${st.finalC.profileUsed || st.passA_C?.frontierProfile || 'balanced'}`,
-      });
+      const scoreC = bestCAttempt.score;
 
       const scoreByApproach = { A: scoreA, B: scoreB, C: scoreC };
       const winner = selectWinnerWithGuardrails(scoreByApproach);
@@ -5458,6 +6323,32 @@ async function runPhasedDualStrategyBatches({ startIndex, endIndex, inputImage }
       const bestAB = Math.max(Number(scoreA?.overall) || 0, Number(scoreB?.overall) || 0);
       const cGainVsBestAB = (Number(scoreC?.overall) || 0) - bestAB;
       const cGainVsBestABPct = bestAB > 0 ? ((cGainVsBestAB / bestAB) * 100) : 0;
+      const cHeadroomGainVsBestABPct = qualityHeadroomGainPercent(scoreC, bestAB, QUALITY_SCORE_CEILING);
+      const cGainPass = cHeadroomGainVsBestABPct >= TARGET_QUALITY_GAIN_PCT;
+      const qualityGateFailureReasons = [];
+      if (C_GAIN_TARGET_HARD_GATE && !cGainPass) {
+        qualityGateFailureReasons.push(
+          `c_headroom_gain ${cHeadroomGainVsBestABPct.toFixed(1)}% < target ${TARGET_QUALITY_GAIN_PCT.toFixed(1)}%`
+        );
+      }
+      const qualityGate = {
+        min_final_multiplier: null,
+        final_from_revised: null,
+        target_c_gain_percent: TARGET_QUALITY_GAIN_PCT,
+        target_c_headroom_gain_percent: TARGET_QUALITY_GAIN_PCT,
+        c_gain_percent_vs_best_ab: cGainVsBestABPct,
+        c_headroom_gain_percent_vs_best_ab: cHeadroomGainVsBestABPct,
+        c_gain_hard_gate: C_GAIN_TARGET_HARD_GATE,
+        c_gain_pass: cGainPass,
+        pass: qualityGateFailureReasons.length === 0,
+        strict: STRICT_QUALITY_GATE,
+        failure_reasons: qualityGateFailureReasons,
+      };
+      const auditQualitySignals = buildAuditQualitySignals({
+        scoreByApproach,
+        winnerApproach,
+        phase2Rounds: { A: [], B: [], C: [] },
+      });
       const hints = deriveABCIterationHints(scoreA, scoreB, scoreC);
       const allLessons = mergeLessonsByPriority(
         [...strategyCLessons, ...hints],
@@ -5473,8 +6364,23 @@ async function runPhasedDualStrategyBatches({ startIndex, endIndex, inputImage }
           phase_order: ['A', 'B', 'C'],
           lock_ab_variation: LOCK_AB_VARIATION,
           lock_c_variation_to_ab: LOCK_C_VARIATION_TO_AB,
+          target_quality_gain_pct: TARGET_QUALITY_GAIN_PCT,
+          c_gain_hard_gate: C_GAIN_TARGET_HARD_GATE,
+          strict_quality_gate: STRICT_QUALITY_GATE,
           request_pacing_base_s: REQUEST_PACING_BASE_S,
           request_pacing_max_s: REQUEST_PACING_MAX_S,
+          phased_c_max_retries: PHASED_C_MAX_RETRIES,
+          phased_c_force_phase2: PHASED_C_FORCE_PHASE2,
+          phased_c_retry_wait_s: PHASED_C_RETRY_WAIT_S,
+          phased_c_skip_post_passb_phase2: PHASED_C_SKIP_POST_PASSB_PHASE2,
+          phased_c_rescue_enable: PHASED_C_RESCUE_ENABLE,
+          phased_c_rescue_base_rounds: PHASED_C_RESCUE_BASE_ROUNDS,
+          phased_c_rescue_extra_rounds_max: PHASED_C_RESCUE_EXTRA_ROUNDS_MAX,
+          phased_c_rescue_shortfall_step_pct: PHASED_C_RESCUE_SHORTFALL_STEP_PCT,
+          phased_c_rescue_min_gain: PHASED_C_RESCUE_MIN_GAIN,
+          phased_c_near_miss_margin_pct: PHASED_C_NEAR_MISS_MARGIN_PCT,
+          phased_c_near_miss_extra_rounds: PHASED_C_NEAR_MISS_EXTRA_ROUNDS,
+          phased_c_near_miss_min_gain: PHASED_C_NEAR_MISS_MIN_GAIN,
         },
         winner: {
           approach: winnerApproach,
@@ -5494,6 +6400,11 @@ async function runPhasedDualStrategyBatches({ startIndex, endIndex, inputImage }
               passB: st.finalA?.attemptLog || [],
               phase2: [],
             },
+            generation_health: {
+              passA: summarizeGenerationHealth(st.passA_A?.attemptLog || []),
+              passB: summarizeGenerationHealth(st.finalA?.attemptLog || []),
+              phase2: summarizeGenerationHealth([]),
+            },
             lessons_applied: historicalLessons,
           },
           B: {
@@ -5507,6 +6418,11 @@ async function runPhasedDualStrategyBatches({ startIndex, endIndex, inputImage }
               passB: st.finalB?.attemptLog || [],
               phase2: [],
             },
+            generation_health: {
+              passA: summarizeGenerationHealth(st.passA_B?.attemptLog || []),
+              passB: summarizeGenerationHealth(st.finalB?.attemptLog || []),
+              phase2: summarizeGenerationHealth([]),
+            },
             lessons_applied: historicalLessons,
           },
           C: {
@@ -5519,19 +6435,53 @@ async function runPhasedDualStrategyBatches({ startIndex, endIndex, inputImage }
               passA: st.passA_C?.attemptLog || [],
               passB: st.finalC?.attemptLog || [],
               phase2: [],
+              retries: st.cRetryDiagnostics || [],
+              rescue: st.cRescueBoost?.rounds || [],
+              near_miss: st.cNearMissBoost?.rounds || [],
+            },
+            generation_health: {
+              passA: summarizeGenerationHealth(st.passA_C?.attemptLog || []),
+              passB: summarizeGenerationHealth(st.finalC?.attemptLog || []),
+              phase2: summarizeGenerationHealth([]),
             },
             lessons_applied: strategyCLessons,
           },
         },
+        deep_audit: {
+          variation_control: {
+            lock_ab_variation: LOCK_AB_VARIATION,
+            lock_c_variation_to_ab: LOCK_C_VARIATION_TO_AB,
+            a_equals_b: variationFingerprint(st.variationA) === variationFingerprint(st.variationB),
+            c_equals_ab: variationFingerprint(st.variationC) === variationFingerprint(st.variationA),
+          },
+          findings: deepAudit.lines,
+          phase2_lessons: {
+            A: deepAudit.lessonsA,
+            B: deepAudit.lessonsB,
+            C: strategyCLessons,
+          },
+          goal_conditioned_learning: goalConditionedCLearning,
+          c_synthesis_charter: st.cSynthesisCharter || '',
+          c_retry_diagnostics: st.cRetryDiagnostics || [],
+          c_rescue_plan: st.cRescuePlan || null,
+          c_rescue_boost: st.cRescueBoost || { attempted: false, applied: false, rounds: [] },
+          c_near_miss_boost: st.cNearMissBoost || { attempted: false, applied: false, rounds: [] },
+        },
+        audit_quality: auditQualitySignals,
         comparisons: {
           c_vs_best_ab: cGainVsBestAB,
           c_gain_percent_vs_best_ab: cGainVsBestABPct,
+          c_headroom_gain_percent_vs_best_ab: cHeadroomGainVsBestABPct,
+          quality_gate: qualityGate,
           target_gain_percent: TARGET_QUALITY_GAIN_PCT,
-          target_gain_hit: cGainVsBestABPct >= TARGET_QUALITY_GAIN_PCT,
+          target_gain_hit: cHeadroomGainVsBestABPct >= TARGET_QUALITY_GAIN_PCT,
         },
         hints,
         lessons: {
           historical: historicalLessons,
+          baseline_ab_derived: baselineHints,
+          deep_audit: [...deepAudit.lessonsA, ...deepAudit.lessonsB, ...deepAudit.sharedLessons],
+          goal_conditioned: goalConditionedCLearning,
           c_prompt_plan: strategyCLessons,
           all: allLessons,
         },
@@ -5543,15 +6493,22 @@ async function runPhasedDualStrategyBatches({ startIndex, endIndex, inputImage }
       console.log(
         `PHASE C AUDIT ${concept.name}: winner=${winnerApproach} ` +
         `scoreA=${scoreA.overall.toFixed(2)} scoreB=${scoreB.overall.toFixed(2)} scoreC=${scoreC.overall.toFixed(2)} ` +
-        `Cgain=${cGainVsBestABPct.toFixed(1)}% saved=${canonicalPath}`
+        `CgainRaw=${cGainVsBestABPct.toFixed(1)}% CgainHeadroom=${cHeadroomGainVsBestABPct.toFixed(1)}% saved=${canonicalPath}`
       );
+      if (STRICT_QUALITY_GATE && !qualityGate.pass) {
+        console.log(
+          `PHASE QUALITY GATE FAIL ${concept.name}: ${qualityGate.failure_reasons.join(' | ')}`
+        );
+      }
 
       results.push({
         name: concept.name,
         path: canonicalPath,
-        ok: true,
+        ok: !(STRICT_QUALITY_GATE && !qualityGate.pass),
         winner: winnerApproach,
         final_multiplier: null,
+        quality_gate_failed: STRICT_QUALITY_GATE && !qualityGate.pass,
+        err: (STRICT_QUALITY_GATE && !qualityGate.pass) ? qualityGate.failure_reasons.join(' | ') : null,
       });
     } catch (err) {
       console.error(`PHASE C FAIL ${concept.name}: ${err.message}`);
@@ -5723,14 +6680,25 @@ function adaptiveRateLimitWaitSeconds(retries) {
   return Math.max(expJitter, smoothing, Math.min(legacyJitter, RATE_LIMIT_MAX_BACKOFF_S));
 }
 
-async function callModel(contents, retries = 0, imageOnly = false, modalitiesOverride = null, endpointOverride = ENDPOINT, rateLimitStartMs = Date.now()) {
+async function callModel(
+  contents,
+  retries = 0,
+  imageOnly = false,
+  modalitiesOverride = null,
+  endpointOverride = ENDPOINT,
+  rateLimitStartMs = Date.now(),
+  imageSizeOverride = null
+) {
   const responseModalities = modalitiesOverride
     || (imageOnly
       ? ['IMAGE']
       : (INCLUDE_TEXT_MODALITY ? ['TEXT', 'IMAGE'] : ['IMAGE']));
   const generationConfig = { responseModalities };
   if (responseModalities.includes('IMAGE')) {
-    generationConfig.imageConfig = { aspectRatio: '4:5', imageSize: '1K' };
+    generationConfig.imageConfig = {
+      aspectRatio: '4:5',
+      imageSize: String(imageSizeOverride || DEFAULT_IMAGE_SIZE || '1K').trim(),
+    };
   }
   const requestBody = {
     contents,
@@ -5787,7 +6755,7 @@ async function callModel(contents, retries = 0, imageOnly = false, modalitiesOve
       : `Network error`;
     console.log(`${reason} (${retries + 1}/${NETWORK_RETRIES_MAX}) - waiting ${wait}s...`);
     await waitWithHeartbeat(wait, 'network retry');
-    return callModel(contents, retries + 1, imageOnly, modalitiesOverride, endpointOverride, rateLimitStartMs);
+    return callModel(contents, retries + 1, imageOnly, modalitiesOverride, endpointOverride, rateLimitStartMs, imageSizeOverride);
   }
   if (requestHeartbeat) clearInterval(requestHeartbeat);
   clearTimeout(timeout);
@@ -5817,13 +6785,13 @@ async function callModel(contents, retries = 0, imageOnly = false, modalitiesOve
         `(truncated exp backoff, streak=${GLOBAL_RATE_LIMIT_STREAK}, elapsed=${elapsed}s)...`
       );
       await waitWithHeartbeat(wait, 'rate-limit backoff');
-      return callModel(contents, retries + 1, imageOnly, modalitiesOverride, endpointOverride, rateLimitStartMs);
+      return callModel(contents, retries + 1, imageOnly, modalitiesOverride, endpointOverride, rateLimitStartMs, imageSizeOverride);
     }
     if (response.status >= 500 && retries < SERVER_RETRIES_MAX) {
       const wait = SERVER_RETRY_WAIT_S;
       console.log(`Server error ${response.status} (${retries + 1}/${SERVER_RETRIES_MAX}) - waiting ${wait}s...`);
       await waitWithHeartbeat(wait, 'server retry');
-      return callModel(contents, retries + 1, imageOnly, modalitiesOverride, endpointOverride, rateLimitStartMs);
+      return callModel(contents, retries + 1, imageOnly, modalitiesOverride, endpointOverride, rateLimitStartMs, imageSizeOverride);
     }
     throw new Error(`API ${response.status}: ${error.substring(0, 300)}`);
   }
@@ -7339,28 +8307,32 @@ for (let i = s; i < Math.min(e, concepts.length); i++) {
         if (STRICT_QUALITY_GATE && !gatePass) {
           const finalMult = Number(gate?.final_from_revised) || 0;
           const minMult = Number(gate?.min_final_multiplier) || MIN_FINAL_MULTIPLIER_GATE;
+          const failReasons = Array.isArray(gate?.failure_reasons) && gate.failure_reasons.length
+            ? gate.failure_reasons
+            : [`final_multiplier ${finalMult.toFixed(2)}x < required ${minMult.toFixed(2)}x`];
+          const failText = failReasons.join(' | ');
+          if (attempt < MAX_CONCEPT_ATTEMPTS) {
+            throw new Error(`QUALITY_GATE_FAIL ${failText}`);
+          }
           if (dual?.path) {
             console.log(
-              `QUALITY GATE FAIL ${concepts[i].name}: final=${finalMult.toFixed(2)}x < required=${minMult.toFixed(2)}x; ` +
-              `keeping generated output and proceeding.`
+              `QUALITY GATE FAIL ${concepts[i].name}: ${failText}; keeping generated output but marking concept failed.`
             );
             results.push({
               name: concepts[i].name,
               path: dual.path,
-              ok: true,
+              ok: false,
               attempt,
               winner: dual.audit?.winner?.approach || 'n/a',
               final_multiplier: finalMult,
               quality_gate_failed: true,
+              err: failText,
             });
             if (dual.audit) abAuditRecords.push(dual.audit);
             ok = true;
             break;
           }
-          console.log(
-            `QUALITY GATE FAIL ${concepts[i].name}: final=${finalMult.toFixed(2)}x < required=${minMult.toFixed(2)}x; retrying (no output artifact).`
-          );
-          throw new Error(`QUALITY_GATE_FAIL final=${finalMult.toFixed(2)}x required=${minMult.toFixed(2)}x`);
+          throw new Error(`QUALITY_GATE_FAIL ${failText}`);
         }
         results.push({
           name: concepts[i].name,
@@ -7439,7 +8411,7 @@ if (abAuditRecords.length > 0) {
     `  Avg overall: A=${(summary.avg_overall.A || 0).toFixed(2)} | B=${(summary.avg_overall.B || 0).toFixed(2)} | C=${(summary.avg_overall.C || 0).toFixed(2)}`
   );
   console.log(
-    `  C gain vs best(A/B): avg=${(summary.c_gain_percent_vs_best_ab?.avg || 0).toFixed(1)}% target=${summary.c_gain_percent_vs_best_ab?.target ?? TARGET_QUALITY_GAIN_PCT}% hits=${summary.c_gain_percent_vs_best_ab?.target_hit_count || 0}`
+    `  C headroom gain vs best(A/B): avg=${(summary.c_gain_percent_vs_best_ab?.avg || 0).toFixed(1)}% target=${summary.c_gain_percent_vs_best_ab?.target ?? TARGET_QUALITY_GAIN_PCT}% hits=${summary.c_gain_percent_vs_best_ab?.target_hit_count || 0}`
   );
   if (Array.isArray(summary.top_lessons) && summary.top_lessons.length > 0) {
     console.log('  Top lessons:');
