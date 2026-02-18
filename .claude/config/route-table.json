@@ -6,8 +6,8 @@
   "domains": {
     "rust": 1,
     "wasm": 2,
-    "sveltekit": 3,
-    "svelte": 3,
+    "audio": 3,
+    "pwa": 3,
     "security": 4,
     "frontend": 5,
     "react": 5,
@@ -19,8 +19,7 @@
     "documentation": 11,
     "devops": 12,
     "typescript": 13,
-    "prisma": 14,
-    "general": 15
+    "general": 14
   },
 
   "actions": {
@@ -41,7 +40,6 @@
   "subtypes": {
     "borrow": 66,
     "lifetime": 67,
-    "leptos-ssr": 21,
     "component": 32,
     "api": 48,
     "schema": 64,
@@ -49,7 +47,6 @@
     "state": 96,
     "auth": 112,
     "validation": 128,
-    "trpc": 144,
     "vitest": 160
   },
 
@@ -67,7 +64,7 @@
     "0x0300000000000000": {
       "agent": "performance-auditor",
       "tier": "tier-2",
-      "note": "sveltekit + optimize"
+      "note": "audio/pwa + optimize"
     },
     "0x0400000000000000": {
       "agent": "security-scanner",
