@@ -1144,6 +1144,18 @@ pub async fn fetch_and_reconcile_ai_config_meta(
 }
 
 #[cfg(feature = "hydrate")]
+pub fn ai_config_remote_meta_label(
+    remote_version: Option<&str>,
+    remote_generated_at: Option<&str>,
+) -> String {
+    format!(
+        "{} @ {}",
+        remote_version.unwrap_or("n/a"),
+        remote_generated_at.unwrap_or("n/a")
+    )
+}
+
+#[cfg(feature = "hydrate")]
 pub fn sync_ai_config_meta(version: Option<&str>, generated_at: Option<&str>) -> bool {
     let Some(window) = web_sys::window() else {
         return false;

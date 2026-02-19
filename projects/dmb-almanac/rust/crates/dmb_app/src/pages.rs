@@ -779,9 +779,11 @@ fn refresh_ai_config_meta_mismatch(state: AiDiagnosticsState) {
 
             if reconciled.mismatched {
                 let msg = format!(
-                    "Remote AI config differs (remote {} @ {}).",
-                    reconciled.remote_version.as_deref().unwrap_or("n/a"),
-                    reconciled.remote_generated_at.as_deref().unwrap_or("n/a")
+                    "Remote AI config differs ({}).",
+                    crate::ai::ai_config_remote_meta_label(
+                        reconciled.remote_version.as_deref(),
+                        reconciled.remote_generated_at.as_deref()
+                    )
                 );
                 let _ = mismatch.try_set(Some(msg));
             } else {

@@ -900,9 +900,11 @@ fn spawn_ai_config_sync_task(state: &PwaStatusState) {
 
             if reconciled.mismatched {
                 let msg = format!(
-                    "AI config mismatch: remote {} @ {}.",
-                    reconciled.remote_version.as_deref().unwrap_or("n/a"),
-                    reconciled.remote_generated_at.as_deref().unwrap_or("n/a")
+                    "AI config mismatch: {}.",
+                    crate::ai::ai_config_remote_meta_label(
+                        reconciled.remote_version.as_deref(),
+                        reconciled.remote_generated_at.as_deref()
+                    )
                 );
                 ai_config_status.set(Some(msg));
             } else {
