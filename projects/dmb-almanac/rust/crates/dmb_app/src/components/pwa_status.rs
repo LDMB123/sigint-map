@@ -506,20 +506,23 @@ fn action_update_click(state: PwaStatusState) {
 #[cfg(not(feature = "hydrate"))]
 fn action_update_click(_state: PwaStatusState) {}
 
-#[cfg(feature = "hydrate")]
 fn action_update_later(state: PwaStatusState) {
-    if let Some(window) = web_sys::window() {
-        if let Ok(Some(storage)) = window.local_storage() {
-            let now = js_sys::Date::now();
-            let _ = storage.set_item("pwa_update_dismissed_at", &now.to_string());
+    #[cfg(feature = "hydrate")]
+    {
+        if let Some(window) = web_sys::window() {
+            if let Ok(Some(storage)) = window.local_storage() {
+                let now = js_sys::Date::now();
+                let _ = storage.set_item("pwa_update_dismissed_at", &now.to_string());
+            }
         }
+        state.update_snoozed.set(true);
+        state.update_ready.set(false);
     }
-    state.update_snoozed.set(true);
-    state.update_ready.set(false);
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = state;
+    }
 }
-
-#[cfg(not(feature = "hydrate"))]
-fn action_update_later(_state: PwaStatusState) {}
 
 #[cfg(feature = "hydrate")]
 fn action_update_check(state: PwaStatusState) {
@@ -567,18 +570,21 @@ fn action_update_check(state: PwaStatusState) {
 #[cfg(not(feature = "hydrate"))]
 fn action_update_check(_state: PwaStatusState) {}
 
-#[cfg(feature = "hydrate")]
 fn action_storage_cleanup(state: PwaStatusState) {
-    spawn_local(async move {
-        let _ = crate::data::handle_storage_pressure().await;
-        state.storage_warning.set(Some(
-            "Cleared AI cache to relieve storage pressure.".to_string(),
-        ));
-    });
+    #[cfg(feature = "hydrate")]
+    {
+        spawn_local(async move {
+            let _ = crate::data::handle_storage_pressure().await;
+            state.storage_warning.set(Some(
+                "Cleared AI cache to relieve storage pressure.".to_string(),
+            ));
+        });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = state;
+    }
 }
-
-#[cfg(not(feature = "hydrate"))]
-fn action_storage_cleanup(_state: PwaStatusState) {}
 
 #[cfg(feature = "hydrate")]
 fn action_cleanup_previous_caches(state: PwaStatusState) {
@@ -724,32 +730,34 @@ fn action_unregister_sw(state: PwaStatusState) {
 #[cfg(not(feature = "hydrate"))]
 fn action_unregister_sw(_state: PwaStatusState) {}
 
-#[cfg(feature = "hydrate")]
 fn action_reset_data() {
-    spawn_local(async move {
-        if let Some(window) = web_sys::window() {
-            if let Ok(cache_storage) = window.caches() {
-                if let Ok(keys) = wasm_bindgen_futures::JsFuture::from(cache_storage.keys()).await {
-                    let keys: js_sys::Array = keys.dyn_into().unwrap_or_default();
-                    for key in keys.iter() {
-                        if let Some(name) = key.as_string() {
-                            let _ =
-                                wasm_bindgen_futures::JsFuture::from(cache_storage.delete(&name))
-                                    .await;
+    #[cfg(feature = "hydrate")]
+    {
+        spawn_local(async move {
+            if let Some(window) = web_sys::window() {
+                if let Ok(cache_storage) = window.caches() {
+                    if let Ok(keys) =
+                        wasm_bindgen_futures::JsFuture::from(cache_storage.keys()).await
+                    {
+                        let keys: js_sys::Array = keys.dyn_into().unwrap_or_default();
+                        for key in keys.iter() {
+                            if let Some(name) = key.as_string() {
+                                let _ = wasm_bindgen_futures::JsFuture::from(
+                                    cache_storage.delete(&name),
+                                )
+                                .await;
+                            }
                         }
                     }
                 }
             }
-        }
-        let _ = dmb_idb::delete_db().await;
-        if let Some(window) = web_sys::window() {
-            let _ = window.location().reload();
-        }
-    });
+            let _ = dmb_idb::delete_db().await;
+            if let Some(window) = web_sys::window() {
+                let _ = window.location().reload();
+            }
+        });
+    }
 }
-
-#[cfg(not(feature = "hydrate"))]
-fn action_reset_data() {}
 
 #[cfg(feature = "hydrate")]
 fn refresh_update_notice_state(state: &PwaStatusState) -> bool {
