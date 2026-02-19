@@ -281,6 +281,16 @@ fn remove_local_storage_item(key: &str) {
     }
 }
 
+#[cfg(feature = "hydrate")]
+fn local_storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
+    storage.get_item(key).ok().flatten()
+}
+
+#[cfg(feature = "hydrate")]
+fn local_storage_f64(storage: &web_sys::Storage, key: &str) -> Option<f64> {
+    local_storage_item(storage, key).and_then(|value| value.parse::<f64>().ok())
+}
+
 #[derive(Clone, Copy)]
 struct PwaStatusState {
     status: RwSignal<ImportStatus>,
@@ -801,13 +811,11 @@ fn action_reset_data() {
 fn refresh_update_notice_state(state: &PwaStatusState) -> bool {
     if let Some(window) = web_sys::window() {
         if let Ok(Some(storage)) = window.local_storage() {
-            if let Ok(Some(value)) = storage.get_item("pwa_update_dismissed_at") {
-                if let Ok(ts) = value.parse::<f64>() {
-                    let now = js_sys::Date::now();
-                    let remaining = remaining_snooze_ms(Some(ts), now);
-                    state.update_snooze_remaining.set(remaining);
-                    return should_suppress_update_notice(Some(ts), now);
-                }
+            if let Some(ts) = local_storage_f64(&storage, "pwa_update_dismissed_at") {
+                let now = js_sys::Date::now();
+                let remaining = remaining_snooze_ms(Some(ts), now);
+                state.update_snooze_remaining.set(remaining);
+                return should_suppress_update_notice(Some(ts), now);
             }
         }
     }
@@ -820,31 +828,25 @@ fn refresh_update_notice_state(state: &PwaStatusState) -> bool {
 fn hydrate_local_snapshot(state: &PwaStatusState) {
     if let Some(window) = web_sys::window() {
         if let Ok(Some(storage)) = window.local_storage() {
-            if let Ok(Some(value)) = storage.get_item(UPDATE_CHECKED_AT_KEY) {
-                if let Ok(ts) = value.parse::<f64>() {
-                    state.update_last_checked.set(Some(ts));
-                }
+            if let Some(ts) = local_storage_f64(&storage, UPDATE_CHECKED_AT_KEY) {
+                state.update_last_checked.set(Some(ts));
             }
-            if let Ok(Some(version)) = storage.get_item(SW_VERSION_KEY) {
+            if let Some(version) = local_storage_item(&storage, SW_VERSION_KEY) {
                 state.sw_version.set(Some(version));
             }
-            if let Ok(Some(ts)) = storage.get_item(SW_ACTIVATED_AT_KEY) {
-                if let Ok(value) = ts.parse::<f64>() {
-                    state.sw_activated_at.set(Some(value));
-                }
+            if let Some(value) = local_storage_f64(&storage, SW_ACTIVATED_AT_KEY) {
+                state.sw_activated_at.set(Some(value));
             }
-            if let Ok(Some(ts)) = storage.get_item(PREVIOUS_CACHE_CLEANED_AT_KEY) {
-                if let Ok(value) = ts.parse::<f64>() {
-                    state.previous_cache_cleaned_at.set(Some(value));
-                }
+            if let Some(value) = local_storage_f64(&storage, PREVIOUS_CACHE_CLEANED_AT_KEY) {
+                state.previous_cache_cleaned_at.set(Some(value));
             }
-            if let Ok(Some(version)) = storage.get_item("dmb-ai-config-version") {
+            if let Some(version) = local_storage_item(&storage, "dmb-ai-config-version") {
                 state.ai_config_version.set(Some(version));
             }
-            if let Ok(Some(generated_at)) = storage.get_item("dmb-ai-config-generated-at") {
+            if let Some(generated_at) = local_storage_item(&storage, "dmb-ai-config-generated-at") {
                 state.ai_config_generated_at.set(Some(generated_at));
             }
-            if let Ok(Some(sample)) = storage.get_item("dmb-embedding-sample") {
+            if let Some(sample) = local_storage_item(&storage, "dmb-embedding-sample") {
                 state.embedding_sample_enabled.set(Some(sample == "1"));
             }
         }
@@ -1147,11 +1149,9 @@ async fn process_sw_registration(
         let mut should_check = true;
 
         if let Ok(Some(storage)) = window.local_storage() {
-            if let Ok(Some(value)) = storage.get_item(UPDATE_CHECKED_AT_KEY) {
-                if let Ok(ts) = value.parse::<f64>() {
-                    if now > ts && (now - ts) < AUTO_UPDATE_CHECK_INTERVAL_MS {
-                        should_check = false;
-                    }
+            if let Some(ts) = local_storage_f64(&storage, UPDATE_CHECKED_AT_KEY) {
+                if now > ts && (now - ts) < AUTO_UPDATE_CHECK_INTERVAL_MS {
+                    should_check = false;
                 }
             }
         }
