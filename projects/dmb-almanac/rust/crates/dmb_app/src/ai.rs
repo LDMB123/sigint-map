@@ -132,6 +132,19 @@ fn local_storage_item(key: &str) -> Option<String> {
 }
 
 #[cfg(feature = "hydrate")]
+fn local_storage_flag_enabled(key: &str) -> bool {
+    matches!(local_storage_item(key).as_deref(), Some("1"))
+}
+
+#[cfg(feature = "hydrate")]
+fn set_local_storage_flag(key: &str, enabled: bool) {
+    let Some(storage) = local_storage() else {
+        return;
+    };
+    let _ = storage.set_item(key, if enabled { "1" } else { "0" });
+}
+
+#[cfg(feature = "hydrate")]
 fn record_ai_warning_once(warn_key: &str, event: &str, details: &str) {
     let Some(storage) = local_storage() else {
         return;
@@ -861,11 +874,7 @@ fn read_webgpu_disabled() -> Option<bool> {
 
 #[cfg(feature = "hydrate")]
 pub fn set_webgpu_disabled(disabled: bool) {
-    let Some(storage) = local_storage() else {
-        return;
-    };
-    let value = if disabled { "1" } else { "0" };
-    let _ = storage.set_item(WEBGPU_DISABLE_KEY, value);
+    set_local_storage_flag(WEBGPU_DISABLE_KEY, disabled);
 }
 
 #[cfg(feature = "hydrate")]
@@ -1358,10 +1367,7 @@ fn mark_worker_benchmark_ran() {
 
 #[cfg(feature = "hydrate")]
 pub fn ai_config_seeded() -> bool {
-    matches!(
-        local_storage_item(AI_CONFIG_SEEDED_KEY).as_deref(),
-        Some("1")
-    )
+    local_storage_flag_enabled(AI_CONFIG_SEEDED_KEY)
 }
 
 #[cfg(feature = "hydrate")]
@@ -1381,18 +1387,12 @@ pub fn webgpu_worker_bench_timestamp() -> Option<f64> {
 
 #[cfg(feature = "hydrate")]
 pub fn embedding_sample_enabled() -> bool {
-    matches!(
-        local_storage_item(EMBEDDING_SAMPLE_KEY).as_deref(),
-        Some("1")
-    )
+    local_storage_flag_enabled(EMBEDDING_SAMPLE_KEY)
 }
 
 #[cfg(feature = "hydrate")]
 pub fn set_embedding_sample_enabled(enabled: bool) {
-    let Some(storage) = local_storage() else {
-        return;
-    };
-    let _ = storage.set_item(EMBEDDING_SAMPLE_KEY, if enabled { "1" } else { "0" });
+    set_local_storage_flag(EMBEDDING_SAMPLE_KEY, enabled);
 }
 
 #[cfg(feature = "hydrate")]
