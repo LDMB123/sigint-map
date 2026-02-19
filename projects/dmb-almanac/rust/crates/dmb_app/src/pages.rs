@@ -65,7 +65,7 @@ fn spawn_local_to_send<T: Send + 'static>(
 }
 
 #[cfg(feature = "hydrate")]
-fn spawn_local_try_set<T: 'static>(
+fn spawn_local_try_set<T: Send + Sync + 'static>(
     signal: RwSignal<T>,
     fut: impl std::future::Future<Output = T> + 'static,
 ) {
