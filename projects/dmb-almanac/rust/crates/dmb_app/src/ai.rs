@@ -132,6 +132,18 @@ fn local_storage_item(key: &str) -> Option<String> {
 }
 
 #[cfg(feature = "hydrate")]
+fn record_ai_warning_once(warn_key: &str, event: &str, details: &str) {
+    let Some(storage) = local_storage() else {
+        return;
+    };
+    if storage.get_item(warn_key).ok().flatten().is_some() {
+        return;
+    }
+    let _ = storage.set_item(warn_key, "1");
+    record_ai_warning(event, Some(details.to_string()));
+}
+
+#[cfg(feature = "hydrate")]
 pub fn detect_ai_capabilities() -> AiCapabilities {
     let Some(window) = web_sys::window() else {
         return AiCapabilities::default();
@@ -143,20 +155,11 @@ pub fn detect_ai_capabilities() -> AiCapabilities {
     let webgpu_helper = window_property(&window, "dmbWebgpuScores").is_function();
     let webgpu_available = webgpu && webgpu_helper;
     if webgpu && !webgpu_helper {
-        if let Ok(Some(storage)) = window.local_storage() {
-            if storage
-                .get_item(WEBGPU_HELPER_WARN_KEY)
-                .ok()
-                .flatten()
-                .is_none()
-            {
-                let _ = storage.set_item(WEBGPU_HELPER_WARN_KEY, "1");
-                record_ai_warning(
-                    "webgpu_helper_missing",
-                    Some("navigator.gpu present but WebGPU helper missing".to_string()),
-                );
-            }
-        }
+        record_ai_warning_once(
+            WEBGPU_HELPER_WARN_KEY,
+            "webgpu_helper_missing",
+            "navigator.gpu present but WebGPU helper missing",
+        );
     }
     let webgpu_disabled = read_webgpu_disabled().unwrap_or(false);
     let webgpu_worker = window_property(&window, "dmbWebgpuScoresWorker").is_function();
@@ -774,22 +777,11 @@ pub fn worker_failure_status() -> WorkerFailureStatus {
         let until = read_worker_failure_until();
         let remaining = until.and_then(|ts| if ts <= now { None } else { Some(ts - now) });
         if remaining.is_some() {
-            if let Some(window) = web_sys::window() {
-                if let Ok(Some(storage)) = window.local_storage() {
-                    if storage
-                        .get_item(WORKER_COOLDOWN_WARN_KEY)
-                        .ok()
-                        .flatten()
-                        .is_none()
-                    {
-                        let _ = storage.set_item(WORKER_COOLDOWN_WARN_KEY, "1");
-                        record_ai_warning(
-                            "webgpu_worker_cooldown",
-                            Some("WebGPU worker in cooldown; using direct scoring".to_string()),
-                        );
-                    }
-                }
-            }
+            record_ai_warning_once(
+                WORKER_COOLDOWN_WARN_KEY,
+                "webgpu_worker_cooldown",
+                "WebGPU worker in cooldown; using direct scoring",
+            );
         }
         WorkerFailureStatus {
             cooldown_until_ms: until,
