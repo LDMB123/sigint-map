@@ -125,6 +125,37 @@ export async function waitForWaitingServiceWorker(page, options = {}) {
   );
 }
 
+export async function resetPwaSwLocalState(page) {
+  await page.addInitScript(() => {
+    localStorage.removeItem('pwa_update_dismissed_at');
+    localStorage.removeItem('pwa_sw_version');
+  });
+}
+
+export async function registerE2eServiceWorker(page, suffix) {
+  await page.evaluate(async (versionSuffix) => {
+    await navigator.serviceWorker.register(`/sw.js?e2e=${versionSuffix}`, { scope: '/' });
+  }, suffix);
+}
+
+export async function clickCheckForUpdates(page, options = {}) {
+  const { timeout = 15_000 } = options;
+  await page.getByRole('button', { name: 'Check for updates' }).click();
+  await page.locator('.pwa-status__row--update[role="status"]').waitFor({
+    state: 'visible',
+    timeout,
+  });
+}
+
+export async function waitForStoredSwVersion(page, expectedVersion, options = {}) {
+  const { timeout = 15_000 } = options;
+  await page.waitForFunction(
+    (expected) => localStorage.getItem('pwa_sw_version') === expected,
+    expectedVersion,
+    { timeout }
+  );
+}
+
 export async function ensureSwDetailsOpen(page) {
   const detailsOpen = await page.locator('.pwa-status__details[open]').count();
   if (detailsOpen === 0) {

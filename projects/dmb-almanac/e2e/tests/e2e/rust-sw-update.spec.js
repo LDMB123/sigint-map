@@ -1,10 +1,14 @@
 import { test, expect } from '@playwright/test';
 import {
   activateWaitingServiceWorker,
+  clickCheckForUpdates,
   ensureSwDetailsOpen,
   gotoHydrated,
+  registerE2eServiceWorker,
+  resetPwaSwLocalState,
   skipUnlessRust,
   waitForHydration,
+  waitForStoredSwVersion,
   waitForWaitingServiceWorker,
   waitForServiceWorkerController,
 } from './_rust_test_utils.js';
@@ -38,27 +42,18 @@ test.describe('Rust service worker updates', () => {
       await route.fulfill({ response, body: patchedBody });
     });
 
-    await page.addInitScript(() => {
-      localStorage.removeItem('pwa_update_dismissed_at');
-      localStorage.removeItem('pwa_sw_version');
-    });
+    await resetPwaSwLocalState(page);
 
     await gotoHydrated(page, '/');
 
     await waitForServiceWorkerController(page);
 
-    await page.evaluate(async (suffix) => {
-      await navigator.serviceWorker.register(`/sw.js?e2e=${suffix}`, { scope: '/' });
-    }, patchedVersion);
+    await registerE2eServiceWorker(page, patchedVersion);
     await expect
       .poll(() => swFetchCount, { timeout: 15000 })
       .toBeGreaterThan(1);
 
-    await page.getByRole('button', { name: 'Check for updates' }).click();
-
-    await expect(
-      page.locator('.pwa-status__row--update[role="status"]')
-    ).toBeVisible({ timeout: 15000 });
+    await clickCheckForUpdates(page, { timeout: 15_000 });
 
     await waitForWaitingServiceWorker(page, { timeout: 15_000 });
 
@@ -73,11 +68,7 @@ test.describe('Rust service worker updates', () => {
     await page.waitForLoadState('load');
     await waitForHydration(page);
 
-    await page.waitForFunction(
-      (expected) => localStorage.getItem('pwa_sw_version') === expected,
-      patchedVersion,
-      { timeout: 15000 }
-    );
+    await waitForStoredSwVersion(page, patchedVersion, { timeout: 15_000 });
 
     await ensureSwDetailsOpen(page);
     await expect(page.getByText(new RegExp(`SW version ${patchedVersion}`))).toBeVisible({
