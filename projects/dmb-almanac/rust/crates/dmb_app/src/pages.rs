@@ -816,19 +816,13 @@ fn spawn_ai_diagnostics_parity_refresh(state: AiDiagnosticsState) {
     spawn_local(async move {
         let mut parity = crate::data::fetch_sqlite_parity_report().await;
         let mut integrity = crate::data::fetch_integrity_report().await;
-        let mut parity_mismatches = parity
-            .as_ref()
-            .map(|report| report.total_mismatches)
-            .unwrap_or(0);
-        let mut integrity_mismatches = integrity
-            .as_ref()
-            .map(|report| report.total_mismatches)
-            .unwrap_or(0);
-
-        let _ = sqlite_parity.try_set(parity.clone());
-        let _ = integrity_report.try_set(integrity.clone());
-
-        if parity_mismatches == 0 && integrity_mismatches == 0 {
+        update_parity_diagnostics_signals(
+            sqlite_parity,
+            integrity_report,
+            parity.clone(),
+            integrity.clone(),
+        );
+        if parity_diagnostics_clean(&parity, &integrity) {
             return;
         }
 
@@ -836,23 +830,44 @@ fn spawn_ai_diagnostics_parity_refresh(state: AiDiagnosticsState) {
             wait_ms(12_000).await;
             parity = crate::data::fetch_sqlite_parity_report().await;
             integrity = crate::data::fetch_integrity_report().await;
-            parity_mismatches = parity
-                .as_ref()
-                .map(|report| report.total_mismatches)
-                .unwrap_or(0);
-            integrity_mismatches = integrity
-                .as_ref()
-                .map(|report| report.total_mismatches)
-                .unwrap_or(0);
-
-            let _ = sqlite_parity.try_set(parity.clone());
-            let _ = integrity_report.try_set(integrity.clone());
-
-            if parity_mismatches == 0 && integrity_mismatches == 0 {
+            update_parity_diagnostics_signals(
+                sqlite_parity,
+                integrity_report,
+                parity.clone(),
+                integrity.clone(),
+            );
+            if parity_diagnostics_clean(&parity, &integrity) {
                 break;
             }
         }
     });
+}
+
+#[cfg(feature = "hydrate")]
+fn update_parity_diagnostics_signals(
+    sqlite_parity: RwSignal<Option<crate::data::SqliteParityReport>>,
+    integrity_report: RwSignal<Option<crate::data::IntegrityReport>>,
+    parity: Option<crate::data::SqliteParityReport>,
+    integrity: Option<crate::data::IntegrityReport>,
+) {
+    let _ = sqlite_parity.try_set(parity);
+    let _ = integrity_report.try_set(integrity);
+}
+
+#[cfg(feature = "hydrate")]
+fn parity_diagnostics_clean(
+    parity: &Option<crate::data::SqliteParityReport>,
+    integrity: &Option<crate::data::IntegrityReport>,
+) -> bool {
+    let parity_has_mismatches = parity
+        .as_ref()
+        .map(|report| report.total_mismatches > 0)
+        .unwrap_or(false);
+    let integrity_has_mismatches = integrity
+        .as_ref()
+        .map(|report| report.total_mismatches > 0)
+        .unwrap_or(false);
+    !parity_has_mismatches && !integrity_has_mismatches
 }
 
 fn initialize_ai_diagnostics_state(state: AiDiagnosticsState) {
