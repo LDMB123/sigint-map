@@ -891,34 +891,35 @@ fn spawn_ai_config_sync_task(state: &PwaStatusState) {
             let remote_g = normalize(remote.generated_at.clone());
             let mut local_v = normalize(ai_config_version.get_untracked());
             let mut local_g = normalize(ai_config_generated_at.get_untracked());
+            let mut mismatched = remote_v != local_v || remote_g != local_g;
 
-            if remote_v != local_v || remote_g != local_g {
+            if mismatched {
                 if crate::ai::refresh_ai_config().await {
                     local_v = normalize(crate::ai::ai_config_version());
                     local_g = normalize(crate::ai::ai_config_generated_at());
                     ai_config_version.set(local_v.clone());
                     ai_config_generated_at.set(local_g.clone());
+                    mismatched = remote_v != local_v || remote_g != local_g;
                 }
 
-                if (remote_v != local_v || remote_g != local_g)
+                if mismatched
                     && crate::ai::sync_ai_config_meta(remote_v.as_deref(), remote_g.as_deref())
                 {
                     local_v = remote_v.clone();
                     local_g = remote_g.clone();
                     ai_config_version.set(local_v.clone());
                     ai_config_generated_at.set(local_g.clone());
+                    mismatched = false;
                 }
+            }
 
-                if remote_v != local_v || remote_g != local_g {
-                    let msg = format!(
-                        "AI config mismatch: remote {} @ {}.",
-                        remote_v.clone().unwrap_or_else(|| "n/a".to_string()),
-                        remote_g.clone().unwrap_or_else(|| "n/a".to_string())
-                    );
-                    ai_config_status.set(Some(msg));
-                } else {
-                    ai_config_status.set(None);
-                }
+            if mismatched {
+                let msg = format!(
+                    "AI config mismatch: remote {} @ {}.",
+                    remote_v.clone().unwrap_or_else(|| "n/a".to_string()),
+                    remote_g.clone().unwrap_or_else(|| "n/a".to_string())
+                );
+                ai_config_status.set(Some(msg));
             } else {
                 ai_config_status.set(None);
             }

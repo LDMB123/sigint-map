@@ -773,15 +773,17 @@ fn refresh_ai_config_meta_mismatch(state: AiDiagnosticsState) {
                 normalize_optional_trimmed(local_version.try_get_untracked().flatten());
             let mut generated =
                 normalize_optional_trimmed(local_generated_at.try_get_untracked().flatten());
+            let mut mismatched = remote_version != version || remote_generated != generated;
 
-            if remote_version != version || remote_generated != generated {
+            if mismatched {
                 if crate::ai::refresh_ai_config().await {
                     version = normalize_optional_trimmed(crate::ai::ai_config_version());
                     generated = normalize_optional_trimmed(crate::ai::ai_config_generated_at());
                     let _ = local_version.try_set(version.clone());
                     let _ = local_generated_at.try_set(generated.clone());
+                    mismatched = remote_version != version || remote_generated != generated;
                 }
-                if (remote_version != version || remote_generated != generated)
+                if mismatched
                     && crate::ai::sync_ai_config_meta(
                         remote_version.as_deref(),
                         remote_generated.as_deref(),
@@ -791,17 +793,17 @@ fn refresh_ai_config_meta_mismatch(state: AiDiagnosticsState) {
                     generated = remote_generated.clone();
                     let _ = local_version.try_set(version.clone());
                     let _ = local_generated_at.try_set(generated.clone());
+                    mismatched = false;
                 }
-                if remote_version != version || remote_generated != generated {
-                    let msg = format!(
-                        "Remote AI config differs (remote {} @ {}).",
-                        remote_version.unwrap_or_else(|| "n/a".to_string()),
-                        remote_generated.unwrap_or_else(|| "n/a".to_string())
-                    );
-                    let _ = mismatch.try_set(Some(msg));
-                } else {
-                    let _ = mismatch.try_set(None);
-                }
+            }
+
+            if mismatched {
+                let msg = format!(
+                    "Remote AI config differs (remote {} @ {}).",
+                    remote_version.unwrap_or_else(|| "n/a".to_string()),
+                    remote_generated.unwrap_or_else(|| "n/a".to_string())
+                );
+                let _ = mismatch.try_set(Some(msg));
             } else {
                 let _ = mismatch.try_set(None);
             }
