@@ -23,6 +23,8 @@ const AUTO_UPDATE_CHECK_INTERVAL_MS: f64 = 30.0 * 60.0 * 1000.0;
 #[cfg(feature = "hydrate")]
 const UPDATE_CHECKED_AT_KEY: &str = "pwa_update_checked_at";
 #[cfg(feature = "hydrate")]
+const UPDATE_DISMISSED_AT_KEY: &str = "pwa_update_dismissed_at";
+#[cfg(feature = "hydrate")]
 const SW_VERSION_KEY: &str = "pwa_sw_version";
 #[cfg(feature = "hydrate")]
 const SW_ACTIVATED_AT_KEY: &str = "pwa_sw_activated_at";
@@ -31,6 +33,8 @@ const SW_ACTIVATED_AT_KEY: &str = "pwa_sw_activated_at";
 // pressure and confusing "ghost" offline state after the Rust app takes over.
 #[cfg(feature = "hydrate")]
 const PREVIOUS_CACHE_CLEANED_AT_KEY: &str = "pwa_previous_cache_cleaned_at";
+#[cfg(feature = "hydrate")]
+const STORAGE_PRESSURE_CLEARED_MESSAGE: &str = "Cleared AI cache to relieve storage pressure.";
 
 #[cfg(any(feature = "hydrate", test))]
 fn e2e_version_from_sw_script_url(script_url: &str) -> Option<String> {
@@ -553,7 +557,7 @@ fn action_update_later(state: PwaStatusState) {
         if let Some(window) = web_sys::window() {
             if let Some(storage) = window_local_storage(&window) {
                 let now = js_sys::Date::now();
-                let _ = storage.set_item("pwa_update_dismissed_at", &now.to_string());
+                let _ = storage.set_item(UPDATE_DISMISSED_AT_KEY, &now.to_string());
             }
         }
         state.update_snoozed.set(true);
@@ -619,9 +623,9 @@ fn action_storage_cleanup(state: PwaStatusState) {
     {
         spawn_local(async move {
             let _ = crate::data::handle_storage_pressure().await;
-            state.storage_warning.set(Some(
-                "Cleared AI cache to relieve storage pressure.".to_string(),
-            ));
+            state
+                .storage_warning
+                .set(Some(STORAGE_PRESSURE_CLEARED_MESSAGE.to_string()));
         });
     }
     #[cfg(not(feature = "hydrate"))]
@@ -770,7 +774,7 @@ fn action_unregister_sw(state: PwaStatusState) {
             if let Some(storage) = window_local_storage(&window) {
                 let _ = storage.remove_item(SW_VERSION_KEY);
                 let _ = storage.remove_item(SW_ACTIVATED_AT_KEY);
-                let _ = storage.remove_item("pwa_update_dismissed_at");
+                let _ = storage.remove_item(UPDATE_DISMISSED_AT_KEY);
             }
 
             set_sw_action_status(state.sw_action_status, "SW unregistered. Reloading…");
@@ -816,7 +820,7 @@ fn action_reset_data() {
 fn refresh_update_notice_state(state: &PwaStatusState) -> bool {
     if let Some(window) = web_sys::window() {
         if let Some(storage) = window_local_storage(&window) {
-            if let Some(ts) = local_storage_f64(&storage, "pwa_update_dismissed_at") {
+            if let Some(ts) = local_storage_f64(&storage, UPDATE_DISMISSED_AT_KEY) {
                 let now = js_sys::Date::now();
                 let remaining = remaining_snooze_ms(Some(ts), now);
                 state.update_snooze_remaining.set(remaining);
@@ -880,9 +884,7 @@ fn spawn_storage_health_tasks(state: &PwaStatusState) {
             .await
             .unwrap_or(false);
         if cleared {
-            storage_warning.set(Some(
-                "Cleared AI cache to relieve storage pressure.".to_string(),
-            ));
+            storage_warning.set(Some(STORAGE_PRESSURE_CLEARED_MESSAGE.to_string()));
         }
     });
 
@@ -996,7 +998,7 @@ fn attach_sw_message_listener(container: &web_sys::ServiceWorkerContainer, state
                 state.update_state.set(None);
                 state.update_error.set(None);
                 state.update_applying.set(false);
-                remove_local_storage_item("pwa_update_dismissed_at");
+                remove_local_storage_item(UPDATE_DISMISSED_AT_KEY);
                 state.update_snoozed.set(false);
                 spawn_cache_entries_refresh(state.cache_entries);
             }
