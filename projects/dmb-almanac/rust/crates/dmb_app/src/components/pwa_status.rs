@@ -215,6 +215,41 @@ fn set_sw_action_status(sw_action_status: RwSignal<Option<String>>, message: &st
     cb.forget();
 }
 
+#[cfg(feature = "hydrate")]
+fn parse_sw_message_payload(event: &web_sys::MessageEvent) -> Option<serde_json::Value> {
+    if let Some(data) = event.data().as_string() {
+        if let Ok(payload) = serde_json::from_str::<serde_json::Value>(&data) {
+            return Some(payload);
+        }
+    }
+    serde_wasm_bindgen::from_value::<serde_json::Value>(event.data()).ok()
+}
+
+#[cfg(feature = "hydrate")]
+fn resolve_effective_sw_version(script_url: Option<String>, version: &str) -> String {
+    script_url
+        .and_then(|url| e2e_version_from_sw_script_url(&url))
+        .unwrap_or_else(|| version.to_string())
+}
+
+#[cfg(feature = "hydrate")]
+fn set_local_storage_item(key: &str, value: &str) {
+    if let Some(window) = web_sys::window() {
+        if let Ok(Some(storage)) = window.local_storage() {
+            let _ = storage.set_item(key, value);
+        }
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn remove_local_storage_item(key: &str) {
+    if let Some(window) = web_sys::window() {
+        if let Ok(Some(storage)) = window.local_storage() {
+            let _ = storage.remove_item(key);
+        }
+    }
+}
+
 #[component]
 pub fn PwaStatus() -> impl IntoView {
     let status = RwSignal::new(ImportStatus {
@@ -959,109 +994,25 @@ pub fn PwaStatus() -> impl IntoView {
                     let sw_action_status_signal = sw_action_status_signal.clone();
                     let cb = wasm_bindgen::closure::Closure::wrap(Box::new(
                         move |event: web_sys::MessageEvent| {
-                            if let Some(data) = event.data().as_string() {
-                                if let Ok(payload) =
-                                    serde_json::from_str::<serde_json::Value>(&data)
-                                {
-                                    if payload.get("type").and_then(|v| v.as_str()) == Some("PONG")
-                                    {
-                                        if let Some(impl_name) =
-                                            payload.get("impl").and_then(|v| v.as_str())
-                                        {
-                                            sw_controller_impl_signal
-                                                .set(Some(impl_name.to_string()));
-                                        }
-                                        if let Some(version) =
-                                            payload.get("version").and_then(|v| v.as_str())
-                                        {
-                                            let effective = sw_controller_url_for_msgs
-                                                .get_untracked()
-                                                .and_then(|url| {
-                                                    e2e_version_from_sw_script_url(&url)
-                                                })
-                                                .unwrap_or_else(|| version.to_string());
-                                            sw_version_signal.set(Some(effective.clone()));
-                                            if let Some(window) = web_sys::window() {
-                                                if let Ok(Some(storage)) = window.local_storage() {
-                                                    let _ = storage
-                                                        .set_item(SW_VERSION_KEY, &effective);
-                                                }
-                                            }
-                                        }
-                                        if let Some(prefix) =
-                                            payload.get("cachePrefix").and_then(|v| v.as_str())
-                                        {
-                                            sw_controller_cache_prefix_signal
-                                                .set(Some(prefix.to_string()));
-                                        }
-                                        set_sw_action_status(
-                                            sw_action_status_signal,
-                                            "Service worker responded to ping.",
-                                        );
-                                    } else if payload.get("type").and_then(|v| v.as_str())
-                                        == Some("SW_ACTIVATED")
-                                    {
-                                        if let Some(version) =
-                                            payload.get("version").and_then(|v| v.as_str())
-                                        {
-                                            update_version_signal.set(Some(version.to_string()));
-                                            let effective = sw_controller_url_for_msgs
-                                                .get_untracked()
-                                                .and_then(|url| {
-                                                    e2e_version_from_sw_script_url(&url)
-                                                })
-                                                .unwrap_or_else(|| version.to_string());
-                                            sw_version_signal.set(Some(effective.clone()));
-                                            if let Some(window) = web_sys::window() {
-                                                if let Ok(Some(storage)) = window.local_storage() {
-                                                    let _ = storage
-                                                        .set_item(SW_VERSION_KEY, &effective);
-                                                }
-                                            }
-                                        }
-                                        let now = js_sys::Date::now();
-                                        sw_activated_at_signal.set(Some(now));
-                                        if let Some(window) = web_sys::window() {
-                                            if let Ok(Some(storage)) = window.local_storage() {
-                                                let _ = storage.set_item(
-                                                    SW_ACTIVATED_AT_KEY,
-                                                    &now.to_string(),
-                                                );
-                                            }
-                                        }
-                                        update_signal.set(false);
-                                        update_state_signal.set(None);
-                                        update_error_signal.set(None);
-                                        update_applying_signal.set(false);
-                                        if let Some(window) = web_sys::window() {
-                                            if let Ok(Some(storage)) = window.local_storage() {
-                                                let _ =
-                                                    storage.remove_item("pwa_update_dismissed_at");
-                                            }
-                                        }
-                                        update_ready_signal.set(false);
-                                        update_snoozed_signal.set(false);
-                                        spawn_local(async move {
-                                            cache_entries_signal.set(count_cache_entries().await);
-                                        });
-                                    } else if payload.get("type").and_then(|v| v.as_str())
-                                        == Some("SW_INSTALLED")
-                                    {
-                                        if let Some(version) =
-                                            payload.get("version").and_then(|v| v.as_str())
-                                        {
-                                            // Mark the candidate version but avoid raising
-                                            // "Update ready" until registration state confirms
-                                            // a waiting worker. This keeps UI state aligned with
-                                            // `reg.waiting` and avoids premature E2E transitions.
-                                            update_version_signal.set(Some(version.to_string()));
-                                        }
-                                    }
-                                }
-                            } else if let Ok(payload) =
-                                serde_wasm_bindgen::from_value::<serde_json::Value>(event.data())
-                            {
-                                if payload.get("type").and_then(|v| v.as_str()) == Some("PONG") {
+                            let Some(payload) = parse_sw_message_payload(&event) else {
+                                return;
+                            };
+                            let Some(event_type) = payload.get("type").and_then(|v| v.as_str())
+                            else {
+                                return;
+                            };
+
+                            let persist_sw_version = |version: &str| {
+                                let effective = resolve_effective_sw_version(
+                                    sw_controller_url_for_msgs.get_untracked(),
+                                    version,
+                                );
+                                sw_version_signal.set(Some(effective.clone()));
+                                set_local_storage_item(SW_VERSION_KEY, &effective);
+                            };
+
+                            match event_type {
+                                "PONG" => {
                                     if let Some(impl_name) =
                                         payload.get("impl").and_then(|v| v.as_str())
                                     {
@@ -1070,17 +1021,7 @@ pub fn PwaStatus() -> impl IntoView {
                                     if let Some(version) =
                                         payload.get("version").and_then(|v| v.as_str())
                                     {
-                                        let effective = sw_controller_url_for_msgs
-                                            .get_untracked()
-                                            .and_then(|url| e2e_version_from_sw_script_url(&url))
-                                            .unwrap_or_else(|| version.to_string());
-                                        sw_version_signal.set(Some(effective.clone()));
-                                        if let Some(window) = web_sys::window() {
-                                            if let Ok(Some(storage)) = window.local_storage() {
-                                                let _ =
-                                                    storage.set_item(SW_VERSION_KEY, &effective);
-                                            }
-                                        }
+                                        persist_sw_version(version);
                                     }
                                     if let Some(prefix) =
                                         payload.get("cachePrefix").and_then(|v| v.as_str())
@@ -1092,50 +1033,29 @@ pub fn PwaStatus() -> impl IntoView {
                                         sw_action_status_signal,
                                         "Service worker responded to ping.",
                                     );
-                                } else if payload.get("type").and_then(|v| v.as_str())
-                                    == Some("SW_ACTIVATED")
-                                {
+                                }
+                                "SW_ACTIVATED" => {
                                     if let Some(version) =
                                         payload.get("version").and_then(|v| v.as_str())
                                     {
                                         update_version_signal.set(Some(version.to_string()));
-                                        let effective = sw_controller_url_for_msgs
-                                            .get_untracked()
-                                            .and_then(|url| e2e_version_from_sw_script_url(&url))
-                                            .unwrap_or_else(|| version.to_string());
-                                        sw_version_signal.set(Some(effective.clone()));
-                                        if let Some(window) = web_sys::window() {
-                                            if let Ok(Some(storage)) = window.local_storage() {
-                                                let _ =
-                                                    storage.set_item(SW_VERSION_KEY, &effective);
-                                            }
-                                        }
+                                        persist_sw_version(version);
                                     }
                                     let now = js_sys::Date::now();
                                     sw_activated_at_signal.set(Some(now));
-                                    if let Some(window) = web_sys::window() {
-                                        if let Ok(Some(storage)) = window.local_storage() {
-                                            let _ = storage
-                                                .set_item(SW_ACTIVATED_AT_KEY, &now.to_string());
-                                        }
-                                    }
+                                    set_local_storage_item(SW_ACTIVATED_AT_KEY, &now.to_string());
                                     update_signal.set(false);
                                     update_state_signal.set(None);
                                     update_error_signal.set(None);
                                     update_applying_signal.set(false);
-                                    if let Some(window) = web_sys::window() {
-                                        if let Ok(Some(storage)) = window.local_storage() {
-                                            let _ = storage.remove_item("pwa_update_dismissed_at");
-                                        }
-                                    }
+                                    remove_local_storage_item("pwa_update_dismissed_at");
                                     update_ready_signal.set(false);
                                     update_snoozed_signal.set(false);
                                     spawn_local(async move {
                                         cache_entries_signal.set(count_cache_entries().await);
                                     });
-                                } else if payload.get("type").and_then(|v| v.as_str())
-                                    == Some("SW_INSTALLED")
-                                {
+                                }
+                                "SW_INSTALLED" => {
                                     if let Some(version) =
                                         payload.get("version").and_then(|v| v.as_str())
                                     {
@@ -1146,6 +1066,7 @@ pub fn PwaStatus() -> impl IntoView {
                                         update_version_signal.set(Some(version.to_string()));
                                     }
                                 }
+                                _ => {}
                             }
                         },
                     )

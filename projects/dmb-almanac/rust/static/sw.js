@@ -61,12 +61,11 @@ async function putCache(cacheName, cacheKey, response) {
   return true;
 }
 
-function putCacheWithLifetime(event, cacheName, cacheKey, response) {
+function putCacheWithLifetime(cacheName, cacheKey, response) {
   if (!isCacheable(response)) {
     return;
   }
   const responseCopy = response.clone();
-  void event;
   void putCache(cacheName, cacheKey, responseCopy).catch((err) => {
     console.warn('cache write failed:', cacheName, cacheKey, err);
   });
@@ -144,7 +143,7 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
         return fetch(request)
           .then((response) => {
-            putCacheWithLifetime(event, SHELL_CACHE, url.pathname, response);
+            putCacheWithLifetime(SHELL_CACHE, url.pathname, response);
             return response;
           })
           .catch(() => cached || Response.error());
@@ -160,7 +159,7 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           // Store by path (not the full Request) so later navigations match reliably even if
           // headers differ (Playwright offline mode, different Accept headers, etc).
-          putCacheWithLifetime(event, SHELL_CACHE, cacheKey, response);
+          putCacheWithLifetime(SHELL_CACHE, cacheKey, response);
           return response;
         })
         .catch(() => caches.match(cacheKey).then((res) => res || caches.match(OFFLINE_FALLBACK)))
@@ -174,7 +173,7 @@ self.addEventListener('fetch', (event) => {
       caches.match(cacheKey).then((cached) => {
         const fetchPromise = fetch(new Request(request, { cache: 'no-store' }))
           .then((response) => {
-            putCacheWithLifetime(event, DATA_CACHE, cacheKey, response);
+            putCacheWithLifetime(DATA_CACHE, cacheKey, response);
             return response;
           })
           .catch(() => cached);
@@ -191,7 +190,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(new Request(request, { cache: 'no-store' }))
         .then((response) => {
-          putCacheWithLifetime(event, ASSET_CACHE, cacheKey, response);
+          putCacheWithLifetime(ASSET_CACHE, cacheKey, response);
           return response;
         })
         .catch(() => caches.match(cacheKey))
@@ -205,7 +204,7 @@ self.addEventListener('fetch', (event) => {
       caches.match(cacheKey).then((cached) =>
         cached ||
         fetch(request).then((response) => {
-          putCacheWithLifetime(event, ASSET_CACHE, cacheKey, response);
+          putCacheWithLifetime(ASSET_CACHE, cacheKey, response);
           return response;
         })
       )
