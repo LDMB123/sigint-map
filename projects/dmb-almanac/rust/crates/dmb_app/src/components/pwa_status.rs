@@ -127,6 +127,18 @@ async fn count_cache_entries() -> Option<usize> {
 }
 
 #[cfg(feature = "hydrate")]
+async fn refresh_cache_entries(cache_entries: RwSignal<Option<usize>>) {
+    cache_entries.set(count_cache_entries().await);
+}
+
+#[cfg(feature = "hydrate")]
+fn spawn_cache_entries_refresh(cache_entries: RwSignal<Option<usize>>) {
+    spawn_local(async move {
+        refresh_cache_entries(cache_entries).await;
+    });
+}
+
+#[cfg(feature = "hydrate")]
 fn is_previous_app_cache_name(name: &str) -> bool {
     // Rust app SW caches are scoped with a distinct prefix.
     if name.starts_with("dmb-almanac-rs") {
@@ -616,7 +628,7 @@ fn action_cleanup_previous_caches(state: PwaStatusState) {
             }
 
             state.previous_cache_cleaned_at.set(Some(now));
-            state.cache_entries.set(count_cache_entries().await);
+            refresh_cache_entries(state.cache_entries).await;
 
             let message = if deleted == 0 {
                 "Old caches: none found.".to_string()
@@ -867,10 +879,7 @@ fn spawn_storage_health_tasks(state: &PwaStatusState) {
         }
     });
 
-    let cache_entries = state.cache_entries;
-    spawn_local(async move {
-        cache_entries.set(count_cache_entries().await);
-    });
+    spawn_cache_entries_refresh(state.cache_entries);
 }
 
 #[cfg(feature = "hydrate")]
@@ -988,9 +997,7 @@ fn attach_sw_message_listener(container: &web_sys::ServiceWorkerContainer, state
                 state.update_applying.set(false);
                 remove_local_storage_item("pwa_update_dismissed_at");
                 state.update_snoozed.set(false);
-                spawn_local(async move {
-                    state.cache_entries.set(count_cache_entries().await);
-                });
+                spawn_cache_entries_refresh(state.cache_entries);
             }
             "SW_INSTALLED" => {
                 if let Some(version) = payload.get("version").and_then(|v| v.as_str()) {
@@ -1187,7 +1194,7 @@ async fn process_sw_registration(
                 let _ = storage.set_item(PREVIOUS_CACHE_CLEANED_AT_KEY, &now.to_string());
             }
             state.previous_cache_cleaned_at.set(Some(now));
-            state.cache_entries.set(count_cache_entries().await);
+            refresh_cache_entries(state.cache_entries).await;
         }
     }
 }
