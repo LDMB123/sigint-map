@@ -35,6 +35,18 @@ const SW_ACTIVATED_AT_KEY: &str = "pwa_sw_activated_at";
 const PREVIOUS_CACHE_CLEANED_AT_KEY: &str = "pwa_previous_cache_cleaned_at";
 #[cfg(feature = "hydrate")]
 const STORAGE_PRESSURE_CLEARED_MESSAGE: &str = "Cleared AI cache to relieve storage pressure.";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_APPLYING: &str = "Applying update…";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_RELOADING: &str = "Reloading…";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_CHECKING: &str = "Checking for updates…";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_NO_UPDATE_FOUND: &str = "No update found.";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_READY_TO_INSTALL: &str = "Update ready to install.";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_DOWNLOADING: &str = "Downloading update…";
 
 #[cfg(any(feature = "hydrate", test))]
 fn e2e_version_from_sw_script_url(script_url: &str) -> Option<String> {
@@ -300,6 +312,29 @@ fn local_storage_f64(storage: &web_sys::Storage, key: &str) -> Option<f64> {
     local_storage_item(storage, key).and_then(|value| value.parse::<f64>().ok())
 }
 
+#[cfg(feature = "hydrate")]
+fn set_update_reloading_state(state: &PwaStatusState) {
+    state
+        .update_state
+        .set(Some(UPDATE_STATE_RELOADING.to_string()));
+    state.update_applying.set(false);
+}
+
+#[cfg(feature = "hydrate")]
+fn set_update_ready_state(state: &PwaStatusState) {
+    state.update_ready.set(true);
+    state
+        .update_state
+        .set(Some(UPDATE_STATE_READY_TO_INSTALL.to_string()));
+}
+
+#[cfg(feature = "hydrate")]
+fn clear_update_progress_state(state: &PwaStatusState) {
+    state.update_error.set(None);
+    state.update_applying.set(false);
+    state.update_checking.set(false);
+}
+
 #[derive(Clone, Copy)]
 struct PwaStatusState {
     status: RwSignal<ImportStatus>,
@@ -487,7 +522,9 @@ fn action_update_click(state: PwaStatusState) {
     {
         state.update_applying.set(true);
         state.update_error.set(None);
-        state.update_state.set(Some("Applying update…".to_string()));
+        state
+            .update_state
+            .set(Some(UPDATE_STATE_APPLYING.to_string()));
 
         spawn_local(async move {
             use wasm_bindgen_futures::JsFuture;
@@ -514,10 +551,7 @@ fn action_update_click(state: PwaStatusState) {
                 let state_on_change = state.clone();
                 let window_reload = window.clone();
                 let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
-                    state_on_change
-                        .update_state
-                        .set(Some("Reloading…".to_string()));
-                    state_on_change.update_applying.set(false);
+                    set_update_reloading_state(&state_on_change);
                     let _ = window_reload.location().reload();
                 }) as Box<dyn Fn()>);
                 container
@@ -531,10 +565,7 @@ fn action_update_click(state: PwaStatusState) {
                 let state_timeout = state.clone();
                 let window_reload = window.clone();
                 schedule_window_timeout(1500, move || {
-                    state_timeout
-                        .update_state
-                        .set(Some("Reloading…".to_string()));
-                    state_timeout.update_applying.set(false);
+                    set_update_reloading_state(&state_timeout);
                     if let Err(err) = window_reload.location().reload() {
                         state_timeout.update_error.set(Some(format!(
                             "Reload blocked: {:?}. Please refresh manually.",
@@ -575,7 +606,7 @@ fn action_update_check(state: PwaStatusState) {
         state.update_checking.set(true);
         state
             .update_state
-            .set(Some("Checking for updates…".to_string()));
+            .set(Some(UPDATE_STATE_CHECKING.to_string()));
 
         spawn_local(async move {
             use wasm_bindgen_futures::JsFuture;
@@ -598,11 +629,13 @@ fn action_update_check(state: PwaStatusState) {
 
             state.update_checking.set(false);
             if !state.update_ready.get_untracked() && state.update_error.get_untracked().is_none() {
-                state.update_state.set(Some("No update found.".to_string()));
+                state
+                    .update_state
+                    .set(Some(UPDATE_STATE_NO_UPDATE_FOUND.to_string()));
                 let state_for_timeout = state.clone();
                 schedule_window_timeout(2500, move || {
                     if state_for_timeout.update_state.get_untracked().as_deref()
-                        == Some("No update found.")
+                        == Some(UPDATE_STATE_NO_UPDATE_FOUND)
                     {
                         state_for_timeout.update_state.set(None);
                     }
@@ -1072,14 +1105,9 @@ fn attach_installing_state_listener(
             if current_state == "installed" {
                 let waiting = reg.waiting().is_some();
                 if has_sw_controller() && waiting && !refresh_update_notice_state(&state) {
-                    state.update_ready.set(true);
-                    state
-                        .update_state
-                        .set(Some("Update ready to install.".to_string()));
+                    set_update_ready_state(&state);
                 }
-                state.update_error.set(None);
-                state.update_applying.set(false);
-                state.update_checking.set(false);
+                clear_update_progress_state(&state);
             }
         }
     }) as Box<dyn Fn()>);
@@ -1097,7 +1125,7 @@ fn attach_updatefound_listener(reg: web_sys::ServiceWorkerRegistration, state: P
         state.update_checking.set(true);
         state
             .update_state
-            .set(Some("Downloading update…".to_string()));
+            .set(Some(UPDATE_STATE_DOWNLOADING.to_string()));
         state.update_error.set(None);
         state.update_applying.set(false);
         state.update_ready.set(false);
@@ -1135,14 +1163,9 @@ async fn process_sw_registration(
 
     if reg.waiting().is_some() {
         if has_controller && !refresh_update_notice_state(&state) {
-            state.update_ready.set(true);
-            state
-                .update_state
-                .set(Some("Update ready to install.".to_string()));
+            set_update_ready_state(&state);
         }
-        state.update_error.set(None);
-        state.update_applying.set(false);
-        state.update_checking.set(false);
+        clear_update_progress_state(&state);
     }
 
     if let Some(worker) = reg.installing() {
