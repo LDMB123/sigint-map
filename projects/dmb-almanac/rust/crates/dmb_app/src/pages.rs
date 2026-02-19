@@ -751,10 +751,10 @@ fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
                 .unwrap_or(false);
         let _ = state.cross_origin_isolated.try_set(Some(isolated));
 
-        if let Some(value) = load_storage_item(&window, "dmb-webgpu-worker-threshold") {
+        if let Some(value) = load_storage_item(&window, crate::ai::WORKER_THRESHOLD_KEY) {
             let _ = state.worker_threshold_input.try_set(value);
         }
-        if let Some(value) = load_storage_item(&window, "dmb-webgpu-disabled") {
+        if let Some(value) = load_storage_item(&window, crate::ai::WEBGPU_DISABLE_KEY) {
             let _ = state
                 .webgpu_disabled
                 .try_set(value == "1" || value.eq_ignore_ascii_case("true"));
