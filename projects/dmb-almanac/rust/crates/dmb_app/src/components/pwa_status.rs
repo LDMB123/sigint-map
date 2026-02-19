@@ -1019,7 +1019,7 @@ fn attach_sw_message_listener(container: &web_sys::ServiceWorkerContainer, state
                 }
                 let now = js_sys::Date::now();
                 state.sw_activated_at.set(Some(now));
-                set_local_storage_item(SW_ACTIVATED_AT_KEY, &now.to_string());
+                set_local_storage_f64_item(SW_ACTIVATED_AT_KEY, now);
                 state.update_ready.set(false);
                 state.update_state.set(None);
                 state.update_error.set(None);
