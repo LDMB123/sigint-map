@@ -671,244 +671,29 @@ fn build_import_work_items(manifest: &DataManifest) -> Vec<ImportWorkItem> {
 }
 
 #[cfg(feature = "hydrate")]
-pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
-    use js_sys::{Date, Promise};
-    use wasm_bindgen::JsValue;
-    use wasm_bindgen_futures::JsFuture;
+fn set_import_progress(status: RwSignal<ImportStatus>, message: impl Into<String>, progress: f32) {
+    status.set(ImportStatus {
+        message: message.into(),
+        progress: progress.clamp(0.0, 1.0),
+        done: false,
+        error: None,
+        can_reset: false,
+    });
+}
 
-    clear_sqlite_parity_cache();
-    clear_integrity_report_cache();
-
-    let update = |message: String, progress: f32| {
-        status.set(ImportStatus {
-            message,
-            progress: progress.clamp(0.0, 1.0),
-            done: false,
-            error: None,
-            can_reset: false,
-        });
-    };
-
-    update("Checking offline data…".to_string(), 0.0);
-
-    update("Checking previous-version data…".to_string(), 0.0);
-    match dmb_idb::migrate_previous_db().await {
-        Ok(true) => {
-            update("Migrated previous-version data".to_string(), 0.05);
-        }
-        Ok(false) => {}
-        Err(err) => {
-            update(
-                "Previous-version migration failed; proceeding with fresh import".to_string(),
-                0.05,
-            );
-            web_sys::console::warn_1(&JsValue::from_str(&format!(
-                "previous-version migration failed: {err:?}"
-            )));
-        }
+#[cfg(feature = "hydrate")]
+fn import_error_status(message: String, progress: f32, error: String) -> ImportStatus {
+    ImportStatus {
+        message,
+        progress: progress.clamp(0.0, 1.0),
+        done: false,
+        error: Some(error),
+        can_reset: true,
     }
+}
 
-    let manifest = match fetch_json::<DataManifest>("/data/manifest.json").await {
-        Some(manifest) => manifest,
-        None => {
-            status.set(ImportStatus {
-                message: "Offline manifest missing".to_string(),
-                progress: 0.0,
-                done: false,
-                error: Some("Missing /data/manifest.json".to_string()),
-                can_reset: true,
-            });
-            return;
-        }
-    };
-    let dry_run = fetch_json::<DryRunReport>("/data/idb-migration-dry-run.json").await;
-
-    if let Ok(Some(marker)) = dmb_idb::get_sync_meta::<ImportMarker>(IMPORT_MARKER_ID).await {
-        if marker.manifest_version == manifest.version {
-            if let Some(mismatches) = verify_import_integrity(&manifest, dry_run.as_ref()).await {
-                if mismatches.is_empty() {
-                    status.set(ImportStatus {
-                        message: "Offline data ready".to_string(),
-                        progress: 1.0,
-                        done: true,
-                        error: None,
-                        can_reset: false,
-                    });
-                    return;
-                }
-
-                // Auto-repair: this typically means the IDB schema drifted (missing stores)
-                // or the previous import was interrupted. Clear seed stores and re-import.
-                tracing::warn!(
-                    mismatch_count = mismatches.len(),
-                    "integrity check failed for current manifest; clearing seed stores and reimporting"
-                );
-                update(
-                    "Offline data integrity check failed; repairing…".to_string(),
-                    0.02,
-                );
-                for spec in IMPORT_SPECS {
-                    if let Err(err) = dmb_idb::clear_store(spec.store).await {
-                        tracing::warn!(store = spec.store, error = ?err, "failed to clear store during repair");
-                    }
-                }
-                let _ = dmb_idb::delete_sync_meta(IMPORT_MARKER_ID).await;
-                let _ = dmb_idb::delete_sync_meta(IMPORT_CHECKPOINT_ID).await;
-                // Proceed into the normal import loop.
-            } else {
-                status.set(ImportStatus {
-                    message: "Offline data ready".to_string(),
-                    progress: 1.0,
-                    done: true,
-                    error: None,
-                    can_reset: false,
-                });
-                return;
-            }
-        }
-    }
-
-    let import_work = build_import_work_items(&manifest);
-    let total_work_items = import_work.len();
-    let total_files = total_work_items.max(1) as f32;
-    let mut resume_file_index = 0usize;
-    let mut resume_chunk_index = 0usize;
-    if let Ok(Some(checkpoint)) =
-        dmb_idb::get_sync_meta::<ImportCheckpoint>(IMPORT_CHECKPOINT_ID).await
-    {
-        if checkpoint.manifest_version == manifest.version && !checkpoint.completed {
-            resume_file_index = checkpoint.file_index.min(total_work_items);
-            resume_chunk_index = checkpoint.chunk_index;
-        }
-    }
-
-    for (file_index, work_item) in import_work.iter().enumerate() {
-        if file_index < resume_file_index {
-            continue;
-        }
-        let file_number = file_index + 1;
-        let progress_base = file_index as f32 / total_files;
-        update(
-            format!(
-                "Importing {} ({}/{})",
-                work_item.label, file_number, total_work_items
-            ),
-            progress_base,
-        );
-
-        let values = match fetch_json_array(&work_item.url).await {
-            Ok(values) => values,
-            Err(err) => {
-                status.set(ImportStatus {
-                    message: format!("Failed to load {}", work_item.label),
-                    progress: progress_base,
-                    done: false,
-                    error: Some(err.as_string().unwrap_or_default()),
-                    can_reset: true,
-                });
-                return;
-            }
-        };
-
-        let total_records = values.length() as usize;
-        let chunk_size = import_chunk_size(total_records);
-        let chunk_total = total_records.div_ceil(chunk_size).max(1);
-        let start_chunk = if file_index == resume_file_index {
-            resume_chunk_index.min(chunk_total.saturating_sub(1))
-        } else {
-            0
-        };
-
-        for chunk_index in start_chunk..chunk_total {
-            let chunk_progress = (chunk_index + 1) as f32 / chunk_total as f32;
-            let progress = progress_base + (1.0 / total_files) * chunk_progress;
-            update(
-                format!(
-                    "Importing {} ({}/{}) • chunk {}/{}",
-                    work_item.label,
-                    file_number,
-                    total_work_items,
-                    chunk_index + 1,
-                    chunk_total
-                ),
-                progress,
-            );
-
-            let start = chunk_index * chunk_size;
-            let end = (start + chunk_size).min(total_records);
-            let mut chunk: Vec<JsValue> = Vec::with_capacity(end.saturating_sub(start));
-            for idx in start..end {
-                chunk.push(values.get(idx as u32));
-            }
-
-            if let Err(err) = dmb_idb::bulk_put(work_item.store, &chunk).await {
-                status.set(ImportStatus {
-                    message: format!("Import failed: {}", work_item.label),
-                    progress,
-                    done: false,
-                    error: Some(format!("{err:?}")),
-                    can_reset: true,
-                });
-                return;
-            }
-
-            let chunk_number = chunk_index + 1;
-            let should_persist_checkpoint = chunk_total <= CHECKPOINT_INTERVAL_CHUNKS
-                || chunk_number == chunk_total
-                || chunk_number % CHECKPOINT_INTERVAL_CHUNKS == 0;
-            if should_persist_checkpoint {
-                let checkpoint = ImportCheckpoint {
-                    id: IMPORT_CHECKPOINT_ID.to_string(),
-                    manifest_version: manifest.version.clone(),
-                    file_index,
-                    chunk_index: chunk_number,
-                    total_files: total_work_items,
-                    chunk_total,
-                    updated_at: Date::new_0().to_string().into(),
-                    completed: false,
-                };
-                let _ = dmb_idb::put_sync_meta(&checkpoint).await;
-            }
-
-            let _ = JsFuture::from(Promise::resolve(&JsValue::NULL)).await;
-        }
-    }
-
-    let manifest_version = manifest.version.clone();
-    let marker = ImportMarker {
-        id: IMPORT_MARKER_ID.to_string(),
-        manifest_version: manifest_version.clone(),
-        imported_at: Date::new_0().to_string().into(),
-        record_counts: manifest.record_counts_map(),
-    };
-
-    let _ = dmb_idb::put_sync_meta(&marker).await;
-    let checkpoint = ImportCheckpoint {
-        id: IMPORT_CHECKPOINT_ID.to_string(),
-        manifest_version,
-        file_index: total_work_items,
-        chunk_index: 0,
-        total_files: total_work_items,
-        chunk_total: 0,
-        updated_at: Date::new_0().to_string().into(),
-        completed: true,
-    };
-    let _ = dmb_idb::put_sync_meta(&checkpoint).await;
-
-    if let Some(mismatches) = verify_import_integrity(&manifest, dry_run.as_ref()).await {
-        if !mismatches.is_empty() {
-            let summary = format!("Integrity check failed for {} stores", mismatches.len());
-            status.set(ImportStatus {
-                message: summary,
-                progress: 1.0,
-                done: false,
-                error: Some(format!("{mismatches:?}")),
-                can_reset: true,
-            });
-            return;
-        }
-    }
-
+#[cfg(feature = "hydrate")]
+fn set_import_ready(status: RwSignal<ImportStatus>) {
     status.set(ImportStatus {
         message: "Offline data ready".to_string(),
         progress: 1.0,
@@ -916,6 +701,340 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
         error: None,
         can_reset: false,
     });
+}
+
+#[cfg(feature = "hydrate")]
+async fn migrate_previous_version_data(status: RwSignal<ImportStatus>) {
+    set_import_progress(status, "Checking previous-version data…", 0.0);
+    match dmb_idb::migrate_previous_db().await {
+        Ok(true) => set_import_progress(status, "Migrated previous-version data", 0.05),
+        Ok(false) => {}
+        Err(err) => {
+            set_import_progress(
+                status,
+                "Previous-version migration failed; proceeding with fresh import",
+                0.05,
+            );
+            web_sys::console::warn_1(&JsValue::from_str(&format!(
+                "previous-version migration failed: {err:?}"
+            )));
+        }
+    }
+}
+
+#[cfg(feature = "hydrate")]
+async fn load_seed_manifest(
+    status: RwSignal<ImportStatus>,
+) -> Option<(DataManifest, Option<DryRunReport>)> {
+    let manifest = fetch_json::<DataManifest>("/data/manifest.json").await?;
+    let dry_run = fetch_json::<DryRunReport>("/data/idb-migration-dry-run.json").await;
+    if manifest.version.is_empty() {
+        status.set(import_error_status(
+            "Offline manifest missing".to_string(),
+            0.0,
+            "Missing /data/manifest.json".to_string(),
+        ));
+        return None;
+    }
+    Some((manifest, dry_run))
+}
+
+#[cfg(feature = "hydrate")]
+async fn clear_seed_stores_for_repair() {
+    for spec in IMPORT_SPECS {
+        if let Err(err) = dmb_idb::clear_store(spec.store).await {
+            tracing::warn!(
+                store = spec.store,
+                error = ?err,
+                "failed to clear store during repair"
+            );
+        }
+    }
+    let _ = dmb_idb::delete_sync_meta(IMPORT_MARKER_ID).await;
+    let _ = dmb_idb::delete_sync_meta(IMPORT_CHECKPOINT_ID).await;
+}
+
+#[cfg(feature = "hydrate")]
+async fn check_existing_manifest_integrity(
+    status: RwSignal<ImportStatus>,
+    manifest: &DataManifest,
+    dry_run: Option<&DryRunReport>,
+) -> bool {
+    let Ok(Some(marker)) = dmb_idb::get_sync_meta::<ImportMarker>(IMPORT_MARKER_ID).await else {
+        return false;
+    };
+    if marker.manifest_version != manifest.version {
+        return false;
+    }
+
+    if let Some(mismatches) = verify_import_integrity(manifest, dry_run).await {
+        if mismatches.is_empty() {
+            set_import_ready(status);
+            return true;
+        }
+        // Auto-repair: this typically means the IDB schema drifted (missing stores)
+        // or the previous import was interrupted. Clear seed stores and re-import.
+        tracing::warn!(
+            mismatch_count = mismatches.len(),
+            "integrity check failed for current manifest; clearing seed stores and reimporting"
+        );
+        set_import_progress(
+            status,
+            "Offline data integrity check failed; repairing…",
+            0.02,
+        );
+        clear_seed_stores_for_repair().await;
+        return false;
+    }
+
+    set_import_ready(status);
+    true
+}
+
+#[cfg(feature = "hydrate")]
+async fn load_resume_position(manifest: &DataManifest, total_work_items: usize) -> (usize, usize) {
+    let Ok(Some(checkpoint)) =
+        dmb_idb::get_sync_meta::<ImportCheckpoint>(IMPORT_CHECKPOINT_ID).await
+    else {
+        return (0, 0);
+    };
+    if checkpoint.manifest_version != manifest.version || checkpoint.completed {
+        return (0, 0);
+    }
+    (
+        checkpoint.file_index.min(total_work_items),
+        checkpoint.chunk_index,
+    )
+}
+
+#[cfg(feature = "hydrate")]
+fn chunk_values(values: &Array, start: usize, end: usize) -> Vec<JsValue> {
+    let mut chunk: Vec<JsValue> = Vec::with_capacity(end.saturating_sub(start));
+    for idx in start..end {
+        chunk.push(values.get(idx as u32));
+    }
+    chunk
+}
+
+#[cfg(feature = "hydrate")]
+async fn persist_import_checkpoint(
+    manifest_version: &str,
+    file_index: usize,
+    chunk_number: usize,
+    total_work_items: usize,
+    chunk_total: usize,
+) {
+    let checkpoint = ImportCheckpoint {
+        id: IMPORT_CHECKPOINT_ID.to_string(),
+        manifest_version: manifest_version.to_string(),
+        file_index,
+        chunk_index: chunk_number,
+        total_files: total_work_items,
+        chunk_total,
+        updated_at: js_sys::Date::new_0().to_string().into(),
+        completed: false,
+    };
+    let _ = dmb_idb::put_sync_meta(&checkpoint).await;
+}
+
+#[cfg(feature = "hydrate")]
+async fn import_single_work_item(
+    status: RwSignal<ImportStatus>,
+    manifest_version: &str,
+    work_item: &ImportWorkItem,
+    file_index: usize,
+    total_work_items: usize,
+    total_files: f32,
+    start_chunk_hint: usize,
+) -> Result<(), ImportStatus> {
+    let file_number = file_index + 1;
+    let progress_base = file_index as f32 / total_files;
+    set_import_progress(
+        status,
+        format!(
+            "Importing {} ({}/{})",
+            work_item.label, file_number, total_work_items
+        ),
+        progress_base,
+    );
+
+    let values = fetch_json_array(&work_item.url).await.map_err(|err| {
+        import_error_status(
+            format!("Failed to load {}", work_item.label),
+            progress_base,
+            err.as_string().unwrap_or_default(),
+        )
+    })?;
+    let total_records = values.length() as usize;
+    let chunk_size = import_chunk_size(total_records);
+    let chunk_total = total_records.div_ceil(chunk_size).max(1);
+    let start_chunk = start_chunk_hint.min(chunk_total.saturating_sub(1));
+
+    for chunk_index in start_chunk..chunk_total {
+        let chunk_progress = (chunk_index + 1) as f32 / chunk_total as f32;
+        let progress = progress_base + (1.0 / total_files) * chunk_progress;
+        set_import_progress(
+            status,
+            format!(
+                "Importing {} ({}/{}) • chunk {}/{}",
+                work_item.label,
+                file_number,
+                total_work_items,
+                chunk_index + 1,
+                chunk_total
+            ),
+            progress,
+        );
+
+        let start = chunk_index * chunk_size;
+        let end = (start + chunk_size).min(total_records);
+        let chunk = chunk_values(&values, start, end);
+
+        if let Err(err) = dmb_idb::bulk_put(work_item.store, &chunk).await {
+            return Err(import_error_status(
+                format!("Import failed: {}", work_item.label),
+                progress,
+                format!("{err:?}"),
+            ));
+        }
+
+        let chunk_number = chunk_index + 1;
+        let should_persist_checkpoint = chunk_total <= CHECKPOINT_INTERVAL_CHUNKS
+            || chunk_number == chunk_total
+            || chunk_number % CHECKPOINT_INTERVAL_CHUNKS == 0;
+        if should_persist_checkpoint {
+            persist_import_checkpoint(
+                manifest_version,
+                file_index,
+                chunk_number,
+                total_work_items,
+                chunk_total,
+            )
+            .await;
+        }
+
+        let _ = JsFuture::from(js_sys::Promise::resolve(&JsValue::NULL)).await;
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "hydrate")]
+async fn import_work_items_with_resume(
+    status: RwSignal<ImportStatus>,
+    manifest_version: &str,
+    import_work: &[ImportWorkItem],
+    resume_file_index: usize,
+    resume_chunk_index: usize,
+) -> Result<(), ImportStatus> {
+    let total_work_items = import_work.len();
+    let total_files = total_work_items.max(1) as f32;
+
+    for (file_index, work_item) in import_work.iter().enumerate() {
+        if file_index < resume_file_index {
+            continue;
+        }
+        let start_chunk = if file_index == resume_file_index {
+            resume_chunk_index
+        } else {
+            0
+        };
+        import_single_work_item(
+            status,
+            manifest_version,
+            work_item,
+            file_index,
+            total_work_items,
+            total_files,
+            start_chunk,
+        )
+        .await?;
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "hydrate")]
+async fn persist_import_completion(manifest: &DataManifest, total_work_items: usize) {
+    let manifest_version = manifest.version.clone();
+    let marker = ImportMarker {
+        id: IMPORT_MARKER_ID.to_string(),
+        manifest_version: manifest_version.clone(),
+        imported_at: js_sys::Date::new_0().to_string().into(),
+        record_counts: manifest.record_counts_map(),
+    };
+    let _ = dmb_idb::put_sync_meta(&marker).await;
+
+    let checkpoint = ImportCheckpoint {
+        id: IMPORT_CHECKPOINT_ID.to_string(),
+        manifest_version,
+        file_index: total_work_items,
+        chunk_index: 0,
+        total_files: total_work_items,
+        chunk_total: 0,
+        updated_at: js_sys::Date::new_0().to_string().into(),
+        completed: true,
+    };
+    let _ = dmb_idb::put_sync_meta(&checkpoint).await;
+}
+
+#[cfg(feature = "hydrate")]
+fn integrity_failure_status(mismatches: &[IntegrityMismatch]) -> ImportStatus {
+    import_error_status(
+        format!("Integrity check failed for {} stores", mismatches.len()),
+        1.0,
+        format!("{mismatches:?}"),
+    )
+}
+
+#[cfg(feature = "hydrate")]
+pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
+    clear_sqlite_parity_cache();
+    clear_integrity_report_cache();
+    set_import_progress(status, "Checking offline data…", 0.0);
+    migrate_previous_version_data(status).await;
+
+    let Some((manifest, dry_run)) = load_seed_manifest(status).await else {
+        status.set(import_error_status(
+            "Offline manifest missing".to_string(),
+            0.0,
+            "Missing /data/manifest.json".to_string(),
+        ));
+        return;
+    };
+
+    if check_existing_manifest_integrity(status, &manifest, dry_run.as_ref()).await {
+        return;
+    }
+
+    let import_work = build_import_work_items(&manifest);
+    let total_work_items = import_work.len();
+    let (resume_file_index, resume_chunk_index) =
+        load_resume_position(&manifest, total_work_items).await;
+
+    if let Err(err_status) = import_work_items_with_resume(
+        status,
+        &manifest.version,
+        &import_work,
+        resume_file_index,
+        resume_chunk_index,
+    )
+    .await
+    {
+        status.set(err_status);
+        return;
+    }
+
+    persist_import_completion(&manifest, total_work_items).await;
+
+    if let Some(mismatches) = verify_import_integrity(&manifest, dry_run.as_ref()).await {
+        if !mismatches.is_empty() {
+            status.set(integrity_failure_status(&mismatches));
+            return;
+        }
+    }
+
+    set_import_ready(status);
 }
 
 #[cfg(feature = "hydrate")]

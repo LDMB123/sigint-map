@@ -540,6 +540,54 @@ fn ivf_cap_bytes_for_matrix(cap_bytes: u64) -> u64 {
 }
 
 #[cfg(any(feature = "hydrate", test))]
+fn target_vectors_for_cap(cap_bytes: u64, dim: usize, record_count: usize) -> usize {
+    let max_vectors = (cap_bytes / (dim as u64 * 4)).max(1) as usize;
+    max_vectors.max(MIN_SAMPLE_RECORDS).min(record_count.max(1))
+}
+
+#[cfg(any(feature = "hydrate", test))]
+fn truncate_for_ann_cap(
+    mut records: Vec<EmbeddingRecord>,
+    mut matrix: Vec<f32>,
+    dim: usize,
+    target_vectors: usize,
+) -> (Vec<EmbeddingRecord>, Vec<f32>) {
+    let keep = target_vectors.min(matrix.len() / dim);
+    records.truncate(keep);
+    matrix.truncate(keep * dim);
+    (records, matrix)
+}
+
+#[cfg(any(feature = "hydrate", test))]
+fn sample_for_cap(
+    records: Vec<EmbeddingRecord>,
+    matrix: Vec<f32>,
+    dim: usize,
+    target_vectors: usize,
+) -> (Vec<EmbeddingRecord>, Vec<f32>) {
+    let total = records.len().max(1);
+    let step = ((total as f64) / (target_vectors as f64)).ceil() as usize;
+    let mut new_records = Vec::with_capacity(target_vectors);
+    let mut new_matrix = Vec::with_capacity(target_vectors * dim);
+    for (idx, record) in records.into_iter().enumerate() {
+        if idx % step != 0 {
+            continue;
+        }
+        let start = idx * dim;
+        let end = start + dim;
+        if end > matrix.len() {
+            break;
+        }
+        new_matrix.extend_from_slice(&matrix[start..end]);
+        new_records.push(record);
+        if new_records.len() >= target_vectors {
+            break;
+        }
+    }
+    (new_records, new_matrix)
+}
+
+#[cfg(any(feature = "hydrate", test))]
 fn cap_embedding_index_with_policy(
     records: Vec<EmbeddingRecord>,
     matrix: Vec<f32>,
@@ -570,62 +618,35 @@ fn cap_embedding_index_with_policy(
         }
     }
     let vectors_before = if dim == 0 { 0 } else { matrix.len() / dim };
+    let mut diagnostics = AnnCapDiagnostics {
+        cap_bytes,
+        cap_override_mb: policy.cap_override_mb,
+        matrix_bytes_before: matrix_bytes,
+        matrix_bytes_after: matrix_bytes,
+        ivf_bytes,
+        ivf_cap_bytes,
+        vectors_before,
+        vectors_after: vectors_before,
+        dim,
+        ivf_dropped,
+        used_ann: use_ann,
+        capped: false,
+        device_memory_gb: policy.device_memory_gb,
+        policy_tier: policy.tier.clone(),
+        chunks_loaded: None,
+        records_loaded: None,
+        budget_capped: false,
+    };
     if dim == 0 || matrix_bytes <= cap_bytes {
-        let diagnostics = AnnCapDiagnostics {
-            cap_bytes,
-            cap_override_mb: policy.cap_override_mb,
-            matrix_bytes_before: matrix_bytes,
-            matrix_bytes_after: matrix_bytes,
-            ivf_bytes,
-            ivf_cap_bytes,
-            vectors_before,
-            vectors_after: vectors_before,
-            dim,
-            ivf_dropped,
-            used_ann: use_ann,
-            capped: false,
-            device_memory_gb: policy.device_memory_gb,
-            policy_tier: policy.tier,
-            chunks_loaded: None,
-            records_loaded: None,
-            budget_capped: false,
-        };
         return (records, matrix, ivf, diagnostics);
     }
 
-    let max_vectors = (cap_bytes / (dim as u64 * 4)).max(1) as usize;
-    let target_vectors = max_vectors
-        .max(MIN_SAMPLE_RECORDS)
-        .min(records.len().max(1));
-    let total = records.len().max(1);
+    let target_vectors = target_vectors_for_cap(cap_bytes, dim, records.len());
 
     let (new_records, new_matrix) = if use_ann {
-        let keep = target_vectors.min(matrix.len() / dim);
-        let mut records = records;
-        records.truncate(keep);
-        let mut matrix = matrix;
-        matrix.truncate(keep * dim);
-        (records, matrix)
+        truncate_for_ann_cap(records, matrix, dim, target_vectors)
     } else {
-        let step = ((total as f64) / (target_vectors as f64)).ceil() as usize;
-        let mut new_records = Vec::with_capacity(target_vectors);
-        let mut new_matrix = Vec::with_capacity(target_vectors * dim);
-        for (idx, record) in records.into_iter().enumerate() {
-            if idx % step != 0 {
-                continue;
-            }
-            let start = idx * dim;
-            let end = start + dim;
-            if end > matrix.len() {
-                break;
-            }
-            new_matrix.extend_from_slice(&matrix[start..end]);
-            new_records.push(record);
-            if new_records.len() >= target_vectors {
-                break;
-            }
-        }
-        (new_records, new_matrix)
+        sample_for_cap(records, matrix, dim, target_vectors)
     };
 
     if ivf.is_some() {
@@ -639,25 +660,11 @@ fn cap_embedding_index_with_policy(
         "ann_cap_exceeded",
         Some(format!("{matrix_bytes} bytes > {cap_bytes} bytes")),
     );
-    let diagnostics = AnnCapDiagnostics {
-        cap_bytes,
-        cap_override_mb: policy.cap_override_mb,
-        matrix_bytes_before: matrix_bytes,
-        matrix_bytes_after: new_matrix.len() as u64 * 4,
-        ivf_bytes,
-        ivf_cap_bytes,
-        vectors_before,
-        vectors_after,
-        dim,
-        ivf_dropped,
-        used_ann: use_ann,
-        capped: true,
-        device_memory_gb: policy.device_memory_gb,
-        policy_tier: policy.tier,
-        chunks_loaded: None,
-        records_loaded: None,
-        budget_capped: true,
-    };
+    diagnostics.matrix_bytes_after = new_matrix.len() as u64 * 4;
+    diagnostics.vectors_after = vectors_after;
+    diagnostics.ivf_dropped = ivf_dropped;
+    diagnostics.capped = true;
+    diagnostics.budget_capped = true;
 
     #[cfg(all(feature = "hydrate", target_arch = "wasm32"))]
     web_sys::console::warn_1(&wasm_bindgen::JsValue::from_str(&format!(
@@ -1522,62 +1529,56 @@ async fn load_ivf_index(meta: &dmb_core::AnnIndexMeta) -> Option<AnnIvfIndex> {
 }
 
 #[cfg(feature = "hydrate")]
-pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
-    if let Some(existing) = EMBEDDING_INDEX.get() {
-        return Some(existing.clone());
-    }
-    maybe_seed_ai_config().await;
-    if embedding_sample_enabled() {
-        if let Some(sample_index) = load_embedding_sample_index().await {
-            let _ = EMBEDDING_INDEX.set(sample_index.clone());
-            return Some(sample_index);
-        }
-    }
-    let version = CORE_SCHEMA_VERSION;
-    let mut manifest = dmb_idb::get_embedding_manifest(version)
+async fn read_cached_embedding_manifest(version: &str) -> Option<EmbeddingManifest> {
+    dmb_idb::get_embedding_manifest(version)
         .await
         .ok()
-        .flatten();
+        .flatten()
+}
 
-    if manifest.is_none() {
-        let fetched = match fetch_json::<EmbeddingManifest>("/data/embedding-manifest.json").await {
-            Some(payload) => payload,
-            None => {
-                record_ai_warning("embedding_manifest_fetch_failed", None);
-                return None;
-            }
-        };
-        dmb_idb::store_embedding_manifest(&fetched).await.ok()?;
-        for chunk in &fetched.chunks {
-            if dmb_idb::get_embedding_chunk(chunk.chunk_id)
-                .await
-                .ok()
-                .flatten()
-                .is_some()
-            {
-                continue;
-            }
-            let url = format!("/data/{}", chunk.file);
-            if let Some(payload) = fetch_json::<EmbeddingChunk>(&url).await {
-                let _ = dmb_idb::store_embedding_chunk(&payload).await;
-            } else {
-                record_ai_warning("embedding_chunk_fetch_failed", Some(chunk.file.clone()));
-            }
-        }
-        manifest = dmb_idb::get_embedding_manifest(version)
+#[cfg(feature = "hydrate")]
+async fn hydrate_missing_embedding_chunks(manifest: &EmbeddingManifest) {
+    for chunk in &manifest.chunks {
+        if dmb_idb::get_embedding_chunk(chunk.chunk_id)
             .await
             .ok()
-            .flatten();
+            .flatten()
+            .is_some()
+        {
+            continue;
+        }
+        let url = format!("/data/{}", chunk.file);
+        if let Some(payload) = fetch_json::<EmbeddingChunk>(&url).await {
+            let _ = dmb_idb::store_embedding_chunk(&payload).await;
+        } else {
+            record_ai_warning("embedding_chunk_fetch_failed", Some(chunk.file.clone()));
+        }
+    }
+}
+
+#[cfg(feature = "hydrate")]
+async fn load_embedding_manifest_with_cache(version: &str) -> Option<EmbeddingManifest> {
+    if let Some(manifest) = read_cached_embedding_manifest(version).await {
+        return Some(manifest);
     }
 
-    let manifest = manifest?;
-    let mut records = Vec::new();
-    let policy = cap_policy_from_navigator();
-    let mut chunks_loaded = 0usize;
-    let mut budget_capped = false;
+    let fetched = match fetch_json::<EmbeddingManifest>("/data/embedding-manifest.json").await {
+        Some(payload) => payload,
+        None => {
+            record_ai_warning("embedding_manifest_fetch_failed", None);
+            return None;
+        }
+    };
+    dmb_idb::store_embedding_manifest(&fetched).await.ok()?;
+    hydrate_missing_embedding_chunks(&fetched).await;
+    read_cached_embedding_manifest(version).await
+}
+
+#[cfg(feature = "hydrate")]
+async fn load_ann_backing(manifest_dim: u32) -> (Vec<f32>, bool, Option<AnnIvfIndex>) {
     let ann_meta = load_ann_meta().await;
-    let mut matrix = if let Some(meta) = ann_meta.as_ref() {
-        load_ann_vectors(meta, manifest.dim)
+    let matrix = if let Some(meta) = ann_meta.as_ref() {
+        load_ann_vectors(meta, manifest_dim)
             .await
             .unwrap_or_else(Vec::new)
     } else {
@@ -1593,13 +1594,29 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     } else {
         None
     };
+    (matrix, use_ann, ivf)
+}
 
-    let max_vectors = if manifest.dim == 0 {
+#[cfg(feature = "hydrate")]
+fn target_vectors_for_manifest(policy: &CapPolicy, dim: u32) -> usize {
+    let max_vectors = if dim == 0 {
         0usize
     } else {
-        (policy.cap_bytes / (manifest.dim as u64 * 4)).max(1) as usize
+        (policy.cap_bytes / (dim as u64 * 4)).max(1) as usize
     };
-    let target_vectors = max_vectors.max(MIN_SAMPLE_RECORDS);
+    max_vectors.max(MIN_SAMPLE_RECORDS)
+}
+
+#[cfg(feature = "hydrate")]
+async fn load_records_and_matrix_from_chunks(
+    manifest: &EmbeddingManifest,
+    mut matrix: Vec<f32>,
+    use_ann: bool,
+    target_vectors: usize,
+) -> (Vec<EmbeddingRecord>, Vec<f32>, usize, bool) {
+    let mut records = Vec::new();
+    let mut chunks_loaded = 0usize;
+    let mut budget_capped = false;
 
     for meta in &manifest.chunks {
         if let Some(chunk) = dmb_idb::get_embedding_chunk(meta.chunk_id)
@@ -1607,8 +1624,7 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
             .ok()
             .flatten()
         {
-            for record in chunk.records {
-                let mut record = record;
+            for mut record in chunk.records {
                 if !use_ann {
                     matrix.extend_from_slice(&record.vector);
                 }
@@ -1626,6 +1642,43 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
             }
         }
     }
+
+    (records, matrix, chunks_loaded, budget_capped)
+}
+
+#[cfg(feature = "hydrate")]
+fn schedule_embedding_background_tasks(caps: AiCapabilities) {
+    if caps.webgpu_enabled && should_run_worker_benchmark() {
+        spawn_local(async move {
+            let _ = benchmark_worker_threshold().await;
+            mark_worker_benchmark_ran();
+        });
+    }
+    if caps.webgpu_worker {
+        spawn_local(async move {
+            warm_webgpu_worker().await;
+        });
+    }
+}
+
+#[cfg(feature = "hydrate")]
+pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
+    if let Some(existing) = EMBEDDING_INDEX.get() {
+        return Some(existing.clone());
+    }
+    maybe_seed_ai_config().await;
+    if embedding_sample_enabled() {
+        if let Some(sample_index) = load_embedding_sample_index().await {
+            let _ = EMBEDDING_INDEX.set(sample_index.clone());
+            return Some(sample_index);
+        }
+    }
+    let manifest = load_embedding_manifest_with_cache(CORE_SCHEMA_VERSION).await?;
+    let policy = cap_policy_from_navigator();
+    let target_vectors = target_vectors_for_manifest(&policy, manifest.dim);
+    let (matrix, use_ann, ivf) = load_ann_backing(manifest.dim).await;
+    let (records, matrix, chunks_loaded, budget_capped) =
+        load_records_and_matrix_from_chunks(&manifest, matrix, use_ann, target_vectors).await;
 
     if budget_capped {
         record_ai_warning(
@@ -1657,18 +1710,7 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
         ivf,
     });
     let _ = EMBEDDING_INDEX.set(index.clone());
-    let caps = detect_ai_capabilities();
-    if caps.webgpu_enabled && should_run_worker_benchmark() {
-        spawn_local(async move {
-            let _ = benchmark_worker_threshold().await;
-            mark_worker_benchmark_ran();
-        });
-    }
-    if caps.webgpu_worker {
-        spawn_local(async move {
-            warm_webgpu_worker().await;
-        });
-    }
+    schedule_embedding_background_tasks(detect_ai_capabilities());
     Some(index)
 }
 

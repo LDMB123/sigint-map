@@ -576,1309 +576,1280 @@ fn load_idb_runtime_metrics() -> Option<IdbRuntimeMetrics> {
         .and_then(|value| serde_wasm_bindgen::from_value(value).ok())
 }
 
-pub fn ai_diagnostics_page() -> impl IntoView {
-    // Keep the initial render deterministic for hydration; client-only detection runs post-mount.
-    let caps = RwSignal::new(crate::ai::AiCapabilities::default());
-    let ann_meta = RwSignal::new(None::<AnnIndexMeta>);
-    let ann_caps = RwSignal::new(None::<crate::ai::AnnCapDiagnostics>);
-    let ann_caps_loading = RwSignal::new(false);
-    let ann_caps_error = RwSignal::new(None::<String>);
-    let embed_meta = RwSignal::new(None::<EmbeddingManifest>);
-    let bench = RwSignal::new(None::<crate::ai::AiBenchmark>);
-    let bench_running = RwSignal::new(false);
-    let bench_progress = RwSignal::new(0.0_f32);
-    let bench_stage = RwSignal::new("Idle".to_string());
-    let bench_cancelled = RwSignal::new(false);
-    let worker_bench = RwSignal::new(None::<crate::ai::AiWorkerBenchmark>);
-    let tuning = RwSignal::new(None::<crate::ai::AiTuning>);
-    let tuning_result = RwSignal::new(None::<crate::ai::ProbeTuningResult>);
-    let benchmark_history = RwSignal::new(Vec::<crate::ai::AiBenchmarkSample>::new());
-    let worker_threshold_input = RwSignal::new(String::new());
-    let worker_threshold_current = RwSignal::new(None::<usize>);
-    let worker_max_floats = RwSignal::new(None::<usize>);
-    let ann_cap_override_input = RwSignal::new(String::new());
-    let ann_cap_override_value = RwSignal::new(None::<u64>);
-    let ai_config_seeded = RwSignal::new(false);
-    let ai_config_version = RwSignal::new(None::<String>);
-    let ai_config_generated_at = RwSignal::new(None::<String>);
-    let ai_config_mismatch = RwSignal::new(None::<String>);
-    let embedding_sample_enabled = RwSignal::new(false);
-    let cross_origin_isolated = RwSignal::new(None::<bool>);
-    let telemetry_snapshot = RwSignal::new(None::<crate::ai::AiTelemetrySnapshot>);
-    let webgpu_disabled = RwSignal::new(false);
-    let ai_warnings = RwSignal::new(Vec::<crate::ai::AiWarningEvent>::new());
-    let worker_bench_timestamp = RwSignal::new(None::<f64>);
-    let worker_failure = RwSignal::new(crate::ai::WorkerFailureStatus::default());
-    let webgpu_probe = RwSignal::new(None::<bool>);
-    let sqlite_parity = RwSignal::new(None::<crate::data::SqliteParityReport>);
-    let integrity_report = RwSignal::new(None::<crate::data::IntegrityReport>);
-    let webgpu_runtime = RwSignal::new(None::<WebgpuRuntimeTelemetry>);
-    let apple_silicon_profile = RwSignal::new(None::<AppleSiliconProfile>);
-    let idb_runtime_metrics = RwSignal::new(None::<IdbRuntimeMetrics>);
+#[derive(Clone)]
+struct AiDiagnosticsState {
+    caps: RwSignal<crate::ai::AiCapabilities>,
+    ann_meta: RwSignal<Option<AnnIndexMeta>>,
+    ann_caps: RwSignal<Option<crate::ai::AnnCapDiagnostics>>,
+    ann_caps_loading: RwSignal<bool>,
+    ann_caps_error: RwSignal<Option<String>>,
+    embed_meta: RwSignal<Option<EmbeddingManifest>>,
+    bench: RwSignal<Option<crate::ai::AiBenchmark>>,
+    bench_running: RwSignal<bool>,
+    bench_progress: RwSignal<f32>,
+    bench_stage: RwSignal<String>,
+    bench_cancelled: RwSignal<bool>,
+    worker_bench: RwSignal<Option<crate::ai::AiWorkerBenchmark>>,
+    tuning: RwSignal<Option<crate::ai::AiTuning>>,
+    tuning_result: RwSignal<Option<crate::ai::ProbeTuningResult>>,
+    benchmark_history: RwSignal<Vec<crate::ai::AiBenchmarkSample>>,
+    worker_threshold_input: RwSignal<String>,
+    worker_threshold_current: RwSignal<Option<usize>>,
+    worker_max_floats: RwSignal<Option<usize>>,
+    ann_cap_override_input: RwSignal<String>,
+    ann_cap_override_value: RwSignal<Option<u64>>,
+    ai_config_seeded: RwSignal<bool>,
+    ai_config_version: RwSignal<Option<String>>,
+    ai_config_generated_at: RwSignal<Option<String>>,
+    ai_config_mismatch: RwSignal<Option<String>>,
+    embedding_sample_enabled: RwSignal<bool>,
+    cross_origin_isolated: RwSignal<Option<bool>>,
+    telemetry_snapshot: RwSignal<Option<crate::ai::AiTelemetrySnapshot>>,
+    webgpu_disabled: RwSignal<bool>,
+    ai_warnings: RwSignal<Vec<crate::ai::AiWarningEvent>>,
+    worker_bench_timestamp: RwSignal<Option<f64>>,
+    worker_failure: RwSignal<crate::ai::WorkerFailureStatus>,
+    webgpu_probe: RwSignal<Option<bool>>,
+    sqlite_parity: RwSignal<Option<crate::data::SqliteParityReport>>,
+    integrity_report: RwSignal<Option<crate::data::IntegrityReport>>,
+    webgpu_runtime: RwSignal<Option<WebgpuRuntimeTelemetry>>,
+    apple_silicon_profile: RwSignal<Option<AppleSiliconProfile>>,
+    idb_runtime_metrics: RwSignal<Option<IdbRuntimeMetrics>>,
+}
 
-    #[cfg(feature = "hydrate")]
-    {
-        let ann_meta_signal = ann_meta.clone();
-        let embed_signal = embed_meta.clone();
-        let ann_caps_signal = ann_caps.clone();
-        let tuning_signal = tuning.clone();
-        let history_signal = benchmark_history.clone();
-        let telemetry_signal = telemetry_snapshot.clone();
-        let webgpu_probe_signal = webgpu_probe.clone();
-        let sqlite_parity_signal = sqlite_parity.clone();
-        let integrity_report_signal = integrity_report.clone();
+impl AiDiagnosticsState {
+    fn new() -> Self {
+        Self {
+            caps: RwSignal::new(crate::ai::AiCapabilities::default()),
+            ann_meta: RwSignal::new(None::<AnnIndexMeta>),
+            ann_caps: RwSignal::new(None::<crate::ai::AnnCapDiagnostics>),
+            ann_caps_loading: RwSignal::new(false),
+            ann_caps_error: RwSignal::new(None::<String>),
+            embed_meta: RwSignal::new(None::<EmbeddingManifest>),
+            bench: RwSignal::new(None::<crate::ai::AiBenchmark>),
+            bench_running: RwSignal::new(false),
+            bench_progress: RwSignal::new(0.0_f32),
+            bench_stage: RwSignal::new("Idle".to_string()),
+            bench_cancelled: RwSignal::new(false),
+            worker_bench: RwSignal::new(None::<crate::ai::AiWorkerBenchmark>),
+            tuning: RwSignal::new(None::<crate::ai::AiTuning>),
+            tuning_result: RwSignal::new(None::<crate::ai::ProbeTuningResult>),
+            benchmark_history: RwSignal::new(Vec::<crate::ai::AiBenchmarkSample>::new()),
+            worker_threshold_input: RwSignal::new(String::new()),
+            worker_threshold_current: RwSignal::new(None::<usize>),
+            worker_max_floats: RwSignal::new(None::<usize>),
+            ann_cap_override_input: RwSignal::new(String::new()),
+            ann_cap_override_value: RwSignal::new(None::<u64>),
+            ai_config_seeded: RwSignal::new(false),
+            ai_config_version: RwSignal::new(None::<String>),
+            ai_config_generated_at: RwSignal::new(None::<String>),
+            ai_config_mismatch: RwSignal::new(None::<String>),
+            embedding_sample_enabled: RwSignal::new(false),
+            cross_origin_isolated: RwSignal::new(None::<bool>),
+            telemetry_snapshot: RwSignal::new(None::<crate::ai::AiTelemetrySnapshot>),
+            webgpu_disabled: RwSignal::new(false),
+            ai_warnings: RwSignal::new(Vec::<crate::ai::AiWarningEvent>::new()),
+            worker_bench_timestamp: RwSignal::new(None::<f64>),
+            worker_failure: RwSignal::new(crate::ai::WorkerFailureStatus::default()),
+            webgpu_probe: RwSignal::new(None::<bool>),
+            sqlite_parity: RwSignal::new(None::<crate::data::SqliteParityReport>),
+            integrity_report: RwSignal::new(None::<crate::data::IntegrityReport>),
+            webgpu_runtime: RwSignal::new(None::<WebgpuRuntimeTelemetry>),
+            apple_silicon_profile: RwSignal::new(None::<AppleSiliconProfile>),
+            idb_runtime_metrics: RwSignal::new(None::<IdbRuntimeMetrics>),
+        }
+    }
+}
 
-        let caps_signal = caps.clone();
-        let worker_threshold_current_signal = worker_threshold_current.clone();
-        let worker_max_floats_signal = worker_max_floats.clone();
-        let ann_cap_override_value_signal = ann_cap_override_value.clone();
-        let ann_cap_override_input_signal = ann_cap_override_input.clone();
-        let worker_failure_signal = worker_failure.clone();
-        let ai_config_seeded_signal = ai_config_seeded.clone();
-        let ai_config_version_signal = ai_config_version.clone();
-        let ai_config_generated_at_signal = ai_config_generated_at.clone();
-        let embedding_sample_enabled_signal = embedding_sample_enabled.clone();
-        let ai_warnings_signal = ai_warnings.clone();
-        let worker_bench_timestamp_signal = worker_bench_timestamp.clone();
-        let cross_origin_isolated_signal = cross_origin_isolated.clone();
-        let worker_threshold_input_signal = worker_threshold_input.clone();
-        let webgpu_disabled_signal = webgpu_disabled.clone();
-        let mismatch_signal = ai_config_mismatch.clone();
-        let webgpu_runtime_signal = webgpu_runtime.clone();
-        let apple_silicon_profile_signal = apple_silicon_profile.clone();
-        let idb_runtime_metrics_signal = idb_runtime_metrics.clone();
-        request_animation_frame(move || {
-            let _ = caps_signal.try_set(crate::ai::detect_ai_capabilities());
+#[cfg(feature = "hydrate")]
+fn normalize_optional_trimmed(value: Option<String>) -> Option<String> {
+    value
+        .map(|item| item.trim().to_string())
+        .filter(|item| !item.is_empty())
+}
 
-            let _ = worker_threshold_current_signal.try_set(crate::ai::worker_threshold_value());
-            let _ = worker_max_floats_signal.try_set(crate::ai::worker_max_floats_value());
+#[cfg(feature = "hydrate")]
+fn load_storage_item(window: &web_sys::Window, key: &str) -> Option<String> {
+    window
+        .local_storage()
+        .ok()
+        .and_then(|storage| storage.and_then(|storage| storage.get_item(key).ok().flatten()))
+}
 
-            // If another page (eg. AI Warmup) already loaded embeddings, surface the cached cap
-            // diagnostics without kicking off the heavy load here.
-            let _ = ann_caps_signal.try_set(crate::ai::ann_cap_diagnostics());
+#[cfg(feature = "hydrate")]
+fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
+    let _ = state.caps.try_set(crate::ai::detect_ai_capabilities());
+    let _ = state
+        .worker_threshold_current
+        .try_set(crate::ai::worker_threshold_value());
+    let _ = state
+        .worker_max_floats
+        .try_set(crate::ai::worker_max_floats_value());
+    let _ = state.ann_caps.try_set(crate::ai::ann_cap_diagnostics());
 
-            let override_mb = crate::ai::ann_cap_override_mb();
-            let _ = ann_cap_override_value_signal.try_set(override_mb);
-            let _ = ann_cap_override_input_signal
-                .try_set(override_mb.map(|v| v.to_string()).unwrap_or_default());
+    let override_mb = crate::ai::ann_cap_override_mb();
+    let _ = state.ann_cap_override_value.try_set(override_mb);
+    let _ = state.ann_cap_override_input.try_set(
+        override_mb
+            .map(|value| value.to_string())
+            .unwrap_or_default(),
+    );
 
-            let _ = worker_failure_signal.try_set(crate::ai::worker_failure_status());
-            let _ = ai_config_seeded_signal.try_set(crate::ai::ai_config_seeded());
-            let _ = ai_config_version_signal.try_set(crate::ai::ai_config_version());
-            let _ = ai_config_generated_at_signal.try_set(crate::ai::ai_config_generated_at());
-            let _ = embedding_sample_enabled_signal.try_set(crate::ai::embedding_sample_enabled());
-            let _ = ai_warnings_signal.try_set(crate::ai::load_ai_warning_events());
-            let _ =
-                worker_bench_timestamp_signal.try_set(crate::ai::webgpu_worker_bench_timestamp());
-            let _ = webgpu_runtime_signal.try_set(load_webgpu_runtime_telemetry());
-            let _ = apple_silicon_profile_signal.try_set(load_apple_silicon_profile());
-            let _ = idb_runtime_metrics_signal.try_set(load_idb_runtime_metrics());
+    let _ = state
+        .worker_failure
+        .try_set(crate::ai::worker_failure_status());
+    let _ = state
+        .ai_config_seeded
+        .try_set(crate::ai::ai_config_seeded());
+    let _ = state
+        .ai_config_version
+        .try_set(crate::ai::ai_config_version());
+    let _ = state
+        .ai_config_generated_at
+        .try_set(crate::ai::ai_config_generated_at());
+    let _ = state
+        .embedding_sample_enabled
+        .try_set(crate::ai::embedding_sample_enabled());
+    let _ = state
+        .ai_warnings
+        .try_set(crate::ai::load_ai_warning_events());
+    let _ = state
+        .worker_bench_timestamp
+        .try_set(crate::ai::webgpu_worker_bench_timestamp());
+    let _ = state
+        .webgpu_runtime
+        .try_set(load_webgpu_runtime_telemetry());
+    let _ = state
+        .apple_silicon_profile
+        .try_set(load_apple_silicon_profile());
+    let _ = state
+        .idb_runtime_metrics
+        .try_set(load_idb_runtime_metrics());
 
-            if let Some(window) = web_sys::window() {
-                let isolated = js_sys::Reflect::get(
-                    window.as_ref(),
-                    &JsValue::from_str("crossOriginIsolated"),
-                )
+    if let Some(window) = web_sys::window() {
+        let isolated =
+            js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("crossOriginIsolated"))
                 .ok()
                 .and_then(|value| value.as_bool())
                 .unwrap_or(false);
-                let _ = cross_origin_isolated_signal.try_set(Some(isolated));
-                if let Ok(Some(storage)) = window.local_storage() {
-                    if let Ok(Some(value)) = storage.get_item("dmb-webgpu-worker-threshold") {
-                        let _ = worker_threshold_input_signal.try_set(value);
-                    }
-                    if let Ok(Some(value)) = storage.get_item("dmb-webgpu-disabled") {
-                        let _ = webgpu_disabled_signal
-                            .try_set(value == "1" || value.eq_ignore_ascii_case("true"));
+        let _ = state.cross_origin_isolated.try_set(Some(isolated));
+
+        if let Some(value) = load_storage_item(&window, "dmb-webgpu-worker-threshold") {
+            let _ = state.worker_threshold_input.try_set(value);
+        }
+        if let Some(value) = load_storage_item(&window, "dmb-webgpu-disabled") {
+            let _ = state
+                .webgpu_disabled
+                .try_set(value == "1" || value.eq_ignore_ascii_case("true"));
+        }
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn refresh_ai_config_meta_mismatch(state: AiDiagnosticsState) {
+    let local_version = state.ai_config_version.clone();
+    let local_generated_at = state.ai_config_generated_at.clone();
+    let mismatch = state.ai_config_mismatch.clone();
+    spawn_local(async move {
+        let remote = crate::ai::fetch_ai_config_meta().await;
+        if let Some(remote) = remote {
+            let remote_version = normalize_optional_trimmed(remote.version.clone());
+            let remote_generated = normalize_optional_trimmed(remote.generated_at.clone());
+            let mut version =
+                normalize_optional_trimmed(local_version.try_get_untracked().flatten());
+            let mut generated =
+                normalize_optional_trimmed(local_generated_at.try_get_untracked().flatten());
+
+            if remote_version != version || remote_generated != generated {
+                if crate::ai::refresh_ai_config().await {
+                    version = normalize_optional_trimmed(crate::ai::ai_config_version());
+                    generated = normalize_optional_trimmed(crate::ai::ai_config_generated_at());
+                    let _ = local_version.try_set(version.clone());
+                    let _ = local_generated_at.try_set(generated.clone());
+                }
+                if remote_version != version || remote_generated != generated {
+                    if crate::ai::sync_ai_config_meta(
+                        remote_version.as_deref(),
+                        remote_generated.as_deref(),
+                    ) {
+                        version = remote_version.clone();
+                        generated = remote_generated.clone();
+                        let _ = local_version.try_set(version.clone());
+                        let _ = local_generated_at.try_set(generated.clone());
                     }
                 }
+                if remote_version != version || remote_generated != generated {
+                    let msg = format!(
+                        "Remote AI config differs (remote {} @ {}).",
+                        remote_version.unwrap_or_else(|| "n/a".to_string()),
+                        remote_generated.unwrap_or_else(|| "n/a".to_string())
+                    );
+                    let _ = mismatch.try_set(Some(msg));
+                } else {
+                    let _ = mismatch.try_set(None);
+                }
+            } else {
+                let _ = mismatch.try_set(None);
+            }
+        }
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn spawn_ai_diagnostics_background_loads(state: AiDiagnosticsState) {
+    let ann_meta = state.ann_meta.clone();
+    spawn_local(async move {
+        let _ = ann_meta.try_set(crate::ai::load_ann_meta().await);
+    });
+
+    let embed_meta = state.embed_meta.clone();
+    spawn_local(async move {
+        let _ = embed_meta.try_set(crate::ai::load_embedding_manifest_meta().await);
+    });
+
+    let tuning = state.tuning.clone();
+    spawn_local(async move {
+        let _ = tuning.try_set(Some(crate::ai::load_ai_tuning().await));
+    });
+
+    let benchmark_history = state.benchmark_history.clone();
+    spawn_local(async move {
+        let _ = benchmark_history.try_set(crate::ai::benchmark_history());
+    });
+
+    let telemetry_snapshot = state.telemetry_snapshot.clone();
+    spawn_local(async move {
+        let _ = telemetry_snapshot.try_set(crate::ai::load_ai_telemetry_snapshot());
+    });
+
+    let webgpu_probe = state.webgpu_probe.clone();
+    spawn_local(async move {
+        let _ = webgpu_probe.try_set(crate::ai::probe_webgpu_device().await);
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn spawn_ai_diagnostics_parity_refresh(state: AiDiagnosticsState) {
+    let sqlite_parity = state.sqlite_parity.clone();
+    let integrity_report = state.integrity_report.clone();
+    spawn_local(async move {
+        let mut parity = crate::data::fetch_sqlite_parity_report().await;
+        let mut integrity = crate::data::fetch_integrity_report().await;
+        let mut parity_mismatches = parity
+            .as_ref()
+            .map(|report| report.total_mismatches)
+            .unwrap_or(0);
+        let mut integrity_mismatches = integrity
+            .as_ref()
+            .map(|report| report.total_mismatches)
+            .unwrap_or(0);
+
+        let _ = sqlite_parity.try_set(parity.clone());
+        let _ = integrity_report.try_set(integrity.clone());
+
+        if parity_mismatches == 0 && integrity_mismatches == 0 {
+            return;
+        }
+
+        for _ in 0..6 {
+            wait_ms(12_000).await;
+            parity = crate::data::fetch_sqlite_parity_report().await;
+            integrity = crate::data::fetch_integrity_report().await;
+            parity_mismatches = parity
+                .as_ref()
+                .map(|report| report.total_mismatches)
+                .unwrap_or(0);
+            integrity_mismatches = integrity
+                .as_ref()
+                .map(|report| report.total_mismatches)
+                .unwrap_or(0);
+
+            let _ = sqlite_parity.try_set(parity.clone());
+            let _ = integrity_report.try_set(integrity.clone());
+
+            if parity_mismatches == 0 && integrity_mismatches == 0 {
+                break;
+            }
+        }
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn initialize_ai_diagnostics_state(state: AiDiagnosticsState) {
+    request_animation_frame(move || {
+        apply_runtime_snapshot_values(state.clone());
+        refresh_ai_config_meta_mismatch(state.clone());
+        spawn_ai_diagnostics_background_loads(state.clone());
+        spawn_ai_diagnostics_parity_refresh(state.clone());
+    });
+}
+
+#[cfg(not(feature = "hydrate"))]
+fn initialize_ai_diagnostics_state(_state: AiDiagnosticsState) {}
+
+fn action_load_ann_caps(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        if state.ann_caps_loading.get_untracked() {
+            return;
+        }
+        state.ann_caps_loading.set(true);
+        state.ann_caps_error.set(None);
+
+        let ann_caps = state.ann_caps.clone();
+        let ann_caps_loading = state.ann_caps_loading.clone();
+        let ann_caps_error = state.ann_caps_error.clone();
+        spawn_local(async move {
+            let loaded = crate::ai::load_embedding_index().await;
+            if loaded.is_none() {
+                ann_caps_error.set(Some("Embedding index load failed.".to_string()));
+            }
+            ann_caps.set(crate::ai::ann_cap_diagnostics());
+            ann_caps_loading.set(false);
+        });
+    }
+}
+
+fn action_run_benchmark(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        let bench = state.bench.clone();
+        let bench_running = state.bench_running.clone();
+        let bench_progress = state.bench_progress.clone();
+        let bench_stage = state.bench_stage.clone();
+        let bench_cancelled = state.bench_cancelled.clone();
+        let benchmark_history = state.benchmark_history.clone();
+        spawn_local(async move {
+            bench_running.set(true);
+            bench_progress.set(0.0);
+            bench_stage.set("Preparing".to_string());
+            bench_cancelled.set(false);
+
+            let sample = crate::ai::prepare_benchmark_sample(4000).await;
+            if bench_cancelled.get_untracked() {
+                bench_running.set(false);
+                bench_stage.set("Cancelled".to_string());
+                return;
+            }
+            let Some(sample) = sample else {
+                bench_running.set(false);
+                bench_stage.set("Cancelled".to_string());
+                return;
+            };
+
+            bench_progress.set(0.2);
+            bench_stage.set("CPU".to_string());
+            let cpu_ms = crate::ai::benchmark_cpu(&sample);
+            if bench_cancelled.get_untracked() || cpu_ms.is_none() {
+                bench_running.set(false);
+                bench_stage.set("Cancelled".to_string());
+                return;
             }
 
-            // After local config is loaded, compare against remote AI config meta.
-            let local_version = ai_config_version_signal.clone();
-            let local_generated_at = ai_config_generated_at_signal.clone();
-            spawn_local(async move {
-                let remote = crate::ai::fetch_ai_config_meta().await;
-                if let Some(remote) = remote {
-                    let normalize = |value: Option<String>| {
-                        value
-                            .map(|item| item.trim().to_string())
-                            .filter(|item| !item.is_empty())
-                    };
-                    let remote_version = normalize(remote.version.clone());
-                    let remote_generated = normalize(remote.generated_at.clone());
-                    let mut version = normalize(local_version.try_get_untracked().flatten());
-                    let mut generated = normalize(local_generated_at.try_get_untracked().flatten());
-                    if remote_version != version || remote_generated != generated {
-                        // Attempt self-heal for stale local AI config metadata.
-                        if crate::ai::refresh_ai_config().await {
-                            version = normalize(crate::ai::ai_config_version());
-                            generated = normalize(crate::ai::ai_config_generated_at());
-                            let _ = local_version.try_set(version.clone());
-                            let _ = local_generated_at.try_set(generated.clone());
-                        }
-                        if remote_version != version || remote_generated != generated {
-                            // Fallback: sync metadata directly from remote response.
-                            if crate::ai::sync_ai_config_meta(
-                                remote_version.as_deref(),
-                                remote_generated.as_deref(),
-                            ) {
-                                version = remote_version.clone();
-                                generated = remote_generated.clone();
-                                let _ = local_version.try_set(version.clone());
-                                let _ = local_generated_at.try_set(generated.clone());
-                            }
-                        }
-                        if remote_version != version || remote_generated != generated {
-                            let msg = format!(
-                                "Remote AI config differs (remote {} @ {}).",
-                                remote_version.clone().unwrap_or_else(|| "n/a".to_string()),
-                                remote_generated
-                                    .clone()
-                                    .unwrap_or_else(|| "n/a".to_string())
-                            );
-                            let _ = mismatch_signal.try_set(Some(msg));
-                        } else {
-                            let _ = mismatch_signal.try_set(None);
-                        }
-                    } else {
-                        let _ = mismatch_signal.try_set(None);
-                    }
-                }
-            });
+            bench_progress.set(0.6);
+            bench_stage.set("GPU".to_string());
+            let (gpu_ms, backend) = crate::ai::benchmark_gpu(&sample).await;
+            if bench_cancelled.get_untracked() {
+                bench_running.set(false);
+                bench_stage.set("Cancelled".to_string());
+                return;
+            }
 
-            // Defer background work until after the first paint so E2E can assert initial UI
-            // without racing long-running async tasks.
-            let ann_meta_signal = ann_meta_signal.clone();
-            spawn_local(async move {
-                let _ = ann_meta_signal.try_set(crate::ai::load_ann_meta().await);
-            });
-
-            let embed_signal = embed_signal.clone();
-            spawn_local(async move {
-                let _ = embed_signal.try_set(crate::ai::load_embedding_manifest_meta().await);
-            });
-
-            let tuning_signal = tuning_signal.clone();
-            spawn_local(async move {
-                let _ = tuning_signal.try_set(Some(crate::ai::load_ai_tuning().await));
-            });
-
-            let history_signal = history_signal.clone();
-            spawn_local(async move {
-                let _ = history_signal.try_set(crate::ai::benchmark_history());
-            });
-
-            let telemetry_signal = telemetry_signal.clone();
-            spawn_local(async move {
-                let _ = telemetry_signal.try_set(crate::ai::load_ai_telemetry_snapshot());
-            });
-
-            let webgpu_probe_signal = webgpu_probe_signal.clone();
-            spawn_local(async move {
-                let _ = webgpu_probe_signal.try_set(crate::ai::probe_webgpu_device().await);
-            });
-
-            let sqlite_parity_signal = sqlite_parity_signal.clone();
-            let integrity_report_signal = integrity_report_signal.clone();
-            spawn_local(async move {
-                let mut parity = crate::data::fetch_sqlite_parity_report().await;
-                let mut integrity = crate::data::fetch_integrity_report().await;
-                let mut parity_mismatches = parity
-                    .as_ref()
-                    .map(|report| report.total_mismatches)
-                    .unwrap_or(0);
-                let mut integrity_mismatches = integrity
-                    .as_ref()
-                    .map(|report| report.total_mismatches)
-                    .unwrap_or(0);
-
-                let _ = sqlite_parity_signal.try_set(parity.clone());
-                let _ = integrity_report_signal.try_set(integrity.clone());
-
-                if parity_mismatches == 0 && integrity_mismatches == 0 {
-                    return;
-                }
-
-                // Seed import can still be in progress when diagnostics first render.
-                for _ in 0..6 {
-                    wait_ms(12_000).await;
-                    parity = crate::data::fetch_sqlite_parity_report().await;
-                    integrity = crate::data::fetch_integrity_report().await;
-                    parity_mismatches = parity
-                        .as_ref()
-                        .map(|report| report.total_mismatches)
-                        .unwrap_or(0);
-                    integrity_mismatches = integrity
-                        .as_ref()
-                        .map(|report| report.total_mismatches)
-                        .unwrap_or(0);
-
-                    let _ = sqlite_parity_signal.try_set(parity.clone());
-                    let _ = integrity_report_signal.try_set(integrity.clone());
-
-                    if parity_mismatches == 0 && integrity_mismatches == 0 {
-                        break;
-                    }
-                }
-            });
+            bench_progress.set(1.0);
+            bench_stage.set("Complete".to_string());
+            let result = crate::ai::AiBenchmark {
+                sample_count: sample.sample_count,
+                cpu_ms: cpu_ms.unwrap_or_default(),
+                gpu_ms,
+                backend,
+            };
+            bench.set(Some(result.clone()));
+            crate::ai::store_benchmark_sample(Some(result), None, None);
+            benchmark_history.set(crate::ai::benchmark_history());
+            bench_running.set(false);
         });
+    }
+}
 
-        // Remaining localStorage-derived values are loaded in request_animation_frame above to keep
-        // the initial hydration render stable.
+fn action_cancel_benchmark(state: AiDiagnosticsState) {
+    state.bench_cancelled.set(true);
+    state.bench_stage.set("Cancelling".to_string());
+}
+
+fn action_run_worker_benchmark(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        let worker_bench = state.worker_bench.clone();
+        let benchmark_history = state.benchmark_history.clone();
+        let worker_threshold_current = state.worker_threshold_current.clone();
+        let worker_threshold_input = state.worker_threshold_input.clone();
+        let worker_failure = state.worker_failure.clone();
+        let webgpu_runtime = state.webgpu_runtime.clone();
+        spawn_local(async move {
+            let result = crate::ai::benchmark_worker_threshold().await;
+            worker_bench.set(result.clone());
+            crate::ai::store_benchmark_sample(None, None, result);
+            benchmark_history.set(crate::ai::benchmark_history());
+            let current = crate::ai::worker_threshold_value();
+            worker_threshold_current.set(current);
+            worker_threshold_input.set(current.map(|v| v.to_string()).unwrap_or_default());
+            worker_failure.set(crate::ai::worker_failure_status());
+            webgpu_runtime.set(load_webgpu_runtime_telemetry());
+        });
+    }
+}
+
+fn action_refresh_runtime_metrics(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        state.webgpu_runtime.set(load_webgpu_runtime_telemetry());
+        state
+            .apple_silicon_profile
+            .set(load_apple_silicon_profile());
+        state.idb_runtime_metrics.set(load_idb_runtime_metrics());
+    }
+}
+
+fn action_reset_runtime_metrics(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        reset_webgpu_runtime_telemetry();
+        state.webgpu_runtime.set(load_webgpu_runtime_telemetry());
+    }
+}
+
+fn action_run_tuning(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        let tuning = state.tuning.clone();
+        let tuning_result = state.tuning_result.clone();
+        spawn_local(async move {
+            if let Some(index) = crate::ai::load_embedding_index().await {
+                let result = crate::ai::tune_ivf_probe(&index, 20).await;
+                tuning_result.set(result.clone());
+                tuning.set(Some(crate::ai::load_ai_tuning().await));
+            }
+        });
+    }
+}
+
+fn action_toggle_webgpu(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        let next = !state.webgpu_disabled.get_untracked();
+        state.webgpu_disabled.set(next);
+        crate::ai::set_webgpu_disabled(next);
+        state.caps.set(crate::ai::detect_ai_capabilities());
+    }
+}
+
+fn action_apply_worker_threshold(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        let parsed = state
+            .worker_threshold_input
+            .get_untracked()
+            .trim()
+            .parse::<usize>()
+            .ok();
+        crate::ai::set_worker_threshold_override(parsed);
+        let current = crate::ai::worker_threshold_value();
+        state.worker_threshold_current.set(current);
+        state
+            .worker_threshold_input
+            .set(current.map(|value| value.to_string()).unwrap_or_default());
+    }
+}
+
+fn action_clear_worker_threshold(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        crate::ai::set_worker_threshold_override(None);
+        let current = crate::ai::worker_threshold_value();
+        state.worker_threshold_current.set(current);
+        state
+            .worker_threshold_input
+            .set(current.map(|value| value.to_string()).unwrap_or_default());
+    }
+}
+
+fn action_apply_ann_cap_override(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        let parsed = state
+            .ann_cap_override_input
+            .get_untracked()
+            .trim()
+            .parse::<u64>()
+            .ok();
+        crate::ai::set_ann_cap_override_mb(parsed);
+        let current = crate::ai::ann_cap_override_mb();
+        state.ann_cap_override_value.set(current);
+        state
+            .ann_cap_override_input
+            .set(current.map(|value| value.to_string()).unwrap_or_default());
+    }
+}
+
+fn action_clear_ann_cap_override(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        crate::ai::set_ann_cap_override_mb(None);
+        state.ann_cap_override_value.set(None);
+        state.ann_cap_override_input.set(String::new());
+    }
+}
+
+fn action_toggle_embedding_sample(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        let next = !state.embedding_sample_enabled.get_untracked();
+        state.embedding_sample_enabled.set(next);
+        crate::ai::set_embedding_sample_enabled(next);
+        state.ann_caps.set(crate::ai::ann_cap_diagnostics());
+    }
+}
+
+fn action_clear_worker_cooldown(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        crate::ai::clear_worker_failure_status();
+        state.worker_failure.set(crate::ai::worker_failure_status());
+    }
+}
+
+fn action_refresh_ai_config(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        let ai_config_version = state.ai_config_version.clone();
+        let ai_config_generated_at = state.ai_config_generated_at.clone();
+        let ai_config_seeded = state.ai_config_seeded.clone();
+        spawn_local(async move {
+            if crate::ai::refresh_ai_config().await {
+                ai_config_version.set(crate::ai::ai_config_version());
+                ai_config_generated_at.set(crate::ai::ai_config_generated_at());
+                ai_config_seeded.set(crate::ai::ai_config_seeded());
+            }
+        });
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn benchmark_diff_json(history: &[crate::ai::AiBenchmarkSample]) -> serde_json::Value {
+    let mut full_samples: Vec<_> = history
+        .iter()
+        .filter_map(|sample| sample.full.clone())
+        .collect();
+    if full_samples.len() < 2 {
+        return serde_json::json!(null);
     }
 
-    let load_ann_caps = {
-        move |_| {
-            #[cfg(feature = "hydrate")]
-            {
-                let ann_caps_signal = ann_caps.clone();
-                let loading_signal = ann_caps_loading.clone();
-                let error_signal = ann_caps_error.clone();
-                spawn_local(async move {
-                    if loading_signal.get_untracked() {
-                        return;
-                    }
-                    loading_signal.set(true);
-                    error_signal.set(None);
+    match (full_samples.pop(), full_samples.pop()) {
+        (Some(current), Some(previous)) => serde_json::json!({
+            "cpuMsDelta": current.cpu_ms - previous.cpu_ms,
+            "gpuMsDelta": current.gpu_ms.unwrap_or(0.0) - previous.gpu_ms.unwrap_or(0.0),
+            "backend": current.backend
+        }),
+        _ => serde_json::json!(null),
+    }
+}
 
-                    let loaded = crate::ai::load_embedding_index().await;
-                    if loaded.is_none() {
-                        error_signal.set(Some("Embedding index load failed.".to_string()));
-                    }
-                    ann_caps_signal.set(crate::ai::ann_cap_diagnostics());
-                    loading_signal.set(false);
-                });
-            }
-        }
+#[cfg(feature = "hydrate")]
+fn download_json_snapshot(window: &web_sys::Window, json: &str) {
+    let array = js_sys::Array::new();
+    array.push(&wasm_bindgen::JsValue::from_str(json));
+    let Ok(blob) = web_sys::Blob::new_with_str_sequence(&array) else {
+        return;
+    };
+    let Ok(url) = web_sys::Url::create_object_url_with_blob(&blob) else {
+        return;
+    };
+    let Some(document) = window.document() else {
+        let _ = web_sys::Url::revoke_object_url(&url);
+        return;
+    };
+    let Ok(element) = document.create_element("a") else {
+        let _ = web_sys::Url::revoke_object_url(&url);
+        return;
+    };
+    let Ok(anchor) = element.dyn_into::<web_sys::HtmlAnchorElement>() else {
+        let _ = web_sys::Url::revoke_object_url(&url);
+        return;
     };
 
-    let run_benchmark = {
-        move |_| {
-            #[cfg(feature = "hydrate")]
-            {
-                let bench_signal = bench.clone();
-                let running_signal = bench_running.clone();
-                let progress_signal = bench_progress.clone();
-                let stage_signal = bench_stage.clone();
-                let cancel_signal = bench_cancelled.clone();
-                let history_signal = benchmark_history.clone();
-                spawn_local(async move {
-                    running_signal.set(true);
-                    progress_signal.set(0.0);
-                    stage_signal.set("Preparing".to_string());
-                    cancel_signal.set(false);
+    anchor.set_href(&url);
+    anchor.set_download(&format!(
+        "ai-diagnostics-{}.json",
+        js_sys::Date::now() as i64
+    ));
+    anchor.click();
+    let _ = web_sys::Url::revoke_object_url(&url);
+}
 
-                    let sample = crate::ai::prepare_benchmark_sample(4000).await;
-                    if cancel_signal.get_untracked() {
-                        running_signal.set(false);
-                        stage_signal.set("Cancelled".to_string());
-                        return;
-                    }
-                    let Some(sample) = sample else {
-                        running_signal.set(false);
-                        stage_signal.set("Cancelled".to_string());
-                        return;
-                    };
-                    progress_signal.set(0.2);
-                    stage_signal.set("CPU".to_string());
-                    let cpu_ms = crate::ai::benchmark_cpu(&sample);
-                    if cancel_signal.get_untracked() || cpu_ms.is_none() {
-                        running_signal.set(false);
-                        stage_signal.set("Cancelled".to_string());
-                        return;
-                    }
-                    progress_signal.set(0.6);
-                    stage_signal.set("GPU".to_string());
-                    let (gpu_ms, backend) = crate::ai::benchmark_gpu(&sample).await;
-                    if cancel_signal.get_untracked() {
-                        running_signal.set(false);
-                        stage_signal.set("Cancelled".to_string());
-                        return;
-                    }
-                    progress_signal.set(1.0);
-                    stage_signal.set("Complete".to_string());
-                    let result = crate::ai::AiBenchmark {
-                        sample_count: sample.sample_count,
-                        cpu_ms: cpu_ms.unwrap_or_default(),
-                        gpu_ms,
-                        backend,
-                    };
-                    bench_signal.set(Some(result.clone()));
-                    crate::ai::store_benchmark_sample(Some(result), None, None);
-                    history_signal.set(crate::ai::benchmark_history());
-                    running_signal.set(false);
-                });
-            }
-        }
-    };
+fn action_export_diagnostics(state: AiDiagnosticsState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+    #[cfg(feature = "hydrate")]
+    {
+        let Some(window) = web_sys::window() else {
+            return;
+        };
+        let history_snapshot = state.benchmark_history.get_untracked();
+        let snapshot = serde_json::json!({
+            "timestampMs": js_sys::Date::now(),
+            "caps": state.caps.get_untracked(),
+            "annMeta": state.ann_meta.get_untracked(),
+            "annCap": state.ann_caps.get_untracked(),
+            "embeddingManifest": state.embed_meta.get_untracked(),
+            "benchmark": state.bench.get_untracked(),
+            "workerBenchmark": state.worker_bench.get_untracked(),
+            "tuning": state.tuning.get_untracked(),
+            "tuningResult": state.tuning_result.get_untracked(),
+            "benchmarkHistory": history_snapshot,
+            "benchmarkDiff": benchmark_diff_json(&state.benchmark_history.get_untracked()),
+            "webgpuRuntimeTelemetry": state.webgpu_runtime.get_untracked(),
+            "appleSiliconProfile": state.apple_silicon_profile.get_untracked(),
+            "idbRuntimeMetrics": state.idb_runtime_metrics.get_untracked(),
+            "crossOriginIsolated": state.cross_origin_isolated.get_untracked(),
+            "workerThresholdOverride": load_storage_item(&window, "dmb-webgpu-worker-threshold"),
+            "workerMaxFloats": crate::ai::worker_max_floats_value(),
+            "aiTelemetry": load_storage_item(&window, "dmb-ai-telemetry"),
+            "aiConfigVersion": load_storage_item(&window, "dmb-ai-config-version"),
+            "aiConfigGeneratedAt": load_storage_item(&window, "dmb-ai-config-generated-at"),
+            "aiConfigSeeded": load_storage_item(&window, "dmb-ai-config-seeded"),
+            "embeddingSampleEnabled": load_storage_item(&window, "dmb-embedding-sample"),
+            "aiWarnings": load_storage_item(&window, "dmb-ai-warning-events"),
+        });
 
-    let cancel_benchmark = {
-        move |_| {
-            bench_cancelled.set(true);
-            bench_stage.set("Cancelling".to_string());
+        if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
+            download_json_snapshot(&window, &json);
         }
-    };
+    }
+}
 
-    let run_worker_benchmark = {
-        move |_| {
-            #[cfg(feature = "hydrate")]
-            {
-                let worker_signal = worker_bench.clone();
-                let history_signal = benchmark_history.clone();
-                let worker_threshold_current = worker_threshold_current.clone();
-                let worker_threshold_input = worker_threshold_input.clone();
-                let worker_failure = worker_failure.clone();
-                let webgpu_runtime = webgpu_runtime.clone();
-                spawn_local(async move {
-                    let result = crate::ai::benchmark_worker_threshold().await;
-                    worker_signal.set(result.clone());
-                    crate::ai::store_benchmark_sample(None, None, result);
-                    history_signal.set(crate::ai::benchmark_history());
-                    let current = crate::ai::worker_threshold_value();
-                    worker_threshold_current.set(current);
-                    worker_threshold_input.set(current.map(|v| v.to_string()).unwrap_or_default());
-                    worker_failure.set(crate::ai::worker_failure_status());
-                    webgpu_runtime.set(load_webgpu_runtime_telemetry());
-                });
-            }
-        }
-    };
-
-    let refresh_runtime_metrics = {
-        #[cfg(feature = "hydrate")]
-        {
-            let webgpu_runtime = webgpu_runtime.clone();
-            let apple_silicon_profile = apple_silicon_profile.clone();
-            let idb_runtime_metrics = idb_runtime_metrics.clone();
-            move |_| {
-                webgpu_runtime.set(load_webgpu_runtime_telemetry());
-                apple_silicon_profile.set(load_apple_silicon_profile());
-                idb_runtime_metrics.set(load_idb_runtime_metrics());
-            }
-        }
-        #[cfg(not(feature = "hydrate"))]
-        {
-            move |_| {}
-        }
-    };
-
-    let reset_runtime_metrics = {
-        #[cfg(feature = "hydrate")]
-        {
-            let webgpu_runtime = webgpu_runtime.clone();
-            move |_| {
-                reset_webgpu_runtime_telemetry();
-                webgpu_runtime.set(load_webgpu_runtime_telemetry());
-            }
-        }
-        #[cfg(not(feature = "hydrate"))]
-        {
-            move |_| {}
-        }
-    };
-
-    let export_diagnostics = {
-        #[cfg(feature = "hydrate")]
-        let caps = caps.clone();
-        #[cfg(feature = "hydrate")]
-        let ann_meta = ann_meta.clone();
-        #[cfg(feature = "hydrate")]
-        let ann_caps = ann_caps.clone();
-        #[cfg(feature = "hydrate")]
-        let embed_meta = embed_meta.clone();
-        #[cfg(feature = "hydrate")]
-        let bench = bench.clone();
-        #[cfg(feature = "hydrate")]
-        let worker_bench = worker_bench.clone();
-        #[cfg(feature = "hydrate")]
-        let tuning = tuning.clone();
-        #[cfg(feature = "hydrate")]
-        let tuning_result = tuning_result.clone();
-        #[cfg(feature = "hydrate")]
-        let cross_origin_isolated = cross_origin_isolated.clone();
-        #[cfg(feature = "hydrate")]
-        let history = benchmark_history.clone();
-        #[cfg(feature = "hydrate")]
-        let webgpu_runtime = webgpu_runtime.clone();
-        #[cfg(feature = "hydrate")]
-        let apple_silicon_profile = apple_silicon_profile.clone();
-        #[cfg(feature = "hydrate")]
-        let idb_runtime_metrics = idb_runtime_metrics.clone();
-        move |_| {
-            #[cfg(feature = "hydrate")]
-            {
-                if let Some(window) = web_sys::window() {
-                    let history_snapshot = history.get_untracked();
-                    let benchmark_diff = {
-                        let mut full_samples: Vec<_> = history_snapshot
-                            .iter()
-                            .filter_map(|sample| sample.full.clone())
-                            .collect();
-                        if full_samples.len() >= 2 {
-                            match (full_samples.pop(), full_samples.pop()) {
-                                (Some(current), Some(previous)) => serde_json::json!({
-                                    "cpuMsDelta": current.cpu_ms - previous.cpu_ms,
-                                    "gpuMsDelta": current.gpu_ms.unwrap_or(0.0) - previous.gpu_ms.unwrap_or(0.0),
-                                    "backend": current.backend
-                                }),
-                                _ => serde_json::json!(null),
+fn render_ai_parity_card(state: AiDiagnosticsState) -> impl IntoView {
+    view! {
+        <div class="card">
+            <h2>"Parity"</h2>
+            <ul class="list">
+                <li>{move || {
+                    state.integrity_report.get().map_or_else(
+                        || "IDB integrity: n/a".to_string(),
+                        |report| {
+                            if report.total_mismatches == 0 {
+                                "IDB integrity: ok".to_string()
+                            } else {
+                                format!("IDB integrity: {} mismatch(es)", report.total_mismatches)
                             }
-                        } else {
-                            serde_json::json!(null)
-                        }
-                    };
-                    let snapshot = serde_json::json!({
-                        "timestampMs": js_sys::Date::now(),
-                        "caps": caps.get_untracked(),
-                        "annMeta": ann_meta.get_untracked(),
-                        "annCap": ann_caps.get_untracked(),
-                        "embeddingManifest": embed_meta.get_untracked(),
-                        "benchmark": bench.get_untracked(),
-                        "workerBenchmark": worker_bench.get_untracked(),
-                        "tuning": tuning.get_untracked(),
-                        "tuningResult": tuning_result.get_untracked(),
-                        "benchmarkHistory": history_snapshot,
-                        "benchmarkDiff": benchmark_diff,
-                        "webgpuRuntimeTelemetry": webgpu_runtime.get_untracked(),
-                        "appleSiliconProfile": apple_silicon_profile.get_untracked(),
-                        "idbRuntimeMetrics": idb_runtime_metrics.get_untracked(),
-                        "crossOriginIsolated": cross_origin_isolated.get_untracked(),
-                        "workerThresholdOverride": window.local_storage().ok().and_then(|s| s.and_then(|s| s.get_item("dmb-webgpu-worker-threshold").ok().flatten())),
-                        "workerMaxFloats": crate::ai::worker_max_floats_value(),
-                        "aiTelemetry": window.local_storage().ok().and_then(|s| s.and_then(|s| s.get_item("dmb-ai-telemetry").ok().flatten())),
-                        "aiConfigVersion": window.local_storage().ok().and_then(|s| s.and_then(|s| s.get_item("dmb-ai-config-version").ok().flatten())),
-                        "aiConfigGeneratedAt": window.local_storage().ok().and_then(|s| s.and_then(|s| s.get_item("dmb-ai-config-generated-at").ok().flatten())),
-                        "aiConfigSeeded": window.local_storage().ok().and_then(|s| s.and_then(|s| s.get_item("dmb-ai-config-seeded").ok().flatten())),
-                        "embeddingSampleEnabled": window.local_storage().ok().and_then(|s| s.and_then(|s| s.get_item("dmb-embedding-sample").ok().flatten())),
-                        "aiWarnings": window.local_storage().ok().and_then(|s| s.and_then(|s| s.get_item("dmb-ai-warning-events").ok().flatten())),
-                    });
-                    if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
-                        let array = js_sys::Array::new();
-                        array.push(&wasm_bindgen::JsValue::from_str(&json));
-                        if let Ok(blob) = web_sys::Blob::new_with_str_sequence(&array) {
-                            if let Ok(url) = web_sys::Url::create_object_url_with_blob(&blob) {
-                                if let Some(document) = window.document() {
-                                    if let Ok(el) = document.create_element("a") {
-                                        if let Ok(anchor) =
-                                            el.dyn_into::<web_sys::HtmlAnchorElement>()
-                                        {
-                                            anchor.set_href(&url);
-                                            anchor.set_download(&format!(
-                                                "ai-diagnostics-{}.json",
-                                                js_sys::Date::now() as i64
-                                            ));
-                                            anchor.click();
-                                            let _ = web_sys::Url::revoke_object_url(&url);
-                                        }
-                                    }
-                                }
+                        },
+                    )
+                }}</li>
+                <li>{move || {
+                    state.sqlite_parity.get().map_or_else(
+                        || "SQLite parity: n/a".to_string(),
+                        |report| {
+                            if !report.available {
+                                "SQLite parity: unavailable".to_string()
+                            } else if report.total_mismatches == 0 {
+                                "SQLite parity: ok".to_string()
+                            } else {
+                                format!("SQLite parity: {} mismatch(es)", report.total_mismatches)
                             }
-                        }
+                        },
+                    )
+                }}</li>
+            </ul>
+            <p class="muted">"Detailed mismatches are shown in the PWA Status panel."</p>
+        </div>
+    }
+}
+
+fn render_ai_capabilities_list(state: AiDiagnosticsState) -> impl IntoView {
+    view! {
+        <ul class="list">
+            <li>{move || format!("WebGPU available: {}", if state.caps.get().webgpu_available { "yes" } else { "no" })}</li>
+            <li>{move || format!(
+                "WebGPU device probe: {}",
+                state.webgpu_probe.get().map_or("n/a", |ok| if ok { "ready" } else { "failed" })
+            )}</li>
+            <li>{move || format!("WebGPU enabled: {}", if state.caps.get().webgpu_enabled { "yes" } else { "no" })}</li>
+            <li>{move || format!("GPU Worker: {}", if state.caps.get().webgpu_worker { "on" } else { "off" })}</li>
+            <li>{move || format!("WebNN: {}", if state.caps.get().webnn { "on" } else { "off" })}</li>
+            <li>{move || format!("SIMD: {}", if state.caps.get().wasm_simd { "on" } else { "off" })}</li>
+            <li>{move || format!("Threads: {}", if state.caps.get().threads { "on" } else { "off" })}</li>
+            <li>{move || format!(
+                "Scoring backend: {}",
+                if state.caps.get().webgpu_enabled { "WebGPU" } else { "WASM SIMD" }
+            )}</li>
+            <li>{move || format!(
+                "Cross-Origin Isolated: {}",
+                state.cross_origin_isolated.get().map_or("n/a", |value| if value { "on" } else { "off" })
+            )}</li>
+            <li>{move || format!("AI config seeded: {}", if state.ai_config_seeded.get() { "yes" } else { "no" })}</li>
+            <li>{move || format!(
+                "AI config version: {}",
+                state.ai_config_version.get().unwrap_or_else(|| "n/a".to_string())
+            )}</li>
+            <li>{move || format!(
+                "AI config generated: {}",
+                state.ai_config_generated_at.get().unwrap_or_else(|| "n/a".to_string())
+            )}</li>
+            <li>{move || format!(
+                "Worker bench: {}",
+                state.worker_bench_timestamp.get().map_or_else(
+                    || "n/a".to_string(),
+                    |timestamp| format!("{:.1}m ago", ((js_sys::Date::now() - timestamp) / 60000.0).max(0.0))
+                )
+            )}</li>
+            <li>{move || format!(
+                "Worker max floats: {}",
+                state.worker_max_floats.get().map_or_else(|| "n/a".to_string(), |value| value.to_string())
+            )}</li>
+            <li>{move || format!(
+                "Worker cooldown: {}",
+                state.worker_failure.get().cooldown_remaining_ms.map_or_else(
+                    || "none".to_string(),
+                    |ms| format!("{:.0}s", (ms / 1000.0).max(0.0))
+                )
+            )}</li>
+            <li>{move || format!(
+                "Worker last error: {}",
+                state.worker_failure.get().last_error.clone().unwrap_or_else(|| "none".to_string())
+            )}</li>
+        </ul>
+    }
+}
+
+fn render_ai_capabilities_card(state: AiDiagnosticsState) -> impl IntoView {
+    let refresh_config_state = state.clone();
+    let toggle_webgpu_state = state.clone();
+    let worker_failure_state = state.clone();
+    let threads_state = state.clone();
+    let webnn_state = state.clone();
+    let webgpu_disabled_state = state.clone();
+
+    view! {
+        <div class="card">
+            <h2>"Capabilities"</h2>
+            {render_ai_capabilities_list(state.clone())}
+            <button type="button" class="pill pill--ghost" on:click=move |_| action_toggle_webgpu(toggle_webgpu_state.clone())>
+                {move || if webgpu_disabled_state.webgpu_disabled.get() { "Enable WebGPU" } else { "Disable WebGPU" }}
+            </button>
+            {move || {
+                if worker_failure_state.worker_failure.get().cooldown_remaining_ms.is_some() {
+                    let clear_state = worker_failure_state.clone();
+                    view! {
+                        <button type="button" class="pill pill--ghost" on:click=move |_| action_clear_worker_cooldown(clear_state.clone())>
+                            "Clear worker cooldown"
+                        </button>
                     }
+                    .into_any()
+                } else {
+                    ().into_any()
                 }
-            }
-        }
-    };
+            }}
+            <button type="button" class="pill pill--ghost" on:click=move |_| action_refresh_ai_config(refresh_config_state.clone())>
+                "Refresh AI config"
+            </button>
+            <Show when=move || threads_state.caps.get().threads && threads_state.cross_origin_isolated.get() == Some(false) fallback=|| () >
+                <p class="muted">"Threads require COOP/COEP. Enable cross-origin isolation to unlock worker SIMD."</p>
+            </Show>
+            <Show when=move || webnn_state.caps.get().webnn && !webnn_state.caps.get().webgpu_enabled fallback=|| () >
+                <p class="muted">"WebNN detected (experimental). Current scoring uses WASM SIMD until WebNN is enabled."</p>
+            </Show>
+        </div>
+    }
+}
 
-    let run_tuning = {
-        move |_| {
-            #[cfg(feature = "hydrate")]
-            {
-                let tuning_signal = tuning.clone();
-                let result_signal = tuning_result.clone();
-                spawn_local(async move {
-                    if let Some(index) = crate::ai::load_embedding_index().await {
-                        let result = crate::ai::tune_ivf_probe(&index, 20).await;
-                        result_signal.set(result.clone());
-                        tuning_signal.set(Some(crate::ai::load_ai_tuning().await));
+fn render_embedding_sample_card(state: AiDiagnosticsState) -> impl IntoView {
+    let toggle_state = state.clone();
+    let enabled_state = state.clone();
+    let status_state = state.clone();
+    view! {
+        <div class="card">
+            <h2>"Embedding Sample"</h2>
+            <p class="muted">"Use a small sample dataset for faster local tuning."</p>
+            <div class="pill-row">
+                <button type="button" class="pill pill--ghost" on:click=move |_| action_toggle_embedding_sample(toggle_state.clone())>
+                    {move || if enabled_state.embedding_sample_enabled.get() { "Disable Sample" } else { "Enable Sample" }}
+                </button>
+            </div>
+            <p class="muted">
+                {move || if status_state.embedding_sample_enabled.get() { "Sample mode is ON." } else { "Sample mode is OFF." }}
+            </p>
+            <p class="muted">"Reload to apply changes."</p>
+        </div>
+    }
+}
+
+fn render_ai_warnings_card(state: AiDiagnosticsState) -> impl IntoView {
+    view! {
+        <div class="card">
+            <h2>"AI Warnings"</h2>
+            {move || {
+                let warnings = state.ai_warnings.get();
+                if warnings.is_empty() {
+                    view! { <p class="muted">"No AI warnings recorded."</p> }.into_any()
+                } else {
+                    let items = warnings.iter().rev().take(5).map(|event| {
+                        let detail = event.details.clone().unwrap_or_else(|| "n/a".to_string());
+                        view! { <li>{format!("{} – {}", event.event, detail)}</li> }
+                    });
+                    view! { <ul class="list">{items.collect_view()}</ul> }.into_any()
+                }
+            }}
+        </div>
+    }
+}
+
+fn render_webgpu_runtime_card(state: AiDiagnosticsState) -> impl IntoView {
+    let refresh_state = state.clone();
+    let reset_state = state.clone();
+    view! {
+        <div class="card">
+            <h2>"WebGPU Runtime"</h2>
+            {move || {
+                state.webgpu_runtime.get().map_or_else(
+                    || view! { <p class="muted">"Runtime telemetry unavailable."</p> }.into_any(),
+                    |telemetry| {
+                        let direct_calls = telemetry.counters.get("direct_scores_calls").copied().unwrap_or(0);
+                        let worker_success = telemetry.counters.get("worker_success").copied().unwrap_or(0);
+                        let worker_fallback = telemetry.counters.get("worker_fallback_runtime_failed").copied().unwrap_or(0)
+                            + telemetry.counters.get("worker_fallback_init_failed").copied().unwrap_or(0);
+                        let subset_success = telemetry.counters.get("subset_worker_success").copied().unwrap_or(0);
+                        let last_event = telemetry.last_event.unwrap_or_else(|| "none".to_string());
+                        let last_event_age = telemetry.last_event_ts.map_or_else(
+                            || "n/a".to_string(),
+                            |timestamp| format!("{:.1}m ago", ((js_sys::Date::now() - timestamp) / 60000.0).max(0.0)),
+                        );
+                        view! {
+                            <ul class="list">
+                                <li>{format!("Direct score calls: {direct_calls}")}</li>
+                                <li>{format!("Worker successes: {worker_success}")}</li>
+                                <li>{format!("Worker fallback errors: {worker_fallback}")}</li>
+                                <li>{format!("Subset worker successes: {subset_success}")}</li>
+                                <li>{format!("Last event: {last_event}")}</li>
+                                <li>{format!("Last event age: {last_event_age}")}</li>
+                            </ul>
+                        }.into_any()
+                    },
+                )
+            }}
+            <div class="pill-row">
+                <button type="button" class="pill pill--ghost" on:click=move |_| action_refresh_runtime_metrics(refresh_state.clone())>
+                    "Refresh Runtime Metrics"
+                </button>
+                <button type="button" class="pill pill--ghost" on:click=move |_| action_reset_runtime_metrics(reset_state.clone())>
+                    "Reset WebGPU Metrics"
+                </button>
+            </div>
+        </div>
+    }
+}
+
+fn render_apple_silicon_card(state: AiDiagnosticsState) -> impl IntoView {
+    view! {
+        <div class="card">
+            <h2>"Apple Silicon Profile"</h2>
+            {move || {
+                state.apple_silicon_profile.get().map_or_else(
+                    || view! { <p class="muted">"Profile unavailable."</p> }.into_any(),
+                    |profile| {
+                        let workgroup_dot = profile.workgroup.as_ref().and_then(|group| group.dot).map_or_else(|| "n/a".to_string(), |value| value.to_string());
+                        let workgroup_score = profile.workgroup.as_ref().and_then(|group| group.score).map_or_else(|| "n/a".to_string(), |value| value.to_string());
+                        let threshold = profile.worker.as_ref().and_then(|worker| worker.threshold_floats).map_or_else(|| "n/a".to_string(), |value| value.to_string());
+                        let max_floats = profile.worker.as_ref().and_then(|worker| worker.max_floats).map_or_else(|| "n/a".to_string(), |value| value.to_string());
+                        view! {
+                            <ul class="list">
+                                <li>{format!("Apple Silicon detected: {}", if profile.is_apple_silicon { "yes" } else { "no" })}</li>
+                                <li>{format!("CPU cores: {}", profile.cpu_cores.map_or_else(|| "n/a".to_string(), |value| format!("{value:.0}")))}</li>
+                                <li>{format!("Device memory: {}", profile.device_memory_gb.map_or_else(|| "n/a".to_string(), |value| format!("{value:.1} GB")))}</li>
+                                <li>{format!("Workgroup dot: {workgroup_dot}")}</li>
+                                <li>{format!("Workgroup score: {workgroup_score}")}</li>
+                                <li>{format!("Worker threshold: {threshold}")}</li>
+                                <li>{format!("Worker max floats: {max_floats}")}</li>
+                            </ul>
+                        }.into_any()
+                    },
+                )
+            }}
+        </div>
+    }
+}
+
+fn render_idb_runtime_card(state: AiDiagnosticsState) -> impl IntoView {
+    let refresh_state = state.clone();
+    view! {
+        <div class="card">
+            <h2>"IndexedDB Runtime"</h2>
+            {move || {
+                state.idb_runtime_metrics.get().map_or_else(
+                    || view! { <p class="muted">"Runtime metrics unavailable."</p> }.into_any(),
+                    |metrics| {
+                        let blocked_age = metrics.open_blocked_last_ms.map_or_else(
+                            || "n/a".to_string(),
+                            |timestamp| format!("{:.1}m ago", ((js_sys::Date::now() - timestamp) / 60000.0).max(0.0)),
+                        );
+                        let version_age = metrics.version_change_last_ms.map_or_else(
+                            || "n/a".to_string(),
+                            |timestamp| format!("{:.1}m ago", ((js_sys::Date::now() - timestamp) / 60000.0).max(0.0)),
+                        );
+                        view! {
+                            <ul class="list">
+                                <li>{format!("Open blocked events: {}", metrics.open_blocked_count)}</li>
+                                <li>{format!("Last open blocked: {blocked_age}")}</li>
+                                <li>{format!("Version change events: {}", metrics.version_change_count)}</li>
+                                <li>{format!("Last version change: {version_age}")}</li>
+                            </ul>
+                        }.into_any()
+                    },
+                )
+            }}
+            <button type="button" class="pill pill--ghost" on:click=move |_| action_refresh_runtime_metrics(refresh_state.clone())>
+                "Refresh Runtime Metrics"
+            </button>
+        </div>
+    }
+}
+
+fn render_ann_index_card(state: AiDiagnosticsState) -> impl IntoView {
+    view! {
+        <div class="card">
+            <h2>"ANN Index"</h2>
+            {move || state.ann_meta.get().map(|meta| view! {
+                <ul class="list">
+                    <li>{format!("Method: {}", meta.method)}</li>
+                    <li>{format!("Dim: {}", meta.dim)}</li>
+                    <li>{format!("Records: {}", meta.record_count)}</li>
+                    <li>{format!("Built: {}", meta.built_at)}</li>
+                    <li>{format!("Source: {}", meta.source_manifest)}</li>
+                    <li>{format!("Index File: {}", meta.index_file.unwrap_or_else(|| "n/a".to_string()))}</li>
+                    <li>{format!("Clusters: {}", meta.cluster_count.unwrap_or(0))}</li>
+                    <li>{format!("Probes: {}", meta.probe_count.unwrap_or(0))}</li>
+                </ul>
+            })}
+        </div>
+    }
+}
+
+fn render_ann_cap_card(state: AiDiagnosticsState) -> impl IntoView {
+    let load_state = state.clone();
+    let apply_state = state.clone();
+    let clear_state = state.clone();
+    view! {
+        <div class="card">
+            <h2>"ANN Cap"</h2>
+            <div class="pill-row">
+                <button type="button" class="pill" prop:disabled=move || state.ann_caps_loading.get() on:click=move |_| action_load_ann_caps(load_state.clone())>
+                    {move || if state.ann_caps_loading.get() { "Loading embeddings…" } else { "Load embeddings" }}
+                </button>
+            </div>
+            {move || state.ann_caps_error.get().map(|msg| view! { <p class="muted">{msg}</p> })}
+            {move || state.ann_caps.get().map(|cap| view! {
+                <ul class="list">
+                    <li>{format!("Cap: {:.1} MB", cap.cap_bytes as f64 / 1_000_000.0)}</li>
+                    <li>{format!("Override: {}", cap.cap_override_mb.map_or_else(|| "none".to_string(), |value| format!("{value} MB")))}</li>
+                    <li>{format!("Before: {:.1} MB ({} vectors)", cap.matrix_bytes_before as f64 / 1_000_000.0, cap.vectors_before)}</li>
+                    <li>{format!("After: {:.1} MB ({} vectors)", cap.matrix_bytes_after as f64 / 1_000_000.0, cap.vectors_after)}</li>
+                    <li>{format!("IVF bytes: {}", cap.ivf_bytes.map_or_else(|| "n/a".to_string(), |value| format!("{:.1} MB", value as f64 / 1_000_000.0)))}</li>
+                    <li>{format!("IVF cap: {}", cap.ivf_cap_bytes.map_or_else(|| "n/a".to_string(), |value| format!("{:.1} MB", value as f64 / 1_000_000.0)))}</li>
+                    <li>{format!("Chunks loaded: {}", cap.chunks_loaded.unwrap_or(0))}</li>
+                    <li>{format!("Records loaded: {}", cap.records_loaded.unwrap_or(0))}</li>
+                    <li>{format!("IVF Dropped: {}", if cap.ivf_dropped { "yes" } else { "no" })}</li>
+                    <li>{format!("Used ANN: {}", if cap.used_ann { "yes" } else { "no" })}</li>
+                    <li>{format!("Capped: {}", if cap.capped { "yes" } else { "no" })}</li>
+                    <li>{format!("Budget capped: {}", if cap.budget_capped { "yes" } else { "no" })}</li>
+                    <li>{format!("Device Memory: {}", cap.device_memory_gb.map_or_else(|| "n/a".to_string(), |value| format!("{value:.1} GB")))}</li>
+                    <li>{format!("Tier: {}", cap.policy_tier)}</li>
+                </ul>
+            })}
+            <div class="stack">
+                <label class="stack">
+                    <span class="muted">"Override cap (MB)"</span>
+                    <input
+                        class="input"
+                        type="number"
+                        min="128"
+                        max="2048"
+                        step="1"
+                        prop:value=move || state.ann_cap_override_input.get()
+                        on:input=move |ev| state.ann_cap_override_input.set(event_target_value(&ev))
+                    />
+                </label>
+                <div class="pill-row">
+                    <button type="button" class="pill pill--ghost" on:click=move |_| action_apply_ann_cap_override(apply_state.clone())>"Apply Override"</button>
+                    <button type="button" class="pill pill--ghost" on:click=move |_| action_clear_ann_cap_override(clear_state.clone())>"Reset Auto"</button>
+                </div>
+                {move || state.ann_cap_override_value.get().map(|value| view! { <p class="muted">{format!("Current override: {value} MB")}</p> })}
+            </div>
+        </div>
+    }
+}
+
+fn render_telemetry_snapshot_card(state: AiDiagnosticsState) -> impl IntoView {
+    view! {
+        <div class="card">
+            <h2>"Telemetry Snapshot"</h2>
+            {move || state.telemetry_snapshot.get().map(|snapshot| {
+                let minutes = (js_sys::Date::now() - snapshot.timestamp_ms) / 60000.0;
+                view! {
+                    <ul class="list">
+                        <li>{format!("Last update: {:.1}m ago", minutes.max(0.0))}</li>
+                        <li>{format!("Worker threshold: {}", snapshot.worker_threshold.map_or_else(|| "n/a".to_string(), |value| value.to_string()))}</li>
+                        <li>{format!("Worker max floats: {}", snapshot.worker_max_floats.map_or_else(|| "n/a".to_string(), |value| value.to_string()))}</li>
+                        <li>{format!("Worker cooldown: {}", snapshot.worker_failure_remaining_ms.map_or_else(|| "none".to_string(), |value| format!("{:.0}s", (value / 1000.0).max(0.0))))}</li>
+                        <li>{format!("Worker last error: {}", snapshot.worker_failure_reason.unwrap_or_else(|| "none".to_string()))}</li>
+                        <li>{format!("ANN cap recorded: {}", if snapshot.ann_cap.is_some() { "yes" } else { "no" })}</li>
+                        <li>{format!("ANN cap override: {}", snapshot.ann_cap_override_mb.map_or_else(|| "none".to_string(), |value| format!("{value} MB")))}</li>
+                        <li>{format!("WebGPU enabled: {}", snapshot.webgpu_enabled.map_or("n/a", |value| if value { "yes" } else { "no" }))}</li>
+                        <li>{format!("WebGPU available: {}", snapshot.webgpu_available.map_or("n/a", |value| if value { "yes" } else { "no" }))}</li>
+                        <li>{format!("WebNN: {}", snapshot.webnn.map_or("n/a", |value| if value { "yes" } else { "no" }))}</li>
+                        <li>{format!("AI config version: {}", snapshot.ai_config_version.unwrap_or_else(|| "n/a".to_string()))}</li>
+                        <li>{format!("AI config generated: {}", snapshot.ai_config_generated_at.unwrap_or_else(|| "n/a".to_string()))}</li>
+                        <li>{format!("AI config seeded: {}", snapshot.ai_config_seeded.map_or("n/a", |value| if value { "yes" } else { "no" }))}</li>
+                        <li>{format!("Embedding sample: {}", snapshot.embedding_sample_enabled.map_or("n/a", |value| if value { "on" } else { "off" }))}</li>
+                    </ul>
+                }
+            })}
+        </div>
+    }
+}
+
+fn render_embedding_manifest_card(state: AiDiagnosticsState) -> impl IntoView {
+    view! {
+        <div class="card">
+            <h2>"Embedding Manifest"</h2>
+            {move || state.embed_meta.get().map(|meta| view! {
+                <ul class="list">
+                    <li>{format!("Version: {}", meta.version)}</li>
+                    <li>{format!("Dim: {}", meta.dim)}</li>
+                    <li>{format!("Chunks: {}", meta.chunk_count)}</li>
+                </ul>
+            })}
+        </div>
+    }
+}
+
+fn render_benchmark_card(state: AiDiagnosticsState) -> impl IntoView {
+    let run_state = state.clone();
+    let cancel_state = state.clone();
+    view! {
+        <div class="card">
+            <h2>"Benchmark"</h2>
+            <div class="stack">
+                <button type="button" class="pill" on:click=move |_| action_run_benchmark(run_state.clone())>"Run Benchmark"</button>
+                {move || {
+                    if state.bench_running.get() {
+                        let cancel_click_state = cancel_state.clone();
+                        view! {
+                            <button type="button" class="pill pill--ghost" on:click=move |_| action_cancel_benchmark(cancel_click_state.clone())>
+                                "Cancel"
+                            </button>
+                        }
+                        .into_any()
+                    } else {
+                        ().into_any()
                     }
+                }}
+                <Show when=move || state.bench_running.get() fallback=|| () >
+                    <div class="muted">{move || state.bench_stage.get()}</div>
+                    <div class="pwa-progress">
+                        <div class="pwa-progress__bar" style:width=move || format!("{:.0}%", state.bench_progress.get() * 100.0)></div>
+                    </div>
+                </Show>
+            </div>
+            {move || state.bench.get().map(|result| view! {
+                <ul class="list">
+                    <li>{format!("Sample Count: {}", result.sample_count)}</li>
+                    <li>{format!("CPU (SIMD if enabled): {:.2} ms", result.cpu_ms)}</li>
+                    <li>{format!("GPU: {}", result.gpu_ms.map_or_else(|| "n/a".to_string(), |value| format!("{value:.2} ms")))}</li>
+                    <li>{format!("Backend: {}", result.backend)}</li>
+                </ul>
+            })}
+        </div>
+    }
+}
+
+fn render_benchmark_history_card(state: AiDiagnosticsState) -> impl IntoView {
+    view! {
+        <div class="card">
+            <h2>"Benchmark History"</h2>
+            {move || {
+                let history = state.benchmark_history.get();
+                if history.is_empty() {
+                    return view! { <p class="muted">"No benchmark history yet."</p> }.into_any();
+                }
+                let items = history.iter().rev().take(5).map(|sample| {
+                    let label = if let Some(full) = &sample.full {
+                        format!("Full: {:.2} ms ({} samples)", full.gpu_ms.unwrap_or(full.cpu_ms), full.sample_count)
+                    } else if let Some(subset) = &sample.subset {
+                        format!("Subset: {:.2} ms ({} candidates)", subset.gpu_ms.unwrap_or(subset.cpu_ms), subset.candidate_count)
+                    } else if let Some(worker) = &sample.worker {
+                        format!("Worker: {} vectors (winner: {})", worker.vector_count, worker.winner.clone().unwrap_or_else(|| "n/a".to_string()))
+                    } else {
+                        "Unknown benchmark".to_string()
+                    };
+                    view! { <li>{format!("{:.0} ms – {}", sample.timestamp_ms, label)}</li> }
                 });
-            }
-        }
-    };
-    let toggle_webgpu = {
-        #[cfg(feature = "hydrate")]
-        {
-            let webgpu_disabled = webgpu_disabled.clone();
-            let caps_signal = caps.clone();
-            move |_| {
-                let next = !webgpu_disabled.get_untracked();
-                webgpu_disabled.set(next);
-                crate::ai::set_webgpu_disabled(next);
-                caps_signal.set(crate::ai::detect_ai_capabilities());
-            }
-        }
-        #[cfg(not(feature = "hydrate"))]
-        {
-            move |_| {}
-        }
-    };
-    let apply_worker_threshold = {
-        #[cfg(feature = "hydrate")]
-        {
-            let worker_threshold_input = worker_threshold_input.clone();
-            let worker_threshold_current = worker_threshold_current.clone();
-            move |_| {
-                let parsed = worker_threshold_input
-                    .get_untracked()
-                    .trim()
-                    .parse::<usize>()
-                    .ok();
-                crate::ai::set_worker_threshold_override(parsed);
-                let current = crate::ai::worker_threshold_value();
-                worker_threshold_current.set(current);
-                worker_threshold_input.set(current.map(|v| v.to_string()).unwrap_or_default());
-            }
-        }
-        #[cfg(not(feature = "hydrate"))]
-        {
-            move |_| {}
-        }
-    };
-    let clear_worker_threshold = {
-        #[cfg(feature = "hydrate")]
-        {
-            let worker_threshold_input = worker_threshold_input.clone();
-            let worker_threshold_current = worker_threshold_current.clone();
-            move |_| {
-                crate::ai::set_worker_threshold_override(None);
-                let current = crate::ai::worker_threshold_value();
-                worker_threshold_current.set(current);
-                worker_threshold_input.set(current.map(|v| v.to_string()).unwrap_or_default());
-            }
-        }
-        #[cfg(not(feature = "hydrate"))]
-        {
-            move |_| {}
-        }
-    };
-    let apply_ann_cap_override = {
-        #[cfg(feature = "hydrate")]
-        {
-            let ann_cap_override_input = ann_cap_override_input.clone();
-            let ann_cap_override_value = ann_cap_override_value.clone();
-            move |_| {
-                let parsed = ann_cap_override_input
-                    .get_untracked()
-                    .trim()
-                    .parse::<u64>()
-                    .ok();
-                crate::ai::set_ann_cap_override_mb(parsed);
-                let current = crate::ai::ann_cap_override_mb();
-                ann_cap_override_value.set(current);
-                ann_cap_override_input.set(current.map(|v| v.to_string()).unwrap_or_default());
-            }
-        }
-        #[cfg(not(feature = "hydrate"))]
-        {
-            move |_| {}
-        }
-    };
-    let clear_ann_cap_override = {
-        #[cfg(feature = "hydrate")]
-        {
-            let ann_cap_override_input = ann_cap_override_input.clone();
-            let ann_cap_override_value = ann_cap_override_value.clone();
-            move |_| {
-                crate::ai::set_ann_cap_override_mb(None);
-                ann_cap_override_value.set(None);
-                ann_cap_override_input.set(String::new());
-            }
-        }
-        #[cfg(not(feature = "hydrate"))]
-        {
-            move |_| {}
-        }
-    };
-    let toggle_embedding_sample = {
-        #[cfg(feature = "hydrate")]
-        {
-            let embedding_sample_enabled = embedding_sample_enabled.clone();
-            let ann_caps = ann_caps.clone();
-            move |_| {
-                let next = !embedding_sample_enabled.get_untracked();
-                embedding_sample_enabled.set(next);
-                crate::ai::set_embedding_sample_enabled(next);
-                ann_caps.set(crate::ai::ann_cap_diagnostics());
-            }
-        }
-        #[cfg(not(feature = "hydrate"))]
-        {
-            move |_| {}
-        }
-    };
+                view! { <ul class="list">{items.collect_view()}</ul> }.into_any()
+            }}
+        </div>
+    }
+}
+
+fn render_export_card(state: AiDiagnosticsState) -> impl IntoView {
+    let export_state = state.clone();
+    view! {
+        <div class="card">
+            <h2>"Export"</h2>
+            <p class="muted">"Download a JSON snapshot of AI diagnostics."</p>
+            <button type="button" class="pill" on:click=move |_| action_export_diagnostics(export_state.clone())>"Export Snapshot"</button>
+        </div>
+    }
+}
+
+fn render_worker_threshold_card(state: AiDiagnosticsState) -> impl IntoView {
+    let run_state = state.clone();
+    let apply_state = state.clone();
+    let clear_state = state.clone();
+    view! {
+        <div class="card">
+            <h2>"Worker Threshold"</h2>
+            <div class="stack">
+                <button type="button" class="pill" on:click=move |_| action_run_worker_benchmark(run_state.clone())>"Run Worker Benchmark"</button>
+                {move || state.worker_threshold_current.get().map(|value| {
+                    let dim = state.embed_meta.get().map_or(0, |meta| meta.dim as usize).max(1);
+                    let approx_vectors = value / dim;
+                    view! {
+                        <p class="muted">{format!("Current threshold: {value} floats (~{approx_vectors} vectors @ dim {dim})")}</p>
+                    }
+                })}
+                <label class="stack">
+                    <span class="muted">"Override threshold (floats)"</span>
+                    <input
+                        class="input"
+                        type="number"
+                        min="0"
+                        step="1"
+                        prop:value=move || state.worker_threshold_input.get()
+                        on:input=move |ev| state.worker_threshold_input.set(event_target_value(&ev))
+                    />
+                </label>
+                <div class="pill-row">
+                    <button type="button" class="pill pill--ghost" on:click=move |_| action_apply_worker_threshold(apply_state.clone())>"Apply Override"</button>
+                    <button type="button" class="pill pill--ghost" on:click=move |_| action_clear_worker_threshold(clear_state.clone())>"Reset Auto"</button>
+                </div>
+            </div>
+            {move || state.worker_bench.get().map(|result| view! {
+                <ul class="list">
+                    <li>{format!("Vectors: {}", result.vector_count)}</li>
+                    <li>{format!("Dim: {}", result.dim)}</li>
+                    <li>{format!("Direct: {}", result.direct_ms.map_or_else(|| "n/a".to_string(), |value| format!("{value:.2} ms")))}</li>
+                    <li>{format!("Worker: {}", result.worker_ms.map_or_else(|| "n/a".to_string(), |value| format!("{value:.2} ms")))}</li>
+                    <li>{format!("Winner: {}", result.winner.unwrap_or_else(|| "n/a".to_string()))}</li>
+                    <li>{format!("Recommended threshold (floats): {}", result.recommended_threshold.map_or_else(|| "n/a".to_string(), |value| value.to_string()))}</li>
+                </ul>
+            })}
+        </div>
+    }
+}
+
+fn render_ivf_tuning_card(state: AiDiagnosticsState) -> impl IntoView {
+    let run_state = state.clone();
+    view! {
+        <div class="card">
+            <h2>"IVF Tuning"</h2>
+            <button type="button" class="pill" on:click=move |_| action_run_tuning(run_state.clone())>"Auto-Tune Probe"</button>
+            {move || state.tuning.get().map(|tuning| view! {
+                <ul class="list">
+                    <li>{format!("Probe Override: {}", tuning.probe_override.map_or_else(|| "none".to_string(), |value| value.to_string()))}</li>
+                    <li>{format!("Target Latency: {:.1} ms", tuning.target_latency_ms)}</li>
+                    <li>{format!("Last Latency: {}", tuning.last_latency_ms.map_or_else(|| "n/a".to_string(), |value| format!("{value:.2} ms")))}</li>
+                </ul>
+            })}
+            {move || state.tuning_result.get().map(|result| view! {
+                <ul class="list">
+                    <li>{format!("Selected Probe: {}", result.selected_probe)}</li>
+                    <li>{format!("Target: {:.1} ms", result.target_latency_ms)}</li>
+                </ul>
+            })}
+            {move || state.tuning_result.get().map(|result| view! {
+                <div class="list">
+                    {result.metrics.into_iter().map(|metric| view! {
+                        <div class="muted">{format!("Probe {} → {} candidates, {:.2} ms", metric.probe_count, metric.candidate_count, metric.avg_latency_ms)}</div>
+                    }).collect_view()}
+                </div>
+            })}
+        </div>
+    }
+}
+
+fn render_ai_diagnostics_cards(state: AiDiagnosticsState) -> impl IntoView {
+    view! {
+        <div class="card-grid">
+            {render_ai_parity_card(state.clone())}
+            {render_ai_capabilities_card(state.clone())}
+            {render_embedding_sample_card(state.clone())}
+            {render_ai_warnings_card(state.clone())}
+            {render_webgpu_runtime_card(state.clone())}
+            {render_apple_silicon_card(state.clone())}
+            {render_idb_runtime_card(state.clone())}
+            {render_ann_index_card(state.clone())}
+            {render_ann_cap_card(state.clone())}
+            {render_telemetry_snapshot_card(state.clone())}
+            {render_embedding_manifest_card(state.clone())}
+            {render_benchmark_card(state.clone())}
+            {render_benchmark_history_card(state.clone())}
+            {render_export_card(state.clone())}
+            {render_worker_threshold_card(state.clone())}
+            {render_ivf_tuning_card(state)}
+        </div>
+    }
+}
+
+pub fn ai_diagnostics_page() -> impl IntoView {
+    let state = AiDiagnosticsState::new();
+    initialize_ai_diagnostics_state(state.clone());
 
     view! {
         <section class="page">
             <h1>"AI Diagnostics"</h1>
             <p class="lead">"On-device AI status, index metadata, and performance checks."</p>
-            <Show when=move || embedding_sample_enabled.get() fallback=|| () >
+            <Show when=move || state.embedding_sample_enabled.get() fallback=|| () >
                 <p class="muted">"Sample mode enabled: using reduced embeddings."</p>
             </Show>
-            {move || ai_config_mismatch.get().map(|msg| view! {
-                <p class="muted">{msg}</p>
+            {move || state.ai_config_mismatch.get().map(|message| view! {
+                <p class="muted">{message}</p>
             })}
-
-            <div class="card-grid">
-                <div class="card">
-                    <h2>"Parity"</h2>
-                    <ul class="list">
-                        <li>{move || {
-                            integrity_report
-                                .get()
-                                .map_or_else(
-                                    || "IDB integrity: n/a".to_string(),
-                                    |report| {
-                                    if report.total_mismatches == 0 {
-                                        "IDB integrity: ok".to_string()
-                                    } else {
-                                        format!("IDB integrity: {} mismatch(es)", report.total_mismatches)
-                                    }
-                                },
-                                )
-                        }}</li>
-                        <li>{move || {
-                            sqlite_parity
-                                .get()
-                                .map_or_else(
-                                    || "SQLite parity: n/a".to_string(),
-                                    |report| {
-                                    if !report.available {
-                                        "SQLite parity: unavailable".to_string()
-                                    } else if report.total_mismatches == 0 {
-                                        "SQLite parity: ok".to_string()
-                                    } else {
-                                        format!("SQLite parity: {} mismatch(es)", report.total_mismatches)
-                                    }
-                                },
-                                )
-                        }}</li>
-                    </ul>
-                    <p class="muted">"Detailed mismatches are shown in the PWA Status panel."</p>
-                </div>
-                <div class="card">
-                    <h2>"Capabilities"</h2>
-                    <ul class="list">
-                        <li>{move || format!("WebGPU available: {}", if caps.get().webgpu_available { "yes" } else { "no" })}</li>
-                        <li>{move || format!(
-                            "WebGPU device probe: {}",
-                            webgpu_probe
-                                .get()
-                                .map_or("n/a", |ok| if ok { "ready" } else { "failed" })
-                        )}</li>
-                        <li>{move || format!("WebGPU enabled: {}", if caps.get().webgpu_enabled { "yes" } else { "no" })}</li>
-                        <li>{move || format!("GPU Worker: {}", if caps.get().webgpu_worker { "on" } else { "off" })}</li>
-                        <li>{move || format!("WebNN: {}", if caps.get().webnn { "on" } else { "off" })}</li>
-                        <li>{move || format!("SIMD: {}", if caps.get().wasm_simd { "on" } else { "off" })}</li>
-                        <li>{move || format!("Threads: {}", if caps.get().threads { "on" } else { "off" })}</li>
-                        <li>{move || format!(
-                            "Scoring backend: {}",
-                            if caps.get().webgpu_enabled { "WebGPU" } else { "WASM SIMD" }
-                        )}</li>
-                        <li>{move || format!(
-                            "Cross-Origin Isolated: {}",
-                            cross_origin_isolated
-                                .get()
-                                .map_or("n/a", |v| if v { "on" } else { "off" })
-                        )}</li>
-                        <li>{move || format!(
-                            "AI config seeded: {}",
-                            if ai_config_seeded.get() { "yes" } else { "no" }
-                        )}</li>
-                        <li>{move || format!(
-                            "AI config version: {}",
-                            ai_config_version
-                                .get()
-                                .unwrap_or_else(|| "n/a".to_string())
-                        )}</li>
-                        <li>{move || format!(
-                            "AI config generated: {}",
-                            ai_config_generated_at
-                                .get()
-                                .unwrap_or_else(|| "n/a".to_string())
-                        )}</li>
-                        <li>{move || format!(
-                            "Worker bench: {}",
-                            worker_bench_timestamp
-                                .get()
-                                .map_or_else(
-                                    || "n/a".to_string(),
-                                    |ts| {
-                                    let minutes = (js_sys::Date::now() - ts) / 60000.0;
-                                    format!("{:.1}m ago", minutes.max(0.0))
-                                },
-                                )
-                        )}</li>
-                        <li>{move || format!(
-                            "Worker max floats: {}",
-                            worker_max_floats
-                                .get().map_or_else(|| "n/a".to_string(), |v| v.to_string())
-                        )}</li>
-                        <li>{move || format!(
-                            "Worker cooldown: {}",
-                            worker_failure
-                                .get()
-                                .cooldown_remaining_ms.map_or_else(|| "none".to_string(), |ms| format!("{:.0}s", (ms / 1000.0).max(0.0)))
-                        )}</li>
-                        <li>{move || format!(
-                            "Worker last error: {}",
-                            worker_failure
-                                .get()
-                                .last_error
-                                .clone()
-                                .unwrap_or_else(|| "none".to_string())
-                        )}</li>
-                    </ul>
-                    <button type="button" class="pill pill--ghost" on:click=toggle_webgpu>
-                        {move || if webgpu_disabled.get() { "Enable WebGPU" } else { "Disable WebGPU" }}
-                    </button>
-                    <Show when=move || worker_failure.get().cooldown_remaining_ms.is_some() fallback=|| () >
-                        <button type="button" class="pill pill--ghost" on:click=move |_| {
-                            #[cfg(feature = "hydrate")]
-                            {
-                                crate::ai::clear_worker_failure_status();
-                                worker_failure.set(crate::ai::worker_failure_status());
-                            }
-                        }>"Clear worker cooldown"</button>
-                    </Show>
-                    <button type="button" class="pill pill--ghost" on:click=move |_| {
-                        #[cfg(feature = "hydrate")]
-                        {
-                            let version = ai_config_version.clone();
-                            let generated = ai_config_generated_at.clone();
-                            let seeded = ai_config_seeded.clone();
-                            spawn_local(async move {
-                                if crate::ai::refresh_ai_config().await {
-                                    version.set(crate::ai::ai_config_version());
-                                    generated.set(crate::ai::ai_config_generated_at());
-                                    seeded.set(crate::ai::ai_config_seeded());
-                                }
-                            });
-                        }
-                    }>"Refresh AI config"</button>
-                    <Show
-                        when=move || {
-                            caps.get().threads && cross_origin_isolated.get() == Some(false)
-                        }
-                        fallback=|| ()
-                    >
-                        <p class="muted">
-                            "Threads require COOP/COEP. Enable cross-origin isolation to unlock worker SIMD."
-                        </p>
-                    </Show>
-                    <Show
-                        when=move || caps.get().webnn && !caps.get().webgpu_enabled
-                        fallback=|| ()
-                    >
-                        <p class="muted">
-                            "WebNN detected (experimental). Current scoring uses WASM SIMD until WebNN is enabled."
-                        </p>
-                    </Show>
-                </div>
-                <div class="card">
-                    <h2>"Embedding Sample"</h2>
-                    <p class="muted">
-                        "Use a small sample dataset for faster local tuning."
-                    </p>
-                    <div class="pill-row">
-                        <button type="button" class="pill pill--ghost" on:click=toggle_embedding_sample>
-                            {move || if embedding_sample_enabled.get() { "Disable Sample" } else { "Enable Sample" }}
-                        </button>
-                    </div>
-                    <p class="muted">
-                        {move || if embedding_sample_enabled.get() { "Sample mode is ON." } else { "Sample mode is OFF." }}
-                    </p>
-                    <p class="muted">"Reload to apply changes."</p>
-                </div>
-                <div class="card">
-                    <h2>"AI Warnings"</h2>
-                    {move || {
-                        let warnings = ai_warnings.get();
-                        if warnings.is_empty() {
-                            view! { <p class="muted">"No AI warnings recorded."</p> }.into_any()
-                        } else {
-                            let items = warnings.iter().rev().take(5).map(|event| {
-                                let detail = event
-                                    .details
-                                    .clone()
-                                    .unwrap_or_else(|| "n/a".to_string());
-                                view! { <li>{format!("{} – {}", event.event, detail)}</li> }
-                            });
-                            view! { <ul class="list">{items.collect_view()}</ul> }.into_any()
-                        }
-                    }}
-                </div>
-                <div class="card">
-                    <h2>"WebGPU Runtime"</h2>
-                    {move || {
-                        webgpu_runtime
-                            .get()
-                            .map_or_else(
-                                || {
-                                    view! { <p class="muted">"Runtime telemetry unavailable."</p> }
-                                        .into_any()
-                                },
-                                |telemetry| {
-                                let direct_calls = telemetry
-                                    .counters
-                                    .get("direct_scores_calls")
-                                    .copied()
-                                    .unwrap_or(0);
-                                let worker_success = telemetry
-                                    .counters
-                                    .get("worker_success")
-                                    .copied()
-                                    .unwrap_or(0);
-                                let worker_fallback = telemetry
-                                    .counters
-                                    .get("worker_fallback_runtime_failed")
-                                    .copied()
-                                    .unwrap_or(0)
-                                    + telemetry
-                                        .counters
-                                        .get("worker_fallback_init_failed")
-                                        .copied()
-                                        .unwrap_or(0);
-                                let subset_success = telemetry
-                                    .counters
-                                    .get("subset_worker_success")
-                                    .copied()
-                                    .unwrap_or(0);
-                                let last_event =
-                                    telemetry.last_event.unwrap_or_else(|| "none".to_string());
-                                let last_event_age = telemetry
-                                    .last_event_ts
-                                    .map_or_else(
-                                        || "n/a".to_string(),
-                                        |ts| {
-                                        let minutes = (js_sys::Date::now() - ts) / 60000.0;
-                                        format!("{:.1}m ago", minutes.max(0.0))
-                                    },
-                                    );
-                                view! {
-                                    <ul class="list">
-                                        <li>{format!("Direct score calls: {direct_calls}")}</li>
-                                        <li>{format!("Worker successes: {worker_success}")}</li>
-                                        <li>{format!("Worker fallback errors: {worker_fallback}")}</li>
-                                        <li>{format!("Subset worker successes: {subset_success}")}</li>
-                                        <li>{format!("Last event: {last_event}")}</li>
-                                        <li>{format!("Last event age: {last_event_age}")}</li>
-                                    </ul>
-                                }
-                                .into_any()
-                            },
-                            )
-                    }}
-                    <div class="pill-row">
-                        <button type="button" class="pill pill--ghost" on:click=refresh_runtime_metrics>
-                            "Refresh Runtime Metrics"
-                        </button>
-                        <button type="button" class="pill pill--ghost" on:click=reset_runtime_metrics>
-                            "Reset WebGPU Metrics"
-                        </button>
-                    </div>
-                </div>
-                <div class="card">
-                    <h2>"Apple Silicon Profile"</h2>
-                    {move || {
-                        apple_silicon_profile
-                            .get()
-                            .map_or_else(
-                                || view! { <p class="muted">"Profile unavailable."</p> }.into_any(),
-                                |profile| {
-                                let workgroup_dot = profile
-                                    .workgroup
-                                    .as_ref()
-                                    .and_then(|group| group.dot).map_or_else(|| "n/a".to_string(), |v| v.to_string());
-                                let workgroup_score = profile
-                                    .workgroup
-                                    .as_ref()
-                                    .and_then(|group| group.score).map_or_else(|| "n/a".to_string(), |v| v.to_string());
-                                let threshold = profile
-                                    .worker
-                                    .as_ref()
-                                    .and_then(|worker| worker.threshold_floats).map_or_else(|| "n/a".to_string(), |v| v.to_string());
-                                let max_floats = profile
-                                    .worker
-                                    .as_ref()
-                                    .and_then(|worker| worker.max_floats).map_or_else(|| "n/a".to_string(), |v| v.to_string());
-                                view! {
-                                    <ul class="list">
-                                        <li>{format!(
-                                            "Apple Silicon detected: {}",
-                                            if profile.is_apple_silicon { "yes" } else { "no" }
-                                        )}</li>
-                                        <li>{format!(
-                                            "CPU cores: {}",
-                                            profile
-                                                .cpu_cores.map_or_else(|| "n/a".to_string(), |v| format!("{v:.0}"))
-                                        )}</li>
-                                        <li>{format!(
-                                            "Device memory: {}",
-                                            profile
-                                                .device_memory_gb.map_or_else(|| "n/a".to_string(), |v| format!("{v:.1} GB"))
-                                        )}</li>
-                                        <li>{format!("Workgroup dot: {workgroup_dot}")}</li>
-                                        <li>{format!("Workgroup score: {workgroup_score}")}</li>
-                                        <li>{format!("Worker threshold: {threshold}")}</li>
-                                        <li>{format!("Worker max floats: {max_floats}")}</li>
-                                    </ul>
-                                }
-                                .into_any()
-                            },
-                            )
-                    }}
-                </div>
-                <div class="card">
-                    <h2>"IndexedDB Runtime"</h2>
-                    {move || {
-                        idb_runtime_metrics
-                            .get()
-                            .map_or_else(
-                                || {
-                                    view! { <p class="muted">"Runtime metrics unavailable."</p> }
-                                        .into_any()
-                                },
-                                |metrics| {
-                                let blocked_age = metrics
-                                    .open_blocked_last_ms
-                                    .map_or_else(
-                                        || "n/a".to_string(),
-                                        |ts| {
-                                        let minutes = (js_sys::Date::now() - ts) / 60000.0;
-                                        format!("{:.1}m ago", minutes.max(0.0))
-                                    },
-                                    );
-                                let version_age = metrics
-                                    .version_change_last_ms
-                                    .map_or_else(
-                                        || "n/a".to_string(),
-                                        |ts| {
-                                        let minutes = (js_sys::Date::now() - ts) / 60000.0;
-                                        format!("{:.1}m ago", minutes.max(0.0))
-                                    },
-                                    );
-                                view! {
-                                    <ul class="list">
-                                        <li>{format!("Open blocked events: {}", metrics.open_blocked_count)}</li>
-                                        <li>{format!("Last open blocked: {blocked_age}")}</li>
-                                        <li>{format!("Version change events: {}", metrics.version_change_count)}</li>
-                                        <li>{format!("Last version change: {version_age}")}</li>
-                                    </ul>
-                                }
-                                .into_any()
-                            },
-                            )
-                    }}
-                    <button type="button" class="pill pill--ghost" on:click=refresh_runtime_metrics>
-                        "Refresh Runtime Metrics"
-                    </button>
-                </div>
-                <div class="card">
-                    <h2>"ANN Index"</h2>
-                    {move || ann_meta.get().map(|meta| view! {
-                        <ul class="list">
-                            <li>{format!("Method: {}", meta.method)}</li>
-                            <li>{format!("Dim: {}", meta.dim)}</li>
-                            <li>{format!("Records: {}", meta.record_count)}</li>
-                            <li>{format!("Built: {}", meta.built_at)}</li>
-                            <li>{format!("Source: {}", meta.source_manifest)}</li>
-                            <li>{format!("Index File: {}", meta.index_file.unwrap_or_else(|| "n/a".to_string()))}</li>
-                            <li>{format!("Clusters: {}", meta.cluster_count.unwrap_or(0))}</li>
-                            <li>{format!("Probes: {}", meta.probe_count.unwrap_or(0))}</li>
-                        </ul>
-                    })}
-                </div>
-                <div class="card">
-                    <h2>"ANN Cap"</h2>
-                    <div class="pill-row">
-                        <button type="button"
-                            class="pill"
-                            prop:disabled=move || ann_caps_loading.get()
-                            on:click=load_ann_caps
-                        >
-                            {move || if ann_caps_loading.get() { "Loading embeddings…" } else { "Load embeddings" }}
-                        </button>
-                    </div>
-                    {move || ann_caps_error.get().map(|msg| view! {
-                        <p class="muted">{msg}</p>
-                    })}
-                    {move || ann_caps.get().map(|cap| view! {
-                        <ul class="list">
-                            <li>{format!("Cap: {:.1} MB", cap.cap_bytes as f64 / 1_000_000.0)}</li>
-                            <li>{format!(
-                                "Override: {}",
-                                cap.cap_override_mb.map_or_else(|| "none".to_string(), |v| format!("{v} MB"))
-                            )}</li>
-                            <li>{format!("Before: {:.1} MB ({} vectors)", cap.matrix_bytes_before as f64 / 1_000_000.0, cap.vectors_before)}</li>
-                            <li>{format!("After: {:.1} MB ({} vectors)", cap.matrix_bytes_after as f64 / 1_000_000.0, cap.vectors_after)}</li>
-                            <li>{format!(
-                                "IVF bytes: {}",
-                                cap.ivf_bytes.map_or_else(|| "n/a".to_string(), |v| format!("{:.1} MB", v as f64 / 1_000_000.0))
-                            )}</li>
-                            <li>{format!(
-                                "IVF cap: {}",
-                                cap.ivf_cap_bytes.map_or_else(|| "n/a".to_string(), |v| format!("{:.1} MB", v as f64 / 1_000_000.0))
-                            )}</li>
-                            <li>{format!("Chunks loaded: {}", cap.chunks_loaded.unwrap_or(0))}</li>
-                            <li>{format!("Records loaded: {}", cap.records_loaded.unwrap_or(0))}</li>
-                            <li>{format!("IVF Dropped: {}", if cap.ivf_dropped { "yes" } else { "no" })}</li>
-                            <li>{format!("Used ANN: {}", if cap.used_ann { "yes" } else { "no" })}</li>
-                            <li>{format!("Capped: {}", if cap.capped { "yes" } else { "no" })}</li>
-                            <li>{format!("Budget capped: {}", if cap.budget_capped { "yes" } else { "no" })}</li>
-                            <li>{format!("Device Memory: {}", cap.device_memory_gb.map_or_else(|| "n/a".to_string(), |v| format!("{v:.1} GB")))}</li>
-                            <li>{format!("Tier: {}", cap.policy_tier)}</li>
-                        </ul>
-                    })}
-                    <div class="stack">
-                        <label class="stack">
-                            <span class="muted">"Override cap (MB)"</span>
-                            <input
-                                class="input"
-                                type="number"
-                                min="128"
-                                max="2048"
-                                step="1"
-                                prop:value=move || ann_cap_override_input.get()
-                                on:input=move |ev| {
-                                    ann_cap_override_input.set(event_target_value(&ev));
-                                }
-                            />
-                        </label>
-                        <div class="pill-row">
-                            <button type="button" class="pill pill--ghost" on:click=apply_ann_cap_override>
-                                "Apply Override"
-                            </button>
-                            <button type="button" class="pill pill--ghost" on:click=clear_ann_cap_override>
-                                "Reset Auto"
-                            </button>
-                        </div>
-                        {move || ann_cap_override_value.get().map(|value| view! {
-                            <p class="muted">{format!("Current override: {value} MB")}</p>
-                        })}
-                    </div>
-                </div>
-                <div class="card">
-                    <h2>"Telemetry Snapshot"</h2>
-                    {move || telemetry_snapshot.get().map(|snapshot| {
-                        let minutes = (js_sys::Date::now() - snapshot.timestamp_ms) / 60000.0;
-                        view! {
-                            <ul class="list">
-                                <li>{format!("Last update: {:.1}m ago", minutes.max(0.0))}</li>
-                                <li>{format!(
-                                    "Worker threshold: {}",
-                                    snapshot.worker_threshold.map_or_else(|| "n/a".to_string(), |v| v.to_string())
-                                )}</li>
-                                <li>{format!(
-                                    "Worker max floats: {}",
-                                    snapshot
-                                        .worker_max_floats.map_or_else(|| "n/a".to_string(), |v| v.to_string())
-                                )}</li>
-                                <li>{format!(
-                                    "Worker cooldown: {}",
-                                    snapshot
-                                        .worker_failure_remaining_ms.map_or_else(|| "none".to_string(), |v| format!("{:.0}s", (v / 1000.0).max(0.0)))
-                                )}</li>
-                                <li>{format!(
-                                    "Worker last error: {}",
-                                    snapshot.worker_failure_reason.unwrap_or_else(|| "none".to_string())
-                                )}</li>
-                                <li>{format!(
-                                    "ANN cap recorded: {}",
-                                    if snapshot.ann_cap.is_some() { "yes" } else { "no" }
-                                )}</li>
-                                <li>{format!(
-                                    "ANN cap override: {}",
-                                    snapshot
-                                        .ann_cap_override_mb.map_or_else(|| "none".to_string(), |v| format!("{v} MB"))
-                                )}</li>
-                                <li>{format!(
-                                    "WebGPU enabled: {}",
-                                    snapshot.webgpu_enabled.map_or("n/a", |v| if v { "yes" } else { "no" })
-                                )}</li>
-                                <li>{format!(
-                                    "WebGPU available: {}",
-                                    snapshot.webgpu_available.map_or("n/a", |v| if v { "yes" } else { "no" })
-                                )}</li>
-                                <li>{format!(
-                                    "WebNN: {}",
-                                    snapshot.webnn.map_or("n/a", |v| if v { "yes" } else { "no" })
-                                )}</li>
-                                <li>{format!(
-                                    "AI config version: {}",
-                                    snapshot.ai_config_version.unwrap_or_else(|| "n/a".to_string())
-                                )}</li>
-                                <li>{format!(
-                                    "AI config generated: {}",
-                                    snapshot.ai_config_generated_at.unwrap_or_else(|| "n/a".to_string())
-                                )}</li>
-                                <li>{format!(
-                                    "AI config seeded: {}",
-                                    snapshot.ai_config_seeded.map_or("n/a", |v| if v { "yes" } else { "no" })
-                                )}</li>
-                                <li>{format!(
-                                    "Embedding sample: {}",
-                                    snapshot
-                                        .embedding_sample_enabled
-                                        .map_or("n/a", |v| if v { "on" } else { "off" })
-                                )}</li>
-                            </ul>
-                        }
-                    })}
-                </div>
-                <div class="card">
-                    <h2>"Embedding Manifest"</h2>
-                    {move || embed_meta.get().map(|meta| view! {
-                        <ul class="list">
-                            <li>{format!("Version: {}", meta.version)}</li>
-                            <li>{format!("Dim: {}", meta.dim)}</li>
-                            <li>{format!("Chunks: {}", meta.chunk_count)}</li>
-                        </ul>
-                    })}
-                </div>
-                <div class="card">
-                    <h2>"Benchmark"</h2>
-                    <div class="stack">
-                        <button type="button" class="pill" on:click=run_benchmark>"Run Benchmark"</button>
-                        <Show when=move || bench_running.get() fallback=|| () >
-                            <button type="button" class="pill pill--ghost" on:click=cancel_benchmark>"Cancel"</button>
-                        </Show>
-                        <Show when=move || bench_running.get() fallback=|| () >
-                            <div class="muted">{move || bench_stage.get()}</div>
-                            <div class="pwa-progress">
-                                <div class="pwa-progress__bar" style:width=move || format!("{:.0}%", bench_progress.get() * 100.0)></div>
-                            </div>
-                        </Show>
-                    </div>
-                    {move || bench.get().map(|result| view! {
-                        <ul class="list">
-                            <li>{format!("Sample Count: {}", result.sample_count)}</li>
-                            <li>{format!("CPU (SIMD if enabled): {:.2} ms", result.cpu_ms)}</li>
-                            <li>{format!("GPU: {}", result.gpu_ms.map_or_else(|| "n/a".to_string(), |ms| format!("{ms:.2} ms")))}</li>
-                            <li>{format!("Backend: {}", result.backend)}</li>
-                        </ul>
-                    })}
-                </div>
-                <div class="card">
-                    <h2>"Benchmark History"</h2>
-                    {move || {
-                        let history = benchmark_history.get();
-                        if history.is_empty() {
-                            return view! { <p class="muted">"No benchmark history yet."</p> }.into_any();
-                        }
-                        let items = history.iter().rev().take(5).map(|sample| {
-                            let label = if let Some(full) = &sample.full {
-                                format!(
-                                    "Full: {:.2} ms ({} samples)",
-                                    full.gpu_ms.unwrap_or(full.cpu_ms),
-                                    full.sample_count
-                                )
-                            } else if let Some(subset) = &sample.subset {
-                                format!(
-                                    "Subset: {:.2} ms ({} candidates)",
-                                    subset.gpu_ms.unwrap_or(subset.cpu_ms),
-                                    subset.candidate_count
-                                )
-                            } else if let Some(worker) = &sample.worker {
-                                format!(
-                                    "Worker: {} vectors (winner: {})",
-                                    worker.vector_count,
-                                    worker.winner.clone().unwrap_or_else(|| "n/a".to_string())
-                                )
-                            } else {
-                                "Unknown benchmark".to_string()
-                            };
-                            view! {
-                                <li>{format!("{:.0} ms – {}", sample.timestamp_ms, label)}</li>
-                            }
-                        }).collect_view();
-                        view! { <ul class="list">{items}</ul> }.into_any()
-                    }}
-                </div>
-                <div class="card">
-                    <h2>"Export"</h2>
-                    <p class="muted">"Download a JSON snapshot of AI diagnostics."</p>
-                    <button type="button" class="pill" on:click=export_diagnostics>"Export Snapshot"</button>
-                </div>
-                <div class="card">
-                    <h2>"Worker Threshold"</h2>
-                    <div class="stack">
-                        <button type="button" class="pill" on:click=run_worker_benchmark>"Run Worker Benchmark"</button>
-                        {move || worker_threshold_current.get().map(|value| {
-                            let dim = embed_meta.get().map_or(0, |meta| meta.dim as usize);
-                            let dim = dim.max(1);
-                            let approx_vectors = value / dim;
-                            view! {
-                                <p class="muted">{format!(
-                                    "Current threshold: {value} floats (~{approx_vectors} vectors @ dim {dim})"
-                                )}</p>
-                            }
-                        })}
-                        <label class="stack">
-                            <span class="muted">"Override threshold (floats)"</span>
-                            <input
-                                class="input"
-                                type="number"
-                                min="0"
-                                step="1"
-                                prop:value=move || worker_threshold_input.get()
-                                on:input=move |ev| {
-                                    worker_threshold_input.set(event_target_value(&ev));
-                                }
-                            />
-                        </label>
-                        <div class="pill-row">
-                            <button type="button" class="pill pill--ghost" on:click=apply_worker_threshold>
-                                "Apply Override"
-                            </button>
-                            <button type="button" class="pill pill--ghost" on:click=clear_worker_threshold>
-                                "Reset Auto"
-                            </button>
-                        </div>
-                    </div>
-                    {move || worker_bench.get().map(|result| view! {
-                        <ul class="list">
-                            <li>{format!("Vectors: {}", result.vector_count)}</li>
-                            <li>{format!("Dim: {}", result.dim)}</li>
-                            <li>{format!("Direct: {}", result.direct_ms.map_or_else(|| "n/a".to_string(), |ms| format!("{ms:.2} ms")))}</li>
-                            <li>{format!("Worker: {}", result.worker_ms.map_or_else(|| "n/a".to_string(), |ms| format!("{ms:.2} ms")))}</li>
-                            <li>{format!("Winner: {}", result.winner.unwrap_or_else(|| "n/a".to_string()))}</li>
-                            <li>{format!(
-                                "Recommended threshold (floats): {}",
-                                result.recommended_threshold.map_or_else(|| "n/a".to_string(), |v| v.to_string())
-                            )}</li>
-                        </ul>
-                    })}
-                </div>
-                <div class="card">
-                    <h2>"IVF Tuning"</h2>
-                    <button type="button" class="pill" on:click=run_tuning>"Auto-Tune Probe"</button>
-                    {move || tuning.get().map(|state| view! {
-                        <ul class="list">
-                            <li>{format!("Probe Override: {}", state.probe_override.map_or_else(|| "none".to_string(), |v| v.to_string()))}</li>
-                            <li>{format!("Target Latency: {:.1} ms", state.target_latency_ms)}</li>
-                            <li>{format!("Last Latency: {}", state.last_latency_ms.map_or_else(|| "n/a".to_string(), |v| format!("{v:.2} ms")))}</li>
-                        </ul>
-                    })}
-                    {move || tuning_result.get().map(|result| view! {
-                        <ul class="list">
-                            <li>{format!("Selected Probe: {}", result.selected_probe)}</li>
-                            <li>{format!("Target: {:.1} ms", result.target_latency_ms)}</li>
-                        </ul>
-                    })}
-                    {move || tuning_result.get().map(|result| view! {
-                        <div class="list">
-                            {result.metrics.into_iter().map(|metric| view! {
-                                <div class="muted">{format!("Probe {} → {} candidates, {:.2} ms",
-                                    metric.probe_count,
-                                    metric.candidate_count,
-                                    metric.avg_latency_ms)}</div>
-                            }).collect_view()}
-                        </div>
-                    })}
-                </div>
-            </div>
+            {render_ai_diagnostics_cards(state)}
         </section>
     }
 }
@@ -3268,6 +3239,473 @@ fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
     Ok(year)
 }
 
+#[cfg(feature = "hydrate")]
+fn hydrate_saved_show_ids(saved_show_ids: RwSignal<std::collections::HashSet<i32>>) {
+    let saved_show_ids_signal = saved_show_ids.clone();
+    spawn_local(async move {
+        let ids = load_user_attended_shows()
+            .await
+            .into_iter()
+            .map(|item| item.show_id)
+            .collect::<std::collections::HashSet<_>>();
+        saved_show_ids_signal.set(ids);
+    });
+}
+
+#[cfg(not(feature = "hydrate"))]
+fn hydrate_saved_show_ids(_saved_show_ids: RwSignal<std::collections::HashSet<i32>>) {}
+
+#[cfg(feature = "hydrate")]
+fn queue_toggle_saved_show(
+    show_id_value: i32,
+    show_date_value: String,
+    saved_show_ids: RwSignal<std::collections::HashSet<i32>>,
+    save_pending: RwSignal<bool>,
+    save_message: RwSignal<Option<(String, bool)>>,
+) {
+    if save_pending.get_untracked() {
+        return;
+    }
+    save_pending.set(true);
+
+    let saved_show_ids_signal = saved_show_ids.clone();
+    let save_pending_signal = save_pending.clone();
+    let save_message_signal = save_message.clone();
+    spawn_local(async move {
+        let currently_saved =
+            saved_show_ids_signal.with_untracked(|ids| ids.contains(&show_id_value));
+        let action_ok = if currently_saved {
+            remove_user_attended_show(show_id_value).await
+        } else {
+            add_user_attended_show(show_id_value, Some(show_date_value)).await
+        };
+
+        if action_ok {
+            let ids = load_user_attended_shows()
+                .await
+                .into_iter()
+                .map(|item| item.show_id)
+                .collect::<std::collections::HashSet<_>>();
+            saved_show_ids_signal.set(ids);
+            if currently_saved {
+                save_message_signal.set(Some((
+                    format!("Removed show {show_id_value} from My Shows."),
+                    false,
+                )));
+            } else {
+                save_message_signal.set(Some((
+                    format!("Saved show {show_id_value} to My Shows."),
+                    false,
+                )));
+            }
+        } else if currently_saved {
+            save_message_signal.set(Some((
+                "Unable to remove this show from My Shows right now.".to_string(),
+                true,
+            )));
+        } else {
+            save_message_signal.set(Some((
+                "Unable to save this show to My Shows right now.".to_string(),
+                true,
+            )));
+        }
+        save_pending_signal.set(false);
+    });
+}
+
+#[cfg(not(feature = "hydrate"))]
+fn queue_toggle_saved_show(
+    _show_id_value: i32,
+    _show_date_value: String,
+    _saved_show_ids: RwSignal<std::collections::HashSet<i32>>,
+    _save_pending: RwSignal<bool>,
+    _save_message: RwSignal<Option<(String, bool)>>,
+) {
+}
+
+fn render_show_detail_loaded(
+    ctx: ShowContext,
+    saved_show_ids: RwSignal<std::collections::HashSet<i32>>,
+    save_pending: RwSignal<bool>,
+    save_message: RwSignal<Option<(String, bool)>>,
+) -> impl IntoView {
+    let show = ctx.show;
+    let venue_name = ctx.venue.as_ref().map_or_else(
+        || format!("Venue #{}", show.venue_id),
+        |venue| venue.name.clone(),
+    );
+    let venue_line = ctx.venue.as_ref().map_or_else(
+        || venue_name.clone(),
+        |venue| {
+            format!(
+                "{} • {}",
+                venue.name,
+                format_location(&venue.city, &venue.state)
+            )
+        },
+    );
+    let tour_line = ctx.tour.as_ref().map_or_else(
+        || "No tour".into(),
+        |tour| format!("{} ({})", tour.name, tour.year),
+    );
+    let tour_href = ctx
+        .tour
+        .as_ref()
+        .map(|tour| format!("/tours/{}", tour.year));
+    let venue_href = format!("/venues/{}", show.venue_id);
+    let song_count = show.song_count.unwrap_or(0);
+    let rarity = show
+        .rarity_index
+        .map_or_else(|| "-".into(), |v| format!("{v:.2}"));
+    let show_id_value = show.id;
+    let show_date_value = show.date.clone();
+
+    let save_pending_for_button = save_pending.clone();
+    let save_pending_for_label = save_pending.clone();
+    let saved_show_ids_for_class = saved_show_ids.clone();
+    let saved_show_ids_for_label = saved_show_ids.clone();
+    let toggle_saved_show_ids = saved_show_ids.clone();
+    let toggle_save_pending = save_pending.clone();
+    let toggle_save_message = save_message.clone();
+
+    view! {
+        <div class="detail-list-head">
+            <div class="detail-list-head__copy">
+                <h2>{show.date.clone()}</h2>
+                <p class="muted">{format!("{venue_line} • {tour_line}")}</p>
+            </div>
+            <div class="pill-row detail-list-head__meta">
+                <span class="pill">{format!("{song_count} songs")}</span>
+                <span class="pill pill--ghost">{format!("Rarity {rarity}")}</span>
+                <button
+                    type="button"
+                    class=move || {
+                        if saved_show_ids_for_class.get().contains(&show_id_value) {
+                            "pill"
+                        } else {
+                            "pill pill--ghost"
+                        }
+                    }
+                    disabled=move || save_pending_for_button.get()
+                    on:click=move |_| {
+                        queue_toggle_saved_show(
+                            show_id_value,
+                            show_date_value.clone(),
+                            toggle_saved_show_ids.clone(),
+                            toggle_save_pending.clone(),
+                            toggle_save_message.clone(),
+                        );
+                    }
+                >
+                    {move || {
+                        if save_pending_for_label.get() {
+                            "Updating..."
+                        } else if saved_show_ids_for_label.get().contains(&show_id_value) {
+                            "Remove from My Shows"
+                        } else {
+                            "Save to My Shows"
+                        }
+                    }}
+                </button>
+                <a class="pill pill--ghost" href="/my-shows">"My Shows"</a>
+                <a class="pill pill--ghost" href=venue_href>"Venue details"</a>
+                {tour_href.map(|href| view! {
+                    <a class="pill pill--ghost" href=href>"Tour details"</a>
+                })}
+            </div>
+        </div>
+        <div class="detail-grid">
+            <div><strong>"Date"</strong><span>{show.date}</span></div>
+            <div><strong>"Venue"</strong><span>{venue_line}</span></div>
+            <div><strong>"Tour"</strong><span>{tour_line}</span></div>
+            <div><strong>"Year"</strong><span>{show.year}</span></div>
+            <div><strong>"Songs"</strong><span>{song_count}</span></div>
+            <div><strong>"Rarity Index"</strong><span>{rarity}</span></div>
+        </div>
+    }
+}
+
+fn render_show_detail_missing(
+    show_id_raw: &str,
+    seed_data_state: RwSignal<crate::data::SeedDataState>,
+) -> impl IntoView {
+    if seed_data_state.get() == crate::data::SeedDataState::Importing {
+        return import_in_progress_state(
+            "Show details are still loading",
+            "/offline",
+            "Open offline help",
+        )
+        .into_any();
+    }
+
+    match parse_positive_i32_param(show_id_raw, "showId") {
+        Ok(parsed_show_id) => {
+            let my_shows_href = format!("/my-shows?showId={parsed_show_id}");
+            view! {
+                <section class="status-card status-card--empty">
+                    <p class="status-title">"Show not found"</p>
+                    <p class="muted">"This show ID was not found in the current dataset."</p>
+                    <div class="pill-row">
+                        <a class="pill pill--ghost" href="/shows">"Browse all shows"</a>
+                        <a class="pill pill--ghost" href=my_shows_href>"Track this show in My Shows"</a>
+                    </div>
+                </section>
+            }
+            .into_any()
+        }
+        Err(_) => view! {
+            {empty_state_with_link(
+                "Show not found",
+                "This show ID was not found in the current dataset.",
+                "/shows",
+                "Browse all shows",
+            )}
+        }
+        .into_any(),
+    }
+}
+
+fn render_show_context(
+    ctx: Option<ShowContext>,
+    show_id_raw: &str,
+    seed_data_state: RwSignal<crate::data::SeedDataState>,
+    saved_show_ids: RwSignal<std::collections::HashSet<i32>>,
+    save_pending: RwSignal<bool>,
+    save_message: RwSignal<Option<(String, bool)>>,
+) -> impl IntoView {
+    if let Some(ctx) = ctx {
+        return render_show_detail_loaded(ctx, saved_show_ids, save_pending, save_message)
+            .into_any();
+    }
+    render_show_detail_missing(show_id_raw, seed_data_state).into_any()
+}
+
+fn render_show_save_message(save_message: RwSignal<Option<(String, bool)>>) -> impl IntoView {
+    save_message.get().map(|(msg, is_error)| {
+        let class_name = if is_error {
+            "form-message form-message--error"
+        } else {
+            "form-message"
+        };
+        view! { <p class=class_name>{msg}</p> }
+    })
+}
+
+fn render_setlist_filter_buttons(
+    total_count: usize,
+    set_counts: Vec<(String, usize)>,
+    active_set: RwSignal<String>,
+) -> impl IntoView {
+    let active_set_for_class = active_set.clone();
+    let active_set_for_aria = active_set.clone();
+    let active_set_for_click = active_set.clone();
+
+    view! {
+        <div
+            class="result-filters"
+            role="group"
+            aria-label="Setlist filters"
+            aria-controls="show-setlist-results"
+        >
+            <button
+                type="button"
+                class="result-filter pill pill--ghost"
+                class:result-filter--active=move || active_set_for_class.get() == "all"
+                aria-pressed=move || active_set_for_aria.get() == "all"
+                on:click=move |_| active_set_for_click.set("all".to_string())
+            >
+                {format!("All ({total_count})")}
+            </button>
+            {set_counts
+                .into_iter()
+                .map(|(set_key, count)| {
+                    let label = setlist_set_label(&set_key);
+                    let key_for_class = set_key.clone();
+                    let key_for_aria = set_key.clone();
+                    let key_for_click = set_key;
+                    let class_active_set = active_set.clone();
+                    let aria_active_set = active_set.clone();
+                    let click_active_set = active_set.clone();
+
+                    view! {
+                        <button
+                            type="button"
+                            class="result-filter pill pill--ghost"
+                            class:result-filter--active=move || class_active_set.get() == key_for_class
+                            aria-pressed=move || aria_active_set.get() == key_for_aria
+                            on:click=move |_| click_active_set.set(key_for_click.clone())
+                        >
+                            {format!("{label} ({count})")}
+                        </button>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </div>
+    }
+}
+
+fn render_setlist_entries_list(filtered_items: Vec<SetlistEntry>) -> impl IntoView {
+    view! {
+        <ol id="show-setlist-results" class="setlist" aria-label="Show setlist">
+            {filtered_items
+                .into_iter()
+                .map(|entry| {
+                    let label = entry
+                        .song
+                        .as_ref()
+                        .map_or_else(|| format!("Song #{}", entry.song_id), |song| song.title.clone());
+                    let slot = entry
+                        .slot
+                        .as_deref()
+                        .map_or_else(|| "Song".to_string(), titleize_label);
+                    let set_label = setlist_set_label(&normalized_set_key(entry.set_name.as_deref()));
+                    let song_href = entry.song.as_ref().and_then(|song| {
+                        let slug = song.slug.trim();
+                        if slug.is_empty() {
+                            None
+                        } else {
+                            Some(format!("/songs/{slug}"))
+                        }
+                    });
+                    let title_view = match song_href {
+                        Some(href) => view! {
+                            <a class="setlist-title result-label" href=href>{label.clone()}</a>
+                        }
+                        .into_any(),
+                        None => view! { <span class="setlist-title">{label.clone()}</span> }.into_any(),
+                    };
+
+                    let mut context_parts = vec![format!("Set: {set_label}")];
+                    if entry.is_segue.unwrap_or(false) {
+                        context_parts.push("Segue".to_string());
+                    }
+                    if entry.is_tease.unwrap_or(false) {
+                        context_parts.push("Tease".to_string());
+                    }
+                    if let Some(duration) = entry.duration_seconds {
+                        if duration > 0 {
+                            context_parts.push(format!("{}:{:02}", duration / 60, duration % 60));
+                        }
+                    }
+                    let context_line = context_parts.join(" • ");
+                    let notes = entry
+                        .notes
+                        .as_deref()
+                        .map(str::trim)
+                        .filter(|notes| !notes.is_empty())
+                        .map(ToString::to_string);
+
+                    view! {
+                        <li class="setlist-item">
+                            <span class="setlist-pos">{entry.position}</span>
+                            <div class="setlist-main">
+                                {title_view}
+                                <span class="setlist-context">{context_line}</span>
+                                {notes.map(|notes_line| view! {
+                                    <span class="setlist-note">{notes_line}</span>
+                                })}
+                            </div>
+                            <span class="setlist-slot">{slot}</span>
+                        </li>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </ol>
+    }
+}
+
+fn render_setlist_empty_state(
+    has_filters: bool,
+    active_set: RwSignal<String>,
+    setlist_query: RwSignal<String>,
+) -> impl IntoView {
+    view! {
+        <section class="status-card status-card--empty">
+            <p class="status-title">"No setlist entries match this view"</p>
+            <p class="muted">"Try a different set filter or clear the search query."</p>
+            {has_filters.then(|| {
+                let active_set_signal = active_set.clone();
+                let setlist_query_signal = setlist_query.clone();
+                view! {
+                    <div class="pill-row">
+                        <button
+                            type="button"
+                            class="pill pill--ghost"
+                            on:click=move |_| {
+                                active_set_signal.set("all".to_string());
+                                setlist_query_signal.set(String::new());
+                            }
+                        >
+                            "Clear filters"
+                        </button>
+                    </div>
+                }
+            })}
+        </section>
+    }
+}
+
+fn render_show_setlist_content(
+    items: Vec<SetlistEntry>,
+    active_set: RwSignal<String>,
+    setlist_query: RwSignal<String>,
+) -> impl IntoView {
+    if items.is_empty() {
+        return empty_state(
+            "Setlist unavailable",
+            "No setlist rows were found for this show.",
+        )
+        .into_any();
+    }
+
+    let total_count = items.len();
+    let set_counts = setlist_set_counts(&items);
+    let active_key = active_set.get();
+    let query_text = setlist_query.get().trim().to_string();
+    let query_normalized = query_text.to_ascii_lowercase();
+    let filtered_items = items
+        .into_iter()
+        .filter(|entry| {
+            let set_key = normalized_set_key(entry.set_name.as_deref());
+            let matches_set = active_key == "all" || set_key == active_key;
+            matches_set && setlist_entry_matches_query(entry, &query_normalized)
+        })
+        .collect::<Vec<_>>();
+    let filtered_count = filtered_items.len();
+    let has_filters = active_key != "all" || !query_text.is_empty();
+    let summary = if query_text.is_empty() {
+        format!("Showing {filtered_count} of {total_count} setlist entries")
+    } else {
+        format!(
+            "Showing {filtered_count} of {total_count} setlist entries matching \"{query_text}\""
+        )
+    };
+
+    view! {
+        <div class="detail-list-controls">
+            <label class="visually-hidden" for="show-setlist-filter">"Filter setlist entries"</label>
+            <input
+                id="show-setlist-filter"
+                class="search-input"
+                type="search"
+                placeholder="Filter by song, set name, slot, or notes"
+                prop:value=move || setlist_query.get()
+                on:input=move |ev| setlist_query.set(event_target_value(&ev))
+            />
+            {render_setlist_filter_buttons(total_count, set_counts, active_set.clone())}
+        </div>
+        <p class="list-summary" role="status" aria-live="polite">
+            {summary}
+        </p>
+        {if filtered_items.is_empty() {
+            render_setlist_empty_state(has_filters, active_set, setlist_query).into_any()
+        } else {
+            render_setlist_entries_list(filtered_items).into_any()
+        }}
+    }
+    .into_any()
+}
+
 pub fn show_detail_page() -> impl IntoView {
     let params = use_params_map();
     let show_id = move || params.with(|p| p.get("showId").unwrap_or_default());
@@ -3278,211 +3716,16 @@ pub fn show_detail_page() -> impl IntoView {
     let save_pending = RwSignal::new(false);
     let save_message = RwSignal::new(None::<(String, bool)>);
 
-    #[cfg(feature = "hydrate")]
-    {
-        let saved_show_ids_signal = saved_show_ids.clone();
-        spawn_local(async move {
-            let ids = load_user_attended_shows()
-                .await
-                .into_iter()
-                .map(|item| item.show_id)
-                .collect::<std::collections::HashSet<_>>();
-            saved_show_ids_signal.set(ids);
-        });
-    }
+    hydrate_saved_show_ids(saved_show_ids.clone());
 
     let show_id_for_reset = show_id.clone();
-    {
-        let active_set_signal = active_set.clone();
-        let setlist_query_signal = setlist_query.clone();
-        Effect::new(move |_| {
-            let _ = show_id_for_reset();
-            active_set_signal.set("all".to_string());
-            setlist_query_signal.set(String::new());
-        });
-    }
-    let render = move |ctx: Option<ShowContext>| match ctx {
-        Some(ctx) => {
-            let show = ctx.show;
-            let venue_name = ctx.venue.as_ref().map_or_else(
-                || format!("Venue #{}", show.venue_id),
-                |venue| venue.name.clone(),
-            );
-            let venue_line = ctx.venue.as_ref().map_or_else(
-                || venue_name.clone(),
-                |venue| {
-                    format!(
-                        "{} • {}",
-                        venue.name,
-                        format_location(&venue.city, &venue.state)
-                    )
-                },
-            );
-            let tour_line = ctx.tour.as_ref().map_or_else(
-                || "No tour".into(),
-                |tour| format!("{} ({})", tour.name, tour.year),
-            );
-            let tour_href = ctx
-                .tour
-                .as_ref()
-                .map(|tour| format!("/tours/{}", tour.year));
-            let venue_href = format!("/venues/{}", show.venue_id);
-            let song_count = show.song_count.unwrap_or(0);
-            let rarity = show
-                .rarity_index
-                .map_or_else(|| "-".into(), |v| format!("{v:.2}"));
-            let show_id_value = show.id;
-            #[cfg(feature = "hydrate")]
-            let show_date_value = show.date.clone();
-            #[cfg(feature = "hydrate")]
-            let saved_show_ids_signal = saved_show_ids.clone();
-            #[cfg(feature = "hydrate")]
-            let save_pending_signal = save_pending.clone();
-            #[cfg(feature = "hydrate")]
-            let save_message_signal = save_message.clone();
-            view! {
-                <div class="detail-list-head">
-                    <div class="detail-list-head__copy">
-                        <h2>{show.date.clone()}</h2>
-                        <p class="muted">{format!("{venue_line} • {tour_line}")}</p>
-                    </div>
-                    <div class="pill-row detail-list-head__meta">
-                        <span class="pill">{format!("{song_count} songs")}</span>
-                        <span class="pill pill--ghost">{format!("Rarity {rarity}")}</span>
-                        <button
-                            type="button"
-                            class=move || {
-                                if saved_show_ids.get().contains(&show_id_value) {
-                                    "pill"
-                                } else {
-                                    "pill pill--ghost"
-                                }
-                            }
-                            disabled=move || save_pending.get()
-                            on:click=move |_| {
-                                #[cfg(feature = "hydrate")]
-                                {
-                                    if save_pending_signal.get_untracked() {
-                                        return;
-                                    }
-                                    save_pending_signal.set(true);
-                                    let saved_show_ids_signal = saved_show_ids_signal.clone();
-                                    let save_pending_signal = save_pending_signal.clone();
-                                    let save_message_signal = save_message_signal.clone();
-                                    let show_date_value = show_date_value.clone();
-                                    spawn_local(async move {
-                                        let currently_saved = saved_show_ids_signal
-                                            .with_untracked(|ids| ids.contains(&show_id_value));
-                                        let action_ok = if currently_saved {
-                                            remove_user_attended_show(show_id_value).await
-                                        } else {
-                                            add_user_attended_show(show_id_value, Some(show_date_value))
-                                                .await
-                                        };
-
-                                        if action_ok {
-                                            let ids = load_user_attended_shows()
-                                                .await
-                                                .into_iter()
-                                                .map(|item| item.show_id)
-                                                .collect::<std::collections::HashSet<_>>();
-                                            saved_show_ids_signal.set(ids);
-                                            if currently_saved {
-                                                save_message_signal.set(Some((
-                                                    format!(
-                                                        "Removed show {show_id_value} from My Shows."
-                                                    ),
-                                                    false,
-                                                )));
-                                            } else {
-                                                save_message_signal.set(Some((
-                                                    format!("Saved show {show_id_value} to My Shows."),
-                                                    false,
-                                                )));
-                                            }
-                                        } else if currently_saved {
-                                            save_message_signal.set(Some((
-                                                "Unable to remove this show from My Shows right now."
-                                                    .to_string(),
-                                                true,
-                                            )));
-                                        } else {
-                                            save_message_signal.set(Some((
-                                                "Unable to save this show to My Shows right now."
-                                                    .to_string(),
-                                                true,
-                                            )));
-                                        }
-                                        save_pending_signal.set(false);
-                                    });
-                                }
-                            }
-                        >
-                            {move || {
-                                if save_pending.get() {
-                                    "Updating..."
-                                } else if saved_show_ids.get().contains(&show_id_value) {
-                                    "Remove from My Shows"
-                                } else {
-                                    "Save to My Shows"
-                                }
-                            }}
-                        </button>
-                        <a class="pill pill--ghost" href="/my-shows">"My Shows"</a>
-                        <a class="pill pill--ghost" href=venue_href>"Venue details"</a>
-                        {tour_href.map(|href| view! {
-                            <a class="pill pill--ghost" href=href>"Tour details"</a>
-                        })}
-                    </div>
-                </div>
-                <div class="detail-grid">
-                    <div><strong>"Date"</strong><span>{show.date}</span></div>
-                    <div><strong>"Venue"</strong><span>{venue_line}</span></div>
-                    <div><strong>"Tour"</strong><span>{tour_line}</span></div>
-                    <div><strong>"Year"</strong><span>{show.year}</span></div>
-                    <div><strong>"Songs"</strong><span>{song_count}</span></div>
-                    <div><strong>"Rarity Index"</strong><span>{rarity}</span></div>
-                </div>
-            }
-            .into_any()
-        }
-        None => {
-            if seed_data_state.get() == crate::data::SeedDataState::Importing {
-                import_in_progress_state(
-                    "Show details are still loading",
-                    "/offline",
-                    "Open offline help",
-                )
-                .into_any()
-            } else {
-                match parse_positive_i32_param(&show_id(), "showId") {
-                    Ok(parsed_show_id) => {
-                        let my_shows_href = format!("/my-shows?showId={parsed_show_id}");
-                        view! {
-                            <section class="status-card status-card--empty">
-                                <p class="status-title">"Show not found"</p>
-                                <p class="muted">"This show ID was not found in the current dataset."</p>
-                                <div class="pill-row">
-                                    <a class="pill pill--ghost" href="/shows">"Browse all shows"</a>
-                                    <a class="pill pill--ghost" href=my_shows_href>"Track this show in My Shows"</a>
-                                </div>
-                            </section>
-                        }
-                            .into_any()
-                    }
-                    Err(_) => view! {
-                        {empty_state_with_link(
-                            "Show not found",
-                            "This show ID was not found in the current dataset.",
-                            "/shows",
-                            "Browse all shows",
-                        )}
-                    }
-                    .into_any(),
-                }
-            }
-        }
-    };
+    let active_set_for_reset = active_set.clone();
+    let setlist_query_for_reset = setlist_query.clone();
+    Effect::new(move |_| {
+        let _ = show_id_for_reset();
+        active_set_for_reset.set("all".to_string());
+        setlist_query_for_reset.set(String::new());
+    });
 
     let show = Resource::new(show_id, |id: String| async move {
         let id = parse_positive_i32_param(&id, "showId").ok()?;
@@ -3493,218 +3736,50 @@ pub fn show_detail_page() -> impl IntoView {
         Some(load_setlist_entries(id).await)
     });
 
+    let show_id_for_heading = show_id.clone();
+    let show_id_for_render = show_id.clone();
+    let save_message_for_render = save_message.clone();
+    let seed_data_state_for_render = seed_data_state.clone();
+    let saved_show_ids_for_render = saved_show_ids.clone();
+    let save_pending_for_render = save_pending.clone();
+    let save_message_for_context = save_message.clone();
+    let active_set_for_setlist = active_set.clone();
+    let setlist_query_for_setlist = setlist_query.clone();
+
     view! {
         <section class="page">
             {detail_nav("/shows", "Back to shows")}
             <h1>"Show Details"</h1>
             {move || {
-                match parse_positive_i32_param(&show_id(), "showId") {
+                match parse_positive_i32_param(&show_id_for_heading(), "showId") {
                     Ok(id) => view! { <p class="page-subhead">{format!("Show ID: {id}")}</p> }.into_any(),
                     Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
                 }
             }}
-            {move || {
-                save_message.get().map(|(msg, is_error)| {
-                    let class_name = if is_error {
-                        "form-message form-message--error"
-                    } else {
-                        "form-message"
-                    };
-                    view! { <p class=class_name>{msg}</p> }
-                })
-            }}
+            {move || render_show_save_message(save_message_for_render.clone())}
             <Suspense fallback=move || loading_state("Loading show", "Fetching show summary and context.")>
-                {move || render(show.get().unwrap_or(None))}
+                {move || {
+                    render_show_context(
+                        show.get().unwrap_or(None),
+                        &show_id_for_render(),
+                        seed_data_state_for_render.clone(),
+                        saved_show_ids_for_render.clone(),
+                        save_pending_for_render.clone(),
+                        save_message_for_context.clone(),
+                    )
+                }}
             </Suspense>
             <div class="section-divider"></div>
             <h2>"Setlist"</h2>
             <Suspense fallback=move || loading_state("Loading setlist", "Building setlist sequence for this show.")>
                 {move || {
                     match setlist.get().unwrap_or(None) {
-                        Some(items) => {
-                            if items.is_empty() {
-                                empty_state(
-                                    "Setlist unavailable",
-                                    "No setlist rows were found for this show.",
-                                )
-                                .into_any()
-                            } else {
-                                let total_count = items.len();
-                                let set_counts = setlist_set_counts(&items);
-                                let active_key = active_set.get();
-                                let query_raw = setlist_query.get();
-                                let query_text = query_raw.trim().to_string();
-                                let query_normalized = query_text.to_ascii_lowercase();
-                                let filtered_items = items
-                                    .into_iter()
-                                    .filter(|entry| {
-                                        let set_key = normalized_set_key(entry.set_name.as_deref());
-                                        let matches_set = active_key == "all" || set_key == active_key;
-                                        matches_set && setlist_entry_matches_query(entry, &query_normalized)
-                                    })
-                                    .collect::<Vec<_>>();
-                                let filtered_count = filtered_items.len();
-                                let has_filters = active_key != "all" || !query_text.is_empty();
-                                let summary = if query_text.is_empty() {
-                                    format!("Showing {filtered_count} of {total_count} setlist entries")
-                                } else {
-                                    format!(
-                                        "Showing {filtered_count} of {total_count} setlist entries matching \"{query_text}\""
-                                    )
-                                };
-                                view! {
-                                    <div class="detail-list-controls">
-                                        <label class="visually-hidden" for="show-setlist-filter">"Filter setlist entries"</label>
-                                        <input
-                                            id="show-setlist-filter"
-                                            class="search-input"
-                                            type="search"
-                                            placeholder="Filter by song, set name, slot, or notes"
-                                            prop:value=move || setlist_query.get()
-                                            on:input=move |ev| setlist_query.set(event_target_value(&ev))
-                                        />
-                                        <div
-                                            class="result-filters"
-                                            role="group"
-                                            aria-label="Setlist filters"
-                                            aria-controls="show-setlist-results"
-                                        >
-                                            <button
-                                                type="button"
-                                                class="result-filter pill pill--ghost"
-                                                class:result-filter--active=move || active_set.get() == "all"
-                                                aria-pressed=move || active_set.get() == "all"
-                                                on:click=move |_| active_set.set("all".to_string())
-                                            >
-                                                {format!("All ({total_count})")}
-                                            </button>
-                                            {set_counts
-                                                .into_iter()
-                                                .map(|(set_key, count)| {
-                                                    let label = setlist_set_label(&set_key);
-                                                    let key_for_class = set_key.clone();
-                                                    let key_for_aria = set_key.clone();
-                                                    let key_for_click = set_key.clone();
-                                                    view! {
-                                                        <button
-                                                            type="button"
-                                                            class="result-filter pill pill--ghost"
-                                                            class:result-filter--active=move || active_set.get() == key_for_class
-                                                            aria-pressed=move || active_set.get() == key_for_aria
-                                                            on:click=move |_| active_set.set(key_for_click.clone())
-                                                        >
-                                                            {format!("{label} ({count})")}
-                                                        </button>
-                                                    }
-                                                })
-                                                .collect::<Vec<_>>()}
-                                        </div>
-                                    </div>
-                                    <p class="list-summary" role="status" aria-live="polite">
-                                        {summary}
-                                    </p>
-                                    {if filtered_items.is_empty() {
-                                        view! {
-                                            <section class="status-card status-card--empty">
-                                                <p class="status-title">"No setlist entries match this view"</p>
-                                                <p class="muted">"Try a different set filter or clear the search query."</p>
-                                                {has_filters.then(|| {
-                                                    view! {
-                                                        <div class="pill-row">
-                                                            <button
-                                                                type="button"
-                                                                class="pill pill--ghost"
-                                                                on:click=move |_| {
-                                                                    active_set.set("all".to_string());
-                                                                    setlist_query.set(String::new());
-                                                                }
-                                                            >
-                                                                "Clear filters"
-                                                            </button>
-                                                        </div>
-                                                    }
-                                                })}
-                                            </section>
-                                        }
-                                            .into_any()
-                                    } else {
-                                        view! {
-                                            <ol
-                                                id="show-setlist-results"
-                                                class="setlist"
-                                                aria-label="Show setlist"
-                                            >
-                                                {filtered_items
-                                                    .into_iter()
-                                                    .map(|entry| {
-                                                        let label = entry
-                                                            .song
-                                                            .as_ref().map_or_else(|| format!("Song #{}", entry.song_id), |song| song.title.clone());
-                                                        let slot = entry
-                                                            .slot
-                                                            .as_deref().map_or_else(|| "Song".to_string(), titleize_label);
-                                                        let set_label =
-                                                            setlist_set_label(&normalized_set_key(entry.set_name.as_deref()));
-                                                        let song_href = entry.song.as_ref().and_then(|song| {
-                                                            let slug = song.slug.trim();
-                                                            if slug.is_empty() {
-                                                                None
-                                                            } else {
-                                                                Some(format!("/songs/{slug}"))
-                                                            }
-                                                        });
-                                                        let title_view = match song_href {
-                                                            Some(href) => view! {
-                                                                <a class="setlist-title result-label" href=href>{label.clone()}</a>
-                                                            }
-                                                            .into_any(),
-                                                            None => view! { <span class="setlist-title">{label.clone()}</span> }.into_any(),
-                                                        };
-
-                                                        let mut context_parts = vec![format!("Set: {set_label}")];
-                                                        if entry.is_segue.unwrap_or(false) {
-                                                            context_parts.push("Segue".to_string());
-                                                        }
-                                                        if entry.is_tease.unwrap_or(false) {
-                                                            context_parts.push("Tease".to_string());
-                                                        }
-                                                        if let Some(duration) = entry.duration_seconds {
-                                                            if duration > 0 {
-                                                                context_parts
-                                                                    .push(format!("{}:{:02}", duration / 60, duration % 60));
-                                                            }
-                                                        }
-                                                        let context_line = context_parts.join(" • ");
-                                                        let notes = entry
-                                                            .notes
-                                                            .as_deref()
-                                                            .map(str::trim)
-                                                            .filter(|notes| !notes.is_empty())
-                                                            .map(ToString::to_string);
-
-                                                        view! {
-                                                            <li class="setlist-item">
-                                                                <span class="setlist-pos">{entry.position}</span>
-                                                                <div class="setlist-main">
-                                                                    {title_view}
-                                                                    <span class="setlist-context">{context_line}</span>
-                                                                    {notes.map(|notes_line| view! {
-                                                                        <span class="setlist-note">{notes_line}</span>
-                                                                    })}
-                                                                </div>
-                                                                <span class="setlist-slot">{slot}</span>
-                                                            </li>
-                                                        }
-                                                    })
-                                                    .collect::<Vec<_>>()}
-                                            </ol>
-                                        }
-                                            .into_any()
-                                    }}
-                                }
-                                .into_any()
-                            }
-                        }
+                        Some(items) => render_show_setlist_content(
+                            items,
+                            active_set_for_setlist.clone(),
+                            setlist_query_for_setlist.clone(),
+                        )
+                        .into_any(),
                         None => {
                             empty_state(
                                 "Setlist unavailable",
@@ -3723,101 +3798,11 @@ pub fn song_detail_page() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
     let seed_data_state = use_seed_data_state();
-    let render = move |song: Option<Song>| match song {
-        Some(song) => {
-            let title = song.title.clone();
-            let sort_title = song.sort_title.unwrap_or_else(|| "-".to_string());
-            let song_slug = song.slug.clone();
-            let total_plays = song.total_performances.unwrap_or(0).max(0);
-            let last_played = song
-                .last_played_date
-                .clone()
-                .unwrap_or_else(|| "Unknown".to_string());
-            let is_liberated = song.is_liberated.unwrap_or(false);
-            let slot_rows = vec![
-                ("Opener", song.opener_count.unwrap_or(0).max(0)),
-                ("Closer", song.closer_count.unwrap_or(0).max(0)),
-                ("Encore", song.encore_count.unwrap_or(0).max(0)),
-            ];
-
-            view! {
-                <div class="detail-list-head">
-                    <div class="detail-list-head__copy">
-                        <h2>{title.clone()}</h2>
-                        <p class="muted">
-                            {if is_liberated {
-                                "Currently showing extended gap behavior in recent setlists."
-                            } else {
-                                "Active in the regular song rotation profile."
-                            }}
-                        </p>
-                    </div>
-                    <div class="pill-row detail-list-head__meta">
-                        <span class="pill">{format!("{total_plays} plays")}</span>
-                        <span class=if is_liberated { "pill" } else { "pill pill--ghost" }>
-                            {if is_liberated { "Liberated" } else { "In Rotation" }}
-                        </span>
-                        <a class="pill pill--ghost" href="/liberation">"View liberation list"</a>
-                    </div>
-                </div>
-                <div class="detail-grid">
-                    <div><strong>"Title"</strong><span>{title}</span></div>
-                    <div><strong>"Last Played"</strong><span>{last_played}</span></div>
-                    <div><strong>"Sort Title"</strong><span>{sort_title}</span></div>
-                    <div><strong>"Slug"</strong><span>{song_slug}</span></div>
-                </div>
-                <h2>"Slot Distribution"</h2>
-                <p class="list-summary">{format!("Based on {total_plays} tracked performances")}</p>
-                {if total_plays <= 0 {
-                    empty_state(
-                        "Slot distribution unavailable",
-                        "No performance totals are available yet for this song.",
-                    )
-                    .into_any()
-                } else {
-                    view! {
-                        <ul class="result-list">
-                            {slot_rows
-                                .into_iter()
-                                .map(|(slot, count)| {
-                                    let percentage = (count as f32 / total_plays as f32) * 100.0;
-                                    view! {
-                                        <li class="result-card">
-                                            <span class="pill pill--ghost">{slot}</span>
-                                            <div class="result-body">
-                                                <span class="result-label">{format!("{count} plays")}</span>
-                                                <span class="result-meta">{format!("{percentage:.1}% of tracked performances")}</span>
-                                            </div>
-                                            <span class="result-score">{format!("{percentage:.1}%")}</span>
-                                        </li>
-                                    }
-                                })
-                                .collect::<Vec<_>>()}
-                        </ul>
-                    }
-                    .into_any()
-                }}
-            }
-            .into_any()
+    let render = move |song: Option<Song>| {
+        if let Some(song) = song {
+            return render_song_detail_content(song).into_any();
         }
-        None => {
-            if seed_data_state.get() == crate::data::SeedDataState::Importing {
-                import_in_progress_state(
-                    "Song details are still loading",
-                    "/offline",
-                    "Open offline help",
-                )
-                .into_any()
-            } else {
-                empty_state_with_link(
-                    "Song not found",
-                    "This song slug could not be resolved.",
-                    "/songs",
-                    "Browse songs",
-                )
-                .into_any()
-            }
-        }
+        render_song_missing_state(seed_data_state).into_any()
     };
 
     let song = Resource::new(slug, |slug: String| async move {
@@ -3840,6 +3825,109 @@ pub fn song_detail_page() -> impl IntoView {
             </Suspense>
         </section>
     }
+}
+
+fn render_song_slot_distribution(
+    total_plays: i32,
+    slot_rows: Vec<(&'static str, i32)>,
+) -> impl IntoView {
+    if total_plays <= 0 {
+        return empty_state(
+            "Slot distribution unavailable",
+            "No performance totals are available yet for this song.",
+        )
+        .into_any();
+    }
+    view! {
+        <ul class="result-list">
+            {slot_rows
+                .into_iter()
+                .map(|(slot, count)| {
+                    let percentage = (count as f32 / total_plays as f32) * 100.0;
+                    view! {
+                        <li class="result-card">
+                            <span class="pill pill--ghost">{slot}</span>
+                            <div class="result-body">
+                                <span class="result-label">{format!("{count} plays")}</span>
+                                <span class="result-meta">{format!("{percentage:.1}% of tracked performances")}</span>
+                            </div>
+                            <span class="result-score">{format!("{percentage:.1}%")}</span>
+                        </li>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </ul>
+    }
+    .into_any()
+}
+
+fn render_song_detail_content(song: Song) -> impl IntoView {
+    let title = song.title.clone();
+    let sort_title = song.sort_title.unwrap_or_else(|| "-".to_string());
+    let song_slug = song.slug.clone();
+    let total_plays = song.total_performances.unwrap_or(0).max(0);
+    let last_played = song
+        .last_played_date
+        .clone()
+        .unwrap_or_else(|| "Unknown".to_string());
+    let is_liberated = song.is_liberated.unwrap_or(false);
+    let slot_rows = vec![
+        ("Opener", song.opener_count.unwrap_or(0).max(0)),
+        ("Closer", song.closer_count.unwrap_or(0).max(0)),
+        ("Encore", song.encore_count.unwrap_or(0).max(0)),
+    ];
+
+    view! {
+        <div class="detail-list-head">
+            <div class="detail-list-head__copy">
+                <h2>{title.clone()}</h2>
+                <p class="muted">
+                    {if is_liberated {
+                        "Currently showing extended gap behavior in recent setlists."
+                    } else {
+                        "Active in the regular song rotation profile."
+                    }}
+                </p>
+            </div>
+            <div class="pill-row detail-list-head__meta">
+                <span class="pill">{format!("{total_plays} plays")}</span>
+                <span class=if is_liberated { "pill" } else { "pill pill--ghost" }>
+                    {if is_liberated { "Liberated" } else { "In Rotation" }}
+                </span>
+                <a class="pill pill--ghost" href="/liberation">"View liberation list"</a>
+            </div>
+        </div>
+        <div class="detail-grid">
+            <div><strong>"Title"</strong><span>{title}</span></div>
+            <div><strong>"Last Played"</strong><span>{last_played}</span></div>
+            <div><strong>"Sort Title"</strong><span>{sort_title}</span></div>
+            <div><strong>"Slug"</strong><span>{song_slug}</span></div>
+        </div>
+        <h2>"Slot Distribution"</h2>
+        <p class="list-summary">{format!("Based on {total_plays} tracked performances")}</p>
+        {render_song_slot_distribution(total_plays, slot_rows)}
+    }
+    .into_any()
+}
+
+fn render_song_missing_state(
+    seed_data_state: RwSignal<crate::data::SeedDataState>,
+) -> impl IntoView {
+    if seed_data_state.get() == crate::data::SeedDataState::Importing {
+        return import_in_progress_state(
+            "Song details are still loading",
+            "/offline",
+            "Open offline help",
+        )
+        .into_any();
+    }
+    empty_state_with_link(
+        "Song not found",
+        "This song slug could not be resolved.",
+        "/songs",
+        "Browse songs",
+    )
+    .into_any()
 }
 
 pub fn guest_detail_page() -> impl IntoView {
@@ -3936,6 +4024,264 @@ pub fn guest_detail_page() -> impl IntoView {
     }
 }
 
+fn render_release_detail_card(release: Release) -> impl IntoView {
+    let title = release.title.clone();
+    let release_slug = release.slug.clone();
+    let release_type = release
+        .release_type
+        .clone()
+        .unwrap_or_else(|| "Release".to_string());
+    let release_date = release
+        .release_date
+        .clone()
+        .unwrap_or_else(|| "Unknown".to_string());
+    view! {
+        <div class="detail-list-head">
+            <div class="detail-list-head__copy">
+                <h2>{title.clone()}</h2>
+                <p class="muted">{format!("{release_type} • {release_date}")}</p>
+            </div>
+            <div class="pill-row detail-list-head__meta">
+                <span class="pill">{release_type.clone()}</span>
+                <span class="pill pill--ghost">{release_date.clone()}</span>
+                <a class="pill pill--ghost" href="/discography">"Open discography"</a>
+            </div>
+        </div>
+        <div class="detail-grid">
+            <div><strong>"Title"</strong><span>{title}</span></div>
+            <div><strong>"Type"</strong><span>{release_type}</span></div>
+            <div><strong>"Date"</strong><span>{release_date}</span></div>
+            <div><strong>"Slug"</strong><span>{release_slug}</span></div>
+        </div>
+    }
+    .into_any()
+}
+
+fn render_release_missing_state(
+    seed_data_state: RwSignal<crate::data::SeedDataState>,
+) -> impl IntoView {
+    if seed_data_state.get() == crate::data::SeedDataState::Importing {
+        return import_in_progress_state(
+            "Release details are still loading",
+            "/offline",
+            "Open offline help",
+        )
+        .into_any();
+    }
+    empty_state_with_link(
+        "Release not found",
+        "This release slug could not be resolved.",
+        "/releases",
+        "Browse releases",
+    )
+    .into_any()
+}
+
+fn filter_release_tracks(
+    items: Vec<ReleaseTrack>,
+    active_key: &str,
+    query_normalized: &str,
+) -> Vec<ReleaseTrack> {
+    items
+        .into_iter()
+        .filter(|track| {
+            let disc_key = normalized_disc_key(track.disc_number);
+            let matches_disc = active_key == "all" || disc_key == active_key;
+            matches_disc && release_track_matches_query(track, query_normalized)
+        })
+        .collect::<Vec<_>>()
+}
+
+fn render_release_track_filter_buttons(
+    disc_counts: Vec<(String, usize)>,
+    active_disc: RwSignal<String>,
+) -> impl IntoView {
+    disc_counts
+        .into_iter()
+        .map(|(disc_key, count)| {
+            let label = disc_key_label(&disc_key);
+            let key_for_class = disc_key.clone();
+            let key_for_aria = disc_key.clone();
+            let key_for_click = disc_key.clone();
+            view! {
+                <button
+                    type="button"
+                    class="result-filter pill pill--ghost"
+                    class:result-filter--active=move || active_disc.get() == key_for_class
+                    aria-pressed=move || active_disc.get() == key_for_aria
+                    on:click=move |_| active_disc.set(key_for_click.clone())
+                >
+                    {format!("{label} ({count})")}
+                </button>
+            }
+        })
+        .collect::<Vec<_>>()
+}
+
+fn render_release_track_empty_state(
+    has_filters: bool,
+    active_disc: RwSignal<String>,
+    track_query: RwSignal<String>,
+) -> impl IntoView {
+    view! {
+        <section class="status-card status-card--empty">
+            <p class="status-title">"No tracks match this view"</p>
+            <p class="muted">"Try another disc filter or clear the search query."</p>
+            {has_filters.then(|| view! {
+                <div class="pill-row">
+                    <button
+                        type="button"
+                        class="pill pill--ghost"
+                        on:click=move |_| {
+                            active_disc.set("all".to_string());
+                            track_query.set(String::new());
+                        }
+                    >
+                        "Clear filters"
+                    </button>
+                </div>
+            })}
+        </section>
+    }
+    .into_any()
+}
+
+fn release_track_context_line(track: &ReleaseTrack) -> String {
+    let mut context_parts = vec![disc_key_label(&normalized_disc_key(track.disc_number))];
+    if let Some(duration) = track.duration_seconds {
+        if duration > 0 {
+            context_parts.push(format!("{}:{:02}", duration / 60, duration % 60));
+        }
+    }
+    if track.show_id.is_some() {
+        context_parts.push("Live source".to_string());
+    }
+    context_parts.join(" • ")
+}
+
+fn render_release_track_rows(filtered_tracks: Vec<ReleaseTrack>) -> impl IntoView {
+    view! {
+        <ol id="release-track-results" class="tracklist" aria-label="Release tracks">
+            {filtered_tracks
+                .into_iter()
+                .map(|track| {
+                    let track_label = track
+                        .song_id
+                        .map_or_else(|| "Unknown song".to_string(), |id| format!("Song #{id}"));
+                    let number = track.track_number.unwrap_or(0);
+                    let disc = track.disc_number.unwrap_or(1).max(1);
+                    let track_pos = if number > 0 {
+                        format!("{disc}-{number}")
+                    } else {
+                        format!("{disc}-?")
+                    };
+                    let context_line = release_track_context_line(&track);
+                    let notes = track
+                        .notes
+                        .as_deref()
+                        .map(str::trim)
+                        .filter(|notes| !notes.is_empty())
+                        .map(ToString::to_string);
+                    let show_link = track.show_id.map(|show_id| {
+                        let href = format!("/shows/{show_id}");
+                        view! { <a class="result-label" href=href>{format!("Open show #{show_id}")}</a> }
+                    });
+                    let slot_label = if track.show_id.is_some() {
+                        "Live"
+                    } else {
+                        "Release"
+                    };
+
+                    view! {
+                        <li class="tracklist-item">
+                            <span class="tracklist-pos">{track_pos}</span>
+                            <div class="tracklist-main">
+                                <span class="tracklist-title">{track_label}</span>
+                                <span class="tracklist-context">{context_line}</span>
+                                {show_link}
+                                {notes.map(|notes_line| view! {
+                                    <span class="tracklist-note">{notes_line}</span>
+                                })}
+                            </div>
+                            <span class="setlist-slot">{slot_label}</span>
+                        </li>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </ol>
+    }
+    .into_any()
+}
+
+fn render_release_tracks_content(
+    items: Vec<ReleaseTrack>,
+    active_disc: RwSignal<String>,
+    track_query: RwSignal<String>,
+) -> impl IntoView {
+    if items.is_empty() {
+        return empty_state(
+            "No tracks available",
+            "Track rows were not found for this release.",
+        )
+        .into_any();
+    }
+
+    let total_count = items.len();
+    let disc_counts = release_track_disc_counts(&items);
+    let active_key = active_disc.get();
+    let query_raw = track_query.get();
+    let query_text = query_raw.trim().to_string();
+    let query_normalized = query_text.to_ascii_lowercase();
+    let filtered_tracks = filter_release_tracks(items, &active_key, &query_normalized);
+    let filtered_count = filtered_tracks.len();
+    let has_filters = active_key != "all" || !query_text.is_empty();
+    let summary = if query_text.is_empty() {
+        format!("Showing {filtered_count} of {total_count} tracks")
+    } else {
+        format!("Showing {filtered_count} of {total_count} tracks matching \"{query_text}\"")
+    };
+
+    view! {
+        <div class="detail-list-controls">
+            <label class="visually-hidden" for="release-track-filter">"Filter release tracks"</label>
+            <input
+                id="release-track-filter"
+                class="search-input"
+                type="search"
+                placeholder="Filter by song id, show id, disc, notes, or live/studio"
+                prop:value=move || track_query.get()
+                on:input=move |ev| track_query.set(event_target_value(&ev))
+            />
+            <div
+                class="result-filters"
+                role="group"
+                aria-label="Track filters"
+                aria-controls="release-track-results"
+            >
+                <button
+                    type="button"
+                    class="result-filter pill pill--ghost"
+                    class:result-filter--active=move || active_disc.get() == "all"
+                    aria-pressed=move || active_disc.get() == "all"
+                    on:click=move |_| active_disc.set("all".to_string())
+                >
+                    {format!("All ({total_count})")}
+                </button>
+                {render_release_track_filter_buttons(disc_counts, active_disc)}
+            </div>
+        </div>
+        <p class="list-summary" role="status" aria-live="polite">
+            {summary}
+        </p>
+        {if filtered_tracks.is_empty() {
+            render_release_track_empty_state(has_filters, active_disc, track_query).into_any()
+        } else {
+            render_release_track_rows(filtered_tracks).into_any()
+        }}
+    }
+    .into_any()
+}
+
 pub fn release_detail_page() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
@@ -3953,57 +4299,11 @@ pub fn release_detail_page() -> impl IntoView {
         });
     }
 
-    let render = move |release: Option<Release>| match release {
-        Some(release) => {
-            let title = release.title.clone();
-            let release_slug = release.slug.clone();
-            let release_type = release
-                .release_type
-                .clone()
-                .unwrap_or_else(|| "Release".to_string());
-            let release_date = release
-                .release_date
-                .clone()
-                .unwrap_or_else(|| "Unknown".to_string());
-            view! {
-                <div class="detail-list-head">
-                    <div class="detail-list-head__copy">
-                        <h2>{title.clone()}</h2>
-                        <p class="muted">{format!("{release_type} • {release_date}")}</p>
-                    </div>
-                    <div class="pill-row detail-list-head__meta">
-                        <span class="pill">{release_type.clone()}</span>
-                        <span class="pill pill--ghost">{release_date.clone()}</span>
-                        <a class="pill pill--ghost" href="/discography">"Open discography"</a>
-                    </div>
-                </div>
-                <div class="detail-grid">
-                    <div><strong>"Title"</strong><span>{title}</span></div>
-                    <div><strong>"Type"</strong><span>{release_type}</span></div>
-                    <div><strong>"Date"</strong><span>{release_date}</span></div>
-                    <div><strong>"Slug"</strong><span>{release_slug}</span></div>
-                </div>
-            }
-            .into_any()
+    let render = move |release: Option<Release>| {
+        if let Some(release) = release {
+            return render_release_detail_card(release).into_any();
         }
-        None => {
-            if seed_data_state.get() == crate::data::SeedDataState::Importing {
-                import_in_progress_state(
-                    "Release details are still loading",
-                    "/offline",
-                    "Open offline help",
-                )
-                .into_any()
-            } else {
-                empty_state_with_link(
-                    "Release not found",
-                    "This release slug could not be resolved.",
-                    "/releases",
-                    "Browse releases",
-                )
-                .into_any()
-            }
-        }
+        render_release_missing_state(seed_data_state).into_any()
     };
 
     let release = Resource::new(slug, |slug: String| async move {
@@ -4040,175 +4340,8 @@ pub fn release_detail_page() -> impl IntoView {
             <Suspense fallback=move || loading_state("Loading tracks", "Fetching track listing.")>
                 {move || {
                     if let Some(items) = tracks.get().unwrap_or(None) {
-                        if items.is_empty() {
-                            empty_state("No tracks available", "Track rows were not found for this release.")
-                                .into_any()
-                        } else {
-                            let total_count = items.len();
-                            let disc_counts = release_track_disc_counts(&items);
-                            let active_key = active_disc.get();
-                            let query_raw = track_query.get();
-                            let query_text = query_raw.trim().to_string();
-                            let query_normalized = query_text.to_ascii_lowercase();
-                            let filtered_tracks = items
-                                .into_iter()
-                                .filter(|track| {
-                                    let disc_key = normalized_disc_key(track.disc_number);
-                                    let matches_disc = active_key == "all" || disc_key == active_key;
-                                    matches_disc
-                                        && release_track_matches_query(track, &query_normalized)
-                                })
-                                .collect::<Vec<_>>();
-                            let filtered_count = filtered_tracks.len();
-                            let has_filters = active_key != "all" || !query_text.is_empty();
-                            let summary = if query_text.is_empty() {
-                                format!("Showing {filtered_count} of {total_count} tracks")
-                            } else {
-                                format!(
-                                    "Showing {filtered_count} of {total_count} tracks matching \"{query_text}\""
-                                )
-                            };
-                            view! {
-                                <div class="detail-list-controls">
-                                    <label class="visually-hidden" for="release-track-filter">"Filter release tracks"</label>
-                                    <input
-                                        id="release-track-filter"
-                                        class="search-input"
-                                        type="search"
-                                        placeholder="Filter by song id, show id, disc, notes, or live/studio"
-                                        prop:value=move || track_query.get()
-                                        on:input=move |ev| track_query.set(event_target_value(&ev))
-                                    />
-                                    <div
-                                        class="result-filters"
-                                        role="group"
-                                        aria-label="Track filters"
-                                        aria-controls="release-track-results"
-                                    >
-                                        <button
-                                            type="button"
-                                            class="result-filter pill pill--ghost"
-                                            class:result-filter--active=move || active_disc.get() == "all"
-                                            aria-pressed=move || active_disc.get() == "all"
-                                            on:click=move |_| active_disc.set("all".to_string())
-                                        >
-                                            {format!("All ({total_count})")}
-                                        </button>
-                                        {disc_counts
-                                            .into_iter()
-                                            .map(|(disc_key, count)| {
-                                                let label = disc_key_label(&disc_key);
-                                                let key_for_class = disc_key.clone();
-                                                let key_for_aria = disc_key.clone();
-                                                let key_for_click = disc_key.clone();
-                                                view! {
-                                                    <button
-                                                        type="button"
-                                                        class="result-filter pill pill--ghost"
-                                                        class:result-filter--active=move || active_disc.get() == key_for_class
-                                                        aria-pressed=move || active_disc.get() == key_for_aria
-                                                        on:click=move |_| active_disc.set(key_for_click.clone())
-                                                    >
-                                                        {format!("{label} ({count})")}
-                                                    </button>
-                                                }
-                                            })
-                                            .collect::<Vec<_>>()}
-                                    </div>
-                                </div>
-                                <p class="list-summary" role="status" aria-live="polite">
-                                    {summary}
-                                </p>
-                                {if filtered_tracks.is_empty() {
-                                    view! {
-                                        <section class="status-card status-card--empty">
-                                            <p class="status-title">"No tracks match this view"</p>
-                                            <p class="muted">"Try another disc filter or clear the search query."</p>
-                                            {has_filters.then(|| view! {
-                                                <div class="pill-row">
-                                                    <button
-                                                        type="button"
-                                                        class="pill pill--ghost"
-                                                        on:click=move |_| {
-                                                            active_disc.set("all".to_string());
-                                                            track_query.set(String::new());
-                                                        }
-                                                    >
-                                                        "Clear filters"
-                                                    </button>
-                                                </div>
-                                            })}
-                                        </section>
-                                    }
-                                    .into_any()
-                                } else {
-                                    view! {
-                                        <ol
-                                            id="release-track-results"
-                                            class="tracklist"
-                                            aria-label="Release tracks"
-                                        >
-                                            {filtered_tracks
-                                                .into_iter()
-                                                .map(|track| {
-                                                    let track_label = track
-                                                        .song_id.map_or_else(|| "Unknown song".to_string(), |id| format!("Song #{id}"));
-                                                    let number = track.track_number.unwrap_or(0);
-                                                    let disc = track.disc_number.unwrap_or(1).max(1);
-                                                    let track_pos = if number > 0 {
-                                                        format!("{disc}-{number}")
-                                                    } else {
-                                                        format!("{disc}-?")
-                                                    };
-                                                    let mut context_parts = vec![disc_key_label(&normalized_disc_key(track.disc_number))];
-                                                    if let Some(duration) = track.duration_seconds {
-                                                        if duration > 0 {
-                                                            context_parts.push(format!("{}:{:02}", duration / 60, duration % 60));
-                                                        }
-                                                    }
-                                                    if track.show_id.is_some() {
-                                                        context_parts.push("Live source".to_string());
-                                                    }
-                                                    let context_line = context_parts.join(" • ");
-                                                    let notes = track
-                                                        .notes
-                                                        .as_deref()
-                                                        .map(str::trim)
-                                                        .filter(|notes| !notes.is_empty())
-                                                        .map(ToString::to_string);
-                                                    let show_link = track.show_id.map(|show_id| {
-                                                        let href = format!("/shows/{show_id}");
-                                                        view! { <a class="result-label" href=href>{format!("Open show #{show_id}")}</a> }
-                                                    });
-                                                    let slot_label = if track.show_id.is_some() {
-                                                        "Live"
-                                                    } else {
-                                                        "Release"
-                                                    };
-
-                                                    view! {
-                                                        <li class="tracklist-item">
-                                                            <span class="tracklist-pos">{track_pos}</span>
-                                                            <div class="tracklist-main">
-                                                                <span class="tracklist-title">{track_label}</span>
-                                                                <span class="tracklist-context">{context_line}</span>
-                                                                {show_link}
-                                                                {notes.map(|notes_line| view! {
-                                                                    <span class="tracklist-note">{notes_line}</span>
-                                                                })}
-                                                            </div>
-                                                            <span class="setlist-slot">{slot_label}</span>
-                                                        </li>
-                                                    }
-                                                })
-                                                .collect::<Vec<_>>()}
-                                        </ol>
-                                    }
-                                    .into_any()
-                                }}
-                            }
+                        render_release_tracks_content(items, active_disc.clone(), track_query.clone())
                             .into_any()
-                        }
                     } else {
                         empty_state(
                             "Tracks unavailable",
@@ -4479,87 +4612,306 @@ fn merge_search_results(
     out
 }
 
+#[derive(Clone, Copy, Default)]
+struct SearchResultCounts {
+    all: usize,
+    songs: usize,
+    shows: usize,
+    venues: usize,
+    tours: usize,
+    guests: usize,
+    releases: usize,
+}
+
+fn count_search_results(items: &[SearchResult]) -> SearchResultCounts {
+    let mut counts = SearchResultCounts {
+        all: items.len(),
+        ..SearchResultCounts::default()
+    };
+
+    for item in items {
+        match item.result_type.as_str() {
+            "song" => counts.songs += 1,
+            "show" => counts.shows += 1,
+            "venue" => counts.venues += 1,
+            "tour" => counts.tours += 1,
+            "guest" => counts.guests += 1,
+            "release" => counts.releases += 1,
+            _ => {}
+        }
+    }
+
+    counts
+}
+
+fn search_summary_label(selected_filter: &str) -> &'static str {
+    match selected_filter {
+        "all" => "all results",
+        "song" => "songs",
+        "venue" => "venues",
+        "tour" => "tours",
+        "guest" => "guests",
+        "release" => "releases",
+        "show" => "shows",
+        _ => "results",
+    }
+}
+
+fn render_search_filter_buttons(
+    active_filter: RwSignal<String>,
+    counts: SearchResultCounts,
+) -> impl IntoView {
+    let button_data = [
+        ("all", "All", counts.all, false),
+        ("song", "Songs", counts.songs, counts.songs == 0),
+        ("show", "Shows", counts.shows, counts.shows == 0),
+        ("venue", "Venues", counts.venues, counts.venues == 0),
+        ("tour", "Tours", counts.tours, counts.tours == 0),
+        ("guest", "Guests", counts.guests, counts.guests == 0),
+        ("release", "Releases", counts.releases, counts.releases == 0),
+    ];
+
+    view! {
+        <div
+            class="result-filters"
+            role="group"
+            aria-label="Search result filters"
+            aria-controls="search-results-list"
+        >
+            {button_data
+                .into_iter()
+                .map(|(value, label, count, disabled)| {
+                    let filter_value = value.to_string();
+                    let class_filter = filter_value.clone();
+                    let aria_filter = filter_value.clone();
+                    let click_filter = filter_value;
+                    let class_active_filter = active_filter.clone();
+                    let aria_active_filter = active_filter.clone();
+                    let click_active_filter = active_filter.clone();
+
+                    view! {
+                        <button
+                            type="button"
+                            class="result-filter pill pill--ghost"
+                            class:result-filter--active=move || {
+                                class_active_filter.get() == class_filter
+                            }
+                            aria-pressed=move || aria_active_filter.get() == aria_filter
+                            disabled=disabled
+                            on:click=move |_| click_active_filter.set(click_filter.clone())
+                        >
+                            {format!("{label} ({count})")}
+                        </button>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </div>
+    }
+}
+
+fn render_search_result_rows(items: Vec<SearchResult>) -> impl IntoView {
+    view! {
+        <ul id="search-results-list" class="result-list">
+            {items
+                .into_iter()
+                .map(|item| {
+                    let label = item.label.clone();
+                    let kind = item.result_type.clone();
+                    let href = search_result_href(&item);
+                    view! {
+                        <li class="result-card">
+                            <span class="pill">{kind}</span>
+                            <div class="result-body">
+                                {move || match &href {
+                                    Some(link) => view! {
+                                        <a class="result-label" href=link.clone()>{label.clone()}</a>
+                                    }
+                                    .into_any(),
+                                    None => view! { <span class="result-label">{label.clone()}</span> }.into_any(),
+                                }}
+                            </div>
+                            <span class="result-score">{format!("{:.2}", item.score)}</span>
+                        </li>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </ul>
+    }
+}
+
+fn render_filtered_search_results(
+    items: Vec<SearchResult>,
+    active_filter: RwSignal<String>,
+) -> impl IntoView {
+    if items.is_empty() {
+        let reset_filter = active_filter.clone();
+        return view! {
+            <section class="status-card status-card--empty">
+                <p class="status-title">"No results in this category"</p>
+                <p class="muted">"Try another filter or switch back to All results."</p>
+                <p>
+                    <button
+                        type="button"
+                        class="pill pill--ghost"
+                        on:click=move |_| reset_filter.set("all".to_string())
+                    >
+                        "Show all results"
+                    </button>
+                </p>
+            </section>
+        }
+        .into_any();
+    }
+
+    render_search_result_rows(items).into_any()
+}
+
+fn render_search_results_content(
+    items: Vec<SearchResult>,
+    query: String,
+    active_filter: RwSignal<String>,
+) -> impl IntoView {
+    if items.is_empty() && !query.is_empty() {
+        return empty_state("No results", "Try a different query or shorter phrase.").into_any();
+    }
+    if items.is_empty() {
+        return empty_state(
+            "Start typing",
+            "Search songs, shows, venues, guests, tours, and releases.",
+        )
+        .into_any();
+    }
+
+    let counts = count_search_results(&items);
+    let selected_filter = normalize_search_filter(&active_filter.get());
+    let filtered_items: Vec<_> = items
+        .into_iter()
+        .filter(|item| selected_filter == "all" || item.result_type == selected_filter)
+        .collect();
+    let filtered_count = filtered_items.len();
+    let summary_label = search_summary_label(&selected_filter);
+
+    view! {
+        <>
+            {render_search_filter_buttons(active_filter.clone(), counts)}
+            <p class="list-summary" role="status" aria-live="polite">
+                {format!("Showing {filtered_count} {summary_label} for \"{query}\"")}
+            </p>
+            {render_filtered_search_results(filtered_items, active_filter)}
+        </>
+    }
+    .into_any()
+}
+
+#[cfg(feature = "hydrate")]
+fn initialize_search_route_signals(
+    query: RwSignal<String>,
+    active_filter: RwSignal<String>,
+    search_url_ready: RwSignal<bool>,
+) {
+    Effect::new(move |_| {
+        let route_query = current_search_param("q").unwrap_or_default();
+        let route_filter =
+            normalize_search_filter(&current_search_param("type").unwrap_or_default());
+        query.set(route_query);
+        active_filter.set(route_filter);
+        search_url_ready.set(true);
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn initialize_search_url_sync(
+    query: RwSignal<String>,
+    active_filter: RwSignal<String>,
+    search_url_ready: RwSignal<bool>,
+) {
+    Effect::new(move |_| {
+        if !search_url_ready.get() {
+            return;
+        }
+        sync_search_query_params(&query.get(), &active_filter.get());
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn initialize_search_results_effect(query: RwSignal<String>, results: RwSignal<Vec<SearchResult>>) {
+    let embedding_index = RwSignal::new(None::<std::sync::Arc<crate::ai::EmbeddingIndex>>);
+    let search_run = RwSignal::new(0_u64);
+
+    let index_signal = embedding_index.clone();
+    spawn_local(async move {
+        index_signal.set(crate::ai::load_embedding_index().await);
+    });
+
+    Effect::new(move |_| {
+        let current_query = query.get();
+        let current_index = embedding_index.get();
+        let run_id = search_run.get_untracked().wrapping_add(1);
+        search_run.set(run_id);
+        let results_signal = results.clone();
+        let search_run_signal = search_run.clone();
+
+        spawn_local(async move {
+            // Debounce keystrokes to reduce repeated prefix/semantic lookups.
+            wait_ms(120).await;
+            if search_run_signal.get_untracked() != run_id {
+                return;
+            }
+
+            let trimmed = current_query.trim().to_string();
+            let items = if trimmed.is_empty() {
+                Vec::new()
+            } else {
+                let prefix = dmb_idb::search_global(&trimmed).await.unwrap_or_default();
+                let semantic = if trimmed.chars().count() >= 2 {
+                    if let Some(index) = current_index {
+                        crate::ai::semantic_search(&trimmed, &index, 12).await
+                    } else {
+                        Vec::new()
+                    }
+                } else {
+                    Vec::new()
+                };
+                merge_search_results(prefix, semantic, 40)
+            };
+
+            // Drop stale async results from superseded queries.
+            if search_run_signal.get_untracked() != run_id {
+                return;
+            }
+            results_signal.set(items);
+        });
+    });
+}
+
 pub fn search_page() -> impl IntoView {
-    let (query, set_query) = signal(String::new());
-    let (active_filter, set_active_filter) = signal(String::from("all"));
-    let results = RwSignal::new(Vec::<dmb_core::SearchResult>::new());
+    let query = RwSignal::new(String::new());
+    let active_filter = RwSignal::new(String::from("all"));
+    let results = RwSignal::new(Vec::<SearchResult>::new());
     #[cfg(feature = "hydrate")]
     let search_url_ready = RwSignal::new(false);
 
     #[cfg(feature = "hydrate")]
     {
-        let set_query_signal = set_query.clone();
-        let set_active_filter_signal = set_active_filter.clone();
-        let search_url_ready_signal = search_url_ready.clone();
-        Effect::new(move |_| {
-            let route_query = current_search_param("q").unwrap_or_default();
-            let route_filter =
-                normalize_search_filter(&current_search_param("type").unwrap_or_default());
-            set_query_signal.set(route_query);
-            set_active_filter_signal.set(route_filter);
-            search_url_ready_signal.set(true);
-        });
-
-        let query_signal_for_url = query.clone();
-        let active_filter_signal_for_url = active_filter.clone();
-        let search_url_ready_signal_for_url = search_url_ready.clone();
-        Effect::new(move |_| {
-            if !search_url_ready_signal_for_url.get() {
-                return;
-            }
-            sync_search_query_params(
-                &query_signal_for_url.get(),
-                &active_filter_signal_for_url.get(),
-            );
-        });
-
-        let embedding_index = RwSignal::new(None::<std::sync::Arc<crate::ai::EmbeddingIndex>>);
-        let query_signal = query.clone();
-        let results_signal = results.clone();
-        let index_signal = embedding_index.clone();
-        let search_run = RwSignal::new(0_u64);
-        spawn_local(async move {
-            index_signal.set(crate::ai::load_embedding_index().await);
-        });
-        Effect::new(move |_| {
-            let current_query = query_signal.get();
-            let results_signal = results_signal.clone();
-            let index_signal = index_signal.get();
-            let search_run_signal = search_run.clone();
-            let run_id = search_run_signal.get_untracked().wrapping_add(1);
-            search_run_signal.set(run_id);
-            spawn_local(async move {
-                // Debounce keystrokes to reduce repeated prefix/semantic lookups.
-                wait_ms(120).await;
-                if search_run_signal.get_untracked() != run_id {
-                    return;
-                }
-
-                let trimmed = current_query.trim().to_string();
-                let items = if trimmed.is_empty() {
-                    Vec::new()
-                } else {
-                    let prefix = dmb_idb::search_global(&trimmed).await.unwrap_or_default();
-                    let semantic = if trimmed.chars().count() >= 2 {
-                        if let Some(index) = index_signal {
-                            crate::ai::semantic_search(&trimmed, &index, 12).await
-                        } else {
-                            Vec::new()
-                        }
-                    } else {
-                        Vec::new()
-                    };
-                    merge_search_results(prefix, semantic, 40)
-                };
-
-                // Drop stale async results from superseded queries.
-                if search_run_signal.get_untracked() != run_id {
-                    return;
-                }
-                results_signal.set(items);
-            });
-        });
+        initialize_search_route_signals(
+            query.clone(),
+            active_filter.clone(),
+            search_url_ready.clone(),
+        );
+        initialize_search_url_sync(
+            query.clone(),
+            active_filter.clone(),
+            search_url_ready.clone(),
+        );
+        initialize_search_results_effect(query.clone(), results.clone());
     }
+
+    let value_query = query.clone();
+    let input_query = query.clone();
+    let input_filter = active_filter.clone();
+    let render_query = query.clone();
+    let render_filter = active_filter.clone();
+    let render_results = results.clone();
 
     view! {
         <section class="page">
@@ -4569,194 +4921,21 @@ pub fn search_page() -> impl IntoView {
                 class="search-input"
                 type="search"
                 placeholder="Search songs, shows, venues..."
-                prop:value=move || query.get()
+                prop:value=move || value_query.get()
                 on:input=move |ev| {
                     let next = event_target_value(&ev);
                     if next.trim().is_empty() {
-                        set_active_filter.set("all".to_string());
+                        input_filter.set("all".to_string());
                     }
-                    set_query.set(next);
+                    input_query.set(next);
                 }
             />
             {move || {
-                let items = results.get();
-                let current_query = query.get();
-                if items.is_empty() && !current_query.is_empty() {
-                    empty_state(
-                        "No results",
-                        "Try a different query or shorter phrase.",
-                    )
-                    .into_any()
-                } else if items.is_empty() {
-                    empty_state(
-                        "Start typing",
-                        "Search songs, shows, venues, guests, tours, and releases.",
-                    )
-                    .into_any()
-                } else {
-                    let all_count = items.len();
-                    let song_count = items.iter().filter(|item| item.result_type == "song").count();
-                    let venue_count = items.iter().filter(|item| item.result_type == "venue").count();
-                    let tour_count = items.iter().filter(|item| item.result_type == "tour").count();
-                    let guest_count = items.iter().filter(|item| item.result_type == "guest").count();
-                    let release_count = items.iter().filter(|item| item.result_type == "release").count();
-                    let show_count = items.iter().filter(|item| item.result_type == "show").count();
-
-                    let selected_filter = normalize_search_filter(&active_filter.get());
-                    let filtered_items: Vec<_> = items
-                        .into_iter()
-                        .filter(|item| {
-                            selected_filter == "all" || item.result_type == selected_filter
-                        })
-                        .collect();
-                    let filtered_count = filtered_items.len();
-                    let summary_label = match selected_filter.as_str() {
-                        "all" => "all results",
-                        "song" => "songs",
-                        "venue" => "venues",
-                        "tour" => "tours",
-                        "guest" => "guests",
-                        "release" => "releases",
-                        "show" => "shows",
-                        _ => "results",
-                    };
-
-                    view! {
-                        <>
-                            <div
-                                class="result-filters"
-                                role="group"
-                                aria-label="Search result filters"
-                                aria-controls="search-results-list"
-                            >
-                                <button
-                                    type="button"
-                                    class="result-filter pill pill--ghost"
-                                    class:result-filter--active=move || active_filter.get() == "all"
-                                    aria-pressed=move || active_filter.get() == "all"
-                                    on:click=move |_| set_active_filter.set("all".to_string())
-                                >
-                                    {format!("All ({all_count})")}
-                                </button>
-                                <button
-                                    type="button"
-                                    class="result-filter pill pill--ghost"
-                                    class:result-filter--active=move || active_filter.get() == "song"
-                                    aria-pressed=move || active_filter.get() == "song"
-                                    disabled=song_count == 0
-                                    on:click=move |_| set_active_filter.set("song".to_string())
-                                >
-                                    {format!("Songs ({song_count})")}
-                                </button>
-                                <button
-                                    type="button"
-                                    class="result-filter pill pill--ghost"
-                                    class:result-filter--active=move || active_filter.get() == "show"
-                                    aria-pressed=move || active_filter.get() == "show"
-                                    disabled=show_count == 0
-                                    on:click=move |_| set_active_filter.set("show".to_string())
-                                >
-                                    {format!("Shows ({show_count})")}
-                                </button>
-                                <button
-                                    type="button"
-                                    class="result-filter pill pill--ghost"
-                                    class:result-filter--active=move || active_filter.get() == "venue"
-                                    aria-pressed=move || active_filter.get() == "venue"
-                                    disabled=venue_count == 0
-                                    on:click=move |_| set_active_filter.set("venue".to_string())
-                                >
-                                    {format!("Venues ({venue_count})")}
-                                </button>
-                                <button
-                                    type="button"
-                                    class="result-filter pill pill--ghost"
-                                    class:result-filter--active=move || active_filter.get() == "tour"
-                                    aria-pressed=move || active_filter.get() == "tour"
-                                    disabled=tour_count == 0
-                                    on:click=move |_| set_active_filter.set("tour".to_string())
-                                >
-                                    {format!("Tours ({tour_count})")}
-                                </button>
-                                <button
-                                    type="button"
-                                    class="result-filter pill pill--ghost"
-                                    class:result-filter--active=move || active_filter.get() == "guest"
-                                    aria-pressed=move || active_filter.get() == "guest"
-                                    disabled=guest_count == 0
-                                    on:click=move |_| set_active_filter.set("guest".to_string())
-                                >
-                                    {format!("Guests ({guest_count})")}
-                                </button>
-                                <button
-                                    type="button"
-                                    class="result-filter pill pill--ghost"
-                                    class:result-filter--active=move || active_filter.get() == "release"
-                                    aria-pressed=move || active_filter.get() == "release"
-                                    disabled=release_count == 0
-                                    on:click=move |_| set_active_filter.set("release".to_string())
-                                >
-                                    {format!("Releases ({release_count})")}
-                                </button>
-                            </div>
-                            <p class="list-summary" role="status" aria-live="polite">
-                                {format!(
-                                    "Showing {filtered_count} {summary_label} for \"{current_query}\""
-                                )}
-                            </p>
-                            {if filtered_items.is_empty() {
-                                view! {
-                                    <section class="status-card status-card--empty">
-                                        <p class="status-title">"No results in this category"</p>
-                                        <p class="muted">
-                                            "Try another filter or switch back to All results."
-                                        </p>
-                                        <p>
-                                            <button
-                                                type="button"
-                                                class="pill pill--ghost"
-                                                on:click=move |_| set_active_filter.set("all".to_string())
-                                            >
-                                                "Show all results"
-                                            </button>
-                                        </p>
-                                    </section>
-                                }
-                                .into_any()
-                            } else {
-                                view! {
-                                    <ul id="search-results-list" class="result-list">
-                                        {filtered_items
-                                            .into_iter()
-                                            .map(|item| {
-                                                let label = item.label.clone();
-                                                let kind = item.result_type.clone();
-                                                let href = search_result_href(&item);
-                                                view! {
-                                                    <li class="result-card">
-                                                        <span class="pill">{kind}</span>
-                                                        <div class="result-body">
-                                                            {move || match &href {
-                                                                Some(link) => view! {
-                                                                    <a class="result-label" href=link.clone()>{label.clone()}</a>
-                                                                }
-                                                                .into_any(),
-                                                                None => view! { <span class="result-label">{label.clone()}</span> }.into_any(),
-                                                            }}
-                                                        </div>
-                                                        <span class="result-score">{format!("{:.2}", item.score)}</span>
-                                                    </li>
-                                                }
-                                            })
-                                            .collect::<Vec<_>>()}
-                                    </ul>
-                                }
-                                .into_any()
-                            }}
-                        </>
-                    }
-                    .into_any()
-                }
+                render_search_results_content(
+                    render_results.get(),
+                    render_query.get(),
+                    render_filter.clone(),
+                )
             }}
         </section>
     }
@@ -5120,315 +5299,355 @@ async fn load_stats_guests() -> StatsGuests {
 // Stats page component
 // ---------------------------------------------------------------------------
 
+const STATS_TABS: [(u8, &str); 5] = [
+    (0, "Overview"),
+    (1, "Songs"),
+    (2, "Shows & Tours"),
+    (3, "Venues"),
+    (4, "Guests"),
+];
+const STATS_TAB_COUNT: u8 = 5;
+
+fn render_stats_tabs(active_tab: RwSignal<u8>) -> impl IntoView {
+    view! {
+        <nav
+            class="stats-tabs"
+            role="tablist"
+            aria-label="Statistics sections"
+            aria-orientation="horizontal"
+        >
+            {STATS_TABS
+                .into_iter()
+                .map(|(idx, name)| {
+                    let tab_id = format!("stats-tab-{idx}");
+                    let panel_id = format!("stats-panel-{idx}");
+                    let class_active_tab = active_tab.clone();
+                    let aria_active_tab = active_tab.clone();
+                    let tabindex_active_tab = active_tab.clone();
+                    let click_active_tab = active_tab.clone();
+                    let keydown_active_tab = active_tab.clone();
+
+                    view! {
+                        <button
+                            type="button"
+                            role="tab"
+                            id=tab_id
+                            aria-controls=panel_id
+                            class:active=move || class_active_tab.get() == idx
+                            aria-selected=move || aria_active_tab.get() == idx
+                            tabindex=move || if tabindex_active_tab.get() == idx { 0 } else { -1 }
+                            on:click=move |_| click_active_tab.set(idx)
+                            on:keydown=move |ev| {
+                                let key = ev.key();
+                                let next = match key.as_str() {
+                                    "ArrowRight" => Some((idx + 1) % STATS_TAB_COUNT),
+                                    "ArrowLeft" => {
+                                        Some(if idx == 0 { STATS_TAB_COUNT - 1 } else { idx - 1 })
+                                    }
+                                    "Home" => Some(0),
+                                    "End" => Some(STATS_TAB_COUNT - 1),
+                                    _ => None,
+                                };
+                                if let Some(next_idx) = next {
+                                    ev.prevent_default();
+                                    keydown_active_tab.set(next_idx);
+                                    focus_stats_tab(next_idx);
+                                }
+                            }
+                        >
+                            {name}
+                        </button>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </nav>
+    }
+}
+
+fn render_stats_overview_content(data: StatsOverview) -> impl IntoView {
+    view! {
+        <>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value">{data.show_count.to_string()}</span>
+                    <span class="stat-label">"Shows"</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">{data.song_count.to_string()}</span>
+                    <span class="stat-label">"Songs"</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">{data.venue_count.to_string()}</span>
+                    <span class="stat-label">"Venues"</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">{data.tour_count.to_string()}</span>
+                    <span class="stat-label">"Tours"</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">{data.guest_count.to_string()}</span>
+                    <span class="stat-label">"Guests"</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">{data.setlist_count.to_string()}</span>
+                    <span class="stat-label">"Setlist Entries"</span>
+                </div>
+            </div>
+            <div class="stat-card" style="margin-top: 1rem">
+                <span class="stat-value">{format!("{:.1}", data.avg_songs_per_show)}</span>
+                <span class="stat-label">"Avg Songs Per Show"</span>
+            </div>
+            <p class="muted" style="margin-top: 1rem">
+                {format!("Database: {} v{}", dmb_idb::DB_NAME, dmb_idb::DB_VERSION)}
+            </p>
+        </>
+    }
+}
+
+fn render_stats_songs_content(data: StatsSongs) -> impl IntoView {
+    view! {
+        <>
+            <h2>"Top 25 Most Played"</h2>
+            {render_song_table(&data.top_played, true)}
+
+            <h2>"Top 10 Openers"</h2>
+            {render_song_ranking(&data.top_openers, |s| s.opener_count.unwrap_or(0))}
+
+            <h2>"Top 10 Closers"</h2>
+            {render_song_ranking(&data.top_closers, |s| s.closer_count.unwrap_or(0))}
+
+            <h2>"Top 10 Encores"</h2>
+            {render_song_ranking(&data.top_encores, |s| s.encore_count.unwrap_or(0))}
+
+            <h2>"Song Debuts by Year"</h2>
+            {render_bar_chart(&data.debuts_by_year)}
+        </>
+    }
+}
+
+fn render_stats_shows_content(data: StatsShows) -> impl IntoView {
+    view! {
+        <>
+            <h2>"Shows Per Year"</h2>
+            {render_bar_chart(&data.shows_by_year)}
+
+            <h2>"Shows Per Decade"</h2>
+            <div class="stats-grid">
+                {data
+                    .shows_by_decade
+                    .iter()
+                    .map(|(decade, count)| {
+                        view! {
+                            <div class="stat-card">
+                                <span class="stat-value">{count.to_string()}</span>
+                                <span class="stat-label">{format!("{decade}s")}</span>
+                            </div>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </div>
+
+            <h2>"Rarity Index Distribution"</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value">{format!("{:.2}", data.rarity_min)}</span>
+                    <span class="stat-label">"Min"</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">{format!("{:.2}", data.rarity_q1)}</span>
+                    <span class="stat-label">"Q1"</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">{format!("{:.2}", data.rarity_median)}</span>
+                    <span class="stat-label">"Median"</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">{format!("{:.2}", data.rarity_q3)}</span>
+                    <span class="stat-label">"Q3"</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">{format!("{:.2}", data.rarity_max)}</span>
+                    <span class="stat-label">"Max"</span>
+                </div>
+            </div>
+
+            <h2>"Recent Tours"</h2>
+            <ul class="result-list">
+                {data
+                    .recent_tours
+                    .iter()
+                    .map(|tour| {
+                        let href = format!("/tours/{}", tour.year);
+                        let total = tour.total_shows.unwrap_or(0);
+                        view! {
+                            <li class="result-card">
+                                <span class="pill">{tour.year.to_string()}</span>
+                                <div class="result-body">
+                                    <a class="result-label" href=href>{tour.name.clone()}</a>
+                                </div>
+                                <span class="result-score">{format!("{total} shows")}</span>
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </ul>
+        </>
+    }
+}
+
+fn render_stats_venues_content(data: StatsVenues) -> impl IntoView {
+    view! {
+        <>
+            <h2>"Top 25 Venues"</h2>
+            <ul class="result-list">
+                {data
+                    .top_venues
+                    .iter()
+                    .map(|venue| {
+                        let href = format!("/venues/{}", venue.id);
+                        let location = format_location(&venue.city, &venue.state);
+                        let total = venue.total_shows.unwrap_or(0);
+                        view! {
+                            <li class="result-card">
+                                <span class="pill">
+                                    {venue
+                                        .state
+                                        .clone()
+                                        .unwrap_or_else(|| venue.country.clone())}
+                                </span>
+                                <div class="result-body">
+                                    <a class="result-label" href=href>{venue.name.clone()}</a>
+                                    <span class="result-meta">{location}</span>
+                                </div>
+                                <span class="result-score">{format!("{total} shows")}</span>
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </ul>
+
+            <h2>"Shows by Country"</h2>
+            {render_string_bar_chart(&data.shows_by_country, 15)}
+
+            <h2>"Shows by US State"</h2>
+            {render_string_bar_chart(&data.shows_by_state, 20)}
+        </>
+    }
+}
+
+fn render_stats_guests_content(data: StatsGuests) -> impl IntoView {
+    view! {
+        <>
+            <h2>"Top 25 Guests"</h2>
+            <ul class="result-list">
+                {data
+                    .top_guests
+                    .iter()
+                    .map(|guest| {
+                        let href = format!("/guests/{}", guest.slug);
+                        let total = guest.total_appearances.unwrap_or(0);
+                        view! {
+                            <li class="result-card">
+                                <div class="result-body">
+                                    <a class="result-label" href=href>{guest.name.clone()}</a>
+                                </div>
+                                <span class="result-score">{format!("{total} appearances")}</span>
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </ul>
+
+            <h2>"Guest Appearances by Year"</h2>
+            {render_bar_chart(&data.appearances_by_year)}
+        </>
+    }
+}
+
 pub fn stats_page() -> impl IntoView {
     let active_tab = RwSignal::new(0u8);
 
-    let overview = Resource::new(|| (), |_| async move { load_stats_overview().await });
-    let songs = Resource::new(|| (), |_| async move { load_stats_songs().await });
-    let shows = Resource::new(|| (), |_| async move { load_stats_shows().await });
-    let venues = Resource::new(|| (), |_| async move { load_stats_venues().await });
-    let guests = Resource::new(|| (), |_| async move { load_stats_guests().await });
+    let overview = Resource::new(|| (), |()| async move { load_stats_overview().await });
+    let songs = Resource::new(|| (), |()| async move { load_stats_songs().await });
+    let shows = Resource::new(|| (), |()| async move { load_stats_shows().await });
+    let venues = Resource::new(|| (), |()| async move { load_stats_venues().await });
+    let guests = Resource::new(|| (), |()| async move { load_stats_guests().await });
 
-    let tab_names = ["Overview", "Songs", "Shows & Tours", "Venues", "Guests"];
-    let tab_count = tab_names.len() as u8;
+    let tabs_active_tab = active_tab.clone();
+    let overview_hidden = active_tab.clone();
+    let overview_display = active_tab.clone();
+    let songs_hidden = active_tab.clone();
+    let songs_display = active_tab.clone();
+    let shows_hidden = active_tab.clone();
+    let shows_display = active_tab.clone();
+    let venues_hidden = active_tab.clone();
+    let venues_display = active_tab.clone();
+    let guests_hidden = active_tab.clone();
+    let guests_display = active_tab.clone();
 
     view! {
         <section class="page">
             <h1>"Stats"</h1>
             <p class="lead">"WASM-powered aggregations over the full concert database."</p>
-
-            <nav
-                class="stats-tabs"
-                role="tablist"
-                aria-label="Statistics sections"
-                aria-orientation="horizontal"
-            >
-                {tab_names
-                    .iter()
-                    .enumerate()
-                    .map(|(i, name)| {
-                        let idx = i as u8;
-                        let tab_id = format!("stats-tab-{idx}");
-                        let panel_id = format!("stats-panel-{idx}");
-                        view! {
-                            <button type="button"
-                                role="tab"
-                                id=tab_id
-                                aria-controls=panel_id
-                                class:active=move || active_tab.get() == idx
-                                aria-selected=move || active_tab.get() == idx
-                                tabindex=move || if active_tab.get() == idx { 0 } else { -1 }
-                                on:click=move |_| active_tab.set(idx)
-                                on:keydown=move |ev| {
-                                    let key = ev.key();
-                                    let next = match key.as_str() {
-                                        "ArrowRight" => Some((idx + 1) % tab_count),
-                                        "ArrowLeft" => Some((idx + tab_count - 1) % tab_count),
-                                        "Home" => Some(0),
-                                        "End" => Some(tab_count - 1),
-                                        _ => None,
-                                    };
-                                    if let Some(next_idx) = next {
-                                        ev.prevent_default();
-                                        active_tab.set(next_idx);
-                                        focus_stats_tab(next_idx);
-                                    }
-                                }
-                            >
-                                {*name}
-                            </button>
-                        }
-                    })
-                    .collect::<Vec<_>>()}
-            </nav>
-
-            // Tab 0: Overview
+            {render_stats_tabs(tabs_active_tab)}
             <div
                 class="stats-panel"
                 id="stats-panel-0"
                 role="tabpanel"
                 aria-labelledby="stats-tab-0"
-                hidden=move || active_tab.get() != 0
-                style:display=move || if active_tab.get() == 0 { "block" } else { "none" }
+                hidden=move || overview_hidden.get() != 0
+                style:display=move || if overview_display.get() == 0 { "block" } else { "none" }
             >
                 <Suspense fallback=move || loading_state("Loading overview", "Crunching summary aggregates.")>
-                    {move || {
-                        let data = overview.get().unwrap_or_default();
-                        view! {
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <span class="stat-value">{data.show_count.to_string()}</span>
-                                    <span class="stat-label">"Shows"</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-value">{data.song_count.to_string()}</span>
-                                    <span class="stat-label">"Songs"</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-value">{data.venue_count.to_string()}</span>
-                                    <span class="stat-label">"Venues"</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-value">{data.tour_count.to_string()}</span>
-                                    <span class="stat-label">"Tours"</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-value">{data.guest_count.to_string()}</span>
-                                    <span class="stat-label">"Guests"</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-value">{data.setlist_count.to_string()}</span>
-                                    <span class="stat-label">"Setlist Entries"</span>
-                                </div>
-                            </div>
-                            <div class="stat-card" style="margin-top: 1rem">
-                                <span class="stat-value">{format!("{:.1}", data.avg_songs_per_show)}</span>
-                                <span class="stat-label">"Avg Songs Per Show"</span>
-                            </div>
-                            <p class="muted" style="margin-top: 1rem">
-                                {format!("Database: {} v{}", dmb_idb::DB_NAME, dmb_idb::DB_VERSION)}
-                            </p>
-                        }
-                    }}
+                    {move || render_stats_overview_content(overview.get().unwrap_or_default())}
                 </Suspense>
             </div>
-
-            // Tab 1: Songs
             <div
                 class="stats-panel"
                 id="stats-panel-1"
                 role="tabpanel"
                 aria-labelledby="stats-tab-1"
-                hidden=move || active_tab.get() != 1
-                style:display=move || if active_tab.get() == 1 { "block" } else { "none" }
+                hidden=move || songs_hidden.get() != 1
+                style:display=move || if songs_display.get() == 1 { "block" } else { "none" }
             >
                 <Suspense fallback=move || loading_state("Loading songs stats", "Computing song rankings.")>
-                    {move || {
-                        let data = songs.get().unwrap_or_default();
-                        view! {
-                            <h2>"Top 25 Most Played"</h2>
-                            {render_song_table(&data.top_played, true)}
-
-                            <h2>"Top 10 Openers"</h2>
-                            {render_song_ranking(&data.top_openers, |s| s.opener_count.unwrap_or(0))}
-
-                            <h2>"Top 10 Closers"</h2>
-                            {render_song_ranking(&data.top_closers, |s| s.closer_count.unwrap_or(0))}
-
-                            <h2>"Top 10 Encores"</h2>
-                            {render_song_ranking(&data.top_encores, |s| s.encore_count.unwrap_or(0))}
-
-                            <h2>"Song Debuts by Year"</h2>
-                            {render_bar_chart(&data.debuts_by_year)}
-                        }
-                    }}
+                    {move || render_stats_songs_content(songs.get().unwrap_or_default())}
                 </Suspense>
             </div>
-
-            // Tab 2: Shows & Tours
             <div
                 class="stats-panel"
                 id="stats-panel-2"
                 role="tabpanel"
                 aria-labelledby="stats-tab-2"
-                hidden=move || active_tab.get() != 2
-                style:display=move || if active_tab.get() == 2 { "block" } else { "none" }
+                hidden=move || shows_hidden.get() != 2
+                style:display=move || if shows_display.get() == 2 { "block" } else { "none" }
             >
                 <Suspense fallback=move || loading_state("Loading shows stats", "Computing show and rarity metrics.")>
-                    {move || {
-                        let data = shows.get().unwrap_or_default();
-                        view! {
-                            <h2>"Shows Per Year"</h2>
-                            {render_bar_chart(&data.shows_by_year)}
-
-                            <h2>"Shows Per Decade"</h2>
-                            <div class="stats-grid">
-                                {data
-                                    .shows_by_decade
-                                    .iter()
-                                    .map(|(decade, count)| {
-                                        view! {
-                                            <div class="stat-card">
-                                                <span class="stat-value">{count.to_string()}</span>
-                                                <span class="stat-label">{format!("{decade}s")}</span>
-                                            </div>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </div>
-
-                            <h2>"Rarity Index Distribution"</h2>
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <span class="stat-value">{format!("{:.2}", data.rarity_min)}</span>
-                                    <span class="stat-label">"Min"</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-value">{format!("{:.2}", data.rarity_q1)}</span>
-                                    <span class="stat-label">"Q1"</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-value">{format!("{:.2}", data.rarity_median)}</span>
-                                    <span class="stat-label">"Median"</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-value">{format!("{:.2}", data.rarity_q3)}</span>
-                                    <span class="stat-label">"Q3"</span>
-                                </div>
-                                <div class="stat-card">
-                                    <span class="stat-value">{format!("{:.2}", data.rarity_max)}</span>
-                                    <span class="stat-label">"Max"</span>
-                                </div>
-                            </div>
-
-                            <h2>"Recent Tours"</h2>
-                            <ul class="result-list">
-                                {data
-                                    .recent_tours
-                                    .iter()
-                                    .map(|tour| {
-                                        let href = format!("/tours/{}", tour.year);
-                                        let total = tour.total_shows.unwrap_or(0);
-                                        view! {
-                                            <li class="result-card">
-                                                <span class="pill">{tour.year.to_string()}</span>
-                                                <div class="result-body">
-                                                    <a class="result-label" href=href>{tour.name.clone()}</a>
-                                                </div>
-                                                <span class="result-score">{format!("{total} shows")}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
-                        }
-                    }}
+                    {move || render_stats_shows_content(shows.get().unwrap_or_default())}
                 </Suspense>
             </div>
-
-            // Tab 3: Venues
             <div
                 class="stats-panel"
                 id="stats-panel-3"
                 role="tabpanel"
                 aria-labelledby="stats-tab-3"
-                hidden=move || active_tab.get() != 3
-                style:display=move || if active_tab.get() == 3 { "block" } else { "none" }
+                hidden=move || venues_hidden.get() != 3
+                style:display=move || if venues_display.get() == 3 { "block" } else { "none" }
             >
                 <Suspense fallback=move || loading_state("Loading venue stats", "Computing venue distributions.")>
-                    {move || {
-                        let data = venues.get().unwrap_or_default();
-                        view! {
-                            <h2>"Top 25 Venues"</h2>
-                            <ul class="result-list">
-                                {data
-                                    .top_venues
-                                    .iter()
-                                    .map(|venue| {
-                                        let href = format!("/venues/{}", venue.id);
-                                        let location = format_location(&venue.city, &venue.state);
-                                        let total = venue.total_shows.unwrap_or(0);
-                                        view! {
-                                            <li class="result-card">
-                                                <span class="pill">{venue.state.clone().unwrap_or_else(|| venue.country.clone())}</span>
-                                                <div class="result-body">
-                                                    <a class="result-label" href=href>{venue.name.clone()}</a>
-                                                    <span class="result-meta">{location}</span>
-                                                </div>
-                                                <span class="result-score">{format!("{total} shows")}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
-
-                            <h2>"Shows by Country"</h2>
-                            {render_string_bar_chart(&data.shows_by_country, 15)}
-
-                            <h2>"Shows by US State"</h2>
-                            {render_string_bar_chart(&data.shows_by_state, 20)}
-                        }
-                    }}
+                    {move || render_stats_venues_content(venues.get().unwrap_or_default())}
                 </Suspense>
             </div>
-
-            // Tab 4: Guests
             <div
                 class="stats-panel"
                 id="stats-panel-4"
                 role="tabpanel"
                 aria-labelledby="stats-tab-4"
-                hidden=move || active_tab.get() != 4
-                style:display=move || if active_tab.get() == 4 { "block" } else { "none" }
+                hidden=move || guests_hidden.get() != 4
+                style:display=move || if guests_display.get() == 4 { "block" } else { "none" }
             >
                 <Suspense fallback=move || loading_state("Loading guest stats", "Computing guest appearance metrics.")>
-                    {move || {
-                        let data = guests.get().unwrap_or_default();
-                        view! {
-                            <h2>"Top 25 Guests"</h2>
-                            <ul class="result-list">
-                                {data
-                                    .top_guests
-                                    .iter()
-                                    .map(|guest| {
-                                        let href = format!("/guests/{}", guest.slug);
-                                        let total = guest.total_appearances.unwrap_or(0);
-                                        view! {
-                                            <li class="result-card">
-                                                <div class="result-body">
-                                                    <a class="result-label" href=href>{guest.name.clone()}</a>
-                                                </div>
-                                                <span class="result-score">{format!("{total} appearances")}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
-
-                            <h2>"Guest Appearances by Year"</h2>
-                            {render_bar_chart(&data.appearances_by_year)}
-                        }
-                    }}
+                    {move || render_stats_guests_content(guests.get().unwrap_or_default())}
                 </Suspense>
             </div>
         </section>
@@ -5592,6 +5811,78 @@ fn render_string_bar_chart(data: &[(String, u32)], limit: usize) -> impl IntoVie
     .into_any()
 }
 
+fn render_assistant_index_status(
+    embedding_index: Option<std::sync::Arc<crate::ai::EmbeddingIndex>>,
+) -> impl IntoView {
+    match embedding_index {
+        None => {
+            loading_state("Loading embedding index", "Preparing local vector search.").into_any()
+        }
+        Some(index) => view! {
+            <p class="list-summary">
+                "Embedding vectors loaded: "
+                {index.records.len()}
+                " (dim "
+                {index.dim}
+                ")"
+            </p>
+        }
+        .into_any(),
+    }
+}
+
+fn render_assistant_results(query: &str, items: Vec<dmb_core::SearchResult>) -> impl IntoView {
+    let trimmed = query.trim().to_string();
+    if trimmed.len() < 2 {
+        return empty_state(
+            "Ask a question",
+            "Type at least two characters to see semantic recommendations.",
+        )
+        .into_any();
+    }
+    if items.is_empty() {
+        return empty_state(
+            "No semantic matches yet",
+            "Try a broader phrase, song title, venue name, or year.",
+        )
+        .into_any();
+    }
+    let count = items.len();
+    view! {
+        <>
+            <p class="list-summary">
+                {format!("Showing {count} semantic matches for \"{trimmed}\"")}
+            </p>
+            <ul class="result-list">
+                {items
+                    .into_iter()
+                    .map(|item| {
+                        let label = item.label.clone();
+                        let kind = item.result_type.clone();
+                        let href = search_result_href(&item);
+                        view! {
+                            <li class="result-card">
+                                <span class="pill">{kind}</span>
+                                <div class="result-body">
+                                    {move || match &href {
+                                        Some(link) => view! {
+                                            <a class="result-label" href=link.clone()>{label.clone()}</a>
+                                        }
+                                        .into_any(),
+                                        None => view! { <span class="result-label">{label.clone()}</span> }.into_any(),
+                                    }}
+                                </div>
+                                <span class="result-score">{format!("{:.2}", item.score)}</span>
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </ul>
+        </>
+    }
+    .into_any()
+}
+
 pub fn assistant_page() -> impl IntoView {
     let (query, set_query) = signal(String::new());
     let embedding_index = RwSignal::new(None::<std::sync::Arc<crate::ai::EmbeddingIndex>>);
@@ -5629,19 +5920,7 @@ pub fn assistant_page() -> impl IntoView {
         <section class="page">
             <h1>"AI Assistant"</h1>
             <p class="lead">"Offline-first semantic recommendations and answers."</p>
-            {move || match embedding_index.get() {
-                None => loading_state("Loading embedding index", "Preparing local vector search.").into_any(),
-                Some(index) => view! {
-                    <p class="list-summary">
-                        "Embedding vectors loaded: "
-                        {index.records.len()}
-                        " (dim "
-                        {index.dim}
-                        ")"
-                    </p>
-                }
-                .into_any(),
-            }}
+            {move || render_assistant_index_status(embedding_index.get())}
 
             <div class="assistant-search">
                 <input
@@ -5652,59 +5931,7 @@ pub fn assistant_page() -> impl IntoView {
                     on:input=move |ev| set_query.set(event_target_value(&ev))
                 />
             </div>
-            {move || {
-                let items = results.get();
-                let current_query = query.get();
-                let trimmed = current_query.trim().to_string();
-                if trimmed.len() < 2 {
-                    empty_state(
-                        "Ask a question",
-                        "Type at least two characters to see semantic recommendations.",
-                    )
-                    .into_any()
-                } else if items.is_empty() {
-                    empty_state(
-                        "No semantic matches yet",
-                        "Try a broader phrase, song title, venue name, or year.",
-                    )
-                    .into_any()
-                } else {
-                    let count = items.len();
-                    view! {
-                        <>
-                            <p class="list-summary">
-                                {format!("Showing {count} semantic matches for \"{trimmed}\"")}
-                            </p>
-                            <ul class="result-list">
-                                {items
-                                    .into_iter()
-                                    .map(|item| {
-                                        let label = item.label.clone();
-                                        let kind = item.result_type.clone();
-                                        let href = search_result_href(&item);
-                                        view! {
-                                            <li class="result-card">
-                                                <span class="pill">{kind}</span>
-                                                <div class="result-body">
-                                                    {move || match &href {
-                                                        Some(link) => view! {
-                                                            <a class="result-label" href=link.clone()>{label.clone()}</a>
-                                                        }
-                                                        .into_any(),
-                                                        None => view! { <span class="result-label">{label.clone()}</span> }.into_any(),
-                                                    }}
-                                                </div>
-                                                <span class="result-score">{format!("{:.2}", item.score)}</span>
-                                            </li>
-                                        }
-                                    })
-                                    .collect::<Vec<_>>()}
-                            </ul>
-                        </>
-                    }
-                    .into_any()
-                }
-            }}
+            {move || render_assistant_results(&query.get(), results.get())}
         </section>
     }
 }
@@ -5732,6 +5959,168 @@ pub fn not_found_page() -> impl IntoView {
     }
 }
 
+#[cfg(feature = "hydrate")]
+fn hydrate_my_shows_state(
+    items: RwSignal<Vec<UserAttendedShow>>,
+    loading: RwSignal<bool>,
+    input: RwSignal<String>,
+    message: RwSignal<Option<(String, bool)>>,
+) {
+    let items_signal = items.clone();
+    let loading_signal = loading.clone();
+    spawn_local(async move {
+        items_signal.set(load_user_attended_shows().await);
+        loading_signal.set(false);
+    });
+
+    let input_signal = input.clone();
+    let message_signal = message.clone();
+    Effect::new(move |_| {
+        let raw_show_id = current_search_param("showId");
+        let Some(raw_show_id) = raw_show_id else {
+            return;
+        };
+        match parse_positive_i32_param(&raw_show_id, "showId") {
+            Ok(show_id) => {
+                input_signal.set(show_id.to_string());
+                if message_signal.get_untracked().is_none() {
+                    message_signal.set(Some((
+                        format!(
+                            "Show {show_id} prefilled from link. Click Add to save it locally."
+                        ),
+                        false,
+                    )));
+                }
+            }
+            Err(_) => {
+                if message_signal.get_untracked().is_none() {
+                    message_signal.set(Some((
+                        "Invalid showId query parameter. Enter a positive show ID.".to_string(),
+                        true,
+                    )));
+                }
+            }
+        }
+    });
+}
+
+#[cfg(feature = "hydrate")]
+async fn add_my_show_and_refresh(
+    show_id: i32,
+    items: RwSignal<Vec<UserAttendedShow>>,
+    input: RwSignal<String>,
+    message: RwSignal<Option<(String, bool)>>,
+    loading: RwSignal<bool>,
+) {
+    let show_date = load_show(show_id).await.map(|show| show.date);
+    if add_user_attended_show(show_id, show_date).await {
+        items.set(load_user_attended_shows().await);
+        input.set(String::new());
+        message.set(Some((format!("Saved show {show_id} locally."), false)));
+    } else {
+        message.set(Some((
+            "Unable to save this show. Please try again.".to_string(),
+            true,
+        )));
+    }
+    loading.set(false);
+}
+
+#[cfg(feature = "hydrate")]
+async fn remove_my_show_and_refresh(
+    show_id: i32,
+    items: RwSignal<Vec<UserAttendedShow>>,
+    message: RwSignal<Option<(String, bool)>>,
+    loading: RwSignal<bool>,
+) {
+    if remove_user_attended_show(show_id).await {
+        items.set(load_user_attended_shows().await);
+        message.set(Some((format!("Removed show {show_id}."), false)));
+    } else {
+        message.set(Some((
+            "Unable to remove this show. Please try again.".to_string(),
+            true,
+        )));
+    }
+    loading.set(false);
+}
+
+#[cfg(feature = "hydrate")]
+fn render_my_shows_message_view(message: Option<(String, bool)>) -> Option<AnyView> {
+    message.map(|(msg, is_error)| {
+        let class_name = if is_error {
+            "form-message form-message--error"
+        } else {
+            "form-message"
+        };
+        view! { <p class=class_name>{msg}</p> }.into_any()
+    })
+}
+
+#[cfg(feature = "hydrate")]
+fn render_saved_show_rows<F>(saved: Vec<UserAttendedShow>, on_remove: F) -> impl IntoView
+where
+    F: Fn(i32) + Clone + 'static,
+{
+    let count = saved.len();
+    view! {
+        <>
+            <p class="list-summary">{format!("Showing {count} saved shows")}</p>
+            <ul class="result-list">
+                {saved
+                    .into_iter()
+                    .map(move |item| {
+                        let href = format!("/shows/{}", item.show_id);
+                        let date = item
+                            .show_date
+                            .clone()
+                            .unwrap_or_else(|| "Unknown date".to_string());
+                        let show_id = item.show_id;
+                        let on_remove_click = on_remove.clone();
+                        view! {
+                            <li class="result-card">
+                                <span class="pill">{format!("#{}", show_id)}</span>
+                                <div class="result-body">
+                                    <a class="result-label" href=href>{date}</a>
+                                    <span class="result-meta">{format!("Show ID {show_id}")}</span>
+                                </div>
+                                <button type="button" class="pill pill--ghost" on:click=move |_| on_remove_click(show_id)>
+                                    "Remove"
+                                </button>
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </ul>
+        </>
+    }
+    .into_any()
+}
+
+#[cfg(feature = "hydrate")]
+fn render_my_shows_hydrated<F>(
+    loading: bool,
+    saved: Vec<UserAttendedShow>,
+    on_remove: F,
+) -> impl IntoView
+where
+    F: Fn(i32) + Clone + 'static,
+{
+    if loading {
+        return loading_state("Loading saved shows", "Reading your local show list.").into_any();
+    }
+    if saved.is_empty() {
+        return empty_state_with_link(
+            "No saved shows yet",
+            "Add a show ID to start tracking your attended history.",
+            "/shows",
+            "Browse shows",
+        )
+        .into_any();
+    }
+    render_saved_show_rows(saved, on_remove).into_any()
+}
+
 pub fn my_shows_page() -> impl IntoView {
     let items = RwSignal::new(Vec::<UserAttendedShow>::new());
     let input = RwSignal::new(String::new());
@@ -5741,42 +6130,7 @@ pub fn my_shows_page() -> impl IntoView {
 
     #[cfg(feature = "hydrate")]
     {
-        let items_signal = items.clone();
-        let loading_signal = loading.clone();
-        spawn_local(async move {
-            items_signal.set(load_user_attended_shows().await);
-            loading_signal.set(false);
-        });
-
-        let input_signal = input.clone();
-        let message_signal = message.clone();
-        Effect::new(move |_| {
-            let raw_show_id = current_search_param("showId");
-            let Some(raw_show_id) = raw_show_id else {
-                return;
-            };
-            match parse_positive_i32_param(&raw_show_id, "showId") {
-                Ok(show_id) => {
-                    input_signal.set(show_id.to_string());
-                    if message_signal.get_untracked().is_none() {
-                        message_signal.set(Some((
-                            format!(
-                                "Show {show_id} prefilled from link. Click Add to save it locally."
-                            ),
-                            false,
-                        )));
-                    }
-                }
-                Err(_) => {
-                    if message_signal.get_untracked().is_none() {
-                        message_signal.set(Some((
-                            "Invalid showId query parameter. Enter a positive show ID.".to_string(),
-                            true,
-                        )));
-                    }
-                }
-            }
-        });
+        hydrate_my_shows_state(items, loading, input, message);
     }
 
     #[cfg(feature = "hydrate")]
@@ -5804,18 +6158,7 @@ pub fn my_shows_page() -> impl IntoView {
             message.set(None);
             loading.set(true);
             spawn_local(async move {
-                let show_date = load_show(show_id).await.map(|show| show.date);
-                if add_user_attended_show(show_id, show_date).await {
-                    items.set(load_user_attended_shows().await);
-                    input.set(String::new());
-                    message.set(Some((format!("Saved show {show_id} locally."), false)));
-                } else {
-                    message.set(Some((
-                        "Unable to save this show. Please try again.".to_string(),
-                        true,
-                    )));
-                }
-                loading.set(false);
+                add_my_show_and_refresh(show_id, items, input, message, loading).await;
             });
         }
     };
@@ -5834,16 +6177,7 @@ pub fn my_shows_page() -> impl IntoView {
             let loading = loading.clone();
             spawn_local(async move {
                 loading.set(true);
-                if remove_user_attended_show(show_id).await {
-                    items.set(load_user_attended_shows().await);
-                    message.set(Some((format!("Removed show {show_id}."), false)));
-                } else {
-                    message.set(Some((
-                        "Unable to remove this show. Please try again.".to_string(),
-                        true,
-                    )));
-                }
-                loading.set(false);
+                remove_my_show_and_refresh(show_id, items, message, loading).await;
             });
         }
     };
@@ -5871,14 +6205,7 @@ pub fn my_shows_page() -> impl IntoView {
             {move || {
                 #[cfg(feature = "hydrate")]
                 {
-                    message.get().map(|(msg, is_error)| {
-                        let class_name = if is_error {
-                            "form-message form-message--error"
-                        } else {
-                            "form-message"
-                        };
-                        view! { <p class=class_name>{msg}</p> }
-                    })
+                    render_my_shows_message_view(message.get())
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
@@ -5888,52 +6215,7 @@ pub fn my_shows_page() -> impl IntoView {
             {move || {
                 #[cfg(feature = "hydrate")]
                 {
-                    if loading.get() {
-                        loading_state("Loading saved shows", "Reading your local show list.")
-                            .into_any()
-                    } else if items.get().is_empty() {
-                        empty_state_with_link(
-                            "No saved shows yet",
-                            "Add a show ID to start tracking your attended history.",
-                            "/shows",
-                            "Browse shows",
-                        )
-                        .into_any()
-                    } else {
-                        let saved = items.get();
-                        let count = saved.len();
-                        view! {
-                            <>
-                                <p class="list-summary">{format!("Showing {count} saved shows")}</p>
-                                <ul class="result-list">
-                                    {saved
-                                        .into_iter()
-                                        .map(|item| {
-                                            let href = format!("/shows/{}", item.show_id);
-                                            let date = item
-                                                .show_date
-                                                .clone()
-                                                .unwrap_or_else(|| "Unknown date".to_string());
-                                            let show_id = item.show_id;
-                                            view! {
-                                                <li class="result-card">
-                                                    <span class="pill">{format!("#{}", show_id)}</span>
-                                                    <div class="result-body">
-                                                        <a class="result-label" href=href>{date}</a>
-                                                        <span class="result-meta">{format!("Show ID {show_id}")}</span>
-                                                    </div>
-                                                    <button type="button" class="pill pill--ghost" on:click=move |_| on_remove(show_id)>
-                                                        "Remove"
-                                                    </button>
-                                                </li>
-                                            }
-                                        })
-                                        .collect::<Vec<_>>()}
-                                </ul>
-                            </>
-                        }
-                        .into_any()
-                    }
+                    render_my_shows_hydrated(loading.get(), items.get(), on_remove.clone()).into_any()
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
@@ -6213,6 +6495,110 @@ fn curated_item_matches_query(item: &CuratedListItem, query: &str) -> bool {
     in_title || in_notes || in_type
 }
 
+fn render_curated_filter_buttons(
+    type_counts: Vec<(String, usize)>,
+    active_filter: RwSignal<String>,
+) -> impl IntoView {
+    type_counts
+        .into_iter()
+        .map(|(type_key, count)| {
+            let type_label = curated_item_type_label(&type_key);
+            let key_for_class = type_key.clone();
+            let key_for_aria = type_key.clone();
+            let key_for_click = type_key.clone();
+            view! {
+                <button
+                    type="button"
+                    class="result-filter pill pill--ghost"
+                    class:result-filter--active=move || active_filter.get() == key_for_class
+                    aria-pressed=move || active_filter.get() == key_for_aria
+                    on:click=move |_| active_filter.set(key_for_click.clone())
+                >
+                    {format!("{type_label} ({count})")}
+                </button>
+            }
+        })
+        .collect::<Vec<_>>()
+}
+
+fn render_curated_empty_state(
+    has_filters: bool,
+    active_filter: RwSignal<String>,
+    query: RwSignal<String>,
+) -> impl IntoView {
+    view! {
+        <section class="status-card status-card--empty">
+            <p class="status-title">"No items match this view"</p>
+            <p class="muted">"Try a different filter or clear the search query."</p>
+            {has_filters.then(|| {
+                view! {
+                    <div class="pill-row">
+                        <button
+                            type="button"
+                            class="pill pill--ghost"
+                            on:click=move |_| {
+                                active_filter.set("all".to_string());
+                                query.set(String::new());
+                            }
+                        >
+                            "Clear filters"
+                        </button>
+                    </div>
+                }
+            })}
+        </section>
+    }
+    .into_any()
+}
+
+fn render_curated_item_rows(filtered_items: Vec<CuratedListItem>) -> impl IntoView {
+    view! {
+        <ol id="curated-list-results" class="tracklist" aria-label="Curated list items">
+            {filtered_items
+                .into_iter()
+                .map(|item| {
+                    let item_type = normalized_curated_item_type(&item.item_type);
+                    let item_type_label = curated_item_type_label(&item_type);
+                    let title = curated_item_title(&item);
+                    let href = curated_item_href(&item);
+                    let context = curated_item_context(&item);
+                    let notes = item
+                        .notes
+                        .as_deref()
+                        .map(str::trim)
+                        .filter(|notes| !notes.is_empty())
+                        .map(ToString::to_string);
+
+                    let title_view = match href {
+                        Some(href) => view! {
+                            <a class="tracklist-title result-label" href=href>{title.clone()}</a>
+                        }
+                        .into_any(),
+                        None => view! { <span class="tracklist-title">{title.clone()}</span> }.into_any(),
+                    };
+
+                    view! {
+                        <li class="tracklist-item">
+                            <span class="tracklist-pos">{item.position}</span>
+                            <div class="tracklist-main">
+                                {title_view}
+                                {context.map(|context_line| view! {
+                                    <span class="tracklist-context">{context_line}</span>
+                                })}
+                                {notes.map(|notes_line| view! {
+                                    <span class="tracklist-note">{notes_line}</span>
+                                })}
+                            </div>
+                            <span class="setlist-slot">{item_type_label}</span>
+                        </li>
+                    }
+                })
+                .collect::<Vec<_>>()}
+        </ol>
+    }
+    .into_any()
+}
+
 fn render_curated_list_detail_content(
     list: CuratedList,
     items: Vec<CuratedListItem>,
@@ -6300,26 +6686,7 @@ fn render_curated_list_detail_content(
                 >
                     {format!("All ({total_count})")}
                 </button>
-                {type_counts
-                    .into_iter()
-                    .map(|(type_key, count)| {
-                        let type_label = curated_item_type_label(&type_key);
-                        let key_for_class = type_key.clone();
-                        let key_for_aria = type_key.clone();
-                        let key_for_click = type_key.clone();
-                        view! {
-                            <button
-                                type="button"
-                                class="result-filter pill pill--ghost"
-                                class:result-filter--active=move || active_filter.get() == key_for_class
-                                aria-pressed=move || active_filter.get() == key_for_aria
-                                on:click=move |_| active_filter.set(key_for_click.clone())
-                            >
-                                {format!("{type_label} ({count})")}
-                            </button>
-                        }
-                    })
-                    .collect::<Vec<_>>()}
+                {render_curated_filter_buttons(type_counts, active_filter)}
             </div>
         </div>
 
@@ -6328,79 +6695,9 @@ fn render_curated_list_detail_content(
         </p>
 
         {if filtered_items.is_empty() {
-            view! {
-                <section class="status-card status-card--empty">
-                    <p class="status-title">"No items match this view"</p>
-                    <p class="muted">"Try a different filter or clear the search query."</p>
-                    {has_filters.then(|| {
-                        view! {
-                            <div class="pill-row">
-                                <button
-                                    type="button"
-                                    class="pill pill--ghost"
-                                    on:click=move |_| {
-                                        active_filter.set("all".to_string());
-                                        query.set(String::new());
-                                    }
-                                >
-                                    "Clear filters"
-                                </button>
-                            </div>
-                        }
-                    })}
-                </section>
-            }
-                .into_any()
+            render_curated_empty_state(has_filters, active_filter, query).into_any()
         } else {
-            view! {
-                <ol
-                    id="curated-list-results"
-                    class="tracklist"
-                    aria-label="Curated list items"
-                >
-                    {filtered_items
-                        .into_iter()
-                        .map(|item| {
-                            let item_type = normalized_curated_item_type(&item.item_type);
-                            let item_type_label = curated_item_type_label(&item_type);
-                            let title = curated_item_title(&item);
-                            let href = curated_item_href(&item);
-                            let context = curated_item_context(&item);
-                            let notes = item
-                                .notes
-                                .as_deref()
-                                .map(str::trim)
-                                .filter(|notes| !notes.is_empty())
-                                .map(ToString::to_string);
-
-                            let title_view = match href {
-                                Some(href) => view! {
-                                    <a class="tracklist-title result-label" href=href>{title.clone()}</a>
-                                }
-                                    .into_any(),
-                                None => view! { <span class="tracklist-title">{title.clone()}</span> }.into_any(),
-                            };
-
-                            view! {
-                                <li class="tracklist-item">
-                                    <span class="tracklist-pos">{item.position}</span>
-                                    <div class="tracklist-main">
-                                        {title_view}
-                                        {context.map(|context_line| view! {
-                                            <span class="tracklist-context">{context_line}</span>
-                                        })}
-                                        {notes.map(|notes_line| view! {
-                                            <span class="tracklist-note">{notes_line}</span>
-                                        })}
-                                    </div>
-                                    <span class="setlist-slot">{item_type_label}</span>
-                                </li>
-                            }
-                        })
-                        .collect::<Vec<_>>()}
-                </ol>
-            }
-                .into_any()
+            render_curated_item_rows(filtered_items).into_any()
         }}
     }
 }
