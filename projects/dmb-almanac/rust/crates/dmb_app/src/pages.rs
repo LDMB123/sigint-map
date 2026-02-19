@@ -691,23 +691,38 @@ fn storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
 }
 
 #[cfg(feature = "hydrate")]
+fn storage_flag_enabled(value: &str) -> bool {
+    value == "1" || value.eq_ignore_ascii_case("true")
+}
+
+#[cfg(feature = "hydrate")]
+fn refresh_worker_threshold_signals(state: AiDiagnosticsState) {
+    let current = crate::ai::worker_threshold_value();
+    state.worker_threshold_current.set(current);
+    state
+        .worker_threshold_input
+        .set(current.map(|value| value.to_string()).unwrap_or_default());
+}
+
+#[cfg(feature = "hydrate")]
+fn refresh_ann_cap_override_signals(state: AiDiagnosticsState) {
+    let current = crate::ai::ann_cap_override_mb();
+    state.ann_cap_override_value.set(current);
+    state
+        .ann_cap_override_input
+        .set(current.map(|value| value.to_string()).unwrap_or_default());
+}
+
+#[cfg(feature = "hydrate")]
 fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
     let _ = state.caps.try_set(crate::ai::detect_ai_capabilities());
-    let _ = state
-        .worker_threshold_current
-        .try_set(crate::ai::worker_threshold_value());
     let _ = state
         .worker_max_floats
         .try_set(crate::ai::worker_max_floats_value());
     let _ = state.ann_caps.try_set(crate::ai::ann_cap_diagnostics());
 
-    let override_mb = crate::ai::ann_cap_override_mb();
-    let _ = state.ann_cap_override_value.try_set(override_mb);
-    let _ = state.ann_cap_override_input.try_set(
-        override_mb
-            .map(|value| value.to_string())
-            .unwrap_or_default(),
-    );
+    refresh_worker_threshold_signals(state);
+    refresh_ann_cap_override_signals(state);
 
     let _ = state
         .worker_failure
@@ -753,9 +768,7 @@ fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
                 let _ = state.worker_threshold_input.try_set(value);
             }
             if let Some(value) = storage_item(&storage, crate::ai::WEBGPU_DISABLE_KEY) {
-                let _ = state
-                    .webgpu_disabled
-                    .try_set(value == "1" || value.eq_ignore_ascii_case("true"));
+                let _ = state.webgpu_disabled.try_set(storage_flag_enabled(&value));
             }
         }
     }
@@ -975,20 +988,16 @@ fn action_run_worker_benchmark(state: AiDiagnosticsState) {
     let _ = state;
     #[cfg(feature = "hydrate")]
     {
-        let worker_bench = state.worker_bench.clone();
-        let benchmark_history = state.benchmark_history.clone();
-        let worker_threshold_current = state.worker_threshold_current.clone();
-        let worker_threshold_input = state.worker_threshold_input.clone();
-        let worker_failure = state.worker_failure.clone();
-        let webgpu_runtime = state.webgpu_runtime.clone();
+        let worker_bench = state.worker_bench;
+        let benchmark_history = state.benchmark_history;
+        let worker_failure = state.worker_failure;
+        let webgpu_runtime = state.webgpu_runtime;
         spawn_local(async move {
             let result = crate::ai::benchmark_worker_threshold().await;
             worker_bench.set(result.clone());
             crate::ai::store_benchmark_sample(None, None, result);
             benchmark_history.set(crate::ai::benchmark_history());
-            let current = crate::ai::worker_threshold_value();
-            worker_threshold_current.set(current);
-            worker_threshold_input.set(current.map(|v| v.to_string()).unwrap_or_default());
+            refresh_worker_threshold_signals(state);
             worker_failure.set(crate::ai::worker_failure_status());
             webgpu_runtime.set(load_webgpu_runtime_telemetry());
         });
@@ -1059,11 +1068,7 @@ fn action_apply_worker_threshold(state: AiDiagnosticsState) {
             .parse::<usize>()
             .ok();
         crate::ai::set_worker_threshold_override(parsed);
-        let current = crate::ai::worker_threshold_value();
-        state.worker_threshold_current.set(current);
-        state
-            .worker_threshold_input
-            .set(current.map(|value| value.to_string()).unwrap_or_default());
+        refresh_worker_threshold_signals(state);
     }
 }
 
@@ -1073,11 +1078,7 @@ fn action_clear_worker_threshold(state: AiDiagnosticsState) {
     #[cfg(feature = "hydrate")]
     {
         crate::ai::set_worker_threshold_override(None);
-        let current = crate::ai::worker_threshold_value();
-        state.worker_threshold_current.set(current);
-        state
-            .worker_threshold_input
-            .set(current.map(|value| value.to_string()).unwrap_or_default());
+        refresh_worker_threshold_signals(state);
     }
 }
 
@@ -1093,11 +1094,7 @@ fn action_apply_ann_cap_override(state: AiDiagnosticsState) {
             .parse::<u64>()
             .ok();
         crate::ai::set_ann_cap_override_mb(parsed);
-        let current = crate::ai::ann_cap_override_mb();
-        state.ann_cap_override_value.set(current);
-        state
-            .ann_cap_override_input
-            .set(current.map(|value| value.to_string()).unwrap_or_default());
+        refresh_ann_cap_override_signals(state);
     }
 }
 
@@ -1107,8 +1104,7 @@ fn action_clear_ann_cap_override(state: AiDiagnosticsState) {
     #[cfg(feature = "hydrate")]
     {
         crate::ai::set_ann_cap_override_mb(None);
-        state.ann_cap_override_value.set(None);
-        state.ann_cap_override_input.set(String::new());
+        refresh_ann_cap_override_signals(state);
     }
 }
 
@@ -1226,7 +1222,7 @@ fn action_export_diagnostics(state: AiDiagnosticsState) {
             "tuning": state.tuning.get_untracked(),
             "tuningResult": state.tuning_result.get_untracked(),
             "benchmarkHistory": history_snapshot,
-            "benchmarkDiff": benchmark_diff_json(&state.benchmark_history.get_untracked()),
+            "benchmarkDiff": benchmark_diff_json(&history_snapshot),
             "webgpuRuntimeTelemetry": state.webgpu_runtime.get_untracked(),
             "appleSiliconProfile": state.apple_silicon_profile.get_untracked(),
             "idbRuntimeMetrics": state.idb_runtime_metrics.get_untracked(),
