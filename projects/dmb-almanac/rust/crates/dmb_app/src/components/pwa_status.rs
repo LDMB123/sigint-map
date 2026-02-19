@@ -293,23 +293,13 @@ fn local_storage() -> Option<web_sys::Storage> {
 }
 
 #[cfg(feature = "hydrate")]
-fn local_storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
-    storage.get_item(key).ok().flatten()
-}
-
-#[cfg(feature = "hydrate")]
 fn local_storage_item_by_key(key: &str) -> Option<String> {
-    local_storage().and_then(|storage| local_storage_item(&storage, key))
-}
-
-#[cfg(feature = "hydrate")]
-fn local_storage_f64(storage: &web_sys::Storage, key: &str) -> Option<f64> {
-    local_storage_item(storage, key).and_then(|value| value.parse::<f64>().ok())
+    local_storage().and_then(|storage| storage.get_item(key).ok().flatten())
 }
 
 #[cfg(feature = "hydrate")]
 fn local_storage_f64_by_key(key: &str) -> Option<f64> {
-    local_storage().and_then(|storage| local_storage_f64(&storage, key))
+    local_storage_item_by_key(key).and_then(|value| value.parse::<f64>().ok())
 }
 
 #[cfg(feature = "hydrate")]
