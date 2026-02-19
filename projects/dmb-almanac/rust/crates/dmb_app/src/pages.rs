@@ -64,6 +64,16 @@ fn spawn_local_to_send<T: Send + 'static>(
     async move { rx.await.expect("spawn_local task canceled") }
 }
 
+#[cfg(feature = "hydrate")]
+fn spawn_local_try_set<T: 'static>(
+    signal: RwSignal<T>,
+    fut: impl std::future::Future<Output = T> + 'static,
+) {
+    spawn_local(async move {
+        let _ = signal.try_set(fut.await);
+    });
+}
+
 fn focus_stats_tab(idx: u8) {
     #[cfg(feature = "hydrate")]
     {
@@ -783,35 +793,18 @@ fn refresh_ai_config_meta_mismatch(state: AiDiagnosticsState) {
 
 #[cfg(feature = "hydrate")]
 fn spawn_ai_diagnostics_background_loads(state: AiDiagnosticsState) {
-    let ann_meta = state.ann_meta.clone();
-    spawn_local(async move {
-        let _ = ann_meta.try_set(crate::ai::load_ann_meta().await);
+    spawn_local_try_set(state.ann_meta, crate::ai::load_ann_meta());
+    spawn_local_try_set(state.embed_meta, crate::ai::load_embedding_manifest_meta());
+    spawn_local_try_set(state.tuning, async {
+        Some(crate::ai::load_ai_tuning().await)
     });
-
-    let embed_meta = state.embed_meta.clone();
-    spawn_local(async move {
-        let _ = embed_meta.try_set(crate::ai::load_embedding_manifest_meta().await);
+    spawn_local_try_set(state.benchmark_history, async {
+        crate::ai::benchmark_history()
     });
-
-    let tuning = state.tuning.clone();
-    spawn_local(async move {
-        let _ = tuning.try_set(Some(crate::ai::load_ai_tuning().await));
+    spawn_local_try_set(state.telemetry_snapshot, async {
+        crate::ai::load_ai_telemetry_snapshot()
     });
-
-    let benchmark_history = state.benchmark_history.clone();
-    spawn_local(async move {
-        let _ = benchmark_history.try_set(crate::ai::benchmark_history());
-    });
-
-    let telemetry_snapshot = state.telemetry_snapshot.clone();
-    spawn_local(async move {
-        let _ = telemetry_snapshot.try_set(crate::ai::load_ai_telemetry_snapshot());
-    });
-
-    let webgpu_probe = state.webgpu_probe.clone();
-    spawn_local(async move {
-        let _ = webgpu_probe.try_set(crate::ai::probe_webgpu_device().await);
-    });
+    spawn_local_try_set(state.webgpu_probe, crate::ai::probe_webgpu_device());
 }
 
 #[cfg(feature = "hydrate")]
