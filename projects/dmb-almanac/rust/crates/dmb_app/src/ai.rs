@@ -805,10 +805,7 @@ pub fn worker_failure_status() -> WorkerFailureStatus {
 
 #[cfg(feature = "hydrate")]
 pub fn clear_worker_failure_status() {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    if let Ok(Some(storage)) = window.local_storage() {
+    if let Some(storage) = local_storage() {
         let _ = storage.remove_item(WORKER_FAILURE_UNTIL_KEY);
         let _ = storage.remove_item(WORKER_FAILURE_REASON_KEY);
         let _ = storage.remove_item(WORKER_COOLDOWN_WARN_KEY);
@@ -818,10 +815,7 @@ pub fn clear_worker_failure_status() {
 
 #[cfg(feature = "hydrate")]
 pub fn set_worker_threshold_override(value: Option<usize>) {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
+    let Some(storage) = local_storage() else {
         return;
     };
     match value {
@@ -852,10 +846,7 @@ pub fn ann_cap_override_mb() -> Option<u64> {
 
 #[cfg(feature = "hydrate")]
 pub fn set_ann_cap_override_mb(value: Option<u64>) {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
+    let Some(storage) = local_storage() else {
         return;
     };
     match value {
@@ -878,10 +869,7 @@ fn read_webgpu_disabled() -> Option<bool> {
 
 #[cfg(feature = "hydrate")]
 pub fn set_webgpu_disabled(disabled: bool) {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
+    let Some(storage) = local_storage() else {
         return;
     };
     let value = if disabled { "1" } else { "0" };
@@ -890,10 +878,7 @@ pub fn set_webgpu_disabled(disabled: bool) {
 
 #[cfg(feature = "hydrate")]
 fn store_worker_threshold(value: usize) {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
+    let Some(storage) = local_storage() else {
         return;
     };
     let _ = storage.set_item(WORKER_THRESHOLD_KEY, &value.to_string());
@@ -1173,10 +1158,7 @@ pub fn ai_config_mismatch_status_message(
 
 #[cfg(feature = "hydrate")]
 pub fn sync_ai_config_meta(version: Option<&str>, generated_at: Option<&str>) -> bool {
-    let Some(window) = web_sys::window() else {
-        return false;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
+    let Some(storage) = local_storage() else {
         return false;
     };
     if let Some(version) = version {
@@ -1401,33 +1383,22 @@ pub async fn refresh_ai_config() -> bool {
 
 #[cfg(feature = "hydrate")]
 fn should_run_worker_benchmark() -> bool {
-    let Some(window) = web_sys::window() else {
-        return false;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
-        return false;
-    };
-    !matches!(storage.get_item(WEBGPU_WORKER_BENCH_KEY), Ok(Some(_)))
+    local_storage_item(WEBGPU_WORKER_BENCH_KEY).is_none()
 }
 
 #[cfg(feature = "hydrate")]
 fn mark_worker_benchmark_ran() {
-    if let Some(window) = web_sys::window() {
-        if let Ok(Some(storage)) = window.local_storage() {
-            let _ = storage.set_item(WEBGPU_WORKER_BENCH_KEY, &js_sys::Date::now().to_string());
-        }
+    if let Some(storage) = local_storage() {
+        let _ = storage.set_item(WEBGPU_WORKER_BENCH_KEY, &js_sys::Date::now().to_string());
     }
 }
 
 #[cfg(feature = "hydrate")]
 pub fn ai_config_seeded() -> bool {
-    let Some(window) = web_sys::window() else {
-        return false;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
-        return false;
-    };
-    matches!(storage.get_item(AI_CONFIG_SEEDED_KEY), Ok(Some(ref v)) if v == "1")
+    matches!(
+        local_storage_item(AI_CONFIG_SEEDED_KEY).as_deref(),
+        Some("1")
+    )
 }
 
 #[cfg(feature = "hydrate")]
@@ -1447,21 +1418,15 @@ pub fn webgpu_worker_bench_timestamp() -> Option<f64> {
 
 #[cfg(feature = "hydrate")]
 pub fn embedding_sample_enabled() -> bool {
-    let Some(window) = web_sys::window() else {
-        return false;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
-        return false;
-    };
-    matches!(storage.get_item(EMBEDDING_SAMPLE_KEY), Ok(Some(ref v)) if v == "1")
+    matches!(
+        local_storage_item(EMBEDDING_SAMPLE_KEY).as_deref(),
+        Some("1")
+    )
 }
 
 #[cfg(feature = "hydrate")]
 pub fn set_embedding_sample_enabled(enabled: bool) {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
+    let Some(storage) = local_storage() else {
         return;
     };
     let _ = storage.set_item(EMBEDDING_SAMPLE_KEY, if enabled { "1" } else { "0" });
