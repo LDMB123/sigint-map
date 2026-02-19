@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { gotoHydrated, skipUnlessRust } from "./_rust_test_utils.js";
+import { ensureSwDetailsOpen, gotoHydrated, skipUnlessRust } from "./_rust_test_utils.js";
 
 test.describe("Rust previous cache cleanup", () => {
   skipUnlessRust(test, "Rust E2E disabled (set RUST_E2E=1)");
@@ -26,7 +26,7 @@ test.describe("Rust previous cache cleanup", () => {
       await keep.put("/keep.txt", new Response("keep"));
     });
 
-    await page.getByRole("button", { name: "SW details" }).click();
+    await ensureSwDetailsOpen(page);
     await page.getByRole("button", { name: "Cleanup old caches" }).click();
 
     // Wait for the UI to acknowledge completion.

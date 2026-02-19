@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   activateWaitingServiceWorker,
+  ensureSwDetailsOpen,
   gotoHydrated,
   skipUnlessRust,
   waitForHydration,
@@ -106,7 +107,7 @@ test.describe('Rust service worker updates (multi deploy)', () => {
       timeout: 60_000,
     });
 
-    await page.locator('summary', { hasText: 'SW details' }).click();
+    await ensureSwDetailsOpen(page);
     await expect(page.getByText(new RegExp(`SW version ${versions[1]}`))).toBeVisible({ timeout: 15000 });
   });
 });

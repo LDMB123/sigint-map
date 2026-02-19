@@ -68,3 +68,10 @@ export async function waitForWaitingServiceWorker(page, options = {}) {
     { timeout }
   );
 }
+
+export async function ensureSwDetailsOpen(page) {
+  const detailsOpen = await page.locator('.pwa-status__details[open]').count();
+  if (detailsOpen === 0) {
+    await page.locator('summary', { hasText: 'SW details' }).click();
+  }
+}

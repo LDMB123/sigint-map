@@ -781,16 +781,16 @@ fn refresh_ai_config_meta_mismatch(state: AiDiagnosticsState) {
                     let _ = local_version.try_set(version.clone());
                     let _ = local_generated_at.try_set(generated.clone());
                 }
-                if remote_version != version || remote_generated != generated {
-                    if crate::ai::sync_ai_config_meta(
+                if (remote_version != version || remote_generated != generated)
+                    && crate::ai::sync_ai_config_meta(
                         remote_version.as_deref(),
                         remote_generated.as_deref(),
-                    ) {
-                        version = remote_version.clone();
-                        generated = remote_generated.clone();
-                        let _ = local_version.try_set(version.clone());
-                        let _ = local_generated_at.try_set(generated.clone());
-                    }
+                    )
+                {
+                    version = remote_version.clone();
+                    generated = remote_generated.clone();
+                    let _ = local_version.try_set(version.clone());
+                    let _ = local_generated_at.try_set(generated.clone());
                 }
                 if remote_version != version || remote_generated != generated {
                     let msg = format!(

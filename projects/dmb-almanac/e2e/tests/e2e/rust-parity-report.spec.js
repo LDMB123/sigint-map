@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
-import { gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
+import { ensureSwDetailsOpen, gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
 
 test.describe('Rust parity report diagnostics', () => {
   skipUnlessRust(test);
@@ -15,7 +15,7 @@ test.describe('Rust parity report diagnostics', () => {
       page.locator('.pwa-status .pwa-status__row', { hasText: /Offline data ready/i }).first()
     ).toBeVisible({ timeout: 210_000 });
 
-    await page.getByRole('button', { name: 'SW details' }).click();
+    await ensureSwDetailsOpen(page);
 
     // These should never appear in a clean environment.
     await expect(page.getByText(/Integrity mismatches detected/i)).toHaveCount(0);

@@ -900,13 +900,13 @@ fn spawn_ai_config_sync_task(state: &PwaStatusState) {
                     ai_config_generated_at.set(local_g.clone());
                 }
 
-                if remote_v != local_v || remote_g != local_g {
-                    if crate::ai::sync_ai_config_meta(remote_v.as_deref(), remote_g.as_deref()) {
-                        local_v = remote_v.clone();
-                        local_g = remote_g.clone();
-                        ai_config_version.set(local_v.clone());
-                        ai_config_generated_at.set(local_g.clone());
-                    }
+                if (remote_v != local_v || remote_g != local_g)
+                    && crate::ai::sync_ai_config_meta(remote_v.as_deref(), remote_g.as_deref())
+                {
+                    local_v = remote_v.clone();
+                    local_g = remote_g.clone();
+                    ai_config_version.set(local_v.clone());
+                    ai_config_generated_at.set(local_g.clone());
                 }
 
                 if remote_v != local_v || remote_g != local_g {
