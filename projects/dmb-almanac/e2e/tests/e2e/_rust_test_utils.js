@@ -1,3 +1,6 @@
+const PWA_STATUS_ROW_SELECTOR = '.pwa-status .pwa-status__row';
+const PWA_UPDATE_STATUS_SELECTOR = '.pwa-status__row--update[role="status"]';
+
 export function isRustE2E() {
   return process.env.RUST_E2E === 'true' || process.env.RUST_E2E === '1';
 }
@@ -26,22 +29,22 @@ export async function gotoHydrated(page, path, options = {}) {
 }
 
 export function offlineStatusRow(page) {
-  return page.locator('.pwa-status .pwa-status__row').first();
+  return page.locator(PWA_STATUS_ROW_SELECTOR).first();
 }
 
 export async function waitForOfflineDataReady(page, options = {}) {
   const { timeout = 210_000 } = options;
-  await page
-    .locator('.pwa-status .pwa-status__row', { hasText: /Offline data ready/i })
-    .first()
-    .waitFor({ state: 'visible', timeout });
+  await page.locator(PWA_STATUS_ROW_SELECTOR, { hasText: /Offline data ready/i }).first().waitFor({
+    state: 'visible',
+    timeout,
+  });
 }
 
 export async function waitForOfflineImportCompletion(page, options = {}) {
   const { timeout = 170_000 } = options;
   await page.waitForFunction(
     () => {
-      const el = document.querySelector('.pwa-status .pwa-status__row');
+      const el = document.querySelector(PWA_STATUS_ROW_SELECTOR);
       if (!el) return false;
       const text = el.textContent || '';
 
@@ -61,7 +64,7 @@ export async function waitForOfflineImportProgress(page, options = {}) {
   const { timeout = 45_000, minCurrent = 4 } = options;
   await page.waitForFunction(
     ({ minCurrent }) => {
-      const el = document.querySelector('.pwa-status .pwa-status__row');
+      const el = document.querySelector(PWA_STATUS_ROW_SELECTOR);
       if (!el) return false;
 
       const text = el.textContent || '';
@@ -141,7 +144,7 @@ export async function registerE2eServiceWorker(page, suffix) {
 export async function clickCheckForUpdates(page, options = {}) {
   const { timeout = 15_000 } = options;
   await page.getByRole('button', { name: 'Check for updates' }).click();
-  await page.locator('.pwa-status__row--update[role="status"]').waitFor({
+  await page.locator(PWA_UPDATE_STATUS_SELECTOR).waitFor({
     state: 'visible',
     timeout,
   });
