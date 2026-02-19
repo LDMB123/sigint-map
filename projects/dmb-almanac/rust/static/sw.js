@@ -3,6 +3,7 @@ const CACHE_PREFIX = 'dmb-almanac-rs';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const DATA_CACHE = `${CACHE_PREFIX}-data-${VERSION}`;
 const ASSET_CACHE = `${CACHE_PREFIX}-asset-${VERSION}`;
+const OFFLINE_FALLBACK = '/offline.html';
 
 const SHELL_ASSETS = [
   '/',
@@ -29,14 +30,46 @@ async function notifyClients(type, payload = {}) {
 }
 
 async function precache(cacheName, assets) {
-  try {
-    const cache = await caches.open(cacheName);
-    await cache.addAll(assets);
-    return true;
-  } catch (err) {
-    console.warn('precache failed:', cacheName, err);
+  const cache = await caches.open(cacheName);
+  const results = await Promise.allSettled(
+    assets.map(async (asset) => {
+      const response = await fetch(asset, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`${asset} returned ${response.status}`);
+      }
+      await cache.put(asset, response.clone());
+    })
+  );
+  const failed = results.filter((result) => result.status === 'rejected').length;
+  if (failed > 0) {
+    console.warn('precache partial failure:', cacheName, failed);
     return false;
   }
+  return true;
+}
+
+function isCacheable(response) {
+  return !!response && response.ok;
+}
+
+async function putCache(cacheName, cacheKey, response) {
+  if (!response) {
+    return false;
+  }
+  const cache = await caches.open(cacheName);
+  await cache.put(cacheKey, response);
+  return true;
+}
+
+function putCacheWithLifetime(event, cacheName, cacheKey, response) {
+  if (!isCacheable(response)) {
+    return;
+  }
+  const responseCopy = response.clone();
+  void event;
+  void putCache(cacheName, cacheKey, responseCopy).catch((err) => {
+    console.warn('cache write failed:', cacheName, cacheKey, err);
+  });
 }
 
 self.addEventListener('install', (event) => {
@@ -107,7 +140,15 @@ self.addEventListener('fetch', (event) => {
   // Cache-first for known shell assets so offline navigations don't hang on missing CSS/manifest.
   if (url.origin === location.origin && SHELL_ASSETS.includes(url.pathname)) {
     event.respondWith(
-      caches.match(url.pathname).then((cached) => cached || fetch(request).catch(() => cached))
+      caches.match(url.pathname).then((cached) => {
+        if (cached) return cached;
+        return fetch(request)
+          .then((response) => {
+            putCacheWithLifetime(event, SHELL_CACHE, url.pathname, response);
+            return response;
+          })
+          .catch(() => cached || Response.error());
+      })
     );
     return;
   }
@@ -117,24 +158,23 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(new Request(request, { cache: 'no-store' }))
         .then((response) => {
-          const copy = response.clone();
           // Store by path (not the full Request) so later navigations match reliably even if
           // headers differ (Playwright offline mode, different Accept headers, etc).
-          caches.open(SHELL_CACHE).then((cache) => cache.put(cacheKey, copy));
+          putCacheWithLifetime(event, SHELL_CACHE, cacheKey, response);
           return response;
         })
-        .catch(() => caches.match(cacheKey).then((res) => res || caches.match('/offline.html')))
+        .catch(() => caches.match(cacheKey).then((res) => res || caches.match(OFFLINE_FALLBACK)))
     );
     return;
   }
 
   if (url.pathname.startsWith('/data/')) {
+    const cacheKey = url.pathname;
     event.respondWith(
-      caches.match(request).then((cached) => {
+      caches.match(cacheKey).then((cached) => {
         const fetchPromise = fetch(new Request(request, { cache: 'no-store' }))
           .then((response) => {
-            const copy = response.clone();
-            caches.open(DATA_CACHE).then((cache) => cache.put(request, copy));
+            putCacheWithLifetime(event, DATA_CACHE, cacheKey, response);
             return response;
           })
           .catch(() => cached);
@@ -147,25 +187,25 @@ self.addEventListener('fetch', (event) => {
   // WASM + JS bundles must stay in sync with SSR markup. Prefer network-first for /pkg/ so
   // dev rebuilds and production deploys do not get stuck on stale cached bundles.
   if (url.pathname.startsWith('/pkg/')) {
+    const cacheKey = url.pathname;
     event.respondWith(
       fetch(new Request(request, { cache: 'no-store' }))
         .then((response) => {
-          const copy = response.clone();
-          caches.open(ASSET_CACHE).then((cache) => cache.put(request, copy));
+          putCacheWithLifetime(event, ASSET_CACHE, cacheKey, response);
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.match(cacheKey))
     );
     return;
   }
 
   if (url.pathname.startsWith('/icons/')) {
+    const cacheKey = url.pathname;
     event.respondWith(
-      caches.match(request).then((cached) =>
+      caches.match(cacheKey).then((cached) =>
         cached ||
         fetch(request).then((response) => {
-          const copy = response.clone();
-          caches.open(ASSET_CACHE).then((cache) => cache.put(request, copy));
+          putCacheWithLifetime(event, ASSET_CACHE, cacheKey, response);
           return response;
         })
       )
