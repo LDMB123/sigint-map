@@ -250,7 +250,7 @@ fn remove_local_storage_item(key: &str) {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 struct PwaStatusState {
     status: RwSignal<ImportStatus>,
     storage: RwSignal<Option<StorageInfo>>,
@@ -1699,7 +1699,7 @@ fn render_update_ready_banner(state: PwaStatusState) -> impl IntoView {
 
     view! {
         {move || {
-            if !(update_ready.get() && !update_snoozed.get()) {
+            if !update_ready.get() || update_snoozed.get() {
                 return ().into_any();
             }
 
@@ -1892,7 +1892,7 @@ fn render_sqlite_failure_notice(state: PwaStatusState) -> impl IntoView {
         >
             {move || sqlite_parity.get().map(|report| {
                 let items = report.idb_count_failures.iter().take(5).map(|store| {
-                    view! { <li>{store.to_string()}</li> }
+                    view! { <li>{store.clone()}</li> }
                 });
                 view! {
                     <div class="pwa-status__row pwa-status__row--warn" role="alert">
@@ -1978,6 +1978,7 @@ fn render_pwa_status(state: PwaStatusState) -> impl IntoView {
 }
 
 #[component]
+#[must_use]
 pub fn PwaStatus() -> impl IntoView {
     let state = PwaStatusState::new();
     initialize_pwa_status_state(state.clone());

@@ -56,6 +56,7 @@ use leptos_router::path;
 use wasm_bindgen::JsValue;
 
 #[component]
+#[must_use]
 pub fn App() -> impl IntoView {
     view! {
         <a class="skip-link" href="#main-content">"Skip to content"</a>
@@ -106,6 +107,7 @@ pub fn App() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
         <!DOCTYPE html>

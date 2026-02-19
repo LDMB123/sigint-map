@@ -5426,15 +5426,25 @@ fn render_stats_songs_content(data: StatsSongs) -> impl IntoView {
 }
 
 fn render_stats_shows_content(data: StatsShows) -> impl IntoView {
+    let StatsShows {
+        shows_by_year,
+        shows_by_decade,
+        rarity_min,
+        rarity_q1,
+        rarity_median,
+        rarity_q3,
+        rarity_max,
+        recent_tours,
+    } = data;
+
     view! {
         <>
             <h2>"Shows Per Year"</h2>
-            {render_bar_chart(&data.shows_by_year)}
+            {render_bar_chart(&shows_by_year)}
 
             <h2>"Shows Per Decade"</h2>
             <div class="stats-grid">
-                {data
-                    .shows_by_decade
+                {shows_by_decade
                     .iter()
                     .map(|(decade, count)| {
                         view! {
@@ -5450,31 +5460,30 @@ fn render_stats_shows_content(data: StatsShows) -> impl IntoView {
             <h2>"Rarity Index Distribution"</h2>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <span class="stat-value">{format!("{:.2}", data.rarity_min)}</span>
+                    <span class="stat-value">{format!("{:.2}", rarity_min)}</span>
                     <span class="stat-label">"Min"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{format!("{:.2}", data.rarity_q1)}</span>
+                    <span class="stat-value">{format!("{:.2}", rarity_q1)}</span>
                     <span class="stat-label">"Q1"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{format!("{:.2}", data.rarity_median)}</span>
+                    <span class="stat-value">{format!("{:.2}", rarity_median)}</span>
                     <span class="stat-label">"Median"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{format!("{:.2}", data.rarity_q3)}</span>
+                    <span class="stat-value">{format!("{:.2}", rarity_q3)}</span>
                     <span class="stat-label">"Q3"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{format!("{:.2}", data.rarity_max)}</span>
+                    <span class="stat-value">{format!("{:.2}", rarity_max)}</span>
                     <span class="stat-label">"Max"</span>
                 </div>
             </div>
 
             <h2>"Recent Tours"</h2>
             <ul class="result-list">
-                {data
-                    .recent_tours
+                {recent_tours
                     .iter()
                     .map(|tour| {
                         let href = format!("/tours/{}", tour.year);
@@ -5496,12 +5505,17 @@ fn render_stats_shows_content(data: StatsShows) -> impl IntoView {
 }
 
 fn render_stats_venues_content(data: StatsVenues) -> impl IntoView {
+    let StatsVenues {
+        top_venues,
+        shows_by_country,
+        shows_by_state,
+    } = data;
+
     view! {
         <>
             <h2>"Top 25 Venues"</h2>
             <ul class="result-list">
-                {data
-                    .top_venues
+                {top_venues
                     .iter()
                     .map(|venue| {
                         let href = format!("/venues/{}", venue.id);
@@ -5527,21 +5541,25 @@ fn render_stats_venues_content(data: StatsVenues) -> impl IntoView {
             </ul>
 
             <h2>"Shows by Country"</h2>
-            {render_string_bar_chart(&data.shows_by_country, 15)}
+            {render_string_bar_chart(&shows_by_country, 15)}
 
             <h2>"Shows by US State"</h2>
-            {render_string_bar_chart(&data.shows_by_state, 20)}
+            {render_string_bar_chart(&shows_by_state, 20)}
         </>
     }
 }
 
 fn render_stats_guests_content(data: StatsGuests) -> impl IntoView {
+    let StatsGuests {
+        top_guests,
+        appearances_by_year,
+    } = data;
+
     view! {
         <>
             <h2>"Top 25 Guests"</h2>
             <ul class="result-list">
-                {data
-                    .top_guests
+                {top_guests
                     .iter()
                     .map(|guest| {
                         let href = format!("/guests/{}", guest.slug);
@@ -5559,11 +5577,12 @@ fn render_stats_guests_content(data: StatsGuests) -> impl IntoView {
             </ul>
 
             <h2>"Guest Appearances by Year"</h2>
-            {render_bar_chart(&data.appearances_by_year)}
+            {render_bar_chart(&appearances_by_year)}
         </>
     }
 }
 
+#[must_use]
 pub fn stats_page() -> impl IntoView {
     let active_tab = RwSignal::new(0u8);
 
@@ -5750,18 +5769,18 @@ fn render_bar_chart(data: &[(u32, u32)]) -> impl IntoView {
         )
         .into_any();
     }
-    let max_val = data.iter().map(|&(_, v)| v).max().unwrap_or(1) as f64;
+    let max_val = f64::from(data.iter().map(|&(_, v)| v).max().unwrap_or(1));
     view! {
         <div class="bar-chart" role="list" aria-label="Bar chart">
             {data
                 .iter()
                 .map(|&(label, value)| {
                     let pct = if max_val > 0.0 {
-                        (value as f64 / max_val * 100.0) as u32
+                        (f64::from(value) / max_val * 100.0).max(1.0)
                     } else {
-                        0
+                        0.0
                     };
-                    let width = format!("width: {}%", pct.max(1));
+                    let width = format!("width: {pct:.1}%");
                     view! {
                         <div class="bar-row" role="listitem" aria-label=format!("{label}: {value}")>
                             <span class="bar-label">{label.to_string()}</span>
@@ -5785,18 +5804,18 @@ fn render_string_bar_chart(data: &[(String, u32)], limit: usize) -> impl IntoVie
         .into_any();
     }
     let items: Vec<_> = data.iter().take(limit).collect();
-    let max_val = items.iter().map(|(_, v)| *v).max().unwrap_or(1) as f64;
+    let max_val = f64::from(items.iter().map(|(_, v)| *v).max().unwrap_or(1));
     view! {
         <div class="bar-chart" role="list" aria-label="Bar chart">
             {items
                 .iter()
                 .map(|(label, value)| {
                     let pct = if max_val > 0.0 {
-                        (*value as f64 / max_val * 100.0) as u32
+                        (f64::from(*value) / max_val * 100.0).max(1.0)
                     } else {
-                        0
+                        0.0
                     };
-                    let width = format!("width: {}%", pct.max(1));
+                    let width = format!("width: {pct:.1}%");
                     view! {
                         <div class="bar-row" role="listitem" aria-label=format!("{label}: {value}")>
                             <span class="bar-label">{label.clone()}</span>
@@ -5883,6 +5902,7 @@ fn render_assistant_results(query: &str, items: Vec<dmb_core::SearchResult>) -> 
     .into_any()
 }
 
+#[must_use]
 pub fn assistant_page() -> impl IntoView {
     let (query, set_query) = signal(String::new());
     let embedding_index = RwSignal::new(None::<std::sync::Arc<crate::ai::EmbeddingIndex>>);
@@ -5936,6 +5956,7 @@ pub fn assistant_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn not_found_page() -> impl IntoView {
     view! {
         <section class="page">
@@ -6121,6 +6142,7 @@ where
     render_saved_show_rows(saved, on_remove).into_any()
 }
 
+#[must_use]
 pub fn my_shows_page() -> impl IntoView {
     let items = RwSignal::new(Vec::<UserAttendedShow>::new());
     let input = RwSignal::new(String::new());
@@ -6605,8 +6627,15 @@ fn render_curated_list_detail_content(
     active_filter: RwSignal<String>,
     query: RwSignal<String>,
 ) -> impl IntoView {
-    let description = list
-        .description
+    let CuratedList {
+        title,
+        category,
+        description,
+        is_featured,
+        ..
+    } = list;
+
+    let description = description
         .as_deref()
         .map(str::trim)
         .filter(|description| !description.is_empty())
@@ -6649,17 +6678,17 @@ fn render_curated_list_detail_content(
     };
 
     view! {
-        <div class="detail-list-head">
-            <div class="detail-list-head__copy">
-                <h2>{list.title.clone()}</h2>
-                <p class="muted">{description}</p>
+            <div class="detail-list-head">
+                <div class="detail-list-head__copy">
+                    <h2>{title.clone()}</h2>
+                    <p class="muted">{description}</p>
+                </div>
+                <div class="pill-row detail-list-head__meta">
+                    <span class="pill">{category.clone()}</span>
+                    {is_featured.unwrap_or(false).then(|| view! { <span class="pill">"Featured"</span> })}
+                    <span class="pill pill--ghost">{format!("{total_count} items")}</span>
+                </div>
             </div>
-            <div class="pill-row detail-list-head__meta">
-                <span class="pill">{list.category.clone()}</span>
-                {list.is_featured.unwrap_or(false).then(|| view! { <span class="pill">"Featured"</span> })}
-                <span class="pill pill--ghost">{format!("{total_count} items")}</span>
-            </div>
-        </div>
 
         <div class="detail-list-controls">
             <label class="visually-hidden" for="curated-list-search">"Filter list items"</label>
@@ -6702,8 +6731,9 @@ fn render_curated_list_detail_content(
     }
 }
 
+#[must_use]
 pub fn liberation_page() -> impl IntoView {
-    let items = Resource::new(|| (), |_| async move { load_liberation_list(50).await });
+    let items = Resource::new(|| (), |()| async move { load_liberation_list(50).await });
 
     view! {
         <section class="page">
@@ -6723,8 +6753,9 @@ pub fn liberation_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn discography_page() -> impl IntoView {
-    let items = Resource::new(|| (), |_| async move { load_all_releases().await });
+    let items = Resource::new(|| (), |()| async move { load_all_releases().await });
 
     view! {
         <section class="page">
@@ -6744,8 +6775,9 @@ pub fn discography_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn curated_lists_page() -> impl IntoView {
-    let items = Resource::new(|| (), |_| async move { load_curated_lists().await });
+    let items = Resource::new(|| (), |()| async move { load_curated_lists().await });
 
     view! {
         <section class="page">
@@ -6765,6 +6797,7 @@ pub fn curated_lists_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn curated_list_detail_page() -> impl IntoView {
     let params = use_params_map();
     let list_id = move || params.with(|params| params.get("listId").unwrap_or_default());
@@ -6854,6 +6887,7 @@ pub fn curated_list_detail_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn visualizations_page() -> impl IntoView {
     view! {
         <section class="page">
@@ -6880,6 +6914,7 @@ pub fn visualizations_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn open_file_page() -> impl IntoView {
     let file_info = RwSignal::new(None::<String>);
     #[cfg(feature = "hydrate")]
@@ -6919,6 +6954,7 @@ pub fn open_file_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn protocol_page() -> impl IntoView {
     #[cfg(feature = "hydrate")]
     let protocol_value = {
@@ -6954,6 +6990,7 @@ pub fn protocol_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn test_wasm_page() -> impl IntoView {
     #[cfg(feature = "hydrate")]
     let wasm_version = {
