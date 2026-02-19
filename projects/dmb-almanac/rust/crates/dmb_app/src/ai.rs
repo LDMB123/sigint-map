@@ -1086,6 +1086,55 @@ pub fn normalize_ai_config_meta_field(value: Option<String>) -> Option<String> {
 }
 
 #[cfg(feature = "hydrate")]
+#[derive(Debug, Clone)]
+pub struct AiConfigMetaReconcile {
+    pub remote_version: Option<String>,
+    pub remote_generated_at: Option<String>,
+    pub local_version: Option<String>,
+    pub local_generated_at: Option<String>,
+    pub mismatched: bool,
+}
+
+#[cfg(feature = "hydrate")]
+pub async fn reconcile_ai_config_meta(
+    remote: AiConfigMeta,
+    local_version: Option<String>,
+    local_generated_at: Option<String>,
+) -> AiConfigMetaReconcile {
+    let remote_version = normalize_ai_config_meta_field(remote.version);
+    let remote_generated_at = normalize_ai_config_meta_field(remote.generated_at);
+    let mut next_local_version = normalize_ai_config_meta_field(local_version);
+    let mut next_local_generated_at = normalize_ai_config_meta_field(local_generated_at);
+    let mut mismatched =
+        remote_version != next_local_version || remote_generated_at != next_local_generated_at;
+
+    if mismatched {
+        if refresh_ai_config().await {
+            next_local_version = normalize_ai_config_meta_field(ai_config_version());
+            next_local_generated_at = normalize_ai_config_meta_field(ai_config_generated_at());
+            mismatched = remote_version != next_local_version
+                || remote_generated_at != next_local_generated_at;
+        }
+
+        if mismatched
+            && sync_ai_config_meta(remote_version.as_deref(), remote_generated_at.as_deref())
+        {
+            next_local_version = remote_version.clone();
+            next_local_generated_at = remote_generated_at.clone();
+            mismatched = false;
+        }
+    }
+
+    AiConfigMetaReconcile {
+        remote_version,
+        remote_generated_at,
+        local_version: next_local_version,
+        local_generated_at: next_local_generated_at,
+        mismatched,
+    }
+}
+
+#[cfg(feature = "hydrate")]
 pub fn sync_ai_config_meta(version: Option<&str>, generated_at: Option<&str>) -> bool {
     let Some(window) = web_sys::window() else {
         return false;

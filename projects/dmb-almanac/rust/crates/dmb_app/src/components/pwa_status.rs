@@ -881,42 +881,27 @@ fn spawn_ai_config_sync_task(state: &PwaStatusState) {
 
     spawn_local(async move {
         if let Some(remote) = crate::ai::fetch_ai_config_meta().await {
-            let remote_v = crate::ai::normalize_ai_config_meta_field(remote.version.clone());
-            let remote_g = crate::ai::normalize_ai_config_meta_field(remote.generated_at.clone());
-            let mut local_v =
-                crate::ai::normalize_ai_config_meta_field(ai_config_version.get_untracked());
-            let mut local_g =
-                crate::ai::normalize_ai_config_meta_field(ai_config_generated_at.get_untracked());
-            let mut mismatched = remote_v != local_v || remote_g != local_g;
+            let reconciled = crate::ai::reconcile_ai_config_meta(
+                remote,
+                ai_config_version.get_untracked(),
+                ai_config_generated_at.get_untracked(),
+            )
+            .await;
 
-            if mismatched {
-                if crate::ai::refresh_ai_config().await {
-                    local_v =
-                        crate::ai::normalize_ai_config_meta_field(crate::ai::ai_config_version());
-                    local_g = crate::ai::normalize_ai_config_meta_field(
-                        crate::ai::ai_config_generated_at(),
-                    );
-                    ai_config_version.set(local_v.clone());
-                    ai_config_generated_at.set(local_g.clone());
-                    mismatched = remote_v != local_v || remote_g != local_g;
-                }
+            ai_config_version.set(reconciled.local_version.clone());
+            ai_config_generated_at.set(reconciled.local_generated_at.clone());
 
-                if mismatched
-                    && crate::ai::sync_ai_config_meta(remote_v.as_deref(), remote_g.as_deref())
-                {
-                    local_v = remote_v.clone();
-                    local_g = remote_g.clone();
-                    ai_config_version.set(local_v.clone());
-                    ai_config_generated_at.set(local_g.clone());
-                    mismatched = false;
-                }
-            }
-
-            if mismatched {
+            if reconciled.mismatched {
                 let msg = format!(
                     "AI config mismatch: remote {} @ {}.",
-                    remote_v.clone().unwrap_or_else(|| "n/a".to_string()),
-                    remote_g.clone().unwrap_or_else(|| "n/a".to_string())
+                    reconciled
+                        .remote_version
+                        .clone()
+                        .unwrap_or_else(|| "n/a".to_string()),
+                    reconciled
+                        .remote_generated_at
+                        .clone()
+                        .unwrap_or_else(|| "n/a".to_string())
                 );
                 ai_config_status.set(Some(msg));
             } else {
