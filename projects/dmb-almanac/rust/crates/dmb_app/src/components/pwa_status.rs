@@ -1166,9 +1166,11 @@ async fn process_sw_registration(
 
     attach_updatefound_listener(reg.clone(), state.clone());
 
-    if window.navigator().on_line() {
+    let online = window.navigator().on_line();
+
+    if online {
         let now = js_sys::Date::now();
-        let should_check = should_auto_check_for_updates(&window, now);
+        let should_check = should_auto_check_for_updates(now);
 
         if should_check {
             if let Ok(promise) = reg.update() {
@@ -1179,7 +1181,7 @@ async fn process_sw_registration(
         }
     }
 
-    if has_controller && window.navigator().on_line() {
+    if has_controller && online {
         let now = js_sys::Date::now();
         let should_cleanup = !has_previous_cache_cleanup_marker();
 
@@ -1211,19 +1213,12 @@ fn spawn_sw_runtime_task(state: &PwaStatusState) {
 }
 
 #[cfg(feature = "hydrate")]
-fn should_auto_check_for_updates(window: &web_sys::Window, now_ms: f64) -> bool {
-    let Some(storage) = window_local_storage(window) else {
-        return true;
-    };
-    let Some(last_checked) = local_storage_f64(&storage, UPDATE_CHECKED_AT_KEY) else {
+fn should_auto_check_for_updates(now_ms: f64) -> bool {
+    let Some(last_checked) = local_storage_f64_by_key(UPDATE_CHECKED_AT_KEY) else {
         return true;
     };
 
-    if now_ms <= last_checked {
-        return true;
-    }
-
-    (now_ms - last_checked) >= AUTO_UPDATE_CHECK_INTERVAL_MS
+    now_ms <= last_checked || (now_ms - last_checked) >= AUTO_UPDATE_CHECK_INTERVAL_MS
 }
 
 #[cfg(feature = "hydrate")]
