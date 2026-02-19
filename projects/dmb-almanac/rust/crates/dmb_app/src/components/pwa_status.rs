@@ -317,6 +317,19 @@ struct PwaStatusState {
     sw_action_status: RwSignal<Option<String>>,
 }
 
+#[cfg(feature = "hydrate")]
+async fn refresh_data_diagnostics(state: PwaStatusState) {
+    state
+        .manifest_diff
+        .set(crate::data::fetch_manifest_diff().await);
+    state
+        .integrity_report
+        .set(crate::data::fetch_integrity_report().await);
+    state
+        .sqlite_parity
+        .set(crate::data::fetch_sqlite_parity_report().await);
+}
+
 impl PwaStatusState {
     fn new() -> Self {
         Self {
@@ -365,15 +378,7 @@ fn action_export_parity(state: PwaStatusState) {
         spawn_local(async move {
             use wasm_bindgen::JsCast;
 
-            state
-                .manifest_diff
-                .set(crate::data::fetch_manifest_diff().await);
-            state
-                .integrity_report
-                .set(crate::data::fetch_integrity_report().await);
-            state
-                .sqlite_parity
-                .set(crate::data::fetch_sqlite_parity_report().await);
+            refresh_data_diagnostics(state).await;
 
             let current_status = state.status.get_untracked();
             let payload = serde_json::json!({
@@ -848,16 +853,11 @@ fn hydrate_local_snapshot(state: &PwaStatusState) {
 
 #[cfg(feature = "hydrate")]
 fn spawn_seed_and_diagnostics_refresh(state: &PwaStatusState) {
-    let status = state.status;
-    let manifest_diff = state.manifest_diff;
-    let integrity_report = state.integrity_report;
-    let sqlite_parity = state.sqlite_parity;
+    let state = *state;
 
     spawn_local(async move {
-        crate::data::ensure_seed_data(status).await;
-        manifest_diff.set(crate::data::fetch_manifest_diff().await);
-        integrity_report.set(crate::data::fetch_integrity_report().await);
-        sqlite_parity.set(crate::data::fetch_sqlite_parity_report().await);
+        crate::data::ensure_seed_data(state.status).await;
+        refresh_data_diagnostics(state).await;
     });
 }
 
@@ -1274,9 +1274,7 @@ fn setup_post_import_refresh(state: PwaStatusState) {
     {
         let post_import_refreshed = RwSignal::new(false);
         let status = state.status;
-        let manifest_diff = state.manifest_diff;
-        let integrity_report = state.integrity_report;
-        let sqlite_parity = state.sqlite_parity;
+        let state_for_refresh = state;
 
         Effect::new(move |_| {
             let current = status.get();
@@ -1288,9 +1286,7 @@ fn setup_post_import_refresh(state: PwaStatusState) {
             }
             post_import_refreshed.set(true);
             spawn_local(async move {
-                manifest_diff.set(crate::data::fetch_manifest_diff().await);
-                integrity_report.set(crate::data::fetch_integrity_report().await);
-                sqlite_parity.set(crate::data::fetch_sqlite_parity_report().await);
+                refresh_data_diagnostics(state_for_refresh).await;
             });
         });
     }
