@@ -942,10 +942,7 @@ fn recommend_worker_threshold(result: &AiWorkerBenchmark) -> Option<usize> {
 
 #[cfg(feature = "hydrate")]
 fn store_ai_telemetry_snapshot(ann_cap: Option<&AnnCapDiagnostics>) {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
+    let Some(storage) = local_storage() else {
         return;
     };
     let caps = detect_ai_capabilities();
@@ -992,10 +989,7 @@ pub fn load_ai_telemetry_snapshot() -> Option<AiTelemetrySnapshot> {
 fn record_ai_warning(event: &str, details: Option<String>) {
     #[cfg(feature = "hydrate")]
     {
-        let Some(window) = web_sys::window() else {
-            return;
-        };
-        let Ok(Some(storage)) = window.local_storage() else {
+        let Some(storage) = local_storage() else {
             return;
         };
         let mut events: Vec<AiWarningEvent> = storage
@@ -1026,16 +1020,7 @@ fn record_ai_warning(event: &str, details: Option<String>) {
 
 #[cfg(feature = "hydrate")]
 pub fn load_ai_warning_events() -> Vec<AiWarningEvent> {
-    let Some(window) = web_sys::window() else {
-        return Vec::new();
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
-        return Vec::new();
-    };
-    storage
-        .get_item(AI_WARNING_EVENTS_KEY)
-        .ok()
-        .flatten()
+    local_storage_item(AI_WARNING_EVENTS_KEY)
         .and_then(|payload| serde_json::from_str(&payload).ok())
         .unwrap_or_default()
 }
@@ -1245,13 +1230,9 @@ fn default_tuning() -> AiTuning {
 
 #[cfg(feature = "hydrate")]
 pub async fn load_ai_tuning() -> AiTuning {
-    if let Some(window) = web_sys::window() {
-        if let Ok(Some(storage)) = window.local_storage() {
-            if let Ok(Some(payload)) = storage.get_item("dmb-ai-tuning") {
-                if let Ok(tuning) = serde_json::from_str::<AiTuning>(&payload) {
-                    return tuning;
-                }
-            }
+    if let Some(payload) = local_storage_item("dmb-ai-tuning") {
+        if let Ok(tuning) = serde_json::from_str::<AiTuning>(&payload) {
+            return tuning;
         }
     }
     default_tuning()
@@ -1259,11 +1240,9 @@ pub async fn load_ai_tuning() -> AiTuning {
 
 #[cfg(feature = "hydrate")]
 pub async fn store_ai_tuning(tuning: &AiTuning) {
-    if let Some(window) = web_sys::window() {
-        if let Ok(Some(storage)) = window.local_storage() {
-            if let Ok(payload) = serde_json::to_string(tuning) {
-                let _ = storage.set_item("dmb-ai-tuning", &payload);
-            }
+    if let Some(storage) = local_storage() {
+        if let Ok(payload) = serde_json::to_string(tuning) {
+            let _ = storage.set_item("dmb-ai-tuning", &payload);
         }
     }
 }
@@ -1293,13 +1272,7 @@ struct AiConfigSeed {
 
 #[cfg(feature = "hydrate")]
 fn load_benchmark_history() -> Vec<AiBenchmarkSample> {
-    let Some(window) = web_sys::window() else {
-        return Vec::new();
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
-        return Vec::new();
-    };
-    let Ok(Some(payload)) = storage.get_item(BENCHMARK_HISTORY_KEY) else {
+    let Some(payload) = local_storage_item(BENCHMARK_HISTORY_KEY) else {
         return Vec::new();
     };
     serde_json::from_str::<Vec<AiBenchmarkSample>>(&payload).unwrap_or_default()
@@ -1347,16 +1320,17 @@ fn apply_ai_config_seed(storage: &web_sys::Storage, seed: AiConfigSeed, overwrit
 
 #[cfg(feature = "hydrate")]
 async fn maybe_seed_ai_config() {
-    let Some(window) = web_sys::window() else {
+    let Some(storage) = local_storage() else {
         return;
     };
-    let Ok(Some(storage)) = window.local_storage() else {
+    if storage
+        .get_item(AI_CONFIG_SEEDED_KEY)
+        .ok()
+        .flatten()
+        .as_deref()
+        == Some("1")
+    {
         return;
-    };
-    if let Ok(Some(value)) = storage.get_item(AI_CONFIG_SEEDED_KEY) {
-        if value == "1" {
-            return;
-        }
     }
     let seed = match fetch_json::<AiConfigSeed>(AI_CONFIG_URL).await {
         Some(seed) => seed,
@@ -1367,10 +1341,7 @@ async fn maybe_seed_ai_config() {
 
 #[cfg(feature = "hydrate")]
 pub async fn refresh_ai_config() -> bool {
-    let Some(window) = web_sys::window() else {
-        return false;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
+    let Some(storage) = local_storage() else {
         return false;
     };
     let seed = match fetch_json::<AiConfigSeed>(AI_CONFIG_URL).await {
@@ -1439,10 +1410,7 @@ pub fn benchmark_history() -> Vec<AiBenchmarkSample> {
 
 #[cfg(feature = "hydrate")]
 fn store_benchmark_history(samples: &[AiBenchmarkSample]) {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
+    let Some(storage) = local_storage() else {
         return;
     };
     if let Ok(payload) = serde_json::to_string(samples) {
