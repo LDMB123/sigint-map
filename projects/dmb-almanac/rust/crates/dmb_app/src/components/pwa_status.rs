@@ -224,6 +224,17 @@ fn set_sw_action_status(sw_action_status: RwSignal<Option<String>>, message: &st
 }
 
 #[cfg(feature = "hydrate")]
+fn post_sw_message_type(worker: &web_sys::ServiceWorker, message_type: &str) {
+    let msg = js_sys::Object::new();
+    let _ = js_sys::Reflect::set(
+        msg.as_ref(),
+        &JsValue::from_str("type"),
+        &JsValue::from_str(message_type),
+    );
+    let _ = worker.post_message(&msg);
+}
+
+#[cfg(feature = "hydrate")]
 fn parse_sw_message_payload(event: &web_sys::MessageEvent) -> Option<serde_json::Value> {
     if let Some(data) = event.data().as_string() {
         if let Ok(payload) = serde_json::from_str::<serde_json::Value>(&data) {
@@ -445,13 +456,7 @@ fn action_update_click(state: PwaStatusState) {
             if let Ok(reg_val) = JsFuture::from(container.get_registration()).await {
                 if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
                     if let Some(worker) = reg.waiting() {
-                        let msg = js_sys::Object::new();
-                        let _ = js_sys::Reflect::set(
-                            &msg,
-                            &JsValue::from_str("type"),
-                            &JsValue::from_str("SKIP_WAITING"),
-                        );
-                        let _ = worker.post_message(&msg);
+                        post_sw_message_type(&worker, "SKIP_WAITING");
                         let _ = worker.post_message(&JsValue::from_str("SKIP_WAITING"));
                     } else {
                         state.update_error.set(Some(
@@ -649,9 +654,7 @@ fn action_ping_sw(state: PwaStatusState) {
             }
         }
 
-        let msg = js_sys::Object::new();
-        let _ = js_sys::Reflect::set(&msg, &JsValue::from_str("type"), &JsValue::from_str("PING"));
-        let _ = controller.post_message(&msg);
+        post_sw_message_type(&controller, "PING");
     });
 }
 
@@ -899,9 +902,7 @@ fn ping_controller_for_metadata(controller: &web_sys::ServiceWorker, state: &Pwa
     state.sw_controller_impl.set(None);
     state.sw_controller_cache_prefix.set(None);
 
-    let msg = js_sys::Object::new();
-    let _ = js_sys::Reflect::set(&msg, &JsValue::from_str("type"), &JsValue::from_str("PING"));
-    let _ = controller.post_message(&msg);
+    post_sw_message_type(controller, "PING");
     state.sw_action_status.set(None);
 }
 

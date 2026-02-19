@@ -3272,23 +3272,25 @@ fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
     Ok(year)
 }
 
-#[cfg(feature = "hydrate")]
 fn hydrate_saved_show_ids(saved_show_ids: RwSignal<std::collections::HashSet<i32>>) {
-    let saved_show_ids_signal = saved_show_ids.clone();
-    spawn_local(async move {
-        let ids = load_user_attended_shows()
-            .await
-            .into_iter()
-            .map(|item| item.show_id)
-            .collect::<std::collections::HashSet<_>>();
-        saved_show_ids_signal.set(ids);
-    });
+    #[cfg(feature = "hydrate")]
+    {
+        let saved_show_ids_signal = saved_show_ids.clone();
+        spawn_local(async move {
+            let ids = load_user_attended_shows()
+                .await
+                .into_iter()
+                .map(|item| item.show_id)
+                .collect::<std::collections::HashSet<_>>();
+            saved_show_ids_signal.set(ids);
+        });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = saved_show_ids;
+    }
 }
 
-#[cfg(not(feature = "hydrate"))]
-fn hydrate_saved_show_ids(_saved_show_ids: RwSignal<std::collections::HashSet<i32>>) {}
-
-#[cfg(feature = "hydrate")]
 fn queue_toggle_saved_show(
     show_id_value: i32,
     show_date_value: String,
@@ -3296,64 +3298,65 @@ fn queue_toggle_saved_show(
     save_pending: RwSignal<bool>,
     save_message: RwSignal<Option<(String, bool)>>,
 ) {
-    if save_pending.get_untracked() {
-        return;
-    }
-    save_pending.set(true);
+    #[cfg(feature = "hydrate")]
+    {
+        if save_pending.get_untracked() {
+            return;
+        }
+        save_pending.set(true);
 
-    let saved_show_ids_signal = saved_show_ids.clone();
-    let save_pending_signal = save_pending.clone();
-    let save_message_signal = save_message.clone();
-    spawn_local(async move {
-        let currently_saved =
-            saved_show_ids_signal.with_untracked(|ids| ids.contains(&show_id_value));
-        let action_ok = if currently_saved {
-            remove_user_attended_show(show_id_value).await
-        } else {
-            add_user_attended_show(show_id_value, Some(show_date_value)).await
-        };
+        let saved_show_ids_signal = saved_show_ids.clone();
+        let save_pending_signal = save_pending.clone();
+        let save_message_signal = save_message.clone();
+        spawn_local(async move {
+            let currently_saved =
+                saved_show_ids_signal.with_untracked(|ids| ids.contains(&show_id_value));
+            let action_ok = if currently_saved {
+                remove_user_attended_show(show_id_value).await
+            } else {
+                add_user_attended_show(show_id_value, Some(show_date_value)).await
+            };
 
-        if action_ok {
-            let ids = load_user_attended_shows()
-                .await
-                .into_iter()
-                .map(|item| item.show_id)
-                .collect::<std::collections::HashSet<_>>();
-            saved_show_ids_signal.set(ids);
-            if currently_saved {
+            if action_ok {
+                let ids = load_user_attended_shows()
+                    .await
+                    .into_iter()
+                    .map(|item| item.show_id)
+                    .collect::<std::collections::HashSet<_>>();
+                saved_show_ids_signal.set(ids);
+                if currently_saved {
+                    save_message_signal.set(Some((
+                        format!("Removed show {show_id_value} from My Shows."),
+                        false,
+                    )));
+                } else {
+                    save_message_signal.set(Some((
+                        format!("Saved show {show_id_value} to My Shows."),
+                        false,
+                    )));
+                }
+            } else if currently_saved {
                 save_message_signal.set(Some((
-                    format!("Removed show {show_id_value} from My Shows."),
-                    false,
+                    "Unable to remove this show from My Shows right now.".to_string(),
+                    true,
                 )));
             } else {
                 save_message_signal.set(Some((
-                    format!("Saved show {show_id_value} to My Shows."),
-                    false,
+                    "Unable to save this show to My Shows right now.".to_string(),
+                    true,
                 )));
             }
-        } else if currently_saved {
-            save_message_signal.set(Some((
-                "Unable to remove this show from My Shows right now.".to_string(),
-                true,
-            )));
-        } else {
-            save_message_signal.set(Some((
-                "Unable to save this show to My Shows right now.".to_string(),
-                true,
-            )));
-        }
-        save_pending_signal.set(false);
-    });
-}
-
-#[cfg(not(feature = "hydrate"))]
-fn queue_toggle_saved_show(
-    _show_id_value: i32,
-    _show_date_value: String,
-    _saved_show_ids: RwSignal<std::collections::HashSet<i32>>,
-    _save_pending: RwSignal<bool>,
-    _save_message: RwSignal<Option<(String, bool)>>,
-) {
+            save_pending_signal.set(false);
+        });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = show_id_value;
+        drop(show_date_value);
+        let _ = saved_show_ids;
+        let _ = save_pending;
+        let _ = save_message;
+    }
 }
 
 fn render_show_detail_loaded(
