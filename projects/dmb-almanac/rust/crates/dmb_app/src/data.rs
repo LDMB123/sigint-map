@@ -9,6 +9,8 @@ use leptos::prelude::Set;
 #[cfg(feature = "hydrate")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "hydrate")]
+use wasm_bindgen::prelude::wasm_bindgen;
+#[cfg(feature = "hydrate")]
 use wasm_bindgen::JsCast;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen_futures::JsFuture;
@@ -27,6 +29,13 @@ use js_sys::Array;
 use wasm_bindgen::JsValue;
 #[cfg(feature = "hydrate")]
 use web_sys::Response;
+
+#[cfg(feature = "hydrate")]
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = scheduler, js_name = "yield", catch)]
+    fn scheduler_yield() -> Result<js_sys::Promise, JsValue>;
+}
 
 #[derive(Clone, Debug, Default)]
 pub struct ImportStatus {
@@ -843,28 +852,7 @@ async fn persist_import_checkpoint(
 
 #[cfg(feature = "hydrate")]
 async fn yield_to_browser_scheduler() {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-
-    let scheduler =
-        js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("scheduler")).unwrap_or_default();
-    if scheduler.is_null() || scheduler.is_undefined() {
-        return;
-    }
-
-    let yield_fn = js_sys::Reflect::get(&scheduler, &JsValue::from_str("yield"))
-        .ok()
-        .and_then(|value| value.dyn_into::<js_sys::Function>().ok());
-    let Some(yield_fn) = yield_fn else {
-        return;
-    };
-
-    let promise = yield_fn
-        .call0(&scheduler)
-        .ok()
-        .and_then(|value| value.dyn_into::<js_sys::Promise>().ok());
-    let Some(promise) = promise else {
+    let Ok(promise) = scheduler_yield() else {
         return;
     };
 
