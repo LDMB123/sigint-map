@@ -811,9 +811,13 @@ pub fn worker_failure_status() -> WorkerFailureStatus {
 #[cfg(feature = "hydrate")]
 pub fn clear_worker_failure_status() {
     if let Some(storage) = local_storage() {
-        let _ = storage.remove_item(WORKER_FAILURE_UNTIL_KEY);
-        let _ = storage.remove_item(WORKER_FAILURE_REASON_KEY);
-        let _ = storage.remove_item(WORKER_COOLDOWN_WARN_KEY);
+        for key in [
+            WORKER_FAILURE_UNTIL_KEY,
+            WORKER_FAILURE_REASON_KEY,
+            WORKER_COOLDOWN_WARN_KEY,
+        ] {
+            let _ = storage.remove_item(key);
+        }
     }
     let _ = dmb_clear_worker_failure_status();
 }
