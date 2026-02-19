@@ -275,19 +275,15 @@ fn resolve_effective_sw_version(script_url: Option<String>, version: &str) -> St
 
 #[cfg(feature = "hydrate")]
 fn set_local_storage_item(key: &str, value: &str) {
-    if let Some(window) = web_sys::window() {
-        if let Some(storage) = window_local_storage(&window) {
-            let _ = storage.set_item(key, value);
-        }
+    if let Some(storage) = local_storage() {
+        let _ = storage.set_item(key, value);
     }
 }
 
 #[cfg(feature = "hydrate")]
 fn remove_local_storage_item(key: &str) {
-    if let Some(window) = web_sys::window() {
-        if let Some(storage) = window_local_storage(&window) {
-            let _ = storage.remove_item(key);
-        }
+    if let Some(storage) = local_storage() {
+        let _ = storage.remove_item(key);
     }
 }
 
@@ -297,13 +293,28 @@ fn window_local_storage(window: &web_sys::Window) -> Option<web_sys::Storage> {
 }
 
 #[cfg(feature = "hydrate")]
+fn local_storage() -> Option<web_sys::Storage> {
+    web_sys::window().and_then(|window| window_local_storage(&window))
+}
+
+#[cfg(feature = "hydrate")]
 fn local_storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
     storage.get_item(key).ok().flatten()
 }
 
 #[cfg(feature = "hydrate")]
+fn local_storage_item_by_key(key: &str) -> Option<String> {
+    local_storage().and_then(|storage| local_storage_item(&storage, key))
+}
+
+#[cfg(feature = "hydrate")]
 fn local_storage_f64(storage: &web_sys::Storage, key: &str) -> Option<f64> {
     local_storage_item(storage, key).and_then(|value| value.parse::<f64>().ok())
+}
+
+#[cfg(feature = "hydrate")]
+fn local_storage_f64_by_key(key: &str) -> Option<f64> {
+    local_storage().and_then(|storage| local_storage_f64(&storage, key))
 }
 
 #[cfg(feature = "hydrate")]
@@ -838,15 +849,11 @@ fn action_reset_data() {
 
 #[cfg(feature = "hydrate")]
 fn refresh_update_notice_state(state: &PwaStatusState) -> bool {
-    if let Some(window) = web_sys::window() {
-        if let Some(storage) = window_local_storage(&window) {
-            if let Some(ts) = local_storage_f64(&storage, UPDATE_DISMISSED_AT_KEY) {
-                let now = js_sys::Date::now();
-                let remaining = remaining_snooze_ms(Some(ts), now);
-                state.update_snooze_remaining.set(remaining);
-                return should_suppress_update_notice(Some(ts), now);
-            }
-        }
+    if let Some(ts) = local_storage_f64_by_key(UPDATE_DISMISSED_AT_KEY) {
+        let now = js_sys::Date::now();
+        let remaining = remaining_snooze_ms(Some(ts), now);
+        state.update_snooze_remaining.set(remaining);
+        return should_suppress_update_notice(Some(ts), now);
     }
 
     state.update_snooze_remaining.set(None);
@@ -855,32 +862,26 @@ fn refresh_update_notice_state(state: &PwaStatusState) -> bool {
 
 #[cfg(feature = "hydrate")]
 fn hydrate_local_snapshot(state: &PwaStatusState) {
-    if let Some(window) = web_sys::window() {
-        if let Some(storage) = window_local_storage(&window) {
-            if let Some(ts) = local_storage_f64(&storage, UPDATE_CHECKED_AT_KEY) {
-                state.update_last_checked.set(Some(ts));
-            }
-            if let Some(version) = local_storage_item(&storage, SW_VERSION_KEY) {
-                state.sw_version.set(Some(version));
-            }
-            if let Some(value) = local_storage_f64(&storage, SW_ACTIVATED_AT_KEY) {
-                state.sw_activated_at.set(Some(value));
-            }
-            if let Some(value) = local_storage_f64(&storage, PREVIOUS_CACHE_CLEANED_AT_KEY) {
-                state.previous_cache_cleaned_at.set(Some(value));
-            }
-            if let Some(version) = local_storage_item(&storage, crate::ai::AI_CONFIG_VERSION_KEY) {
-                state.ai_config_version.set(Some(version));
-            }
-            if let Some(generated_at) =
-                local_storage_item(&storage, crate::ai::AI_CONFIG_GENERATED_AT_KEY)
-            {
-                state.ai_config_generated_at.set(Some(generated_at));
-            }
-            if let Some(sample) = local_storage_item(&storage, crate::ai::EMBEDDING_SAMPLE_KEY) {
-                state.embedding_sample_enabled.set(Some(sample == "1"));
-            }
-        }
+    if let Some(ts) = local_storage_f64_by_key(UPDATE_CHECKED_AT_KEY) {
+        state.update_last_checked.set(Some(ts));
+    }
+    if let Some(version) = local_storage_item_by_key(SW_VERSION_KEY) {
+        state.sw_version.set(Some(version));
+    }
+    if let Some(value) = local_storage_f64_by_key(SW_ACTIVATED_AT_KEY) {
+        state.sw_activated_at.set(Some(value));
+    }
+    if let Some(value) = local_storage_f64_by_key(PREVIOUS_CACHE_CLEANED_AT_KEY) {
+        state.previous_cache_cleaned_at.set(Some(value));
+    }
+    if let Some(version) = local_storage_item_by_key(crate::ai::AI_CONFIG_VERSION_KEY) {
+        state.ai_config_version.set(Some(version));
+    }
+    if let Some(generated_at) = local_storage_item_by_key(crate::ai::AI_CONFIG_GENERATED_AT_KEY) {
+        state.ai_config_generated_at.set(Some(generated_at));
+    }
+    if let Some(sample) = local_storage_item_by_key(crate::ai::EMBEDDING_SAMPLE_KEY) {
+        state.embedding_sample_enabled.set(Some(sample == "1"));
     }
 }
 
@@ -1180,7 +1181,7 @@ async fn process_sw_registration(
 
     if has_controller && window.navigator().on_line() {
         let now = js_sys::Date::now();
-        let should_cleanup = !has_previous_cache_cleanup_marker(&window);
+        let should_cleanup = !has_previous_cache_cleanup_marker();
 
         if should_cleanup {
             let _ = cleanup_previous_app_caches().await;
@@ -1226,11 +1227,8 @@ fn should_auto_check_for_updates(window: &web_sys::Window, now_ms: f64) -> bool 
 }
 
 #[cfg(feature = "hydrate")]
-fn has_previous_cache_cleanup_marker(window: &web_sys::Window) -> bool {
-    let Some(storage) = window_local_storage(window) else {
-        return false;
-    };
-    local_storage_item(&storage, PREVIOUS_CACHE_CLEANED_AT_KEY).is_some()
+fn has_previous_cache_cleanup_marker() -> bool {
+    local_storage_item_by_key(PREVIOUS_CACHE_CLEANED_AT_KEY).is_some()
 }
 
 #[cfg(feature = "hydrate")]
