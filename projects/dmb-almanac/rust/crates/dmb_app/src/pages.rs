@@ -1230,14 +1230,14 @@ fn action_export_diagnostics(state: AiDiagnosticsState) {
             "appleSiliconProfile": state.apple_silicon_profile.get_untracked(),
             "idbRuntimeMetrics": state.idb_runtime_metrics.get_untracked(),
             "crossOriginIsolated": state.cross_origin_isolated.get_untracked(),
-            "workerThresholdOverride": load_storage_item(&window, "dmb-webgpu-worker-threshold"),
+            "workerThresholdOverride": load_storage_item(&window, crate::ai::WORKER_THRESHOLD_KEY),
             "workerMaxFloats": crate::ai::worker_max_floats_value(),
-            "aiTelemetry": load_storage_item(&window, "dmb-ai-telemetry"),
+            "aiTelemetry": load_storage_item(&window, crate::ai::AI_TELEMETRY_KEY),
             "aiConfigVersion": load_storage_item(&window, crate::ai::AI_CONFIG_VERSION_KEY),
             "aiConfigGeneratedAt": load_storage_item(&window, crate::ai::AI_CONFIG_GENERATED_AT_KEY),
-            "aiConfigSeeded": load_storage_item(&window, "dmb-ai-config-seeded"),
+            "aiConfigSeeded": load_storage_item(&window, crate::ai::AI_CONFIG_SEEDED_KEY),
             "embeddingSampleEnabled": load_storage_item(&window, crate::ai::EMBEDDING_SAMPLE_KEY),
-            "aiWarnings": load_storage_item(&window, "dmb-ai-warning-events"),
+            "aiWarnings": load_storage_item(&window, crate::ai::AI_WARNING_EVENTS_KEY),
         });
 
         if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
