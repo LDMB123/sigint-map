@@ -13,8 +13,6 @@ use futures::future::join_all;
 #[cfg(feature = "hydrate")]
 use std::collections::{HashMap, HashSet};
 #[cfg(feature = "hydrate")]
-use wasm_bindgen::closure::Closure;
-#[cfg(feature = "hydrate")]
 use wasm_bindgen::prelude::wasm_bindgen;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen::JsCast;
@@ -40,6 +38,16 @@ use crate::server::{
     get_release, get_show, get_song, get_top_guests, get_top_songs, get_top_venues, get_tour,
     get_tour_by_id, get_venue, ShowSummary,
 };
+
+#[cfg(feature = "hydrate")]
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = scheduler, js_name = postTask, catch)]
+    fn scheduler_post_task(
+        callback: &js_sys::Function,
+        options: &JsValue,
+    ) -> Result<js_sys::Promise, JsValue>;
+}
 
 // Leptos `Resource` requires `Send` futures even in WASM builds. IndexedDB (`dmb_idb`) futures are
 // `!Send`, so we bridge them by running the `!Send` future on the local executor and awaiting the
@@ -79,21 +87,16 @@ fn focus_stats_tab(_idx: u8) {}
 
 #[cfg(feature = "hydrate")]
 async fn wait_ms(ms: i32) {
-    let promise = js_sys::Promise::new(&mut |resolve, _reject| {
-        if let Some(window) = web_sys::window() {
-            let resolve = resolve.clone();
-            let callback = Closure::once(move || {
-                let _ = resolve.call0(&JsValue::UNDEFINED);
-            });
-            let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
-                callback.as_ref().unchecked_ref(),
-                ms,
-            );
-            callback.forget();
-        } else {
-            let _ = resolve.call0(&JsValue::UNDEFINED);
-        }
-    });
+    let options = js_sys::Object::new();
+    let _ = js_sys::Reflect::set(
+        options.as_ref(),
+        &JsValue::from_str("delay"),
+        &JsValue::from_f64(f64::from(ms.max(0))),
+    );
+    let callback = js_sys::Function::new_no_args("");
+    let Ok(promise) = scheduler_post_task(&callback, options.as_ref()) else {
+        return;
+    };
     let _ = JsFuture::from(promise).await;
 }
 

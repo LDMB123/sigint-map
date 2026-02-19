@@ -200,21 +200,27 @@ fn shorten_script_url(url: &str) -> String {
 }
 
 #[cfg(feature = "hydrate")]
-fn set_sw_action_status(sw_action_status: RwSignal<Option<String>>, message: &str) {
+fn schedule_window_timeout(timeout_ms: i32, callback: impl FnOnce() + 'static) {
     use wasm_bindgen::closure::Closure;
     use wasm_bindgen::JsCast;
 
-    sw_action_status.set(Some(message.to_string()));
     let Some(window) = web_sys::window() else {
         return;
     };
-    let sw_action_status = sw_action_status.clone();
-    let cb = Closure::once(move || {
+    let cb = Closure::once(callback);
+    let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
+        cb.as_ref().unchecked_ref(),
+        timeout_ms,
+    );
+    cb.forget();
+}
+
+#[cfg(feature = "hydrate")]
+fn set_sw_action_status(sw_action_status: RwSignal<Option<String>>, message: &str) {
+    sw_action_status.set(Some(message.to_string()));
+    schedule_window_timeout(5000, move || {
         sw_action_status.set(None);
     });
-    let _ = window
-        .set_timeout_with_callback_and_timeout_and_arguments_0(cb.as_ref().unchecked_ref(), 5000);
-    cb.forget();
 }
 
 #[cfg(feature = "hydrate")]
@@ -476,7 +482,7 @@ fn action_update_click(state: PwaStatusState) {
 
             let state_timeout = state.clone();
             let window_reload = window.clone();
-            let timeout_cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
+            schedule_window_timeout(1500, move || {
                 state_timeout
                     .update_state
                     .set(Some("Reloading…".to_string()));
@@ -487,12 +493,7 @@ fn action_update_click(state: PwaStatusState) {
                         err
                     )));
                 }
-            }) as Box<dyn Fn()>);
-            let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
-                timeout_cb.as_ref().unchecked_ref(),
-                1500,
-            );
-            timeout_cb.forget();
+            });
         }
     });
 }
@@ -544,21 +545,14 @@ fn action_update_check(state: PwaStatusState) {
         state.update_checking.set(false);
         if !state.update_ready.get_untracked() && state.update_error.get_untracked().is_none() {
             state.update_state.set(Some("No update found.".to_string()));
-            if let Some(window) = web_sys::window() {
-                let state_for_timeout = state.clone();
-                let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
-                    if state_for_timeout.update_state.get_untracked().as_deref()
-                        == Some("No update found.")
-                    {
-                        state_for_timeout.update_state.set(None);
-                    }
-                }) as Box<dyn Fn()>);
-                let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
-                    cb.as_ref().unchecked_ref(),
-                    2500,
-                );
-                cb.forget();
-            }
+            let state_for_timeout = state.clone();
+            schedule_window_timeout(2500, move || {
+                if state_for_timeout.update_state.get_untracked().as_deref()
+                    == Some("No update found.")
+                {
+                    state_for_timeout.update_state.set(None);
+                }
+            });
         } else {
             state.update_state.set(None);
         }
@@ -609,24 +603,17 @@ fn action_cleanup_previous_caches(state: PwaStatusState) {
         };
         state.previous_cache_cleanup.set(Some(message));
 
-        if let Some(window) = web_sys::window() {
-            let state_for_timeout = state.clone();
-            let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
-                let current = state_for_timeout.previous_cache_cleanup.get_untracked();
-                if current
-                    .as_deref()
-                    .map(|v| v.starts_with("Old caches:"))
-                    .unwrap_or(false)
-                {
-                    state_for_timeout.previous_cache_cleanup.set(None);
-                }
-            }) as Box<dyn Fn()>);
-            let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
-                cb.as_ref().unchecked_ref(),
-                4500,
-            );
-            cb.forget();
-        }
+        let state_for_timeout = state.clone();
+        schedule_window_timeout(4500, move || {
+            let current = state_for_timeout.previous_cache_cleanup.get_untracked();
+            if current
+                .as_deref()
+                .map(|v| v.starts_with("Old caches:"))
+                .unwrap_or(false)
+            {
+                state_for_timeout.previous_cache_cleanup.set(None);
+            }
+        });
     });
 }
 
