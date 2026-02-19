@@ -90,35 +90,29 @@ fn remaining_snooze_ms(last_dismissed_ms: Option<f64>, now_ms: f64) -> Option<f6
 }
 
 #[cfg(feature = "hydrate")]
-fn format_last_checked(ts: f64, now_ms: f64) -> String {
+fn format_relative_age(ts: f64, now_ms: f64) -> String {
     if now_ms <= ts {
-        return "Last checked: just now".to_string();
+        return "just now".to_string();
     }
     let minutes = (now_ms - ts) / 60000.0;
     if minutes < 1.0 {
-        "Last checked: just now".to_string()
+        "just now".to_string()
     } else if minutes < 60.0 {
-        format!("Last checked: {:.0}m ago", minutes)
+        format!("{minutes:.0}m ago")
     } else {
         let hours = minutes / 60.0;
-        format!("Last checked: {:.1}h ago", hours)
+        format!("{hours:.1}h ago")
     }
 }
 
 #[cfg(feature = "hydrate")]
+fn format_last_checked(ts: f64, now_ms: f64) -> String {
+    format!("Last checked: {}", format_relative_age(ts, now_ms))
+}
+
+#[cfg(feature = "hydrate")]
 fn format_age(prefix: &str, ts: f64, now_ms: f64) -> String {
-    if now_ms <= ts {
-        return format!("{prefix}: just now");
-    }
-    let minutes = (now_ms - ts) / 60000.0;
-    if minutes < 1.0 {
-        format!("{prefix}: just now")
-    } else if minutes < 60.0 {
-        format!("{prefix}: {:.0}m ago", minutes)
-    } else {
-        let hours = minutes / 60.0;
-        format!("{prefix}: {:.1}h ago", hours)
-    }
+    format!("{prefix}: {}", format_relative_age(ts, now_ms))
 }
 
 #[cfg(feature = "hydrate")]
