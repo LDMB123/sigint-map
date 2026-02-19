@@ -274,22 +274,29 @@ fn resolve_effective_sw_version(script_url: Option<String>, version: &str) -> St
 }
 
 #[cfg(feature = "hydrate")]
-fn set_local_storage_item(key: &str, value: &str) {
+fn local_storage() -> Option<web_sys::Storage> {
+    web_sys::window().and_then(|window| window.local_storage().ok().flatten())
+}
+
+#[cfg(feature = "hydrate")]
+fn with_local_storage(callback: impl FnOnce(&web_sys::Storage)) {
     if let Some(storage) = local_storage() {
-        let _ = storage.set_item(key, value);
+        callback(&storage);
     }
+}
+
+#[cfg(feature = "hydrate")]
+fn set_local_storage_item(key: &str, value: &str) {
+    with_local_storage(|storage| {
+        let _ = storage.set_item(key, value);
+    });
 }
 
 #[cfg(feature = "hydrate")]
 fn remove_local_storage_item(key: &str) {
-    if let Some(storage) = local_storage() {
+    with_local_storage(|storage| {
         let _ = storage.remove_item(key);
-    }
-}
-
-#[cfg(feature = "hydrate")]
-fn local_storage() -> Option<web_sys::Storage> {
-    web_sys::window().and_then(|window| window.local_storage().ok().flatten())
+    });
 }
 
 #[cfg(feature = "hydrate")]
