@@ -875,13 +875,15 @@ fn hydrate_local_snapshot(state: &PwaStatusState) {
             if let Some(value) = local_storage_f64(&storage, PREVIOUS_CACHE_CLEANED_AT_KEY) {
                 state.previous_cache_cleaned_at.set(Some(value));
             }
-            if let Some(version) = local_storage_item(&storage, "dmb-ai-config-version") {
+            if let Some(version) = local_storage_item(&storage, crate::ai::AI_CONFIG_VERSION_KEY) {
                 state.ai_config_version.set(Some(version));
             }
-            if let Some(generated_at) = local_storage_item(&storage, "dmb-ai-config-generated-at") {
+            if let Some(generated_at) =
+                local_storage_item(&storage, crate::ai::AI_CONFIG_GENERATED_AT_KEY)
+            {
                 state.ai_config_generated_at.set(Some(generated_at));
             }
-            if let Some(sample) = local_storage_item(&storage, "dmb-embedding-sample") {
+            if let Some(sample) = local_storage_item(&storage, crate::ai::EMBEDDING_SAMPLE_KEY) {
                 state.embedding_sample_enabled.set(Some(sample == "1"));
             }
         }

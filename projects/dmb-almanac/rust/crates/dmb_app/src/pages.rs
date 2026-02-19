@@ -1233,10 +1233,10 @@ fn action_export_diagnostics(state: AiDiagnosticsState) {
             "workerThresholdOverride": load_storage_item(&window, "dmb-webgpu-worker-threshold"),
             "workerMaxFloats": crate::ai::worker_max_floats_value(),
             "aiTelemetry": load_storage_item(&window, "dmb-ai-telemetry"),
-            "aiConfigVersion": load_storage_item(&window, "dmb-ai-config-version"),
-            "aiConfigGeneratedAt": load_storage_item(&window, "dmb-ai-config-generated-at"),
+            "aiConfigVersion": load_storage_item(&window, crate::ai::AI_CONFIG_VERSION_KEY),
+            "aiConfigGeneratedAt": load_storage_item(&window, crate::ai::AI_CONFIG_GENERATED_AT_KEY),
             "aiConfigSeeded": load_storage_item(&window, "dmb-ai-config-seeded"),
-            "embeddingSampleEnabled": load_storage_item(&window, "dmb-embedding-sample"),
+            "embeddingSampleEnabled": load_storage_item(&window, crate::ai::EMBEDDING_SAMPLE_KEY),
             "aiWarnings": load_storage_item(&window, "dmb-ai-warning-events"),
         });
 
