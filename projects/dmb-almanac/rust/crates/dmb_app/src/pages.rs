@@ -686,8 +686,7 @@ impl AiDiagnosticsState {
 }
 
 #[cfg(feature = "hydrate")]
-fn load_storage_item(window: &web_sys::Window, key: &str) -> Option<String> {
-    let storage = window.local_storage().ok().flatten()?;
+fn storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
     storage.get_item(key).ok().flatten()
 }
 
@@ -749,13 +748,15 @@ fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
                 .unwrap_or(false);
         let _ = state.cross_origin_isolated.try_set(Some(isolated));
 
-        if let Some(value) = load_storage_item(&window, crate::ai::WORKER_THRESHOLD_KEY) {
-            let _ = state.worker_threshold_input.try_set(value);
-        }
-        if let Some(value) = load_storage_item(&window, crate::ai::WEBGPU_DISABLE_KEY) {
-            let _ = state
-                .webgpu_disabled
-                .try_set(value == "1" || value.eq_ignore_ascii_case("true"));
+        if let Some(storage) = window.local_storage().ok().flatten() {
+            if let Some(value) = storage_item(&storage, crate::ai::WORKER_THRESHOLD_KEY) {
+                let _ = state.worker_threshold_input.try_set(value);
+            }
+            if let Some(value) = storage_item(&storage, crate::ai::WEBGPU_DISABLE_KEY) {
+                let _ = state
+                    .webgpu_disabled
+                    .try_set(value == "1" || value.eq_ignore_ascii_case("true"));
+            }
         }
     }
 }
@@ -1211,6 +1212,8 @@ fn action_export_diagnostics(state: AiDiagnosticsState) {
         let Some(window) = web_sys::window() else {
             return;
         };
+        let storage = window.local_storage().ok().flatten();
+        let storage_value = |key: &str| storage.as_ref().and_then(|store| storage_item(store, key));
         let history_snapshot = state.benchmark_history.get_untracked();
         let snapshot = serde_json::json!({
             "timestampMs": js_sys::Date::now(),
@@ -1228,14 +1231,14 @@ fn action_export_diagnostics(state: AiDiagnosticsState) {
             "appleSiliconProfile": state.apple_silicon_profile.get_untracked(),
             "idbRuntimeMetrics": state.idb_runtime_metrics.get_untracked(),
             "crossOriginIsolated": state.cross_origin_isolated.get_untracked(),
-            "workerThresholdOverride": load_storage_item(&window, crate::ai::WORKER_THRESHOLD_KEY),
+            "workerThresholdOverride": storage_value(crate::ai::WORKER_THRESHOLD_KEY),
             "workerMaxFloats": crate::ai::worker_max_floats_value(),
-            "aiTelemetry": load_storage_item(&window, crate::ai::AI_TELEMETRY_KEY),
-            "aiConfigVersion": load_storage_item(&window, crate::ai::AI_CONFIG_VERSION_KEY),
-            "aiConfigGeneratedAt": load_storage_item(&window, crate::ai::AI_CONFIG_GENERATED_AT_KEY),
-            "aiConfigSeeded": load_storage_item(&window, crate::ai::AI_CONFIG_SEEDED_KEY),
-            "embeddingSampleEnabled": load_storage_item(&window, crate::ai::EMBEDDING_SAMPLE_KEY),
-            "aiWarnings": load_storage_item(&window, crate::ai::AI_WARNING_EVENTS_KEY),
+            "aiTelemetry": storage_value(crate::ai::AI_TELEMETRY_KEY),
+            "aiConfigVersion": storage_value(crate::ai::AI_CONFIG_VERSION_KEY),
+            "aiConfigGeneratedAt": storage_value(crate::ai::AI_CONFIG_GENERATED_AT_KEY),
+            "aiConfigSeeded": storage_value(crate::ai::AI_CONFIG_SEEDED_KEY),
+            "embeddingSampleEnabled": storage_value(crate::ai::EMBEDDING_SAMPLE_KEY),
+            "aiWarnings": storage_value(crate::ai::AI_WARNING_EVENTS_KEY),
         });
 
         if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
