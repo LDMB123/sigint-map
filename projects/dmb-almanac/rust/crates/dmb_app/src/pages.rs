@@ -64,26 +64,29 @@ fn spawn_local_to_send<T: Send + 'static>(
     async move { rx.await.expect("spawn_local task canceled") }
 }
 
-#[cfg(feature = "hydrate")]
 fn focus_stats_tab(idx: u8) {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let Some(document) = window.document() else {
-        return;
-    };
-    let tab_id = format!("stats-tab-{idx}");
-    let Some(element) = document.get_element_by_id(&tab_id) else {
-        return;
-    };
-    let Ok(tab) = element.dyn_into::<web_sys::HtmlElement>() else {
-        return;
-    };
-    let _ = tab.focus();
+    #[cfg(feature = "hydrate")]
+    {
+        let Some(window) = web_sys::window() else {
+            return;
+        };
+        let Some(document) = window.document() else {
+            return;
+        };
+        let tab_id = format!("stats-tab-{idx}");
+        let Some(element) = document.get_element_by_id(&tab_id) else {
+            return;
+        };
+        let Ok(tab) = element.dyn_into::<web_sys::HtmlElement>() else {
+            return;
+        };
+        let _ = tab.focus();
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = idx;
+    }
 }
-
-#[cfg(not(feature = "hydrate"))]
-fn focus_stats_tab(_idx: u8) {}
 
 #[cfg(feature = "hydrate")]
 async fn wait_ms(ms: i32) {
@@ -885,18 +888,21 @@ fn spawn_ai_diagnostics_parity_refresh(state: AiDiagnosticsState) {
     });
 }
 
-#[cfg(feature = "hydrate")]
 fn initialize_ai_diagnostics_state(state: AiDiagnosticsState) {
-    request_animation_frame(move || {
-        apply_runtime_snapshot_values(state.clone());
-        refresh_ai_config_meta_mismatch(state.clone());
-        spawn_ai_diagnostics_background_loads(state.clone());
-        spawn_ai_diagnostics_parity_refresh(state.clone());
-    });
+    #[cfg(feature = "hydrate")]
+    {
+        request_animation_frame(move || {
+            apply_runtime_snapshot_values(state.clone());
+            refresh_ai_config_meta_mismatch(state.clone());
+            spawn_ai_diagnostics_background_loads(state.clone());
+            spawn_ai_diagnostics_parity_refresh(state.clone());
+        });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = state;
+    }
 }
-
-#[cfg(not(feature = "hydrate"))]
-fn initialize_ai_diagnostics_state(_state: AiDiagnosticsState) {}
 
 fn action_load_ann_caps(state: AiDiagnosticsState) {
     #[cfg(not(feature = "hydrate"))]
