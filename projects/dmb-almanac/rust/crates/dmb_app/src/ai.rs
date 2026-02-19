@@ -18,6 +18,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct AiCapabilities {
     pub webgpu_available: bool,
     pub webgpu_enabled: bool,
@@ -164,6 +165,7 @@ pub fn detect_ai_capabilities() -> AiCapabilities {
 }
 
 #[cfg(not(feature = "hydrate"))]
+#[must_use]
 pub fn detect_ai_capabilities() -> AiCapabilities {
     AiCapabilities::default()
 }
@@ -295,6 +297,7 @@ struct EmbeddingSampleEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct AnnCapDiagnostics {
     pub cap_bytes: u64,
     #[serde(default)]
@@ -685,6 +688,7 @@ static ANN_CAP_DIAGNOSTICS: OnceCell<AnnCapDiagnostics> = OnceCell::new();
 #[cfg(feature = "hydrate")]
 static WEBGPU_PROBE_CACHE: OnceCell<bool> = OnceCell::new();
 
+#[must_use]
 pub fn ann_cap_diagnostics() -> Option<AnnCapDiagnostics> {
     #[cfg(feature = "hydrate")]
     {
@@ -710,6 +714,7 @@ async fn webgpu_probe_ok() -> bool {
 }
 
 #[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
 async fn webgpu_probe_ok() -> bool {
     false
 }
@@ -787,6 +792,7 @@ pub fn worker_failure_status() -> WorkerFailureStatus {
 }
 
 #[cfg(not(feature = "hydrate"))]
+#[must_use]
 pub fn worker_failure_status() -> WorkerFailureStatus {
     WorkerFailureStatus::default()
 }
@@ -1715,6 +1721,7 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
 }
 
 #[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
 pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     None
 }
@@ -2309,7 +2316,8 @@ fn collect_ivf_candidates_with_probe(
     let probe = probe
         .max(1)
         .min(ivf.cluster_count)
-        .min(ivf.lists.len() as u32) as usize;
+        .min(u32::try_from(ivf.lists.len()).unwrap_or(u32::MAX));
+    let probe = usize::try_from(probe).unwrap_or(usize::MAX);
     let mut seen = std::collections::HashSet::new();
     let mut candidates = Vec::new();
     for (cluster_idx, _) in centroid_scores.into_iter().take(probe) {
@@ -2375,6 +2383,7 @@ fn top_k_from_subset(scores: Vec<f32>, candidates: &[usize], k: usize) -> Vec<Sc
     scored
 }
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn score_candidates(
     query_vec: &[f32],
     index: &EmbeddingIndex,

@@ -67,6 +67,8 @@ fn NavItems(
 }
 
 #[component]
+#[allow(clippy::must_use_candidate)]
+#[must_use]
 pub fn Header() -> impl IntoView {
     let location = use_location();
     let current_path = Memo::new(move |_| location.pathname.get());

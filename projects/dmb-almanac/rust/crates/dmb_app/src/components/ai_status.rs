@@ -1,6 +1,8 @@
 use leptos::prelude::*;
 
 #[component]
+#[allow(clippy::must_use_candidate)]
+#[must_use]
 pub fn AiStatus() -> impl IntoView {
     // Hydration requires the first client render to match SSR exactly. Treat capability
     // detection as a post-mount (hydrate-only) enhancement to avoid SSR/CSR divergence.

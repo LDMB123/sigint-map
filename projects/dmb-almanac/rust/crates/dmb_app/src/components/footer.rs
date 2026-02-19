@@ -1,6 +1,8 @@
 use leptos::prelude::*;
 
 #[component]
+#[allow(clippy::must_use_candidate)]
+#[must_use]
 pub fn Footer() -> impl IntoView {
     view! {
         <footer class="footer" role="contentinfo">

@@ -56,6 +56,7 @@ use leptos_router::path;
 use wasm_bindgen::JsValue;
 
 #[component]
+#[allow(clippy::must_use_candidate)]
 #[must_use]
 pub fn App() -> impl IntoView {
     view! {
@@ -108,6 +109,7 @@ pub fn App() -> impl IntoView {
 }
 
 #[must_use]
+#[allow(clippy::needless_pass_by_value)]
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
         <!DOCTYPE html>

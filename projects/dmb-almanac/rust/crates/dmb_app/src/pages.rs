@@ -1,3 +1,5 @@
+#![allow(clippy::large_types_passed_by_value)]
+
 use leptos::prelude::*;
 use leptos::suspense::Suspense;
 use leptos::tachys::view::any_view::IntoAny;
@@ -191,8 +193,9 @@ fn sync_search_query_params(query: &str, active_filter: &str) {
     }
 }
 
+#[must_use]
 pub fn home_page() -> impl IntoView {
-    let stats = Resource::new(|| (), |_| async move { get_home_stats().await.ok() });
+    let stats = Resource::new(|| (), |()| async move { get_home_stats().await.ok() });
     let storage = RwSignal::new(None::<crate::data::StorageInfo>);
 
     #[cfg(feature = "hydrate")]
@@ -279,6 +282,7 @@ pub fn home_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn static_page(title: &'static str) -> impl IntoView {
     view! {
         <section class="page">
@@ -385,6 +389,7 @@ fn detail_nav(href: &'static str, label: &'static str) -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn about_page() -> impl IntoView {
     view! {
         <section class="page">
@@ -407,6 +412,7 @@ pub fn about_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn contact_page() -> impl IntoView {
     view! {
         <section class="page">
@@ -433,6 +439,7 @@ pub fn contact_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn faq_page() -> impl IntoView {
     view! {
         <section class="page">
@@ -451,6 +458,7 @@ pub fn faq_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn offline_page() -> impl IntoView {
     view! {
         <section class="page">
@@ -576,7 +584,7 @@ fn load_idb_runtime_metrics() -> Option<IdbRuntimeMetrics> {
         .and_then(|value| serde_wasm_bindgen::from_value(value).ok())
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 struct AiDiagnosticsState {
     caps: RwSignal<crate::ai::AiCapabilities>,
     ann_meta: RwSignal<Option<AnnIndexMeta>>,
@@ -1575,12 +1583,12 @@ fn render_ann_cap_card(state: AiDiagnosticsState) -> impl IntoView {
             {move || state.ann_caps_error.get().map(|msg| view! { <p class="muted">{msg}</p> })}
             {move || state.ann_caps.get().map(|cap| view! {
                 <ul class="list">
-                    <li>{format!("Cap: {:.1} MB", cap.cap_bytes as f64 / 1_000_000.0)}</li>
+                    <li>{format!("Cap: {}", format_mb_u64(cap.cap_bytes))}</li>
                     <li>{format!("Override: {}", cap.cap_override_mb.map_or_else(|| "none".to_string(), |value| format!("{value} MB")))}</li>
-                    <li>{format!("Before: {:.1} MB ({} vectors)", cap.matrix_bytes_before as f64 / 1_000_000.0, cap.vectors_before)}</li>
-                    <li>{format!("After: {:.1} MB ({} vectors)", cap.matrix_bytes_after as f64 / 1_000_000.0, cap.vectors_after)}</li>
-                    <li>{format!("IVF bytes: {}", cap.ivf_bytes.map_or_else(|| "n/a".to_string(), |value| format!("{:.1} MB", value as f64 / 1_000_000.0)))}</li>
-                    <li>{format!("IVF cap: {}", cap.ivf_cap_bytes.map_or_else(|| "n/a".to_string(), |value| format!("{:.1} MB", value as f64 / 1_000_000.0)))}</li>
+                    <li>{format!("Before: {} ({} vectors)", format_mb_u64(cap.matrix_bytes_before), cap.vectors_before)}</li>
+                    <li>{format!("After: {} ({} vectors)", format_mb_u64(cap.matrix_bytes_after), cap.vectors_after)}</li>
+                    <li>{format!("IVF bytes: {}", cap.ivf_bytes.map_or_else(|| "n/a".to_string(), format_mb_u64))}</li>
+                    <li>{format!("IVF cap: {}", cap.ivf_cap_bytes.map_or_else(|| "n/a".to_string(), format_mb_u64))}</li>
                     <li>{format!("Chunks loaded: {}", cap.chunks_loaded.unwrap_or(0))}</li>
                     <li>{format!("Records loaded: {}", cap.records_loaded.unwrap_or(0))}</li>
                     <li>{format!("IVF Dropped: {}", if cap.ivf_dropped { "yes" } else { "no" })}</li>
@@ -1835,6 +1843,7 @@ fn render_ai_diagnostics_cards(state: AiDiagnosticsState) -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn ai_diagnostics_page() -> impl IntoView {
     let state = AiDiagnosticsState::new();
     initialize_ai_diagnostics_state(state.clone());
@@ -1854,6 +1863,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn ai_benchmark_page() -> impl IntoView {
     let full_bench = RwSignal::new(None::<crate::ai::AiBenchmark>);
     let subset_bench = RwSignal::new(None::<crate::ai::AiSubsetBenchmark>);
@@ -1947,6 +1957,7 @@ pub fn ai_benchmark_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn ai_warmup_page() -> impl IntoView {
     let status = RwSignal::new("Ready".to_string());
     let ann_caps = RwSignal::new(None::<crate::ai::AnnCapDiagnostics>);
@@ -1992,7 +2003,7 @@ pub fn ai_warmup_page() -> impl IntoView {
                 {move || ann_caps.get().map(|cap| view! {
                     <ul class="list">
                         <li>{format!("Vectors: {}", cap.vectors_after)}</li>
-                        <li>{format!("Cap: {:.1} MB", cap.cap_bytes as f64 / 1_000_000.0)}</li>
+                        <li>{format!("Cap: {}", format_mb_u64(cap.cap_bytes))}</li>
                     </ul>
                 })}
             </div>
@@ -2000,6 +2011,7 @@ pub fn ai_warmup_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn ai_smoke_page() -> impl IntoView {
     let query = RwSignal::new("dave matthews".to_string());
     let status = RwSignal::new("Idle".to_string());
@@ -2556,6 +2568,7 @@ async fn load_recent_releases(limit: usize) -> Vec<Release> {
     }
 }
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_all_releases() -> Vec<Release> {
     #[cfg(feature = "hydrate")]
     {
@@ -2581,6 +2594,7 @@ async fn load_all_releases() -> Vec<Release> {
     }
 }
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
     #[cfg(feature = "hydrate")]
     {
@@ -2602,6 +2616,7 @@ async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
     }
 }
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_setlist_entries(_show_id: i32) -> Vec<SetlistEntry> {
     #[cfg(feature = "hydrate")]
     {
@@ -2623,6 +2638,7 @@ async fn load_setlist_entries(_show_id: i32) -> Vec<SetlistEntry> {
     }
 }
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_liberation_list(_limit: usize) -> Vec<LiberationEntry> {
     #[cfg(feature = "hydrate")]
     {
@@ -2644,6 +2660,7 @@ async fn load_liberation_list(_limit: usize) -> Vec<LiberationEntry> {
     }
 }
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_curated_lists() -> Vec<CuratedList> {
     #[cfg(feature = "hydrate")]
     {
@@ -2665,6 +2682,7 @@ async fn load_curated_lists() -> Vec<CuratedList> {
     }
 }
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_curated_list_items(_list_id: i32, _limit: usize) -> Vec<CuratedListItem> {
     #[cfg(feature = "hydrate")]
     {
@@ -2716,7 +2734,7 @@ async fn remove_user_attended_show(show_id: i32) -> bool {
     dmb_idb::remove_user_attended_show(show_id).await.is_ok()
 }
 
-fn format_location(city: &str, state: &Option<String>) -> String {
+fn format_location(city: &str, state: Option<&str>) -> String {
     match state {
         Some(state) if !state.is_empty() => format!("{city}, {state}"),
         _ => city.to_string(),
@@ -2759,6 +2777,11 @@ fn titleize_label(raw: &str) -> String {
     } else {
         words.join(" ")
     }
+}
+
+fn format_mb_u64(bytes: u64) -> String {
+    let tenths = (u128::from(bytes) * 10) / 1_000_000;
+    format!("{}.{} MB", tenths / 10, tenths % 10)
 }
 
 fn normalized_set_key(raw: Option<&str>) -> String {
@@ -2864,6 +2887,7 @@ fn release_track_matches_query(track: &ReleaseTrack, query: &str) -> bool {
     in_notes || in_numbers || in_track_type
 }
 
+#[must_use]
 pub fn shows_page() -> impl IntoView {
     let render = |items: Vec<ShowSummary>| {
         if items.is_empty() {
@@ -2884,7 +2908,8 @@ pub fn shows_page() -> impl IntoView {
                             .into_iter()
                             .map(|show| {
                                 let href = format!("/shows/{}", show.id);
-                                let location = format_location(&show.venue_city, &show.venue_state);
+                                let location =
+                                    format_location(&show.venue_city, show.venue_state.as_deref());
                                 let meta = if location.is_empty() {
                                     show.venue_name.clone()
                                 } else {
@@ -2913,7 +2938,7 @@ pub fn shows_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |_| async move { load_recent_shows(30).await });
+    let items = Resource::new(|| (), |()| async move { load_recent_shows(30).await });
 
     view! {
         <section class="page">
@@ -2926,6 +2951,7 @@ pub fn shows_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn songs_page() -> impl IntoView {
     let render = |items: Vec<Song>| {
         if items.is_empty() {
@@ -2971,7 +2997,7 @@ pub fn songs_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |_| async move { load_top_songs(50).await });
+    let items = Resource::new(|| (), |()| async move { load_top_songs(50).await });
 
     view! {
         <section class="page">
@@ -2984,6 +3010,7 @@ pub fn songs_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn venues_page() -> impl IntoView {
     let render = |items: Vec<Venue>| {
         if items.is_empty() {
@@ -3008,7 +3035,7 @@ pub fn venues_page() -> impl IntoView {
                                     .state
                                     .clone()
                                     .unwrap_or_else(|| venue.country.clone());
-                                let location = format_location(&venue.city, &venue.state);
+                                let location = format_location(&venue.city, venue.state.as_deref());
                                 let total = venue.total_shows.unwrap_or(0);
                                 view! {
                                     <li class="result-card">
@@ -3029,7 +3056,7 @@ pub fn venues_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |_| async move { load_top_venues(50).await });
+    let items = Resource::new(|| (), |()| async move { load_top_venues(50).await });
 
     view! {
         <section class="page">
@@ -3044,6 +3071,7 @@ pub fn venues_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn guests_page() -> impl IntoView {
     let render = |items: Vec<Guest>| {
         if items.is_empty() {
@@ -3083,7 +3111,7 @@ pub fn guests_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |_| async move { load_top_guests(50).await });
+    let items = Resource::new(|| (), |()| async move { load_top_guests(50).await });
 
     view! {
         <section class="page">
@@ -3096,6 +3124,7 @@ pub fn guests_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn tours_page() -> impl IntoView {
     let render = |items: Vec<Tour>| {
         if items.is_empty() {
@@ -3135,7 +3164,7 @@ pub fn tours_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |_| async move { load_recent_tours(25).await });
+    let items = Resource::new(|| (), |()| async move { load_recent_tours(25).await });
 
     view! {
         <section class="page">
@@ -3148,6 +3177,7 @@ pub fn tours_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn releases_page() -> impl IntoView {
     let render = |items: Vec<Release>| {
         if items.is_empty() {
@@ -3194,7 +3224,7 @@ pub fn releases_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |_| async move { load_recent_releases(25).await });
+    let items = Resource::new(|| (), |()| async move { load_recent_releases(25).await });
 
     view! {
         <section class="page">
@@ -3340,7 +3370,7 @@ fn render_show_detail_loaded(
             format!(
                 "{} • {}",
                 venue.name,
-                format_location(&venue.city, &venue.state)
+                format_location(&venue.city, venue.state.as_deref())
             )
         },
     );
@@ -3706,6 +3736,7 @@ fn render_show_setlist_content(
     .into_any()
 }
 
+#[must_use]
 pub fn show_detail_page() -> impl IntoView {
     let params = use_params_map();
     let show_id = move || params.with(|p| p.get("showId").unwrap_or_default());
@@ -3794,6 +3825,7 @@ pub fn show_detail_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn song_detail_page() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
@@ -3843,7 +3875,7 @@ fn render_song_slot_distribution(
             {slot_rows
                 .into_iter()
                 .map(|(slot, count)| {
-                    let percentage = (count as f32 / total_plays as f32) * 100.0;
+                    let percentage = (f64::from(count) / f64::from(total_plays)) * 100.0;
                     view! {
                         <li class="result-card">
                             <span class="pill pill--ghost">{slot}</span>
@@ -3930,6 +3962,7 @@ fn render_song_missing_state(
     .into_any()
 }
 
+#[must_use]
 pub fn guest_detail_page() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
@@ -4024,7 +4057,7 @@ pub fn guest_detail_page() -> impl IntoView {
     }
 }
 
-fn render_release_detail_card(release: Release) -> impl IntoView {
+fn render_release_detail_card(release: &Release) -> impl IntoView {
     let title = release.title.clone();
     let release_slug = release.slug.clone();
     let release_type = release
@@ -4282,6 +4315,7 @@ fn render_release_tracks_content(
     .into_any()
 }
 
+#[must_use]
 pub fn release_detail_page() -> impl IntoView {
     let params = use_params_map();
     let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
@@ -4301,7 +4335,7 @@ pub fn release_detail_page() -> impl IntoView {
 
     let render = move |release: Option<Release>| {
         if let Some(release) = release {
-            return render_release_detail_card(release).into_any();
+            return render_release_detail_card(&release).into_any();
         }
         render_release_missing_state(seed_data_state).into_any()
     };
@@ -4355,6 +4389,7 @@ pub fn release_detail_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn tour_year_page() -> impl IntoView {
     let params = use_params_map();
     let year = move || params.with(|p| p.get("year").unwrap_or_default());
@@ -4448,6 +4483,7 @@ pub fn tour_year_page() -> impl IntoView {
     }
 }
 
+#[must_use]
 pub fn venue_detail_page() -> impl IntoView {
     let params = use_params_map();
     let venue_id = move || params.with(|p| p.get("venueId").unwrap_or_default());
@@ -4455,7 +4491,7 @@ pub fn venue_detail_page() -> impl IntoView {
     let render = move |venue: Option<Venue>| match venue {
         Some(venue) => {
             let name = venue.name.clone();
-            let location = format_location(&venue.city, &venue.state);
+            let location = format_location(&venue.city, venue.state.as_deref());
             let country = venue.country.clone();
             let location_line = if location.is_empty() {
                 country.clone()
@@ -4768,9 +4804,11 @@ fn render_filtered_search_results(
 
 fn render_search_results_content(
     items: Vec<SearchResult>,
-    query: String,
+    query: &str,
     active_filter: RwSignal<String>,
 ) -> impl IntoView {
+    let query = query.to_string();
+
     if items.is_empty() && !query.is_empty() {
         return empty_state("No results", "Try a different query or shorter phrase.").into_any();
     }
@@ -4884,6 +4922,7 @@ fn initialize_search_results_effect(query: RwSignal<String>, results: RwSignal<V
     });
 }
 
+#[must_use]
 pub fn search_page() -> impl IntoView {
     let query = RwSignal::new(String::new());
     let active_filter = RwSignal::new(String::from("all"));
@@ -4931,9 +4970,10 @@ pub fn search_page() -> impl IntoView {
                 }
             />
             {move || {
+                let query_value = render_query.get();
                 render_search_results_content(
                     render_results.get(),
-                    render_query.get(),
+                    &query_value,
                     render_filter.clone(),
                 )
             }}
@@ -4945,7 +4985,7 @@ pub fn search_page() -> impl IntoView {
 // Stats page structs
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Copy, Default, serde::Serialize, serde::Deserialize)]
 struct StatsOverview {
     show_count: u32,
     song_count: u32,
@@ -5010,6 +5050,7 @@ fn js_map_to_u32_pairs(map: &js_sys::Map) -> Vec<(u32, u32)> {
 // Stats data loaders
 // ---------------------------------------------------------------------------
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_overview() -> StatsOverview {
     #[cfg(feature = "hydrate")]
     {
@@ -5081,6 +5122,7 @@ async fn load_stats_overview() -> StatsOverview {
     }
 }
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_songs() -> StatsSongs {
     #[cfg(feature = "hydrate")]
     {
@@ -5131,6 +5173,7 @@ async fn load_stats_songs() -> StatsSongs {
     }
 }
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_shows() -> StatsShows {
     #[cfg(feature = "hydrate")]
     {
@@ -5208,6 +5251,7 @@ async fn load_stats_shows() -> StatsShows {
     }
 }
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_venues() -> StatsVenues {
     #[cfg(feature = "hydrate")]
     {
@@ -5257,6 +5301,7 @@ async fn load_stats_venues() -> StatsVenues {
     }
 }
 
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_guests() -> StatsGuests {
     #[cfg(feature = "hydrate")]
     {
@@ -5365,36 +5410,46 @@ fn render_stats_tabs(active_tab: RwSignal<u8>) -> impl IntoView {
 }
 
 fn render_stats_overview_content(data: StatsOverview) -> impl IntoView {
+    let StatsOverview {
+        show_count,
+        song_count,
+        venue_count,
+        tour_count,
+        guest_count,
+        setlist_count,
+        avg_songs_per_show,
+    } = data;
+
     view! {
         <>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <span class="stat-value">{data.show_count.to_string()}</span>
+                    <span class="stat-value">{show_count.to_string()}</span>
                     <span class="stat-label">"Shows"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{data.song_count.to_string()}</span>
+                    <span class="stat-value">{song_count.to_string()}</span>
                     <span class="stat-label">"Songs"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{data.venue_count.to_string()}</span>
+                    <span class="stat-value">{venue_count.to_string()}</span>
                     <span class="stat-label">"Venues"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{data.tour_count.to_string()}</span>
+                    <span class="stat-value">{tour_count.to_string()}</span>
                     <span class="stat-label">"Tours"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{data.guest_count.to_string()}</span>
+                    <span class="stat-value">{guest_count.to_string()}</span>
                     <span class="stat-label">"Guests"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{data.setlist_count.to_string()}</span>
+                    <span class="stat-value">{setlist_count.to_string()}</span>
                     <span class="stat-label">"Setlist Entries"</span>
                 </div>
             </div>
             <div class="stat-card" style="margin-top: 1rem">
-                <span class="stat-value">{format!("{:.1}", data.avg_songs_per_show)}</span>
+                <span class="stat-value">{format!("{avg_songs_per_show:.1}")}</span>
                 <span class="stat-label">"Avg Songs Per Show"</span>
             </div>
             <p class="muted" style="margin-top: 1rem">
@@ -5405,22 +5460,30 @@ fn render_stats_overview_content(data: StatsOverview) -> impl IntoView {
 }
 
 fn render_stats_songs_content(data: StatsSongs) -> impl IntoView {
+    let StatsSongs {
+        top_played,
+        top_openers,
+        top_closers,
+        top_encores,
+        debuts_by_year,
+    } = data;
+
     view! {
         <>
             <h2>"Top 25 Most Played"</h2>
-            {render_song_table(&data.top_played, true)}
+            {render_song_table(&top_played, true)}
 
             <h2>"Top 10 Openers"</h2>
-            {render_song_ranking(&data.top_openers, |s| s.opener_count.unwrap_or(0))}
+            {render_song_ranking(&top_openers, |s| s.opener_count.unwrap_or(0))}
 
             <h2>"Top 10 Closers"</h2>
-            {render_song_ranking(&data.top_closers, |s| s.closer_count.unwrap_or(0))}
+            {render_song_ranking(&top_closers, |s| s.closer_count.unwrap_or(0))}
 
             <h2>"Top 10 Encores"</h2>
-            {render_song_ranking(&data.top_encores, |s| s.encore_count.unwrap_or(0))}
+            {render_song_ranking(&top_encores, |s| s.encore_count.unwrap_or(0))}
 
             <h2>"Song Debuts by Year"</h2>
-            {render_bar_chart(&data.debuts_by_year)}
+            {render_bar_chart(&debuts_by_year)}
         </>
     }
 }
@@ -5460,23 +5523,23 @@ fn render_stats_shows_content(data: StatsShows) -> impl IntoView {
             <h2>"Rarity Index Distribution"</h2>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <span class="stat-value">{format!("{:.2}", rarity_min)}</span>
+                    <span class="stat-value">{format!("{rarity_min:.2}")}</span>
                     <span class="stat-label">"Min"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{format!("{:.2}", rarity_q1)}</span>
+                    <span class="stat-value">{format!("{rarity_q1:.2}")}</span>
                     <span class="stat-label">"Q1"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{format!("{:.2}", rarity_median)}</span>
+                    <span class="stat-value">{format!("{rarity_median:.2}")}</span>
                     <span class="stat-label">"Median"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{format!("{:.2}", rarity_q3)}</span>
+                    <span class="stat-value">{format!("{rarity_q3:.2}")}</span>
                     <span class="stat-label">"Q3"</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">{format!("{:.2}", rarity_max)}</span>
+                    <span class="stat-value">{format!("{rarity_max:.2}")}</span>
                     <span class="stat-label">"Max"</span>
                 </div>
             </div>
@@ -5519,7 +5582,7 @@ fn render_stats_venues_content(data: StatsVenues) -> impl IntoView {
                     .iter()
                     .map(|venue| {
                         let href = format!("/venues/{}", venue.id);
-                        let location = format_location(&venue.city, &venue.state);
+                        let location = format_location(&venue.city, venue.state.as_deref());
                         let total = venue.total_shows.unwrap_or(0);
                         view! {
                             <li class="result-card">

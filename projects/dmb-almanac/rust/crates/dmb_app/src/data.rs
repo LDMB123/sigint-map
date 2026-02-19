@@ -252,6 +252,7 @@ pub async fn fetch_manifest_diff() -> Option<ManifestDiff> {
 }
 
 #[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
 pub async fn fetch_manifest_diff() -> Option<ManifestDiff> {
     None
 }
@@ -319,6 +320,7 @@ pub async fn fetch_integrity_report() -> Option<IntegrityReport> {
 }
 
 #[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
 pub async fn fetch_integrity_report() -> Option<IntegrityReport> {
     None
 }
@@ -453,6 +455,7 @@ pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
 }
 
 #[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
 pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
     None
 }
@@ -570,6 +573,7 @@ pub async fn detect_seed_data_state() -> SeedDataState {
 }
 
 #[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
 pub async fn detect_seed_data_state() -> SeedDataState {
     SeedDataState::Ready
 }
@@ -1224,6 +1228,7 @@ async fn verify_import_integrity(
 }
 
 #[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
 pub async fn ensure_seed_data(_status: RwSignal<ImportStatus>) {}
 
 #[cfg(feature = "hydrate")]
@@ -1279,6 +1284,7 @@ pub async fn handle_storage_pressure() -> Option<bool> {
 }
 
 #[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
 pub async fn estimate_storage() -> Option<StorageInfo> {
     None
 }

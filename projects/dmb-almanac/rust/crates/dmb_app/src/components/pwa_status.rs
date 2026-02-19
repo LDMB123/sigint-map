@@ -1,3 +1,5 @@
+#![allow(clippy::large_types_passed_by_value)]
+
 use leptos::prelude::*;
 #[cfg(feature = "hydrate")]
 use leptos::task::spawn_local;
@@ -1978,6 +1980,7 @@ fn render_pwa_status(state: PwaStatusState) -> impl IntoView {
 }
 
 #[component]
+#[allow(clippy::must_use_candidate)]
 #[must_use]
 pub fn PwaStatus() -> impl IntoView {
     let state = PwaStatusState::new();
