@@ -953,31 +953,49 @@ fn ping_controller_for_metadata(controller: &web_sys::ServiceWorker, state: &Pwa
 }
 
 #[cfg(feature = "hydrate")]
+fn persist_effective_sw_version(state: &PwaStatusState, version: &str) {
+    let effective = resolve_effective_sw_version(state.sw_controller_url.get_untracked(), version);
+    state.sw_version.set(Some(effective.clone()));
+    set_local_storage_item(SW_VERSION_KEY, &effective);
+}
+
+#[cfg(feature = "hydrate")]
+fn sync_controller_version_from_script_url(script_url: &str, state: &PwaStatusState) {
+    if let Some(version) = e2e_version_from_sw_script_url(script_url) {
+        state.sw_version.set(Some(version.clone()));
+        set_local_storage_item(SW_VERSION_KEY, &version);
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn apply_controller_snapshot(controller: &web_sys::ServiceWorker, state: &PwaStatusState) {
+    let script_url = controller.script_url();
+    state.sw_controller_url.set(Some(script_url.clone()));
+    state.sw_controller_state.set(sw_state(controller));
+    sync_controller_version_from_script_url(&script_url, state);
+    ping_controller_for_metadata(controller, state);
+}
+
+#[cfg(feature = "hydrate")]
+fn clear_controller_snapshot(state: &PwaStatusState) {
+    state.sw_controller_url.set(None);
+    state.sw_controller_state.set(None);
+    state.sw_controller_impl.set(None);
+    state.sw_controller_cache_prefix.set(None);
+}
+
+#[cfg(feature = "hydrate")]
 fn sync_current_controller_state(
     container: &web_sys::ServiceWorkerContainer,
     state: &PwaStatusState,
 ) -> bool {
-    let has_controller = container.controller().is_some();
-
     if let Some(controller) = container.controller() {
-        let script_url = controller.script_url();
-        state.sw_controller_url.set(Some(script_url.clone()));
-        state.sw_controller_state.set(sw_state(&controller));
-
-        if let Some(version) = e2e_version_from_sw_script_url(&script_url) {
-            state.sw_version.set(Some(version.clone()));
-            set_local_storage_item(SW_VERSION_KEY, &version);
-        }
-
-        ping_controller_for_metadata(&controller, state);
+        apply_controller_snapshot(&controller, state);
+        true
     } else {
-        state.sw_controller_url.set(None);
-        state.sw_controller_state.set(None);
-        state.sw_controller_impl.set(None);
-        state.sw_controller_cache_prefix.set(None);
+        clear_controller_snapshot(state);
+        false
     }
-
-    has_controller
 }
 
 #[cfg(feature = "hydrate")]
@@ -992,20 +1010,13 @@ fn attach_sw_message_listener(container: &web_sys::ServiceWorkerContainer, state
             return;
         };
 
-        let persist_sw_version = |version: &str, state: &PwaStatusState| {
-            let effective =
-                resolve_effective_sw_version(state.sw_controller_url.get_untracked(), version);
-            state.sw_version.set(Some(effective.clone()));
-            set_local_storage_item(SW_VERSION_KEY, &effective);
-        };
-
         match event_type {
             "PONG" => {
                 if let Some(impl_name) = payload.get("impl").and_then(|v| v.as_str()) {
                     state.sw_controller_impl.set(Some(impl_name.to_string()));
                 }
                 if let Some(version) = payload.get("version").and_then(|v| v.as_str()) {
-                    persist_sw_version(version, &state);
+                    persist_effective_sw_version(&state, version);
                 }
                 if let Some(prefix) = payload.get("cachePrefix").and_then(|v| v.as_str()) {
                     state
@@ -1017,7 +1028,7 @@ fn attach_sw_message_listener(container: &web_sys::ServiceWorkerContainer, state
             "SW_ACTIVATED" => {
                 if let Some(version) = payload.get("version").and_then(|v| v.as_str()) {
                     state.update_version.set(Some(version.to_string()));
-                    persist_sw_version(version, &state);
+                    persist_effective_sw_version(&state, version);
                 }
                 let now = js_sys::Date::now();
                 state.sw_activated_at.set(Some(now));
@@ -1056,16 +1067,7 @@ fn attach_sw_controllerchange_listener(
     let controllerchange_cb =
         wasm_bindgen::closure::Closure::wrap(Box::new(move |_event: web_sys::Event| {
             if let Some(controller) = container_on_change.controller() {
-                let script_url = controller.script_url();
-                state.sw_controller_url.set(Some(script_url.clone()));
-                state.sw_controller_state.set(sw_state(&controller));
-
-                if let Some(version) = e2e_version_from_sw_script_url(&script_url) {
-                    state.sw_version.set(Some(version.clone()));
-                    set_local_storage_item(SW_VERSION_KEY, &version);
-                }
-
-                ping_controller_for_metadata(&controller, &state);
+                apply_controller_snapshot(&controller, &state);
             }
         }) as Box<dyn FnMut(web_sys::Event)>);
 
