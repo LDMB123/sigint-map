@@ -40,8 +40,7 @@ async fn cache_control_middleware(req: Request<Body>, next: Next) -> Response {
         .headers()
         .get(header::ACCEPT)
         .and_then(|v| v.to_str().ok())
-        .map(|value| value.contains("text/html"))
-        .unwrap_or(false);
+        .is_some_and(|value| value.contains("text/html"));
 
     let mut res = next.run(req).await;
 
@@ -662,14 +661,14 @@ mod tests {
             payload
                 .get("counts")
                 .and_then(Value::as_object)
-                .map(|counts| counts.len()),
+                .map(serde_json::Map::len),
             Some(0)
         );
         assert_eq!(
             payload
                 .get("missingTables")
                 .and_then(Value::as_array)
-                .map(|tables| tables.len()),
+                .map(Vec::len),
             Some(0)
         );
     }
@@ -827,7 +826,7 @@ mod tests {
             payload
                 .get("counts")
                 .and_then(Value::as_object)
-                .map(|counts| counts.len()),
+                .map(serde_json::Map::len),
             Some(0)
         );
     }
@@ -874,7 +873,7 @@ mod tests {
                 )
                 .await
                 .expect("response");
-            assert_eq!(response.status(), StatusCode::OK, "path {}", path);
+            assert_eq!(response.status(), StatusCode::OK, "path {path}");
 
             let body = to_bytes(response.into_body(), 2 * 1024 * 1024)
                 .await
@@ -882,8 +881,7 @@ mod tests {
             let text = String::from_utf8_lossy(&body);
             assert!(
                 text.contains("Skip to content"),
-                "missing app shell for {}",
-                path
+                "missing app shell for {path}"
             );
             if path == "/search" {
                 assert!(text.contains("Search"), "missing search content");
@@ -1072,16 +1070,13 @@ async fn api_ai_health(
         let static_data = cwd.map(|cwd| cwd.join(site_root.as_ref()).join("data"));
         let manifest = static_data
             .as_ref()
-            .map(|dir| dir.join("manifest.json").exists())
-            .unwrap_or(false);
+            .is_some_and(|dir| dir.join("manifest.json").exists());
         let ai_config = static_data
             .as_ref()
-            .map(|dir| dir.join("ai-config.json").exists())
-            .unwrap_or(false);
+            .is_some_and(|dir| dir.join("ai-config.json").exists());
         let migration = static_data
             .as_ref()
-            .map(|dir| dir.join("idb-migration-dry-run.json").exists())
-            .unwrap_or(false);
+            .is_some_and(|dir| dir.join("idb-migration-dry-run.json").exists());
         (manifest, ai_config, migration)
     };
 

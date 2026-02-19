@@ -47,11 +47,10 @@ fn ssr_routes_render_headings() {
     ];
 
     for (route, html) in cases {
-        assert!(html.contains("<h1"), "route {} missing heading", route);
+        assert!(html.contains("<h1"), "route {route} missing heading");
         assert!(
             html.contains("class=\"page\""),
-            "route {} missing page wrapper",
-            route
+            "route {route} missing page wrapper"
         );
     }
 }

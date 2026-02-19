@@ -56,21 +56,17 @@ fn ssr_smoke_renders_all_route_paths() {
         let path = sample_path_for_route(route);
         assert!(
             sampled_paths.insert(path.clone()),
-            "route {} mapped to duplicate sample path {}",
-            route,
-            path
+            "route {route} mapped to duplicate sample path {path}"
         );
         let html = render_app_at(&path);
         assert!(
             html.contains("main-content"),
-            "path {} missing app main content",
-            path
+            "path {path} missing app main content"
         );
         assert!(
             html.contains("class=\"page\""),
-            "path {} missing page wrapper",
-            path
+            "path {path} missing page wrapper"
         );
-        assert!(html.contains("<h1"), "path {} missing heading", path);
+        assert!(html.contains("<h1"), "path {path} missing heading");
     }
 }

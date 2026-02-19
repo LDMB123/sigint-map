@@ -11,7 +11,10 @@ pub(crate) fn read_warning_report(path: &Path) -> Result<WarningReport> {
     let report: serde_json::Value =
         serde_json::from_str(&contents).context("parse warning report")?;
     let report_path = path.display().to_string();
-    let empty = match report.get("emptySelectors").and_then(|v| v.as_u64()) {
+    let empty = match report
+        .get("emptySelectors")
+        .and_then(serde_json::Value::as_u64)
+    {
         Some(v) => v,
         None => {
             tracing::warn!(
@@ -22,7 +25,10 @@ pub(crate) fn read_warning_report(path: &Path) -> Result<WarningReport> {
             0
         }
     };
-    let missing = match report.get("missingFields").and_then(|v| v.as_u64()) {
+    let missing = match report
+        .get("missingFields")
+        .and_then(serde_json::Value::as_u64)
+    {
         Some(v) => v,
         None => {
             tracing::warn!(
@@ -89,7 +95,7 @@ pub(crate) fn read_warning_report(path: &Path) -> Result<WarningReport> {
         .unwrap_or_default();
     let endpoint_retries_total = report
         .get("endpointRetriesTotal")
-        .and_then(|v| v.as_u64())
+        .and_then(serde_json::Value::as_u64)
         .unwrap_or_else(|| endpoint_retries.values().copied().sum());
     let top_endpoint_retries = report
         .get("topEndpointRetries")
@@ -108,7 +114,7 @@ pub(crate) fn read_warning_report(path: &Path) -> Result<WarningReport> {
     let signature = report
         .get("signature")
         .and_then(|v| v.as_str())
-        .map(|s| s.to_string());
+        .map(std::string::ToString::to_string);
     let warning_events_summary = report
         .get("warningEventsSummary")
         .and_then(|v| v.as_object())
@@ -157,10 +163,7 @@ pub(crate) fn compare_warning_reports(
         let baseline_count = baseline.missing_by_field.get(key).copied().unwrap_or(0);
         if count > baseline_count {
             anyhow::bail!(
-                "warning regression: missingByField {} = {} > baseline {}",
-                key,
-                count,
-                baseline_count
+                "warning regression: missingByField {key} = {count} > baseline {baseline_count}"
             );
         }
     }
@@ -168,10 +171,7 @@ pub(crate) fn compare_warning_reports(
         let baseline_count = baseline.missing_by_context.get(key).copied().unwrap_or(0);
         if count > baseline_count {
             anyhow::bail!(
-                "warning regression: missingByContext {} = {} > baseline {}",
-                key,
-                count,
-                baseline_count
+                "warning regression: missingByContext {key} = {count} > baseline {baseline_count}"
             );
         }
     }
@@ -180,10 +180,7 @@ pub(crate) fn compare_warning_reports(
         let baseline_count = baseline.empty_by_selector.get(key).copied().unwrap_or(0);
         if count > baseline_count {
             anyhow::bail!(
-                "warning regression: emptyBySelector {} = {} > baseline {}",
-                key,
-                count,
-                baseline_count
+                "warning regression: emptyBySelector {key} = {count} > baseline {baseline_count}"
             );
         }
     }
@@ -191,10 +188,7 @@ pub(crate) fn compare_warning_reports(
         let baseline_count = baseline.empty_by_context.get(key).copied().unwrap_or(0);
         if count > baseline_count {
             anyhow::bail!(
-                "warning regression: emptyByContext {} = {} > baseline {}",
-                key,
-                count,
-                baseline_count
+                "warning regression: emptyByContext {key} = {count} > baseline {baseline_count}"
             );
         }
     }
@@ -220,11 +214,7 @@ pub(crate) fn compare_endpoint_timings(
         let allowed = baseline_timing.saturating_add(baseline_timing.saturating_mul(max_pct) / 100);
         if timing > allowed {
             anyhow::bail!(
-                "endpoint timing regression: {} {}ms > baseline {}ms (max +{}%)",
-                endpoint,
-                timing,
-                baseline_timing,
-                max_pct
+                "endpoint timing regression: {endpoint} {timing}ms > baseline {baseline_timing}ms (max +{max_pct}%)"
             );
         }
     }
@@ -237,12 +227,7 @@ pub(crate) fn enforce_endpoint_retries(current: &HashMap<String, u64>, max: u64)
     }
     for (endpoint, &count) in current {
         if count > max {
-            anyhow::bail!(
-                "endpoint retry budget exceeded: {} retries {} > max {}",
-                endpoint,
-                count,
-                max
-            );
+            anyhow::bail!("endpoint retry budget exceeded: {endpoint} retries {count} > max {max}");
         }
     }
     Ok(())
@@ -260,12 +245,7 @@ pub(crate) fn enforce_empty_by_context(
             .map(|(_, value)| *value)
             .sum();
         if total > *max {
-            anyhow::bail!(
-                "empty selector budget exceeded: {} total {} > max {}",
-                context,
-                total,
-                max
-            );
+            anyhow::bail!("empty selector budget exceeded: {context} total {total} > max {max}");
         }
     }
     Ok(())
@@ -283,12 +263,7 @@ pub(crate) fn enforce_missing_by_context(
             .map(|(_, value)| *value)
             .sum();
         if total > *max {
-            anyhow::bail!(
-                "missing field budget exceeded: {} total {} > max {}",
-                context,
-                total,
-                max
-            );
+            anyhow::bail!("missing field budget exceeded: {context} total {total} > max {max}");
         }
     }
     Ok(())
@@ -301,12 +276,7 @@ pub(crate) fn enforce_missing_by_context_map(
     for (context, max) in thresholds {
         let total = missing_by_context.get(context).copied().unwrap_or(0);
         if total > *max {
-            anyhow::bail!(
-                "missing field budget exceeded: {} total {} > max {}",
-                context,
-                total,
-                max
-            );
+            anyhow::bail!("missing field budget exceeded: {context} total {total} > max {max}");
         }
     }
     Ok(())
@@ -346,12 +316,7 @@ pub(crate) fn enforce_warning_thresholds(
     for (key, max) in thresholds {
         let value = current.get(key).copied().unwrap_or(0);
         if value > *max {
-            anyhow::bail!(
-                "warning threshold exceeded: {} = {} (max {})",
-                key,
-                value,
-                max
-            );
+            anyhow::bail!("warning threshold exceeded: {key} = {value} (max {max})");
         }
     }
     Ok(())

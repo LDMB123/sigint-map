@@ -58,7 +58,7 @@ pub fn calculate_quartiles(values: &[f64]) -> Result<js_sys::Object, JsValue> {
     }
 
     let mut sorted = values.to_vec();
-    sorted.sort_by(|a, b| a.total_cmp(b));
+    sorted.sort_by(f64::total_cmp);
 
     let q1 = calculate_percentile_sorted(&sorted, 0.25);
     let median = calculate_percentile_sorted(&sorted, 0.5);

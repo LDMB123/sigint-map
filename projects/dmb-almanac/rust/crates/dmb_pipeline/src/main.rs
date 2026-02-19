@@ -290,7 +290,7 @@ fn warn_once(key: String, f: impl FnOnce()) {
 }
 
 fn json_i64_or_warn(value: Option<&Value>, context: &str, field: &str) -> i64 {
-    if let Some(v) = value.and_then(|v| v.as_i64()) {
+    if let Some(v) = value.and_then(serde_json::Value::as_i64) {
         return v;
     }
     if let Some(v) = value
@@ -432,7 +432,7 @@ fn validate_sqlite_parity(
                 0
             }
         };
-        let query = format!("SELECT COUNT(*) FROM {}", table);
+        let query = format!("SELECT COUNT(*) FROM {table}");
         let actual: i64 = match conn.query_row(&query, [], |row| row.get(0)) {
             Ok(value) => value,
             Err(err) => {
@@ -707,7 +707,7 @@ fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {
     let mut venue_map = HashMap::<i32, String>::new();
     for venue in &venues {
         if let (Some(id), Some(name)) = (
-            venue.get("id").and_then(|v| v.as_i64()),
+            venue.get("id").and_then(serde_json::Value::as_i64),
             venue.get("name").and_then(|v| v.as_str()),
         ) {
             let city = venue.get("city").and_then(|v| v.as_str()).unwrap_or("");
@@ -741,7 +741,7 @@ fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {
     let mut tour_map = HashMap::<i32, String>::new();
     for tour in &tours {
         if let (Some(id), Some(name)) = (
-            tour.get("id").and_then(|v| v.as_i64()),
+            tour.get("id").and_then(serde_json::Value::as_i64),
             tour.get("name").and_then(|v| v.as_str()),
         ) {
             let year = json_i64_or_warn(tour.get("year"), "embedding_input.tour", "year");
@@ -757,7 +757,7 @@ fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {
     let mut items: Vec<EmbeddingInput> = Vec::new();
 
     for song in songs {
-        let id = match song.get("id").and_then(|v| v.as_i64()) {
+        let id = match song.get("id").and_then(serde_json::Value::as_i64) {
             Some(id) => id as i32,
             None => continue,
         };
@@ -772,7 +772,7 @@ fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {
         let slug = song
             .get("slug")
             .and_then(|v| v.as_str())
-            .map(|v| v.to_string());
+            .map(std::string::ToString::to_string);
         let text = format!("song {title}");
         items.push(EmbeddingInput {
             id,
@@ -785,7 +785,7 @@ fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {
     }
 
     for venue in venues {
-        let id = match venue.get("id").and_then(|v| v.as_i64()) {
+        let id = match venue.get("id").and_then(serde_json::Value::as_i64) {
             Some(id) => id as i32,
             None => continue,
         };
@@ -812,7 +812,7 @@ fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {
     }
 
     for guest in guests {
-        let id = match guest.get("id").and_then(|v| v.as_i64()) {
+        let id = match guest.get("id").and_then(serde_json::Value::as_i64) {
             Some(id) => id as i32,
             None => continue,
         };
@@ -827,7 +827,7 @@ fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {
         let slug = guest
             .get("slug")
             .and_then(|v| v.as_str())
-            .map(|v| v.to_string());
+            .map(std::string::ToString::to_string);
         items.push(EmbeddingInput {
             id,
             kind: "guest".to_string(),
@@ -839,7 +839,7 @@ fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {
     }
 
     for tour in tours {
-        let id = match tour.get("id").and_then(|v| v.as_i64()) {
+        let id = match tour.get("id").and_then(serde_json::Value::as_i64) {
             Some(id) => id as i32,
             None => continue,
         };
@@ -868,7 +868,7 @@ fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {
     }
 
     for release in releases {
-        let id = match release.get("id").and_then(|v| v.as_i64()) {
+        let id = match release.get("id").and_then(serde_json::Value::as_i64) {
             Some(id) => id as i32,
             None => continue,
         };
@@ -883,7 +883,7 @@ fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {
         let slug = release
             .get("slug")
             .and_then(|v| v.as_str())
-            .map(|v| v.to_string());
+            .map(std::string::ToString::to_string);
         let release_type = release
             .get("releaseType")
             .and_then(|v| v.as_str())
@@ -904,7 +904,7 @@ fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {
     }
 
     for show in shows {
-        let id = match show.get("id").and_then(|v| v.as_i64()) {
+        let id = match show.get("id").and_then(serde_json::Value::as_i64) {
             Some(id) => id as i32,
             None => continue,
         };
@@ -1232,11 +1232,7 @@ fn validate_ann_index_files(data_dir: &Path) -> Result<()> {
         .with_context(|| format!("stat {}", bin_path.display()))?
         .len();
     if actual != expected {
-        anyhow::bail!(
-            "ann index binary size mismatch: {} vs expected {}",
-            actual,
-            expected
-        );
+        anyhow::bail!("ann index binary size mismatch: {actual} vs expected {expected}");
     }
 
     if meta.method == "ivf-flat" {
@@ -1256,7 +1252,7 @@ fn validate_ann_index_files(data_dir: &Path) -> Result<()> {
         if ivf.cluster_count == 0 || ivf.centroids.is_empty() {
             anyhow::bail!("ann ivf has no centroids");
         }
-        let total_list_entries: usize = ivf.lists.iter().map(|list| list.len()).sum();
+        let total_list_entries: usize = ivf.lists.iter().map(std::vec::Vec::len).sum();
         if total_list_entries != meta.record_count as usize {
             anyhow::bail!(
                 "ann ivf list size mismatch: {} vs {}",
@@ -1288,12 +1284,7 @@ fn validate_embedding_sample(path: &Path, dim: u32) -> Result<()> {
                     dim
                 );
             }
-        } else if entry
-            .text
-            .as_ref()
-            .map(|s| s.trim().is_empty())
-            .unwrap_or(true)
-        {
+        } else if entry.text.as_ref().is_none_or(|s| s.trim().is_empty()) {
             anyhow::bail!("embedding sample missing vector or text");
         }
     }
@@ -1669,8 +1660,7 @@ mod tests {
         std::fs::write(
             &ai_config_path,
             format!(
-                "{{\"version\":\"{}\",\"generatedAt\":\"2026-02-01T00:00:00Z\"}}",
-                CORE_SCHEMA_VERSION
+                "{{\"version\":\"{CORE_SCHEMA_VERSION}\",\"generatedAt\":\"2026-02-01T00:00:00Z\"}}"
             ),
         )?;
 
@@ -1709,8 +1699,7 @@ mod tests {
         let err = enforce_endpoint_retries(&retries, 2).expect_err("expected retry budget error");
         assert!(
             err.to_string().contains("endpoint retry budget exceeded"),
-            "unexpected error: {}",
-            err
+            "unexpected error: {err}"
         );
     }
 
@@ -1997,9 +1986,7 @@ fn validate_data(
                     .unwrap_or("");
                 if version != CORE_SCHEMA_VERSION {
                     anyhow::bail!(
-                        "idb migration dry-run manifestVersion mismatch: {} vs {}",
-                        version,
-                        CORE_SCHEMA_VERSION
+                        "idb migration dry-run manifestVersion mismatch: {version} vs {CORE_SCHEMA_VERSION}"
                     );
                 }
             }
@@ -2031,16 +2018,16 @@ fn validate_data(
 
     // FK-like checks
     for item in &shows {
-        let venue_id = item.get("venueId").and_then(|v| v.as_i64());
+        let venue_id = item.get("venueId").and_then(serde_json::Value::as_i64);
         if let Some(venue_id) = venue_id {
             if !venue_ids.contains(&(venue_id as i32)) {
-                anyhow::bail!("show references missing venue_id={}", venue_id);
+                anyhow::bail!("show references missing venue_id={venue_id}");
             }
         }
-        let tour_id = item.get("tourId").and_then(|v| v.as_i64());
+        let tour_id = item.get("tourId").and_then(serde_json::Value::as_i64);
         if let Some(tour_id) = tour_id {
             if !tour_ids.contains(&(tour_id as i32)) {
-                anyhow::bail!("show references missing tour_id={}", tour_id);
+                anyhow::bail!("show references missing tour_id={tour_id}");
             }
         }
     }
@@ -2052,7 +2039,7 @@ fn validate_data(
     } else {
         let mut chunk_paths = std::fs::read_dir(&data_dir)
             .with_context(|| format!("read dir {}", data_dir.display()))?
-            .filter_map(|entry| entry.ok())
+            .filter_map(std::result::Result::ok)
             .filter_map(|entry| {
                 let path = entry.path();
                 if !path.is_file() {
@@ -2082,9 +2069,9 @@ fn validate_data(
             "setlistEntries",
         )?;
         for item in &setlist {
-            if let Some(song_id) = item.get("songId").and_then(|v| v.as_i64()) {
+            if let Some(song_id) = item.get("songId").and_then(serde_json::Value::as_i64) {
                 if !song_ids.contains(&(song_id as i32)) {
-                    anyhow::bail!("setlist references missing song_id={}", song_id);
+                    anyhow::bail!("setlist references missing song_id={song_id}");
                 }
             }
         }
@@ -2154,7 +2141,7 @@ fn validate_data(
         if let Ok(baseline_path) = std::env::var("DMB_WARNING_BASELINE") {
             let baseline = read_warning_report(Path::new(&baseline_path))?;
             compare_warning_reports(current, &baseline)
-                .with_context(|| format!("warning regression vs {}", baseline_path))?;
+                .with_context(|| format!("warning regression vs {baseline_path}"))?;
             let max_pct =
                 endpoint_timing_max_pct.or_else(|| env_u64_or_warn("DMB_ENDPOINT_TIMING_MAX_PCT"));
             if let Some(max_pct) = max_pct {
@@ -2163,18 +2150,13 @@ fn validate_data(
             }
             if std::env::var("DMB_WARNING_SIGNATURE_STRICT")
                 .ok()
-                .map(|val| matches!(val.as_str(), "1" | "true" | "TRUE"))
-                .unwrap_or(false)
+                .is_some_and(|val| matches!(val.as_str(), "1" | "true" | "TRUE"))
             {
                 if let (Some(current_sig), Some(baseline_sig)) =
                     (current.signature.as_ref(), baseline.signature.as_ref())
                 {
                     if current_sig != baseline_sig {
-                        anyhow::bail!(
-                            "warning signature changed: {} != {}",
-                            current_sig,
-                            baseline_sig
-                        );
+                        anyhow::bail!("warning signature changed: {current_sig} != {baseline_sig}");
                     }
                 }
             }
@@ -2182,7 +2164,7 @@ fn validate_data(
         if let Ok(thresholds_path) = std::env::var("DMB_WARNING_MAX_BY_FIELD") {
             let thresholds = read_warning_thresholds(Path::new(&thresholds_path))?;
             enforce_warning_thresholds(&current.missing_by_field, &thresholds)
-                .with_context(|| format!("warning max by field {}", thresholds_path))?;
+                .with_context(|| format!("warning max by field {thresholds_path}"))?;
         }
         if !current.top_endpoint_retries.is_empty() {
             let summary = current
@@ -2201,17 +2183,17 @@ fn validate_data(
         if let Ok(thresholds_path) = std::env::var("DMB_WARNING_MAX_BY_PAGE") {
             let thresholds = read_warning_thresholds(Path::new(&thresholds_path))?;
             enforce_missing_by_context(&current.missing_by_field, &thresholds)
-                .with_context(|| format!("warning max by page {}", thresholds_path))?;
+                .with_context(|| format!("warning max by page {thresholds_path}"))?;
         }
         if let Ok(thresholds_path) = std::env::var("DMB_WARNING_MAX_BY_SELECTOR") {
             let thresholds = read_warning_thresholds(Path::new(&thresholds_path))?;
             enforce_warning_thresholds(&current.empty_by_selector, &thresholds)
-                .with_context(|| format!("warning max by selector {}", thresholds_path))?;
+                .with_context(|| format!("warning max by selector {thresholds_path}"))?;
         }
         if let Ok(thresholds_path) = std::env::var("DMB_WARNING_MAX_BY_EVENT") {
             let thresholds = read_warning_thresholds(Path::new(&thresholds_path))?;
             enforce_warning_thresholds(&current.warning_events_summary, &thresholds)
-                .with_context(|| format!("warning max by event {}", thresholds_path))?;
+                .with_context(|| format!("warning max by event {thresholds_path}"))?;
         }
     }
 
@@ -2233,9 +2215,7 @@ fn validate_data(
         );
         if strict_warnings && (empty + missing) > 0 {
             anyhow::bail!(
-                "strict warnings enabled: {} empty selectors, {} missing fields",
-                empty,
-                missing
+                "strict warnings enabled: {empty} empty selectors, {missing} missing fields"
             );
         }
     }
@@ -2249,17 +2229,16 @@ fn validate_data(
         if let Ok(thresholds_path) = std::env::var("DMB_WARNING_MAX_EMPTY_BY_CONTEXT") {
             let thresholds = read_warning_thresholds(Path::new(&thresholds_path))?;
             enforce_empty_by_context(&current.empty_by_selector, &thresholds)
-                .with_context(|| format!("warning max empty by context {}", thresholds_path))?;
+                .with_context(|| format!("warning max empty by context {thresholds_path}"))?;
         }
         if let Ok(thresholds_path) = std::env::var("DMB_WARNING_MAX_MISSING_BY_CONTEXT") {
             let thresholds = read_warning_thresholds(Path::new(&thresholds_path))?;
             enforce_missing_by_context_map(&current.missing_by_context, &thresholds)
-                .with_context(|| format!("warning max missing by context {}", thresholds_path))?;
+                .with_context(|| format!("warning max missing by context {thresholds_path}"))?;
         }
         if std::env::var("DMB_REQUIRE_VENUE_SHOWS")
             .ok()
-            .map(|val| matches!(val.as_str(), "1" | "true" | "TRUE"))
-            .unwrap_or(false)
+            .is_some_and(|val| matches!(val.as_str(), "1" | "true" | "TRUE"))
         {
             let missing = current
                 .missing_by_field
@@ -2268,8 +2247,7 @@ fn validate_data(
                 .unwrap_or(0);
             if missing > 0 {
                 anyhow::bail!(
-                    "venue stats missing show history: venue_stats.shows warnings={}",
-                    missing
+                    "venue stats missing show history: venue_stats.shows warnings={missing}"
                 );
             }
         }
@@ -2283,7 +2261,7 @@ fn validate_data(
     if song_stats_path.exists() {
         let song_stats = load_json_array(&song_stats_path)?;
         for stat in &song_stats {
-            let total = stat.get("totalPlays").and_then(|v| v.as_i64());
+            let total = stat.get("totalPlays").and_then(serde_json::Value::as_i64);
             let performances_len = stat
                 .get("performances")
                 .and_then(|v| v.as_array())
@@ -2307,7 +2285,7 @@ fn validate_data(
         let venue_stats = load_json_array(&venue_stats_path)?;
         let mut show_counts: HashMap<i32, i64> = HashMap::new();
         for show in &shows {
-            if let Some(venue_id) = show.get("venueId").and_then(|v| v.as_i64()) {
+            if let Some(venue_id) = show.get("venueId").and_then(serde_json::Value::as_i64) {
                 *show_counts.entry(venue_id as i32).or_insert(0) += 1;
             }
         }
@@ -2315,16 +2293,13 @@ fn validate_data(
             let venue_id = stat
                 .get("originalId")
                 .or_else(|| stat.get("venueId"))
-                .and_then(|v| v.as_i64());
-            let total_shows = stat.get("totalShows").and_then(|v| v.as_i64());
+                .and_then(serde_json::Value::as_i64);
+            let total_shows = stat.get("totalShows").and_then(serde_json::Value::as_i64);
             if let (Some(venue_id), Some(total_shows)) = (venue_id, total_shows) {
                 let count = show_counts.get(&(venue_id as i32)).copied().unwrap_or(0);
                 if count != total_shows && !allow_mismatch {
                     anyhow::bail!(
-                        "venue stats mismatch: venue_id={} totalShows={} shows={}",
-                        venue_id,
-                        total_shows,
-                        count
+                        "venue stats mismatch: venue_id={venue_id} totalShows={total_shows} shows={count}"
                     );
                 }
             }
@@ -2349,37 +2324,48 @@ fn validate_ai_config(path: &Path) -> Result<()> {
         anyhow::bail!("ai-config missing required keys (version/generatedAt)");
     }
     if version != CORE_SCHEMA_VERSION {
-        anyhow::bail!(
-            "ai-config version mismatch: {} vs {}",
-            version,
-            CORE_SCHEMA_VERSION
-        );
+        anyhow::bail!("ai-config version mismatch: {version} vs {CORE_SCHEMA_VERSION}");
     }
     if chrono::DateTime::parse_from_rfc3339(generated_at).is_err() {
         anyhow::bail!("ai-config generatedAt is not RFC3339");
     }
-    if let Some(worker_threshold) = value.get("workerThresholdDefault").and_then(|v| v.as_u64()) {
+    if let Some(worker_threshold) = value
+        .get("workerThresholdDefault")
+        .and_then(serde_json::Value::as_u64)
+    {
         if !(5_000..=1_000_000).contains(&worker_threshold) {
             anyhow::bail!("ai-config workerThresholdDefault out of range");
         }
     }
-    if let Some(override_mb) = value.get("annCapOverrideMb").and_then(|v| v.as_u64()) {
+    if let Some(override_mb) = value
+        .get("annCapOverrideMb")
+        .and_then(serde_json::Value::as_u64)
+    {
         if !(128..=2048).contains(&override_mb) {
             anyhow::bail!("ai-config annCapOverrideMb out of range");
         }
     }
     if let Some(tuning) = value.get("tuning") {
-        if let Some(last) = tuning.get("last_latency_ms").and_then(|v| v.as_f64()) {
+        if let Some(last) = tuning
+            .get("last_latency_ms")
+            .and_then(serde_json::Value::as_f64)
+        {
             if last < 0.0 {
                 anyhow::bail!("ai-config last_latency_ms is negative");
             }
         }
-        if let Some(target) = tuning.get("target_latency_ms").and_then(|v| v.as_f64()) {
+        if let Some(target) = tuning
+            .get("target_latency_ms")
+            .and_then(serde_json::Value::as_f64)
+        {
             if !(1.0..=100.0).contains(&target) {
                 anyhow::bail!("ai-config target_latency_ms out of range");
             }
         }
-        if let Some(probe) = tuning.get("probe_override").and_then(|v| v.as_u64()) {
+        if let Some(probe) = tuning
+            .get("probe_override")
+            .and_then(serde_json::Value::as_u64)
+        {
             if probe == 0 {
                 anyhow::bail!("ai-config probe_override must be >= 1");
             }

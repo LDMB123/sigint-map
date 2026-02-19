@@ -22,7 +22,7 @@ pub(crate) fn collect_ids(
     items
         .iter()
         .filter_map(|item| item.get(field))
-        .filter_map(|value| value.as_i64())
+        .filter_map(serde_json::Value::as_i64)
         .map(|id| id as i32)
         .collect()
 }
@@ -30,7 +30,7 @@ pub(crate) fn collect_ids(
 pub(crate) fn ensure_unique(items: &[serde_json::Value], field: &str, label: &str) -> Result<()> {
     let mut seen = std::collections::HashSet::new();
     for item in items {
-        let Some(value) = item.get(field).and_then(|v| v.as_i64()) else {
+        let Some(value) = item.get(field).and_then(serde_json::Value::as_i64) else {
             anyhow::bail!("{label}: missing {field}");
         };
         if !seen.insert(value) {
@@ -73,10 +73,8 @@ pub(crate) fn compare_counts(
     let primary_count = load_json_array(primary)?.len();
     let baseline_count = load_json_array(baseline)?.len();
     if primary_count != baseline_count {
-        let message = format!(
-            "{label}: count mismatch primary={} baseline={}",
-            primary_count, baseline_count
-        );
+        let message =
+            format!("{label}: count mismatch primary={primary_count} baseline={baseline_count}");
         if allow_mismatch {
             tracing::warn!("{message}");
         } else {

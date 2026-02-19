@@ -398,7 +398,8 @@ fn write_warning_summary(
         fs::read(report_path).with_context(|| format!("read {}", report_path.display()))?;
     let report: Value = serde_json::from_slice(&report_bytes).context("parse warning report")?;
 
-    let mut selector_missing_counts: std::collections::HashMap<String, u64> = Default::default();
+    let mut selector_missing_counts: std::collections::HashMap<String, u64> =
+        std::collections::HashMap::default();
     if events_path.exists() {
         let contents = fs::read_to_string(events_path)
             .with_context(|| format!("read {}", events_path.display()))?;
@@ -474,7 +475,10 @@ fn repo_root_dir() -> Result<PathBuf> {
         return Ok(cwd);
     }
     if cwd.file_name().and_then(|v| v.to_str()) == Some("rust") && cwd.join("Cargo.toml").exists() {
-        return Ok(cwd.parent().map(|p| p.to_path_buf()).unwrap_or(cwd.clone()));
+        return Ok(cwd
+            .parent()
+            .map(std::path::Path::to_path_buf)
+            .unwrap_or(cwd.clone()));
     }
     for ancestor in cwd.ancestors() {
         if ancestor.join("rust/Cargo.toml").exists() {

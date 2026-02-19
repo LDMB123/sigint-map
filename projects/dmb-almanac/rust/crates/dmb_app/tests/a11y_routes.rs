@@ -36,20 +36,17 @@ fn top_routes_include_accessibility_landmarks_and_heading_order() {
 
         assert!(
             html.contains("class=\"skip-link\""),
-            "route {} missing skip-link",
-            route
+            "route {route} missing skip-link"
         );
         assert!(
             html.contains("id=\"main-content\""),
-            "route {} missing main landmark",
-            route
+            "route {route} missing main landmark"
         );
         assert!(
             html.contains("aria-label=\"Primary navigation\""),
-            "route {} missing primary nav label",
-            route
+            "route {route} missing primary nav label"
         );
-        assert!(html.contains("<h1"), "route {} missing h1", route);
+        assert!(html.contains("<h1"), "route {route} missing h1");
 
         if let Some(h2_pos) = html.find("<h2") {
             let h1_pos = html
@@ -57,8 +54,7 @@ fn top_routes_include_accessibility_landmarks_and_heading_order() {
                 .expect("h1 required before evaluating heading order");
             assert!(
                 h1_pos < h2_pos,
-                "route {} has h2 before h1 (invalid heading hierarchy)",
-                route
+                "route {route} has h2 before h1 (invalid heading hierarchy)"
             );
         }
     }

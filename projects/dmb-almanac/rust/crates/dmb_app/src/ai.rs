@@ -515,8 +515,8 @@ fn cap_embedding_index_inner(
 
 #[cfg(any(feature = "hydrate", test))]
 fn estimate_ivf_bytes(ivf: &AnnIvfIndex) -> u64 {
-    let centroid_floats: usize = ivf.centroids.iter().map(|c| c.len()).sum();
-    let list_entries: usize = ivf.lists.iter().map(|l| l.len()).sum();
+    let centroid_floats: usize = ivf.centroids.iter().map(std::vec::Vec::len).sum();
+    let list_entries: usize = ivf.lists.iter().map(std::vec::Vec::len).sum();
     (centroid_floats as u64 * 4).saturating_add(list_entries as u64 * 4)
 }
 

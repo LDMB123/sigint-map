@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub fn calculate_song_debuts_with_count(setlists_json: &str) -> Result<js_sys::Map, JsValue> {
     let setlists: Vec<SetlistData> = serde_json::from_str(setlists_json)
-        .map_err(|e| JsValue::from_str(&format!("JSON parse error: {}", e)))?;
+        .map_err(|e| JsValue::from_str(&format!("JSON parse error: {e}")))?;
 
     let mut song_stats: HashMap<String, SongDebut> = HashMap::new();
 

@@ -1227,19 +1227,23 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                         <li>{move || {
                             integrity_report
                                 .get()
-                                .map(|report| {
+                                .map_or_else(
+                                    || "IDB integrity: n/a".to_string(),
+                                    |report| {
                                     if report.total_mismatches == 0 {
                                         "IDB integrity: ok".to_string()
                                     } else {
                                         format!("IDB integrity: {} mismatch(es)", report.total_mismatches)
                                     }
-                                })
-                                .unwrap_or_else(|| "IDB integrity: n/a".to_string())
+                                },
+                                )
                         }}</li>
                         <li>{move || {
                             sqlite_parity
                                 .get()
-                                .map(|report| {
+                                .map_or_else(
+                                    || "SQLite parity: n/a".to_string(),
+                                    |report| {
                                     if !report.available {
                                         "SQLite parity: unavailable".to_string()
                                     } else if report.total_mismatches == 0 {
@@ -1247,8 +1251,8 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                     } else {
                                         format!("SQLite parity: {} mismatch(es)", report.total_mismatches)
                                     }
-                                })
-                                .unwrap_or_else(|| "SQLite parity: n/a".to_string())
+                                },
+                                )
                         }}</li>
                     </ul>
                     <p class="muted">"Detailed mismatches are shown in the PWA Status panel."</p>
@@ -1261,8 +1265,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                             "WebGPU device probe: {}",
                             webgpu_probe
                                 .get()
-                                .map(|ok| if ok { "ready" } else { "failed" })
-                                .unwrap_or("n/a")
+                                .map_or("n/a", |ok| if ok { "ready" } else { "failed" })
                         )}</li>
                         <li>{move || format!("WebGPU enabled: {}", if caps.get().webgpu_enabled { "yes" } else { "no" })}</li>
                         <li>{move || format!("GPU Worker: {}", if caps.get().webgpu_worker { "on" } else { "off" })}</li>
@@ -1277,8 +1280,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                             "Cross-Origin Isolated: {}",
                             cross_origin_isolated
                                 .get()
-                                .map(|v| if v { "on" } else { "off" })
-                                .unwrap_or("n/a")
+                                .map_or("n/a", |v| if v { "on" } else { "off" })
                         )}</li>
                         <li>{move || format!(
                             "AI config seeded: {}",
@@ -1300,26 +1302,24 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                             "Worker bench: {}",
                             worker_bench_timestamp
                                 .get()
-                                .map(|ts| {
+                                .map_or_else(
+                                    || "n/a".to_string(),
+                                    |ts| {
                                     let minutes = (js_sys::Date::now() - ts) / 60000.0;
                                     format!("{:.1}m ago", minutes.max(0.0))
-                                })
-                                .unwrap_or_else(|| "n/a".to_string())
+                                },
+                                )
                         )}</li>
                         <li>{move || format!(
                             "Worker max floats: {}",
                             worker_max_floats
-                                .get()
-                                .map(|v| v.to_string())
-                                .unwrap_or_else(|| "n/a".to_string())
+                                .get().map_or_else(|| "n/a".to_string(), |v| v.to_string())
                         )}</li>
                         <li>{move || format!(
                             "Worker cooldown: {}",
                             worker_failure
                                 .get()
-                                .cooldown_remaining_ms
-                                .map(|ms| format!("{:.0}s", (ms / 1000.0).max(0.0)))
-                                .unwrap_or_else(|| "none".to_string())
+                                .cooldown_remaining_ms.map_or_else(|| "none".to_string(), |ms| format!("{:.0}s", (ms / 1000.0).max(0.0)))
                         )}</li>
                         <li>{move || format!(
                             "Worker last error: {}",
@@ -1414,7 +1414,12 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                     {move || {
                         webgpu_runtime
                             .get()
-                            .map(|telemetry| {
+                            .map_or_else(
+                                || {
+                                    view! { <p class="muted">"Runtime telemetry unavailable."</p> }
+                                        .into_any()
+                                },
+                                |telemetry| {
                                 let direct_calls = telemetry
                                     .counters
                                     .get("direct_scores_calls")
@@ -1444,11 +1449,13 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                     telemetry.last_event.unwrap_or_else(|| "none".to_string());
                                 let last_event_age = telemetry
                                     .last_event_ts
-                                    .map(|ts| {
+                                    .map_or_else(
+                                        || "n/a".to_string(),
+                                        |ts| {
                                         let minutes = (js_sys::Date::now() - ts) / 60000.0;
                                         format!("{:.1}m ago", minutes.max(0.0))
-                                    })
-                                    .unwrap_or_else(|| "n/a".to_string());
+                                    },
+                                    );
                                 view! {
                                     <ul class="list">
                                         <li>{format!("Direct score calls: {direct_calls}")}</li>
@@ -1460,11 +1467,8 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                     </ul>
                                 }
                                 .into_any()
-                            })
-                            .unwrap_or_else(|| {
-                                view! { <p class="muted">"Runtime telemetry unavailable."</p> }
-                                    .into_any()
-                            })
+                            },
+                            )
                     }}
                     <div class="pill-row">
                         <button type="button" class="pill pill--ghost" on:click=refresh_runtime_metrics>
@@ -1480,31 +1484,25 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                     {move || {
                         apple_silicon_profile
                             .get()
-                            .map(|profile| {
+                            .map_or_else(
+                                || view! { <p class="muted">"Profile unavailable."</p> }.into_any(),
+                                |profile| {
                                 let workgroup_dot = profile
                                     .workgroup
                                     .as_ref()
-                                    .and_then(|group| group.dot)
-                                    .map(|v| v.to_string())
-                                    .unwrap_or_else(|| "n/a".to_string());
+                                    .and_then(|group| group.dot).map_or_else(|| "n/a".to_string(), |v| v.to_string());
                                 let workgroup_score = profile
                                     .workgroup
                                     .as_ref()
-                                    .and_then(|group| group.score)
-                                    .map(|v| v.to_string())
-                                    .unwrap_or_else(|| "n/a".to_string());
+                                    .and_then(|group| group.score).map_or_else(|| "n/a".to_string(), |v| v.to_string());
                                 let threshold = profile
                                     .worker
                                     .as_ref()
-                                    .and_then(|worker| worker.threshold_floats)
-                                    .map(|v| v.to_string())
-                                    .unwrap_or_else(|| "n/a".to_string());
+                                    .and_then(|worker| worker.threshold_floats).map_or_else(|| "n/a".to_string(), |v| v.to_string());
                                 let max_floats = profile
                                     .worker
                                     .as_ref()
-                                    .and_then(|worker| worker.max_floats)
-                                    .map(|v| v.to_string())
-                                    .unwrap_or_else(|| "n/a".to_string());
+                                    .and_then(|worker| worker.max_floats).map_or_else(|| "n/a".to_string(), |v| v.to_string());
                                 view! {
                                     <ul class="list">
                                         <li>{format!(
@@ -1514,16 +1512,12 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                         <li>{format!(
                                             "CPU cores: {}",
                                             profile
-                                                .cpu_cores
-                                                .map(|v| format!("{v:.0}"))
-                                                .unwrap_or_else(|| "n/a".to_string())
+                                                .cpu_cores.map_or_else(|| "n/a".to_string(), |v| format!("{v:.0}"))
                                         )}</li>
                                         <li>{format!(
                                             "Device memory: {}",
                                             profile
-                                                .device_memory_gb
-                                                .map(|v| format!("{v:.1} GB"))
-                                                .unwrap_or_else(|| "n/a".to_string())
+                                                .device_memory_gb.map_or_else(|| "n/a".to_string(), |v| format!("{v:.1} GB"))
                                         )}</li>
                                         <li>{format!("Workgroup dot: {workgroup_dot}")}</li>
                                         <li>{format!("Workgroup score: {workgroup_score}")}</li>
@@ -1532,10 +1526,8 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                     </ul>
                                 }
                                 .into_any()
-                            })
-                            .unwrap_or_else(|| {
-                                view! { <p class="muted">"Profile unavailable."</p> }.into_any()
-                            })
+                            },
+                            )
                     }}
                 </div>
                 <div class="card">
@@ -1543,21 +1535,30 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                     {move || {
                         idb_runtime_metrics
                             .get()
-                            .map(|metrics| {
+                            .map_or_else(
+                                || {
+                                    view! { <p class="muted">"Runtime metrics unavailable."</p> }
+                                        .into_any()
+                                },
+                                |metrics| {
                                 let blocked_age = metrics
                                     .open_blocked_last_ms
-                                    .map(|ts| {
+                                    .map_or_else(
+                                        || "n/a".to_string(),
+                                        |ts| {
                                         let minutes = (js_sys::Date::now() - ts) / 60000.0;
                                         format!("{:.1}m ago", minutes.max(0.0))
-                                    })
-                                    .unwrap_or_else(|| "n/a".to_string());
+                                    },
+                                    );
                                 let version_age = metrics
                                     .version_change_last_ms
-                                    .map(|ts| {
+                                    .map_or_else(
+                                        || "n/a".to_string(),
+                                        |ts| {
                                         let minutes = (js_sys::Date::now() - ts) / 60000.0;
                                         format!("{:.1}m ago", minutes.max(0.0))
-                                    })
-                                    .unwrap_or_else(|| "n/a".to_string());
+                                    },
+                                    );
                                 view! {
                                     <ul class="list">
                                         <li>{format!("Open blocked events: {}", metrics.open_blocked_count)}</li>
@@ -1567,11 +1568,8 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                     </ul>
                                 }
                                 .into_any()
-                            })
-                            .unwrap_or_else(|| {
-                                view! { <p class="muted">"Runtime metrics unavailable."</p> }
-                                    .into_any()
-                            })
+                            },
+                            )
                     }}
                     <button type="button" class="pill pill--ghost" on:click=refresh_runtime_metrics>
                         "Refresh Runtime Metrics"
@@ -1611,23 +1609,17 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                             <li>{format!("Cap: {:.1} MB", cap.cap_bytes as f64 / 1_000_000.0)}</li>
                             <li>{format!(
                                 "Override: {}",
-                                cap.cap_override_mb
-                                    .map(|v| format!("{v} MB"))
-                                    .unwrap_or_else(|| "none".to_string())
+                                cap.cap_override_mb.map_or_else(|| "none".to_string(), |v| format!("{v} MB"))
                             )}</li>
                             <li>{format!("Before: {:.1} MB ({} vectors)", cap.matrix_bytes_before as f64 / 1_000_000.0, cap.vectors_before)}</li>
                             <li>{format!("After: {:.1} MB ({} vectors)", cap.matrix_bytes_after as f64 / 1_000_000.0, cap.vectors_after)}</li>
                             <li>{format!(
                                 "IVF bytes: {}",
-                                cap.ivf_bytes
-                                    .map(|v| format!("{:.1} MB", v as f64 / 1_000_000.0))
-                                    .unwrap_or_else(|| "n/a".to_string())
+                                cap.ivf_bytes.map_or_else(|| "n/a".to_string(), |v| format!("{:.1} MB", v as f64 / 1_000_000.0))
                             )}</li>
                             <li>{format!(
                                 "IVF cap: {}",
-                                cap.ivf_cap_bytes
-                                    .map(|v| format!("{:.1} MB", v as f64 / 1_000_000.0))
-                                    .unwrap_or_else(|| "n/a".to_string())
+                                cap.ivf_cap_bytes.map_or_else(|| "n/a".to_string(), |v| format!("{:.1} MB", v as f64 / 1_000_000.0))
                             )}</li>
                             <li>{format!("Chunks loaded: {}", cap.chunks_loaded.unwrap_or(0))}</li>
                             <li>{format!("Records loaded: {}", cap.records_loaded.unwrap_or(0))}</li>
@@ -1635,7 +1627,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                             <li>{format!("Used ANN: {}", if cap.used_ann { "yes" } else { "no" })}</li>
                             <li>{format!("Capped: {}", if cap.capped { "yes" } else { "no" })}</li>
                             <li>{format!("Budget capped: {}", if cap.budget_capped { "yes" } else { "no" })}</li>
-                            <li>{format!("Device Memory: {}", cap.device_memory_gb.map(|v| format!("{v:.1} GB")).unwrap_or_else(|| "n/a".to_string()))}</li>
+                            <li>{format!("Device Memory: {}", cap.device_memory_gb.map_or_else(|| "n/a".to_string(), |v| format!("{v:.1} GB")))}</li>
                             <li>{format!("Tier: {}", cap.policy_tier)}</li>
                         </ul>
                     })}
@@ -1676,21 +1668,17 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                 <li>{format!("Last update: {:.1}m ago", minutes.max(0.0))}</li>
                                 <li>{format!(
                                     "Worker threshold: {}",
-                                    snapshot.worker_threshold.map(|v| v.to_string()).unwrap_or_else(|| "n/a".to_string())
+                                    snapshot.worker_threshold.map_or_else(|| "n/a".to_string(), |v| v.to_string())
                                 )}</li>
                                 <li>{format!(
                                     "Worker max floats: {}",
                                     snapshot
-                                        .worker_max_floats
-                                        .map(|v| v.to_string())
-                                        .unwrap_or_else(|| "n/a".to_string())
+                                        .worker_max_floats.map_or_else(|| "n/a".to_string(), |v| v.to_string())
                                 )}</li>
                                 <li>{format!(
                                     "Worker cooldown: {}",
                                     snapshot
-                                        .worker_failure_remaining_ms
-                                        .map(|v| format!("{:.0}s", (v / 1000.0).max(0.0)))
-                                        .unwrap_or_else(|| "none".to_string())
+                                        .worker_failure_remaining_ms.map_or_else(|| "none".to_string(), |v| format!("{:.0}s", (v / 1000.0).max(0.0)))
                                 )}</li>
                                 <li>{format!(
                                     "Worker last error: {}",
@@ -1703,21 +1691,19 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                 <li>{format!(
                                     "ANN cap override: {}",
                                     snapshot
-                                        .ann_cap_override_mb
-                                        .map(|v| format!("{v} MB"))
-                                        .unwrap_or_else(|| "none".to_string())
+                                        .ann_cap_override_mb.map_or_else(|| "none".to_string(), |v| format!("{v} MB"))
                                 )}</li>
                                 <li>{format!(
                                     "WebGPU enabled: {}",
-                                    snapshot.webgpu_enabled.map(|v| if v { "yes" } else { "no" }).unwrap_or("n/a")
+                                    snapshot.webgpu_enabled.map_or("n/a", |v| if v { "yes" } else { "no" })
                                 )}</li>
                                 <li>{format!(
                                     "WebGPU available: {}",
-                                    snapshot.webgpu_available.map(|v| if v { "yes" } else { "no" }).unwrap_or("n/a")
+                                    snapshot.webgpu_available.map_or("n/a", |v| if v { "yes" } else { "no" })
                                 )}</li>
                                 <li>{format!(
                                     "WebNN: {}",
-                                    snapshot.webnn.map(|v| if v { "yes" } else { "no" }).unwrap_or("n/a")
+                                    snapshot.webnn.map_or("n/a", |v| if v { "yes" } else { "no" })
                                 )}</li>
                                 <li>{format!(
                                     "AI config version: {}",
@@ -1729,14 +1715,13 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                                 )}</li>
                                 <li>{format!(
                                     "AI config seeded: {}",
-                                    snapshot.ai_config_seeded.map(|v| if v { "yes" } else { "no" }).unwrap_or("n/a")
+                                    snapshot.ai_config_seeded.map_or("n/a", |v| if v { "yes" } else { "no" })
                                 )}</li>
                                 <li>{format!(
                                     "Embedding sample: {}",
                                     snapshot
                                         .embedding_sample_enabled
-                                        .map(|v| if v { "on" } else { "off" })
-                                        .unwrap_or("n/a")
+                                        .map_or("n/a", |v| if v { "on" } else { "off" })
                                 )}</li>
                             </ul>
                         }
@@ -1770,7 +1755,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                         <ul class="list">
                             <li>{format!("Sample Count: {}", result.sample_count)}</li>
                             <li>{format!("CPU (SIMD if enabled): {:.2} ms", result.cpu_ms)}</li>
-                            <li>{format!("GPU: {}", result.gpu_ms.map(|ms| format!("{:.2} ms", ms)).unwrap_or_else(|| "n/a".to_string()))}</li>
+                            <li>{format!("GPU: {}", result.gpu_ms.map_or_else(|| "n/a".to_string(), |ms| format!("{ms:.2} ms")))}</li>
                             <li>{format!("Backend: {}", result.backend)}</li>
                         </ul>
                     })}
@@ -1821,7 +1806,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                     <div class="stack">
                         <button type="button" class="pill" on:click=run_worker_benchmark>"Run Worker Benchmark"</button>
                         {move || worker_threshold_current.get().map(|value| {
-                            let dim = embed_meta.get().map(|meta| meta.dim as usize).unwrap_or(0);
+                            let dim = embed_meta.get().map_or(0, |meta| meta.dim as usize);
                             let dim = dim.max(1);
                             let approx_vectors = value / dim;
                             view! {
@@ -1856,12 +1841,12 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                         <ul class="list">
                             <li>{format!("Vectors: {}", result.vector_count)}</li>
                             <li>{format!("Dim: {}", result.dim)}</li>
-                            <li>{format!("Direct: {}", result.direct_ms.map(|ms| format!("{:.2} ms", ms)).unwrap_or_else(|| "n/a".to_string()))}</li>
-                            <li>{format!("Worker: {}", result.worker_ms.map(|ms| format!("{:.2} ms", ms)).unwrap_or_else(|| "n/a".to_string()))}</li>
+                            <li>{format!("Direct: {}", result.direct_ms.map_or_else(|| "n/a".to_string(), |ms| format!("{ms:.2} ms")))}</li>
+                            <li>{format!("Worker: {}", result.worker_ms.map_or_else(|| "n/a".to_string(), |ms| format!("{ms:.2} ms")))}</li>
                             <li>{format!("Winner: {}", result.winner.unwrap_or_else(|| "n/a".to_string()))}</li>
                             <li>{format!(
                                 "Recommended threshold (floats): {}",
-                                result.recommended_threshold.map(|v| v.to_string()).unwrap_or_else(|| "n/a".to_string())
+                                result.recommended_threshold.map_or_else(|| "n/a".to_string(), |v| v.to_string())
                             )}</li>
                         </ul>
                     })}
@@ -1871,9 +1856,9 @@ pub fn ai_diagnostics_page() -> impl IntoView {
                     <button type="button" class="pill" on:click=run_tuning>"Auto-Tune Probe"</button>
                     {move || tuning.get().map(|state| view! {
                         <ul class="list">
-                            <li>{format!("Probe Override: {}", state.probe_override.map(|v| v.to_string()).unwrap_or_else(|| "none".to_string()))}</li>
+                            <li>{format!("Probe Override: {}", state.probe_override.map_or_else(|| "none".to_string(), |v| v.to_string()))}</li>
                             <li>{format!("Target Latency: {:.1} ms", state.target_latency_ms)}</li>
-                            <li>{format!("Last Latency: {}", state.last_latency_ms.map(|v| format!("{:.2} ms", v)).unwrap_or_else(|| "n/a".to_string()))}</li>
+                            <li>{format!("Last Latency: {}", state.last_latency_ms.map_or_else(|| "n/a".to_string(), |v| format!("{v:.2} ms")))}</li>
                         </ul>
                     })}
                     {move || tuning_result.get().map(|result| view! {
@@ -1958,7 +1943,7 @@ pub fn ai_benchmark_page() -> impl IntoView {
                                 <ul class="list">
                                     <li>{format!("Sample Count: {}", result.sample_count)}</li>
                                     <li>{format!("CPU: {:.2} ms", result.cpu_ms)}</li>
-                                    <li>{format!("GPU: {}", result.gpu_ms.map(|ms| format!("{:.2} ms", ms)).unwrap_or_else(|| "n/a".to_string()))}</li>
+                                    <li>{format!("GPU: {}", result.gpu_ms.map_or_else(|| "n/a".to_string(), |ms| format!("{ms:.2} ms")))}</li>
                                     <li>{format!("Backend: {}", result.backend)}</li>
                                 </ul>
                             }
@@ -1976,7 +1961,7 @@ pub fn ai_benchmark_page() -> impl IntoView {
                                 <ul class="list">
                                     <li>{format!("Candidates: {}", result.candidate_count)}</li>
                                     <li>{format!("CPU: {:.2} ms", result.cpu_ms)}</li>
-                                    <li>{format!("GPU: {}", result.gpu_ms.map(|ms| format!("{:.2} ms", ms)).unwrap_or_else(|| "n/a".to_string()))}</li>
+                                    <li>{format!("GPU: {}", result.gpu_ms.map_or_else(|| "n/a".to_string(), |ms| format!("{ms:.2} ms")))}</li>
                                     <li>{format!("Backend: {}", result.backend)}</li>
                                 </ul>
                             }
@@ -2762,7 +2747,7 @@ async fn remove_user_attended_show(show_id: i32) -> bool {
 
 fn format_location(city: &str, state: &Option<String>) -> String {
     match state {
-        Some(state) if !state.is_empty() => format!("{}, {}", city, state),
+        Some(state) if !state.is_empty() => format!("{city}, {state}"),
         _ => city.to_string(),
     }
 }
@@ -2842,23 +2827,19 @@ fn setlist_entry_matches_query(entry: &SetlistEntry, query: &str) -> bool {
     let in_song_title = entry
         .song
         .as_ref()
-        .map(|song| song.title.to_ascii_lowercase().contains(query))
-        .unwrap_or(false);
+        .is_some_and(|song| song.title.to_ascii_lowercase().contains(query));
     let in_slot = entry
         .slot
         .as_deref()
-        .map(|slot| slot.to_ascii_lowercase().contains(query))
-        .unwrap_or(false);
+        .is_some_and(|slot| slot.to_ascii_lowercase().contains(query));
     let in_set = entry
         .set_name
         .as_deref()
-        .map(|set| set.to_ascii_lowercase().contains(query))
-        .unwrap_or(false);
+        .is_some_and(|set| set.to_ascii_lowercase().contains(query));
     let in_notes = entry
         .notes
         .as_deref()
-        .map(|notes| notes.to_ascii_lowercase().contains(query))
-        .unwrap_or(false);
+        .is_some_and(|notes| notes.to_ascii_lowercase().contains(query));
     in_song_title || in_slot || in_set || in_notes
 }
 
@@ -2897,8 +2878,7 @@ fn release_track_matches_query(track: &ReleaseTrack, query: &str) -> bool {
     let in_notes = track
         .notes
         .as_deref()
-        .map(|notes| notes.to_ascii_lowercase().contains(query))
-        .unwrap_or(false);
+        .is_some_and(|notes| notes.to_ascii_lowercase().contains(query));
     let in_numbers = format!(
         "{} {} {} {}",
         track.song_id.unwrap_or(0),
@@ -2927,7 +2907,7 @@ pub fn shows_page() -> impl IntoView {
             let total = items.len();
             view! {
                 <>
-                    <p class="list-summary">{format!("Showing {} recent shows", total)}</p>
+                    <p class="list-summary">{format!("Showing {total} recent shows")}</p>
                     <ul class="result-list">
                         {items
                             .into_iter()
@@ -2989,7 +2969,7 @@ pub fn songs_page() -> impl IntoView {
             let total = items.len();
             view! {
                 <>
-                    <p class="list-summary">{format!("Showing {} ranked songs", total)}</p>
+                    <p class="list-summary">{format!("Showing {total} ranked songs")}</p>
                     <ul class="result-list">
                         {items
                             .into_iter()
@@ -3006,9 +2986,9 @@ pub fn songs_page() -> impl IntoView {
                                         <span class="pill">{format!("#{}", idx + 1)}</span>
                                         <div class="result-body">
                                             <a class="result-label" href=href>{song.title}</a>
-                                            <span class="result-meta">{format!("Last played: {}", last)}</span>
+                                            <span class="result-meta">{format!("Last played: {last}")}</span>
                                         </div>
-                                        <span class="result-score">{format!("{} plays", plays)}</span>
+                                        <span class="result-score">{format!("{plays} plays")}</span>
                                     </li>
                                 }
                             })
@@ -3047,7 +3027,7 @@ pub fn venues_page() -> impl IntoView {
             let total = items.len();
             view! {
                 <>
-                    <p class="list-summary">{format!("Showing {} venues", total)}</p>
+                    <p class="list-summary">{format!("Showing {total} venues")}</p>
                     <ul class="result-list">
                         {items
                             .into_iter()
@@ -3066,7 +3046,7 @@ pub fn venues_page() -> impl IntoView {
                                             <a class="result-label" href=href>{venue.name}</a>
                                             <span class="result-meta">{location}</span>
                                         </div>
-                                        <span class="result-score">{format!("{} shows", total)}</span>
+                                        <span class="result-score">{format!("{total} shows")}</span>
                                     </li>
                                 }
                             })
@@ -3107,7 +3087,7 @@ pub fn guests_page() -> impl IntoView {
             let total = items.len();
             view! {
                 <>
-                    <p class="list-summary">{format!("Showing {} frequent guests", total)}</p>
+                    <p class="list-summary">{format!("Showing {total} frequent guests")}</p>
                     <ul class="result-list">
                         {items
                             .into_iter()
@@ -3120,7 +3100,7 @@ pub fn guests_page() -> impl IntoView {
                                         <div class="result-body">
                                             <a class="result-label" href=href>{guest.name}</a>
                                         </div>
-                                        <span class="result-score">{format!("{} appearances", total)}</span>
+                                        <span class="result-score">{format!("{total} appearances")}</span>
                                     </li>
                                 }
                             })
@@ -3159,7 +3139,7 @@ pub fn tours_page() -> impl IntoView {
             let total = items.len();
             view! {
                 <>
-                    <p class="list-summary">{format!("Showing {} recent tours", total)}</p>
+                    <p class="list-summary">{format!("Showing {total} recent tours")}</p>
                     <ul class="result-list">
                         {items
                             .into_iter()
@@ -3172,7 +3152,7 @@ pub fn tours_page() -> impl IntoView {
                                         <div class="result-body">
                                             <a class="result-label" href=href>{tour.name}</a>
                                         </div>
-                                        <span class="result-score">{format!("{} shows", total)}</span>
+                                        <span class="result-score">{format!("{total} shows")}</span>
                                     </li>
                                 }
                             })
@@ -3211,7 +3191,7 @@ pub fn releases_page() -> impl IntoView {
             let total = items.len();
             view! {
                 <>
-                    <p class="list-summary">{format!("Showing {} recent releases", total)}</p>
+                    <p class="list-summary">{format!("Showing {total} recent releases")}</p>
                     <ul class="result-list">
                         {items
                             .into_iter()
@@ -3324,27 +3304,24 @@ pub fn show_detail_page() -> impl IntoView {
     let render = move |ctx: Option<ShowContext>| match ctx {
         Some(ctx) => {
             let show = ctx.show;
-            let venue_name = ctx
-                .venue
-                .as_ref()
-                .map(|venue| venue.name.clone())
-                .unwrap_or_else(|| format!("Venue #{}", show.venue_id));
-            let venue_line = ctx
-                .venue
-                .as_ref()
-                .map(|venue| {
+            let venue_name = ctx.venue.as_ref().map_or_else(
+                || format!("Venue #{}", show.venue_id),
+                |venue| venue.name.clone(),
+            );
+            let venue_line = ctx.venue.as_ref().map_or_else(
+                || venue_name.clone(),
+                |venue| {
                     format!(
                         "{} • {}",
                         venue.name,
                         format_location(&venue.city, &venue.state)
                     )
-                })
-                .unwrap_or_else(|| venue_name.clone());
-            let tour_line = ctx
-                .tour
-                .as_ref()
-                .map(|tour| format!("{} ({})", tour.name, tour.year))
-                .unwrap_or_else(|| "No tour".into());
+                },
+            );
+            let tour_line = ctx.tour.as_ref().map_or_else(
+                || "No tour".into(),
+                |tour| format!("{} ({})", tour.name, tour.year),
+            );
             let tour_href = ctx
                 .tour
                 .as_ref()
@@ -3353,8 +3330,7 @@ pub fn show_detail_page() -> impl IntoView {
             let song_count = show.song_count.unwrap_or(0);
             let rarity = show
                 .rarity_index
-                .map(|v| format!("{:.2}", v))
-                .unwrap_or_else(|| "-".into());
+                .map_or_else(|| "-".into(), |v| format!("{v:.2}"));
             let show_id_value = show.id;
             #[cfg(feature = "hydrate")]
             let show_date_value = show.date.clone();
@@ -3663,14 +3639,10 @@ pub fn show_detail_page() -> impl IntoView {
                                                     .map(|entry| {
                                                         let label = entry
                                                             .song
-                                                            .as_ref()
-                                                            .map(|song| song.title.clone())
-                                                            .unwrap_or_else(|| format!("Song #{}", entry.song_id));
+                                                            .as_ref().map_or_else(|| format!("Song #{}", entry.song_id), |song| song.title.clone());
                                                         let slot = entry
                                                             .slot
-                                                            .as_deref()
-                                                            .map(titleize_label)
-                                                            .unwrap_or_else(|| "Song".to_string());
+                                                            .as_deref().map_or_else(|| "Song".to_string(), titleize_label);
                                                         let set_label =
                                                             setlist_set_label(&normalized_set_key(entry.set_name.as_deref()));
                                                         let song_href = entry.song.as_ref().and_then(|song| {
@@ -4180,9 +4152,7 @@ pub fn release_detail_page() -> impl IntoView {
                                                 .into_iter()
                                                 .map(|track| {
                                                     let track_label = track
-                                                        .song_id
-                                                        .map(|id| format!("Song #{id}"))
-                                                        .unwrap_or_else(|| "Unknown song".to_string());
+                                                        .song_id.map_or_else(|| "Unknown song".to_string(), |id| format!("Song #{id}"));
                                                     let number = track.track_number.unwrap_or(0);
                                                     let disc = track.disc_number.unwrap_or(1).max(1);
                                                     let track_pos = if number > 0 {
@@ -4452,11 +4422,11 @@ pub fn venue_detail_page() -> impl IntoView {
 
 fn search_result_href(item: &dmb_core::SearchResult) -> Option<String> {
     match item.result_type.as_str() {
-        "song" => item.slug.as_ref().map(|slug| format!("/songs/{}", slug)),
+        "song" => item.slug.as_ref().map(|slug| format!("/songs/{slug}")),
         "venue" => Some(format!("/venues/{}", item.id)),
         "tour" => Some(format!("/tours/{}", item.id)),
-        "guest" => item.slug.as_ref().map(|slug| format!("/guests/{}", slug)),
-        "release" => item.slug.as_ref().map(|slug| format!("/releases/{}", slug)),
+        "guest" => item.slug.as_ref().map(|slug| format!("/guests/{slug}")),
+        "release" => item.slug.as_ref().map(|slug| format!("/releases/{slug}")),
         _ => None,
     }
 }
@@ -5320,7 +5290,7 @@ pub fn stats_page() -> impl IntoView {
                                         view! {
                                             <div class="stat-card">
                                                 <span class="stat-value">{count.to_string()}</span>
-                                                <span class="stat-label">{format!("{}s", decade)}</span>
+                                                <span class="stat-label">{format!("{decade}s")}</span>
                                             </div>
                                         }
                                     })
@@ -5365,7 +5335,7 @@ pub fn stats_page() -> impl IntoView {
                                                 <div class="result-body">
                                                     <a class="result-label" href=href>{tour.name.clone()}</a>
                                                 </div>
-                                                <span class="result-score">{format!("{} shows", total)}</span>
+                                                <span class="result-score">{format!("{total} shows")}</span>
                                             </li>
                                         }
                                     })
@@ -5405,7 +5375,7 @@ pub fn stats_page() -> impl IntoView {
                                                     <a class="result-label" href=href>{venue.name.clone()}</a>
                                                     <span class="result-meta">{location}</span>
                                                 </div>
-                                                <span class="result-score">{format!("{} shows", total)}</span>
+                                                <span class="result-score">{format!("{total} shows")}</span>
                                             </li>
                                         }
                                     })
@@ -5448,7 +5418,7 @@ pub fn stats_page() -> impl IntoView {
                                                 <div class="result-body">
                                                     <a class="result-label" href=href>{guest.name.clone()}</a>
                                                 </div>
-                                                <span class="result-score">{format!("{} appearances", total)}</span>
+                                                <span class="result-score">{format!("{total} appearances")}</span>
                                             </li>
                                         }
                                     })
@@ -5543,7 +5513,7 @@ fn render_song_ranking(songs: &[Song], count_fn: fn(&Song) -> i32) -> impl IntoV
                             <div class="result-body">
                                 <a class="result-label" href=href>{song.title.clone()}</a>
                             </div>
-                            <span class="result-score">{format!("{} times", count)}</span>
+                            <span class="result-score">{format!("{count} times")}</span>
                         </li>
                     }
                 })
@@ -5999,9 +5969,7 @@ fn render_liberation_items(list: Vec<LiberationEntry>) -> impl IntoView {
                     .map(|(idx, entry)| {
                         let label = entry
                             .song
-                            .as_ref()
-                            .map(|song| song.title.clone())
-                            .unwrap_or_else(|| format!("Song #{}", entry.song_id));
+                            .as_ref().map_or_else(|| format!("Song #{}", entry.song_id), |song| song.title.clone());
                         let days = entry.days_since.unwrap_or(0);
                         let shows = entry.shows_since.unwrap_or(0);
                         let last_played = entry
@@ -6219,12 +6187,14 @@ fn curated_item_title(item: &CuratedListItem) -> String {
         .as_deref()
         .map(str::trim)
         .filter(|title| !title.is_empty())
-        .map(ToString::to_string)
-        .unwrap_or_else(|| {
-            let type_label =
-                curated_item_type_label(&normalized_curated_item_type(&item.item_type));
-            format!("{type_label} #{id}", id = item.id)
-        })
+        .map_or_else(
+            || {
+                let type_label =
+                    curated_item_type_label(&normalized_curated_item_type(&item.item_type));
+                format!("{type_label} #{id}", id = item.id)
+            },
+            ToString::to_string,
+        )
 }
 
 fn curated_item_matches_query(item: &CuratedListItem, query: &str) -> bool {
@@ -6234,13 +6204,11 @@ fn curated_item_matches_query(item: &CuratedListItem, query: &str) -> bool {
     let in_title = item
         .item_title
         .as_deref()
-        .map(|title| title.to_ascii_lowercase().contains(query))
-        .unwrap_or(false);
+        .is_some_and(|title| title.to_ascii_lowercase().contains(query));
     let in_notes = item
         .notes
         .as_deref()
-        .map(|notes| notes.to_ascii_lowercase().contains(query))
-        .unwrap_or(false);
+        .is_some_and(|notes| notes.to_ascii_lowercase().contains(query));
     let in_type = item.item_type.to_ascii_lowercase().contains(query);
     in_title || in_notes || in_type
 }

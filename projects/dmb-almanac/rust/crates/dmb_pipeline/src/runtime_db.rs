@@ -118,7 +118,7 @@ fn read_setlist_entries(source_dir: &Path) -> Result<Vec<SetlistEntry>> {
 
     let mut chunk_paths = std::fs::read_dir(source_dir)
         .with_context(|| format!("read dir {}", source_dir.display()))?
-        .filter_map(|entry| entry.ok())
+        .filter_map(Result::ok)
         .filter_map(|entry| {
             let path = entry.path();
             if !path.is_file() {

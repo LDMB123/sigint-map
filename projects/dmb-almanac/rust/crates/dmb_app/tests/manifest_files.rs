@@ -25,8 +25,7 @@ fn manifest_includes_ann_index_bin() {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../static/data/manifest.json");
     let require_static_data = std::env::var("DMB_STATIC_DATA_REQUIRED")
         .ok()
-        .map(|v| matches!(v.as_str(), "1" | "true" | "TRUE"))
-        .unwrap_or(false);
+        .is_some_and(|v| matches!(v.as_str(), "1" | "true" | "TRUE"));
     if !manifest_path.exists() && !require_static_data {
         // `xtask verify` runs in environments where `rust/static/data` may not be generated yet.
         // We validate this in the cutover rehearsal after seeding from the static data bundle.

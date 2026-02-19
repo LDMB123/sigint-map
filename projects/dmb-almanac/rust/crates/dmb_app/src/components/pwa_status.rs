@@ -194,8 +194,7 @@ fn shorten_script_url(url: &str) -> String {
     // Keep the UI readable. `scriptURL` can be a full origin URL.
     url.rsplit('/')
         .next()
-        .map(|tail| tail.to_string())
-        .unwrap_or_else(|| url.to_string())
+        .map_or_else(|| url.to_string(), std::string::ToString::to_string)
 }
 
 #[cfg(feature = "hydrate")]
@@ -1599,7 +1598,7 @@ pub fn PwaStatus() -> impl IntoView {
             }}
             {move || {
                 cache_entries.get().map(|count| {
-                    view! { <div class="pwa-status__row muted">{format!("Cache entries: {}", count)}</div> }
+                    view! { <div class="pwa-status__row muted">{format!("Cache entries: {count}")}</div> }
                 })
             }}
             {move || {
@@ -1770,9 +1769,7 @@ pub fn PwaStatus() -> impl IntoView {
             >
                 {move || {
                     let label = update_version
-                        .get()
-                        .map(|version| format!("Update ready ({version})"))
-                        .unwrap_or_else(|| "Update ready".to_string());
+                        .get().map_or_else(|| "Update ready".to_string(), |version| format!("Update ready ({version})"));
                     view! {
                         <div class="pwa-status__row pwa-status__row--update" role="status" aria-live="polite">
                             <div class="pwa-update-message">{label}</div>
@@ -1792,8 +1789,7 @@ pub fn PwaStatus() -> impl IntoView {
                 when=move || {
                     manifest_diff
                         .get()
-                        .map(|diff| diff.total_changed > 0)
-                        .unwrap_or(false)
+                        .is_some_and(|diff| diff.total_changed > 0)
                 }
                 fallback=|| ()
             >
@@ -1827,12 +1823,10 @@ pub fn PwaStatus() -> impl IntoView {
                 when=move || {
                     let update_pending = manifest_diff
                         .get()
-                        .map(|diff| diff.total_changed > 0)
-                        .unwrap_or(false);
+                        .is_some_and(|diff| diff.total_changed > 0);
                     integrity_report
                         .get()
-                        .map(|report| report.total_mismatches > 0)
-                        .unwrap_or(false)
+                        .is_some_and(|report| report.total_mismatches > 0)
                         && status.get().done
                         && !update_pending
                 }
@@ -1875,12 +1869,10 @@ pub fn PwaStatus() -> impl IntoView {
                 when=move || {
                     let update_pending = manifest_diff
                         .get()
-                        .map(|diff| diff.total_changed > 0)
-                        .unwrap_or(false);
+                        .is_some_and(|diff| diff.total_changed > 0);
                     sqlite_parity
                         .get()
-                        .map(|report| report.available && report.total_mismatches > 0)
-                        .unwrap_or(false)
+                        .is_some_and(|report| report.available && report.total_mismatches > 0)
                         && status.get().done
                         && !update_pending
                 }
@@ -1914,12 +1906,10 @@ pub fn PwaStatus() -> impl IntoView {
                 when=move || {
                     let update_pending = manifest_diff
                         .get()
-                        .map(|diff| diff.total_changed > 0)
-                        .unwrap_or(false);
+                        .is_some_and(|diff| diff.total_changed > 0);
                     sqlite_parity
                         .get()
-                        .map(|report| report.available && !report.idb_count_failures.is_empty())
-                        .unwrap_or(false)
+                        .is_some_and(|report| report.available && !report.idb_count_failures.is_empty())
                         && status.get().done
                         && !update_pending
                 }
@@ -1953,7 +1943,7 @@ pub fn PwaStatus() -> impl IntoView {
                     let hours = remaining / (1000.0 * 60.0 * 60.0);
                     view! {
                         <div class="pwa-status__row muted">
-                            {format!("Update snoozed ({:.1}h remaining)", hours)}
+                            {format!("Update snoozed ({hours:.1}h remaining)")}
                         </div>
                     }
                 }}

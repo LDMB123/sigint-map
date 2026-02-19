@@ -16,8 +16,10 @@ fn rust_router_covers_previous_routes() {
         return;
     };
 
-    let rust_routes: BTreeSet<String> =
-        dmb_app::RUST_ROUTES.iter().map(|r| r.to_string()).collect();
+    let rust_routes: BTreeSet<String> = dmb_app::RUST_ROUTES
+        .iter()
+        .map(std::string::ToString::to_string)
+        .collect();
 
     let missing: Vec<String> = previous_routes
         .difference(&rust_routes)

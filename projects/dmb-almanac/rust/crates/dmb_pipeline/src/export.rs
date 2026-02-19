@@ -590,7 +590,7 @@ where
 fn map_by_id(items: &[Value]) -> HashMap<i64, Value> {
     let mut map = HashMap::new();
     for item in items {
-        if let Some(id) = item.get("id").and_then(|v| v.as_i64()) {
+        if let Some(id) = item.get("id").and_then(Value::as_i64) {
             map.insert(id, item.clone());
         }
     }
@@ -673,7 +673,7 @@ fn write_json_value(output_dir: &Path, name: &str, data: &Value) -> Result<FileM
     let file = fs::File::create(&path).with_context(|| format!("write {}", path.display()))?;
     serde_json::to_writer_pretty(file, data).context("serialize json")?;
     let size = fs::metadata(&path)?.len();
-    let record_count = data.as_array().map(|arr| arr.len()).unwrap_or(1);
+    let record_count = data.as_array().map_or(1, Vec::len);
     Ok(FileMeta {
         name: name.to_string(),
         path,

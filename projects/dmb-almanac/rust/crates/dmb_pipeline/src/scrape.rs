@@ -447,10 +447,10 @@ fn write_scrape_summary_with_snapshot(
     missing: usize,
     snapshot: &ScrapeReportSnapshot,
 ) -> Result<()> {
-    let summary_path = path
-        .parent()
-        .map(|parent| parent.join("scrape-summary.json"))
-        .unwrap_or_else(|| PathBuf::from("scrape-summary.json"));
+    let summary_path = path.parent().map_or_else(
+        || PathBuf::from("scrape-summary.json"),
+        |parent| parent.join("scrape-summary.json"),
+    );
     if let Some(parent) = summary_path.parent() {
         fs::create_dir_all(parent).with_context(|| format!("create {}", parent.display()))?;
     }
@@ -561,7 +561,7 @@ fn write_warning_events(path: &Path) -> Result<()> {
     for event in events {
         let line = serde_json::to_string(&event).context("serialize warning event")?;
         use std::io::Write;
-        writeln!(file, "{}", line).context("write warning event")?;
+        writeln!(file, "{line}").context("write warning event")?;
     }
     tracing::info!(path = %path.display(), "wrote warning events jsonl");
     Ok(())
@@ -791,10 +791,10 @@ impl ScrapeClient {
                 url,
                 Some("cache-only scrape missing cached html"),
             );
-            bail!("cache-only scrape missing cached html for {}", url);
+            bail!("cache-only scrape missing cached html for {url}");
         }
         let mut attempt: u32 = 0;
-        let mut last_error = anyhow::anyhow!("fetch failed for {}", url);
+        let mut last_error = anyhow::anyhow!("fetch failed for {url}");
         loop {
             attempt += 1;
             let response = self.client.get(url).send();
@@ -804,7 +804,7 @@ impl ScrapeClient {
                     if status.is_success() {
                         let response = resp
                             .text()
-                            .with_context(|| format!("read response body from {}", url))?;
+                            .with_context(|| format!("read response body from {url}"))?;
                         if response.len() > LARGE_RESPONSE_WARN_BYTES {
                             tracing::warn!(url, bytes = response.len(), "large html response");
                             record_warning_event("large_response", "http", url);
@@ -818,7 +818,7 @@ impl ScrapeClient {
                                 url,
                                 Some("empty response body"),
                             );
-                            last_error = anyhow::anyhow!("empty response body for {}", url);
+                            last_error = anyhow::anyhow!("empty response body for {url}");
                             if attempt <= self.max_retries {
                                 self.sleep_jitter();
                                 continue;
@@ -890,10 +890,7 @@ impl ScrapeClient {
                         if current >= max {
                             record_warning_event("retry_budget_exceeded", "http", endpoint);
                             last_error = anyhow::anyhow!(
-                                "endpoint retry budget exceeded: {} retries {} >= max {}",
-                                endpoint,
-                                current,
-                                max
+                                "endpoint retry budget exceeded: {endpoint} retries {current} >= max {max}"
                             );
                             tracing::error!(
                                 endpoint,
@@ -938,10 +935,7 @@ impl ScrapeClient {
                         if current >= max {
                             record_warning_event("retry_budget_exceeded", "http", endpoint);
                             last_error = anyhow::anyhow!(
-                                "endpoint retry budget exceeded: {} retries {} >= max {}",
-                                endpoint,
-                                current,
-                                max
+                                "endpoint retry budget exceeded: {endpoint} retries {current} >= max {max}"
                             );
                             tracing::error!(
                                 endpoint,
@@ -1194,18 +1188,10 @@ pub fn scrape_live(config: ScrapeConfig) -> Result<()> {
     }
     let total_warnings = empty + missing;
     if config.fail_on_warning && total_warnings > 0 {
-        bail!(
-            "scrape warnings detected: {} empty selectors, {} missing fields",
-            empty,
-            missing
-        );
+        bail!("scrape warnings detected: {empty} empty selectors, {missing} missing fields");
     }
     if config.strict && !config.warn_only && total_warnings > 0 {
-        bail!(
-            "scrape strict mode failed: {} empty selectors, {} missing fields",
-            empty,
-            missing
-        );
+        bail!("scrape strict mode failed: {empty} empty selectors, {missing} missing fields");
     }
     if let Some(max_allowed) = config.warnings_max {
         if config.warn_only {
@@ -1213,11 +1199,7 @@ pub fn scrape_live(config: ScrapeConfig) -> Result<()> {
         }
         let total = empty + missing;
         if total > max_allowed {
-            bail!(
-                "scrape warning budget exceeded: {} warnings (max {})",
-                total,
-                max_allowed
-            );
+            bail!("scrape warning budget exceeded: {total} warnings (max {max_allowed})");
         }
     }
     Ok(())
@@ -1261,20 +1243,12 @@ pub fn scrape_fixtures(
         write_warning_artifacts(path, empty, missing, warnings_jsonl.as_deref())?;
     }
     if fail_on_warning && (empty + missing) > 0 {
-        bail!(
-            "fixture warnings detected: {} empty selectors, {} missing fields",
-            empty,
-            missing
-        );
+        bail!("fixture warnings detected: {empty} empty selectors, {missing} missing fields");
     }
     if let Some(max_allowed) = warnings_max {
         let total = empty + missing;
         if total > max_allowed {
-            bail!(
-                "fixture warning budget exceeded: {} warnings (max {})",
-                total,
-                max_allowed
-            );
+            bail!("fixture warning budget exceeded: {total} warnings (max {max_allowed})");
         }
     }
     Ok(())
@@ -1996,7 +1970,7 @@ fn parse_release_links(document: &Html) -> Vec<(i32, String, String)> {
         };
         let title = normalize_whitespace(&element.text().collect::<String>());
         let id = if let Some(cap) = regex(r"release=([^&]+)").captures(href) {
-            let id_str = cap.get(1).map(|m| m.as_str()).unwrap_or("");
+            let id_str = cap.get(1).map_or("", |m| m.as_str());
             stable_id_from_string(id_str)
         } else {
             warn_missing_field("release", "id");
@@ -2306,8 +2280,7 @@ fn parse_location(text: &str) -> Option<(String, Option<String>, String)> {
         let state = cap.get(2)?.as_str().trim().to_string();
         let country = cap
             .get(3)
-            .map(|m| m.as_str().trim().to_string())
-            .unwrap_or_else(|| "USA".to_string());
+            .map_or_else(|| "USA".to_string(), |m| m.as_str().trim().to_string());
         return Some((city, Some(state), country));
     }
 
@@ -2590,8 +2563,7 @@ fn parse_song_stats_page(html: &str, song_id: i32, song_title: &str) -> Value {
     if result
         .get("playsByYear")
         .and_then(|v| v.as_array())
-        .map(|v| v.is_empty())
-        .unwrap_or(true)
+        .is_none_or(std::vec::Vec::is_empty)
     {
         partial = true;
     }
@@ -2599,8 +2571,7 @@ fn parse_song_stats_page(html: &str, song_id: i32, song_title: &str) -> Value {
     if result
         .get("performances")
         .and_then(|v| v.as_array())
-        .map(|v| v.is_empty())
-        .unwrap_or(true)
+        .is_none_or(std::vec::Vec::is_empty)
     {
         partial = true;
     }
@@ -2679,12 +2650,13 @@ fn parse_slot_breakdown(document: &Html, body_text: &str) -> Value {
     let total_from_text = opener + set1_closer + set2_opener + closer + midset + encore + encore2;
     if total_from_text < 5 {
         let count = |selector: &str| -> i64 {
-            selector_or_warn("setlist count selector", selector)
-                .map(|sel| document.select(&sel).count() as i64)
-                .unwrap_or_else(|| {
+            selector_or_warn("setlist count selector", selector).map_or_else(
+                || {
                     warn_missing_field("song_stats.slot_breakdown", "setlistRows");
                     0
-                })
+                },
+                |sel| document.select(&sel).count() as i64,
+            )
         };
         opener = count("tr.opener, tr[class*='opener']");
         set1_closer = count("tr.set1closer, tr[class*='set1closer']");
@@ -2812,18 +2784,16 @@ fn parse_duration_extremes(document: &Html) -> (Value, Value) {
         if longest
             .as_ref()
             .and_then(|v| v.get("durationSeconds"))
-            .and_then(|v| v.as_i64())
-            .map(|d| total_seconds > d)
-            .unwrap_or(true)
+            .and_then(serde_json::Value::as_i64)
+            .is_none_or(|d| total_seconds > d)
         {
             longest = Some(entry.clone());
         }
         if shortest
             .as_ref()
             .and_then(|v| v.get("durationSeconds"))
-            .and_then(|v| v.as_i64())
-            .map(|d| total_seconds < d)
-            .unwrap_or(true)
+            .and_then(serde_json::Value::as_i64)
+            .is_none_or(|d| total_seconds < d)
         {
             shortest = Some(entry);
         }
@@ -2930,8 +2900,8 @@ fn parse_top_segues(document: &Html, into: bool) -> Vec<Value> {
     }
     results.sort_by(|a, b| {
         b.get("count")
-            .and_then(|v| v.as_i64())
-            .cmp(&a.get("count").and_then(|v| v.as_i64()))
+            .and_then(serde_json::Value::as_i64)
+            .cmp(&a.get("count").and_then(serde_json::Value::as_i64))
     });
     results.truncate(10);
     if results.is_empty() {
@@ -3028,8 +2998,8 @@ fn parse_plays_by_year(document: &Html) -> Vec<Value> {
         .collect();
     entries.sort_by(|a, b| {
         a.get("year")
-            .and_then(|v| v.as_i64())
-            .cmp(&b.get("year").and_then(|v| v.as_i64()))
+            .and_then(serde_json::Value::as_i64)
+            .cmp(&b.get("year").and_then(serde_json::Value::as_i64))
     });
     if entries.is_empty() {
         warn_missing_field("song_stats", "playsByYear");
@@ -3172,11 +3142,11 @@ fn parse_artist_stats(body_text: &str) -> Vec<Value> {
     }
     let total: i64 = stats
         .iter()
-        .filter_map(|v| v.get("playCount").and_then(|p| p.as_i64()))
+        .filter_map(|v| v.get("playCount").and_then(serde_json::Value::as_i64))
         .sum();
     if total > 0 {
         for stat in &mut stats {
-            if let Some(count) = stat.get("playCount").and_then(|p| p.as_i64()) {
+            if let Some(count) = stat.get("playCount").and_then(serde_json::Value::as_i64) {
                 let percent = (count as f64 / total as f64) * 100.0;
                 if let Some(obj) = stat.as_object_mut() {
                     obj.insert("percentOfTotal".to_string(), json!(percent));
@@ -3300,8 +3270,7 @@ fn parse_song_performances(document: &Html) -> Vec<Value> {
             }
             let is_on_release = release_img_selector
                 .as_ref()
-                .map(|selector| row.select(selector).next().is_some())
-                .unwrap_or(false);
+                .is_some_and(|selector| row.select(selector).next().is_some());
             performances.push(json!({
                 "showId": show_id,
                 "date": date,
@@ -3452,10 +3421,10 @@ fn parse_guest_shows_page(html: &str, guest_id: i32, guest_name: &str) -> Value 
                 })
             });
         if let Some(date) = &show_date {
-            if first_date.as_ref().map(|d| date < d).unwrap_or(true) {
+            if first_date.as_ref().is_none_or(|d| date < d) {
                 first_date = Some(date.clone());
             }
-            if last_date.as_ref().map(|d| date > d).unwrap_or(true) {
+            if last_date.as_ref().is_none_or(|d| date > d) {
                 last_date = Some(date.clone());
             }
         }
@@ -3529,11 +3498,10 @@ fn parse_guest_shows_page(html: &str, guest_id: i32, guest_name: &str) -> Value 
             }
             let text = normalize_whitespace(&item.text().collect::<String>());
             let show_date = parse_mdy_any(&text);
-            let venue_name = item
-                .select(&venue_selector)
-                .next()
-                .map(|link| normalize_whitespace(&link.text().collect::<String>()))
-                .unwrap_or_else(|| normalize_whitespace(&show_link.text().collect::<String>()));
+            let venue_name = item.select(&venue_selector).next().map_or_else(
+                || normalize_whitespace(&show_link.text().collect::<String>()),
+                |link| normalize_whitespace(&link.text().collect::<String>()),
+            );
             appearances.push(json!({
                 "showId": show_id,
                 "showDate": show_date,
@@ -3549,8 +3517,10 @@ fn parse_guest_shows_page(html: &str, guest_id: i32, guest_name: &str) -> Value 
     let total_appearances = regex(r"(\\d+)\\s+(?:total\\s+)?(?:appearances?|shows?|performances?)")
         .captures(&document.root_element().text().collect::<Vec<_>>().join(" "))
         .and_then(|cap| cap.get(1).map(|m| m.as_str()))
-        .map(|value| parse_i64_or_warn(Some(value), "guest_shows", "totalAppearances"))
-        .unwrap_or_else(|| appearances.len() as i64);
+        .map_or_else(
+            || appearances.len() as i64,
+            |value| parse_i64_or_warn(Some(value), "guest_shows", "totalAppearances"),
+        );
     if total_appearances > 0 {
         warn_if_out_of_range(
             "guest_shows",
@@ -3582,8 +3552,7 @@ fn parse_guest_shows_page(html: &str, guest_id: i32, guest_name: &str) -> Value 
         let empty = result
             .get("appearances")
             .and_then(|v| v.as_array())
-            .map(|v| v.is_empty())
-            .unwrap_or(true);
+            .is_none_or(std::vec::Vec::is_empty);
         if empty {
             if let Some(obj) = result.as_object_mut() {
                 obj.insert("_partial".to_string(), Value::Bool(true));
@@ -3735,7 +3704,7 @@ fn parse_venue_stats_page(html: &str, venue_id: i32) -> Option<Value> {
             regex(r"Names:?\\s*([A-Z][a-zA-Z\\s&\\-']+?)\\s+(?:Changed|Seating|Venue|Total)")
                 .captures(section)
         {
-            let cleaned = normalize_whitespace(cap.get(1).map(|m| m.as_str()).unwrap_or(""));
+            let cleaned = normalize_whitespace(cap.get(1).map_or("", |m| m.as_str()));
             if cleaned.len() > 3 {
                 aka_names.push(cleaned);
             }
@@ -3744,7 +3713,7 @@ fn parse_venue_stats_page(html: &str, venue_id: i32) -> Option<Value> {
     if let Some(cap) =
         regex(r"(?i)(?:formerly|previously)\\s+(?:known as\\s+)?([^\\.]+)").captures(&body_text)
     {
-        let cleaned = normalize_whitespace(cap.get(1).map(|m| m.as_str()).unwrap_or(""));
+        let cleaned = normalize_whitespace(cap.get(1).map_or("", |m| m.as_str()));
         if cleaned.len() > 3 && !aka_names.contains(&cleaned) {
             aka_names.push(cleaned);
         }
@@ -3789,8 +3758,7 @@ fn parse_venue_stats_page(html: &str, venue_id: i32) -> Option<Value> {
                 if !top_songs.iter().any(|v| {
                     v.get("title")
                         .and_then(|t| t.as_str())
-                        .map(|t| t.eq_ignore_ascii_case(&song_title))
-                        .unwrap_or(false)
+                        .is_some_and(|t| t.eq_ignore_ascii_case(&song_title))
                 }) {
                     top_songs.push(json!({
                         "title": song_title,
@@ -3803,8 +3771,8 @@ fn parse_venue_stats_page(html: &str, venue_id: i32) -> Option<Value> {
     }
     top_songs.sort_by(|a, b| {
         b.get("playCount")
-            .and_then(|v| v.as_i64())
-            .cmp(&a.get("playCount").and_then(|v| v.as_i64()))
+            .and_then(serde_json::Value::as_i64)
+            .cmp(&a.get("playCount").and_then(serde_json::Value::as_i64))
     });
     top_songs.truncate(20);
 
@@ -3815,7 +3783,7 @@ fn parse_venue_stats_page(html: &str, venue_id: i32) -> Option<Value> {
             regex(r"Performance:[\\s\\S]*?(\\d{1,2}\\.\\d{2}\\.\\d{2,4}.+?\\([0-9:]+\\))")
                 .captures(section)
         {
-            let perf = normalize_whitespace(cap.get(1).map(|m| m.as_str()).unwrap_or(""));
+            let perf = normalize_whitespace(cap.get(1).map_or("", |m| m.as_str()));
             if !perf.is_empty() {
                 notable_performances.push(perf);
             }
@@ -3837,7 +3805,7 @@ fn parse_venue_stats_page(html: &str, venue_id: i32) -> Option<Value> {
     for cap in regex(r"(?i)first\\s+(?:played?|performance|show|gig)[^\\.]{0,100}")
         .captures_iter(&body_text)
     {
-        let cleaned = normalize_whitespace(cap.get(0).map(|m| m.as_str()).unwrap_or(""));
+        let cleaned = normalize_whitespace(cap.get(0).map_or("", |m| m.as_str()));
         if cleaned.len() > 10 && !notable_performances.contains(&cleaned) {
             notable_performances.push(cleaned);
         }
@@ -3845,7 +3813,7 @@ fn parse_venue_stats_page(html: &str, venue_id: i32) -> Option<Value> {
     for cap in regex(r"(?i)last\\s+(?:played?|performance|show|gig)[^\\.]{0,100}")
         .captures_iter(&body_text)
     {
-        let cleaned = normalize_whitespace(cap.get(0).map(|m| m.as_str()).unwrap_or(""));
+        let cleaned = normalize_whitespace(cap.get(0).map_or("", |m| m.as_str()));
         if cleaned.len() > 10 && !notable_performances.contains(&cleaned) {
             notable_performances.push(cleaned);
         }
@@ -3859,7 +3827,7 @@ fn parse_venue_stats_page(html: &str, venue_id: i32) -> Option<Value> {
             regex(r"Description[\\s\\S]*?(The .+?)(?=Sort|Order|Alphabetically|\\n\\s*\\n|$)")
                 .captures(section)
         {
-            let cleaned = normalize_whitespace(cap.get(1).map(|m| m.as_str()).unwrap_or(""));
+            let cleaned = normalize_whitespace(cap.get(1).map_or("", |m| m.as_str()));
             if cleaned.len() > 10 {
                 notes = Some(cleaned);
             }
@@ -3961,8 +3929,7 @@ fn parse_venue_show_history(document: &Html) -> Vec<Value> {
         }
         let has_release = release_selector
             .as_ref()
-            .map(|selector| row.select(selector).next().is_some())
-            .unwrap_or(false);
+            .is_some_and(|selector| row.select(selector).next().is_some());
         shows.push(json!({
             "showId": show_id,
             "date": date,
@@ -4021,7 +3988,10 @@ mod tests {
         with_warning_lock(|| {
             let html = include_str!("../tests/fixtures/song_stats.html");
             let parsed = parse_song_stats_page(html, 42, "Test Song");
-            assert_eq!(parsed.get("totalPlays").and_then(|v| v.as_i64()), Some(12));
+            assert_eq!(
+                parsed.get("totalPlays").and_then(serde_json::Value::as_i64),
+                Some(12)
+            );
             assert_eq!(
                 parsed.get("firstPlayedDate").and_then(|v| v.as_str()),
                 Some("1999-01-01")
@@ -4031,7 +4001,9 @@ mod tests {
                 Some("2000-12-31")
             );
             assert_eq!(
-                parsed.get("avgLengthSeconds").and_then(|v| v.as_i64()),
+                parsed
+                    .get("avgLengthSeconds")
+                    .and_then(serde_json::Value::as_i64),
                 Some(330)
             );
 
@@ -4053,8 +4025,14 @@ mod tests {
                 .and_then(|v| v.as_array())
                 .expect("playsByYear missing");
             assert_eq!(plays.len(), 1);
-            assert_eq!(plays[0].get("year").and_then(|v| v.as_i64()), Some(2001));
-            assert_eq!(plays[0].get("plays").and_then(|v| v.as_i64()), Some(12));
+            assert_eq!(
+                plays[0].get("year").and_then(serde_json::Value::as_i64),
+                Some(2001)
+            );
+            assert_eq!(
+                plays[0].get("plays").and_then(serde_json::Value::as_i64),
+                Some(12)
+            );
 
             let segues = parsed
                 .get("topSeguesInto")
@@ -4080,36 +4058,63 @@ mod tests {
                 .get("versionTypes")
                 .and_then(|v| v.as_object())
                 .expect("versionTypes missing");
-            assert_eq!(version_types.get("full").and_then(|v| v.as_i64()), Some(10));
-            assert_eq!(version_types.get("tease").and_then(|v| v.as_i64()), Some(1));
+            assert_eq!(
+                version_types
+                    .get("full")
+                    .and_then(serde_json::Value::as_i64),
+                Some(10)
+            );
+            assert_eq!(
+                version_types
+                    .get("tease")
+                    .and_then(serde_json::Value::as_i64),
+                Some(1)
+            );
 
             let release_counts = parsed
                 .get("releaseCounts")
                 .and_then(|v| v.as_object())
                 .expect("releaseCounts missing");
             assert_eq!(
-                release_counts.get("total").and_then(|v| v.as_i64()),
+                release_counts
+                    .get("total")
+                    .and_then(serde_json::Value::as_i64),
                 Some(10)
             );
             assert_eq!(
-                release_counts.get("studio").and_then(|v| v.as_i64()),
-                Some(2)
-            );
-            assert_eq!(release_counts.get("live").and_then(|v| v.as_i64()), Some(3));
-            assert_eq!(
-                release_counts.get("dmblive").and_then(|v| v.as_i64()),
-                Some(1)
-            );
-            assert_eq!(
-                release_counts.get("warehouse").and_then(|v| v.as_i64()),
-                Some(1)
-            );
-            assert_eq!(
-                release_counts.get("liveTrax").and_then(|v| v.as_i64()),
+                release_counts
+                    .get("studio")
+                    .and_then(serde_json::Value::as_i64),
                 Some(2)
             );
             assert_eq!(
-                release_counts.get("broadcasts").and_then(|v| v.as_i64()),
+                release_counts
+                    .get("live")
+                    .and_then(serde_json::Value::as_i64),
+                Some(3)
+            );
+            assert_eq!(
+                release_counts
+                    .get("dmblive")
+                    .and_then(serde_json::Value::as_i64),
+                Some(1)
+            );
+            assert_eq!(
+                release_counts
+                    .get("warehouse")
+                    .and_then(serde_json::Value::as_i64),
+                Some(1)
+            );
+            assert_eq!(
+                release_counts
+                    .get("liveTrax")
+                    .and_then(serde_json::Value::as_i64),
+                Some(2)
+            );
+            assert_eq!(
+                release_counts
+                    .get("broadcasts")
+                    .and_then(serde_json::Value::as_i64),
                 Some(1)
             );
 
@@ -4119,11 +4124,15 @@ mod tests {
                 .expect("artistStats missing");
             assert_eq!(artist_stats.len(), 2);
             assert_eq!(
-                artist_stats[0].get("playCount").and_then(|v| v.as_i64()),
+                artist_stats[0]
+                    .get("playCount")
+                    .and_then(serde_json::Value::as_i64),
                 Some(8)
             );
             assert_eq!(
-                artist_stats[1].get("playCount").and_then(|v| v.as_i64()),
+                artist_stats[1]
+                    .get("playCount")
+                    .and_then(serde_json::Value::as_i64),
                 Some(4)
             );
             let counts = warning_counts();
@@ -4144,7 +4153,10 @@ mod tests {
             );
             assert_eq!(parsed.get("city").and_then(|v| v.as_str()), Some("George"));
             assert_eq!(parsed.get("state").and_then(|v| v.as_str()), Some("WA"));
-            assert_eq!(parsed.get("totalShows").and_then(|v| v.as_i64()), Some(10));
+            assert_eq!(
+                parsed.get("totalShows").and_then(serde_json::Value::as_i64),
+                Some(10)
+            );
             assert_eq!(
                 parsed.get("firstShowDate").and_then(|v| v.as_str()),
                 Some("1995-01-01")
@@ -4166,7 +4178,9 @@ mod tests {
             let html = include_str!("../tests/fixtures/guest_shows.html");
             let parsed = parse_guest_shows_page(html, 7, "Guest X");
             assert_eq!(
-                parsed.get("totalAppearances").and_then(|v| v.as_i64()),
+                parsed
+                    .get("totalAppearances")
+                    .and_then(serde_json::Value::as_i64),
                 Some(1)
             );
             assert_eq!(
@@ -4208,11 +4222,15 @@ mod tests {
                 Some("200")
             );
             assert_eq!(
-                entries[0].get("daysSince").and_then(|v| v.as_i64()),
+                entries[0]
+                    .get("daysSince")
+                    .and_then(serde_json::Value::as_i64),
                 Some(10)
             );
             assert_eq!(
-                entries[0].get("showsSince").and_then(|v| v.as_i64()),
+                entries[0]
+                    .get("showsSince")
+                    .and_then(serde_json::Value::as_i64),
                 Some(2)
             );
             let counts = warning_counts();
@@ -4232,9 +4250,16 @@ mod tests {
                 shows[0].get("date").and_then(|v| v.as_str()),
                 Some("1996-01-03")
             );
-            assert_eq!(shows[0].get("songCount").and_then(|v| v.as_i64()), Some(20));
             assert_eq!(
-                shows[0].get("isOnRelease").and_then(|v| v.as_bool()),
+                shows[0]
+                    .get("songCount")
+                    .and_then(serde_json::Value::as_i64),
+                Some(20)
+            );
+            assert_eq!(
+                shows[0]
+                    .get("isOnRelease")
+                    .and_then(serde_json::Value::as_bool),
                 Some(true)
             );
             let counts = warning_counts();
@@ -4258,15 +4283,21 @@ mod tests {
                 Some("4:32")
             );
             assert_eq!(
-                performances[0].get("isTease").and_then(|v| v.as_bool()),
+                performances[0]
+                    .get("isTease")
+                    .and_then(serde_json::Value::as_bool),
                 Some(true)
             );
             assert_eq!(
-                performances[0].get("isSegue").and_then(|v| v.as_bool()),
+                performances[0]
+                    .get("isSegue")
+                    .and_then(serde_json::Value::as_bool),
                 Some(true)
             );
             assert_eq!(
-                performances[0].get("isOnRelease").and_then(|v| v.as_bool()),
+                performances[0]
+                    .get("isOnRelease")
+                    .and_then(serde_json::Value::as_bool),
                 Some(true)
             );
             let counts = warning_counts();
@@ -4365,7 +4396,9 @@ mod tests {
                 .as_object()
                 .expect("errorCounts is not object");
             assert_eq!(
-                error_counts.get("http_status").and_then(|v| v.as_i64()),
+                error_counts
+                    .get("http_status")
+                    .and_then(serde_json::Value::as_i64),
                 Some(1)
             );
             let error_summary = parsed
@@ -4374,7 +4407,9 @@ mod tests {
                 .as_object()
                 .expect("errorEventsSummary is not object");
             assert_eq!(
-                error_summary.get("http_status").and_then(|v| v.as_i64()),
+                error_summary
+                    .get("http_status")
+                    .and_then(serde_json::Value::as_i64),
                 Some(1)
             );
         });
@@ -4406,7 +4441,9 @@ mod tests {
                 .as_object()
                 .expect("errorCounts is not object");
             assert_eq!(
-                error_counts.get("cache_read").and_then(|v| v.as_i64()),
+                error_counts
+                    .get("cache_read")
+                    .and_then(serde_json::Value::as_i64),
                 Some(1)
             );
             let error_summary = parsed
@@ -4415,7 +4452,9 @@ mod tests {
                 .as_object()
                 .expect("errorEventsSummary is not object");
             assert_eq!(
-                error_summary.get("cache_read").and_then(|v| v.as_i64()),
+                error_summary
+                    .get("cache_read")
+                    .and_then(serde_json::Value::as_i64),
                 Some(1)
             );
         });
@@ -4434,8 +4473,7 @@ mod tests {
                 event
                     .get("kind")
                     .and_then(|v| v.as_str())
-                    .map(|kind| kind == "selector_parse")
-                    .unwrap_or(false)
+                    .is_some_and(|kind| kind == "selector_parse")
             }));
         });
     }
@@ -4550,8 +4588,7 @@ mod tests {
                 event
                     .get("kind")
                     .and_then(|v| v.as_str())
-                    .map(|kind| kind == "selector_missing")
-                    .unwrap_or(false)
+                    .is_some_and(|kind| kind == "selector_missing")
             }));
         });
     }
@@ -4670,7 +4707,9 @@ mod tests {
             let html = include_str!("../tests/fixtures/guest_shows_missing_song_id.html");
             let parsed = parse_guest_shows_page(html, 11, "Guest Y");
             assert_eq!(
-                parsed.get("totalAppearances").and_then(|v| v.as_i64()),
+                parsed
+                    .get("totalAppearances")
+                    .and_then(serde_json::Value::as_i64),
                 Some(1)
             );
             let (_, missing) = warning_counts();
@@ -4900,8 +4939,7 @@ fn scrape_liberation(client: &ScrapeClient) -> Result<Vec<Value>> {
         let is_liberated = row
             .value()
             .attr("style")
-            .map(|v| v.contains("background-color"))
-            .unwrap_or(false);
+            .is_some_and(|v| v.contains("background-color"));
         let song_link = row.select(&song_selector).next();
         let last_played = row.select(&last_played_selector).next();
         if song_link.is_none() || last_played.is_none() {
@@ -5116,7 +5154,7 @@ fn scrape_history(client: &ScrapeClient) -> Result<Vec<Value>> {
                         .captures(&text)
                         .and_then(|cap| cap.get(0).map(|m| m.as_str().to_string()));
                     if let Some(year) = year_match {
-                        format!("{}-{:02}-{:02}", year, month, day)
+                        format!("{year}-{month:02}-{day:02}")
                     } else {
                         format!("{}-{:02}-{:02}", chrono::Utc::now().year(), month, day)
                     }
@@ -5232,11 +5270,7 @@ pub fn scrape_smoke(config: ScrapeConfig) -> Result<()> {
     if let Some(max_allowed) = config.warnings_max {
         let total = empty + missing;
         if total > max_allowed {
-            bail!(
-                "scrape warning budget exceeded: {} warnings (max {})",
-                total,
-                max_allowed
-            );
+            bail!("scrape warning budget exceeded: {total} warnings (max {max_allowed})");
         }
     }
     Ok(())
@@ -5259,11 +5293,10 @@ fn parse_lists_page(html: &str) -> Vec<Value> {
     let mut lists = Vec::new();
 
     for series in document.select(&category_selector) {
-        let category = series
-            .select(&header_selector)
-            .next()
-            .map(|el| normalize_whitespace(&el.text().collect::<String>()))
-            .unwrap_or_else(|| "Lists".to_string());
+        let category = series.select(&header_selector).next().map_or_else(
+            || "Lists".to_string(),
+            |el| normalize_whitespace(&el.text().collect::<String>()),
+        );
         for link in series.select(&list_link_selector) {
             let href = link.value().attr("href").unwrap_or("");
             let list_id = regex(r"id=(\\d+)")
