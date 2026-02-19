@@ -676,13 +676,6 @@ impl AiDiagnosticsState {
 }
 
 #[cfg(feature = "hydrate")]
-fn normalize_optional_trimmed(value: Option<String>) -> Option<String> {
-    value
-        .map(|item| item.trim().to_string())
-        .filter(|item| !item.is_empty())
-}
-
-#[cfg(feature = "hydrate")]
 fn load_storage_item(window: &web_sys::Window, key: &str) -> Option<String> {
     window
         .local_storage()
@@ -767,18 +760,24 @@ fn refresh_ai_config_meta_mismatch(state: AiDiagnosticsState) {
     spawn_local(async move {
         let remote = crate::ai::fetch_ai_config_meta().await;
         if let Some(remote) = remote {
-            let remote_version = normalize_optional_trimmed(remote.version.clone());
-            let remote_generated = normalize_optional_trimmed(remote.generated_at.clone());
-            let mut version =
-                normalize_optional_trimmed(local_version.try_get_untracked().flatten());
-            let mut generated =
-                normalize_optional_trimmed(local_generated_at.try_get_untracked().flatten());
+            let remote_version = crate::ai::normalize_ai_config_meta_field(remote.version.clone());
+            let remote_generated =
+                crate::ai::normalize_ai_config_meta_field(remote.generated_at.clone());
+            let mut version = crate::ai::normalize_ai_config_meta_field(
+                local_version.try_get_untracked().flatten(),
+            );
+            let mut generated = crate::ai::normalize_ai_config_meta_field(
+                local_generated_at.try_get_untracked().flatten(),
+            );
             let mut mismatched = remote_version != version || remote_generated != generated;
 
             if mismatched {
                 if crate::ai::refresh_ai_config().await {
-                    version = normalize_optional_trimmed(crate::ai::ai_config_version());
-                    generated = normalize_optional_trimmed(crate::ai::ai_config_generated_at());
+                    version =
+                        crate::ai::normalize_ai_config_meta_field(crate::ai::ai_config_version());
+                    generated = crate::ai::normalize_ai_config_meta_field(
+                        crate::ai::ai_config_generated_at(),
+                    );
                     let _ = local_version.try_set(version.clone());
                     let _ = local_generated_at.try_set(generated.clone());
                     mismatched = remote_version != version || remote_generated != generated;

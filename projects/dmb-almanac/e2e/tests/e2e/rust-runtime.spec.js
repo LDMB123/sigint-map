@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
+import { gotoHydrated, offlineStatusRow, skipUnlessRust } from './_rust_test_utils.js';
 
 test.describe('Rust runtime guardrails', () => {
   skipUnlessRust(test);
@@ -19,7 +19,7 @@ test.describe('Rust runtime guardrails', () => {
   test('offline seed status advances after hydration', async ({ page }) => {
     await gotoHydrated(page, '/');
 
-    const statusRow = page.locator('.pwa-status .pwa-status__row').first();
+    const statusRow = offlineStatusRow(page);
     await expect(statusRow).toHaveText(
       /Checking previous-version data|Migrated previous-version data|Previous-version migration failed|Importing|Offline data ready|Integrity check failed|Offline manifest missing/i,
       { timeout: 5000 }

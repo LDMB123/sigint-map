@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
+import { gotoHydrated, offlineStatusRow, skipUnlessRust } from './_rust_test_utils.js';
 
 test.describe('Rust offline seed import', () => {
   skipUnlessRust(test);
@@ -12,7 +12,7 @@ test.describe('Rust offline seed import', () => {
       hydrationTimeout: 30_000,
     });
 
-    const statusRow = page.locator('.pwa-status .pwa-status__row').first();
+    const statusRow = offlineStatusRow(page);
     await expect(statusRow).toBeVisible({ timeout: 15_000 });
 
     // The UI can report intermediate states while importing. This gate is about

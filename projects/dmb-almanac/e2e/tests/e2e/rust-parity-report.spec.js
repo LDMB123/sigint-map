@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
-import { ensureSwDetailsOpen, gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
+import {
+  ensureSwDetailsOpen,
+  gotoHydrated,
+  skipUnlessRust,
+  waitForOfflineDataReady,
+} from './_rust_test_utils.js';
 
 test.describe('Rust parity report diagnostics', () => {
   skipUnlessRust(test);
@@ -11,9 +16,7 @@ test.describe('Rust parity report diagnostics', () => {
     await gotoHydrated(page, '/');
 
     // Wait for offline import to finish, otherwise parity checks can be in-flight.
-    await expect(
-      page.locator('.pwa-status .pwa-status__row', { hasText: /Offline data ready/i }).first()
-    ).toBeVisible({ timeout: 210_000 });
+    await waitForOfflineDataReady(page, { timeout: 210_000 });
 
     await ensureSwDetailsOpen(page);
 

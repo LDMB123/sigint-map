@@ -1,5 +1,10 @@
 import { test, expect, devices } from '@playwright/test';
-import { gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
+import {
+  gotoHydrated,
+  isRustE2E,
+  skipUnlessRust,
+  waitForOfflineDataReady,
+} from './_rust_test_utils.js';
 
 test.describe('Rust visual regression', () => {
   skipUnlessRust(test);
@@ -9,7 +14,7 @@ test.describe('Rust visual regression', () => {
   let sharedPage;
 
   test.beforeAll(async ({ browser }) => {
-    if (process.env.RUST_E2E !== '1' && process.env.RUST_E2E !== 'true') {
+    if (!isRustE2E()) {
       return;
     }
 
@@ -33,12 +38,6 @@ test.describe('Rust visual regression', () => {
       throw new Error('Shared page was not initialized.');
     }
     return sharedPage;
-  }
-
-  async function waitForOfflineDataReady(page, timeout = 210_000) {
-    await expect(
-      page.locator('.pwa-status .pwa-status__row', { hasText: /Offline data ready/i }).first()
-    ).toBeVisible({ timeout });
   }
 
   async function waitForStableHomePage(page) {

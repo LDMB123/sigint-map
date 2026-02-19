@@ -881,22 +881,21 @@ fn spawn_ai_config_sync_task(state: &PwaStatusState) {
 
     spawn_local(async move {
         if let Some(remote) = crate::ai::fetch_ai_config_meta().await {
-            let normalize = |value: Option<String>| {
-                value
-                    .map(|item| item.trim().to_string())
-                    .filter(|item| !item.is_empty())
-            };
-
-            let remote_v = normalize(remote.version.clone());
-            let remote_g = normalize(remote.generated_at.clone());
-            let mut local_v = normalize(ai_config_version.get_untracked());
-            let mut local_g = normalize(ai_config_generated_at.get_untracked());
+            let remote_v = crate::ai::normalize_ai_config_meta_field(remote.version.clone());
+            let remote_g = crate::ai::normalize_ai_config_meta_field(remote.generated_at.clone());
+            let mut local_v =
+                crate::ai::normalize_ai_config_meta_field(ai_config_version.get_untracked());
+            let mut local_g =
+                crate::ai::normalize_ai_config_meta_field(ai_config_generated_at.get_untracked());
             let mut mismatched = remote_v != local_v || remote_g != local_g;
 
             if mismatched {
                 if crate::ai::refresh_ai_config().await {
-                    local_v = normalize(crate::ai::ai_config_version());
-                    local_g = normalize(crate::ai::ai_config_generated_at());
+                    local_v =
+                        crate::ai::normalize_ai_config_meta_field(crate::ai::ai_config_version());
+                    local_g = crate::ai::normalize_ai_config_meta_field(
+                        crate::ai::ai_config_generated_at(),
+                    );
                     ai_config_version.set(local_v.clone());
                     ai_config_generated_at.set(local_g.clone());
                     mismatched = remote_v != local_v || remote_g != local_g;

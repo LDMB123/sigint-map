@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
+import { gotoHydrated, offlineStatusRow, skipUnlessRust } from './_rust_test_utils.js';
 
 test.describe('Rust IDB auto-repair', () => {
   skipUnlessRust(test, 'Rust E2E disabled (set RUST_E2E=1)');
@@ -62,7 +62,7 @@ test.describe('Rust IDB auto-repair', () => {
 
     await gotoHydrated(page, '/');
 
-    const statusRow = page.locator('.pwa-status .pwa-status__row').first();
+    const statusRow = offlineStatusRow(page);
 
     // The key behavior we want: don't claim "Offline data ready" while missing stores.
     // We should see the explicit repair message (or at least an import) for this scenario.

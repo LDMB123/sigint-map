@@ -1079,6 +1079,13 @@ pub async fn fetch_ai_config_meta() -> Option<AiConfigMeta> {
 }
 
 #[cfg(feature = "hydrate")]
+pub fn normalize_ai_config_meta_field(value: Option<String>) -> Option<String> {
+    value
+        .map(|item| item.trim().to_string())
+        .filter(|item| !item.is_empty())
+}
+
+#[cfg(feature = "hydrate")]
 pub fn sync_ai_config_meta(version: Option<&str>, generated_at: Option<&str>) -> bool {
     let Some(window) = web_sys::window() else {
         return false;

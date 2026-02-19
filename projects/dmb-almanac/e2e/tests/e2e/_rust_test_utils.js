@@ -25,6 +25,18 @@ export async function gotoHydrated(page, path, options = {}) {
   await waitForHydration(page, { timeout: hydrationTimeout, ...hydrationOptions });
 }
 
+export function offlineStatusRow(page) {
+  return page.locator('.pwa-status .pwa-status__row').first();
+}
+
+export async function waitForOfflineDataReady(page, options = {}) {
+  const { timeout = 210_000 } = options;
+  await page
+    .locator('.pwa-status .pwa-status__row', { hasText: /Offline data ready/i })
+    .first()
+    .waitFor({ state: 'visible', timeout });
+}
+
 export async function waitForServiceWorkerController(page, options = {}) {
   const { availabilityTimeout = 5000, controllerTimeout = 15000 } = options;
   await page.waitForFunction(() => 'serviceWorker' in navigator, { timeout: availabilityTimeout });
