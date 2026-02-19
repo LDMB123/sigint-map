@@ -347,164 +347,173 @@ impl PwaStatusState {
     }
 }
 
-#[cfg(feature = "hydrate")]
 fn action_export_parity(state: PwaStatusState) {
-    spawn_local(async move {
-        use wasm_bindgen::JsCast;
+    #[cfg(feature = "hydrate")]
+    {
+        spawn_local(async move {
+            use wasm_bindgen::JsCast;
 
-        state
-            .manifest_diff
-            .set(crate::data::fetch_manifest_diff().await);
-        state
-            .integrity_report
-            .set(crate::data::fetch_integrity_report().await);
-        state
-            .sqlite_parity
-            .set(crate::data::fetch_sqlite_parity_report().await);
+            state
+                .manifest_diff
+                .set(crate::data::fetch_manifest_diff().await);
+            state
+                .integrity_report
+                .set(crate::data::fetch_integrity_report().await);
+            state
+                .sqlite_parity
+                .set(crate::data::fetch_sqlite_parity_report().await);
 
-        let current_status = state.status.get_untracked();
-        let payload = serde_json::json!({
-            "generatedAtMs": js_sys::Date::now(),
-            "import": {
-                "message": current_status.message,
-                "progress": current_status.progress,
-                "done": current_status.done,
-                "error": current_status.error,
-            },
-            "sw": {
-                "version": state.sw_version.get_untracked(),
-                "activatedAtMs": state.sw_activated_at.get_untracked(),
-            },
-            "manifestDiff": state.manifest_diff.get_untracked().map(|diff| serde_json::json!({
-                "version": diff.version,
-                "totalChanged": diff.total_changed,
-                "changed": diff.changed.iter().map(|e| serde_json::json!({
-                    "name": e.name,
-                    "before": e.before,
-                    "after": e.after,
-                    "delta": e.delta,
-                })).collect::<Vec<_>>(),
-            })),
-            "integrityReport": state.integrity_report.get_untracked().map(|report| serde_json::json!({
-                "totalMismatches": report.total_mismatches,
-                "mismatches": report.mismatches.iter().map(|e| serde_json::json!({
-                    "store": e.store,
-                    "expected": e.expected,
-                    "actual": e.actual,
-                })).collect::<Vec<_>>(),
-            })),
-            "sqliteParity": state.sqlite_parity.get_untracked().map(|report| serde_json::json!({
-                "available": report.available,
-                "totalMismatches": report.total_mismatches,
-                "missingTables": report.missing_tables,
-                "idbCountFailures": report.idb_count_failures,
-                "mismatches": report.mismatches.iter().map(|e| serde_json::json!({
-                    "store": e.store,
-                    "sqliteTable": e.sqlite_table,
-                    "idbCount": e.idb_count,
-                    "sqliteCount": e.sqlite_count,
-                })).collect::<Vec<_>>(),
-            })),
+            let current_status = state.status.get_untracked();
+            let payload = serde_json::json!({
+                "generatedAtMs": js_sys::Date::now(),
+                "import": {
+                    "message": current_status.message,
+                    "progress": current_status.progress,
+                    "done": current_status.done,
+                    "error": current_status.error,
+                },
+                "sw": {
+                    "version": state.sw_version.get_untracked(),
+                    "activatedAtMs": state.sw_activated_at.get_untracked(),
+                },
+                "manifestDiff": state.manifest_diff.get_untracked().map(|diff| serde_json::json!({
+                    "version": diff.version,
+                    "totalChanged": diff.total_changed,
+                    "changed": diff.changed.iter().map(|e| serde_json::json!({
+                        "name": e.name,
+                        "before": e.before,
+                        "after": e.after,
+                        "delta": e.delta,
+                    })).collect::<Vec<_>>(),
+                })),
+                "integrityReport": state.integrity_report.get_untracked().map(|report| serde_json::json!({
+                    "totalMismatches": report.total_mismatches,
+                    "mismatches": report.mismatches.iter().map(|e| serde_json::json!({
+                        "store": e.store,
+                        "expected": e.expected,
+                        "actual": e.actual,
+                    })).collect::<Vec<_>>(),
+                })),
+                "sqliteParity": state.sqlite_parity.get_untracked().map(|report| serde_json::json!({
+                    "available": report.available,
+                    "totalMismatches": report.total_mismatches,
+                    "missingTables": report.missing_tables,
+                    "idbCountFailures": report.idb_count_failures,
+                    "mismatches": report.mismatches.iter().map(|e| serde_json::json!({
+                        "store": e.store,
+                        "sqliteTable": e.sqlite_table,
+                        "idbCount": e.idb_count,
+                        "sqliteCount": e.sqlite_count,
+                    })).collect::<Vec<_>>(),
+                })),
+            });
+
+            let Some(window) = web_sys::window() else {
+                return;
+            };
+            let json_str =
+                serde_json::to_string_pretty(&payload).unwrap_or_else(|_| "{}".to_string());
+            let blob_parts = js_sys::Array::new();
+            blob_parts.push(&JsValue::from_str(&json_str));
+            let blob = web_sys::Blob::new_with_str_sequence(&blob_parts).ok();
+            let Some(blob) = blob else {
+                return;
+            };
+            let url = web_sys::Url::create_object_url_with_blob(&blob).ok();
+            let Some(url) = url else {
+                return;
+            };
+            let document = window.document();
+            let Some(document) = document else {
+                return;
+            };
+            let a = document.create_element("a").ok();
+            let Some(a) = a else {
+                return;
+            };
+            let Ok(a) = a.dyn_into::<web_sys::HtmlAnchorElement>() else {
+                return;
+            };
+            a.set_href(&url);
+            a.set_download("dmb-parity-report.json");
+            a.click();
+            let _ = web_sys::Url::revoke_object_url(&url);
         });
-
-        let Some(window) = web_sys::window() else {
-            return;
-        };
-        let json_str = serde_json::to_string_pretty(&payload).unwrap_or_else(|_| "{}".to_string());
-        let blob_parts = js_sys::Array::new();
-        blob_parts.push(&JsValue::from_str(&json_str));
-        let blob = web_sys::Blob::new_with_str_sequence(&blob_parts).ok();
-        let Some(blob) = blob else {
-            return;
-        };
-        let url = web_sys::Url::create_object_url_with_blob(&blob).ok();
-        let Some(url) = url else {
-            return;
-        };
-        let document = window.document();
-        let Some(document) = document else {
-            return;
-        };
-        let a = document.create_element("a").ok();
-        let Some(a) = a else {
-            return;
-        };
-        let Ok(a) = a.dyn_into::<web_sys::HtmlAnchorElement>() else {
-            return;
-        };
-        a.set_href(&url);
-        a.set_download("dmb-parity-report.json");
-        a.click();
-        let _ = web_sys::Url::revoke_object_url(&url);
-    });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = state;
+    }
 }
 
-#[cfg(not(feature = "hydrate"))]
-fn action_export_parity(_state: PwaStatusState) {}
-
-#[cfg(feature = "hydrate")]
 fn action_update_click(state: PwaStatusState) {
-    state.update_applying.set(true);
-    state.update_error.set(None);
-    state.update_state.set(Some("Applying update…".to_string()));
+    #[cfg(feature = "hydrate")]
+    {
+        state.update_applying.set(true);
+        state.update_error.set(None);
+        state.update_state.set(Some("Applying update…".to_string()));
 
-    spawn_local(async move {
-        use wasm_bindgen_futures::JsFuture;
+        spawn_local(async move {
+            use wasm_bindgen_futures::JsFuture;
 
-        if let Some(window) = web_sys::window() {
-            let container = window.navigator().service_worker();
-            if let Ok(reg_val) = JsFuture::from(container.get_registration()).await {
-                if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
-                    if let Some(worker) = reg.waiting() {
-                        post_sw_message_type(&worker, "SKIP_WAITING");
-                        let _ = worker.post_message(&JsValue::from_str("SKIP_WAITING"));
-                    } else {
-                        state.update_error.set(Some(
-                            "No waiting service worker. Try again in a moment.".to_string(),
-                        ));
-                        state.update_applying.set(false);
-                        state.update_state.set(None);
-                        state.update_ready.set(false);
-                        return;
+            if let Some(window) = web_sys::window() {
+                let container = window.navigator().service_worker();
+                if let Ok(reg_val) = JsFuture::from(container.get_registration()).await {
+                    if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
+                        if let Some(worker) = reg.waiting() {
+                            post_sw_message_type(&worker, "SKIP_WAITING");
+                        } else {
+                            state.update_error.set(Some(
+                                "No waiting service worker. Try again in a moment.".to_string(),
+                            ));
+                            state.update_applying.set(false);
+                            state.update_state.set(None);
+                            state.update_ready.set(false);
+                            return;
+                        }
                     }
                 }
+
+                let container = window.navigator().service_worker();
+                let state_on_change = state.clone();
+                let window_reload = window.clone();
+                let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
+                    state_on_change
+                        .update_state
+                        .set(Some("Reloading…".to_string()));
+                    state_on_change.update_applying.set(false);
+                    let _ = window_reload.location().reload();
+                }) as Box<dyn Fn()>);
+                container
+                    .add_event_listener_with_callback(
+                        "controllerchange",
+                        cb.as_ref().unchecked_ref(),
+                    )
+                    .ok();
+                cb.forget();
+
+                let state_timeout = state.clone();
+                let window_reload = window.clone();
+                schedule_window_timeout(1500, move || {
+                    state_timeout
+                        .update_state
+                        .set(Some("Reloading…".to_string()));
+                    state_timeout.update_applying.set(false);
+                    if let Err(err) = window_reload.location().reload() {
+                        state_timeout.update_error.set(Some(format!(
+                            "Reload blocked: {:?}. Please refresh manually.",
+                            err
+                        )));
+                    }
+                });
             }
-
-            let container = window.navigator().service_worker();
-            let state_on_change = state.clone();
-            let window_reload = window.clone();
-            let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
-                state_on_change
-                    .update_state
-                    .set(Some("Reloading…".to_string()));
-                state_on_change.update_applying.set(false);
-                let _ = window_reload.location().reload();
-            }) as Box<dyn Fn()>);
-            container
-                .add_event_listener_with_callback("controllerchange", cb.as_ref().unchecked_ref())
-                .ok();
-            cb.forget();
-
-            let state_timeout = state.clone();
-            let window_reload = window.clone();
-            schedule_window_timeout(1500, move || {
-                state_timeout
-                    .update_state
-                    .set(Some("Reloading…".to_string()));
-                state_timeout.update_applying.set(false);
-                if let Err(err) = window_reload.location().reload() {
-                    state_timeout.update_error.set(Some(format!(
-                        "Reload blocked: {:?}. Please refresh manually.",
-                        err
-                    )));
-                }
-            });
-        }
-    });
+        });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = state;
+    }
 }
-
-#[cfg(not(feature = "hydrate"))]
-fn action_update_click(_state: PwaStatusState) {}
 
 fn action_update_later(state: PwaStatusState) {
     #[cfg(feature = "hydrate")]
@@ -524,51 +533,54 @@ fn action_update_later(state: PwaStatusState) {
     }
 }
 
-#[cfg(feature = "hydrate")]
 fn action_update_check(state: PwaStatusState) {
-    state.update_checking.set(true);
-    state
-        .update_state
-        .set(Some("Checking for updates…".to_string()));
+    #[cfg(feature = "hydrate")]
+    {
+        state.update_checking.set(true);
+        state
+            .update_state
+            .set(Some("Checking for updates…".to_string()));
 
-    spawn_local(async move {
-        use wasm_bindgen_futures::JsFuture;
+        spawn_local(async move {
+            use wasm_bindgen_futures::JsFuture;
 
-        if let Some(window) = web_sys::window() {
-            let container = window.navigator().service_worker();
-            if let Ok(reg_val) = JsFuture::from(container.get_registration()).await {
-                if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
-                    if let Ok(promise) = reg.update() {
-                        let _ = JsFuture::from(promise).await;
+            if let Some(window) = web_sys::window() {
+                let container = window.navigator().service_worker();
+                if let Ok(reg_val) = JsFuture::from(container.get_registration()).await {
+                    if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
+                        if let Ok(promise) = reg.update() {
+                            let _ = JsFuture::from(promise).await;
+                        }
                     }
                 }
-            }
-            let now = js_sys::Date::now();
-            if let Ok(Some(storage)) = window.local_storage() {
-                let _ = storage.set_item(UPDATE_CHECKED_AT_KEY, &now.to_string());
-            }
-            state.update_last_checked.set(Some(now));
-        }
-
-        state.update_checking.set(false);
-        if !state.update_ready.get_untracked() && state.update_error.get_untracked().is_none() {
-            state.update_state.set(Some("No update found.".to_string()));
-            let state_for_timeout = state.clone();
-            schedule_window_timeout(2500, move || {
-                if state_for_timeout.update_state.get_untracked().as_deref()
-                    == Some("No update found.")
-                {
-                    state_for_timeout.update_state.set(None);
+                let now = js_sys::Date::now();
+                if let Ok(Some(storage)) = window.local_storage() {
+                    let _ = storage.set_item(UPDATE_CHECKED_AT_KEY, &now.to_string());
                 }
-            });
-        } else {
-            state.update_state.set(None);
-        }
-    });
-}
+                state.update_last_checked.set(Some(now));
+            }
 
-#[cfg(not(feature = "hydrate"))]
-fn action_update_check(_state: PwaStatusState) {}
+            state.update_checking.set(false);
+            if !state.update_ready.get_untracked() && state.update_error.get_untracked().is_none() {
+                state.update_state.set(Some("No update found.".to_string()));
+                let state_for_timeout = state.clone();
+                schedule_window_timeout(2500, move || {
+                    if state_for_timeout.update_state.get_untracked().as_deref()
+                        == Some("No update found.")
+                    {
+                        state_for_timeout.update_state.set(None);
+                    }
+                });
+            } else {
+                state.update_state.set(None);
+            }
+        });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = state;
+    }
+}
 
 fn action_storage_cleanup(state: PwaStatusState) {
     #[cfg(feature = "hydrate")]
@@ -586,149 +598,158 @@ fn action_storage_cleanup(state: PwaStatusState) {
     }
 }
 
-#[cfg(feature = "hydrate")]
 fn action_cleanup_previous_caches(state: PwaStatusState) {
-    state
-        .previous_cache_cleanup
-        .set(Some("Cleaning old caches…".to_string()));
+    #[cfg(feature = "hydrate")]
+    {
+        state
+            .previous_cache_cleanup
+            .set(Some("Cleaning old caches…".to_string()));
 
-    spawn_local(async move {
-        let deleted = cleanup_previous_app_caches().await.unwrap_or(0);
-        let now = js_sys::Date::now();
+        spawn_local(async move {
+            let deleted = cleanup_previous_app_caches().await.unwrap_or(0);
+            let now = js_sys::Date::now();
 
-        if let Some(window) = web_sys::window() {
-            if let Ok(Some(storage)) = window.local_storage() {
-                let _ = storage.set_item(PREVIOUS_CACHE_CLEANED_AT_KEY, &now.to_string());
-            }
-        }
-
-        state.previous_cache_cleaned_at.set(Some(now));
-        state.cache_entries.set(count_cache_entries().await);
-
-        let message = if deleted == 0 {
-            "Old caches: none found.".to_string()
-        } else if deleted == 1 {
-            "Old caches: removed 1 cache.".to_string()
-        } else {
-            format!("Old caches: removed {deleted} caches.")
-        };
-        state.previous_cache_cleanup.set(Some(message));
-
-        let state_for_timeout = state.clone();
-        schedule_window_timeout(4500, move || {
-            let current = state_for_timeout.previous_cache_cleanup.get_untracked();
-            if current
-                .as_deref()
-                .map(|v| v.starts_with("Old caches:"))
-                .unwrap_or(false)
-            {
-                state_for_timeout.previous_cache_cleanup.set(None);
-            }
-        });
-    });
-}
-
-#[cfg(not(feature = "hydrate"))]
-fn action_cleanup_previous_caches(_state: PwaStatusState) {}
-
-#[cfg(feature = "hydrate")]
-fn action_ping_sw(state: PwaStatusState) {
-    set_sw_action_status(state.sw_action_status, "Pinging service worker…");
-
-    spawn_local(async move {
-        use wasm_bindgen_futures::JsFuture;
-
-        let Some(window) = web_sys::window() else {
-            set_sw_action_status(state.sw_action_status, "No window");
-            return;
-        };
-
-        let container = window.navigator().service_worker();
-        let Some(controller) = container.controller() else {
-            set_sw_action_status(state.sw_action_status, "No SW controller yet.");
-            return;
-        };
-
-        if let Ok(reg_val) = JsFuture::from(container.get_registration()).await {
-            if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
-                if reg.waiting().is_some() {
-                    set_sw_action_status(
-                        state.sw_action_status,
-                        "Ping sent (note: update is waiting).",
-                    );
+            if let Some(window) = web_sys::window() {
+                if let Ok(Some(storage)) = window.local_storage() {
+                    let _ = storage.set_item(PREVIOUS_CACHE_CLEANED_AT_KEY, &now.to_string());
                 }
             }
-        }
 
-        post_sw_message_type(&controller, "PING");
-    });
+            state.previous_cache_cleaned_at.set(Some(now));
+            state.cache_entries.set(count_cache_entries().await);
+
+            let message = if deleted == 0 {
+                "Old caches: none found.".to_string()
+            } else if deleted == 1 {
+                "Old caches: removed 1 cache.".to_string()
+            } else {
+                format!("Old caches: removed {deleted} caches.")
+            };
+            state.previous_cache_cleanup.set(Some(message));
+
+            let state_for_timeout = state.clone();
+            schedule_window_timeout(4500, move || {
+                let current = state_for_timeout.previous_cache_cleanup.get_untracked();
+                if current
+                    .as_deref()
+                    .map(|v| v.starts_with("Old caches:"))
+                    .unwrap_or(false)
+                {
+                    state_for_timeout.previous_cache_cleanup.set(None);
+                }
+            });
+        });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = state;
+    }
 }
 
-#[cfg(not(feature = "hydrate"))]
-fn action_ping_sw(_state: PwaStatusState) {}
+fn action_ping_sw(state: PwaStatusState) {
+    #[cfg(feature = "hydrate")]
+    {
+        set_sw_action_status(state.sw_action_status, "Pinging service worker…");
 
-#[cfg(feature = "hydrate")]
+        spawn_local(async move {
+            use wasm_bindgen_futures::JsFuture;
+
+            let Some(window) = web_sys::window() else {
+                set_sw_action_status(state.sw_action_status, "No window");
+                return;
+            };
+
+            let container = window.navigator().service_worker();
+            let Some(controller) = container.controller() else {
+                set_sw_action_status(state.sw_action_status, "No SW controller yet.");
+                return;
+            };
+
+            if let Ok(reg_val) = JsFuture::from(container.get_registration()).await {
+                if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
+                    if reg.waiting().is_some() {
+                        set_sw_action_status(
+                            state.sw_action_status,
+                            "Ping sent (note: update is waiting).",
+                        );
+                    }
+                }
+            }
+
+            post_sw_message_type(&controller, "PING");
+        });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = state;
+    }
+}
+
 fn action_unregister_sw(state: PwaStatusState) {
-    set_sw_action_status(state.sw_action_status, "Unregistering service worker…");
+    #[cfg(feature = "hydrate")]
+    {
+        set_sw_action_status(state.sw_action_status, "Unregistering service worker…");
 
-    spawn_local(async move {
-        use wasm_bindgen_futures::JsFuture;
+        spawn_local(async move {
+            use wasm_bindgen_futures::JsFuture;
 
-        let Some(window) = web_sys::window() else {
-            set_sw_action_status(state.sw_action_status, "No window");
-            return;
-        };
+            let Some(window) = web_sys::window() else {
+                set_sw_action_status(state.sw_action_status, "No window");
+                return;
+            };
 
-        let container = window.navigator().service_worker();
-        let Ok(reg_val) = JsFuture::from(container.get_registration()).await else {
-            set_sw_action_status(state.sw_action_status, "No SW registration found.");
-            return;
-        };
-        let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() else {
-            set_sw_action_status(state.sw_action_status, "No SW registration found.");
-            return;
-        };
+            let container = window.navigator().service_worker();
+            let Ok(reg_val) = JsFuture::from(container.get_registration()).await else {
+                set_sw_action_status(state.sw_action_status, "No SW registration found.");
+                return;
+            };
+            let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() else {
+                set_sw_action_status(state.sw_action_status, "No SW registration found.");
+                return;
+            };
 
-        let promise = match reg.unregister() {
-            Ok(promise) => promise,
-            Err(err) => {
-                set_sw_action_status(
-                    state.sw_action_status,
-                    &format!("SW unregister failed: {err:?}"),
-                );
+            let promise = match reg.unregister() {
+                Ok(promise) => promise,
+                Err(err) => {
+                    set_sw_action_status(
+                        state.sw_action_status,
+                        &format!("SW unregister failed: {err:?}"),
+                    );
+                    return;
+                }
+            };
+
+            let unregistered = match JsFuture::from(promise).await {
+                Ok(value) => value.as_bool().unwrap_or(true),
+                Err(err) => {
+                    set_sw_action_status(
+                        state.sw_action_status,
+                        &format!("SW unregister failed: {err:?}"),
+                    );
+                    return;
+                }
+            };
+
+            if !unregistered {
+                set_sw_action_status(state.sw_action_status, "SW unregister returned false.");
                 return;
             }
-        };
 
-        let unregistered = match JsFuture::from(promise).await {
-            Ok(value) => value.as_bool().unwrap_or(true),
-            Err(err) => {
-                set_sw_action_status(
-                    state.sw_action_status,
-                    &format!("SW unregister failed: {err:?}"),
-                );
-                return;
+            if let Ok(Some(storage)) = window.local_storage() {
+                let _ = storage.remove_item(SW_VERSION_KEY);
+                let _ = storage.remove_item(SW_ACTIVATED_AT_KEY);
+                let _ = storage.remove_item("pwa_update_dismissed_at");
             }
-        };
 
-        if !unregistered {
-            set_sw_action_status(state.sw_action_status, "SW unregister returned false.");
-            return;
-        }
-
-        if let Ok(Some(storage)) = window.local_storage() {
-            let _ = storage.remove_item(SW_VERSION_KEY);
-            let _ = storage.remove_item(SW_ACTIVATED_AT_KEY);
-            let _ = storage.remove_item("pwa_update_dismissed_at");
-        }
-
-        set_sw_action_status(state.sw_action_status, "SW unregistered. Reloading…");
-        let _ = window.location().reload();
-    });
+            set_sw_action_status(state.sw_action_status, "SW unregistered. Reloading…");
+            let _ = window.location().reload();
+        });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = state;
+    }
 }
-
-#[cfg(not(feature = "hydrate"))]
-fn action_unregister_sw(_state: PwaStatusState) {}
 
 fn action_reset_data() {
     #[cfg(feature = "hydrate")]
@@ -1048,11 +1069,14 @@ fn attach_installing_state_listener(
     worker: web_sys::ServiceWorker,
     state: PwaStatusState,
 ) {
+    let worker_for_state = worker.clone();
     let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
-        let worker_state =
-            js_sys::Reflect::get(worker.as_ref(), &wasm_bindgen::JsValue::from_str("state"))
-                .ok()
-                .and_then(|v| v.as_string());
+        let worker_state = js_sys::Reflect::get(
+            worker_for_state.as_ref(),
+            &wasm_bindgen::JsValue::from_str("state"),
+        )
+        .ok()
+        .and_then(|v| v.as_string());
 
         if let Some(current_state) = worker_state.as_deref() {
             state

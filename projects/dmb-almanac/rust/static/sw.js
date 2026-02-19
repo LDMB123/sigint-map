@@ -105,8 +105,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('message', (event) => {
-  const data = event.data || {};
-  const type = typeof data === 'string' ? data : data.type;
+  const type = event.data?.type;
 
   if (type === 'SKIP_WAITING') {
     const skipPromise = Promise.resolve(self.skipWaiting());

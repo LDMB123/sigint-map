@@ -475,23 +475,24 @@ fn cap_policy_from_device_memory(device_memory: Option<f64>) -> CapPolicy {
     }
 }
 
-#[cfg(feature = "hydrate")]
 fn cap_policy_from_navigator() -> CapPolicy {
-    let Some(window) = web_sys::window() else {
-        return cap_policy_from_device_memory(None);
-    };
-    let navigator = window.navigator();
-    let device_memory = navigator_property(&navigator, "deviceMemory").as_f64();
-    cap_policy_from_device_memory(device_memory)
-}
-
-#[cfg(not(feature = "hydrate"))]
-fn cap_policy_from_navigator() -> CapPolicy {
-    CapPolicy {
-        cap_bytes: DEFAULT_MAX_MATRIX_BYTES,
-        device_memory_gb: None,
-        tier: "ssr".to_string(),
-        cap_override_mb: None,
+    #[cfg(feature = "hydrate")]
+    {
+        let Some(window) = web_sys::window() else {
+            return cap_policy_from_device_memory(None);
+        };
+        let navigator = window.navigator();
+        let device_memory = navigator_property(&navigator, "deviceMemory").as_f64();
+        cap_policy_from_device_memory(device_memory)
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        CapPolicy {
+            cap_bytes: DEFAULT_MAX_MATRIX_BYTES,
+            device_memory_gb: None,
+            tier: "ssr".to_string(),
+            cap_override_mb: None,
+        }
     }
 }
 
@@ -761,40 +762,41 @@ fn read_worker_failure_reason() -> Option<String> {
     storage.get_item(WORKER_FAILURE_REASON_KEY).ok().flatten()
 }
 
-#[cfg(feature = "hydrate")]
+#[cfg_attr(not(feature = "hydrate"), must_use)]
 pub fn worker_failure_status() -> WorkerFailureStatus {
-    let now = js_sys::Date::now();
-    let until = read_worker_failure_until();
-    let remaining = until.and_then(|ts| if ts <= now { None } else { Some(ts - now) });
-    if remaining.is_some() {
-        if let Some(window) = web_sys::window() {
-            if let Ok(Some(storage)) = window.local_storage() {
-                if storage
-                    .get_item(WORKER_COOLDOWN_WARN_KEY)
-                    .ok()
-                    .flatten()
-                    .is_none()
-                {
-                    let _ = storage.set_item(WORKER_COOLDOWN_WARN_KEY, "1");
-                    record_ai_warning(
-                        "webgpu_worker_cooldown",
-                        Some("WebGPU worker in cooldown; using direct scoring".to_string()),
-                    );
+    #[cfg(feature = "hydrate")]
+    {
+        let now = js_sys::Date::now();
+        let until = read_worker_failure_until();
+        let remaining = until.and_then(|ts| if ts <= now { None } else { Some(ts - now) });
+        if remaining.is_some() {
+            if let Some(window) = web_sys::window() {
+                if let Ok(Some(storage)) = window.local_storage() {
+                    if storage
+                        .get_item(WORKER_COOLDOWN_WARN_KEY)
+                        .ok()
+                        .flatten()
+                        .is_none()
+                    {
+                        let _ = storage.set_item(WORKER_COOLDOWN_WARN_KEY, "1");
+                        record_ai_warning(
+                            "webgpu_worker_cooldown",
+                            Some("WebGPU worker in cooldown; using direct scoring".to_string()),
+                        );
+                    }
                 }
             }
         }
+        WorkerFailureStatus {
+            cooldown_until_ms: until,
+            cooldown_remaining_ms: remaining,
+            last_error: read_worker_failure_reason(),
+        }
     }
-    WorkerFailureStatus {
-        cooldown_until_ms: until,
-        cooldown_remaining_ms: remaining,
-        last_error: read_worker_failure_reason(),
+    #[cfg(not(feature = "hydrate"))]
+    {
+        WorkerFailureStatus::default()
     }
-}
-
-#[cfg(not(feature = "hydrate"))]
-#[must_use]
-pub fn worker_failure_status() -> WorkerFailureStatus {
-    WorkerFailureStatus::default()
 }
 
 #[cfg(feature = "hydrate")]
@@ -1003,36 +1005,41 @@ pub fn load_ai_telemetry_snapshot() -> Option<AiTelemetrySnapshot> {
     }
 }
 
-#[cfg(feature = "hydrate")]
+#[cfg_attr(not(feature = "hydrate"), allow(clippy::needless_pass_by_value))]
 fn record_ai_warning(event: &str, details: Option<String>) {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let Ok(Some(storage)) = window.local_storage() else {
-        return;
-    };
-    let mut events: Vec<AiWarningEvent> = storage
-        .get_item(AI_WARNING_EVENTS_KEY)
-        .ok()
-        .flatten()
-        .and_then(|payload| serde_json::from_str(&payload).ok())
-        .unwrap_or_default();
-    events.push(AiWarningEvent {
-        timestamp_ms: js_sys::Date::now(),
-        event: event.to_string(),
-        details,
-    });
-    if events.len() > AI_WARNING_EVENTS_LIMIT {
-        let excess = events.len() - AI_WARNING_EVENTS_LIMIT;
-        events.drain(0..excess);
+    #[cfg(feature = "hydrate")]
+    {
+        let Some(window) = web_sys::window() else {
+            return;
+        };
+        let Ok(Some(storage)) = window.local_storage() else {
+            return;
+        };
+        let mut events: Vec<AiWarningEvent> = storage
+            .get_item(AI_WARNING_EVENTS_KEY)
+            .ok()
+            .flatten()
+            .and_then(|payload| serde_json::from_str(&payload).ok())
+            .unwrap_or_default();
+        events.push(AiWarningEvent {
+            timestamp_ms: js_sys::Date::now(),
+            event: event.to_string(),
+            details,
+        });
+        if events.len() > AI_WARNING_EVENTS_LIMIT {
+            let excess = events.len() - AI_WARNING_EVENTS_LIMIT;
+            events.drain(0..excess);
+        }
+        if let Ok(payload) = serde_json::to_string(&events) {
+            let _ = storage.set_item(AI_WARNING_EVENTS_KEY, &payload);
+        }
     }
-    if let Ok(payload) = serde_json::to_string(&events) {
-        let _ = storage.set_item(AI_WARNING_EVENTS_KEY, &payload);
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = event;
+        let _ = details;
     }
 }
-
-#[cfg(not(feature = "hydrate"))]
-fn record_ai_warning(_event: &str, _details: Option<String>) {}
 
 #[cfg(feature = "hydrate")]
 pub fn load_ai_warning_events() -> Vec<AiWarningEvent> {

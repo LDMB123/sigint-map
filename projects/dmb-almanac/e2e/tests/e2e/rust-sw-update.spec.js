@@ -1,21 +1,15 @@
 import { test, expect } from '@playwright/test';
-import { gotoHydrated, skipUnlessRust, waitForHydration } from './_rust_test_utils.js';
+import {
+  activateWaitingServiceWorker,
+  gotoHydrated,
+  skipUnlessRust,
+  waitForHydration,
+  waitForWaitingServiceWorker,
+  waitForServiceWorkerController,
+} from './_rust_test_utils.js';
 
 test.describe('Rust service worker updates', () => {
   skipUnlessRust(test);
-
-  async function waitForServiceWorker(page) {
-    // The page must be loaded before this is called.
-    await page.waitForFunction(() => 'serviceWorker' in navigator, { timeout: 5000 });
-    await page.evaluate(async () => {
-      if (navigator.serviceWorker) {
-        await navigator.serviceWorker.ready;
-      }
-    });
-
-    // Ensure we have a controller (the app may register on load).
-    await page.waitForFunction(() => !!navigator.serviceWorker.controller, { timeout: 15000 });
-  }
 
   test('detects and applies an updated sw.js', async ({ page, context }) => {
     test.setTimeout(120_000);
@@ -50,7 +44,7 @@ test.describe('Rust service worker updates', () => {
 
     await gotoHydrated(page, '/');
 
-    await waitForServiceWorker(page);
+    await waitForServiceWorkerController(page);
 
     await page.evaluate(async (suffix) => {
       await navigator.serviceWorker.register(`/sw.js?e2e=${suffix}`, { scope: '/' });
@@ -65,28 +59,9 @@ test.describe('Rust service worker updates', () => {
       page.locator('.pwa-status__row--update[role="status"]')
     ).toBeVisible({ timeout: 15000 });
 
-    await page.waitForFunction(
-      async () => {
-        const reg = await navigator.serviceWorker.getRegistration();
-        return !!reg?.waiting;
-      },
-      { timeout: 15000 }
-    );
+    await waitForWaitingServiceWorker(page, { timeout: 15_000 });
 
-    await page.evaluate(async () => {
-      for (let attempt = 0; attempt < 6; attempt += 1) {
-        const reg = await navigator.serviceWorker.getRegistration();
-        const waiting = reg?.waiting;
-        if (!waiting) {
-          break;
-        }
-        waiting.postMessage({ type: 'SKIP_WAITING' });
-        waiting.postMessage('SKIP_WAITING');
-        if (attempt < 5) {
-          await new Promise((resolve) => setTimeout(resolve, 250));
-        }
-      }
-    });
+    await activateWaitingServiceWorker(page);
 
     await page.waitForFunction(
       (expected) => navigator.serviceWorker.controller?.scriptURL?.includes(expected),
@@ -103,7 +78,7 @@ test.describe('Rust service worker updates', () => {
       { timeout: 15000 }
     );
 
-    await page.getByRole('button', { name: 'SW details' }).click();
+    await page.locator('summary', { hasText: 'SW details' }).click();
     await expect(page.getByText(new RegExp(`SW version ${patchedVersion}`))).toBeVisible({
       timeout: 15000,
     });
