@@ -880,28 +880,20 @@ fn spawn_ai_config_sync_task(state: &PwaStatusState) {
     let ai_config_generated_at = state.ai_config_generated_at;
 
     spawn_local(async move {
-        if let Some(remote) = crate::ai::fetch_ai_config_meta().await {
-            let reconciled = crate::ai::reconcile_ai_config_meta(
-                remote,
-                ai_config_version.get_untracked(),
-                ai_config_generated_at.get_untracked(),
-            )
-            .await;
-
+        if let Some(reconciled) = crate::ai::fetch_and_reconcile_ai_config_meta(
+            ai_config_version.get_untracked(),
+            ai_config_generated_at.get_untracked(),
+        )
+        .await
+        {
             ai_config_version.set(reconciled.local_version.clone());
             ai_config_generated_at.set(reconciled.local_generated_at.clone());
 
             if reconciled.mismatched {
                 let msg = format!(
                     "AI config mismatch: remote {} @ {}.",
-                    reconciled
-                        .remote_version
-                        .clone()
-                        .unwrap_or_else(|| "n/a".to_string()),
-                    reconciled
-                        .remote_generated_at
-                        .clone()
-                        .unwrap_or_else(|| "n/a".to_string())
+                    reconciled.remote_version.as_deref().unwrap_or("n/a"),
+                    reconciled.remote_generated_at.as_deref().unwrap_or("n/a")
                 );
                 ai_config_status.set(Some(msg));
             } else {

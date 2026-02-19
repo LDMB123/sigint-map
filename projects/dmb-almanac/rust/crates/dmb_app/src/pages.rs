@@ -758,29 +758,20 @@ fn refresh_ai_config_meta_mismatch(state: AiDiagnosticsState) {
     let local_generated_at = state.ai_config_generated_at.clone();
     let mismatch = state.ai_config_mismatch.clone();
     spawn_local(async move {
-        let remote = crate::ai::fetch_ai_config_meta().await;
-        if let Some(remote) = remote {
-            let reconciled = crate::ai::reconcile_ai_config_meta(
-                remote,
-                local_version.try_get_untracked().flatten(),
-                local_generated_at.try_get_untracked().flatten(),
-            )
-            .await;
-
+        if let Some(reconciled) = crate::ai::fetch_and_reconcile_ai_config_meta(
+            local_version.try_get_untracked().flatten(),
+            local_generated_at.try_get_untracked().flatten(),
+        )
+        .await
+        {
             let _ = local_version.try_set(reconciled.local_version.clone());
             let _ = local_generated_at.try_set(reconciled.local_generated_at.clone());
 
             if reconciled.mismatched {
                 let msg = format!(
                     "Remote AI config differs (remote {} @ {}).",
-                    reconciled
-                        .remote_version
-                        .clone()
-                        .unwrap_or_else(|| "n/a".to_string()),
-                    reconciled
-                        .remote_generated_at
-                        .clone()
-                        .unwrap_or_else(|| "n/a".to_string())
+                    reconciled.remote_version.as_deref().unwrap_or("n/a"),
+                    reconciled.remote_generated_at.as_deref().unwrap_or("n/a")
                 );
                 let _ = mismatch.try_set(Some(msg));
             } else {

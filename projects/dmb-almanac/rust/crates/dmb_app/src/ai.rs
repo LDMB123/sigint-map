@@ -1079,7 +1079,7 @@ pub async fn fetch_ai_config_meta() -> Option<AiConfigMeta> {
 }
 
 #[cfg(feature = "hydrate")]
-pub fn normalize_ai_config_meta_field(value: Option<String>) -> Option<String> {
+fn normalize_ai_config_meta_field(value: Option<String>) -> Option<String> {
     value
         .map(|item| item.trim().to_string())
         .filter(|item| !item.is_empty())
@@ -1132,6 +1132,15 @@ pub async fn reconcile_ai_config_meta(
         local_generated_at: next_local_generated_at,
         mismatched,
     }
+}
+
+#[cfg(feature = "hydrate")]
+pub async fn fetch_and_reconcile_ai_config_meta(
+    local_version: Option<String>,
+    local_generated_at: Option<String>,
+) -> Option<AiConfigMetaReconcile> {
+    let remote = fetch_ai_config_meta().await?;
+    Some(reconcile_ai_config_meta(remote, local_version, local_generated_at).await)
 }
 
 #[cfg(feature = "hydrate")]
