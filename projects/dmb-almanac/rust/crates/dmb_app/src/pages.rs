@@ -687,10 +687,8 @@ impl AiDiagnosticsState {
 
 #[cfg(feature = "hydrate")]
 fn load_storage_item(window: &web_sys::Window, key: &str) -> Option<String> {
-    window
-        .local_storage()
-        .ok()
-        .and_then(|storage| storage.and_then(|storage| storage.get_item(key).ok().flatten()))
+    let storage = window.local_storage().ok().flatten()?;
+    storage.get_item(key).ok().flatten()
 }
 
 #[cfg(feature = "hydrate")]
