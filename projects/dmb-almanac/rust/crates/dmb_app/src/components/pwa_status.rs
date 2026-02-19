@@ -313,6 +313,11 @@ fn local_storage_f64(storage: &web_sys::Storage, key: &str) -> Option<f64> {
 }
 
 #[cfg(feature = "hydrate")]
+fn set_local_storage_f64_item(key: &str, value: f64) {
+    set_local_storage_item(key, &value.to_string());
+}
+
+#[cfg(feature = "hydrate")]
 fn set_update_reloading_state(state: &PwaStatusState) {
     state
         .update_state
@@ -585,12 +590,8 @@ fn action_update_click(state: PwaStatusState) {
 fn action_update_later(state: PwaStatusState) {
     #[cfg(feature = "hydrate")]
     {
-        if let Some(window) = web_sys::window() {
-            if let Some(storage) = window_local_storage(&window) {
-                let now = js_sys::Date::now();
-                let _ = storage.set_item(UPDATE_DISMISSED_AT_KEY, &now.to_string());
-            }
-        }
+        let now = js_sys::Date::now();
+        set_local_storage_f64_item(UPDATE_DISMISSED_AT_KEY, now);
         state.update_snoozed.set(true);
         state.update_ready.set(false);
     }
@@ -621,9 +622,7 @@ fn action_update_check(state: PwaStatusState) {
                     }
                 }
                 let now = js_sys::Date::now();
-                if let Some(storage) = window_local_storage(&window) {
-                    let _ = storage.set_item(UPDATE_CHECKED_AT_KEY, &now.to_string());
-                }
+                set_local_storage_f64_item(UPDATE_CHECKED_AT_KEY, now);
                 state.update_last_checked.set(Some(now));
             }
 
@@ -678,11 +677,7 @@ fn action_cleanup_previous_caches(state: PwaStatusState) {
             let deleted = cleanup_previous_app_caches().await.unwrap_or(0);
             let now = js_sys::Date::now();
 
-            if let Some(window) = web_sys::window() {
-                if let Some(storage) = window_local_storage(&window) {
-                    let _ = storage.set_item(PREVIOUS_CACHE_CLEANED_AT_KEY, &now.to_string());
-                }
-            }
+            set_local_storage_f64_item(PREVIOUS_CACHE_CLEANED_AT_KEY, now);
 
             state.previous_cache_cleaned_at.set(Some(now));
             refresh_cache_entries(state.cache_entries).await;
@@ -804,11 +799,9 @@ fn action_unregister_sw(state: PwaStatusState) {
                 return;
             }
 
-            if let Some(storage) = window_local_storage(&window) {
-                let _ = storage.remove_item(SW_VERSION_KEY);
-                let _ = storage.remove_item(SW_ACTIVATED_AT_KEY);
-                let _ = storage.remove_item(UPDATE_DISMISSED_AT_KEY);
-            }
+            remove_local_storage_item(SW_VERSION_KEY);
+            remove_local_storage_item(SW_ACTIVATED_AT_KEY);
+            remove_local_storage_item(UPDATE_DISMISSED_AT_KEY);
 
             set_sw_action_status(state.sw_action_status, "SW unregistered. Reloading…");
             let _ = window.location().reload();
@@ -1190,9 +1183,7 @@ async fn process_sw_registration(
             if let Ok(promise) = reg.update() {
                 let _ = JsFuture::from(promise).await;
             }
-            if let Some(storage) = window_local_storage(&window) {
-                let _ = storage.set_item(UPDATE_CHECKED_AT_KEY, &now.to_string());
-            }
+            set_local_storage_f64_item(UPDATE_CHECKED_AT_KEY, now);
             state.update_last_checked.set(Some(now));
         }
     }
@@ -1214,9 +1205,7 @@ async fn process_sw_registration(
 
         if should_cleanup {
             let _ = cleanup_previous_app_caches().await;
-            if let Some(storage) = window_local_storage(&window) {
-                let _ = storage.set_item(PREVIOUS_CACHE_CLEANED_AT_KEY, &now.to_string());
-            }
+            set_local_storage_f64_item(PREVIOUS_CACHE_CLEANED_AT_KEY, now);
             state.previous_cache_cleaned_at.set(Some(now));
             refresh_cache_entries(state.cache_entries).await;
         }
