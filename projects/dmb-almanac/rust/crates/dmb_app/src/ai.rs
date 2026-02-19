@@ -127,8 +127,37 @@ fn local_storage() -> Option<web_sys::Storage> {
 }
 
 #[cfg(feature = "hydrate")]
+fn storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
+    storage.get_item(key).ok().flatten()
+}
+
+#[cfg(feature = "hydrate")]
+fn set_storage_item(storage: &web_sys::Storage, key: &str, value: &str) {
+    let _ = storage.set_item(key, value);
+}
+
+#[cfg(feature = "hydrate")]
+fn remove_storage_item(storage: &web_sys::Storage, key: &str) {
+    let _ = storage.remove_item(key);
+}
+
+#[cfg(feature = "hydrate")]
 fn local_storage_item(key: &str) -> Option<String> {
-    local_storage().and_then(|storage| storage.get_item(key).ok().flatten())
+    local_storage().and_then(|storage| storage_item(&storage, key))
+}
+
+#[cfg(feature = "hydrate")]
+fn set_local_storage_item(key: &str, value: &str) {
+    if let Some(storage) = local_storage() {
+        set_storage_item(&storage, key, value);
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn remove_local_storage_item(key: &str) {
+    if let Some(storage) = local_storage() {
+        remove_storage_item(&storage, key);
+    }
 }
 
 #[cfg(feature = "hydrate")]
@@ -138,10 +167,7 @@ fn local_storage_flag_enabled(key: &str) -> bool {
 
 #[cfg(feature = "hydrate")]
 fn set_local_storage_flag(key: &str, enabled: bool) {
-    let Some(storage) = local_storage() else {
-        return;
-    };
-    let _ = storage.set_item(key, if enabled { "1" } else { "0" });
+    set_local_storage_item(key, if enabled { "1" } else { "0" });
 }
 
 #[cfg(feature = "hydrate")]
@@ -149,10 +175,10 @@ fn record_ai_warning_once(warn_key: &str, event: &str, details: &str) {
     let Some(storage) = local_storage() else {
         return;
     };
-    if storage.get_item(warn_key).ok().flatten().is_some() {
+    if storage_item(&storage, warn_key).is_some() {
         return;
     }
-    let _ = storage.set_item(warn_key, "1");
+    set_storage_item(&storage, warn_key, "1");
     record_ai_warning(event, Some(details.to_string()));
 }
 
@@ -816,7 +842,7 @@ pub fn clear_worker_failure_status() {
             WORKER_FAILURE_REASON_KEY,
             WORKER_COOLDOWN_WARN_KEY,
         ] {
-            let _ = storage.remove_item(key);
+            remove_storage_item(&storage, key);
         }
     }
     let _ = dmb_clear_worker_failure_status();
@@ -824,16 +850,13 @@ pub fn clear_worker_failure_status() {
 
 #[cfg(feature = "hydrate")]
 pub fn set_worker_threshold_override(value: Option<usize>) {
-    let Some(storage) = local_storage() else {
-        return;
-    };
     match value {
         Some(val) => {
             let clamped = clamp_worker_threshold(val);
             store_worker_threshold(clamped);
         }
         None => {
-            let _ = storage.remove_item(WORKER_THRESHOLD_KEY);
+            remove_local_storage_item(WORKER_THRESHOLD_KEY);
             ensure_default_worker_threshold();
         }
     }
@@ -855,16 +878,13 @@ pub fn ann_cap_override_mb() -> Option<u64> {
 
 #[cfg(feature = "hydrate")]
 pub fn set_ann_cap_override_mb(value: Option<u64>) {
-    let Some(storage) = local_storage() else {
-        return;
-    };
     match value {
         Some(mb) => {
             let clamped = mb.clamp(MIN_ANN_CAP_MB, MAX_ANN_CAP_MB);
-            let _ = storage.set_item(ANN_CAP_OVERRIDE_KEY, &clamped.to_string());
+            set_local_storage_item(ANN_CAP_OVERRIDE_KEY, &clamped.to_string());
         }
         None => {
-            let _ = storage.remove_item(ANN_CAP_OVERRIDE_KEY);
+            remove_local_storage_item(ANN_CAP_OVERRIDE_KEY);
         }
     }
     store_ai_telemetry_snapshot(ann_cap_diagnostics().as_ref());
@@ -883,10 +903,7 @@ pub fn set_webgpu_disabled(disabled: bool) {
 
 #[cfg(feature = "hydrate")]
 fn store_worker_threshold(value: usize) {
-    let Some(storage) = local_storage() else {
-        return;
-    };
-    let _ = storage.set_item(WORKER_THRESHOLD_KEY, &value.to_string());
+    set_local_storage_item(WORKER_THRESHOLD_KEY, &value.to_string());
     let _ = dmb_set_worker_threshold(value as f64);
 }
 
@@ -947,9 +964,6 @@ fn recommend_worker_threshold(result: &AiWorkerBenchmark) -> Option<usize> {
 
 #[cfg(feature = "hydrate")]
 fn store_ai_telemetry_snapshot(ann_cap: Option<&AnnCapDiagnostics>) {
-    let Some(storage) = local_storage() else {
-        return;
-    };
     let caps = detect_ai_capabilities();
     let worker_status = worker_failure_status();
     let payload = serde_json::json!({
@@ -972,7 +986,7 @@ fn store_ai_telemetry_snapshot(ann_cap: Option<&AnnCapDiagnostics>) {
         "embeddingSampleEnabled": Some(embedding_sample_enabled()),
     });
     if let Ok(json) = serde_json::to_string(&payload) {
-        let _ = storage.set_item(AI_TELEMETRY_KEY, &json);
+        set_local_storage_item(AI_TELEMETRY_KEY, &json);
     }
 }
 
@@ -1013,7 +1027,7 @@ fn record_ai_warning(event: &str, details: Option<String>) {
             events.drain(0..excess);
         }
         if let Ok(payload) = serde_json::to_string(&events) {
-            let _ = storage.set_item(AI_WARNING_EVENTS_KEY, &payload);
+            set_storage_item(&storage, AI_WARNING_EVENTS_KEY, &payload);
         }
     }
     #[cfg(not(feature = "hydrate"))]
@@ -1152,12 +1166,12 @@ pub fn sync_ai_config_meta(version: Option<&str>, generated_at: Option<&str>) ->
         return false;
     };
     if let Some(version) = version {
-        let _ = storage.set_item(AI_CONFIG_VERSION_KEY, version);
+        set_storage_item(&storage, AI_CONFIG_VERSION_KEY, version);
     }
     if let Some(generated_at) = generated_at {
-        let _ = storage.set_item(AI_CONFIG_GENERATED_AT_KEY, generated_at);
+        set_storage_item(&storage, AI_CONFIG_GENERATED_AT_KEY, generated_at);
     }
-    let _ = storage.set_item(AI_CONFIG_SEEDED_KEY, "1");
+    set_storage_item(&storage, AI_CONFIG_SEEDED_KEY, "1");
     true
 }
 
@@ -1245,10 +1259,8 @@ pub async fn load_ai_tuning() -> AiTuning {
 
 #[cfg(feature = "hydrate")]
 pub async fn store_ai_tuning(tuning: &AiTuning) {
-    if let Some(storage) = local_storage() {
-        if let Ok(payload) = serde_json::to_string(tuning) {
-            let _ = storage.set_item("dmb-ai-tuning", &payload);
-        }
+    if let Ok(payload) = serde_json::to_string(tuning) {
+        set_local_storage_item("dmb-ai-tuning", &payload);
     }
 }
 
@@ -1299,7 +1311,7 @@ fn set_seed_string_field(
         return;
     }
     if let Some(value) = value {
-        let _ = storage.set_item(key, value);
+        set_storage_item(storage, key, value);
     }
 }
 
@@ -1315,7 +1327,7 @@ fn set_seed_json_field<T: Serialize>(
     }
     if let Some(value) = value {
         if let Ok(payload) = serde_json::to_string(value) {
-            let _ = storage.set_item(key, &payload);
+            set_storage_item(storage, key, &payload);
         }
     }
 }
@@ -1351,7 +1363,7 @@ fn apply_ai_config_seed(storage: &web_sys::Storage, seed: AiConfigSeed, overwrit
             set_ann_cap_override_mb(Some(override_mb));
         }
     }
-    let _ = storage.set_item(AI_CONFIG_SEEDED_KEY, "1");
+    set_storage_item(storage, AI_CONFIG_SEEDED_KEY, "1");
 }
 
 #[cfg(feature = "hydrate")]
@@ -1387,9 +1399,7 @@ fn should_run_worker_benchmark() -> bool {
 
 #[cfg(feature = "hydrate")]
 fn mark_worker_benchmark_ran() {
-    if let Some(storage) = local_storage() {
-        let _ = storage.set_item(WEBGPU_WORKER_BENCH_KEY, &js_sys::Date::now().to_string());
-    }
+    set_local_storage_item(WEBGPU_WORKER_BENCH_KEY, &js_sys::Date::now().to_string());
 }
 
 #[cfg(feature = "hydrate")]
@@ -1429,11 +1439,8 @@ pub fn benchmark_history() -> Vec<AiBenchmarkSample> {
 
 #[cfg(feature = "hydrate")]
 fn store_benchmark_history(samples: &[AiBenchmarkSample]) {
-    let Some(storage) = local_storage() else {
-        return;
-    };
     if let Ok(payload) = serde_json::to_string(samples) {
-        let _ = storage.set_item(BENCHMARK_HISTORY_KEY, &payload);
+        set_local_storage_item(BENCHMARK_HISTORY_KEY, &payload);
     }
 }
 
