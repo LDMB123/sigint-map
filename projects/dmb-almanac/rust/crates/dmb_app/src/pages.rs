@@ -776,19 +776,11 @@ fn refresh_ai_config_meta_mismatch(state: AiDiagnosticsState) {
         {
             let _ = local_version.try_set(reconciled.local_version.clone());
             let _ = local_generated_at.try_set(reconciled.local_generated_at.clone());
-
-            if reconciled.mismatched {
-                let msg = format!(
-                    "Remote AI config differs ({}).",
-                    crate::ai::ai_config_remote_meta_label(
-                        reconciled.remote_version.as_deref(),
-                        reconciled.remote_generated_at.as_deref()
-                    )
-                );
-                let _ = mismatch.try_set(Some(msg));
-            } else {
-                let _ = mismatch.try_set(None);
-            }
+            let _ = mismatch.try_set(crate::ai::ai_config_mismatch_status_message(
+                &reconciled,
+                "Remote AI config differs (",
+                ").",
+            ));
         }
     });
 }

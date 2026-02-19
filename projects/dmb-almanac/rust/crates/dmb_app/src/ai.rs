@@ -1156,6 +1156,24 @@ pub fn ai_config_remote_meta_label(
 }
 
 #[cfg(feature = "hydrate")]
+pub fn ai_config_mismatch_status_message(
+    reconciled: &AiConfigMetaReconcile,
+    prefix: &str,
+    suffix: &str,
+) -> Option<String> {
+    if !reconciled.mismatched {
+        return None;
+    }
+    Some(format!(
+        "{prefix}{}{suffix}",
+        ai_config_remote_meta_label(
+            reconciled.remote_version.as_deref(),
+            reconciled.remote_generated_at.as_deref()
+        )
+    ))
+}
+
+#[cfg(feature = "hydrate")]
 pub fn sync_ai_config_meta(version: Option<&str>, generated_at: Option<&str>) -> bool {
     let Some(window) = web_sys::window() else {
         return false;

@@ -897,19 +897,11 @@ fn spawn_ai_config_sync_task(state: &PwaStatusState) {
         {
             ai_config_version.set(reconciled.local_version.clone());
             ai_config_generated_at.set(reconciled.local_generated_at.clone());
-
-            if reconciled.mismatched {
-                let msg = format!(
-                    "AI config mismatch: {}.",
-                    crate::ai::ai_config_remote_meta_label(
-                        reconciled.remote_version.as_deref(),
-                        reconciled.remote_generated_at.as_deref()
-                    )
-                );
-                ai_config_status.set(Some(msg));
-            } else {
-                ai_config_status.set(None);
-            }
+            ai_config_status.set(crate::ai::ai_config_mismatch_status_message(
+                &reconciled,
+                "AI config mismatch: ",
+                ".",
+            ));
         }
     });
 }
