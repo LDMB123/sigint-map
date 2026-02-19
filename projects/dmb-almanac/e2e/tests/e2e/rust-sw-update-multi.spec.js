@@ -6,6 +6,7 @@ import {
   gotoHydrated,
   registerE2eServiceWorker,
   resetPwaSwLocalState,
+  routePatchedServiceWorker,
   skipUnlessRust,
   waitForHydration,
   waitForStoredSwVersion,
@@ -20,25 +21,8 @@ test.describe('Rust service worker updates (multi deploy)', () => {
     test.setTimeout(120_000);
 
     const versions = [`e2e-${Date.now()}-v1`, `e2e-${Date.now()}-v2`];
-    let swFetchCount = 0;
     let phase = 0;
-
-    await context.route('**/sw.js*', async (route) => {
-      const url = route.request().url();
-      const response = await route.fetch();
-      const body = await response.text();
-      swFetchCount += 1;
-
-      // Only patch when our test registers a SW with an explicit `?e2e=` suffix.
-      // This avoids relying on whether the app auto-registers `sw.js` (which varies by build).
-      if (!url.includes('e2e=')) {
-        await route.fulfill({ response, body });
-        return;
-      }
-
-      const patchedBody = body.replace(/const VERSION = '.*?';/, `const VERSION = '${versions[phase]}';`);
-      await route.fulfill({ response, body: patchedBody });
-    });
+    const swRoute = await routePatchedServiceWorker(context, () => versions[phase]);
 
     await resetPwaSwLocalState(page);
 
@@ -49,7 +33,7 @@ test.describe('Rust service worker updates (multi deploy)', () => {
     // First deploy/update.
     await registerE2eServiceWorker(page, versions[0]);
 
-    await expect.poll(() => swFetchCount, { timeout: 15000 }).toBeGreaterThan(1);
+    await expect.poll(() => swRoute.getFetchCount(), { timeout: 15000 }).toBeGreaterThan(1);
     await clickCheckForUpdates(page, { timeout: 15_000 });
 
     await waitForWaitingServiceWorker(page, { timeout: 30_000 });
@@ -72,11 +56,13 @@ test.describe('Rust service worker updates (multi deploy)', () => {
 
     // Second deploy/update. Swap patch version and re-register with a new URL to force an update check.
     phase = 1;
-    const swFetchCountBefore = swFetchCount;
+    const swFetchCountBefore = swRoute.getFetchCount();
 
     await registerE2eServiceWorker(page, versions[1]);
 
-    await expect.poll(() => swFetchCount, { timeout: 15000 }).toBeGreaterThan(swFetchCountBefore);
+    await expect
+      .poll(() => swRoute.getFetchCount(), { timeout: 15000 })
+      .toBeGreaterThan(swFetchCountBefore);
     await clickCheckForUpdates(page, { timeout: 15_000 });
 
     await waitForWaitingServiceWorker(page, { timeout: 30_000 });

@@ -6,6 +6,7 @@ import {
   gotoHydrated,
   registerE2eServiceWorker,
   resetPwaSwLocalState,
+  routePatchedServiceWorker,
   skipUnlessRust,
   waitForHydration,
   waitForStoredSwVersion,
@@ -20,27 +21,7 @@ test.describe('Rust service worker updates', () => {
     test.setTimeout(120_000);
 
     const patchedVersion = `e2e-${Date.now()}`;
-    let swFetchCount = 0;
-
-    await context.route('**/sw.js*', async (route) => {
-      const url = route.request().url();
-      const response = await route.fetch();
-      const body = await response.text();
-      swFetchCount += 1;
-
-      // Only patch when our test registers a SW with an explicit `?e2e=` suffix.
-      // This avoids interfering with the app's own SW registration (which varies by build).
-      if (!url.includes('e2e=')) {
-        await route.fulfill({ response, body });
-        return;
-      }
-
-      const patchedBody = body.replace(
-        /const VERSION = '.*?';/,
-        `const VERSION = '${patchedVersion}';`
-      );
-      await route.fulfill({ response, body: patchedBody });
-    });
+    const swRoute = await routePatchedServiceWorker(context, () => patchedVersion);
 
     await resetPwaSwLocalState(page);
 
@@ -50,7 +31,7 @@ test.describe('Rust service worker updates', () => {
 
     await registerE2eServiceWorker(page, patchedVersion);
     await expect
-      .poll(() => swFetchCount, { timeout: 15000 })
+      .poll(() => swRoute.getFetchCount(), { timeout: 15000 })
       .toBeGreaterThan(1);
 
     await clickCheckForUpdates(page, { timeout: 15_000 });

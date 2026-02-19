@@ -156,6 +156,34 @@ export async function waitForStoredSwVersion(page, expectedVersion, options = {}
   );
 }
 
+export async function routePatchedServiceWorker(context, resolveVersion) {
+  let fetchCount = 0;
+
+  await context.route('**/sw.js*', async (route) => {
+    const url = route.request().url();
+    const response = await route.fetch();
+    const body = await response.text();
+    fetchCount += 1;
+
+    // Only patch when tests explicitly register with `?e2e=` so app-controlled
+    // SW registrations are left untouched.
+    if (!url.includes('e2e=')) {
+      await route.fulfill({ response, body });
+      return;
+    }
+
+    const nextVersion = resolveVersion();
+    const patchedBody = body.replace(/const VERSION = '.*?';/, `const VERSION = '${nextVersion}';`);
+    await route.fulfill({ response, body: patchedBody });
+  });
+
+  return {
+    getFetchCount() {
+      return fetchCount;
+    },
+  };
+}
+
 export async function ensureSwDetailsOpen(page) {
   const detailsOpen = await page.locator('.pwa-status__details[open]').count();
   if (detailsOpen === 0) {
