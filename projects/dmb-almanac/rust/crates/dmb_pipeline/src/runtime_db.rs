@@ -85,6 +85,19 @@ pub fn build_runtime_db(source_dir: &Path, output: &Path) -> Result<()> {
 
     tx.commit().context("commit sqlite transaction")?;
 
+    // Finalize runtime DB for read-mostly deployment:
+    // - persist planner statistics (sqlite_stat1) for stable query plans
+    // - checkpoint/truncate WAL and switch back to DELETE mode to avoid sidecar reliance
+    conn.execute_batch(
+        r#"
+        ANALYZE;
+        PRAGMA wal_checkpoint(TRUNCATE);
+        PRAGMA journal_mode = DELETE;
+        PRAGMA optimize;
+        "#,
+    )
+    .context("finalize runtime sqlite pragmas")?;
+
     tracing::info!(
         venues = venues.len(),
         songs = songs.len(),

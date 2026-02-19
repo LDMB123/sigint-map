@@ -68,9 +68,14 @@ const DATA_PARITY_CACHE_TTL: Duration = Duration::from_secs(10);
 const SQLITE_POOL_MAX_CONNECTIONS: u32 = 8;
 const SQLITE_POOL_MIN_CONNECTIONS: u32 = 1;
 const SQLITE_POOL_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(5);
-const SQLITE_POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(300);
+const SQLITE_POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(600);
 const SQLITE_POOL_MAX_LIFETIME: Duration = Duration::from_secs(1800);
 const SQLITE_BUSY_TIMEOUT: Duration = Duration::from_secs(5);
+const DEFAULT_SQLITE_CANDIDATES: &[&str] = &[
+    "data/dmb-almanac.db",
+    "../data/dmb-almanac.db",
+    "../../data/dmb-almanac.db",
+];
 
 #[derive(Clone)]
 struct DataParityCacheEntry {
@@ -80,6 +85,10 @@ struct DataParityCacheEntry {
 
 fn new_data_parity_cache() -> Arc<tokio::sync::RwLock<Option<DataParityCacheEntry>>> {
     Arc::new(tokio::sync::RwLock::new(None))
+}
+
+fn default_sqlite_candidates() -> &'static [&'static str] {
+    DEFAULT_SQLITE_CANDIDATES
 }
 
 impl axum::extract::FromRef<AppState> for LeptosOptions {
@@ -534,6 +543,18 @@ mod tests {
         assert!(query.contains("UNION ALL SELECT 'shows', (SELECT COUNT(*) FROM shows)"));
     }
 
+    #[test]
+    fn default_sqlite_candidates_include_common_workspace_layouts() {
+        assert_eq!(
+            default_sqlite_candidates(),
+            &[
+                "data/dmb-almanac.db",
+                "../data/dmb-almanac.db",
+                "../../data/dmb-almanac.db",
+            ]
+        );
+    }
+
     fn unique_temp_dir(prefix: &str) -> std::path::PathBuf {
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -938,8 +959,7 @@ async fn init_db_pool() -> Option<SqlitePool> {
         }
     }
 
-    let candidates = ["data/dmb-almanac.db"];
-    for path in candidates {
+    for path in default_sqlite_candidates() {
         if !std::path::Path::new(path).exists() {
             continue;
         }

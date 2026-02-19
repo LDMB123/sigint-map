@@ -117,17 +117,17 @@ assert_zero "curated_lists.slug duplicate groups" \
 assert_plan_uses_index \
   "top songs ordering" \
   "SELECT id, slug, title FROM songs ORDER BY COALESCE(total_performances, 0) DESC, title ASC LIMIT 50" \
-  "idx_songs_total_performances_title"
+  "idx_songs_top_performances_title"
 
 assert_plan_uses_index \
   "top venues ordering" \
   "SELECT id, name FROM venues ORDER BY COALESCE(total_shows, 0) DESC, name ASC LIMIT 50" \
-  "idx_venues_total_shows_name"
+  "idx_venues_top_shows_name"
 
 assert_plan_uses_index \
   "top guests ordering" \
   "SELECT id, name FROM guests ORDER BY COALESCE(total_appearances, 0) DESC, name ASC LIMIT 50" \
-  "idx_guests_total_appearances_name"
+  "idx_guests_top_appearances_name"
 
 assert_plan_uses_index \
   "recent releases ordering" \
@@ -137,7 +137,7 @@ assert_plan_uses_index \
 assert_plan_uses_index \
   "recent tours ordering" \
   "SELECT id, year, name FROM tours ORDER BY year DESC, total_shows DESC, id DESC LIMIT 25" \
-  "idx_tours_year_total_shows_id"
+  "idx_tours_recent_order"
 
 assert_plan_uses_index \
   "curated list items ordering" \
@@ -167,7 +167,7 @@ assert_plan_uses_index \
 assert_plan_uses_index \
   "tour-by-year lookup" \
   "SELECT id, year, name FROM tours WHERE year = 2014 ORDER BY year DESC, total_shows DESC, id DESC LIMIT 1" \
-  "idx_tours_year_total_shows_id"
+  "idx_tours_recent_order"
 
 assert_plan_uses_index \
   "song slug lookup" \

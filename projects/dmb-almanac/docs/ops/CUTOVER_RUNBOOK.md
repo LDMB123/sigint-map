@@ -96,7 +96,10 @@ The old UI code is intentionally not part of this repo. If you need forensics, u
    - If both apps run under the same origin and both try to control `/`, clients can get stuck on stale bundles.
    - Subdomain rollout avoids this.
 2. SQLite fallback confusion:
-   - Ensure `DMB_SQLITE_PATH` (or the default `data/dmb-almanac.db`) points at the intended SQLite file.
+   - Ensure `DMB_SQLITE_PATH` points at the intended SQLite file, or rely on default search order:
+     - `data/dmb-almanac.db`
+     - `../data/dmb-almanac.db`
+     - `../../data/dmb-almanac.db`
    - Confirm which DB was opened via server logs.
 3. Silent data mismatch:
    - Use strict parity gate and keep the parity report export available.

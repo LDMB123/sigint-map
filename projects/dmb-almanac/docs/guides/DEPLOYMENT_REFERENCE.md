@@ -49,7 +49,10 @@ RUST_LOG=info
 
 ## Data Inputs
 - Canonical static seed data (used by cutover scripts/pipeline): `data/static-data`
-- Default SQLite location (when present): `data/dmb-almanac.db`
+- Default SQLite location search order:
+  - `data/dmb-almanac.db`
+  - `../data/dmb-almanac.db`
+  - `../../data/dmb-almanac.db`
 
 ## Rust E2E (Playwright)
 The Rust-only Playwright harness lives in `e2e/`:
