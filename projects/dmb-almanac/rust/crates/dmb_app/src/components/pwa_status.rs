@@ -285,7 +285,6 @@ struct PwaStatusState {
     manifest_diff: RwSignal<Option<crate::data::ManifestDiff>>,
     integrity_report: RwSignal<Option<crate::data::IntegrityReport>>,
     sqlite_parity: RwSignal<Option<crate::data::SqliteParityReport>>,
-    show_sw_details: RwSignal<bool>,
     sw_action_status: RwSignal<Option<String>>,
 }
 
@@ -326,7 +325,6 @@ impl PwaStatusState {
             manifest_diff: RwSignal::new(None::<crate::data::ManifestDiff>),
             integrity_report: RwSignal::new(None::<crate::data::IntegrityReport>),
             sqlite_parity: RwSignal::new(None::<crate::data::SqliteParityReport>),
-            show_sw_details: RwSignal::new(false),
             sw_action_status: RwSignal::new(None::<String>),
         }
     }
@@ -1548,7 +1546,6 @@ fn sw_details_text(state: &PwaStatusState) -> String {
 
 fn render_update_control_rows(state: PwaStatusState) -> impl IntoView {
     let update_checking = state.update_checking;
-    let show_sw_details = state.show_sw_details;
 
     let on_update_check = {
         let state = state.clone();
@@ -1566,17 +1563,11 @@ fn render_update_control_rows(state: PwaStatusState) -> impl IntoView {
                 >
                     {move || if update_checking.get() { "Checking updates…" } else { "Check for updates" }}
                 </button>
-                <button
-                    type="button"
-                    class="pill pill--ghost"
-                    on:click=move |_| show_sw_details.set(!show_sw_details.get_untracked())
-                >
-                    {move || if show_sw_details.get() { "Hide SW details" } else { "SW details" }}
-                </button>
             </div>
-            <Show when=move || show_sw_details.get() fallback=|| ()>
+            <details class="pwa-status__details">
+                <summary class="pill pill--ghost">"SW details"</summary>
                 {render_sw_details_section(state.clone())}
-            </Show>
+            </details>
         </>
     }
 }

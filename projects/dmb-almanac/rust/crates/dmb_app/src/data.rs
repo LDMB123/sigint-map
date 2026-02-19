@@ -842,6 +842,36 @@ async fn persist_import_checkpoint(
 }
 
 #[cfg(feature = "hydrate")]
+async fn yield_to_browser_scheduler() {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+
+    let scheduler =
+        js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("scheduler")).unwrap_or_default();
+    if scheduler.is_null() || scheduler.is_undefined() {
+        return;
+    }
+
+    let yield_fn = js_sys::Reflect::get(&scheduler, &JsValue::from_str("yield"))
+        .ok()
+        .and_then(|value| value.dyn_into::<js_sys::Function>().ok());
+    let Some(yield_fn) = yield_fn else {
+        return;
+    };
+
+    let promise = yield_fn
+        .call0(&scheduler)
+        .ok()
+        .and_then(|value| value.dyn_into::<js_sys::Promise>().ok());
+    let Some(promise) = promise else {
+        return;
+    };
+
+    let _ = JsFuture::from(promise).await;
+}
+
+#[cfg(feature = "hydrate")]
 async fn import_single_work_item(
     status: RwSignal<ImportStatus>,
     manifest_version: &str,
@@ -917,7 +947,7 @@ async fn import_single_work_item(
             .await;
         }
 
-        let _ = JsFuture::from(js_sys::Promise::resolve(&JsValue::NULL)).await;
+        yield_to_browser_scheduler().await;
     }
 
     Ok(())
