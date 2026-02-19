@@ -1284,32 +1284,63 @@ fn load_benchmark_history() -> Vec<AiBenchmarkSample> {
 }
 
 #[cfg(feature = "hydrate")]
+fn should_set_seed_storage_key(storage: &web_sys::Storage, key: &str, overwrite: bool) -> bool {
+    overwrite || storage.get_item(key).ok().flatten().is_none()
+}
+
+#[cfg(feature = "hydrate")]
+fn set_seed_string_field(
+    storage: &web_sys::Storage,
+    key: &str,
+    value: Option<&str>,
+    overwrite: bool,
+) {
+    if !should_set_seed_storage_key(storage, key, overwrite) {
+        return;
+    }
+    if let Some(value) = value {
+        let _ = storage.set_item(key, value);
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn set_seed_json_field<T: Serialize>(
+    storage: &web_sys::Storage,
+    key: &str,
+    value: Option<&T>,
+    overwrite: bool,
+) {
+    if !should_set_seed_storage_key(storage, key, overwrite) {
+        return;
+    }
+    if let Some(value) = value {
+        if let Ok(payload) = serde_json::to_string(value) {
+            let _ = storage.set_item(key, &payload);
+        }
+    }
+}
+
+#[cfg(feature = "hydrate")]
 fn apply_ai_config_seed(storage: &web_sys::Storage, seed: AiConfigSeed, overwrite: bool) {
-    let should_set = |key: &str| overwrite || storage.get_item(key).ok().flatten().is_none();
-    if should_set(AI_CONFIG_VERSION_KEY) {
-        if let Some(version) = seed.version.as_ref() {
-            let _ = storage.set_item(AI_CONFIG_VERSION_KEY, version);
-        }
-    }
-    if should_set(AI_CONFIG_GENERATED_AT_KEY) {
-        if let Some(generated_at) = seed.generated_at.as_ref() {
-            let _ = storage.set_item(AI_CONFIG_GENERATED_AT_KEY, generated_at);
-        }
-    }
-    if should_set("dmb-ai-tuning") {
-        if let Some(tuning) = seed.tuning {
-            if let Ok(payload) = serde_json::to_string(&tuning) {
-                let _ = storage.set_item("dmb-ai-tuning", &payload);
-            }
-        }
-    }
-    if should_set(BENCHMARK_HISTORY_KEY) {
-        if let Some(history) = seed.benchmark_history {
-            if let Ok(payload) = serde_json::to_string(&history) {
-                let _ = storage.set_item(BENCHMARK_HISTORY_KEY, &payload);
-            }
-        }
-    }
+    set_seed_string_field(
+        storage,
+        AI_CONFIG_VERSION_KEY,
+        seed.version.as_deref(),
+        overwrite,
+    );
+    set_seed_string_field(
+        storage,
+        AI_CONFIG_GENERATED_AT_KEY,
+        seed.generated_at.as_deref(),
+        overwrite,
+    );
+    set_seed_json_field(storage, "dmb-ai-tuning", seed.tuning.as_ref(), overwrite);
+    set_seed_json_field(
+        storage,
+        BENCHMARK_HISTORY_KEY,
+        seed.benchmark_history.as_ref(),
+        overwrite,
+    );
     if read_worker_threshold().is_none() || overwrite {
         if let Some(default_threshold) = seed.worker_threshold_default {
             store_worker_threshold(default_threshold);
@@ -1324,28 +1355,7 @@ fn apply_ai_config_seed(storage: &web_sys::Storage, seed: AiConfigSeed, overwrit
 }
 
 #[cfg(feature = "hydrate")]
-async fn maybe_seed_ai_config() {
-    let Some(storage) = local_storage() else {
-        return;
-    };
-    if storage
-        .get_item(AI_CONFIG_SEEDED_KEY)
-        .ok()
-        .flatten()
-        .as_deref()
-        == Some("1")
-    {
-        return;
-    }
-    let seed = match fetch_json::<AiConfigSeed>(AI_CONFIG_URL).await {
-        Some(seed) => seed,
-        None => return,
-    };
-    apply_ai_config_seed(&storage, seed, false);
-}
-
-#[cfg(feature = "hydrate")]
-pub async fn refresh_ai_config() -> bool {
+async fn fetch_and_apply_ai_config_seed(overwrite: bool) -> bool {
     let Some(storage) = local_storage() else {
         return false;
     };
@@ -1353,8 +1363,21 @@ pub async fn refresh_ai_config() -> bool {
         Some(seed) => seed,
         None => return false,
     };
-    apply_ai_config_seed(&storage, seed, true);
+    apply_ai_config_seed(&storage, seed, overwrite);
     true
+}
+
+#[cfg(feature = "hydrate")]
+async fn maybe_seed_ai_config() {
+    if ai_config_seeded() {
+        return;
+    }
+    let _ = fetch_and_apply_ai_config_seed(false).await;
+}
+
+#[cfg(feature = "hydrate")]
+pub async fn refresh_ai_config() -> bool {
+    fetch_and_apply_ai_config_seed(true).await
 }
 
 #[cfg(feature = "hydrate")]
