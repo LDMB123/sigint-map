@@ -43,8 +43,8 @@ export async function waitForOfflineDataReady(page, options = {}) {
 export async function waitForOfflineImportCompletion(page, options = {}) {
   const { timeout = 170_000 } = options;
   await page.waitForFunction(
-    () => {
-      const el = document.querySelector(PWA_STATUS_ROW_SELECTOR);
+    ({ selector }) => {
+      const el = document.querySelector(selector);
       if (!el) return false;
       const text = el.textContent || '';
 
@@ -56,6 +56,7 @@ export async function waitForOfflineImportCompletion(page, options = {}) {
 
       return false;
     },
+    { selector: PWA_STATUS_ROW_SELECTOR },
     { timeout }
   );
 }
@@ -63,8 +64,8 @@ export async function waitForOfflineImportCompletion(page, options = {}) {
 export async function waitForOfflineImportProgress(page, options = {}) {
   const { timeout = 45_000, minCurrent = 4 } = options;
   await page.waitForFunction(
-    ({ minCurrent }) => {
-      const el = document.querySelector(PWA_STATUS_ROW_SELECTOR);
+    ({ minCurrent, selector }) => {
+      const el = document.querySelector(selector);
       if (!el) return false;
 
       const text = el.textContent || '';
@@ -79,7 +80,7 @@ export async function waitForOfflineImportProgress(page, options = {}) {
 
       return current >= Math.min(minCurrent, total);
     },
-    { minCurrent },
+    { minCurrent, selector: PWA_STATUS_ROW_SELECTOR },
     { timeout }
   );
 }
