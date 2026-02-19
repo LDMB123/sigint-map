@@ -122,6 +122,16 @@ fn window_cross_origin_isolated(window: &web_sys::Window) -> bool {
 }
 
 #[cfg(feature = "hydrate")]
+fn local_storage() -> Option<web_sys::Storage> {
+    web_sys::window().and_then(|window| window.local_storage().ok().flatten())
+}
+
+#[cfg(feature = "hydrate")]
+fn local_storage_item(key: &str) -> Option<String> {
+    local_storage().and_then(|storage| storage.get_item(key).ok().flatten())
+}
+
+#[cfg(feature = "hydrate")]
 pub fn detect_ai_capabilities() -> AiCapabilities {
     let Some(window) = web_sys::window() else {
         return AiCapabilities::default();
@@ -722,9 +732,7 @@ async fn webgpu_probe_ok() -> bool {
 
 #[cfg(feature = "hydrate")]
 fn read_worker_threshold() -> Option<usize> {
-    let window = web_sys::window()?;
-    let storage = window.local_storage().ok().flatten()?;
-    let value = storage.get_item(WORKER_THRESHOLD_KEY).ok().flatten()?;
+    let value = local_storage_item(WORKER_THRESHOLD_KEY)?;
     value.parse::<usize>().ok()
 }
 
@@ -749,17 +757,13 @@ pub fn worker_max_floats_value() -> Option<usize> {
 
 #[cfg(feature = "hydrate")]
 fn read_worker_failure_until() -> Option<f64> {
-    let window = web_sys::window()?;
-    let storage = window.local_storage().ok().flatten()?;
-    let value = storage.get_item(WORKER_FAILURE_UNTIL_KEY).ok().flatten()?;
+    let value = local_storage_item(WORKER_FAILURE_UNTIL_KEY)?;
     value.parse::<f64>().ok()
 }
 
 #[cfg(feature = "hydrate")]
 fn read_worker_failure_reason() -> Option<String> {
-    let window = web_sys::window()?;
-    let storage = window.local_storage().ok().flatten()?;
-    storage.get_item(WORKER_FAILURE_REASON_KEY).ok().flatten()
+    local_storage_item(WORKER_FAILURE_REASON_KEY)
 }
 
 #[cfg_attr(not(feature = "hydrate"), must_use)]
@@ -834,9 +838,7 @@ pub fn set_worker_threshold_override(value: Option<usize>) {
 
 #[cfg(feature = "hydrate")]
 fn read_ann_cap_override_mb() -> Option<u64> {
-    let window = web_sys::window()?;
-    let storage = window.local_storage().ok().flatten()?;
-    let value = storage.get_item(ANN_CAP_OVERRIDE_KEY).ok().flatten()?;
+    let value = local_storage_item(ANN_CAP_OVERRIDE_KEY)?;
     value
         .parse::<u64>()
         .ok()
@@ -870,9 +872,7 @@ pub fn set_ann_cap_override_mb(value: Option<u64>) {
 
 #[cfg(feature = "hydrate")]
 fn read_webgpu_disabled() -> Option<bool> {
-    let window = web_sys::window()?;
-    let storage = window.local_storage().ok()??;
-    let value = storage.get_item(WEBGPU_DISABLE_KEY).ok()??;
+    let value = local_storage_item(WEBGPU_DISABLE_KEY)?;
     Some(value == "1" || value.eq_ignore_ascii_case("true"))
 }
 
@@ -991,9 +991,7 @@ fn store_ai_telemetry_snapshot(ann_cap: Option<&AnnCapDiagnostics>) {
 
 #[cfg(feature = "hydrate")]
 pub fn load_ai_telemetry_snapshot() -> Option<AiTelemetrySnapshot> {
-    let window = web_sys::window()?;
-    let storage = window.local_storage().ok().flatten()?;
-    let payload = storage.get_item(AI_TELEMETRY_KEY).ok().flatten()?;
+    let payload = local_storage_item(AI_TELEMETRY_KEY)?;
     match serde_json::from_str::<AiTelemetrySnapshot>(&payload) {
         Ok(snapshot) => Some(snapshot),
         Err(err) => {
@@ -1434,27 +1432,17 @@ pub fn ai_config_seeded() -> bool {
 
 #[cfg(feature = "hydrate")]
 pub fn ai_config_version() -> Option<String> {
-    let window = web_sys::window()?;
-    let storage = window.local_storage().ok().flatten()?;
-    storage.get_item(AI_CONFIG_VERSION_KEY).ok().flatten()
+    local_storage_item(AI_CONFIG_VERSION_KEY)
 }
 
 #[cfg(feature = "hydrate")]
 pub fn ai_config_generated_at() -> Option<String> {
-    let window = web_sys::window()?;
-    let storage = window.local_storage().ok().flatten()?;
-    storage.get_item(AI_CONFIG_GENERATED_AT_KEY).ok().flatten()
+    local_storage_item(AI_CONFIG_GENERATED_AT_KEY)
 }
 
 #[cfg(feature = "hydrate")]
 pub fn webgpu_worker_bench_timestamp() -> Option<f64> {
-    let window = web_sys::window()?;
-    let storage = window.local_storage().ok().flatten()?;
-    storage
-        .get_item(WEBGPU_WORKER_BENCH_KEY)
-        .ok()
-        .flatten()
-        .and_then(|value| value.parse::<f64>().ok())
+    local_storage_item(WEBGPU_WORKER_BENCH_KEY).and_then(|value| value.parse::<f64>().ok())
 }
 
 #[cfg(feature = "hydrate")]
