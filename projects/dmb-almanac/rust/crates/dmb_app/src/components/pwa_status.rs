@@ -1171,15 +1171,7 @@ async fn process_sw_registration(
 
     if window.navigator().on_line() {
         let now = js_sys::Date::now();
-        let mut should_check = true;
-
-        if let Some(storage) = window_local_storage(&window) {
-            if let Some(ts) = local_storage_f64(&storage, UPDATE_CHECKED_AT_KEY) {
-                if now > ts && (now - ts) < AUTO_UPDATE_CHECK_INTERVAL_MS {
-                    should_check = false;
-                }
-            }
-        }
+        let should_check = should_auto_check_for_updates(&window, now);
 
         if should_check {
             if let Ok(promise) = reg.update() {
@@ -1192,18 +1184,7 @@ async fn process_sw_registration(
 
     if has_controller && window.navigator().on_line() {
         let now = js_sys::Date::now();
-        let mut should_cleanup = true;
-
-        if let Some(storage) = window_local_storage(&window) {
-            if storage
-                .get_item(PREVIOUS_CACHE_CLEANED_AT_KEY)
-                .ok()
-                .flatten()
-                .is_some()
-            {
-                should_cleanup = false;
-            }
-        }
+        let should_cleanup = !has_previous_cache_cleanup_marker(&window);
 
         if should_cleanup {
             let _ = cleanup_previous_app_caches().await;
@@ -1230,6 +1211,30 @@ fn spawn_sw_runtime_task(state: &PwaStatusState) {
         let has_controller = sync_current_controller_state(&container, &state);
         process_sw_registration(container, state, has_controller).await;
     });
+}
+
+#[cfg(feature = "hydrate")]
+fn should_auto_check_for_updates(window: &web_sys::Window, now_ms: f64) -> bool {
+    let Some(storage) = window_local_storage(window) else {
+        return true;
+    };
+    let Some(last_checked) = local_storage_f64(&storage, UPDATE_CHECKED_AT_KEY) else {
+        return true;
+    };
+
+    if now_ms <= last_checked {
+        return true;
+    }
+
+    (now_ms - last_checked) >= AUTO_UPDATE_CHECK_INTERVAL_MS
+}
+
+#[cfg(feature = "hydrate")]
+fn has_previous_cache_cleanup_marker(window: &web_sys::Window) -> bool {
+    let Some(storage) = window_local_storage(window) else {
+        return false;
+    };
+    local_storage_item(&storage, PREVIOUS_CACHE_CLEANED_AT_KEY).is_some()
 }
 
 #[cfg(feature = "hydrate")]
