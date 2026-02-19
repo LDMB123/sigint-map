@@ -37,6 +37,50 @@ export async function waitForOfflineDataReady(page, options = {}) {
     .waitFor({ state: 'visible', timeout });
 }
 
+export async function waitForOfflineImportCompletion(page, options = {}) {
+  const { timeout = 170_000 } = options;
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector('.pwa-status .pwa-status__row');
+      if (!el) return false;
+      const text = el.textContent || '';
+
+      if (/offline data ready/i.test(text)) return true;
+
+      if (/integrity check failed|offline manifest missing|failed to load|import failed/i.test(text)) {
+        throw new Error(`offline seed import failed: ${text}`);
+      }
+
+      return false;
+    },
+    { timeout }
+  );
+}
+
+export async function waitForOfflineImportProgress(page, options = {}) {
+  const { timeout = 45_000, minCurrent = 4 } = options;
+  await page.waitForFunction(
+    ({ minCurrent }) => {
+      const el = document.querySelector('.pwa-status .pwa-status__row');
+      if (!el) return false;
+
+      const text = el.textContent || '';
+      if (/offline data ready/i.test(text)) return true;
+
+      const match = text.match(/Importing [^(]+\((\d+)\/(\d+)\)/i);
+      if (!match) return false;
+
+      const current = Number(match[1]);
+      const total = Number(match[2]);
+      if (!Number.isFinite(current) || !Number.isFinite(total) || total <= 0) return false;
+
+      return current >= Math.min(minCurrent, total);
+    },
+    { minCurrent },
+    { timeout }
+  );
+}
+
 export async function waitForServiceWorkerController(page, options = {}) {
   const { availabilityTimeout = 5000, controllerTimeout = 15000 } = options;
   await page.waitForFunction(() => 'serviceWorker' in navigator, { timeout: availabilityTimeout });
