@@ -288,13 +288,8 @@ fn remove_local_storage_item(key: &str) {
 }
 
 #[cfg(feature = "hydrate")]
-fn window_local_storage(window: &web_sys::Window) -> Option<web_sys::Storage> {
-    window.local_storage().ok().flatten()
-}
-
-#[cfg(feature = "hydrate")]
 fn local_storage() -> Option<web_sys::Storage> {
-    web_sys::window().and_then(|window| window_local_storage(&window))
+    web_sys::window().and_then(|window| window.local_storage().ok().flatten())
 }
 
 #[cfg(feature = "hydrate")]
