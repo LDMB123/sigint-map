@@ -2147,11 +2147,6 @@ async fn load_venue(id: i32) -> Option<Venue> {
     load_entity_by_id!(id, dmb_idb::get_venue, get_venue)
 }
 
-async fn load_curated_list(id: i32) -> Option<CuratedList> {
-    let lists = load_curated_lists().await;
-    lists.into_iter().find(|list| list.id == id)
-}
-
 fn normalize_with_limit<T>(
     mut items: Vec<T>,
     limit: usize,
@@ -6534,7 +6529,10 @@ pub fn curated_list_detail_page() -> impl IntoView {
     let list = optional_resource_from_param!(
         list_id,
         |raw: &str| parse_positive_i32_param(raw, "listId"),
-        load_curated_list
+        |id: i32| async move {
+            let lists = load_curated_lists().await;
+            lists.into_iter().find(|list| list.id == id)
+        }
     );
 
     let items = resource_from_param_or_default!(
