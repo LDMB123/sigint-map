@@ -2321,15 +2321,6 @@ where
     }
 }
 
-#[cfg(not(feature = "hydrate"))]
-async fn load_server_with_limit<T>(
-    limit: usize,
-    server_loader: impl std::future::Future<Output = Vec<T>>,
-    normalize: fn(Vec<T>, usize) -> Vec<T>,
-) -> Vec<T> {
-    normalize(server_loader.await, limit)
-}
-
 #[cfg(feature = "hydrate")]
 async fn load_hydrate_with_server_fallback<T, IdbLoad, IdbFut, ServerLoad, ServerFut>(
     idb_loader: IdbLoad,
@@ -2364,7 +2355,7 @@ macro_rules! load_with_limit_fallback {
         }
         #[cfg(not(feature = "hydrate"))]
         {
-            load_server_with_limit($limit, $server_loader(), $normalize).await
+            $normalize($server_loader().await, $limit)
         }
     }};
 }
