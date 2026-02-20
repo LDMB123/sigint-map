@@ -2123,14 +2123,6 @@ async fn load_show(id: i32) -> Option<Show> {
     load_entity_by_id!(id, dmb_idb::get_show, get_show)
 }
 
-async fn load_song(slug: String) -> Option<Song> {
-    load_entity_by_slug!(slug, dmb_idb::get_song, get_song)
-}
-
-async fn load_guest(slug: String) -> Option<Guest> {
-    load_entity_by_slug!(slug, dmb_idb::get_guest_by_slug, get_guest)
-}
-
 async fn load_release(slug: String) -> Option<Release> {
     load_entity_by_slug!(slug, dmb_idb::get_release_by_slug, get_release)
 }
@@ -3696,7 +3688,10 @@ pub fn song_detail_page() -> impl IntoView {
         )
     };
 
-    let song = optional_resource_from_param!(slug, parse_route_slug_param, load_song);
+    let song =
+        optional_resource_from_param!(slug, parse_route_slug_param, |slug: String| async move {
+            load_entity_by_slug!(slug, dmb_idb::get_song, get_song)
+        });
 
     detail_page_with_primary_resource!(
         back_href: "/songs",
@@ -3854,7 +3849,10 @@ pub fn guest_detail_page() -> impl IntoView {
         ),
     };
 
-    let guest = optional_resource_from_param!(slug, parse_route_slug_param, load_guest);
+    let guest =
+        optional_resource_from_param!(slug, parse_route_slug_param, |slug: String| async move {
+            load_entity_by_slug!(slug, dmb_idb::get_guest_by_slug, get_guest)
+        });
 
     detail_page_with_primary_resource!(
         back_href: "/guests",
