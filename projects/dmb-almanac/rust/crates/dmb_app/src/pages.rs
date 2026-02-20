@@ -2477,17 +2477,6 @@ struct ShowContext {
     tour: Option<Tour>,
 }
 
-async fn load_show_context(id: i32) -> Option<ShowContext> {
-    let show = load_show(id).await?;
-    let venue = load_venue(show.venue_id).await;
-    let tour = if let Some(tour_id) = show.tour_id {
-        load_entity_by_id!(tour_id, dmb_idb::get_tour_by_id, get_tour_by_id)
-    } else {
-        None
-    };
-    Some(ShowContext { show, venue, tour })
-}
-
 fn titleize_words_with_fallback(raw: &str, fallback: &str) -> String {
     let normalized = raw.trim().replace(['-', '_'], " ");
     let mut words = normalized
@@ -3526,7 +3515,16 @@ pub fn show_detail_page() -> impl IntoView {
     let show = optional_resource_from_param!(
         show_id,
         |raw: &str| parse_positive_i32_param(raw, "showId"),
-        load_show_context
+        |id: i32| async move {
+            let show = load_show(id).await?;
+            let venue = load_venue(show.venue_id).await;
+            let tour = if let Some(tour_id) = show.tour_id {
+                load_entity_by_id!(tour_id, dmb_idb::get_tour_by_id, get_tour_by_id)
+            } else {
+                None
+            };
+            Some(ShowContext { show, venue, tour })
+        }
     );
     let setlist = optional_resource_from_param!(
         show_id,
