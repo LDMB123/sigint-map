@@ -3068,6 +3068,14 @@ fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
     Ok(year)
 }
 
+fn parse_show_id_param(raw: &str) -> Result<i32, String> {
+    parse_positive_i32_param(raw, "showId")
+}
+
+fn parse_venue_id_param(raw: &str) -> Result<i32, String> {
+    parse_positive_i32_param(raw, "venueId")
+}
+
 fn parse_list_id_param(raw: &str) -> Result<i32, String> {
     parse_positive_i32_param(raw, "listId")
 }
@@ -3353,7 +3361,7 @@ fn render_show_detail_missing(
         .into_any();
     }
 
-    match parse_positive_i32_param(show_id_raw, "showId") {
+    match parse_show_id_param(show_id_raw) {
         Ok(parsed_show_id) => {
             let my_shows_href = format!("/my-shows?showId={parsed_show_id}");
             view! {
@@ -3642,16 +3650,10 @@ pub fn show_detail_page() -> impl IntoView {
         setlist_query_for_reset.set(String::new());
     });
 
-    let show = optional_resource_from_param!(
-        show_id,
-        |raw: &str| parse_positive_i32_param(raw, "showId"),
-        load_show_context
-    );
-    let setlist = optional_resource_from_param!(
-        show_id,
-        |raw: &str| parse_positive_i32_param(raw, "showId"),
-        |id| async move { Some(load_setlist_entries(id).await) }
-    );
+    let show = optional_resource_from_param!(show_id, parse_show_id_param, load_show_context);
+    let setlist = optional_resource_from_param!(show_id, parse_show_id_param, |id| async move {
+        Some(load_setlist_entries(id).await)
+    });
 
     let show_id_for_heading = show_id.clone();
     let show_id_for_render = show_id.clone();
@@ -3670,7 +3672,7 @@ pub fn show_detail_page() -> impl IntoView {
             {move || {
                 render_param_subhead(
                     "Show ID",
-                    parse_positive_i32_param(&show_id_for_heading(), "showId"),
+                    parse_show_id_param(&show_id_for_heading()),
                 )
             }}
             {move || render_show_save_message(save_message_for_render.clone())}
@@ -4377,18 +4379,14 @@ pub fn venue_detail_page() -> impl IntoView {
         ),
     };
 
-    let venue = optional_resource_from_param!(
-        venue_id,
-        |raw: &str| parse_positive_i32_param(raw, "venueId"),
-        load_venue
-    );
+    let venue = optional_resource_from_param!(venue_id, parse_venue_id_param, load_venue);
 
     detail_page_with_primary_resource!(
         back_href: "/venues",
         back_label: "Back to venues",
         title: "Venue Details",
         subhead: move || {
-            render_param_subhead("Venue ID", parse_positive_i32_param(&venue_id(), "venueId"))
+            render_param_subhead("Venue ID", parse_venue_id_param(&venue_id()))
         },
         loading_title: "Loading venue",
         loading_message: "Fetching venue profile and location.",
@@ -5822,7 +5820,7 @@ fn hydrate_my_shows_state(
         let Some(raw_show_id) = raw_show_id else {
             return;
         };
-        match parse_positive_i32_param(&raw_show_id, "showId") {
+        match parse_show_id_param(&raw_show_id) {
             Ok(show_id) => {
                 input_signal.set(show_id.to_string());
                 if message_signal.get_untracked().is_none() {
