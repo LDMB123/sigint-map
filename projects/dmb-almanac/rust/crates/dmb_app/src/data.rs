@@ -304,27 +304,45 @@ fn clear_thread_ttl_cache<T>(cache: &'static std::thread::LocalKey<ThreadTtlCach
 }
 
 #[cfg(feature = "hydrate")]
+macro_rules! define_thread_ttl_cache {
+    (
+        $cache:ident,
+        $value:ty,
+        $ttl_ms:ident,
+        $read_fn:ident,
+        $write_fn:ident,
+        $clear_fn:ident
+    ) => {
+        thread_local! {
+            static $cache: RefCell<Option<(f64, $value)>> = const { RefCell::new(None) };
+        }
+
+        fn $read_fn() -> Option<$value> {
+            read_thread_ttl_cache(&$cache, $ttl_ms)
+        }
+
+        fn $write_fn(value: &$value) {
+            write_thread_ttl_cache(&$cache, value);
+        }
+
+        fn $clear_fn() {
+            clear_thread_ttl_cache(&$cache);
+        }
+    };
+}
+
+#[cfg(feature = "hydrate")]
 const INTEGRITY_REPORT_CACHE_TTL_MS: f64 = 10_000.0;
 
 #[cfg(feature = "hydrate")]
-thread_local! {
-    static INTEGRITY_REPORT_CACHE: RefCell<Option<(f64, IntegrityReport)>> = const { RefCell::new(None) };
-}
-
-#[cfg(feature = "hydrate")]
-fn read_integrity_report_cache() -> Option<IntegrityReport> {
-    read_thread_ttl_cache(&INTEGRITY_REPORT_CACHE, INTEGRITY_REPORT_CACHE_TTL_MS)
-}
-
-#[cfg(feature = "hydrate")]
-fn write_integrity_report_cache(report: &IntegrityReport) {
-    write_thread_ttl_cache(&INTEGRITY_REPORT_CACHE, report);
-}
-
-#[cfg(feature = "hydrate")]
-fn clear_integrity_report_cache() {
-    clear_thread_ttl_cache(&INTEGRITY_REPORT_CACHE);
-}
+define_thread_ttl_cache!(
+    INTEGRITY_REPORT_CACHE,
+    IntegrityReport,
+    INTEGRITY_REPORT_CACHE_TTL_MS,
+    read_integrity_report_cache,
+    write_integrity_report_cache,
+    clear_integrity_report_cache
+);
 
 #[cfg(feature = "hydrate")]
 pub async fn fetch_integrity_report() -> Option<IntegrityReport> {
@@ -373,24 +391,14 @@ struct SqliteParityResponse {
 const SQLITE_PARITY_CACHE_TTL_MS: f64 = 10_000.0;
 
 #[cfg(feature = "hydrate")]
-thread_local! {
-    static SQLITE_PARITY_CACHE: RefCell<Option<(f64, SqliteParityReport)>> = const { RefCell::new(None) };
-}
-
-#[cfg(feature = "hydrate")]
-fn read_sqlite_parity_cache() -> Option<SqliteParityReport> {
-    read_thread_ttl_cache(&SQLITE_PARITY_CACHE, SQLITE_PARITY_CACHE_TTL_MS)
-}
-
-#[cfg(feature = "hydrate")]
-fn write_sqlite_parity_cache(report: &SqliteParityReport) {
-    write_thread_ttl_cache(&SQLITE_PARITY_CACHE, report);
-}
-
-#[cfg(feature = "hydrate")]
-fn clear_sqlite_parity_cache() {
-    clear_thread_ttl_cache(&SQLITE_PARITY_CACHE);
-}
+define_thread_ttl_cache!(
+    SQLITE_PARITY_CACHE,
+    SqliteParityReport,
+    SQLITE_PARITY_CACHE_TTL_MS,
+    read_sqlite_parity_cache,
+    write_sqlite_parity_cache,
+    clear_sqlite_parity_cache
+);
 
 #[cfg(feature = "hydrate")]
 pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
