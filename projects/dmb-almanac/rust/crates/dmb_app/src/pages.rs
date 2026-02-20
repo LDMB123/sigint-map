@@ -2405,6 +2405,15 @@ macro_rules! load_with_hydrate_or_ssr_fallback {
     }};
 }
 
+macro_rules! load_with_hydrate_or_ssr_list {
+    ($idb_call:expr, $server_call:expr) => {{
+        load_with_hydrate_or_ssr_fallback!(
+            move || async move { $idb_call.await.ok() },
+            move || async move { $server_call.await.unwrap_or_default() }
+        )
+    }};
+}
+
 async fn load_top_songs(limit: usize) -> Vec<Song> {
     load_with_limit_fallback!(
         limit,
@@ -2471,58 +2480,46 @@ async fn load_all_releases() -> Vec<Release> {
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
-    load_with_hydrate_or_ssr_fallback!(
-        move || async move { dmb_idb::list_release_tracks(_release_id).await.ok() },
-        move || async move { get_release_tracks(_release_id).await.unwrap_or_default() }
+    load_with_hydrate_or_ssr_list!(
+        dmb_idb::list_release_tracks(_release_id),
+        get_release_tracks(_release_id)
     )
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_setlist_entries(_show_id: i32) -> Vec<SetlistEntry> {
-    load_with_hydrate_or_ssr_fallback!(
-        move || async move { dmb_idb::list_setlist_entries(_show_id).await.ok() },
-        move || async move { get_setlist_entries(_show_id).await.unwrap_or_default() }
+    load_with_hydrate_or_ssr_list!(
+        dmb_idb::list_setlist_entries(_show_id),
+        get_setlist_entries(_show_id)
     )
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_liberation_list(_limit: usize) -> Vec<LiberationEntry> {
-    load_with_hydrate_or_ssr_fallback!(
-        move || async move { dmb_idb::list_liberation_entries(_limit).await.ok() },
-        move || async move { get_liberation_list(_limit as i32).await.unwrap_or_default() }
+    load_with_hydrate_or_ssr_list!(
+        dmb_idb::list_liberation_entries(_limit),
+        get_liberation_list(_limit as i32)
     )
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_curated_lists() -> Vec<CuratedList> {
-    load_with_hydrate_or_ssr_fallback!(
-        move || async move { dmb_idb::list_curated_lists().await.ok() },
-        move || async move { get_curated_lists().await.unwrap_or_default() }
-    )
+    load_with_hydrate_or_ssr_list!(dmb_idb::list_curated_lists(), get_curated_lists())
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_curated_list_items(_list_id: i32, _limit: usize) -> Vec<CuratedListItem> {
-    load_with_hydrate_or_ssr_fallback!(
-        move || async move {
-            dmb_idb::list_curated_list_items(_list_id, _limit)
-                .await
-                .ok()
-        },
-        move || async move {
-            get_curated_list_items(_list_id, _limit as i32)
-                .await
-                .unwrap_or_default()
-        }
+    load_with_hydrate_or_ssr_list!(
+        dmb_idb::list_curated_list_items(_list_id, _limit),
+        get_curated_list_items(_list_id, _limit as i32)
     )
 }
 
 #[cfg(feature = "hydrate")]
 async fn load_user_attended_shows() -> Vec<UserAttendedShow> {
-    if let Ok(items) = dmb_idb::list_user_attended_shows().await {
-        return items;
-    }
-    Vec::new()
+    dmb_idb::list_user_attended_shows()
+        .await
+        .unwrap_or_default()
 }
 
 #[cfg(feature = "hydrate")]
