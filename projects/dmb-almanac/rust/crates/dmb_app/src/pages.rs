@@ -2454,14 +2454,6 @@ async fn load_curated_lists() -> Vec<CuratedList> {
     load_with_hydrate_or_ssr_list!(dmb_idb::list_curated_lists(), get_curated_lists())
 }
 
-#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
-async fn load_curated_list_items(_list_id: i32, _limit: usize) -> Vec<CuratedListItem> {
-    load_with_hydrate_or_ssr_list!(
-        dmb_idb::list_curated_list_items(_list_id, _limit),
-        get_curated_list_items(_list_id, _limit as i32)
-    )
-}
-
 #[cfg(feature = "hydrate")]
 async fn load_user_attended_shows() -> Vec<UserAttendedShow> {
     dmb_idb::list_user_attended_shows()
@@ -6507,7 +6499,12 @@ pub fn curated_list_detail_page() -> impl IntoView {
         list_id,
         |raw: &str| parse_positive_i32_param(raw, "listId"),
         Vec::new(),
-        |id| async move { load_curated_list_items(id, 200).await }
+        |_id| async move {
+            load_with_hydrate_or_ssr_list!(
+                dmb_idb::list_curated_list_items(_id, 200),
+                get_curated_list_items(_id, 200)
+            )
+        }
     );
 
     #[cfg(feature = "hydrate")]
