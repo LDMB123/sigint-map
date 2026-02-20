@@ -2423,25 +2423,6 @@ where
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
-async fn load_all_releases() -> Vec<Release> {
-    let releases = load_with_hydrate_or_ssr_fallback!(
-        move || async move { dmb_idb::list_all_releases().await.ok() },
-        move || async move { get_all_releases().await.unwrap_or_default() }
-    );
-    #[cfg(feature = "hydrate")]
-    {
-        if !releases.is_empty() {
-            return releases;
-        }
-        get_recent_releases(200).await.unwrap_or_default()
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        releases
-    }
-}
-
-#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_curated_lists() -> Vec<CuratedList> {
     load_with_hydrate_or_ssr_list!(dmb_idb::list_curated_lists(), get_curated_lists())
 }
@@ -6432,7 +6413,23 @@ pub fn liberation_page() -> impl IntoView {
 
 #[must_use]
 pub fn discography_page() -> impl IntoView {
-    let items = unit_resource(load_all_releases);
+    let items = unit_resource(|| async {
+        let releases = load_with_hydrate_or_ssr_fallback!(
+            move || async move { dmb_idb::list_all_releases().await.ok() },
+            move || async move { get_all_releases().await.unwrap_or_default() }
+        );
+        #[cfg(feature = "hydrate")]
+        {
+            if !releases.is_empty() {
+                return releases;
+            }
+            get_recent_releases(200).await.unwrap_or_default()
+        }
+        #[cfg(not(feature = "hydrate"))]
+        {
+            releases
+        }
+    });
 
     view! {
         <section class="page">
