@@ -2139,10 +2139,6 @@ async fn load_tour(year: i32) -> Option<Tour> {
     load_entity_by_id!(year, dmb_idb::get_tour, get_tour)
 }
 
-async fn load_tour_by_id(id: i32) -> Option<Tour> {
-    load_entity_by_id!(id, dmb_idb::get_tour_by_id, get_tour_by_id)
-}
-
 async fn load_venue(id: i32) -> Option<Venue> {
     load_entity_by_id!(id, dmb_idb::get_venue, get_venue)
 }
@@ -2597,7 +2593,7 @@ async fn load_show_context(id: i32) -> Option<ShowContext> {
     let show = load_show(id).await?;
     let venue = load_venue(show.venue_id).await;
     let tour = if let Some(tour_id) = show.tour_id {
-        load_tour_by_id(tour_id).await
+        load_entity_by_id!(tour_id, dmb_idb::get_tour_by_id, get_tour_by_id)
     } else {
         None
     };
