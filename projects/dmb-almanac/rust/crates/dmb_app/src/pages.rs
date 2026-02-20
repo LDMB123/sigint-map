@@ -4860,65 +4860,73 @@ fn js_map_to_u32_pairs(map: &js_sys::Map) -> Vec<(u32, u32)> {
     result
 }
 
+macro_rules! load_stats_hydrate_or_default {
+    ($body:block) => {{
+        #[cfg(feature = "hydrate")]
+        {
+            spawn_local_to_send(async move $body).await
+        }
+        #[cfg(not(feature = "hydrate"))]
+        {
+            Default::default()
+        }
+    }};
+}
+
 // ---------------------------------------------------------------------------
 // Stats data loaders
 // ---------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_overview() -> StatsOverview {
-    #[cfg(feature = "hydrate")]
-    {
-        let counts = spawn_local_to_send(async move {
-            let stores = [
-                dmb_idb::TABLE_SHOWS,
-                dmb_idb::TABLE_SONGS,
-                dmb_idb::TABLE_VENUES,
-                dmb_idb::TABLE_TOURS,
-                dmb_idb::TABLE_GUESTS,
-                dmb_idb::TABLE_SETLIST_ENTRIES,
-            ];
+    load_stats_hydrate_or_default!({
+        let stores = [
+            dmb_idb::TABLE_SHOWS,
+            dmb_idb::TABLE_SONGS,
+            dmb_idb::TABLE_VENUES,
+            dmb_idb::TABLE_TOURS,
+            dmb_idb::TABLE_GUESTS,
+            dmb_idb::TABLE_SETLIST_ENTRIES,
+        ];
 
-            let mut counts_by_store: HashMap<String, u32> = HashMap::new();
-            if let Ok((entries, _missing)) = dmb_idb::count_stores_with_missing(&stores).await {
-                for (store, count) in entries {
-                    counts_by_store.insert(store, count);
-                }
+        let mut counts_by_store: HashMap<String, u32> = HashMap::new();
+        if let Ok((entries, _missing)) = dmb_idb::count_stores_with_missing(&stores).await {
+            for (store, count) in entries {
+                counts_by_store.insert(store, count);
             }
+        }
 
-            let shows = counts_by_store
-                .get(dmb_idb::TABLE_SHOWS)
-                .copied()
-                .unwrap_or(0);
-            let songs = counts_by_store
-                .get(dmb_idb::TABLE_SONGS)
-                .copied()
-                .unwrap_or(0);
-            let venues = counts_by_store
-                .get(dmb_idb::TABLE_VENUES)
-                .copied()
-                .unwrap_or(0);
-            let tours = counts_by_store
-                .get(dmb_idb::TABLE_TOURS)
-                .copied()
-                .unwrap_or(0);
-            let guests = counts_by_store
-                .get(dmb_idb::TABLE_GUESTS)
-                .copied()
-                .unwrap_or(0);
-            let setlists = counts_by_store
-                .get(dmb_idb::TABLE_SETLIST_ENTRIES)
-                .copied()
-                .unwrap_or(0);
-            (shows, songs, venues, tours, guests, setlists)
-        })
-        .await;
+        let shows = counts_by_store
+            .get(dmb_idb::TABLE_SHOWS)
+            .copied()
+            .unwrap_or(0);
+        let songs = counts_by_store
+            .get(dmb_idb::TABLE_SONGS)
+            .copied()
+            .unwrap_or(0);
+        let venues = counts_by_store
+            .get(dmb_idb::TABLE_VENUES)
+            .copied()
+            .unwrap_or(0);
+        let tours = counts_by_store
+            .get(dmb_idb::TABLE_TOURS)
+            .copied()
+            .unwrap_or(0);
+        let guests = counts_by_store
+            .get(dmb_idb::TABLE_GUESTS)
+            .copied()
+            .unwrap_or(0);
+        let setlists = counts_by_store
+            .get(dmb_idb::TABLE_SETLIST_ENTRIES)
+            .copied()
+            .unwrap_or(0);
 
-        let (shows, songs, venues, tours, guests, setlists) = counts;
-        let avg = if shows > 0 {
+        let avg_songs_per_show = if shows > 0 {
             setlists as f32 / shows as f32
         } else {
             0.0
         };
+
         StatsOverview {
             show_count: shows,
             song_count: songs,
@@ -4926,98 +4934,74 @@ async fn load_stats_overview() -> StatsOverview {
             tour_count: tours,
             guest_count: guests,
             setlist_count: setlists,
-            avg_songs_per_show: avg,
+            avg_songs_per_show,
         }
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        StatsOverview::default()
-    }
+    })
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_songs() -> StatsSongs {
-    #[cfg(feature = "hydrate")]
-    {
-        let data = spawn_local_to_send(async move {
-            let top_played = dmb_idb::stats_top_songs(25).await.unwrap_or_default();
-            let top_openers = dmb_idb::stats_top_openers(10).await.unwrap_or_default();
-            let top_closers = dmb_idb::stats_top_closers(10).await.unwrap_or_default();
-            let top_encores = dmb_idb::stats_top_encores(10).await.unwrap_or_default();
+    load_stats_hydrate_or_default!({
+        let top_played = dmb_idb::stats_top_songs(25).await.unwrap_or_default();
+        let top_openers = dmb_idb::stats_top_openers(10).await.unwrap_or_default();
+        let top_closers = dmb_idb::stats_top_closers(10).await.unwrap_or_default();
+        let top_encores = dmb_idb::stats_top_encores(10).await.unwrap_or_default();
 
-            // Debut histogram via WASM aggregation
-            let debuts_by_year = {
-                let setlists: Vec<SetlistEntry> = dmb_idb::list_all(dmb_idb::TABLE_SETLIST_ENTRIES)
-                    .await
-                    .unwrap_or_default();
-                if setlists.is_empty() {
-                    Vec::new()
-                } else {
-                    let json = serde_json::to_string(&setlists).unwrap_or_default();
-                    match dmb_wasm::calculate_song_debuts_with_count(&json) {
-                        Ok(map) => js_map_to_u32_pairs(&map),
-                        Err(_) => Vec::new(),
-                    }
+        let debuts_by_year = {
+            let setlists: Vec<SetlistEntry> = dmb_idb::list_all(dmb_idb::TABLE_SETLIST_ENTRIES)
+                .await
+                .unwrap_or_default();
+            if setlists.is_empty() {
+                Vec::new()
+            } else {
+                let json = serde_json::to_string(&setlists).unwrap_or_default();
+                match dmb_wasm::calculate_song_debuts_with_count(&json) {
+                    Ok(map) => js_map_to_u32_pairs(&map),
+                    Err(_) => Vec::new(),
                 }
-            };
-
-            (
-                top_played,
-                top_openers,
-                top_closers,
-                top_encores,
-                debuts_by_year,
-            )
-        })
-        .await;
+            }
+        };
 
         StatsSongs {
-            top_played: data.0,
-            top_openers: data.1,
-            top_closers: data.2,
-            top_encores: data.3,
-            debuts_by_year: data.4,
+            top_played,
+            top_openers,
+            top_closers,
+            top_encores,
+            debuts_by_year,
         }
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        StatsSongs::default()
-    }
+    })
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_shows() -> StatsShows {
-    #[cfg(feature = "hydrate")]
-    {
-        let data = spawn_local_to_send(async move {
-            let shows: Vec<Show> = dmb_idb::list_all(dmb_idb::TABLE_SHOWS)
-                .await
-                .unwrap_or_default();
-            let tours = dmb_idb::list_recent_tours(25).await.unwrap_or_default();
+    load_stats_hydrate_or_default!({
+        let shows: Vec<Show> = dmb_idb::list_all(dmb_idb::TABLE_SHOWS)
+            .await
+            .unwrap_or_default();
+        let recent_tours = dmb_idb::list_recent_tours(25).await.unwrap_or_default();
 
-            let years: Vec<u32> = shows.iter().map(|s| s.year as u32).collect();
-            let rarity_values: Vec<f64> = shows
-                .iter()
-                .filter_map(|s| s.rarity_index.map(|r| r as f64))
-                .collect();
+        let years: Vec<u32> = shows.iter().map(|s| s.year as u32).collect();
+        let rarity_values: Vec<f64> = shows
+            .iter()
+            .filter_map(|s| s.rarity_index.map(|r| r as f64))
+            .collect();
 
-            let shows_by_year = if years.is_empty() {
-                Vec::new()
-            } else {
-                let map = dmb_wasm::aggregate_by_year(&years);
-                js_map_to_u32_pairs(&map)
-            };
+        let shows_by_year = if years.is_empty() {
+            Vec::new()
+        } else {
+            let map = dmb_wasm::aggregate_by_year(&years);
+            js_map_to_u32_pairs(&map)
+        };
 
-            let shows_by_decade = if years.is_empty() {
-                Vec::new()
-            } else {
-                let map = dmb_wasm::aggregate_by_decade(&years);
-                js_map_to_u32_pairs(&map)
-            };
+        let shows_by_decade = if years.is_empty() {
+            Vec::new()
+        } else {
+            let map = dmb_wasm::aggregate_by_decade(&years);
+            js_map_to_u32_pairs(&map)
+        };
 
-            let (rmin, rq1, rmed, rq3, rmax) = if rarity_values.is_empty() {
+        let (rarity_min, rarity_q1, rarity_median, rarity_q3, rarity_max) =
+            if rarity_values.is_empty() {
                 (0.0, 0.0, 0.0, 0.0, 0.0)
             } else {
                 match dmb_wasm::calculate_quartiles(&rarity_values) {
@@ -5034,124 +5018,82 @@ async fn load_stats_shows() -> StatsShows {
                 }
             };
 
-            (
-                shows_by_year,
-                shows_by_decade,
-                rmin,
-                rq1,
-                rmed,
-                rq3,
-                rmax,
-                tours,
-            )
-        })
-        .await;
-
         StatsShows {
-            shows_by_year: data.0,
-            shows_by_decade: data.1,
-            rarity_min: data.2,
-            rarity_q1: data.3,
-            rarity_median: data.4,
-            rarity_q3: data.5,
-            rarity_max: data.6,
-            recent_tours: data.7,
+            shows_by_year,
+            shows_by_decade,
+            rarity_min,
+            rarity_q1,
+            rarity_median,
+            rarity_q3,
+            rarity_max,
+            recent_tours,
         }
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        StatsShows::default()
-    }
+    })
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_venues() -> StatsVenues {
-    #[cfg(feature = "hydrate")]
-    {
-        let data = spawn_local_to_send(async move {
-            let top_venues = dmb_idb::list_top_venues(25).await.unwrap_or_default();
-            let all_venues: Vec<Venue> = dmb_idb::list_all(dmb_idb::TABLE_VENUES)
-                .await
-                .unwrap_or_default();
+    load_stats_hydrate_or_default!({
+        let top_venues = dmb_idb::list_top_venues(25).await.unwrap_or_default();
+        let all_venues: Vec<Venue> = dmb_idb::list_all(dmb_idb::TABLE_VENUES)
+            .await
+            .unwrap_or_default();
 
-            // Group by country
-            let mut country_map: std::collections::HashMap<String, u32> =
-                std::collections::HashMap::new();
-            let mut state_map: std::collections::HashMap<String, u32> =
-                std::collections::HashMap::new();
-            for v in &all_venues {
-                let total = v.total_shows.unwrap_or(0) as u32;
-                *country_map.entry(v.country.clone()).or_insert(0) += total;
-                if v.country == "US" || v.country == "United States" {
-                    if let Some(ref state) = v.state {
-                        if !state.is_empty() {
-                            *state_map.entry(state.clone()).or_insert(0) += total;
-                        }
+        let mut country_map: std::collections::HashMap<String, u32> =
+            std::collections::HashMap::new();
+        let mut state_map: std::collections::HashMap<String, u32> =
+            std::collections::HashMap::new();
+        for venue in &all_venues {
+            let total = venue.total_shows.unwrap_or(0) as u32;
+            *country_map.entry(venue.country.clone()).or_insert(0) += total;
+            if venue.country == "US" || venue.country == "United States" {
+                if let Some(state) = venue.state.as_ref() {
+                    if !state.is_empty() {
+                        *state_map.entry(state.clone()).or_insert(0) += total;
                     }
                 }
             }
+        }
 
-            let mut by_country: Vec<(String, u32)> = country_map.into_iter().collect();
-            by_country.sort_by(|a, b| b.1.cmp(&a.1));
+        let mut shows_by_country: Vec<(String, u32)> = country_map.into_iter().collect();
+        shows_by_country.sort_by(|a, b| b.1.cmp(&a.1));
 
-            let mut by_state: Vec<(String, u32)> = state_map.into_iter().collect();
-            by_state.sort_by(|a, b| b.1.cmp(&a.1));
-
-            (top_venues, by_country, by_state)
-        })
-        .await;
+        let mut shows_by_state: Vec<(String, u32)> = state_map.into_iter().collect();
+        shows_by_state.sort_by(|a, b| b.1.cmp(&a.1));
 
         StatsVenues {
-            top_venues: data.0,
-            shows_by_country: data.1,
-            shows_by_state: data.2,
+            top_venues,
+            shows_by_country,
+            shows_by_state,
         }
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        StatsVenues::default()
-    }
+    })
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_guests() -> StatsGuests {
-    #[cfg(feature = "hydrate")]
-    {
-        let data = spawn_local_to_send(async move {
-            let top_guests = dmb_idb::list_top_guests(25).await.unwrap_or_default();
-            let appearances: Vec<GuestAppearance> =
-                dmb_idb::list_all(dmb_idb::TABLE_GUEST_APPEARANCES)
-                    .await
-                    .unwrap_or_default();
+    load_stats_hydrate_or_default!({
+        let top_guests = dmb_idb::list_top_guests(25).await.unwrap_or_default();
+        let appearances: Vec<GuestAppearance> = dmb_idb::list_all(dmb_idb::TABLE_GUEST_APPEARANCES)
+            .await
+            .unwrap_or_default();
 
-            let years: Vec<u32> = appearances
-                .iter()
-                .filter_map(|a| a.year.map(|y| y as u32))
-                .collect();
+        let years: Vec<u32> = appearances
+            .iter()
+            .filter_map(|appearance| appearance.year.map(|year| year as u32))
+            .collect();
 
-            let appearances_by_year = if years.is_empty() {
-                Vec::new()
-            } else {
-                let map = dmb_wasm::aggregate_by_year(&years);
-                js_map_to_u32_pairs(&map)
-            };
-
-            (top_guests, appearances_by_year)
-        })
-        .await;
+        let appearances_by_year = if years.is_empty() {
+            Vec::new()
+        } else {
+            let map = dmb_wasm::aggregate_by_year(&years);
+            js_map_to_u32_pairs(&map)
+        };
 
         StatsGuests {
-            top_guests: data.0,
-            appearances_by_year: data.1,
+            top_guests,
+            appearances_by_year,
         }
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        StatsGuests::default()
-    }
+    })
 }
 
 // ---------------------------------------------------------------------------
