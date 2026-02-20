@@ -934,27 +934,30 @@ fn parity_diagnostics_clean(
     !parity_has_mismatches && !integrity_has_mismatches
 }
 
+macro_rules! hydrate_action {
+    ($state:ident, $body:block) => {{
+        #[cfg(feature = "hydrate")]
+        $body
+        #[cfg(not(feature = "hydrate"))]
+        {
+            let _ = $state;
+        }
+    }};
+}
+
 fn initialize_ai_diagnostics_state(state: AiDiagnosticsState) {
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         request_animation_frame(move || {
             apply_runtime_snapshot_values(state.clone());
             refresh_ai_config_meta_mismatch(state.clone());
             spawn_ai_diagnostics_background_loads(state.clone());
             spawn_ai_diagnostics_parity_refresh(state.clone());
         });
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = state;
-    }
+    });
 }
 
 fn action_load_ann_caps(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         if state.ann_caps_loading.get_untracked() {
             return;
         }
@@ -972,14 +975,11 @@ fn action_load_ann_caps(state: AiDiagnosticsState) {
             ann_caps.set(crate::ai::ann_cap_diagnostics());
             ann_caps_loading.set(false);
         });
-    }
+    });
 }
 
 fn action_run_benchmark(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         let bench = state.bench.clone();
         let bench_running = state.bench_running.clone();
         let bench_progress = state.bench_progress.clone();
@@ -1031,7 +1031,7 @@ fn action_run_benchmark(state: AiDiagnosticsState) {
             store_benchmark_sample_and_refresh_history(benchmark_history, Some(result), None, None);
             bench_running.set(false);
         });
-    }
+    });
 }
 
 fn action_cancel_benchmark(state: AiDiagnosticsState) {
@@ -1040,10 +1040,7 @@ fn action_cancel_benchmark(state: AiDiagnosticsState) {
 }
 
 fn action_run_worker_benchmark(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         let worker_bench = state.worker_bench;
         let benchmark_history = state.benchmark_history;
         let worker_failure = state.worker_failure;
@@ -1056,33 +1053,24 @@ fn action_run_worker_benchmark(state: AiDiagnosticsState) {
             worker_failure.set(crate::ai::worker_failure_status());
             webgpu_runtime.set(load_webgpu_runtime_telemetry());
         });
-    }
+    });
 }
 
 fn action_refresh_runtime_metrics(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         refresh_runtime_metrics_signals(state);
-    }
+    });
 }
 
 fn action_reset_runtime_metrics(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         reset_webgpu_runtime_telemetry();
         state.webgpu_runtime.set(load_webgpu_runtime_telemetry());
-    }
+    });
 }
 
 fn action_run_tuning(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         let tuning = state.tuning.clone();
         let tuning_result = state.tuning_result.clone();
         spawn_local(async move {
@@ -1092,92 +1080,68 @@ fn action_run_tuning(state: AiDiagnosticsState) {
                 tuning.set(Some(crate::ai::load_ai_tuning().await));
             }
         });
-    }
+    });
 }
 
 fn action_toggle_webgpu(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         let next = !state.webgpu_disabled.get_untracked();
         state.webgpu_disabled.set(next);
         crate::ai::set_webgpu_disabled(next);
         state.caps.set(crate::ai::detect_ai_capabilities());
-    }
+    });
 }
 
 fn action_apply_worker_threshold(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         let parsed = parse_optional_signal_value(state.worker_threshold_input);
         apply_worker_threshold_override(state, parsed);
-    }
+    });
 }
 
 fn action_clear_worker_threshold(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         apply_worker_threshold_override(state, None);
-    }
+    });
 }
 
 fn action_apply_ann_cap_override(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         let parsed = parse_optional_signal_value(state.ann_cap_override_input);
         apply_ann_cap_override(state, parsed);
-    }
+    });
 }
 
 fn action_clear_ann_cap_override(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         apply_ann_cap_override(state, None);
-    }
+    });
 }
 
 fn action_toggle_embedding_sample(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         let next = !state.embedding_sample_enabled.get_untracked();
         state.embedding_sample_enabled.set(next);
         crate::ai::set_embedding_sample_enabled(next);
         state.ann_caps.set(crate::ai::ann_cap_diagnostics());
-    }
+    });
 }
 
 fn action_clear_worker_cooldown(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         crate::ai::clear_worker_failure_status();
         state.worker_failure.set(crate::ai::worker_failure_status());
-    }
+    });
 }
 
 fn action_refresh_ai_config(state: AiDiagnosticsState) {
-    #[cfg(not(feature = "hydrate"))]
-    let _ = state;
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_action!(state, {
         spawn_local(async move {
             if crate::ai::refresh_ai_config().await {
                 refresh_ai_config_signals(state);
             }
         });
-    }
+    });
 }
 
 #[cfg(feature = "hydrate")]
