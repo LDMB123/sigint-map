@@ -3111,6 +3111,17 @@ where
     }
 }
 
+fn render_route_param_subhead<T>(
+    label: &str,
+    raw: &str,
+    parse: impl FnOnce(&str) -> Result<T, String>,
+) -> AnyView
+where
+    T: std::fmt::Display,
+{
+    render_param_subhead(label, parse(raw))
+}
+
 fn route_param_or_default(param_name: &'static str) -> impl Fn() -> String + Copy {
     let params = use_params_map();
     move || params.with(|p| p.get(param_name).unwrap_or_default())
@@ -3695,12 +3706,7 @@ pub fn show_detail_page() -> impl IntoView {
         <section class="page">
             {detail_nav("/shows", "Back to shows")}
             <h1>"Show Details"</h1>
-            {move || {
-                render_param_subhead(
-                    "Show ID",
-                    parse_show_id_param(&show_id_for_heading()),
-                )
-            }}
+            {move || render_route_param_subhead("Show ID", &show_id_for_heading(), parse_show_id_param)}
             {move || render_show_save_message(save_message_for_render.clone())}
             <Suspense fallback=move || loading_state("Loading show", "Fetching show summary and context.")>
                 {move || {
@@ -3756,7 +3762,7 @@ pub fn song_detail_page() -> impl IntoView {
         back_href: "/songs",
         back_label: "Back to songs",
         title: "Song Details",
-        subhead: move || render_param_subhead("Slug", parse_route_slug_param(&slug())),
+        subhead: move || render_route_param_subhead("Slug", &slug(), parse_route_slug_param),
         loading_title: "Loading song",
         loading_message: "Fetching song profile and performance stats.",
         content: move || render(song.get().unwrap_or(None)),
@@ -3927,7 +3933,7 @@ pub fn guest_detail_page() -> impl IntoView {
         back_href: "/guests",
         back_label: "Back to guests",
         title: "Guest Details",
-        subhead: move || render_param_subhead("Slug", parse_route_slug_param(&slug())),
+        subhead: move || render_route_param_subhead("Slug", &slug(), parse_route_slug_param),
         loading_title: "Loading guest",
         loading_message: "Fetching guest appearance profile.",
         content: move || render(guest.get().unwrap_or(None)),
@@ -4212,7 +4218,7 @@ pub fn release_detail_page() -> impl IntoView {
         <section class="page">
             {detail_nav("/releases", "Back to releases")}
             <h1>"Release Details"</h1>
-            {move || render_param_subhead("Slug", parse_route_slug_param(&slug()))}
+            {move || render_route_param_subhead("Slug", &slug(), parse_route_slug_param)}
             <Suspense fallback=move || loading_state("Loading release", "Fetching release metadata.")>
                 {move || render(release.get().unwrap_or(None))}
             </Suspense>
@@ -4303,7 +4309,7 @@ pub fn tour_year_page() -> impl IntoView {
         back_href: "/tours",
         back_label: "Back to tours",
         title: "Tour Details",
-        subhead: move || render_param_subhead("Year", parse_tour_year_param(&year())),
+        subhead: move || render_route_param_subhead("Year", &year(), parse_tour_year_param),
         loading_title: "Loading tour",
         loading_message: "Fetching tour details for this year.",
         content: move || render(tour.get().unwrap_or(None)),
@@ -4389,9 +4395,7 @@ pub fn venue_detail_page() -> impl IntoView {
         back_href: "/venues",
         back_label: "Back to venues",
         title: "Venue Details",
-        subhead: move || {
-            render_param_subhead("Venue ID", parse_venue_id_param(&venue_id()))
-        },
+        subhead: move || render_route_param_subhead("Venue ID", &venue_id(), parse_venue_id_param),
         loading_title: "Loading venue",
         loading_message: "Fetching venue profile and location.",
         content: move || render(venue.get().unwrap_or(None)),
@@ -6615,7 +6619,7 @@ pub fn curated_list_detail_page() -> impl IntoView {
             {detail_nav("/lists", "Back to curated lists")}
             <h1>"Curated List Details"</h1>
             <p class="lead">"Highlights, context, and quick filtering for every item in this collection."</p>
-            {move || render_param_subhead("List ID", parse_list_id_param(&list_id()))}
+            {move || render_route_param_subhead("List ID", &list_id(), parse_list_id_param)}
             <Suspense
                 fallback=move || {
                     loading_state(
