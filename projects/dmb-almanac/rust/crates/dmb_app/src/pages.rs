@@ -4669,71 +4669,6 @@ macro_rules! load_stats_hydrate_or_default {
 // Stats data loaders
 // ---------------------------------------------------------------------------
 
-#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
-async fn load_stats_venues() -> StatsVenues {
-    load_stats_hydrate_or_default!({
-        let top_venues = dmb_idb::list_top_venues(25).await.unwrap_or_default();
-        let all_venues: Vec<Venue> = dmb_idb::list_all(dmb_idb::TABLE_VENUES)
-            .await
-            .unwrap_or_default();
-
-        let mut country_map: std::collections::HashMap<String, u32> =
-            std::collections::HashMap::new();
-        let mut state_map: std::collections::HashMap<String, u32> =
-            std::collections::HashMap::new();
-        for venue in &all_venues {
-            let total = venue.total_shows.unwrap_or(0) as u32;
-            *country_map.entry(venue.country.clone()).or_insert(0) += total;
-            if venue.country == "US" || venue.country == "United States" {
-                if let Some(state) = venue.state.as_ref() {
-                    if !state.is_empty() {
-                        *state_map.entry(state.clone()).or_insert(0) += total;
-                    }
-                }
-            }
-        }
-
-        let mut shows_by_country: Vec<(String, u32)> = country_map.into_iter().collect();
-        shows_by_country.sort_by(|a, b| b.1.cmp(&a.1));
-
-        let mut shows_by_state: Vec<(String, u32)> = state_map.into_iter().collect();
-        shows_by_state.sort_by(|a, b| b.1.cmp(&a.1));
-
-        StatsVenues {
-            top_venues,
-            shows_by_country,
-            shows_by_state,
-        }
-    })
-}
-
-#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
-async fn load_stats_guests() -> StatsGuests {
-    load_stats_hydrate_or_default!({
-        let top_guests = dmb_idb::list_top_guests(25).await.unwrap_or_default();
-        let appearances: Vec<GuestAppearance> = dmb_idb::list_all(dmb_idb::TABLE_GUEST_APPEARANCES)
-            .await
-            .unwrap_or_default();
-
-        let years: Vec<u32> = appearances
-            .iter()
-            .filter_map(|appearance| appearance.year.map(|year| year as u32))
-            .collect();
-
-        let appearances_by_year = if years.is_empty() {
-            Vec::new()
-        } else {
-            let map = dmb_wasm::aggregate_by_year(&years);
-            js_map_to_u32_pairs(&map)
-        };
-
-        StatsGuests {
-            top_guests,
-            appearances_by_year,
-        }
-    })
-}
-
 // ---------------------------------------------------------------------------
 // Stats page component
 // ---------------------------------------------------------------------------
@@ -5227,8 +5162,68 @@ pub fn stats_page() -> impl IntoView {
             }
         })
     });
-    let venues = unit_resource(load_stats_venues);
-    let guests = unit_resource(load_stats_guests);
+    let venues = unit_resource(|| async {
+        load_stats_hydrate_or_default!({
+            let top_venues = dmb_idb::list_top_venues(25).await.unwrap_or_default();
+            let all_venues: Vec<Venue> = dmb_idb::list_all(dmb_idb::TABLE_VENUES)
+                .await
+                .unwrap_or_default();
+
+            let mut country_map: std::collections::HashMap<String, u32> =
+                std::collections::HashMap::new();
+            let mut state_map: std::collections::HashMap<String, u32> =
+                std::collections::HashMap::new();
+            for venue in &all_venues {
+                let total = venue.total_shows.unwrap_or(0) as u32;
+                *country_map.entry(venue.country.clone()).or_insert(0) += total;
+                if venue.country == "US" || venue.country == "United States" {
+                    if let Some(state) = venue.state.as_ref() {
+                        if !state.is_empty() {
+                            *state_map.entry(state.clone()).or_insert(0) += total;
+                        }
+                    }
+                }
+            }
+
+            let mut shows_by_country: Vec<(String, u32)> = country_map.into_iter().collect();
+            shows_by_country.sort_by(|a, b| b.1.cmp(&a.1));
+
+            let mut shows_by_state: Vec<(String, u32)> = state_map.into_iter().collect();
+            shows_by_state.sort_by(|a, b| b.1.cmp(&a.1));
+
+            StatsVenues {
+                top_venues,
+                shows_by_country,
+                shows_by_state,
+            }
+        })
+    });
+    let guests = unit_resource(|| async {
+        load_stats_hydrate_or_default!({
+            let top_guests = dmb_idb::list_top_guests(25).await.unwrap_or_default();
+            let appearances: Vec<GuestAppearance> =
+                dmb_idb::list_all(dmb_idb::TABLE_GUEST_APPEARANCES)
+                    .await
+                    .unwrap_or_default();
+
+            let years: Vec<u32> = appearances
+                .iter()
+                .filter_map(|appearance| appearance.year.map(|year| year as u32))
+                .collect();
+
+            let appearances_by_year = if years.is_empty() {
+                Vec::new()
+            } else {
+                let map = dmb_wasm::aggregate_by_year(&years);
+                js_map_to_u32_pairs(&map)
+            };
+
+            StatsGuests {
+                top_guests,
+                appearances_by_year,
+            }
+        })
+    });
 
     view! {
         <section class="page">
