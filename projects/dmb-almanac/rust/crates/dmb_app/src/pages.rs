@@ -2450,14 +2450,6 @@ async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
-async fn load_liberation_list(_limit: usize) -> Vec<LiberationEntry> {
-    load_with_hydrate_or_ssr_list!(
-        dmb_idb::list_liberation_entries(_limit),
-        get_liberation_list(_limit as i32)
-    )
-}
-
-#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_curated_lists() -> Vec<CuratedList> {
     load_with_hydrate_or_ssr_list!(dmb_idb::list_curated_lists(), get_curated_lists())
 }
@@ -6426,7 +6418,12 @@ fn render_curated_list_detail_content(
 
 #[must_use]
 pub fn liberation_page() -> impl IntoView {
-    let items = unit_resource(|| load_liberation_list(50));
+    let items = unit_resource(|| async {
+        load_with_hydrate_or_ssr_list!(
+            dmb_idb::list_liberation_entries(50),
+            get_liberation_list(50)
+        )
+    });
 
     view! {
         <section class="page">
