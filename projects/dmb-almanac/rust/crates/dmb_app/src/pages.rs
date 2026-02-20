@@ -2450,14 +2450,6 @@ async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
-async fn load_setlist_entries(_show_id: i32) -> Vec<SetlistEntry> {
-    load_with_hydrate_or_ssr_list!(
-        dmb_idb::list_setlist_entries(_show_id),
-        get_setlist_entries(_show_id)
-    )
-}
-
-#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_liberation_list(_limit: usize) -> Vec<LiberationEntry> {
     load_with_hydrate_or_ssr_list!(
         dmb_idb::list_liberation_entries(_limit),
@@ -3582,7 +3574,12 @@ pub fn show_detail_page() -> impl IntoView {
     let setlist = optional_resource_from_param!(
         show_id,
         |raw: &str| parse_positive_i32_param(raw, "showId"),
-        |id| async move { Some(load_setlist_entries(id).await) }
+        |_id| async move {
+            Some(load_with_hydrate_or_ssr_list!(
+                dmb_idb::list_setlist_entries(_id),
+                get_setlist_entries(_id)
+            ))
+        }
     );
 
     let show_id_for_heading = show_id.clone();
