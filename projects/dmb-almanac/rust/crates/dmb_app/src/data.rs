@@ -2,6 +2,8 @@
 use std::cell::RefCell;
 #[cfg(feature = "hydrate")]
 use std::collections::{HashMap, HashSet};
+#[cfg(feature = "hydrate")]
+use std::future::Future;
 
 use leptos::prelude::RwSignal;
 #[cfg(feature = "hydrate")]
@@ -304,6 +306,26 @@ fn clear_thread_ttl_cache<T>(cache: &'static std::thread::LocalKey<ThreadTtlCach
 }
 
 #[cfg(feature = "hydrate")]
+async fn cached_thread_ttl_value<T, F, Fut>(
+    read_cached: fn() -> Option<T>,
+    write_cached: fn(&T),
+    load: F,
+) -> Option<T>
+where
+    T: Clone,
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Option<T>>,
+{
+    if let Some(cached) = read_cached() {
+        return Some(cached);
+    }
+
+    let value = load().await?;
+    write_cached(&value);
+    Some(value)
+}
+
+#[cfg(feature = "hydrate")]
 macro_rules! define_thread_ttl_cache {
     (
         $cache:ident,
@@ -346,28 +368,29 @@ define_thread_ttl_cache!(
 
 #[cfg(feature = "hydrate")]
 pub async fn fetch_integrity_report() -> Option<IntegrityReport> {
-    if let Some(cached) = read_integrity_report_cache() {
-        return Some(cached);
-    }
-
-    let manifest = fetch_json::<DataManifest>("/data/manifest.json").await?;
-    let dry_run = fetch_json::<DryRunReport>("/data/idb-migration-dry-run.json").await;
-    let mismatches = verify_import_integrity(&manifest, dry_run.as_ref()).await?;
-    let entries = mismatches
-        .into_iter()
-        .map(|entry| IntegrityReportEntry {
-            store: entry.store,
-            expected: entry.expected,
-            actual: entry.actual,
-        })
-        .collect::<Vec<_>>();
-    let total_mismatches = entries.len();
-    let report = IntegrityReport {
-        total_mismatches,
-        mismatches: entries,
-    };
-    write_integrity_report_cache(&report);
-    Some(report)
+    cached_thread_ttl_value(
+        read_integrity_report_cache,
+        write_integrity_report_cache,
+        || async {
+            let manifest = fetch_json::<DataManifest>("/data/manifest.json").await?;
+            let dry_run = fetch_json::<DryRunReport>("/data/idb-migration-dry-run.json").await;
+            let mismatches = verify_import_integrity(&manifest, dry_run.as_ref()).await?;
+            let entries = mismatches
+                .into_iter()
+                .map(|entry| IntegrityReportEntry {
+                    store: entry.store,
+                    expected: entry.expected,
+                    actual: entry.actual,
+                })
+                .collect::<Vec<_>>();
+            let total_mismatches = entries.len();
+            Some(IntegrityReport {
+                total_mismatches,
+                mismatches: entries,
+            })
+        },
+    )
+    .await
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -402,84 +425,83 @@ define_thread_ttl_cache!(
 
 #[cfg(feature = "hydrate")]
 pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
-    if let Some(cached) = read_sqlite_parity_cache() {
-        return Some(cached);
-    }
+    cached_thread_ttl_value(
+        read_sqlite_parity_cache,
+        write_sqlite_parity_cache,
+        || async {
+            let response = fetch_json::<SqliteParityResponse>("/api/data-parity").await?;
+            if !response.available {
+                return Some(SqliteParityReport {
+                    available: false,
+                    total_mismatches: 0,
+                    mismatches: Vec::new(),
+                    missing_tables: response.missing_tables,
+                    idb_count_failures: Vec::new(),
+                });
+            }
 
-    let response = fetch_json::<SqliteParityResponse>("/api/data-parity").await?;
-    if !response.available {
-        let report = SqliteParityReport {
-            available: false,
-            total_mismatches: 0,
-            mismatches: Vec::new(),
-            missing_tables: response.missing_tables,
-            idb_count_failures: Vec::new(),
-        };
-        write_sqlite_parity_cache(&report);
-        return Some(report);
-    }
-
-    let stores: Vec<&str> = SQLITE_PARITY_STORE_TABLE_MAPPINGS
-        .iter()
-        .map(|(store, _)| *store)
-        .collect();
-    let (idb_counts, known_missing_stores) = dmb_idb::count_stores_with_missing(&stores)
-        .await
-        .map(|(entries, missing)| {
-            let counts = entries
-                .into_iter()
-                .map(|(name, count)| (name, count as u64))
-                .collect::<HashMap<_, _>>();
-            let missing = missing.into_iter().collect::<HashSet<_>>();
-            (counts, missing)
-        })
-        .unwrap_or_else(|err| {
-            tracing::warn!(
-                error = ?err,
-                "sqlite parity: IndexedDB store counting failed; marking all stores unavailable"
-            );
-            let missing = stores
+            let stores: Vec<&str> = SQLITE_PARITY_STORE_TABLE_MAPPINGS
                 .iter()
-                .map(|store| (*store).to_string())
-                .collect::<HashSet<_>>();
-            (HashMap::new(), missing)
-        });
-
-    let mut mismatches = Vec::new();
-    let mut idb_count_failures = Vec::new();
-    for &(store, table) in SQLITE_PARITY_STORE_TABLE_MAPPINGS.iter() {
-        if known_missing_stores.contains(store) {
-            idb_count_failures.push(store.to_string());
-            continue;
-        }
-
-        let Some(idb_count) = idb_counts.get(store).copied() else {
-            idb_count_failures.push(store.to_string());
-            continue;
-        };
-        let sqlite_count = response.counts.get(table).copied().unwrap_or(0);
-        if idb_count != sqlite_count {
-            mismatches.push(SqliteParityEntry {
-                store: store.to_string(),
-                sqlite_table: table.to_string(),
-                idb_count,
-                sqlite_count,
+                .map(|(store, _)| *store)
+                .collect();
+            let (idb_counts, known_missing_stores) = dmb_idb::count_stores_with_missing(&stores)
+            .await
+            .map(|(entries, missing)| {
+                let counts = entries
+                    .into_iter()
+                    .map(|(name, count)| (name, count as u64))
+                    .collect::<HashMap<_, _>>();
+                let missing = missing.into_iter().collect::<HashSet<_>>();
+                (counts, missing)
+            })
+            .unwrap_or_else(|err| {
+                tracing::warn!(
+                    error = ?err,
+                    "sqlite parity: IndexedDB store counting failed; marking all stores unavailable"
+                );
+                let missing = stores
+                    .iter()
+                    .map(|store| (*store).to_string())
+                    .collect::<HashSet<_>>();
+                (HashMap::new(), missing)
             });
-        }
-    }
-    idb_count_failures.sort_unstable();
-    idb_count_failures.dedup();
 
-    let total_mismatches = mismatches.len();
-    let report = SqliteParityReport {
-        available: true,
-        total_mismatches,
-        mismatches,
-        missing_tables: response.missing_tables,
-        idb_count_failures,
-    };
-    write_sqlite_parity_cache(&report);
-    Some(report)
+            let mut mismatches = Vec::new();
+            let mut idb_count_failures = Vec::new();
+            for &(store, table) in SQLITE_PARITY_STORE_TABLE_MAPPINGS.iter() {
+                if known_missing_stores.contains(store) {
+                    idb_count_failures.push(store.to_string());
+                    continue;
+                }
+
+                let Some(idb_count) = idb_counts.get(store).copied() else {
+                    idb_count_failures.push(store.to_string());
+                    continue;
+                };
+                let sqlite_count = response.counts.get(table).copied().unwrap_or(0);
+                if idb_count != sqlite_count {
+                    mismatches.push(SqliteParityEntry {
+                        store: store.to_string(),
+                        sqlite_table: table.to_string(),
+                        idb_count,
+                        sqlite_count,
+                    });
+                }
+            }
+            idb_count_failures.sort_unstable();
+            idb_count_failures.dedup();
+
+            let total_mismatches = mismatches.len();
+            Some(SqliteParityReport {
+                available: true,
+                total_mismatches,
+                mismatches,
+                missing_tables: response.missing_tables,
+                idb_count_failures,
+            })
+        },
+    )
+    .await
 }
 
 #[cfg(not(feature = "hydrate"))]
