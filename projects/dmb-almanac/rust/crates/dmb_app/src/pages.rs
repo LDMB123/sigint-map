@@ -3083,6 +3083,27 @@ fn route_param_or_default(param_name: &'static str) -> impl Fn() -> String + Cop
     move || params.with(|p| p.get(param_name).unwrap_or_default())
 }
 
+fn render_import_or_missing_with_link(
+    seed_data_state: RwSignal<crate::data::SeedDataState>,
+    importing_title: &'static str,
+    missing_title: &'static str,
+    missing_message: &'static str,
+    missing_href: &'static str,
+    missing_link_label: &'static str,
+) -> AnyView {
+    if seed_data_state.get() == crate::data::SeedDataState::Importing {
+        import_in_progress_state(importing_title, "/offline", "Open offline help").into_any()
+    } else {
+        empty_state_with_link(
+            missing_title,
+            missing_message,
+            missing_href,
+            missing_link_label,
+        )
+        .into_any()
+    }
+}
+
 fn hydrate_saved_show_ids(saved_show_ids: RwSignal<std::collections::HashSet<i32>>) {
     #[cfg(feature = "hydrate")]
     {
@@ -3755,21 +3776,14 @@ fn render_song_detail_content(song: Song) -> impl IntoView {
 fn render_song_missing_state(
     seed_data_state: RwSignal<crate::data::SeedDataState>,
 ) -> impl IntoView {
-    if seed_data_state.get() == crate::data::SeedDataState::Importing {
-        return import_in_progress_state(
-            "Song details are still loading",
-            "/offline",
-            "Open offline help",
-        )
-        .into_any();
-    }
-    empty_state_with_link(
+    render_import_or_missing_with_link(
+        seed_data_state,
+        "Song details are still loading",
         "Song not found",
         "This song slug could not be resolved.",
         "/songs",
         "Browse songs",
     )
-    .into_any()
 }
 
 #[must_use]
@@ -3824,24 +3838,14 @@ pub fn guest_detail_page() -> impl IntoView {
             }
             .into_any()
         }
-        None => {
-            if seed_data_state.get() == crate::data::SeedDataState::Importing {
-                import_in_progress_state(
-                    "Guest details are still loading",
-                    "/offline",
-                    "Open offline help",
-                )
-                .into_any()
-            } else {
-                empty_state_with_link(
-                    "Guest not found",
-                    "This guest slug could not be resolved.",
-                    "/guests",
-                    "Browse guests",
-                )
-                .into_any()
-            }
-        }
+        None => render_import_or_missing_with_link(
+            seed_data_state,
+            "Guest details are still loading",
+            "Guest not found",
+            "This guest slug could not be resolved.",
+            "/guests",
+            "Browse guests",
+        ),
     };
 
     let guest = Resource::new(slug, |slug: String| async move {
@@ -3897,21 +3901,14 @@ fn render_release_detail_card(release: &Release) -> impl IntoView {
 fn render_release_missing_state(
     seed_data_state: RwSignal<crate::data::SeedDataState>,
 ) -> impl IntoView {
-    if seed_data_state.get() == crate::data::SeedDataState::Importing {
-        return import_in_progress_state(
-            "Release details are still loading",
-            "/offline",
-            "Open offline help",
-        )
-        .into_any();
-    }
-    empty_state_with_link(
+    render_import_or_missing_with_link(
+        seed_data_state,
+        "Release details are still loading",
         "Release not found",
         "This release slug could not be resolved.",
         "/releases",
         "Browse releases",
     )
-    .into_any()
 }
 
 fn filter_release_tracks(
@@ -4238,24 +4235,14 @@ pub fn tour_year_page() -> impl IntoView {
             }
             .into_any()
         }
-        None => {
-            if seed_data_state.get() == crate::data::SeedDataState::Importing {
-                import_in_progress_state(
-                    "Tour details are still loading",
-                    "/offline",
-                    "Open offline help",
-                )
-                .into_any()
-            } else {
-                empty_state_with_link(
-                    "Tour not found",
-                    "This year does not map to a tour record.",
-                    "/tours",
-                    "Browse tours",
-                )
-                .into_any()
-            }
-        }
+        None => render_import_or_missing_with_link(
+            seed_data_state,
+            "Tour details are still loading",
+            "Tour not found",
+            "This year does not map to a tour record.",
+            "/tours",
+            "Browse tours",
+        ),
     };
 
     let tour = Resource::new(year, |year: String| async move {
@@ -4338,24 +4325,14 @@ pub fn venue_detail_page() -> impl IntoView {
             }
             .into_any()
         }
-        None => {
-            if seed_data_state.get() == crate::data::SeedDataState::Importing {
-                import_in_progress_state(
-                    "Venue details are still loading",
-                    "/offline",
-                    "Open offline help",
-                )
-                .into_any()
-            } else {
-                empty_state_with_link(
-                    "Venue not found",
-                    "This venue ID was not found in the current dataset.",
-                    "/venues",
-                    "Browse venues",
-                )
-                .into_any()
-            }
-        }
+        None => render_import_or_missing_with_link(
+            seed_data_state,
+            "Venue details are still loading",
+            "Venue not found",
+            "This venue ID was not found in the current dataset.",
+            "/venues",
+            "Browse venues",
+        ),
     };
 
     let venue = Resource::new(venue_id, |id: String| async move {
@@ -6630,21 +6607,15 @@ pub fn curated_list_detail_page() -> impl IntoView {
                             </section>
                         }
                             .into_any()
-                    } else if seed_data_state.get() == crate::data::SeedDataState::Importing {
-                        import_in_progress_state(
-                            "Curated list details are still loading",
-                            "/offline",
-                            "Open offline help",
-                        )
-                            .into_any()
                     } else {
-                        empty_state_with_link(
+                        render_import_or_missing_with_link(
+                            seed_data_state,
+                            "Curated list details are still loading",
                             "List not found",
                             "This curated list id could not be resolved.",
                             "/lists",
                             "Browse curated lists",
                         )
-                            .into_any()
                     }
                 }}
             </Suspense>
