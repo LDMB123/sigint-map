@@ -2237,57 +2237,6 @@ fn hydrate_show_summary(
     }
 }
 
-async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
-    #[cfg(feature = "hydrate")]
-    {
-        let shows =
-            spawn_local_to_send(async move { dmb_idb::list_recent_shows(limit).await.ok() }).await;
-        let Some(shows) = shows else {
-            return normalize_show_summaries(
-                get_recent_shows(limit).await.unwrap_or_default(),
-                limit,
-            );
-        };
-
-        if shows.is_empty() {
-            return normalize_show_summaries(
-                get_recent_shows(limit).await.unwrap_or_default(),
-                limit,
-            );
-        }
-
-        let mut venue_ids: HashSet<i32> = HashSet::new();
-        let mut tour_ids: HashSet<i32> = HashSet::new();
-        for show in &shows {
-            venue_ids.insert(show.venue_id);
-            if let Some(tour_id) = show.tour_id {
-                tour_ids.insert(tour_id);
-            }
-        }
-        let venues: HashMap<i32, Venue> = load_idb_entities_by_id(venue_ids, |id| async move {
-            dmb_idb::get_venue(id).await.ok().flatten()
-        })
-        .await;
-        let tours: HashMap<i32, Tour> = load_idb_entities_by_id(tour_ids, |id| async move {
-            dmb_idb::get_tour_by_id(id).await.ok().flatten()
-        })
-        .await;
-
-        normalize_show_summaries(
-            shows
-                .into_iter()
-                .map(|show| hydrate_show_summary(show, &venues, &tours))
-                .collect(),
-            limit,
-        )
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        normalize_show_summaries(get_recent_shows(limit).await.unwrap_or_default(), limit)
-    }
-}
-
 macro_rules! load_with_limit_fallback {
     ($limit:expr, $idb_loader:expr, $server_loader:expr, $normalize:expr) => {{
         #[cfg(feature = "hydrate")]
@@ -2615,7 +2564,62 @@ pub fn shows_page() -> impl IntoView {
         "Latest performances with offline hydration.",
         "Loading shows",
         "Fetching recent performances.",
-        || load_recent_shows(30),
+        || async {
+            let limit = 30usize;
+            #[cfg(feature = "hydrate")]
+            {
+                let shows =
+                    spawn_local_to_send(
+                        async move { dmb_idb::list_recent_shows(limit).await.ok() },
+                    )
+                    .await;
+                let Some(shows) = shows else {
+                    return normalize_show_summaries(
+                        get_recent_shows(limit).await.unwrap_or_default(),
+                        limit,
+                    );
+                };
+
+                if shows.is_empty() {
+                    return normalize_show_summaries(
+                        get_recent_shows(limit).await.unwrap_or_default(),
+                        limit,
+                    );
+                }
+
+                let mut venue_ids: HashSet<i32> = HashSet::new();
+                let mut tour_ids: HashSet<i32> = HashSet::new();
+                for show in &shows {
+                    venue_ids.insert(show.venue_id);
+                    if let Some(tour_id) = show.tour_id {
+                        tour_ids.insert(tour_id);
+                    }
+                }
+                let venues: HashMap<i32, Venue> =
+                    load_idb_entities_by_id(venue_ids, |id| async move {
+                        dmb_idb::get_venue(id).await.ok().flatten()
+                    })
+                    .await;
+                let tours: HashMap<i32, Tour> =
+                    load_idb_entities_by_id(tour_ids, |id| async move {
+                        dmb_idb::get_tour_by_id(id).await.ok().flatten()
+                    })
+                    .await;
+
+                normalize_show_summaries(
+                    shows
+                        .into_iter()
+                        .map(|show| hydrate_show_summary(show, &venues, &tours))
+                        .collect(),
+                    limit,
+                )
+            }
+
+            #[cfg(not(feature = "hydrate"))]
+            {
+                normalize_show_summaries(get_recent_shows(limit).await.unwrap_or_default(), limit)
+            }
+        },
         render,
     )
 }
