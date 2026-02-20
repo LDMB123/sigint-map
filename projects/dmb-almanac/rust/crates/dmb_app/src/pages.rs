@@ -3068,6 +3068,16 @@ fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
     Ok(year)
 }
 
+fn render_param_subhead<T>(label: &str, parsed: Result<T, String>) -> AnyView
+where
+    T: std::fmt::Display,
+{
+    match parsed {
+        Ok(value) => view! { <p class="page-subhead">{format!("{label}: {value}")}</p> }.into_any(),
+        Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
+    }
+}
+
 fn hydrate_saved_show_ids(saved_show_ids: RwSignal<std::collections::HashSet<i32>>) {
     #[cfg(feature = "hydrate")]
     {
@@ -3584,10 +3594,10 @@ pub fn show_detail_page() -> impl IntoView {
             {detail_nav("/shows", "Back to shows")}
             <h1>"Show Details"</h1>
             {move || {
-                match parse_positive_i32_param(&show_id_for_heading(), "showId") {
-                    Ok(id) => view! { <p class="page-subhead">{format!("Show ID: {id}")}</p> }.into_any(),
-                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
-                }
+                render_param_subhead(
+                    "Show ID",
+                    parse_positive_i32_param(&show_id_for_heading(), "showId"),
+                )
             }}
             {move || render_show_save_message(save_message_for_render.clone())}
             <Suspense fallback=move || loading_state("Loading show", "Fetching show summary and context.")>
@@ -3648,12 +3658,7 @@ pub fn song_detail_page() -> impl IntoView {
         <section class="page">
             {detail_nav("/songs", "Back to songs")}
             <h1>"Song Details"</h1>
-            {move || {
-                match parse_slug_param(&slug(), "slug") {
-                    Ok(value) => view! { <p class="page-subhead">{format!("Slug: {value}")}</p> }.into_any(),
-                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
-                }
-            }}
+            {move || render_param_subhead("Slug", parse_slug_param(&slug(), "slug"))}
             <Suspense fallback=move || loading_state("Loading song", "Fetching song profile and performance stats.")>
                 {move || render(song.get().unwrap_or(None))}
             </Suspense>
@@ -3846,12 +3851,7 @@ pub fn guest_detail_page() -> impl IntoView {
         <section class="page">
             {detail_nav("/guests", "Back to guests")}
             <h1>"Guest Details"</h1>
-            {move || {
-                match parse_slug_param(&slug(), "slug") {
-                    Ok(value) => view! { <p class="page-subhead">{format!("Slug: {value}")}</p> }.into_any(),
-                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
-                }
-            }}
+            {move || render_param_subhead("Slug", parse_slug_param(&slug(), "slug"))}
             <Suspense fallback=move || loading_state("Loading guest", "Fetching guest appearance profile.")>
                 {move || render(guest.get().unwrap_or(None))}
             </Suspense>
@@ -4162,12 +4162,7 @@ pub fn release_detail_page() -> impl IntoView {
         <section class="page">
             {detail_nav("/releases", "Back to releases")}
             <h1>"Release Details"</h1>
-            {move || {
-                match parse_slug_param(&slug(), "slug") {
-                    Ok(value) => view! { <p class="page-subhead">{format!("Slug: {value}")}</p> }.into_any(),
-                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
-                }
-            }}
+            {move || render_param_subhead("Slug", parse_slug_param(&slug(), "slug"))}
             <Suspense fallback=move || loading_state("Loading release", "Fetching release metadata.")>
                 {move || render(release.get().unwrap_or(None))}
             </Suspense>
@@ -4272,12 +4267,7 @@ pub fn tour_year_page() -> impl IntoView {
         <section class="page">
             {detail_nav("/tours", "Back to tours")}
             <h1>"Tour Details"</h1>
-            {move || {
-                match parse_tour_year_param(&year()) {
-                    Ok(value) => view! { <p class="page-subhead">{format!("Year: {value}")}</p> }.into_any(),
-                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
-                }
-            }}
+            {move || render_param_subhead("Year", parse_tour_year_param(&year()))}
             <Suspense fallback=move || loading_state("Loading tour", "Fetching tour details for this year.")>
                 {move || render(tour.get().unwrap_or(None))}
             </Suspense>
@@ -4379,10 +4369,7 @@ pub fn venue_detail_page() -> impl IntoView {
             {detail_nav("/venues", "Back to venues")}
             <h1>"Venue Details"</h1>
             {move || {
-                match parse_positive_i32_param(&venue_id(), "venueId") {
-                    Ok(id) => view! { <p class="page-subhead">{format!("Venue ID: {id}")}</p> }.into_any(),
-                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
-                }
+                render_param_subhead("Venue ID", parse_positive_i32_param(&venue_id(), "venueId"))
             }}
             <Suspense fallback=move || loading_state("Loading venue", "Fetching venue profile and location.")>
                 {move || render(venue.get().unwrap_or(None))}
@@ -6619,12 +6606,7 @@ pub fn curated_list_detail_page() -> impl IntoView {
             {detail_nav("/lists", "Back to curated lists")}
             <h1>"Curated List Details"</h1>
             <p class="lead">"Highlights, context, and quick filtering for every item in this collection."</p>
-            {move || {
-                match parse_positive_i32_param(&list_id(), "listId") {
-                    Ok(id) => view! { <p class="page-subhead">{format!("List ID: {id}")}</p> }.into_any(),
-                    Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
-                }
-            }}
+            {move || render_param_subhead("List ID", parse_positive_i32_param(&list_id(), "listId"))}
             <Suspense
                 fallback=move || {
                     loading_state(
