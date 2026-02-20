@@ -2249,6 +2249,63 @@ where
     out
 }
 
+#[cfg(feature = "hydrate")]
+fn collect_show_related_ids(shows: &[Show]) -> (HashSet<i32>, HashSet<i32>) {
+    let mut venue_ids: HashSet<i32> = HashSet::new();
+    let mut tour_ids: HashSet<i32> = HashSet::new();
+    for show in shows {
+        venue_ids.insert(show.venue_id);
+        if let Some(tour_id) = show.tour_id {
+            tour_ids.insert(tour_id);
+        }
+    }
+    (venue_ids, tour_ids)
+}
+
+#[cfg(feature = "hydrate")]
+async fn load_idb_entities_by_id<T, Loader, LoaderFuture>(
+    ids: HashSet<i32>,
+    loader: Loader,
+) -> HashMap<i32, T>
+where
+    T: Send + 'static,
+    Loader: Fn(i32) -> LoaderFuture + Copy,
+    LoaderFuture: std::future::Future<Output = Option<T>> + 'static,
+{
+    let futs = ids.into_iter().map(|id| async move {
+        let entity = spawn_local_to_send(loader(id)).await;
+        (id, entity)
+    });
+    collect_present_pairs(join_all(futs).await)
+}
+
+#[cfg(feature = "hydrate")]
+fn hydrate_show_summary(
+    show: Show,
+    venues: &HashMap<i32, Venue>,
+    tours: &HashMap<i32, Tour>,
+) -> ShowSummary {
+    let (venue_name, venue_city, venue_state) = match venues.get(&show.venue_id) {
+        Some(venue) => (venue.name.clone(), venue.city.clone(), venue.state.clone()),
+        None => (format!("Venue #{}", show.venue_id), String::new(), None),
+    };
+    let (tour_name, tour_year) = match show.tour_id.and_then(|id| tours.get(&id)) {
+        Some(tour) => (Some(tour.name.clone()), Some(tour.year)),
+        None => (None, None),
+    };
+    ShowSummary {
+        id: show.id,
+        date: show.date,
+        year: show.year,
+        venue_id: show.venue_id,
+        venue_name,
+        venue_city,
+        venue_state,
+        tour_name,
+        tour_year,
+    }
+}
+
 async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
     #[cfg(feature = "hydrate")]
     {
@@ -2262,56 +2319,23 @@ async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
             return load_recent_shows_from_server(limit).await;
         }
 
-        let mut venue_ids: HashSet<i32> = HashSet::new();
-        let mut tour_ids: HashSet<i32> = HashSet::new();
-        for show in &shows {
-            venue_ids.insert(show.venue_id);
-            if let Some(tour_id) = show.tour_id {
-                tour_ids.insert(tour_id);
-            }
-        }
+        let (venue_ids, tour_ids) = collect_show_related_ids(&shows);
+        let venues: HashMap<i32, Venue> = load_idb_entities_by_id(venue_ids, |id| async move {
+            dmb_idb::get_venue(id).await.ok().flatten()
+        })
+        .await;
+        let tours: HashMap<i32, Tour> = load_idb_entities_by_id(tour_ids, |id| async move {
+            dmb_idb::get_tour_by_id(id).await.ok().flatten()
+        })
+        .await;
 
-        let venue_futs = venue_ids.iter().copied().map(|id| async move {
-            let venue =
-                spawn_local_to_send(async move { dmb_idb::get_venue(id).await.ok().flatten() })
-                    .await;
-            (id, venue)
-        });
-        let venues: HashMap<i32, Venue> = collect_present_pairs(join_all(venue_futs).await);
-
-        let tour_futs = tour_ids.iter().copied().map(|id| async move {
-            let tour =
-                spawn_local_to_send(
-                    async move { dmb_idb::get_tour_by_id(id).await.ok().flatten() },
-                )
-                .await;
-            (id, tour)
-        });
-        let tours: HashMap<i32, Tour> = collect_present_pairs(join_all(tour_futs).await);
-
-        let mut out = Vec::with_capacity(shows.len());
-        for show in shows {
-            let (venue_name, venue_city, venue_state) = match venues.get(&show.venue_id) {
-                Some(venue) => (venue.name.clone(), venue.city.clone(), venue.state.clone()),
-                None => (format!("Venue #{}", show.venue_id), String::new(), None),
-            };
-            let (tour_name, tour_year) = match show.tour_id.and_then(|id| tours.get(&id)) {
-                Some(tour) => (Some(tour.name.clone()), Some(tour.year)),
-                None => (None, None),
-            };
-            out.push(ShowSummary {
-                id: show.id,
-                date: show.date,
-                year: show.year,
-                venue_id: show.venue_id,
-                venue_name,
-                venue_city,
-                venue_state,
-                tour_name,
-                tour_year,
-            });
-        }
-        normalize_show_summaries(out, limit)
+        normalize_show_summaries(
+            shows
+                .into_iter()
+                .map(|show| hydrate_show_summary(show, &venues, &tours))
+                .collect(),
+            limit,
+        )
     }
 
     #[cfg(not(feature = "hydrate"))]
