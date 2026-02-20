@@ -3083,6 +3083,15 @@ fn route_param_or_default(param_name: &'static str) -> impl Fn() -> String + Cop
     move || params.with(|p| p.get(param_name).unwrap_or_default())
 }
 
+macro_rules! optional_resource_from_param {
+    ($source:expr, $parse:expr, $loader:expr) => {
+        Resource::new($source, |raw: String| async move {
+            let parsed = $parse(&raw).ok()?;
+            $loader(parsed).await
+        })
+    };
+}
+
 fn render_import_or_missing_with_link(
     seed_data_state: RwSignal<crate::data::SeedDataState>,
     importing_title: &'static str,
@@ -3595,14 +3604,16 @@ pub fn show_detail_page() -> impl IntoView {
         setlist_query_for_reset.set(String::new());
     });
 
-    let show = Resource::new(show_id, |id: String| async move {
-        let id = parse_positive_i32_param(&id, "showId").ok()?;
-        load_show_context(id).await
-    });
-    let setlist = Resource::new(show_id, |id: String| async move {
-        let id = parse_positive_i32_param(&id, "showId").ok()?;
-        Some(load_setlist_entries(id).await)
-    });
+    let show = optional_resource_from_param!(
+        show_id,
+        |raw: &str| parse_positive_i32_param(raw, "showId"),
+        load_show_context
+    );
+    let setlist = optional_resource_from_param!(
+        show_id,
+        |raw: &str| parse_positive_i32_param(raw, "showId"),
+        |id| async move { Some(load_setlist_entries(id).await) }
+    );
 
     let show_id_for_heading = show_id.clone();
     let show_id_for_render = show_id.clone();
@@ -3673,10 +3684,8 @@ pub fn song_detail_page() -> impl IntoView {
         render_song_missing_state(seed_data_state).into_any()
     };
 
-    let song = Resource::new(slug, |slug: String| async move {
-        let slug = parse_slug_param(&slug, "slug").ok()?;
-        load_song(slug).await
-    });
+    let song =
+        optional_resource_from_param!(slug, |raw: &str| parse_slug_param(raw, "slug"), load_song);
 
     view! {
         <section class="page">
@@ -3848,10 +3857,8 @@ pub fn guest_detail_page() -> impl IntoView {
         ),
     };
 
-    let guest = Resource::new(slug, |slug: String| async move {
-        let slug = parse_slug_param(&slug, "slug").ok()?;
-        load_guest(slug).await
-    });
+    let guest =
+        optional_resource_from_param!(slug, |raw: &str| parse_slug_param(raw, "slug"), load_guest);
 
     view! {
         <section class="page">
@@ -4140,10 +4147,11 @@ pub fn release_detail_page() -> impl IntoView {
         render_release_missing_state(seed_data_state).into_any()
     };
 
-    let release = Resource::new(slug, |slug: String| async move {
-        let slug = parse_slug_param(&slug, "slug").ok()?;
-        load_release(slug).await
-    });
+    let release = optional_resource_from_param!(
+        slug,
+        |raw: &str| parse_slug_param(raw, "slug"),
+        load_release
+    );
     let tracks = Resource::new(slug, |slug: String| async move {
         let Some(parsed_slug) = parse_slug_param(&slug, "slug").ok() else {
             return Some(Vec::new());
@@ -4245,10 +4253,7 @@ pub fn tour_year_page() -> impl IntoView {
         ),
     };
 
-    let tour = Resource::new(year, |year: String| async move {
-        let year = parse_tour_year_param(&year).ok()?;
-        load_tour(year).await
-    });
+    let tour = optional_resource_from_param!(year, parse_tour_year_param, load_tour);
 
     view! {
         <section class="page">
@@ -4335,10 +4340,11 @@ pub fn venue_detail_page() -> impl IntoView {
         ),
     };
 
-    let venue = Resource::new(venue_id, |id: String| async move {
-        let id = parse_positive_i32_param(&id, "venueId").ok()?;
-        load_venue(id).await
-    });
+    let venue = optional_resource_from_param!(
+        venue_id,
+        |raw: &str| parse_positive_i32_param(raw, "venueId"),
+        load_venue
+    );
 
     view! {
         <section class="page">
@@ -6552,11 +6558,14 @@ pub fn curated_list_detail_page() -> impl IntoView {
     let active_filter = RwSignal::new("all".to_string());
     let query = RwSignal::new(String::new());
 
-    let list = Resource::new(list_id, |id: String| async move {
-        let id = parse_positive_i32_param(&id, "listId").ok()?;
-        let lists = load_curated_lists().await;
-        lists.into_iter().find(|list| list.id == id)
-    });
+    let list = optional_resource_from_param!(
+        list_id,
+        |raw: &str| parse_positive_i32_param(raw, "listId"),
+        |id| async move {
+            let lists = load_curated_lists().await;
+            lists.into_iter().find(|list| list.id == id)
+        }
+    );
 
     let items = Resource::new(list_id, |id: String| async move {
         let Ok(id) = parse_positive_i32_param(&id, "listId") else {
