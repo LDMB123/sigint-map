@@ -597,35 +597,6 @@ fn ivf_cap_bytes_for_matrix(cap_bytes: u64) -> u64 {
 }
 
 #[cfg(any(feature = "hydrate", test))]
-fn sample_for_cap(
-    records: Vec<EmbeddingRecord>,
-    matrix: Vec<f32>,
-    dim: usize,
-    target_vectors: usize,
-) -> (Vec<EmbeddingRecord>, Vec<f32>) {
-    let total = records.len().max(1);
-    let step = ((total as f64) / (target_vectors as f64)).ceil() as usize;
-    let mut new_records = Vec::with_capacity(target_vectors);
-    let mut new_matrix = Vec::with_capacity(target_vectors * dim);
-    for (idx, record) in records.into_iter().enumerate() {
-        if idx % step != 0 {
-            continue;
-        }
-        let start = idx * dim;
-        let end = start + dim;
-        if end > matrix.len() {
-            break;
-        }
-        new_matrix.extend_from_slice(&matrix[start..end]);
-        new_records.push(record);
-        if new_records.len() >= target_vectors {
-            break;
-        }
-    }
-    (new_records, new_matrix)
-}
-
-#[cfg(any(feature = "hydrate", test))]
 fn cap_embedding_index_with_policy(
     records: Vec<EmbeddingRecord>,
     matrix: Vec<f32>,
@@ -692,7 +663,26 @@ fn cap_embedding_index_with_policy(
         matrix.truncate(keep * dim);
         (records, matrix)
     } else {
-        sample_for_cap(records, matrix, dim, target_vectors)
+        let total = records.len().max(1);
+        let step = ((total as f64) / (target_vectors as f64)).ceil() as usize;
+        let mut new_records = Vec::with_capacity(target_vectors);
+        let mut new_matrix = Vec::with_capacity(target_vectors * dim);
+        for (idx, record) in records.into_iter().enumerate() {
+            if idx % step != 0 {
+                continue;
+            }
+            let start = idx * dim;
+            let end = start + dim;
+            if end > matrix.len() {
+                break;
+            }
+            new_matrix.extend_from_slice(&matrix[start..end]);
+            new_records.push(record);
+            if new_records.len() >= target_vectors {
+                break;
+            }
+        }
+        (new_records, new_matrix)
     };
 
     if ivf.is_some() {
