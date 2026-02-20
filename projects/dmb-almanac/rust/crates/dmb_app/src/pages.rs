@@ -586,24 +586,6 @@ fn load_webgpu_runtime_telemetry() -> Option<WebgpuRuntimeTelemetry> {
     serde_wasm_bindgen::from_value(value).ok()
 }
 
-#[cfg(feature = "hydrate")]
-fn reset_webgpu_runtime_telemetry() {
-    let _ = js_reset_webgpu_runtime_telemetry();
-}
-
-#[cfg(feature = "hydrate")]
-fn load_apple_silicon_profile() -> Option<AppleSiliconProfile> {
-    let value = js_get_apple_silicon_profile().ok()?;
-    serde_wasm_bindgen::from_value(value).ok()
-}
-
-#[cfg(feature = "hydrate")]
-fn load_idb_runtime_metrics() -> Option<IdbRuntimeMetrics> {
-    dmb_idb::js_idb_runtime_metrics()
-        .ok()
-        .and_then(|value| serde_wasm_bindgen::from_value(value).ok())
-}
-
 #[derive(Clone, Copy)]
 struct AiDiagnosticsState {
     caps: RwSignal<crate::ai::AiCapabilities>,
@@ -722,12 +704,16 @@ fn refresh_runtime_metrics_signals(state: AiDiagnosticsState) {
     let _ = state
         .webgpu_runtime
         .try_set(load_webgpu_runtime_telemetry());
-    let _ = state
-        .apple_silicon_profile
-        .try_set(load_apple_silicon_profile());
-    let _ = state
-        .idb_runtime_metrics
-        .try_set(load_idb_runtime_metrics());
+    let _ = state.apple_silicon_profile.try_set(
+        js_get_apple_silicon_profile()
+            .ok()
+            .and_then(|value| serde_wasm_bindgen::from_value(value).ok()),
+    );
+    let _ = state.idb_runtime_metrics.try_set(
+        dmb_idb::js_idb_runtime_metrics()
+            .ok()
+            .and_then(|value| serde_wasm_bindgen::from_value(value).ok()),
+    );
 }
 
 #[cfg(feature = "hydrate")]
@@ -1068,7 +1054,7 @@ fn action_refresh_runtime_metrics(state: AiDiagnosticsState) {
 
 fn action_reset_runtime_metrics(state: AiDiagnosticsState) {
     hydrate_action!(state, {
-        reset_webgpu_runtime_telemetry();
+        let _ = js_reset_webgpu_runtime_telemetry();
         state.webgpu_runtime.set(load_webgpu_runtime_telemetry());
     });
 }
