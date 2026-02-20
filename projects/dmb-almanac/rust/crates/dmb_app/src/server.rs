@@ -172,6 +172,12 @@ fn to_server_error(err: sqlx::Error) -> ServerFnError {
     ServerFnError::ServerError(err.to_string())
 }
 
+#[cfg(not(feature = "ssr"))]
+#[allow(dead_code)]
+fn ssr_only<T>() -> Result<T, ServerFnError> {
+    Err(ServerFnError::ServerError("SSR only".into()))
+}
+
 #[cfg(feature = "ssr")]
 fn year_from_date(date: &str) -> i32 {
     date.get(0..4)
@@ -182,6 +188,87 @@ fn year_from_date(date: &str) -> i32 {
 #[cfg(feature = "ssr")]
 fn sanitize_i32_limit(limit: i32, max: i32) -> i32 {
     limit.clamp(0, max.max(0))
+}
+
+#[cfg(feature = "ssr")]
+fn opt_i64_to_i32(value: Option<i64>) -> Option<i32> {
+    value.map(|raw| raw as i32)
+}
+
+#[cfg(feature = "ssr")]
+fn row_i32(row: &sqlx::sqlite::SqliteRow, column: &str) -> Result<i32, ServerFnError> {
+    row.try_get::<i64, _>(column)
+        .map(|raw| raw as i32)
+        .map_err(to_server_error)
+}
+
+#[cfg(feature = "ssr")]
+fn opt_i64_to_bool(value: Option<i64>) -> Option<bool> {
+    value.map(|raw| raw != 0)
+}
+
+#[cfg(feature = "ssr")]
+fn row_opt_i32(row: &sqlx::sqlite::SqliteRow, column: &str) -> Result<Option<i32>, ServerFnError> {
+    row.try_get::<Option<i64>, _>(column)
+        .map(opt_i64_to_i32)
+        .map_err(to_server_error)
+}
+
+#[cfg(feature = "ssr")]
+fn row_opt_bool(
+    row: &sqlx::sqlite::SqliteRow,
+    column: &str,
+) -> Result<Option<bool>, ServerFnError> {
+    row.try_get::<Option<i64>, _>(column)
+        .map(opt_i64_to_bool)
+        .map_err(to_server_error)
+}
+
+#[cfg(feature = "ssr")]
+struct SongColumns<'a> {
+    id: &'a str,
+    slug: &'a str,
+    title: &'a str,
+    sort_title: &'a str,
+    total_performances: &'a str,
+    last_played_date: &'a str,
+    opener_count: &'a str,
+    closer_count: &'a str,
+    encore_count: &'a str,
+}
+
+#[cfg(feature = "ssr")]
+fn row_optional_song(
+    row: &sqlx::sqlite::SqliteRow,
+    columns: SongColumns<'_>,
+) -> Result<Option<Song>, ServerFnError> {
+    let slug = row
+        .try_get::<Option<String>, _>(columns.slug)
+        .map_err(to_server_error)?;
+    let title = row
+        .try_get::<Option<String>, _>(columns.title)
+        .map_err(to_server_error)?;
+    let (Some(slug), Some(title)) = (slug, title) else {
+        return Ok(None);
+    };
+
+    Ok(Some(Song {
+        id: row_i32(row, columns.id)?,
+        slug,
+        title,
+        sort_title: row
+            .try_get::<Option<String>, _>(columns.sort_title)
+            .map_err(to_server_error)?,
+        total_performances: row_opt_i32(row, columns.total_performances)?,
+        last_played_date: row
+            .try_get::<Option<String>, _>(columns.last_played_date)
+            .map_err(to_server_error)?,
+        is_liberated: None,
+        opener_count: row_opt_i32(row, columns.opener_count)?,
+        closer_count: row_opt_i32(row, columns.closer_count)?,
+        encore_count: row_opt_i32(row, columns.encore_count)?,
+        search_text: None,
+    }))
 }
 
 #[server(GetHomeStats, "/api")]
@@ -213,7 +300,7 @@ pub async fn get_home_stats() -> Result<HomeStats, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -233,18 +320,12 @@ pub async fn get_show(id: i32) -> Result<Option<Show>, ServerFnError> {
         if let Some(row) = row {
             let date: String = row.try_get::<String, _>("date").map_err(to_server_error)?;
             let show = Show {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 date: date.clone(),
-                venue_id: row.try_get::<i64, _>("venue_id").map_err(to_server_error)? as i32,
-                tour_id: row
-                    .try_get::<Option<i64>, _>("tour_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                venue_id: row_i32(&row, "venue_id")?,
+                tour_id: row_opt_i32(&row, "tour_id")?,
                 year: year_from_date(&date),
-                song_count: row
-                    .try_get::<Option<i64>, _>("song_count")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                song_count: row_opt_i32(&row, "song_count")?,
                 rarity_index: row
                     .try_get::<Option<f64>, _>("rarity_index")
                     .map_err(to_server_error)?
@@ -258,7 +339,7 @@ pub async fn get_show(id: i32) -> Result<Option<Show>, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -277,32 +358,20 @@ pub async fn get_song(slug: String) -> Result<Option<Song>, ServerFnError> {
 
         if let Some(row) = row {
             let song = Song {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
                 title: row.try_get::<String, _>("title").map_err(to_server_error)?,
                 sort_title: row
                     .try_get::<Option<String>, _>("sort_title")
                     .map_err(to_server_error)?,
-                total_performances: row
-                    .try_get::<Option<i64>, _>("total_performances")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                total_performances: row_opt_i32(&row, "total_performances")?,
                 last_played_date: row
                     .try_get::<Option<String>, _>("last_played_date")
                     .map_err(to_server_error)?,
                 is_liberated: None,
-                opener_count: row
-                    .try_get::<Option<i64>, _>("opener_count")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                closer_count: row
-                    .try_get::<Option<i64>, _>("closer_count")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                encore_count: row
-                    .try_get::<Option<i64>, _>("encore_count")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                opener_count: row_opt_i32(&row, "opener_count")?,
+                closer_count: row_opt_i32(&row, "closer_count")?,
+                encore_count: row_opt_i32(&row, "encore_count")?,
                 search_text: None,
             };
             return Ok(Some(song));
@@ -313,7 +382,7 @@ pub async fn get_song(slug: String) -> Result<Option<Song>, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -332,7 +401,7 @@ pub async fn get_venue(id: i32) -> Result<Option<Venue>, ServerFnError> {
 
         if let Some(row) = row {
             let venue = Venue {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 name: row.try_get::<String, _>("name").map_err(to_server_error)?,
                 city: row.try_get::<String, _>("city").map_err(to_server_error)?,
                 state: row
@@ -347,10 +416,7 @@ pub async fn get_venue(id: i32) -> Result<Option<Venue>, ServerFnError> {
                 venue_type: row
                     .try_get::<Option<String>, _>("venue_type")
                     .map_err(to_server_error)?,
-                total_shows: row
-                    .try_get::<Option<i64>, _>("total_shows")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                total_shows: row_opt_i32(&row, "total_shows")?,
                 search_text: None,
             };
             return Ok(Some(venue));
@@ -361,7 +427,7 @@ pub async fn get_venue(id: i32) -> Result<Option<Venue>, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -384,13 +450,10 @@ pub async fn get_tour(year: i32) -> Result<Option<Tour>, ServerFnError> {
 
         if let Some(row) = row {
             let tour = Tour {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
-                year: row.try_get::<i64, _>("year").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
+                year: row_i32(&row, "year")?,
                 name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                total_shows: row
-                    .try_get::<Option<i64>, _>("total_shows")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                total_shows: row_opt_i32(&row, "total_shows")?,
                 search_text: None,
             };
             return Ok(Some(tour));
@@ -401,7 +464,7 @@ pub async fn get_tour(year: i32) -> Result<Option<Tour>, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -418,13 +481,10 @@ pub async fn get_tour_by_id(id: i32) -> Result<Option<Tour>, ServerFnError> {
 
         if let Some(row) = row {
             let tour = Tour {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
-                year: row.try_get::<i64, _>("year").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
+                year: row_i32(&row, "year")?,
                 name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                total_shows: row
-                    .try_get::<Option<i64>, _>("total_shows")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                total_shows: row_opt_i32(&row, "total_shows")?,
                 search_text: None,
             };
             return Ok(Some(tour));
@@ -435,7 +495,7 @@ pub async fn get_tour_by_id(id: i32) -> Result<Option<Tour>, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -453,13 +513,10 @@ pub async fn get_guest(slug: String) -> Result<Option<Guest>, ServerFnError> {
 
         if let Some(row) = row {
             let guest = Guest {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
                 name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                total_appearances: row
-                    .try_get::<Option<i64>, _>("total_appearances")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                total_appearances: row_opt_i32(&row, "total_appearances")?,
                 search_text: None,
             };
             return Ok(Some(guest));
@@ -470,7 +527,7 @@ pub async fn get_guest(slug: String) -> Result<Option<Guest>, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -489,7 +546,7 @@ pub async fn get_release(slug: String) -> Result<Option<Release>, ServerFnError>
 
         if let Some(row) = row {
             let release = Release {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 title: row.try_get::<String, _>("title").map_err(to_server_error)?,
                 slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
                 release_type: row
@@ -508,7 +565,7 @@ pub async fn get_release(slug: String) -> Result<Option<Release>, ServerFnError>
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -530,7 +587,7 @@ pub async fn get_all_releases() -> Result<Vec<Release>, ServerFnError> {
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
             out.push(Release {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 title: row.try_get::<String, _>("title").map_err(to_server_error)?,
                 slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
                 release_type: row
@@ -548,7 +605,7 @@ pub async fn get_all_releases() -> Result<Vec<Release>, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -574,30 +631,13 @@ pub async fn get_release_tracks(release_id: i32) -> Result<Vec<ReleaseTrack>, Se
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
             out.push(ReleaseTrack {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
-                release_id: row
-                    .try_get::<i64, _>("release_id")
-                    .map_err(to_server_error)? as i32,
-                song_id: row
-                    .try_get::<Option<i64>, _>("song_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                show_id: row
-                    .try_get::<Option<i64>, _>("show_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                track_number: row
-                    .try_get::<Option<i64>, _>("track_number")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                disc_number: row
-                    .try_get::<Option<i64>, _>("disc_number")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                duration_seconds: row
-                    .try_get::<Option<i64>, _>("duration_seconds")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                id: row_i32(&row, "id")?,
+                release_id: row_i32(&row, "release_id")?,
+                song_id: row_opt_i32(&row, "song_id")?,
+                show_id: row_opt_i32(&row, "show_id")?,
+                track_number: row_opt_i32(&row, "track_number")?,
+                disc_number: row_opt_i32(&row, "disc_number")?,
+                duration_seconds: row_opt_i32(&row, "duration_seconds")?,
                 notes: row
                     .try_get::<Option<String>, _>("notes")
                     .map_err(to_server_error)?,
@@ -609,7 +649,7 @@ pub async fn get_release_tracks(release_id: i32) -> Result<Vec<ReleaseTrack>, Se
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -647,48 +687,25 @@ pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, Serv
                 .as_deref()
                 .and_then(|d| d.get(0..4))
                 .and_then(|s| s.parse::<i32>().ok());
-            let song = match (
-                row.try_get::<Option<String>, _>("song_slug")
-                    .map_err(to_server_error)?,
-                row.try_get::<Option<String>, _>("song_title")
-                    .map_err(to_server_error)?,
-            ) {
-                (Some(slug), Some(title)) => Some(Song {
-                    id: row.try_get::<i64, _>("song_id").map_err(to_server_error)? as i32,
-                    slug,
-                    title,
-                    sort_title: row
-                        .try_get::<Option<String>, _>("song_sort_title")
-                        .map_err(to_server_error)?,
-                    total_performances: row
-                        .try_get::<Option<i64>, _>("total_performances")
-                        .map_err(to_server_error)?
-                        .map(|v| v as i32),
-                    last_played_date: row
-                        .try_get::<Option<String>, _>("last_played_date")
-                        .map_err(to_server_error)?,
-                    is_liberated: None,
-                    opener_count: row
-                        .try_get::<Option<i64>, _>("opener_count")
-                        .map_err(to_server_error)?
-                        .map(|v| v as i32),
-                    closer_count: row
-                        .try_get::<Option<i64>, _>("closer_count")
-                        .map_err(to_server_error)?
-                        .map(|v| v as i32),
-                    encore_count: row
-                        .try_get::<Option<i64>, _>("encore_count")
-                        .map_err(to_server_error)?
-                        .map(|v| v as i32),
-                    search_text: None,
-                }),
-                _ => None,
-            };
+            let song = row_optional_song(
+                &row,
+                SongColumns {
+                    id: "song_id",
+                    slug: "song_slug",
+                    title: "song_title",
+                    sort_title: "song_sort_title",
+                    total_performances: "total_performances",
+                    last_played_date: "last_played_date",
+                    opener_count: "opener_count",
+                    closer_count: "closer_count",
+                    encore_count: "encore_count",
+                },
+            )?;
             out.push(SetlistEntry {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
-                show_id: row.try_get::<i64, _>("show_id").map_err(to_server_error)? as i32,
-                song_id: row.try_get::<i64, _>("song_id").map_err(to_server_error)? as i32,
-                position: row.try_get::<i64, _>("position").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
+                show_id: row_i32(&row, "show_id")?,
+                song_id: row_i32(&row, "song_id")?,
+                position: row_i32(&row, "position")?,
                 set_name: row
                     .try_get::<Option<String>, _>("set_name")
                     .map_err(to_server_error)?,
@@ -697,26 +714,11 @@ pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, Serv
                     .map_err(to_server_error)?,
                 show_date,
                 year,
-                duration_seconds: row
-                    .try_get::<Option<i64>, _>("duration_seconds")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                segue_into_song_id: row
-                    .try_get::<Option<i64>, _>("segue_into_song_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                is_segue: row
-                    .try_get::<Option<i64>, _>("is_segue")
-                    .map_err(to_server_error)?
-                    .map(|v| v != 0),
-                is_tease: row
-                    .try_get::<Option<i64>, _>("is_tease")
-                    .map_err(to_server_error)?
-                    .map(|v| v != 0),
-                tease_of_song_id: row
-                    .try_get::<Option<i64>, _>("tease_of_song_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                duration_seconds: row_opt_i32(&row, "duration_seconds")?,
+                segue_into_song_id: row_opt_i32(&row, "segue_into_song_id")?,
+                is_segue: row_opt_bool(&row, "is_segue")?,
+                is_tease: row_opt_bool(&row, "is_tease")?,
+                tease_of_song_id: row_opt_i32(&row, "tease_of_song_id")?,
                 notes: row
                     .try_get::<Option<String>, _>("notes")
                     .map_err(to_server_error)?,
@@ -729,7 +731,7 @@ pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, Serv
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -768,49 +770,24 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
         .map_err(to_server_error)?;
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            let song = match (
-                row.try_get::<Option<String>, _>("song_slug")
-                    .map_err(to_server_error)?,
-                row.try_get::<Option<String>, _>("song_title")
-                    .map_err(to_server_error)?,
-            ) {
-                (Some(slug), Some(title)) => Some(Song {
-                    id: row.try_get::<i64, _>("song_id").map_err(to_server_error)? as i32,
-                    slug,
-                    title,
-                    sort_title: row
-                        .try_get::<Option<String>, _>("song_sort_title")
-                        .map_err(to_server_error)?,
-                    total_performances: row
-                        .try_get::<Option<i64>, _>("total_performances")
-                        .map_err(to_server_error)?
-                        .map(|v| v as i32),
-                    last_played_date: row
-                        .try_get::<Option<String>, _>("song_last_played_date")
-                        .map_err(to_server_error)?,
-                    is_liberated: None,
-                    opener_count: row
-                        .try_get::<Option<i64>, _>("opener_count")
-                        .map_err(to_server_error)?
-                        .map(|v| v as i32),
-                    closer_count: row
-                        .try_get::<Option<i64>, _>("closer_count")
-                        .map_err(to_server_error)?
-                        .map(|v| v as i32),
-                    encore_count: row
-                        .try_get::<Option<i64>, _>("encore_count")
-                        .map_err(to_server_error)?
-                        .map(|v| v as i32),
-                    search_text: None,
-                }),
-                _ => None,
-            };
-            let last_show_id = row
-                .try_get::<Option<i64>, _>("last_played_show_id")
-                .map_err(to_server_error)?;
+            let song = row_optional_song(
+                &row,
+                SongColumns {
+                    id: "song_id",
+                    slug: "song_slug",
+                    title: "song_title",
+                    sort_title: "song_sort_title",
+                    total_performances: "total_performances",
+                    last_played_date: "song_last_played_date",
+                    opener_count: "opener_count",
+                    closer_count: "closer_count",
+                    encore_count: "encore_count",
+                },
+            )?;
+            let last_show_id = row_opt_i32(&row, "last_played_show_id")?;
             let last_show = if let Some(show_id) = last_show_id {
                 Some(LiberationLastShow {
-                    id: show_id as i32,
+                    id: show_id,
                     date: row
                         .try_get::<Option<String>, _>("show_date")
                         .map_err(to_server_error)?,
@@ -830,27 +807,15 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
                 None
             };
             out.push(LiberationEntry {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
-                song_id: row.try_get::<i64, _>("song_id").map_err(to_server_error)? as i32,
-                days_since: row
-                    .try_get::<Option<i64>, _>("days_since")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                shows_since: row
-                    .try_get::<Option<i64>, _>("shows_since")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                is_liberated: row
-                    .try_get::<Option<i64>, _>("is_liberated")
-                    .map_err(to_server_error)?
-                    .map(|v| v != 0),
+                id: row_i32(&row, "id")?,
+                song_id: row_i32(&row, "song_id")?,
+                days_since: row_opt_i32(&row, "days_since")?,
+                shows_since: row_opt_i32(&row, "shows_since")?,
+                is_liberated: row_opt_bool(&row, "is_liberated")?,
                 last_played_date: row
                     .try_get::<Option<String>, _>("last_played_date")
                     .map_err(to_server_error)?,
-                last_played_show_id: row
-                    .try_get::<Option<i64>, _>("last_played_show_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                last_played_show_id: row_opt_i32(&row, "last_played_show_id")?,
                 notes: row
                     .try_get::<Option<String>, _>("notes")
                     .map_err(to_server_error)?,
@@ -860,10 +825,7 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
                 liberated_date: row
                     .try_get::<Option<String>, _>("liberated_date")
                     .map_err(to_server_error)?,
-                liberated_show_id: row
-                    .try_get::<Option<i64>, _>("liberated_show_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                liberated_show_id: row_opt_i32(&row, "liberated_show_id")?,
                 song,
                 last_show,
             });
@@ -874,7 +836,7 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -899,7 +861,7 @@ pub async fn get_curated_lists() -> Result<Vec<CuratedList>, ServerFnError> {
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
             out.push(CuratedList {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 original_id: row
                     .try_get::<Option<String>, _>("original_id")
                     .map_err(to_server_error)?,
@@ -911,18 +873,9 @@ pub async fn get_curated_lists() -> Result<Vec<CuratedList>, ServerFnError> {
                 description: row
                     .try_get::<Option<String>, _>("description")
                     .map_err(to_server_error)?,
-                item_count: row
-                    .try_get::<Option<i64>, _>("item_count")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                is_featured: row
-                    .try_get::<Option<i64>, _>("is_featured")
-                    .map_err(to_server_error)?
-                    .map(|v| v != 0),
-                sort_order: row
-                    .try_get::<Option<i64>, _>("sort_order")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                item_count: row_opt_i32(&row, "item_count")?,
+                is_featured: row_opt_bool(&row, "is_featured")?,
+                sort_order: row_opt_i32(&row, "sort_order")?,
                 created_at: row
                     .try_get::<Option<String>, _>("created_at")
                     .map_err(to_server_error)?,
@@ -937,7 +890,7 @@ pub async fn get_curated_lists() -> Result<Vec<CuratedList>, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -979,32 +932,17 @@ pub async fn get_curated_list_items(
                 .map_err(to_server_error)?;
             let metadata = metadata.and_then(|raw| serde_json::from_str(&raw).ok());
             out.push(CuratedListItem {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
-                list_id: row.try_get::<i64, _>("list_id").map_err(to_server_error)? as i32,
-                position: row.try_get::<i64, _>("position").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
+                list_id: row_i32(&row, "list_id")?,
+                position: row_i32(&row, "position")?,
                 item_type: row
                     .try_get::<String, _>("item_type")
                     .map_err(to_server_error)?,
-                show_id: row
-                    .try_get::<Option<i64>, _>("show_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                song_id: row
-                    .try_get::<Option<i64>, _>("song_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                venue_id: row
-                    .try_get::<Option<i64>, _>("venue_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                guest_id: row
-                    .try_get::<Option<i64>, _>("guest_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                release_id: row
-                    .try_get::<Option<i64>, _>("release_id")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                show_id: row_opt_i32(&row, "show_id")?,
+                song_id: row_opt_i32(&row, "song_id")?,
+                venue_id: row_opt_i32(&row, "venue_id")?,
+                guest_id: row_opt_i32(&row, "guest_id")?,
+                release_id: row_opt_i32(&row, "release_id")?,
                 item_title: row
                     .try_get::<Option<String>, _>("item_title")
                     .map_err(to_server_error)?,
@@ -1026,7 +964,7 @@ pub async fn get_curated_list_items(
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -1068,10 +1006,10 @@ pub async fn get_recent_shows(limit: usize) -> Result<Vec<ShowSummary>, ServerFn
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
             out.push(ShowSummary {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 date: row.try_get::<String, _>("date").map_err(to_server_error)?,
-                year: row.try_get::<i64, _>("year").map_err(to_server_error)? as i32,
-                venue_id: row.try_get::<i64, _>("venue_id").map_err(to_server_error)? as i32,
+                year: row_i32(&row, "year")?,
+                venue_id: row_i32(&row, "venue_id")?,
                 venue_name: row
                     .try_get::<String, _>("venue_name")
                     .map_err(to_server_error)?,
@@ -1084,10 +1022,7 @@ pub async fn get_recent_shows(limit: usize) -> Result<Vec<ShowSummary>, ServerFn
                 tour_name: row
                     .try_get::<Option<String>, _>("tour_name")
                     .map_err(to_server_error)?,
-                tour_year: row
-                    .try_get::<Option<i64>, _>("tour_year")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                tour_year: row_opt_i32(&row, "tour_year")?,
             });
         }
         write_ttl_keyed_cache(&RECENT_SHOWS_CACHE, limit, &out);
@@ -1096,7 +1031,7 @@ pub async fn get_recent_shows(limit: usize) -> Result<Vec<ShowSummary>, ServerFn
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -1128,32 +1063,20 @@ pub async fn get_top_songs(limit: usize) -> Result<Vec<Song>, ServerFnError> {
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
             out.push(Song {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
                 title: row.try_get::<String, _>("title").map_err(to_server_error)?,
                 sort_title: row
                     .try_get::<Option<String>, _>("sort_title")
                     .map_err(to_server_error)?,
-                total_performances: row
-                    .try_get::<Option<i64>, _>("total_performances")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                total_performances: row_opt_i32(&row, "total_performances")?,
                 last_played_date: row
                     .try_get::<Option<String>, _>("last_played_date")
                     .map_err(to_server_error)?,
                 is_liberated: None,
-                opener_count: row
-                    .try_get::<Option<i64>, _>("opener_count")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                closer_count: row
-                    .try_get::<Option<i64>, _>("closer_count")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
-                encore_count: row
-                    .try_get::<Option<i64>, _>("encore_count")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                opener_count: row_opt_i32(&row, "opener_count")?,
+                closer_count: row_opt_i32(&row, "closer_count")?,
+                encore_count: row_opt_i32(&row, "encore_count")?,
                 search_text: None,
             });
         }
@@ -1163,7 +1086,7 @@ pub async fn get_top_songs(limit: usize) -> Result<Vec<Song>, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -1194,7 +1117,7 @@ pub async fn get_top_venues(limit: usize) -> Result<Vec<Venue>, ServerFnError> {
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
             out.push(Venue {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 name: row.try_get::<String, _>("name").map_err(to_server_error)?,
                 city: row.try_get::<String, _>("city").map_err(to_server_error)?,
                 state: row
@@ -1209,10 +1132,7 @@ pub async fn get_top_venues(limit: usize) -> Result<Vec<Venue>, ServerFnError> {
                 venue_type: row
                     .try_get::<Option<String>, _>("venue_type")
                     .map_err(to_server_error)?,
-                total_shows: row
-                    .try_get::<Option<i64>, _>("total_shows")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                total_shows: row_opt_i32(&row, "total_shows")?,
                 search_text: None,
             });
         }
@@ -1222,7 +1142,7 @@ pub async fn get_top_venues(limit: usize) -> Result<Vec<Venue>, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -1253,13 +1173,10 @@ pub async fn get_top_guests(limit: usize) -> Result<Vec<Guest>, ServerFnError> {
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
             out.push(Guest {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
                 name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                total_appearances: row
-                    .try_get::<Option<i64>, _>("total_appearances")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                total_appearances: row_opt_i32(&row, "total_appearances")?,
                 search_text: None,
             });
         }
@@ -1269,7 +1186,7 @@ pub async fn get_top_guests(limit: usize) -> Result<Vec<Guest>, ServerFnError> {
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -1300,13 +1217,10 @@ pub async fn get_recent_tours(limit: usize) -> Result<Vec<Tour>, ServerFnError> 
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
             out.push(Tour {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
-                year: row.try_get::<i64, _>("year").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
+                year: row_i32(&row, "year")?,
                 name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                total_shows: row
-                    .try_get::<Option<i64>, _>("total_shows")
-                    .map_err(to_server_error)?
-                    .map(|v| v as i32),
+                total_shows: row_opt_i32(&row, "total_shows")?,
                 search_text: None,
             });
         }
@@ -1316,7 +1230,7 @@ pub async fn get_recent_tours(limit: usize) -> Result<Vec<Tour>, ServerFnError> 
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }
 
@@ -1347,7 +1261,7 @@ pub async fn get_recent_releases(limit: usize) -> Result<Vec<Release>, ServerFnE
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
             out.push(Release {
-                id: row.try_get::<i64, _>("id").map_err(to_server_error)? as i32,
+                id: row_i32(&row, "id")?,
                 title: row.try_get::<String, _>("title").map_err(to_server_error)?,
                 slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
                 release_type: row
@@ -1365,6 +1279,6 @@ pub async fn get_recent_releases(limit: usize) -> Result<Vec<Release>, ServerFnE
 
     #[cfg(not(feature = "ssr"))]
     {
-        Err(ServerFnError::ServerError("SSR only".into()))
+        ssr_only()
     }
 }

@@ -48,6 +48,17 @@ const UPDATE_STATE_READY_TO_INSTALL: &str = "Update ready to install.";
 #[cfg(feature = "hydrate")]
 const UPDATE_STATE_DOWNLOADING: &str = "Downloading update…";
 
+macro_rules! hydrate_state_action {
+    ($state:ident, $body:block) => {{
+        #[cfg(feature = "hydrate")]
+        $body
+        #[cfg(not(feature = "hydrate"))]
+        {
+            let _ = $state;
+        }
+    }};
+}
+
 #[cfg(any(feature = "hydrate", test))]
 fn e2e_version_from_sw_script_url(script_url: &str) -> Option<String> {
     // Playwright SW update E2E tests register `/sw.js?e2e=<version>`.
@@ -429,8 +440,7 @@ impl PwaStatusState {
 }
 
 fn action_export_parity(state: PwaStatusState) {
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_state_action!(state, {
         spawn_local(async move {
             use wasm_bindgen::JsCast;
 
@@ -512,16 +522,11 @@ fn action_export_parity(state: PwaStatusState) {
             a.click();
             let _ = web_sys::Url::revoke_object_url(&url);
         });
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = state;
-    }
+    });
 }
 
 fn action_update_click(state: PwaStatusState) {
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_state_action!(state, {
         state.update_applying.set(true);
         state.update_error.set(None);
         state
@@ -577,30 +582,20 @@ fn action_update_click(state: PwaStatusState) {
                 });
             }
         });
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = state;
-    }
+    });
 }
 
 fn action_update_later(state: PwaStatusState) {
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_state_action!(state, {
         let now = js_sys::Date::now();
         set_local_storage_f64_item(UPDATE_DISMISSED_AT_KEY, now);
         state.update_snoozed.set(true);
         state.update_ready.set(false);
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = state;
-    }
+    });
 }
 
 fn action_update_check(state: PwaStatusState) {
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_state_action!(state, {
         state.update_checking.set(true);
         state
             .update_state
@@ -640,32 +635,22 @@ fn action_update_check(state: PwaStatusState) {
                 state.update_state.set(None);
             }
         });
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = state;
-    }
+    });
 }
 
 fn action_storage_cleanup(state: PwaStatusState) {
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_state_action!(state, {
         spawn_local(async move {
             let _ = crate::data::handle_storage_pressure().await;
             state
                 .storage_warning
                 .set(Some(STORAGE_PRESSURE_CLEARED_MESSAGE.to_string()));
         });
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = state;
-    }
+    });
 }
 
 fn action_cleanup_previous_caches(state: PwaStatusState) {
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_state_action!(state, {
         state
             .previous_cache_cleanup
             .set(Some("Cleaning old caches…".to_string()));
@@ -700,16 +685,11 @@ fn action_cleanup_previous_caches(state: PwaStatusState) {
                 }
             });
         });
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = state;
-    }
+    });
 }
 
 fn action_ping_sw(state: PwaStatusState) {
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_state_action!(state, {
         set_sw_action_status(state.sw_action_status, "Pinging service worker…");
 
         spawn_local(async move {
@@ -739,16 +719,11 @@ fn action_ping_sw(state: PwaStatusState) {
 
             post_sw_message_type(&controller, "PING");
         });
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = state;
-    }
+    });
 }
 
 fn action_unregister_sw(state: PwaStatusState) {
-    #[cfg(feature = "hydrate")]
-    {
+    hydrate_state_action!(state, {
         set_sw_action_status(state.sw_action_status, "Unregistering service worker…");
 
         spawn_local(async move {
@@ -803,11 +778,7 @@ fn action_unregister_sw(state: PwaStatusState) {
             set_sw_action_status(state.sw_action_status, "SW unregistered. Reloading…");
             let _ = window.location().reload();
         });
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = state;
-    }
+    });
 }
 
 fn action_reset_data() {

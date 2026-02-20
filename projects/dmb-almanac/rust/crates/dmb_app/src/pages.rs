@@ -39,6 +39,8 @@ use crate::server::{
     get_tour_by_id, get_venue, ShowSummary,
 };
 
+type SharedEmbeddingIndex = std::sync::Arc<crate::ai::EmbeddingIndex>;
+
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen]
 extern "C" {
@@ -4686,14 +4688,18 @@ fn initialize_search_url_sync(
 }
 
 #[cfg(feature = "hydrate")]
+fn spawn_embedding_index_load(embedding_index: RwSignal<Option<SharedEmbeddingIndex>>) {
+    spawn_local(async move {
+        embedding_index.set(crate::ai::load_embedding_index().await);
+    });
+}
+
+#[cfg(feature = "hydrate")]
 fn initialize_search_results_effect(query: RwSignal<String>, results: RwSignal<Vec<SearchResult>>) {
-    let embedding_index = RwSignal::new(None::<std::sync::Arc<crate::ai::EmbeddingIndex>>);
+    let embedding_index = RwSignal::new(None::<SharedEmbeddingIndex>);
     let search_run = RwSignal::new(0_u64);
 
-    let index_signal = embedding_index.clone();
-    spawn_local(async move {
-        index_signal.set(crate::ai::load_embedding_index().await);
-    });
+    spawn_embedding_index_load(embedding_index.clone());
 
     Effect::new(move |_| {
         let current_query = query.get();
@@ -5707,9 +5713,7 @@ fn render_string_bar_chart(data: &[(String, u32)], limit: usize) -> impl IntoVie
     .into_any()
 }
 
-fn render_assistant_index_status(
-    embedding_index: Option<std::sync::Arc<crate::ai::EmbeddingIndex>>,
-) -> impl IntoView {
+fn render_assistant_index_status(embedding_index: Option<SharedEmbeddingIndex>) -> impl IntoView {
     match embedding_index {
         None => {
             loading_state("Loading embedding index", "Preparing local vector search.").into_any()
@@ -5725,6 +5729,25 @@ fn render_assistant_index_status(
         }
         .into_any(),
     }
+}
+
+#[cfg(feature = "hydrate")]
+fn spawn_assistant_semantic_search(
+    current_query: String,
+    current_index: Option<SharedEmbeddingIndex>,
+    results_signal: RwSignal<Vec<SearchResult>>,
+) {
+    spawn_local(async move {
+        let trimmed = current_query.trim().to_string();
+        let items = if trimmed.len() < 2 {
+            Vec::new()
+        } else if let Some(index) = current_index {
+            crate::ai::semantic_search(&trimmed, &index, 8).await
+        } else {
+            Vec::new()
+        };
+        results_signal.set(items);
+    });
 }
 
 fn render_assistant_results(query: &str, items: Vec<dmb_core::SearchResult>) -> impl IntoView {
@@ -5782,34 +5805,19 @@ fn render_assistant_results(query: &str, items: Vec<dmb_core::SearchResult>) -> 
 #[must_use]
 pub fn assistant_page() -> impl IntoView {
     let (query, set_query) = signal(String::new());
-    let embedding_index = RwSignal::new(None::<std::sync::Arc<crate::ai::EmbeddingIndex>>);
+    let embedding_index = RwSignal::new(None::<SharedEmbeddingIndex>);
     let results = RwSignal::new(Vec::<dmb_core::SearchResult>::new());
 
     #[cfg(feature = "hydrate")]
     {
-        let index_signal = embedding_index.clone();
-        spawn_local(async move {
-            let loaded = crate::ai::load_embedding_index().await;
-            index_signal.set(loaded);
-        });
+        spawn_embedding_index_load(embedding_index.clone());
 
         let index_signal = embedding_index.clone();
         let results_signal = results.clone();
         Effect::new(move |_| {
             let current_query = query.get();
             let current_index = index_signal.get();
-            let results_signal = results_signal.clone();
-            spawn_local(async move {
-                let trimmed = current_query.trim().to_string();
-                let items = if trimmed.len() < 2 {
-                    Vec::new()
-                } else if let Some(index) = current_index {
-                    crate::ai::semantic_search(&trimmed, &index, 8).await
-                } else {
-                    Vec::new()
-                };
-                results_signal.set(items);
-            });
+            spawn_assistant_semantic_search(current_query, current_index, results_signal);
         });
     }
 

@@ -267,6 +267,43 @@ pub async fn fetch_manifest_diff() -> Option<ManifestDiff> {
 }
 
 #[cfg(feature = "hydrate")]
+type ThreadTtlCache<T> = RefCell<Option<(f64, T)>>;
+
+#[cfg(feature = "hydrate")]
+fn read_thread_ttl_cache<T: Clone>(
+    cache: &'static std::thread::LocalKey<ThreadTtlCache<T>>,
+    ttl_ms: f64,
+) -> Option<T> {
+    let now = js_sys::Date::now();
+    cache.with(|cache| {
+        let cached = cache.borrow();
+        let (timestamp_ms, value) = cached.as_ref()?;
+        if now - *timestamp_ms <= ttl_ms {
+            Some(value.clone())
+        } else {
+            None
+        }
+    })
+}
+
+#[cfg(feature = "hydrate")]
+fn write_thread_ttl_cache<T: Clone>(
+    cache: &'static std::thread::LocalKey<ThreadTtlCache<T>>,
+    value: &T,
+) {
+    cache.with(|cache| {
+        *cache.borrow_mut() = Some((js_sys::Date::now(), value.clone()));
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn clear_thread_ttl_cache<T>(cache: &'static std::thread::LocalKey<ThreadTtlCache<T>>) {
+    cache.with(|cache| {
+        *cache.borrow_mut() = None;
+    });
+}
+
+#[cfg(feature = "hydrate")]
 const INTEGRITY_REPORT_CACHE_TTL_MS: f64 = 10_000.0;
 
 #[cfg(feature = "hydrate")]
@@ -276,30 +313,17 @@ thread_local! {
 
 #[cfg(feature = "hydrate")]
 fn read_integrity_report_cache() -> Option<IntegrityReport> {
-    let now = js_sys::Date::now();
-    INTEGRITY_REPORT_CACHE.with(|cache| {
-        let cached = cache.borrow();
-        let (timestamp_ms, report) = cached.as_ref()?;
-        if now - *timestamp_ms <= INTEGRITY_REPORT_CACHE_TTL_MS {
-            Some(report.clone())
-        } else {
-            None
-        }
-    })
+    read_thread_ttl_cache(&INTEGRITY_REPORT_CACHE, INTEGRITY_REPORT_CACHE_TTL_MS)
 }
 
 #[cfg(feature = "hydrate")]
 fn write_integrity_report_cache(report: &IntegrityReport) {
-    INTEGRITY_REPORT_CACHE.with(|cache| {
-        *cache.borrow_mut() = Some((js_sys::Date::now(), report.clone()));
-    });
+    write_thread_ttl_cache(&INTEGRITY_REPORT_CACHE, report);
 }
 
 #[cfg(feature = "hydrate")]
 fn clear_integrity_report_cache() {
-    INTEGRITY_REPORT_CACHE.with(|cache| {
-        *cache.borrow_mut() = None;
-    });
+    clear_thread_ttl_cache(&INTEGRITY_REPORT_CACHE);
 }
 
 #[cfg(feature = "hydrate")]
@@ -355,30 +379,17 @@ thread_local! {
 
 #[cfg(feature = "hydrate")]
 fn read_sqlite_parity_cache() -> Option<SqliteParityReport> {
-    let now = js_sys::Date::now();
-    SQLITE_PARITY_CACHE.with(|cache| {
-        let cached = cache.borrow();
-        let (timestamp_ms, report) = cached.as_ref()?;
-        if now - *timestamp_ms <= SQLITE_PARITY_CACHE_TTL_MS {
-            Some(report.clone())
-        } else {
-            None
-        }
-    })
+    read_thread_ttl_cache(&SQLITE_PARITY_CACHE, SQLITE_PARITY_CACHE_TTL_MS)
 }
 
 #[cfg(feature = "hydrate")]
 fn write_sqlite_parity_cache(report: &SqliteParityReport) {
-    SQLITE_PARITY_CACHE.with(|cache| {
-        *cache.borrow_mut() = Some((js_sys::Date::now(), report.clone()));
-    });
+    write_thread_ttl_cache(&SQLITE_PARITY_CACHE, report);
 }
 
 #[cfg(feature = "hydrate")]
 fn clear_sqlite_parity_cache() {
-    SQLITE_PARITY_CACHE.with(|cache| {
-        *cache.borrow_mut() = None;
-    });
+    clear_thread_ttl_cache(&SQLITE_PARITY_CACHE);
 }
 
 #[cfg(feature = "hydrate")]
