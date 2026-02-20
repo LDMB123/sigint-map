@@ -1284,14 +1284,6 @@ async fn fetch_and_apply_ai_config_seed(overwrite: bool) -> bool {
 }
 
 #[cfg(feature = "hydrate")]
-async fn maybe_seed_ai_config() {
-    if ai_config_seeded() {
-        return;
-    }
-    let _ = fetch_and_apply_ai_config_seed(false).await;
-}
-
-#[cfg(feature = "hydrate")]
 pub async fn refresh_ai_config() -> bool {
     fetch_and_apply_ai_config_seed(true).await
 }
@@ -1420,7 +1412,9 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     if let Some(existing) = EMBEDDING_INDEX.get() {
         return Some(existing.clone());
     }
-    maybe_seed_ai_config().await;
+    if !ai_config_seeded() {
+        let _ = fetch_and_apply_ai_config_seed(false).await;
+    }
     if embedding_sample_enabled() {
         let entries =
             fetch_json::<Vec<EmbeddingSampleEntry>>("/data/embedding-sample.json").await?;
