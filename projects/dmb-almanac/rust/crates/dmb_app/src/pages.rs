@@ -3967,21 +3967,6 @@ fn render_release_detail_card(release: &Release) -> impl IntoView {
     .into_any()
 }
 
-fn filter_release_tracks(
-    items: Vec<ReleaseTrack>,
-    active_key: &str,
-    query_normalized: &str,
-) -> Vec<ReleaseTrack> {
-    items
-        .into_iter()
-        .filter(|track| {
-            let disc_key = normalized_disc_key(track.disc_number);
-            let matches_disc = active_key == "all" || disc_key == active_key;
-            matches_disc && release_track_matches_query(track, query_normalized)
-        })
-        .collect::<Vec<_>>()
-}
-
 fn render_release_track_filter_buttons(
     disc_counts: Vec<(String, usize)>,
     active_disc: RwSignal<String>,
@@ -4036,19 +4021,6 @@ fn render_release_track_empty_state(
     .into_any()
 }
 
-fn release_track_context_line(track: &ReleaseTrack) -> String {
-    let mut context_parts = vec![disc_key_label(&normalized_disc_key(track.disc_number))];
-    if let Some(duration) = track.duration_seconds {
-        if duration > 0 {
-            context_parts.push(format!("{}:{:02}", duration / 60, duration % 60));
-        }
-    }
-    if track.show_id.is_some() {
-        context_parts.push("Live source".to_string());
-    }
-    context_parts.join(" • ")
-}
-
 fn render_release_track_rows(filtered_tracks: Vec<ReleaseTrack>) -> impl IntoView {
     view! {
         <ol id="release-track-results" class="tracklist" aria-label="Release tracks">
@@ -4065,7 +4037,16 @@ fn render_release_track_rows(filtered_tracks: Vec<ReleaseTrack>) -> impl IntoVie
                     } else {
                         format!("{disc}-?")
                     };
-                    let context_line = release_track_context_line(&track);
+                    let mut context_parts = vec![disc_key_label(&normalized_disc_key(track.disc_number))];
+                    if let Some(duration) = track.duration_seconds {
+                        if duration > 0 {
+                            context_parts.push(format!("{}:{:02}", duration / 60, duration % 60));
+                        }
+                    }
+                    if track.show_id.is_some() {
+                        context_parts.push("Live source".to_string());
+                    }
+                    let context_line = context_parts.join(" • ");
                     let notes = track
                         .notes
                         .as_deref()
@@ -4122,7 +4103,14 @@ fn render_release_tracks_content(
     let query_raw = track_query.get();
     let query_text = query_raw.trim().to_string();
     let query_normalized = query_text.to_ascii_lowercase();
-    let filtered_tracks = filter_release_tracks(items, &active_key, &query_normalized);
+    let filtered_tracks = items
+        .into_iter()
+        .filter(|track| {
+            let disc_key = normalized_disc_key(track.disc_number);
+            let matches_disc = active_key == "all" || disc_key == active_key;
+            matches_disc && release_track_matches_query(track, &query_normalized)
+        })
+        .collect::<Vec<_>>();
     let filtered_count = filtered_tracks.len();
     let has_filters = active_key != "all" || !query_text.is_empty();
     let summary = if query_text.is_empty() {
