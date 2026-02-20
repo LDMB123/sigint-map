@@ -3060,6 +3060,10 @@ fn parse_slug_param(raw: &str, param_name: &str) -> Result<String, String> {
     Ok(slug.to_string())
 }
 
+fn parse_route_slug_param(raw: &str) -> Result<String, String> {
+    parse_slug_param(raw, "slug")
+}
+
 fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
     let year = parse_positive_i32_param(raw, "year")?;
     if !(1960..=2100).contains(&year) {
@@ -3729,14 +3733,13 @@ pub fn song_detail_page() -> impl IntoView {
         render_song_missing_state(seed_data_state).into_any()
     };
 
-    let song =
-        optional_resource_from_param!(slug, |raw: &str| parse_slug_param(raw, "slug"), load_song);
+    let song = optional_resource_from_param!(slug, parse_route_slug_param, load_song);
 
     detail_page_with_primary_resource!(
         back_href: "/songs",
         back_label: "Back to songs",
         title: "Song Details",
-        subhead: move || render_param_subhead("Slug", parse_slug_param(&slug(), "slug")),
+        subhead: move || render_param_subhead("Slug", parse_route_slug_param(&slug())),
         loading_title: "Loading song",
         loading_message: "Fetching song profile and performance stats.",
         content: move || render(song.get().unwrap_or(None)),
@@ -3901,14 +3904,13 @@ pub fn guest_detail_page() -> impl IntoView {
         ),
     };
 
-    let guest =
-        optional_resource_from_param!(slug, |raw: &str| parse_slug_param(raw, "slug"), load_guest);
+    let guest = optional_resource_from_param!(slug, parse_route_slug_param, load_guest);
 
     detail_page_with_primary_resource!(
         back_href: "/guests",
         back_label: "Back to guests",
         title: "Guest Details",
-        subhead: move || render_param_subhead("Slug", parse_slug_param(&slug(), "slug")),
+        subhead: move || render_param_subhead("Slug", parse_route_slug_param(&slug())),
         loading_title: "Loading guest",
         loading_message: "Fetching guest appearance profile.",
         content: move || render(guest.get().unwrap_or(None)),
@@ -4181,14 +4183,10 @@ pub fn release_detail_page() -> impl IntoView {
         render_release_missing_state(seed_data_state).into_any()
     };
 
-    let release = optional_resource_from_param!(
-        slug,
-        |raw: &str| parse_slug_param(raw, "slug"),
-        load_release
-    );
+    let release = optional_resource_from_param!(slug, parse_route_slug_param, load_release);
     let tracks = resource_from_param_or_default!(
         slug,
-        |raw: &str| parse_slug_param(raw, "slug"),
+        parse_route_slug_param,
         Some(Vec::new()),
         |parsed_slug| async move {
             let release = load_release(parsed_slug).await;
@@ -4204,7 +4202,7 @@ pub fn release_detail_page() -> impl IntoView {
         <section class="page">
             {detail_nav("/releases", "Back to releases")}
             <h1>"Release Details"</h1>
-            {move || render_param_subhead("Slug", parse_slug_param(&slug(), "slug"))}
+            {move || render_param_subhead("Slug", parse_route_slug_param(&slug()))}
             <Suspense fallback=move || loading_state("Loading release", "Fetching release metadata.")>
                 {move || render(release.get().unwrap_or(None))}
             </Suspense>
