@@ -3081,16 +3081,6 @@ fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
     Ok(year)
 }
 
-fn render_param_subhead<T>(label: &str, parsed: Result<T, String>) -> AnyView
-where
-    T: std::fmt::Display,
-{
-    match parsed {
-        Ok(value) => view! { <p class="page-subhead">{format!("{label}: {value}")}</p> }.into_any(),
-        Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
-    }
-}
-
 fn render_route_param_subhead<T>(
     label: &str,
     raw: &str,
@@ -3099,7 +3089,10 @@ fn render_route_param_subhead<T>(
 where
     T: std::fmt::Display,
 {
-    render_param_subhead(label, parse(raw))
+    match parse(raw) {
+        Ok(value) => view! { <p class="page-subhead">{format!("{label}: {value}")}</p> }.into_any(),
+        Err(message) => view! { <p class="muted">{message}</p> }.into_any(),
+    }
 }
 
 fn route_param_or_default(param_name: &'static str) -> impl Fn() -> String + Copy {
