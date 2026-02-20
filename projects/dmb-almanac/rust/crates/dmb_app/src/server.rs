@@ -10,6 +10,8 @@ use dmb_core::{LiberationLastShow, LiberationVenue};
 #[cfg(feature = "ssr")]
 use std::collections::HashMap;
 #[cfg(feature = "ssr")]
+use std::future::Future;
+#[cfg(feature = "ssr")]
 use std::hash::Hash;
 #[cfg(feature = "ssr")]
 use std::sync::{OnceLock, RwLock};
@@ -119,6 +121,44 @@ fn write_ttl_keyed_cache<K, T>(
 }
 
 #[cfg(feature = "ssr")]
+async fn cached_value<T, F, Fut>(
+    cache: &OnceLock<RwLock<Option<TimedCacheValue<T>>>>,
+    load: F,
+) -> Result<T, ServerFnError>
+where
+    T: Clone,
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<T, ServerFnError>>,
+{
+    if let Some(cached) = read_ttl_cache(cache) {
+        return Ok(cached);
+    }
+    let value = load().await?;
+    write_ttl_cache(cache, &value);
+    Ok(value)
+}
+
+#[cfg(feature = "ssr")]
+async fn cached_keyed_value<K, T, F, Fut>(
+    cache: &OnceLock<RwLock<HashMap<K, TimedCacheValue<T>>>>,
+    key: K,
+    load: F,
+) -> Result<T, ServerFnError>
+where
+    K: Eq + Hash + Clone,
+    T: Clone,
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<T, ServerFnError>>,
+{
+    if let Some(cached) = read_ttl_keyed_cache(cache, &key) {
+        return Ok(cached);
+    }
+    let value = load().await?;
+    write_ttl_keyed_cache(cache, key, &value);
+    Ok(value)
+}
+
+#[cfg(feature = "ssr")]
 static HOME_STATS_CACHE: OnceLock<RwLock<Option<TimedCacheValue<HomeStats>>>> = OnceLock::new();
 #[cfg(feature = "ssr")]
 static RECENT_SHOWS_CACHE: OnceLock<RwLock<HashMap<usize, TimedCacheValue<Vec<ShowSummary>>>>> =
@@ -181,6 +221,19 @@ async fn fetch_optional_row<'q>(
     pool: &sqlx::SqlitePool,
 ) -> Result<Option<sqlx::sqlite::SqliteRow>, ServerFnError> {
     query.fetch_optional(pool).await.map_err(to_server_error)
+}
+
+#[cfg(feature = "ssr")]
+async fn fetch_optional_mapped<'q, T>(
+    query: SqliteQuery<'q>,
+    pool: &sqlx::SqlitePool,
+    map: impl FnOnce(&sqlx::sqlite::SqliteRow) -> Result<T, ServerFnError>,
+) -> Result<Option<T>, ServerFnError> {
+    fetch_optional_row(query, pool)
+        .await?
+        .as_ref()
+        .map(map)
+        .transpose()
 }
 
 #[cfg(feature = "ssr")]
@@ -455,27 +508,24 @@ fn row_curated_list_item(row: &sqlx::sqlite::SqliteRow) -> Result<CuratedListIte
 pub async fn get_home_stats() -> Result<HomeStats, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
-        if let Some(cached) = read_ttl_cache(&HOME_STATS_CACHE) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let (shows, songs, venues): (i64, i64, i64) = sqlx::query_as(
-            "SELECT
-                (SELECT COUNT(*) FROM shows),
-                (SELECT COUNT(*) FROM songs),
-                (SELECT COUNT(*) FROM venues)",
-        )
-        .fetch_one(&pool)
+        cached_value(&HOME_STATS_CACHE, || async {
+            let pool = pool().await?;
+            let (shows, songs, venues): (i64, i64, i64) = sqlx::query_as(
+                "SELECT
+                    (SELECT COUNT(*) FROM shows),
+                    (SELECT COUNT(*) FROM songs),
+                    (SELECT COUNT(*) FROM venues)",
+            )
+            .fetch_one(&pool)
+            .await
+            .map_err(to_server_error)?;
+            Ok(HomeStats {
+                shows,
+                songs,
+                venues,
+            })
+        })
         .await
-        .map_err(to_server_error)?;
-        let stats = HomeStats {
-            shows,
-            songs,
-            venues,
-        };
-        write_ttl_cache(&HOME_STATS_CACHE, &stats);
-        Ok(stats)
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -489,30 +539,26 @@ pub async fn get_show(id: i32) -> Result<Option<Show>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = fetch_optional_row(
+        fetch_optional_mapped(
             sqlx::query(
                 "SELECT id, date, venue_id, tour_id, song_count, rarity_index FROM shows WHERE id = ?",
             )
             .bind(id),
             &pool,
+            |row| {
+                let date: String = row_string(row, "date")?;
+                Ok(Show {
+                    id: row_i32(row, "id")?,
+                    date: date.clone(),
+                    venue_id: row_i32(row, "venue_id")?,
+                    tour_id: row_opt_i32(row, "tour_id")?,
+                    year: year_from_date(&date),
+                    song_count: row_opt_i32(row, "song_count")?,
+                    rarity_index: row_opt_f32(row, "rarity_index")?,
+                })
+            },
         )
-        .await?;
-
-        if let Some(row) = row {
-            let date: String = row_string(&row, "date")?;
-            let show = Show {
-                id: row_i32(&row, "id")?,
-                date: date.clone(),
-                venue_id: row_i32(&row, "venue_id")?,
-                tour_id: row_opt_i32(&row, "tour_id")?,
-                year: year_from_date(&date),
-                song_count: row_opt_i32(&row, "song_count")?,
-                rarity_index: row_opt_f32(&row, "rarity_index")?,
-            };
-            return Ok(Some(show));
-        }
-
-        Ok(None)
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -526,20 +572,15 @@ pub async fn get_song(slug: String) -> Result<Option<Song>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = fetch_optional_row(
+        fetch_optional_mapped(
             sqlx::query(
                 "SELECT id, slug, title, sort_title, total_performances, last_played_date, opener_count, closer_count, encore_count FROM songs WHERE slug = ?",
             )
             .bind(slug),
             &pool,
+            row_song,
         )
-        .await?;
-
-        if let Some(row) = row {
-            return Ok(Some(row_song(&row)?));
-        }
-
-        Ok(None)
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -553,20 +594,15 @@ pub async fn get_venue(id: i32) -> Result<Option<Venue>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = fetch_optional_row(
+        fetch_optional_mapped(
             sqlx::query(
                 "SELECT id, name, city, state, country, country_code, venue_type, total_shows FROM venues WHERE id = ?",
             )
             .bind(id),
             &pool,
+            row_venue,
         )
-        .await?;
-
-        if let Some(row) = row {
-            return Ok(Some(row_venue(&row)?));
-        }
-
-        Ok(None)
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -580,7 +616,7 @@ pub async fn get_tour(year: i32) -> Result<Option<Tour>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = fetch_optional_row(
+        fetch_optional_mapped(
             sqlx::query(
                 "SELECT id, year, name, total_shows
                  FROM tours
@@ -590,14 +626,9 @@ pub async fn get_tour(year: i32) -> Result<Option<Tour>, ServerFnError> {
             )
             .bind(year),
             &pool,
+            row_tour,
         )
-        .await?;
-
-        if let Some(row) = row {
-            return Ok(Some(row_tour(&row)?));
-        }
-
-        Ok(None)
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -611,17 +642,12 @@ pub async fn get_tour_by_id(id: i32) -> Result<Option<Tour>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = fetch_optional_row(
+        fetch_optional_mapped(
             sqlx::query("SELECT id, year, name, total_shows FROM tours WHERE id = ?").bind(id),
             &pool,
+            row_tour,
         )
-        .await?;
-
-        if let Some(row) = row {
-            return Ok(Some(row_tour(&row)?));
-        }
-
-        Ok(None)
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -635,18 +661,13 @@ pub async fn get_guest(slug: String) -> Result<Option<Guest>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = fetch_optional_row(
+        fetch_optional_mapped(
             sqlx::query("SELECT id, name, slug, total_appearances FROM guests WHERE slug = ?")
                 .bind(slug),
             &pool,
+            row_guest,
         )
-        .await?;
-
-        if let Some(row) = row {
-            return Ok(Some(row_guest(&row)?));
-        }
-
-        Ok(None)
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -660,20 +681,15 @@ pub async fn get_release(slug: String) -> Result<Option<Release>, ServerFnError>
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = fetch_optional_row(
+        fetch_optional_mapped(
             sqlx::query(
                 "SELECT id, title, slug, release_type, release_date FROM releases WHERE slug = ?",
             )
             .bind(slug),
             &pool,
+            row_release,
         )
-        .await?;
-
-        if let Some(row) = row {
-            return Ok(Some(row_release(&row)?));
-        }
-
-        Ok(None)
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -686,21 +702,18 @@ pub async fn get_release(slug: String) -> Result<Option<Release>, ServerFnError>
 pub async fn get_all_releases() -> Result<Vec<Release>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
-        if let Some(cached) = read_ttl_cache(&ALL_RELEASES_CACHE) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let rows = fetch_rows(
-            sqlx::query(
-                "SELECT id, title, slug, release_type, release_date FROM releases ORDER BY release_date DESC, id DESC",
-            ),
-            &pool,
-        )
-        .await?;
-        let out = map_rows(rows, |row| row_release(&row))?;
-        write_ttl_cache(&ALL_RELEASES_CACHE, &out);
-        Ok(out)
+        cached_value(&ALL_RELEASES_CACHE, || async {
+            let pool = pool().await?;
+            let rows = fetch_rows(
+                sqlx::query(
+                    "SELECT id, title, slug, release_type, release_date FROM releases ORDER BY release_date DESC, id DESC",
+                ),
+                &pool,
+            )
+            .await?;
+            map_rows(rows, |row| row_release(&row))
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -713,36 +726,33 @@ pub async fn get_all_releases() -> Result<Vec<Release>, ServerFnError> {
 pub async fn get_release_tracks(release_id: i32) -> Result<Vec<ReleaseTrack>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
-        if let Some(cached) = read_ttl_keyed_cache(&RELEASE_TRACKS_CACHE, &release_id) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let rows = fetch_rows(
-            sqlx::query(
-                "SELECT id, release_id, song_id, show_id, track_number, disc_number, duration_seconds, notes
-                 FROM release_tracks
-                 WHERE release_id = ?
-                 ORDER BY disc_number, track_number, id",
+        cached_keyed_value(&RELEASE_TRACKS_CACHE, release_id, || async {
+            let pool = pool().await?;
+            let rows = fetch_rows(
+                sqlx::query(
+                    "SELECT id, release_id, song_id, show_id, track_number, disc_number, duration_seconds, notes
+                     FROM release_tracks
+                     WHERE release_id = ?
+                     ORDER BY disc_number, track_number, id",
+                )
+                .bind(release_id),
+                &pool,
             )
-            .bind(release_id),
-            &pool,
-        )
-        .await?;
-        let out = map_rows(rows, |row| {
-            Ok(ReleaseTrack {
-                id: row_i32(&row, "id")?,
-                release_id: row_i32(&row, "release_id")?,
-                song_id: row_opt_i32(&row, "song_id")?,
-                show_id: row_opt_i32(&row, "show_id")?,
-                track_number: row_opt_i32(&row, "track_number")?,
-                disc_number: row_opt_i32(&row, "disc_number")?,
-                duration_seconds: row_opt_i32(&row, "duration_seconds")?,
-                notes: row_opt_string(&row, "notes")?,
+            .await?;
+            map_rows(rows, |row| {
+                Ok(ReleaseTrack {
+                    id: row_i32(&row, "id")?,
+                    release_id: row_i32(&row, "release_id")?,
+                    song_id: row_opt_i32(&row, "song_id")?,
+                    show_id: row_opt_i32(&row, "show_id")?,
+                    track_number: row_opt_i32(&row, "track_number")?,
+                    disc_number: row_opt_i32(&row, "disc_number")?,
+                    duration_seconds: row_opt_i32(&row, "duration_seconds")?,
+                    notes: row_opt_string(&row, "notes")?,
+                })
             })
-        })?;
-        write_ttl_keyed_cache(&RELEASE_TRACKS_CACHE, release_id, &out);
-        Ok(out)
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -755,68 +765,65 @@ pub async fn get_release_tracks(release_id: i32) -> Result<Vec<ReleaseTrack>, Se
 pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
-        if let Some(cached) = read_ttl_keyed_cache(&SETLIST_ENTRIES_CACHE, &show_id) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let rows = fetch_rows(
-            sqlx::query(
-                "SELECT se.id, se.show_id, se.song_id, se.position, se.set_name, se.slot, se.duration_seconds,
-                        se.segue_into_song_id, se.is_segue, se.is_tease, se.tease_of_song_id, se.notes,
-                        sh.date as show_date,
-                        s.slug as song_slug, s.title as song_title, s.sort_title as song_sort_title,
-                        s.total_performances, s.last_played_date, s.opener_count, s.closer_count, s.encore_count
-                 FROM setlist_entries se
-                 LEFT JOIN shows sh ON sh.id = se.show_id
-                 LEFT JOIN songs s ON s.id = se.song_id
-                 WHERE se.show_id = ?
-                 ORDER BY se.position, se.id",
+        cached_keyed_value(&SETLIST_ENTRIES_CACHE, show_id, || async {
+            let pool = pool().await?;
+            let rows = fetch_rows(
+                sqlx::query(
+                    "SELECT se.id, se.show_id, se.song_id, se.position, se.set_name, se.slot, se.duration_seconds,
+                            se.segue_into_song_id, se.is_segue, se.is_tease, se.tease_of_song_id, se.notes,
+                            sh.date as show_date,
+                            s.slug as song_slug, s.title as song_title, s.sort_title as song_sort_title,
+                            s.total_performances, s.last_played_date, s.opener_count, s.closer_count, s.encore_count
+                     FROM setlist_entries se
+                     LEFT JOIN shows sh ON sh.id = se.show_id
+                     LEFT JOIN songs s ON s.id = se.song_id
+                     WHERE se.show_id = ?
+                     ORDER BY se.position, se.id",
+                )
+                .bind(show_id),
+                &pool,
             )
-            .bind(show_id),
-            &pool,
-        )
-        .await?;
-        let out = map_rows(rows, |row| {
-            let show_date: Option<String> = row_opt_string(&row, "show_date")?;
-            let year = show_date
-                .as_deref()
-                .and_then(|d| d.get(0..4))
-                .and_then(|s| s.parse::<i32>().ok());
-            let song = row_optional_song(
-                &row,
-                SongColumns {
-                    id: "song_id",
-                    slug: "song_slug",
-                    title: "song_title",
-                    sort_title: "song_sort_title",
-                    total_performances: "total_performances",
-                    last_played_date: "last_played_date",
-                    opener_count: "opener_count",
-                    closer_count: "closer_count",
-                    encore_count: "encore_count",
-                },
-            )?;
-            Ok(SetlistEntry {
-                id: row_i32(&row, "id")?,
-                show_id: row_i32(&row, "show_id")?,
-                song_id: row_i32(&row, "song_id")?,
-                position: row_i32(&row, "position")?,
-                set_name: row_opt_string(&row, "set_name")?,
-                slot: row_opt_string(&row, "slot")?,
-                show_date,
-                year,
-                duration_seconds: row_opt_i32(&row, "duration_seconds")?,
-                segue_into_song_id: row_opt_i32(&row, "segue_into_song_id")?,
-                is_segue: row_opt_bool(&row, "is_segue")?,
-                is_tease: row_opt_bool(&row, "is_tease")?,
-                tease_of_song_id: row_opt_i32(&row, "tease_of_song_id")?,
-                notes: row_opt_string(&row, "notes")?,
-                song,
+            .await?;
+            map_rows(rows, |row| {
+                let show_date: Option<String> = row_opt_string(&row, "show_date")?;
+                let year = show_date
+                    .as_deref()
+                    .and_then(|d| d.get(0..4))
+                    .and_then(|s| s.parse::<i32>().ok());
+                let song = row_optional_song(
+                    &row,
+                    SongColumns {
+                        id: "song_id",
+                        slug: "song_slug",
+                        title: "song_title",
+                        sort_title: "song_sort_title",
+                        total_performances: "total_performances",
+                        last_played_date: "last_played_date",
+                        opener_count: "opener_count",
+                        closer_count: "closer_count",
+                        encore_count: "encore_count",
+                    },
+                )?;
+                Ok(SetlistEntry {
+                    id: row_i32(&row, "id")?,
+                    show_id: row_i32(&row, "show_id")?,
+                    song_id: row_i32(&row, "song_id")?,
+                    position: row_i32(&row, "position")?,
+                    set_name: row_opt_string(&row, "set_name")?,
+                    slot: row_opt_string(&row, "slot")?,
+                    show_date,
+                    year,
+                    duration_seconds: row_opt_i32(&row, "duration_seconds")?,
+                    segue_into_song_id: row_opt_i32(&row, "segue_into_song_id")?,
+                    is_segue: row_opt_bool(&row, "is_segue")?,
+                    is_tease: row_opt_bool(&row, "is_tease")?,
+                    tease_of_song_id: row_opt_i32(&row, "tease_of_song_id")?,
+                    notes: row_opt_string(&row, "notes")?,
+                    song,
+                })
             })
-        })?;
-        write_ttl_keyed_cache(&SETLIST_ENTRIES_CACHE, show_id, &out);
-        Ok(out)
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -834,78 +841,75 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
             return Ok(Vec::new());
         }
 
-        if let Some(cached) = read_ttl_keyed_cache(&LIBERATION_LIST_CACHE, &limit) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let rows = fetch_rows(
-            sqlx::query(
-                "SELECT ll.id, ll.song_id, ll.last_played_date, ll.last_played_show_id,
-                        ll.days_since, ll.shows_since, ll.notes, ll.configuration, ll.is_liberated,
-                        ll.liberated_date, ll.liberated_show_id,
-                        s.slug as song_slug, s.title as song_title, s.sort_title as song_sort_title,
-                        s.total_performances, s.last_played_date as song_last_played_date,
-                        s.opener_count, s.closer_count, s.encore_count,
-                        sh.date as show_date, v.name as venue_name, v.city as venue_city, v.state as venue_state
-                 FROM liberation_list ll
-                 LEFT JOIN songs s ON ll.song_id = s.id
-                 LEFT JOIN shows sh ON ll.last_played_show_id = sh.id
-                 LEFT JOIN venues v ON sh.venue_id = v.id
-                 ORDER BY ll.days_since DESC, ll.id DESC
-                 LIMIT ?",
+        cached_keyed_value(&LIBERATION_LIST_CACHE, limit, || async {
+            let pool = pool().await?;
+            let rows = fetch_rows(
+                sqlx::query(
+                    "SELECT ll.id, ll.song_id, ll.last_played_date, ll.last_played_show_id,
+                            ll.days_since, ll.shows_since, ll.notes, ll.configuration, ll.is_liberated,
+                            ll.liberated_date, ll.liberated_show_id,
+                            s.slug as song_slug, s.title as song_title, s.sort_title as song_sort_title,
+                            s.total_performances, s.last_played_date as song_last_played_date,
+                            s.opener_count, s.closer_count, s.encore_count,
+                            sh.date as show_date, v.name as venue_name, v.city as venue_city, v.state as venue_state
+                     FROM liberation_list ll
+                     LEFT JOIN songs s ON ll.song_id = s.id
+                     LEFT JOIN shows sh ON ll.last_played_show_id = sh.id
+                     LEFT JOIN venues v ON sh.venue_id = v.id
+                     ORDER BY ll.days_since DESC, ll.id DESC
+                     LIMIT ?",
+                )
+                .bind(limit),
+                &pool,
             )
-            .bind(limit),
-            &pool,
-        )
-        .await?;
-        let out = map_rows(rows, |row| {
-            let song = row_optional_song(
-                &row,
-                SongColumns {
-                    id: "song_id",
-                    slug: "song_slug",
-                    title: "song_title",
-                    sort_title: "song_sort_title",
-                    total_performances: "total_performances",
-                    last_played_date: "song_last_played_date",
-                    opener_count: "opener_count",
-                    closer_count: "closer_count",
-                    encore_count: "encore_count",
-                },
-            )?;
-            let last_show_id = row_opt_i32(&row, "last_played_show_id")?;
-            let last_show = if let Some(show_id) = last_show_id {
-                Some(LiberationLastShow {
-                    id: show_id,
-                    date: row_opt_string(&row, "show_date")?,
-                    venue: Some(LiberationVenue {
-                        name: row_opt_string(&row, "venue_name")?,
-                        city: row_opt_string(&row, "venue_city")?,
-                        state: row_opt_string(&row, "venue_state")?,
-                    }),
+            .await?;
+            map_rows(rows, |row| {
+                let song = row_optional_song(
+                    &row,
+                    SongColumns {
+                        id: "song_id",
+                        slug: "song_slug",
+                        title: "song_title",
+                        sort_title: "song_sort_title",
+                        total_performances: "total_performances",
+                        last_played_date: "song_last_played_date",
+                        opener_count: "opener_count",
+                        closer_count: "closer_count",
+                        encore_count: "encore_count",
+                    },
+                )?;
+                let last_show_id = row_opt_i32(&row, "last_played_show_id")?;
+                let last_show = if let Some(show_id) = last_show_id {
+                    Some(LiberationLastShow {
+                        id: show_id,
+                        date: row_opt_string(&row, "show_date")?,
+                        venue: Some(LiberationVenue {
+                            name: row_opt_string(&row, "venue_name")?,
+                            city: row_opt_string(&row, "venue_city")?,
+                            state: row_opt_string(&row, "venue_state")?,
+                        }),
+                    })
+                } else {
+                    None
+                };
+                Ok(LiberationEntry {
+                    id: row_i32(&row, "id")?,
+                    song_id: row_i32(&row, "song_id")?,
+                    days_since: row_opt_i32(&row, "days_since")?,
+                    shows_since: row_opt_i32(&row, "shows_since")?,
+                    is_liberated: row_opt_bool(&row, "is_liberated")?,
+                    last_played_date: row_opt_string(&row, "last_played_date")?,
+                    last_played_show_id: row_opt_i32(&row, "last_played_show_id")?,
+                    notes: row_opt_string(&row, "notes")?,
+                    configuration: row_opt_string(&row, "configuration")?,
+                    liberated_date: row_opt_string(&row, "liberated_date")?,
+                    liberated_show_id: row_opt_i32(&row, "liberated_show_id")?,
+                    song,
+                    last_show,
                 })
-            } else {
-                None
-            };
-            Ok(LiberationEntry {
-                id: row_i32(&row, "id")?,
-                song_id: row_i32(&row, "song_id")?,
-                days_since: row_opt_i32(&row, "days_since")?,
-                shows_since: row_opt_i32(&row, "shows_since")?,
-                is_liberated: row_opt_bool(&row, "is_liberated")?,
-                last_played_date: row_opt_string(&row, "last_played_date")?,
-                last_played_show_id: row_opt_i32(&row, "last_played_show_id")?,
-                notes: row_opt_string(&row, "notes")?,
-                configuration: row_opt_string(&row, "configuration")?,
-                liberated_date: row_opt_string(&row, "liberated_date")?,
-                liberated_show_id: row_opt_i32(&row, "liberated_show_id")?,
-                song,
-                last_show,
             })
-        })?;
-        write_ttl_keyed_cache(&LIBERATION_LIST_CACHE, limit, &out);
-        Ok(out)
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -918,24 +922,21 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
 pub async fn get_curated_lists() -> Result<Vec<CuratedList>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
-        if let Some(cached) = read_ttl_cache(&CURATED_LISTS_CACHE) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let rows = fetch_rows(
-            sqlx::query(
-                "SELECT id, original_id, title, slug, category, description, item_count, is_featured,
-                        sort_order, created_at, updated_at
-                 FROM curated_lists
-                 ORDER BY sort_order, id",
-            ),
-            &pool,
-        )
-        .await?;
-        let out = map_rows(rows, |row| row_curated_list(&row))?;
-        write_ttl_cache(&CURATED_LISTS_CACHE, &out);
-        Ok(out)
+        cached_value(&CURATED_LISTS_CACHE, || async {
+            let pool = pool().await?;
+            let rows = fetch_rows(
+                sqlx::query(
+                    "SELECT id, original_id, title, slug, category, description, item_count, is_featured,
+                            sort_order, created_at, updated_at
+                     FROM curated_lists
+                     ORDER BY sort_order, id",
+                ),
+                &pool,
+            )
+            .await?;
+            map_rows(rows, |row| row_curated_list(&row))
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -957,28 +958,25 @@ pub async fn get_curated_list_items(
         }
 
         let cache_key = (list_id, limit);
-        if let Some(cached) = read_ttl_keyed_cache(&CURATED_LIST_ITEMS_CACHE, &cache_key) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let rows = fetch_rows(
-            sqlx::query(
-                "SELECT id, list_id, position, item_type, show_id, song_id, venue_id, guest_id, release_id,
-                        item_title, item_link, notes, metadata, created_at
-                 FROM curated_list_items
-                 WHERE list_id = ?
-                 ORDER BY position, id
-                 LIMIT ?",
+        cached_keyed_value(&CURATED_LIST_ITEMS_CACHE, cache_key, || async {
+            let pool = pool().await?;
+            let rows = fetch_rows(
+                sqlx::query(
+                    "SELECT id, list_id, position, item_type, show_id, song_id, venue_id, guest_id, release_id,
+                            item_title, item_link, notes, metadata, created_at
+                     FROM curated_list_items
+                     WHERE list_id = ?
+                     ORDER BY position, id
+                     LIMIT ?",
+                )
+                .bind(list_id)
+                .bind(limit),
+                &pool,
             )
-            .bind(list_id)
-            .bind(limit),
-            &pool,
-        )
-        .await?;
-        let out = map_rows(rows, |row| row_curated_list_item(&row))?;
-        write_ttl_keyed_cache(&CURATED_LIST_ITEMS_CACHE, cache_key, &out);
-        Ok(out)
+            .await?;
+            map_rows(rows, |row| row_curated_list_item(&row))
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -992,40 +990,37 @@ pub async fn get_recent_shows(limit: usize) -> Result<Vec<ShowSummary>, ServerFn
     #[cfg(feature = "ssr")]
     {
         let limit = limit.min(200);
-        if let Some(cached) = read_ttl_keyed_cache(&RECENT_SHOWS_CACHE, &limit) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let sql_limit = limit as i64;
-        let rows = fetch_rows(
-            sqlx::query(
-                r#"
-                SELECT
-                  s.id,
-                  s.date,
-                  s.year,
-                  s.venue_id,
-                  v.name AS venue_name,
-                  v.city AS venue_city,
-                  v.state AS venue_state,
-                  t.name AS tour_name,
-                  t.year AS tour_year
-                FROM shows s
-                JOIN venues v ON v.id = s.venue_id
-                LEFT JOIN tours t ON t.id = s.tour_id
-                ORDER BY s.date DESC
-                LIMIT ?
-                "#,
+        cached_keyed_value(&RECENT_SHOWS_CACHE, limit, || async {
+            let pool = pool().await?;
+            let sql_limit = limit as i64;
+            let rows = fetch_rows(
+                sqlx::query(
+                    r#"
+                    SELECT
+                      s.id,
+                      s.date,
+                      s.year,
+                      s.venue_id,
+                      v.name AS venue_name,
+                      v.city AS venue_city,
+                      v.state AS venue_state,
+                      t.name AS tour_name,
+                      t.year AS tour_year
+                    FROM shows s
+                    JOIN venues v ON v.id = s.venue_id
+                    LEFT JOIN tours t ON t.id = s.tour_id
+                    ORDER BY s.date DESC
+                    LIMIT ?
+                    "#,
+                )
+                .bind(sql_limit),
+                &pool,
             )
-            .bind(sql_limit),
-            &pool,
-        )
-        .await?;
+            .await?;
 
-        let out = map_rows(rows, |row| row_show_summary(&row))?;
-        write_ttl_keyed_cache(&RECENT_SHOWS_CACHE, limit, &out);
-        Ok(out)
+            map_rows(rows, |row| row_show_summary(&row))
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -1039,30 +1034,27 @@ pub async fn get_top_songs(limit: usize) -> Result<Vec<Song>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let limit = limit.min(200);
-        if let Some(cached) = read_ttl_keyed_cache(&TOP_SONGS_CACHE, &limit) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let sql_limit = limit as i64;
-        let rows = fetch_rows(
-            sqlx::query(
-                r#"
-                SELECT id, slug, title, sort_title, total_performances, last_played_date,
-                       opener_count, closer_count, encore_count
-                FROM songs
-                ORDER BY COALESCE(total_performances, 0) DESC, title ASC
-                LIMIT ?
-                "#,
+        cached_keyed_value(&TOP_SONGS_CACHE, limit, || async {
+            let pool = pool().await?;
+            let sql_limit = limit as i64;
+            let rows = fetch_rows(
+                sqlx::query(
+                    r#"
+                    SELECT id, slug, title, sort_title, total_performances, last_played_date,
+                           opener_count, closer_count, encore_count
+                    FROM songs
+                    ORDER BY COALESCE(total_performances, 0) DESC, title ASC
+                    LIMIT ?
+                    "#,
+                )
+                .bind(sql_limit),
+                &pool,
             )
-            .bind(sql_limit),
-            &pool,
-        )
-        .await?;
+            .await?;
 
-        let out = map_rows(rows, |row| row_song(&row))?;
-        write_ttl_keyed_cache(&TOP_SONGS_CACHE, limit, &out);
-        Ok(out)
+            map_rows(rows, |row| row_song(&row))
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -1076,29 +1068,26 @@ pub async fn get_top_venues(limit: usize) -> Result<Vec<Venue>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let limit = limit.min(200);
-        if let Some(cached) = read_ttl_keyed_cache(&TOP_VENUES_CACHE, &limit) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let sql_limit = limit as i64;
-        let rows = fetch_rows(
-            sqlx::query(
-                r#"
-                SELECT id, name, city, state, country, country_code, venue_type, total_shows
-                FROM venues
-                ORDER BY COALESCE(total_shows, 0) DESC, name ASC
-                LIMIT ?
-                "#,
+        cached_keyed_value(&TOP_VENUES_CACHE, limit, || async {
+            let pool = pool().await?;
+            let sql_limit = limit as i64;
+            let rows = fetch_rows(
+                sqlx::query(
+                    r#"
+                    SELECT id, name, city, state, country, country_code, venue_type, total_shows
+                    FROM venues
+                    ORDER BY COALESCE(total_shows, 0) DESC, name ASC
+                    LIMIT ?
+                    "#,
+                )
+                .bind(sql_limit),
+                &pool,
             )
-            .bind(sql_limit),
-            &pool,
-        )
-        .await?;
+            .await?;
 
-        let out = map_rows(rows, |row| row_venue(&row))?;
-        write_ttl_keyed_cache(&TOP_VENUES_CACHE, limit, &out);
-        Ok(out)
+            map_rows(rows, |row| row_venue(&row))
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -1112,29 +1101,26 @@ pub async fn get_top_guests(limit: usize) -> Result<Vec<Guest>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let limit = limit.min(200);
-        if let Some(cached) = read_ttl_keyed_cache(&TOP_GUESTS_CACHE, &limit) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let sql_limit = limit as i64;
-        let rows = fetch_rows(
-            sqlx::query(
-                r#"
-                SELECT id, name, slug, total_appearances
-                FROM guests
-                ORDER BY COALESCE(total_appearances, 0) DESC, name ASC
-                LIMIT ?
-                "#,
+        cached_keyed_value(&TOP_GUESTS_CACHE, limit, || async {
+            let pool = pool().await?;
+            let sql_limit = limit as i64;
+            let rows = fetch_rows(
+                sqlx::query(
+                    r#"
+                    SELECT id, name, slug, total_appearances
+                    FROM guests
+                    ORDER BY COALESCE(total_appearances, 0) DESC, name ASC
+                    LIMIT ?
+                    "#,
+                )
+                .bind(sql_limit),
+                &pool,
             )
-            .bind(sql_limit),
-            &pool,
-        )
-        .await?;
+            .await?;
 
-        let out = map_rows(rows, |row| row_guest(&row))?;
-        write_ttl_keyed_cache(&TOP_GUESTS_CACHE, limit, &out);
-        Ok(out)
+            map_rows(rows, |row| row_guest(&row))
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -1148,29 +1134,26 @@ pub async fn get_recent_tours(limit: usize) -> Result<Vec<Tour>, ServerFnError> 
     #[cfg(feature = "ssr")]
     {
         let limit = limit.min(200);
-        if let Some(cached) = read_ttl_keyed_cache(&RECENT_TOURS_CACHE, &limit) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let sql_limit = limit as i64;
-        let rows = fetch_rows(
-            sqlx::query(
-                r#"
-                SELECT id, year, name, total_shows
-                FROM tours
-                ORDER BY year DESC, total_shows DESC, id DESC
-                LIMIT ?
-                "#,
+        cached_keyed_value(&RECENT_TOURS_CACHE, limit, || async {
+            let pool = pool().await?;
+            let sql_limit = limit as i64;
+            let rows = fetch_rows(
+                sqlx::query(
+                    r#"
+                    SELECT id, year, name, total_shows
+                    FROM tours
+                    ORDER BY year DESC, total_shows DESC, id DESC
+                    LIMIT ?
+                    "#,
+                )
+                .bind(sql_limit),
+                &pool,
             )
-            .bind(sql_limit),
-            &pool,
-        )
-        .await?;
+            .await?;
 
-        let out = map_rows(rows, |row| row_tour(&row))?;
-        write_ttl_keyed_cache(&RECENT_TOURS_CACHE, limit, &out);
-        Ok(out)
+            map_rows(rows, |row| row_tour(&row))
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
@@ -1184,29 +1167,26 @@ pub async fn get_recent_releases(limit: usize) -> Result<Vec<Release>, ServerFnE
     #[cfg(feature = "ssr")]
     {
         let limit = limit.min(200);
-        if let Some(cached) = read_ttl_keyed_cache(&RECENT_RELEASES_CACHE, &limit) {
-            return Ok(cached);
-        }
-
-        let pool = pool().await?;
-        let sql_limit = limit as i64;
-        let rows = fetch_rows(
-            sqlx::query(
-                r#"
-                SELECT id, title, slug, release_type, release_date
-                FROM releases
-                ORDER BY release_date DESC, id DESC
-                LIMIT ?
-                "#,
+        cached_keyed_value(&RECENT_RELEASES_CACHE, limit, || async {
+            let pool = pool().await?;
+            let sql_limit = limit as i64;
+            let rows = fetch_rows(
+                sqlx::query(
+                    r#"
+                    SELECT id, title, slug, release_type, release_date
+                    FROM releases
+                    ORDER BY release_date DESC, id DESC
+                    LIMIT ?
+                    "#,
+                )
+                .bind(sql_limit),
+                &pool,
             )
-            .bind(sql_limit),
-            &pool,
-        )
-        .await?;
+            .await?;
 
-        let out = map_rows(rows, |row| row_release(&row))?;
-        write_ttl_keyed_cache(&RECENT_RELEASES_CACHE, limit, &out);
-        Ok(out)
+            map_rows(rows, |row| row_release(&row))
+        })
+        .await
     }
 
     #[cfg(not(feature = "ssr"))]
