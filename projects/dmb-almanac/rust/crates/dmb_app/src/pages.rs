@@ -2109,71 +2109,59 @@ macro_rules! load_with_idb_fallback {
     }};
 }
 
+macro_rules! load_entity_by_id {
+    ($id:expr, $idb_loader:path, $api_loader:path) => {{
+        let id = $id;
+        load_with_idb_fallback!(
+            async move { $idb_loader(id).await.ok().flatten() },
+            async move { $api_loader(id).await.ok().flatten() }
+        )
+    }};
+}
+
+macro_rules! load_entity_by_slug {
+    ($slug:expr, $idb_loader:path, $api_loader:path) => {{
+        let slug = $slug;
+        if slug.is_empty() {
+            None
+        } else {
+            load_with_idb_fallback!(
+                {
+                    let idb_slug = slug.clone();
+                    async move { $idb_loader(&idb_slug).await.ok().flatten() }
+                },
+                async move { $api_loader(slug).await.ok().flatten() }
+            )
+        }
+    }};
+}
+
 async fn load_show(id: i32) -> Option<Show> {
-    load_with_idb_fallback!(
-        async move { dmb_idb::get_show(id).await.ok().flatten() },
-        async move { get_show(id).await.ok().flatten() }
-    )
+    load_entity_by_id!(id, dmb_idb::get_show, get_show)
 }
 
 async fn load_song(slug: String) -> Option<Song> {
-    if slug.is_empty() {
-        return None;
-    }
-    load_with_idb_fallback!(
-        {
-            let idb_slug = slug.clone();
-            async move { dmb_idb::get_song(&idb_slug).await.ok().flatten() }
-        },
-        async move { get_song(slug).await.ok().flatten() }
-    )
+    load_entity_by_slug!(slug, dmb_idb::get_song, get_song)
 }
 
 async fn load_guest(slug: String) -> Option<Guest> {
-    if slug.is_empty() {
-        return None;
-    }
-    load_with_idb_fallback!(
-        {
-            let idb_slug = slug.clone();
-            async move { dmb_idb::get_guest_by_slug(&idb_slug).await.ok().flatten() }
-        },
-        async move { get_guest(slug).await.ok().flatten() }
-    )
+    load_entity_by_slug!(slug, dmb_idb::get_guest_by_slug, get_guest)
 }
 
 async fn load_release(slug: String) -> Option<Release> {
-    if slug.is_empty() {
-        return None;
-    }
-    load_with_idb_fallback!(
-        {
-            let idb_slug = slug.clone();
-            async move { dmb_idb::get_release_by_slug(&idb_slug).await.ok().flatten() }
-        },
-        async move { get_release(slug).await.ok().flatten() }
-    )
+    load_entity_by_slug!(slug, dmb_idb::get_release_by_slug, get_release)
 }
 
 async fn load_tour(year: i32) -> Option<Tour> {
-    load_with_idb_fallback!(
-        async move { dmb_idb::get_tour(year).await.ok().flatten() },
-        async move { get_tour(year).await.ok().flatten() }
-    )
+    load_entity_by_id!(year, dmb_idb::get_tour, get_tour)
 }
 
 async fn load_tour_by_id(id: i32) -> Option<Tour> {
-    load_with_idb_fallback!(
-        async move { dmb_idb::get_tour_by_id(id).await.ok().flatten() },
-        async move { get_tour_by_id(id).await.ok().flatten() }
-    )
+    load_entity_by_id!(id, dmb_idb::get_tour_by_id, get_tour_by_id)
 }
 
 async fn load_venue(id: i32) -> Option<Venue> {
-    load_with_idb_fallback!(
-        async move { dmb_idb::get_venue(id).await.ok().flatten() },
-        async move { get_venue(id).await.ok().flatten() }
-    )
+    load_entity_by_id!(id, dmb_idb::get_venue, get_venue)
 }
 
 fn normalize_with_limit<T>(
@@ -5235,6 +5223,41 @@ fn render_stats_tabs(active_tab: RwSignal<u8>) -> impl IntoView {
     }
 }
 
+fn render_stats_panel<T, F, V>(
+    active_tab: RwSignal<u8>,
+    idx: u8,
+    loading_title: &'static str,
+    loading_desc: &'static str,
+    data: Resource<T>,
+    render: F,
+) -> impl IntoView
+where
+    T: Clone + Default + Send + Sync + 'static,
+    F: Fn(T) -> V + Copy + Send + Sync + 'static,
+    V: IntoView + 'static,
+{
+    let hidden_active_tab = active_tab.clone();
+    let display_active_tab = active_tab.clone();
+    let content_data = data.clone();
+    let panel_id = format!("stats-panel-{idx}");
+    let tab_id = format!("stats-tab-{idx}");
+
+    view! {
+        <div
+            class="stats-panel"
+            id=panel_id
+            role="tabpanel"
+            aria-labelledby=tab_id
+            hidden=move || hidden_active_tab.get() != idx
+            style:display=move || if display_active_tab.get() == idx { "block" } else { "none" }
+        >
+            <Suspense fallback=move || loading_state(loading_title, loading_desc)>
+                {move || render(content_data.get().unwrap_or_default())}
+            </Suspense>
+        </div>
+    }
+}
+
 fn render_stats_overview_content(data: StatsOverview) -> impl IntoView {
     let StatsOverview {
         show_count,
@@ -5481,83 +5504,51 @@ pub fn stats_page() -> impl IntoView {
     let venues = Resource::new(|| (), |()| async move { load_stats_venues().await });
     let guests = Resource::new(|| (), |()| async move { load_stats_guests().await });
 
-    let tabs_active_tab = active_tab.clone();
-    let overview_hidden = active_tab.clone();
-    let overview_display = active_tab.clone();
-    let songs_hidden = active_tab.clone();
-    let songs_display = active_tab.clone();
-    let shows_hidden = active_tab.clone();
-    let shows_display = active_tab.clone();
-    let venues_hidden = active_tab.clone();
-    let venues_display = active_tab.clone();
-    let guests_hidden = active_tab.clone();
-    let guests_display = active_tab.clone();
-
     view! {
         <section class="page">
             <h1>"Stats"</h1>
             <p class="lead">"WASM-powered aggregations over the full concert database."</p>
-            {render_stats_tabs(tabs_active_tab)}
-            <div
-                class="stats-panel"
-                id="stats-panel-0"
-                role="tabpanel"
-                aria-labelledby="stats-tab-0"
-                hidden=move || overview_hidden.get() != 0
-                style:display=move || if overview_display.get() == 0 { "block" } else { "none" }
-            >
-                <Suspense fallback=move || loading_state("Loading overview", "Crunching summary aggregates.")>
-                    {move || render_stats_overview_content(overview.get().unwrap_or_default())}
-                </Suspense>
-            </div>
-            <div
-                class="stats-panel"
-                id="stats-panel-1"
-                role="tabpanel"
-                aria-labelledby="stats-tab-1"
-                hidden=move || songs_hidden.get() != 1
-                style:display=move || if songs_display.get() == 1 { "block" } else { "none" }
-            >
-                <Suspense fallback=move || loading_state("Loading songs stats", "Computing song rankings.")>
-                    {move || render_stats_songs_content(songs.get().unwrap_or_default())}
-                </Suspense>
-            </div>
-            <div
-                class="stats-panel"
-                id="stats-panel-2"
-                role="tabpanel"
-                aria-labelledby="stats-tab-2"
-                hidden=move || shows_hidden.get() != 2
-                style:display=move || if shows_display.get() == 2 { "block" } else { "none" }
-            >
-                <Suspense fallback=move || loading_state("Loading shows stats", "Computing show and rarity metrics.")>
-                    {move || render_stats_shows_content(shows.get().unwrap_or_default())}
-                </Suspense>
-            </div>
-            <div
-                class="stats-panel"
-                id="stats-panel-3"
-                role="tabpanel"
-                aria-labelledby="stats-tab-3"
-                hidden=move || venues_hidden.get() != 3
-                style:display=move || if venues_display.get() == 3 { "block" } else { "none" }
-            >
-                <Suspense fallback=move || loading_state("Loading venue stats", "Computing venue distributions.")>
-                    {move || render_stats_venues_content(venues.get().unwrap_or_default())}
-                </Suspense>
-            </div>
-            <div
-                class="stats-panel"
-                id="stats-panel-4"
-                role="tabpanel"
-                aria-labelledby="stats-tab-4"
-                hidden=move || guests_hidden.get() != 4
-                style:display=move || if guests_display.get() == 4 { "block" } else { "none" }
-            >
-                <Suspense fallback=move || loading_state("Loading guest stats", "Computing guest appearance metrics.")>
-                    {move || render_stats_guests_content(guests.get().unwrap_or_default())}
-                </Suspense>
-            </div>
+            {render_stats_tabs(active_tab.clone())}
+            {render_stats_panel(
+                active_tab.clone(),
+                0,
+                "Loading overview",
+                "Crunching summary aggregates.",
+                overview,
+                render_stats_overview_content,
+            )}
+            {render_stats_panel(
+                active_tab.clone(),
+                1,
+                "Loading songs stats",
+                "Computing song rankings.",
+                songs,
+                render_stats_songs_content,
+            )}
+            {render_stats_panel(
+                active_tab.clone(),
+                2,
+                "Loading shows stats",
+                "Computing show and rarity metrics.",
+                shows,
+                render_stats_shows_content,
+            )}
+            {render_stats_panel(
+                active_tab.clone(),
+                3,
+                "Loading venue stats",
+                "Computing venue distributions.",
+                venues,
+                render_stats_venues_content,
+            )}
+            {render_stats_panel(
+                active_tab,
+                4,
+                "Loading guest stats",
+                "Computing guest appearance metrics.",
+                guests,
+                render_stats_guests_content,
+            )}
         </section>
     }
 }
