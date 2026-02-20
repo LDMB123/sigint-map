@@ -597,19 +597,6 @@ fn ivf_cap_bytes_for_matrix(cap_bytes: u64) -> u64 {
 }
 
 #[cfg(any(feature = "hydrate", test))]
-fn truncate_for_ann_cap(
-    mut records: Vec<EmbeddingRecord>,
-    mut matrix: Vec<f32>,
-    dim: usize,
-    target_vectors: usize,
-) -> (Vec<EmbeddingRecord>, Vec<f32>) {
-    let keep = target_vectors.min(matrix.len() / dim);
-    records.truncate(keep);
-    matrix.truncate(keep * dim);
-    (records, matrix)
-}
-
-#[cfg(any(feature = "hydrate", test))]
 fn sample_for_cap(
     records: Vec<EmbeddingRecord>,
     matrix: Vec<f32>,
@@ -698,7 +685,12 @@ fn cap_embedding_index_with_policy(
         .min(records.len().max(1));
 
     let (new_records, new_matrix) = if use_ann {
-        truncate_for_ann_cap(records, matrix, dim, target_vectors)
+        let mut records = records;
+        let mut matrix = matrix;
+        let keep = target_vectors.min(matrix.len() / dim);
+        records.truncate(keep);
+        matrix.truncate(keep * dim);
+        (records, matrix)
     } else {
         sample_for_cap(records, matrix, dim, target_vectors)
     };
