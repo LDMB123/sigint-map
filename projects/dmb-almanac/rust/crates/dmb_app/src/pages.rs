@@ -2,7 +2,7 @@
 
 use leptos::prelude::*;
 use leptos::suspense::Suspense;
-use leptos::tachys::view::any_view::IntoAny;
+use leptos::tachys::view::any_view::{AnyView, IntoAny};
 #[cfg(feature = "hydrate")]
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_params_map;
@@ -2736,354 +2736,304 @@ fn release_track_matches_query(track: &ReleaseTrack, query: &str) -> bool {
     in_notes || in_numbers || in_track_type
 }
 
-#[must_use]
-pub fn shows_page() -> impl IntoView {
-    let render = |items: Vec<ShowSummary>| {
-        if items.is_empty() {
-            empty_state_with_link(
-                "No shows available",
-                "Recent show data is unavailable right now.",
-                "/search",
-                "Search the catalog",
-            )
-            .into_any()
-        } else {
-            let total = items.len();
-            view! {
-                <>
-                    <p class="list-summary">{format!("Showing {total} recent shows")}</p>
-                    <ul class="result-list">
-                        {items
-                            .into_iter()
-                            .map(|show| {
-                                let href = format!("/shows/{}", show.id);
-                                let location =
-                                    format_location(&show.venue_city, show.venue_state.as_deref());
-                                let meta = if location.is_empty() {
-                                    show.venue_name.clone()
-                                } else {
-                                    format!("{} • {}", show.venue_name, location)
-                                };
-                                let tour_label = show
-                                    .tour_name
-                                    .clone()
-                                    .unwrap_or_else(|| "No tour".into());
-                                view! {
-                                    <li class="result-card">
-                                        <span class="pill">{show.year}</span>
-                                        <div class="result-body">
-                                            <a class="result-label" href=href>{show.date}</a>
-                                            <span class="result-meta">{meta}</span>
-                                        </div>
-                                        <span class="result-score">{tour_label}</span>
-                                    </li>
-                                }
-                            })
-                            .collect::<Vec<_>>()}
-                    </ul>
-                </>
-            }
-            .into_any()
+fn render_result_list<T, Summary, RenderItem>(
+    items: Vec<T>,
+    empty_title: &'static str,
+    empty_description: &'static str,
+    empty_href: &'static str,
+    empty_link: &'static str,
+    summary_text: Summary,
+    render_item: RenderItem,
+) -> AnyView
+where
+    Summary: Fn(usize) -> String,
+    RenderItem: Fn(usize, T) -> AnyView,
+{
+    if items.is_empty() {
+        empty_state_with_link(empty_title, empty_description, empty_href, empty_link).into_any()
+    } else {
+        let total = items.len();
+        view! {
+            <>
+                <p class="list-summary">{summary_text(total)}</p>
+                <ul class="result-list">
+                    {items
+                        .into_iter()
+                        .enumerate()
+                        .map(|(idx, item)| render_item(idx, item))
+                        .collect::<Vec<_>>()}
+                </ul>
+            </>
         }
-    };
+        .into_any()
+    }
+}
 
-    let items = unit_resource(|| load_recent_shows(30));
-
+fn render_result_page<T, Loader, LoaderFuture, Render>(
+    title: &'static str,
+    lead: &'static str,
+    loading_title: &'static str,
+    loading_description: &'static str,
+    loader: Loader,
+    render_items: Render,
+) -> impl IntoView
+where
+    T: Clone + serde::Serialize + serde::de::DeserializeOwned + Send + Sync + 'static,
+    Loader: Fn() -> LoaderFuture + Copy + Send + Sync + 'static,
+    LoaderFuture: std::future::Future<Output = Vec<T>> + Send + 'static,
+    Render: Fn(Vec<T>) -> AnyView + Copy + Send + Sync + 'static,
+{
+    let items = unit_resource(loader);
     view! {
         <section class="page">
-            <h1>"Shows"</h1>
-            <p class="lead">"Latest performances with offline hydration."</p>
-            <Suspense fallback=move || loading_state("Loading shows", "Fetching recent performances.")>
-                {move || render(items.get().unwrap_or_default())}
+            <h1>{title}</h1>
+            <p class="lead">{lead}</p>
+            <Suspense fallback=move || loading_state(loading_title, loading_description)>
+                {move || render_items(items.get().unwrap_or_default())}
             </Suspense>
         </section>
     }
+}
+
+#[must_use]
+pub fn shows_page() -> impl IntoView {
+    let render = |items: Vec<ShowSummary>| {
+        render_result_list(
+            items,
+            "No shows available",
+            "Recent show data is unavailable right now.",
+            "/search",
+            "Search the catalog",
+            |total| format!("Showing {total} recent shows"),
+            |_, show| {
+                let href = format!("/shows/{}", show.id);
+                let location = format_location(&show.venue_city, show.venue_state.as_deref());
+                let meta = if location.is_empty() {
+                    show.venue_name.clone()
+                } else {
+                    format!("{} • {}", show.venue_name, location)
+                };
+                let tour_label = show.tour_name.clone().unwrap_or_else(|| "No tour".into());
+                view! {
+                    <li class="result-card">
+                        <span class="pill">{show.year}</span>
+                        <div class="result-body">
+                            <a class="result-label" href=href>{show.date}</a>
+                            <span class="result-meta">{meta}</span>
+                        </div>
+                        <span class="result-score">{tour_label}</span>
+                    </li>
+                }
+                .into_any()
+            },
+        )
+    };
+
+    render_result_page(
+        "Shows",
+        "Latest performances with offline hydration.",
+        "Loading shows",
+        "Fetching recent performances.",
+        || load_recent_shows(30),
+        render,
+    )
 }
 
 #[must_use]
 pub fn songs_page() -> impl IntoView {
     let render = |items: Vec<Song>| {
-        if items.is_empty() {
-            empty_state_with_link(
-                "No songs available",
-                "Top song stats are unavailable right now.",
-                "/search",
-                "Search songs",
-            )
-            .into_any()
-        } else {
-            let total = items.len();
-            view! {
-                <>
-                    <p class="list-summary">{format!("Showing {total} ranked songs")}</p>
-                    <ul class="result-list">
-                        {items
-                            .into_iter()
-                            .enumerate()
-                            .map(|(idx, song)| {
-                                let href = format!("/songs/{}", song.slug);
-                                let plays = song.total_performances.unwrap_or(0);
-                                let last = song
-                                    .last_played_date
-                                    .clone()
-                                    .unwrap_or_else(|| "Unknown".into());
-                                view! {
-                                    <li class="result-card">
-                                        <span class="pill">{format!("#{}", idx + 1)}</span>
-                                        <div class="result-body">
-                                            <a class="result-label" href=href>{song.title}</a>
-                                            <span class="result-meta">{format!("Last played: {last}")}</span>
-                                        </div>
-                                        <span class="result-score">{format!("{plays} plays")}</span>
-                                    </li>
-                                }
-                            })
-                            .collect::<Vec<_>>()}
-                    </ul>
-                </>
-            }
-            .into_any()
-        }
+        render_result_list(
+            items,
+            "No songs available",
+            "Top song stats are unavailable right now.",
+            "/search",
+            "Search songs",
+            |total| format!("Showing {total} ranked songs"),
+            |idx, song| {
+                let href = format!("/songs/{}", song.slug);
+                let plays = song.total_performances.unwrap_or(0);
+                let last = song
+                    .last_played_date
+                    .clone()
+                    .unwrap_or_else(|| "Unknown".into());
+                view! {
+                    <li class="result-card">
+                        <span class="pill">{format!("#{}", idx + 1)}</span>
+                        <div class="result-body">
+                            <a class="result-label" href=href>{song.title}</a>
+                            <span class="result-meta">{format!("Last played: {last}")}</span>
+                        </div>
+                        <span class="result-score">{format!("{plays} plays")}</span>
+                    </li>
+                }
+                .into_any()
+            },
+        )
     };
 
-    let items = unit_resource(|| load_top_songs(50));
-
-    view! {
-        <section class="page">
-            <h1>"Songs"</h1>
-            <p class="lead">"Top songs by total performances."</p>
-            <Suspense fallback=move || loading_state("Loading songs", "Calculating song performance rankings.")>
-                {move || render(items.get().unwrap_or_default())}
-            </Suspense>
-        </section>
-    }
+    render_result_page(
+        "Songs",
+        "Top songs by total performances.",
+        "Loading songs",
+        "Calculating song performance rankings.",
+        || load_top_songs(50),
+        render,
+    )
 }
 
 #[must_use]
 pub fn venues_page() -> impl IntoView {
     let render = |items: Vec<Venue>| {
-        if items.is_empty() {
-            empty_state_with_link(
-                "No venues available",
-                "Venue leaderboard data is unavailable right now.",
-                "/shows",
-                "Browse recent shows",
-            )
-            .into_any()
-        } else {
-            let total = items.len();
-            view! {
-                <>
-                    <p class="list-summary">{format!("Showing {total} venues")}</p>
-                    <ul class="result-list">
-                        {items
-                            .into_iter()
-                            .map(|venue| {
-                                let href = format!("/venues/{}", venue.id);
-                                let pill = venue
-                                    .state
-                                    .clone()
-                                    .unwrap_or_else(|| venue.country.clone());
-                                let location = format_location(&venue.city, venue.state.as_deref());
-                                let total = venue.total_shows.unwrap_or(0);
-                                view! {
-                                    <li class="result-card">
-                                        <span class="pill">{pill}</span>
-                                        <div class="result-body">
-                                            <a class="result-label" href=href>{venue.name}</a>
-                                            <span class="result-meta">{location}</span>
-                                        </div>
-                                        <span class="result-score">{format!("{total} shows")}</span>
-                                    </li>
-                                }
-                            })
-                            .collect::<Vec<_>>()}
-                    </ul>
-                </>
-            }
-            .into_any()
-        }
+        render_result_list(
+            items,
+            "No venues available",
+            "Venue leaderboard data is unavailable right now.",
+            "/shows",
+            "Browse recent shows",
+            |total| format!("Showing {total} venues"),
+            |_, venue| {
+                let href = format!("/venues/{}", venue.id);
+                let pill = venue.state.clone().unwrap_or_else(|| venue.country.clone());
+                let location = format_location(&venue.city, venue.state.as_deref());
+                let total = venue.total_shows.unwrap_or(0);
+                view! {
+                    <li class="result-card">
+                        <span class="pill">{pill}</span>
+                        <div class="result-body">
+                            <a class="result-label" href=href>{venue.name}</a>
+                            <span class="result-meta">{location}</span>
+                        </div>
+                        <span class="result-score">{format!("{total} shows")}</span>
+                    </li>
+                }
+                .into_any()
+            },
+        )
     };
 
-    let items = unit_resource(|| load_top_venues(50));
-
-    view! {
-        <section class="page">
-            <h1>"Venues"</h1>
-            <p class="lead">"Most visited venues by show count."</p>
-            <Suspense fallback=move || loading_state("Loading venues", "Fetching venue totals and rankings.")>
-                {move || {
-                    render(items.get().unwrap_or_default())
-                }}
-            </Suspense>
-        </section>
-    }
+    render_result_page(
+        "Venues",
+        "Most visited venues by show count.",
+        "Loading venues",
+        "Fetching venue totals and rankings.",
+        || load_top_venues(50),
+        render,
+    )
 }
 
 #[must_use]
 pub fn guests_page() -> impl IntoView {
     let render = |items: Vec<Guest>| {
-        if items.is_empty() {
-            empty_state_with_link(
-                "No guests available",
-                "Guest appearance stats are unavailable right now.",
-                "/shows",
-                "Browse recent shows",
-            )
-            .into_any()
-        } else {
-            let total = items.len();
-            view! {
-                <>
-                    <p class="list-summary">{format!("Showing {total} frequent guests")}</p>
-                    <ul class="result-list">
-                        {items
-                            .into_iter()
-                            .map(|guest| {
-                                let href = format!("/guests/{}", guest.slug);
-                                let total = guest.total_appearances.unwrap_or(0);
-                                view! {
-                                    <li class="result-card">
-                                        <span class="pill">"Guest"</span>
-                                        <div class="result-body">
-                                            <a class="result-label" href=href>{guest.name}</a>
-                                        </div>
-                                        <span class="result-score">{format!("{total} appearances")}</span>
-                                    </li>
-                                }
-                            })
-                            .collect::<Vec<_>>()}
-                    </ul>
-                </>
-            }
-            .into_any()
-        }
+        render_result_list(
+            items,
+            "No guests available",
+            "Guest appearance stats are unavailable right now.",
+            "/shows",
+            "Browse recent shows",
+            |total| format!("Showing {total} frequent guests"),
+            |_, guest| {
+                let href = format!("/guests/{}", guest.slug);
+                let total = guest.total_appearances.unwrap_or(0);
+                view! {
+                    <li class="result-card">
+                        <span class="pill">"Guest"</span>
+                        <div class="result-body">
+                            <a class="result-label" href=href>{guest.name}</a>
+                        </div>
+                        <span class="result-score">{format!("{total} appearances")}</span>
+                    </li>
+                }
+                .into_any()
+            },
+        )
     };
 
-    let items = unit_resource(|| load_top_guests(50));
-
-    view! {
-        <section class="page">
-            <h1>"Guests"</h1>
-            <p class="lead">"Most frequent guest appearances."</p>
-            <Suspense fallback=move || loading_state("Loading guests", "Collecting guest appearance counts.")>
-                {move || render(items.get().unwrap_or_default())}
-            </Suspense>
-        </section>
-    }
+    render_result_page(
+        "Guests",
+        "Most frequent guest appearances.",
+        "Loading guests",
+        "Collecting guest appearance counts.",
+        || load_top_guests(50),
+        render,
+    )
 }
 
 #[must_use]
 pub fn tours_page() -> impl IntoView {
     let render = |items: Vec<Tour>| {
-        if items.is_empty() {
-            empty_state_with_link(
-                "No tours available",
-                "Tour data is unavailable right now.",
-                "/shows",
-                "Browse recent shows",
-            )
-            .into_any()
-        } else {
-            let total = items.len();
-            view! {
-                <>
-                    <p class="list-summary">{format!("Showing {total} recent tours")}</p>
-                    <ul class="result-list">
-                        {items
-                            .into_iter()
-                            .map(|tour| {
-                                let href = format!("/tours/{}", tour.year);
-                                let total = tour.total_shows.unwrap_or(0);
-                                view! {
-                                    <li class="result-card">
-                                        <span class="pill">{tour.year}</span>
-                                        <div class="result-body">
-                                            <a class="result-label" href=href>{tour.name}</a>
-                                        </div>
-                                        <span class="result-score">{format!("{total} shows")}</span>
-                                    </li>
-                                }
-                            })
-                            .collect::<Vec<_>>()}
-                    </ul>
-                </>
-            }
-            .into_any()
-        }
+        render_result_list(
+            items,
+            "No tours available",
+            "Tour data is unavailable right now.",
+            "/shows",
+            "Browse recent shows",
+            |total| format!("Showing {total} recent tours"),
+            |_, tour| {
+                let href = format!("/tours/{}", tour.year);
+                let total = tour.total_shows.unwrap_or(0);
+                view! {
+                    <li class="result-card">
+                        <span class="pill">{tour.year}</span>
+                        <div class="result-body">
+                            <a class="result-label" href=href>{tour.name}</a>
+                        </div>
+                        <span class="result-score">{format!("{total} shows")}</span>
+                    </li>
+                }
+                .into_any()
+            },
+        )
     };
 
-    let items = unit_resource(|| load_recent_tours(25));
-
-    view! {
-        <section class="page">
-            <h1>"Tours"</h1>
-            <p class="lead">"Most recent tours, newest first."</p>
-            <Suspense fallback=move || loading_state("Loading tours", "Fetching latest tour activity.")>
-                {move || render(items.get().unwrap_or_default())}
-            </Suspense>
-        </section>
-    }
+    render_result_page(
+        "Tours",
+        "Most recent tours, newest first.",
+        "Loading tours",
+        "Fetching latest tour activity.",
+        || load_recent_tours(25),
+        render,
+    )
 }
 
 #[must_use]
 pub fn releases_page() -> impl IntoView {
     let render = |items: Vec<Release>| {
-        if items.is_empty() {
-            empty_state_with_link(
-                "No releases available",
-                "Release data is unavailable right now.",
-                "/search",
-                "Search releases",
-            )
-            .into_any()
-        } else {
-            let total = items.len();
-            view! {
-                <>
-                    <p class="list-summary">{format!("Showing {total} recent releases")}</p>
-                    <ul class="result-list">
-                        {items
-                            .into_iter()
-                            .map(|release| {
-                                let href = format!("/releases/{}", release.slug);
-                                let pill = release
-                                    .release_type
-                                    .clone()
-                                    .unwrap_or_else(|| "Release".into());
-                                let date = release
-                                    .release_date
-                                    .clone()
-                                    .unwrap_or_else(|| "TBD".into());
-                                view! {
-                                    <li class="result-card">
-                                        <span class="pill">{pill}</span>
-                                        <div class="result-body">
-                                            <a class="result-label" href=href>{release.title}</a>
-                                        </div>
-                                        <span class="result-score">{date}</span>
-                                    </li>
-                                }
-                            })
-                            .collect::<Vec<_>>()}
-                    </ul>
-                </>
-            }
-            .into_any()
-        }
+        render_result_list(
+            items,
+            "No releases available",
+            "Release data is unavailable right now.",
+            "/search",
+            "Search releases",
+            |total| format!("Showing {total} recent releases"),
+            |_, release| {
+                let href = format!("/releases/{}", release.slug);
+                let pill = release
+                    .release_type
+                    .clone()
+                    .unwrap_or_else(|| "Release".into());
+                let date = release.release_date.clone().unwrap_or_else(|| "TBD".into());
+                view! {
+                    <li class="result-card">
+                        <span class="pill">{pill}</span>
+                        <div class="result-body">
+                            <a class="result-label" href=href>{release.title}</a>
+                        </div>
+                        <span class="result-score">{date}</span>
+                    </li>
+                }
+                .into_any()
+            },
+        )
     };
 
-    let items = unit_resource(|| load_recent_releases(25));
-
-    view! {
-        <section class="page">
-            <h1>"Releases"</h1>
-            <p class="lead">"Latest official releases and recordings."</p>
-            <Suspense fallback=move || loading_state("Loading releases", "Fetching latest release metadata.")>
-                {move || render(items.get().unwrap_or_default())}
-            </Suspense>
-        </section>
-    }
+    render_result_page(
+        "Releases",
+        "Latest official releases and recordings.",
+        "Loading releases",
+        "Fetching latest release metadata.",
+        || load_recent_releases(25),
+        render,
+    )
 }
 
 fn parse_positive_i32_param(raw: &str, param_name: &str) -> Result<i32, String> {
