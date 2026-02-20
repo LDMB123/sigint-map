@@ -2186,10 +2186,6 @@ fn normalize_releases(items: Vec<Release>, limit: usize) -> Vec<Release> {
     })
 }
 
-async fn load_recent_shows_from_server(limit: usize) -> Vec<ShowSummary> {
-    normalize_show_summaries(get_recent_shows(limit).await.unwrap_or_default(), limit)
-}
-
 #[cfg(feature = "hydrate")]
 fn collect_present_pairs<K, V>(pairs: Vec<(K, Option<V>)>) -> HashMap<K, V>
 where
@@ -2267,11 +2263,17 @@ async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
         let shows =
             spawn_local_to_send(async move { dmb_idb::list_recent_shows(limit).await.ok() }).await;
         let Some(shows) = shows else {
-            return load_recent_shows_from_server(limit).await;
+            return normalize_show_summaries(
+                get_recent_shows(limit).await.unwrap_or_default(),
+                limit,
+            );
         };
 
         if shows.is_empty() {
-            return load_recent_shows_from_server(limit).await;
+            return normalize_show_summaries(
+                get_recent_shows(limit).await.unwrap_or_default(),
+                limit,
+            );
         }
 
         let (venue_ids, tour_ids) = collect_show_related_ids(&shows);
@@ -2295,7 +2297,7 @@ async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
 
     #[cfg(not(feature = "hydrate"))]
     {
-        load_recent_shows_from_server(limit).await
+        normalize_show_summaries(get_recent_shows(limit).await.unwrap_or_default(), limit)
     }
 }
 
