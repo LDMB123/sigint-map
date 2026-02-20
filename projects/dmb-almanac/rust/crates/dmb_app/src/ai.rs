@@ -1396,88 +1396,6 @@ pub async fn load_embedding_manifest_meta() -> Option<EmbeddingManifest> {
 }
 
 #[cfg(feature = "hydrate")]
-async fn load_ann_vectors(meta: &dmb_core::AnnIndexMeta, expected_dim: u32) -> Option<Vec<f32>> {
-    if meta.dim != expected_dim {
-        record_ai_warning(
-            "ann_index_dim_mismatch",
-            Some(format!(
-                "meta_dim {} != expected {}",
-                meta.dim, expected_dim
-            )),
-        );
-        return None;
-    }
-    let policy = cap_policy_from_navigator();
-    let estimated_bytes = meta.record_count as u64 * meta.dim as u64 * 4;
-    if estimated_bytes > policy.cap_bytes {
-        web_sys::console::warn_1(&wasm_bindgen::JsValue::from_str(&format!(
-            "ANN index too large for device ({} MB > {:.1} MB cap).",
-            estimated_bytes as f64 / 1_000_000.0,
-            policy.cap_bytes as f64 / 1_000_000.0
-        )));
-        record_ai_warning(
-            "ann_index_cap_exceeded",
-            Some(format!(
-                "{estimated_bytes} bytes > {} bytes",
-                policy.cap_bytes
-            )),
-        );
-        return None;
-    }
-    let vectors = fetch_f32_array_with_cap("/data/ann-index.bin", policy.cap_bytes).await?;
-    let expected_len = meta
-        .record_count
-        .checked_mul(meta.dim)
-        .map(|v| v as usize)?;
-    if vectors.len() != expected_len {
-        web_sys::console::warn_1(&wasm_bindgen::JsValue::from_str(
-            "ann-index size mismatch; falling back to embedded vectors",
-        ));
-        record_ai_warning(
-            "ann_index_size_mismatch",
-            Some(format!("expected {expected_len}, got {}", vectors.len())),
-        );
-        return None;
-    }
-    Some(vectors)
-}
-
-#[cfg(feature = "hydrate")]
-async fn load_ivf_index(meta: &dmb_core::AnnIndexMeta) -> Option<AnnIvfIndex> {
-    if meta.method != "ivf-flat" {
-        return None;
-    }
-    let file = meta.index_file.as_deref()?;
-    let policy = cap_policy_from_navigator();
-    let clusters = meta.cluster_count.unwrap_or(0);
-    let estimate = if clusters == 0 || meta.dim == 0 {
-        None
-    } else {
-        let centroid_bytes = (clusters as u64)
-            .saturating_mul(meta.dim as u64)
-            .saturating_mul(4);
-        let list_bytes = (meta.record_count as u64).saturating_mul(4);
-        Some(centroid_bytes.saturating_add(list_bytes))
-    };
-    if let Some(estimate) = estimate {
-        let cap = ivf_cap_bytes_for_matrix(policy.cap_bytes);
-        if estimate > cap {
-            record_ai_warning(
-                "ivf_estimate_cap_exceeded",
-                Some(format!("{estimate} bytes > {cap} bytes")),
-            );
-            return None;
-        }
-    }
-    let url = format!("/data/{file}");
-    let ivf = fetch_json::<AnnIvfIndex>(&url).await?;
-    if ivf.dim != meta.dim || ivf.cluster_count == 0 {
-        return None;
-    }
-    Some(ivf)
-}
-
-#[cfg(feature = "hydrate")]
 async fn hydrate_missing_embedding_chunks(manifest: &EmbeddingManifest) {
     for chunk in &manifest.chunks {
         if dmb_idb::get_embedding_chunk(chunk.chunk_id)
@@ -1626,16 +1544,104 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     let target_vectors = max_vectors.max(MIN_SAMPLE_RECORDS);
     let ann_meta = load_ann_meta().await;
     let matrix = if let Some(meta) = ann_meta.as_ref() {
-        load_ann_vectors(meta, manifest.dim)
-            .await
-            .unwrap_or_else(Vec::new)
+        let vectors = if meta.dim != manifest.dim {
+            record_ai_warning(
+                "ann_index_dim_mismatch",
+                Some(format!(
+                    "meta_dim {} != expected {}",
+                    meta.dim, manifest.dim
+                )),
+            );
+            None
+        } else {
+            let policy = cap_policy_from_navigator();
+            let estimated_bytes = meta.record_count as u64 * meta.dim as u64 * 4;
+            if estimated_bytes > policy.cap_bytes {
+                web_sys::console::warn_1(&wasm_bindgen::JsValue::from_str(&format!(
+                    "ANN index too large for device ({} MB > {:.1} MB cap).",
+                    estimated_bytes as f64 / 1_000_000.0,
+                    policy.cap_bytes as f64 / 1_000_000.0
+                )));
+                record_ai_warning(
+                    "ann_index_cap_exceeded",
+                    Some(format!(
+                        "{estimated_bytes} bytes > {} bytes",
+                        policy.cap_bytes
+                    )),
+                );
+                None
+            } else {
+                match fetch_f32_array_with_cap("/data/ann-index.bin", policy.cap_bytes).await {
+                    Some(vectors) => {
+                        let expected_len =
+                            meta.record_count.checked_mul(meta.dim).map(|v| v as usize);
+                        if let Some(expected_len) = expected_len {
+                            if vectors.len() != expected_len {
+                                web_sys::console::warn_1(&wasm_bindgen::JsValue::from_str(
+                                    "ann-index size mismatch; falling back to embedded vectors",
+                                ));
+                                record_ai_warning(
+                                    "ann_index_size_mismatch",
+                                    Some(format!("expected {expected_len}, got {}", vectors.len())),
+                                );
+                                None
+                            } else {
+                                Some(vectors)
+                            }
+                        } else {
+                            None
+                        }
+                    }
+                    None => None,
+                }
+            }
+        };
+        vectors.unwrap_or_else(Vec::new)
     } else {
         Vec::new()
     };
     let use_ann = !matrix.is_empty();
     let ivf = if use_ann {
         if let Some(meta) = ann_meta.as_ref() {
-            load_ivf_index(meta).await
+            if meta.method != "ivf-flat" {
+                None
+            } else if let Some(file) = meta.index_file.as_deref() {
+                let policy = cap_policy_from_navigator();
+                let clusters = meta.cluster_count.unwrap_or(0);
+                let estimate = if clusters == 0 || meta.dim == 0 {
+                    None
+                } else {
+                    let centroid_bytes = (clusters as u64)
+                        .saturating_mul(meta.dim as u64)
+                        .saturating_mul(4);
+                    let list_bytes = (meta.record_count as u64).saturating_mul(4);
+                    Some(centroid_bytes.saturating_add(list_bytes))
+                };
+                if let Some(estimate) = estimate {
+                    let cap = ivf_cap_bytes_for_matrix(policy.cap_bytes);
+                    if estimate > cap {
+                        record_ai_warning(
+                            "ivf_estimate_cap_exceeded",
+                            Some(format!("{estimate} bytes > {cap} bytes")),
+                        );
+                        None
+                    } else {
+                        let url = format!("/data/{file}");
+                        match fetch_json::<AnnIvfIndex>(&url).await {
+                            Some(ivf) if ivf.dim == meta.dim && ivf.cluster_count > 0 => Some(ivf),
+                            _ => None,
+                        }
+                    }
+                } else {
+                    let url = format!("/data/{file}");
+                    match fetch_json::<AnnIvfIndex>(&url).await {
+                        Some(ivf) if ivf.dim == meta.dim && ivf.cluster_count > 0 => Some(ivf),
+                        _ => None,
+                    }
+                }
+            } else {
+                None
+            }
         } else {
             None
         }
