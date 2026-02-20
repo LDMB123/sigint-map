@@ -3056,14 +3056,6 @@ fn parse_route_slug_param(raw: &str) -> Result<String, String> {
     Ok(slug.to_string())
 }
 
-fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
-    let year = parse_positive_i32_param(raw, "year")?;
-    if !(1960..=2100).contains(&year) {
-        return Err("Invalid `year` parameter: expected 1960-2100.".to_string());
-    }
-    Ok(year)
-}
-
 fn render_route_param_subhead<T>(
     label: &str,
     raw: &str,
@@ -4236,13 +4228,29 @@ pub fn tour_year_page() -> impl IntoView {
         ),
     };
 
-    let tour = optional_resource_from_param!(year, parse_tour_year_param, load_tour);
+    let tour = optional_resource_from_param!(
+        year,
+        |raw: &str| {
+            let year = parse_positive_i32_param(raw, "year")?;
+            if !(1960..=2100).contains(&year) {
+                return Err("Invalid `year` parameter: expected 1960-2100.".to_string());
+            }
+            Ok(year)
+        },
+        load_tour
+    );
 
     detail_page_with_primary_resource!(
         back_href: "/tours",
         back_label: "Back to tours",
         title: "Tour Details",
-        subhead: move || render_route_param_subhead("Year", &year(), parse_tour_year_param),
+        subhead: move || render_route_param_subhead("Year", &year(), |raw: &str| {
+            let year = parse_positive_i32_param(raw, "year")?;
+            if !(1960..=2100).contains(&year) {
+                return Err("Invalid `year` parameter: expected 1960-2100.".to_string());
+            }
+            Ok(year)
+        }),
         loading_title: "Loading tour",
         loading_message: "Fetching tour details for this year.",
         content: move || render(tour.get().unwrap_or(None)),
