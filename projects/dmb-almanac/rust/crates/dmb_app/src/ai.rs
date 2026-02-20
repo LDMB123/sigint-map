@@ -227,7 +227,9 @@ pub fn detect_ai_capabilities() -> AiCapabilities {
             "navigator.gpu present but WebGPU helper missing",
         );
     }
-    let webgpu_disabled = read_webgpu_disabled().unwrap_or(false);
+    let webgpu_disabled = local_storage_item(WEBGPU_DISABLE_KEY)
+        .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
+        .unwrap_or(false);
     let webgpu_worker = window_property(&window, "dmbWebgpuScoresWorker").is_function();
     let webnn = js_value_exists(&navigator_property(&navigator, "ml"));
     let threads = window_property(&window, "crossOriginIsolated")
@@ -905,12 +907,6 @@ pub fn set_ann_cap_override_mb(value: Option<u64>) {
 }
 
 #[cfg(feature = "hydrate")]
-fn read_webgpu_disabled() -> Option<bool> {
-    let value = local_storage_item(WEBGPU_DISABLE_KEY)?;
-    Some(value == "1" || value.eq_ignore_ascii_case("true"))
-}
-
-#[cfg(feature = "hydrate")]
 pub fn set_webgpu_disabled(disabled: bool) {
     set_local_storage_flag(WEBGPU_DISABLE_KEY, disabled);
 }
@@ -922,13 +918,17 @@ fn store_worker_threshold(value: usize) {
 }
 
 #[cfg(feature = "hydrate")]
-fn auto_worker_threshold() -> Option<usize> {
-    let window = web_sys::window()?;
+fn ensure_default_worker_threshold() {
+    if read_worker_threshold().is_some() {
+        return;
+    }
+    let Some(window) = web_sys::window() else {
+        return;
+    };
     let navigator = window.navigator();
     let device_memory = navigator_property(&navigator, "deviceMemory").as_f64();
     let cores = window.navigator().hardware_concurrency().max(1.0) as usize;
-
-    let mut threshold = if device_memory.unwrap_or(0.0) >= 16.0 || cores >= 12 {
+    let threshold = if device_memory.unwrap_or(0.0) >= 16.0 || cores >= 12 {
         15_000
     } else if device_memory.unwrap_or(0.0) <= 4.0 || cores <= 4 {
         60_000
@@ -937,43 +937,12 @@ fn auto_worker_threshold() -> Option<usize> {
     } else {
         35_000
     };
-
-    threshold = clamp_worker_threshold(threshold);
-    Some(threshold)
-}
-
-#[cfg(feature = "hydrate")]
-fn ensure_default_worker_threshold() {
-    if read_worker_threshold().is_some() {
-        return;
-    }
-    if let Some(value) = auto_worker_threshold() {
-        store_worker_threshold(value);
-    }
+    store_worker_threshold(clamp_worker_threshold(threshold));
 }
 
 #[cfg(feature = "hydrate")]
 fn clamp_worker_threshold(value: usize) -> usize {
     value.clamp(MIN_WORKER_THRESHOLD, MAX_WORKER_THRESHOLD)
-}
-
-#[cfg(feature = "hydrate")]
-fn recommend_worker_threshold(result: &AiWorkerBenchmark) -> Option<usize> {
-    let (direct, worker) = match (result.direct_ms, result.worker_ms) {
-        (Some(direct), Some(worker)) => (direct, worker),
-        _ => return None,
-    };
-    let delta_ratio = (direct - worker).abs() / direct.max(1.0);
-    if delta_ratio < 0.05 {
-        return None;
-    }
-    let floats = result.floats.max(1);
-    let suggested = if worker < direct {
-        (floats as f64 * 0.75) as usize
-    } else {
-        (floats as f64 * 1.25) as usize
-    };
-    Some(clamp_worker_threshold(suggested))
 }
 
 #[cfg(feature = "hydrate")]
@@ -2104,9 +2073,19 @@ pub async fn benchmark_worker_threshold() -> Option<AiWorkerBenchmark> {
         winner,
         recommended_threshold: None,
     };
-    if let Some(recommended) = recommend_worker_threshold(&result) {
-        store_worker_threshold(recommended);
-        result.recommended_threshold = Some(recommended);
+    if let (Some(direct), Some(worker)) = (result.direct_ms, result.worker_ms) {
+        let delta_ratio = (direct - worker).abs() / direct.max(1.0);
+        if delta_ratio >= 0.05 {
+            let floats = result.floats.max(1);
+            let suggested = if worker < direct {
+                (floats as f64 * 0.75) as usize
+            } else {
+                (floats as f64 * 1.25) as usize
+            };
+            let recommended = clamp_worker_threshold(suggested);
+            store_worker_threshold(recommended);
+            result.recommended_threshold = Some(recommended);
+        }
     }
     if sampled {
         record_ai_warning(
