@@ -2160,10 +2160,6 @@ async fn load_curated_list(id: i32) -> Option<CuratedList> {
     lists.into_iter().find(|list| list.id == id)
 }
 
-async fn load_curated_list_items_page(id: i32) -> Vec<CuratedListItem> {
-    load_curated_list_items(id, 200).await
-}
-
 fn normalize_with_limit<T>(
     mut items: Vec<T>,
     limit: usize,
@@ -6547,7 +6543,7 @@ pub fn curated_list_detail_page() -> impl IntoView {
         list_id,
         |raw: &str| parse_positive_i32_param(raw, "listId"),
         Vec::new(),
-        load_curated_list_items_page
+        |id| async move { load_curated_list_items(id, 200).await }
     );
 
     #[cfg(feature = "hydrate")]
