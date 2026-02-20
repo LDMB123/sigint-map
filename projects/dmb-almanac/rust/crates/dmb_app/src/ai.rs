@@ -1498,31 +1498,6 @@ async fn hydrate_missing_embedding_chunks(manifest: &EmbeddingManifest) {
 }
 
 #[cfg(feature = "hydrate")]
-async fn load_embedding_manifest_with_cache(version: &str) -> Option<EmbeddingManifest> {
-    if let Some(manifest) = dmb_idb::get_embedding_manifest(version)
-        .await
-        .ok()
-        .flatten()
-    {
-        return Some(manifest);
-    }
-
-    let fetched = match fetch_json::<EmbeddingManifest>("/data/embedding-manifest.json").await {
-        Some(payload) => payload,
-        None => {
-            record_ai_warning("embedding_manifest_fetch_failed", None);
-            return None;
-        }
-    };
-    dmb_idb::store_embedding_manifest(&fetched).await.ok()?;
-    hydrate_missing_embedding_chunks(&fetched).await;
-    dmb_idb::get_embedding_manifest(version)
-        .await
-        .ok()
-        .flatten()
-}
-
-#[cfg(feature = "hydrate")]
 async fn load_records_and_matrix_from_chunks(
     manifest: &EmbeddingManifest,
     mut matrix: Vec<f32>,
@@ -1573,7 +1548,27 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
             return Some(sample_index);
         }
     }
-    let manifest = load_embedding_manifest_with_cache(CORE_SCHEMA_VERSION).await?;
+    let manifest = if let Some(manifest) = dmb_idb::get_embedding_manifest(CORE_SCHEMA_VERSION)
+        .await
+        .ok()
+        .flatten()
+    {
+        manifest
+    } else {
+        let fetched = match fetch_json::<EmbeddingManifest>("/data/embedding-manifest.json").await {
+            Some(payload) => payload,
+            None => {
+                record_ai_warning("embedding_manifest_fetch_failed", None);
+                return None;
+            }
+        };
+        dmb_idb::store_embedding_manifest(&fetched).await.ok()?;
+        hydrate_missing_embedding_chunks(&fetched).await;
+        dmb_idb::get_embedding_manifest(CORE_SCHEMA_VERSION)
+            .await
+            .ok()
+            .flatten()?
+    };
     let policy = cap_policy_from_navigator();
     let max_vectors = if manifest.dim == 0 {
         0usize
