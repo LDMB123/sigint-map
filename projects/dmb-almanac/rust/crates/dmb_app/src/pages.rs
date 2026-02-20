@@ -5651,30 +5651,6 @@ where
     .into_any()
 }
 
-#[cfg(feature = "hydrate")]
-fn render_my_shows_hydrated<F>(
-    loading: bool,
-    saved: Vec<UserAttendedShow>,
-    on_remove: F,
-) -> impl IntoView
-where
-    F: Fn(i32) + Clone + 'static,
-{
-    if loading {
-        return loading_state("Loading saved shows", "Reading your local show list.").into_any();
-    }
-    if saved.is_empty() {
-        return empty_state_with_link(
-            "No saved shows yet",
-            "Add a show ID to start tracking your attended history.",
-            "/shows",
-            "Browse shows",
-        )
-        .into_any();
-    }
-    render_saved_show_rows(saved, on_remove).into_any()
-}
-
 #[must_use]
 #[allow(clippy::too_many_lines)]
 pub fn my_shows_page() -> impl IntoView {
@@ -5799,7 +5775,21 @@ pub fn my_shows_page() -> impl IntoView {
             {move || {
                 #[cfg(feature = "hydrate")]
                 {
-                    render_my_shows_hydrated(loading.get(), items.get(), on_remove.clone()).into_any()
+                    let saved = items.get();
+                    if loading.get() {
+                        loading_state("Loading saved shows", "Reading your local show list.")
+                            .into_any()
+                    } else if saved.is_empty() {
+                        empty_state_with_link(
+                            "No saved shows yet",
+                            "Add a show ID to start tracking your attended history.",
+                            "/shows",
+                            "Browse shows",
+                        )
+                        .into_any()
+                    } else {
+                        render_saved_show_rows(saved, on_remove.clone()).into_any()
+                    }
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
