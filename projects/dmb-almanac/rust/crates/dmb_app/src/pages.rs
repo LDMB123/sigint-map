@@ -727,6 +727,19 @@ fn refresh_runtime_metrics_signals(state: AiDiagnosticsState) {
 }
 
 #[cfg(feature = "hydrate")]
+fn refresh_ai_config_signals(state: AiDiagnosticsState) {
+    let _ = state
+        .ai_config_seeded
+        .try_set(crate::ai::ai_config_seeded());
+    let _ = state
+        .ai_config_version
+        .try_set(crate::ai::ai_config_version());
+    let _ = state
+        .ai_config_generated_at
+        .try_set(crate::ai::ai_config_generated_at());
+}
+
+#[cfg(feature = "hydrate")]
 fn apply_worker_threshold_override(state: AiDiagnosticsState, value: Option<usize>) {
     crate::ai::set_worker_threshold_override(value);
     refresh_worker_threshold_signals(state);
@@ -779,15 +792,7 @@ fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
     let _ = state
         .worker_failure
         .try_set(crate::ai::worker_failure_status());
-    let _ = state
-        .ai_config_seeded
-        .try_set(crate::ai::ai_config_seeded());
-    let _ = state
-        .ai_config_version
-        .try_set(crate::ai::ai_config_version());
-    let _ = state
-        .ai_config_generated_at
-        .try_set(crate::ai::ai_config_generated_at());
+    refresh_ai_config_signals(state);
     let _ = state
         .embedding_sample_enabled
         .try_set(crate::ai::embedding_sample_enabled());
@@ -1158,14 +1163,9 @@ fn action_refresh_ai_config(state: AiDiagnosticsState) {
     let _ = state;
     #[cfg(feature = "hydrate")]
     {
-        let ai_config_version = state.ai_config_version.clone();
-        let ai_config_generated_at = state.ai_config_generated_at.clone();
-        let ai_config_seeded = state.ai_config_seeded.clone();
         spawn_local(async move {
             if crate::ai::refresh_ai_config().await {
-                ai_config_version.set(crate::ai::ai_config_version());
-                ai_config_generated_at.set(crate::ai::ai_config_generated_at());
-                ai_config_seeded.set(crate::ai::ai_config_seeded());
+                refresh_ai_config_signals(state);
             }
         });
     }
