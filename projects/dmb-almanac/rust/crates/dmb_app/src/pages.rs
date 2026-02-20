@@ -215,7 +215,7 @@ fn sync_search_query_params(query: &str, active_filter: &str) {
 
 #[must_use]
 pub fn home_page() -> impl IntoView {
-    let stats = Resource::new(|| (), |()| async move { get_home_stats().await.ok() });
+    let stats = unit_resource(|| async { get_home_stats().await.ok() });
     let storage = RwSignal::new(None::<crate::data::StorageInfo>);
 
     #[cfg(feature = "hydrate")]
@@ -2426,6 +2426,15 @@ macro_rules! load_with_hydrate_or_ssr_list {
     }};
 }
 
+fn unit_resource<T, Loader, LoaderFuture>(loader: Loader) -> Resource<T>
+where
+    T: serde::Serialize + serde::de::DeserializeOwned + Send + Sync + 'static,
+    Loader: Fn() -> LoaderFuture + Copy + Send + Sync + 'static,
+    LoaderFuture: std::future::Future<Output = T> + Send + 'static,
+{
+    Resource::new(|| (), move |()| loader())
+}
+
 async fn load_top_songs(limit: usize) -> Vec<Song> {
     load_with_limit_sources!(
         limit,
@@ -2754,7 +2763,7 @@ pub fn shows_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |()| async move { load_recent_shows(30).await });
+    let items = unit_resource(|| load_recent_shows(30));
 
     view! {
         <section class="page">
@@ -2813,7 +2822,7 @@ pub fn songs_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |()| async move { load_top_songs(50).await });
+    let items = unit_resource(|| load_top_songs(50));
 
     view! {
         <section class="page">
@@ -2872,7 +2881,7 @@ pub fn venues_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |()| async move { load_top_venues(50).await });
+    let items = unit_resource(|| load_top_venues(50));
 
     view! {
         <section class="page">
@@ -2927,7 +2936,7 @@ pub fn guests_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |()| async move { load_top_guests(50).await });
+    let items = unit_resource(|| load_top_guests(50));
 
     view! {
         <section class="page">
@@ -2980,7 +2989,7 @@ pub fn tours_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |()| async move { load_recent_tours(25).await });
+    let items = unit_resource(|| load_recent_tours(25));
 
     view! {
         <section class="page">
@@ -3040,7 +3049,7 @@ pub fn releases_page() -> impl IntoView {
         }
     };
 
-    let items = Resource::new(|| (), |()| async move { load_recent_releases(25).await });
+    let items = unit_resource(|| load_recent_releases(25));
 
     view! {
         <section class="page">
@@ -5449,11 +5458,11 @@ fn render_stats_guests_content(data: StatsGuests) -> impl IntoView {
 pub fn stats_page() -> impl IntoView {
     let active_tab = RwSignal::new(0u8);
 
-    let overview = Resource::new(|| (), |()| async move { load_stats_overview().await });
-    let songs = Resource::new(|| (), |()| async move { load_stats_songs().await });
-    let shows = Resource::new(|| (), |()| async move { load_stats_shows().await });
-    let venues = Resource::new(|| (), |()| async move { load_stats_venues().await });
-    let guests = Resource::new(|| (), |()| async move { load_stats_guests().await });
+    let overview = unit_resource(load_stats_overview);
+    let songs = unit_resource(load_stats_songs);
+    let shows = unit_resource(load_stats_shows);
+    let venues = unit_resource(load_stats_venues);
+    let guests = unit_resource(load_stats_guests);
 
     view! {
         <section class="page">
@@ -6535,7 +6544,7 @@ fn render_curated_list_detail_content(
 
 #[must_use]
 pub fn liberation_page() -> impl IntoView {
-    let items = Resource::new(|| (), |()| async move { load_liberation_list(50).await });
+    let items = unit_resource(|| load_liberation_list(50));
 
     view! {
         <section class="page">
@@ -6557,7 +6566,7 @@ pub fn liberation_page() -> impl IntoView {
 
 #[must_use]
 pub fn discography_page() -> impl IntoView {
-    let items = Resource::new(|| (), |()| async move { load_all_releases().await });
+    let items = unit_resource(load_all_releases);
 
     view! {
         <section class="page">
@@ -6579,7 +6588,7 @@ pub fn discography_page() -> impl IntoView {
 
 #[must_use]
 pub fn curated_lists_page() -> impl IntoView {
-    let items = Resource::new(|| (), |()| async move { load_curated_lists().await });
+    let items = unit_resource(load_curated_lists);
 
     view! {
         <section class="page">
