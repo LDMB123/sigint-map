@@ -2243,23 +2243,35 @@ fn normalize_releases(items: Vec<Release>, limit: usize) -> Vec<Release> {
     })
 }
 
+async fn load_recent_shows_from_server(limit: usize) -> Vec<ShowSummary> {
+    normalize_show_summaries(get_recent_shows(limit).await.unwrap_or_default(), limit)
+}
+
+#[cfg(feature = "hydrate")]
+fn collect_present_pairs<K, V>(pairs: Vec<(K, Option<V>)>) -> HashMap<K, V>
+where
+    K: Eq + std::hash::Hash,
+{
+    let mut out = HashMap::with_capacity(pairs.len());
+    for (key, value) in pairs {
+        if let Some(value) = value {
+            out.insert(key, value);
+        }
+    }
+    out
+}
+
 async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
     #[cfg(feature = "hydrate")]
     {
         let shows =
             spawn_local_to_send(async move { dmb_idb::list_recent_shows(limit).await.ok() }).await;
         let Some(shows) = shows else {
-            return normalize_show_summaries(
-                get_recent_shows(limit).await.unwrap_or_default(),
-                limit,
-            );
+            return load_recent_shows_from_server(limit).await;
         };
 
         if shows.is_empty() {
-            return normalize_show_summaries(
-                get_recent_shows(limit).await.unwrap_or_default(),
-                limit,
-            );
+            return load_recent_shows_from_server(limit).await;
         }
 
         let mut venue_ids: HashSet<i32> = HashSet::new();
@@ -2277,13 +2289,7 @@ async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
                     .await;
             (id, venue)
         });
-        let venues_vec = join_all(venue_futs).await;
-        let mut venues: HashMap<i32, Venue> = HashMap::new();
-        for (id, venue) in venues_vec {
-            if let Some(venue) = venue {
-                venues.insert(id, venue);
-            }
-        }
+        let venues: HashMap<i32, Venue> = collect_present_pairs(join_all(venue_futs).await);
 
         let tour_futs = tour_ids.iter().copied().map(|id| async move {
             let tour =
@@ -2293,13 +2299,7 @@ async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
                 .await;
             (id, tour)
         });
-        let tours_vec = join_all(tour_futs).await;
-        let mut tours: HashMap<i32, Tour> = HashMap::new();
-        for (id, tour) in tours_vec {
-            if let Some(tour) = tour {
-                tours.insert(id, tour);
-            }
-        }
+        let tours: HashMap<i32, Tour> = collect_present_pairs(join_all(tour_futs).await);
 
         let mut out = Vec::with_capacity(shows.len());
         for show in shows {
@@ -2328,7 +2328,7 @@ async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
 
     #[cfg(not(feature = "hydrate"))]
     {
-        normalize_show_summaries(get_recent_shows(limit).await.unwrap_or_default(), limit)
+        load_recent_shows_from_server(limit).await
     }
 }
 
