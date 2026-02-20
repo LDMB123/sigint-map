@@ -2187,30 +2187,6 @@ fn normalize_releases(items: Vec<Release>, limit: usize) -> Vec<Release> {
 }
 
 #[cfg(feature = "hydrate")]
-async fn load_idb_entities_by_id<T, Loader, LoaderFuture>(
-    ids: HashSet<i32>,
-    loader: Loader,
-) -> HashMap<i32, T>
-where
-    T: Send + 'static,
-    Loader: Fn(i32) -> LoaderFuture + Copy,
-    LoaderFuture: std::future::Future<Output = Option<T>> + 'static,
-{
-    let futs = ids.into_iter().map(|id| async move {
-        let entity = spawn_local_to_send(loader(id)).await;
-        (id, entity)
-    });
-    let pairs = join_all(futs).await;
-    let mut out = HashMap::with_capacity(pairs.len());
-    for (id, entity) in pairs {
-        if let Some(entity) = entity {
-            out.insert(id, entity);
-        }
-    }
-    out
-}
-
-#[cfg(feature = "hydrate")]
 fn hydrate_show_summary(
     show: Show,
     venues: &HashMap<i32, Venue>,
@@ -2526,6 +2502,7 @@ where
 }
 
 #[must_use]
+#[allow(clippy::too_many_lines)]
 pub fn shows_page() -> impl IntoView {
     let render = |items: Vec<ShowSummary>| {
         render_result_list(
@@ -2595,16 +2572,36 @@ pub fn shows_page() -> impl IntoView {
                         tour_ids.insert(tour_id);
                     }
                 }
-                let venues: HashMap<i32, Venue> =
-                    load_idb_entities_by_id(venue_ids, |id| async move {
-                        dmb_idb::get_venue(id).await.ok().flatten()
-                    })
-                    .await;
-                let tours: HashMap<i32, Tour> =
-                    load_idb_entities_by_id(tour_ids, |id| async move {
+                let venue_pairs = join_all(venue_ids.into_iter().map(|id| async move {
+                    let venue =
+                        spawn_local_to_send(
+                            async move { dmb_idb::get_venue(id).await.ok().flatten() },
+                        )
+                        .await;
+                    (id, venue)
+                }))
+                .await;
+                let mut venues = HashMap::with_capacity(venue_pairs.len());
+                for (id, venue) in venue_pairs {
+                    if let Some(venue) = venue {
+                        venues.insert(id, venue);
+                    }
+                }
+
+                let tour_pairs = join_all(tour_ids.into_iter().map(|id| async move {
+                    let tour = spawn_local_to_send(async move {
                         dmb_idb::get_tour_by_id(id).await.ok().flatten()
                     })
                     .await;
+                    (id, tour)
+                }))
+                .await;
+                let mut tours = HashMap::with_capacity(tour_pairs.len());
+                for (id, tour) in tour_pairs {
+                    if let Some(tour) = tour {
+                        tours.insert(id, tour);
+                    }
+                }
 
                 normalize_show_summaries(
                     shows
