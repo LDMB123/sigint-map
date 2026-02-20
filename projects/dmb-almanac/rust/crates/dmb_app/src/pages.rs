@@ -2123,10 +2123,6 @@ async fn load_show(id: i32) -> Option<Show> {
     load_entity_by_id!(id, dmb_idb::get_show, get_show)
 }
 
-async fn load_release(slug: String) -> Option<Release> {
-    load_entity_by_slug!(slug, dmb_idb::get_release_by_slug, get_release)
-}
-
 async fn load_venue(id: i32) -> Option<Venue> {
     load_entity_by_id!(id, dmb_idb::get_venue, get_venue)
 }
@@ -4104,13 +4100,16 @@ pub fn release_detail_page() -> impl IntoView {
         )
     };
 
-    let release = optional_resource_from_param!(slug, parse_route_slug_param, load_release);
+    let release =
+        optional_resource_from_param!(slug, parse_route_slug_param, |slug: String| async move {
+            load_entity_by_slug!(slug, dmb_idb::get_release_by_slug, get_release)
+        });
     let tracks = resource_from_param_or_default!(
         slug,
         parse_route_slug_param,
         Some(Vec::new()),
         |slug: String| async move {
-            let release = load_release(slug).await;
+            let release = load_entity_by_slug!(slug, dmb_idb::get_release_by_slug, get_release);
             Some(match release {
                 Some(release) => load_release_tracks(release.id).await,
                 None => Vec::new(),
