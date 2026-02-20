@@ -2965,25 +2965,6 @@ fn render_import_or_missing_with_link(
     }
 }
 
-fn hydrate_saved_show_ids(saved_show_ids: RwSignal<std::collections::HashSet<i32>>) {
-    #[cfg(feature = "hydrate")]
-    {
-        let saved_show_ids_signal = saved_show_ids.clone();
-        spawn_local(async move {
-            let ids = load_user_attended_shows()
-                .await
-                .into_iter()
-                .map(|item| item.show_id)
-                .collect::<std::collections::HashSet<_>>();
-            saved_show_ids_signal.set(ids);
-        });
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = saved_show_ids;
-    }
-}
-
 fn queue_toggle_saved_show(
     show_id_value: i32,
     show_date_value: String,
@@ -3427,6 +3408,7 @@ fn render_show_setlist_content(
 }
 
 #[must_use]
+#[allow(clippy::too_many_lines)]
 pub fn show_detail_page() -> impl IntoView {
     let show_id = route_param_or_default("showId");
     let seed_data_state = use_seed_data_state();
@@ -3436,7 +3418,22 @@ pub fn show_detail_page() -> impl IntoView {
     let save_pending = RwSignal::new(false);
     let save_message = RwSignal::new(None::<(String, bool)>);
 
-    hydrate_saved_show_ids(saved_show_ids.clone());
+    #[cfg(feature = "hydrate")]
+    {
+        let saved_show_ids_signal = saved_show_ids.clone();
+        spawn_local(async move {
+            let ids = load_user_attended_shows()
+                .await
+                .into_iter()
+                .map(|item| item.show_id)
+                .collect::<std::collections::HashSet<_>>();
+            saved_show_ids_signal.set(ids);
+        });
+    }
+    #[cfg(not(feature = "hydrate"))]
+    {
+        let _ = &saved_show_ids;
+    }
 
     reset_filter_and_query_on_route_change(show_id, active_set, setlist_query);
 
