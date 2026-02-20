@@ -4670,39 +4670,6 @@ macro_rules! load_stats_hydrate_or_default {
 // ---------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
-async fn load_stats_songs() -> StatsSongs {
-    load_stats_hydrate_or_default!({
-        let top_played = dmb_idb::stats_top_songs(25).await.unwrap_or_default();
-        let top_openers = dmb_idb::stats_top_openers(10).await.unwrap_or_default();
-        let top_closers = dmb_idb::stats_top_closers(10).await.unwrap_or_default();
-        let top_encores = dmb_idb::stats_top_encores(10).await.unwrap_or_default();
-
-        let debuts_by_year = {
-            let setlists: Vec<SetlistEntry> = dmb_idb::list_all(dmb_idb::TABLE_SETLIST_ENTRIES)
-                .await
-                .unwrap_or_default();
-            if setlists.is_empty() {
-                Vec::new()
-            } else {
-                let json = serde_json::to_string(&setlists).unwrap_or_default();
-                match dmb_wasm::calculate_song_debuts_with_count(&json) {
-                    Ok(map) => js_map_to_u32_pairs(&map),
-                    Err(_) => Vec::new(),
-                }
-            }
-        };
-
-        StatsSongs {
-            top_played,
-            top_openers,
-            top_closers,
-            top_encores,
-            debuts_by_year,
-        }
-    })
-}
-
-#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_shows() -> StatsShows {
     load_stats_hydrate_or_default!({
         let shows: Vec<Show> = dmb_idb::list_all(dmb_idb::TABLE_SHOWS)
@@ -5231,7 +5198,37 @@ pub fn stats_page() -> impl IntoView {
             }
         })
     });
-    let songs = unit_resource(load_stats_songs);
+    let songs = unit_resource(|| async {
+        load_stats_hydrate_or_default!({
+            let top_played = dmb_idb::stats_top_songs(25).await.unwrap_or_default();
+            let top_openers = dmb_idb::stats_top_openers(10).await.unwrap_or_default();
+            let top_closers = dmb_idb::stats_top_closers(10).await.unwrap_or_default();
+            let top_encores = dmb_idb::stats_top_encores(10).await.unwrap_or_default();
+
+            let debuts_by_year = {
+                let setlists: Vec<SetlistEntry> = dmb_idb::list_all(dmb_idb::TABLE_SETLIST_ENTRIES)
+                    .await
+                    .unwrap_or_default();
+                if setlists.is_empty() {
+                    Vec::new()
+                } else {
+                    let json = serde_json::to_string(&setlists).unwrap_or_default();
+                    match dmb_wasm::calculate_song_debuts_with_count(&json) {
+                        Ok(map) => js_map_to_u32_pairs(&map),
+                        Err(_) => Vec::new(),
+                    }
+                }
+            };
+
+            StatsSongs {
+                top_played,
+                top_openers,
+                top_closers,
+                top_encores,
+                debuts_by_year,
+            }
+        })
+    });
     let shows = unit_resource(load_stats_shows);
     let venues = unit_resource(load_stats_venues);
     let guests = unit_resource(load_stats_guests);
