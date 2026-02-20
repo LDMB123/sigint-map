@@ -1416,45 +1416,6 @@ async fn hydrate_missing_embedding_chunks(manifest: &EmbeddingManifest) {
 }
 
 #[cfg(feature = "hydrate")]
-async fn load_records_and_matrix_from_chunks(
-    manifest: &EmbeddingManifest,
-    mut matrix: Vec<f32>,
-    use_ann: bool,
-    target_vectors: usize,
-) -> (Vec<EmbeddingRecord>, Vec<f32>, usize, bool) {
-    let mut records = Vec::new();
-    let mut chunks_loaded = 0usize;
-    let mut budget_capped = false;
-
-    for meta in &manifest.chunks {
-        if let Some(chunk) = dmb_idb::get_embedding_chunk(meta.chunk_id)
-            .await
-            .ok()
-            .flatten()
-        {
-            for mut record in chunk.records {
-                if !use_ann {
-                    matrix.extend_from_slice(&record.vector);
-                }
-                // Keep vectors only in the contiguous matrix to avoid doubling memory.
-                record.vector.clear();
-                records.push(record);
-                if !use_ann && records.len() >= target_vectors {
-                    budget_capped = true;
-                    break;
-                }
-            }
-            chunks_loaded += 1;
-            if budget_capped {
-                break;
-            }
-        }
-    }
-
-    (records, matrix, chunks_loaded, budget_capped)
-}
-
-#[cfg(feature = "hydrate")]
 pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     if let Some(existing) = EMBEDDING_INDEX.get() {
         return Some(existing.clone());
@@ -1648,8 +1609,39 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     } else {
         None
     };
-    let (records, matrix, chunks_loaded, budget_capped) =
-        load_records_and_matrix_from_chunks(&manifest, matrix, use_ann, target_vectors).await;
+    let (records, matrix, chunks_loaded, budget_capped) = {
+        let mut records = Vec::new();
+        let mut matrix = matrix;
+        let mut chunks_loaded = 0usize;
+        let mut budget_capped = false;
+
+        for meta in &manifest.chunks {
+            if let Some(chunk) = dmb_idb::get_embedding_chunk(meta.chunk_id)
+                .await
+                .ok()
+                .flatten()
+            {
+                for mut record in chunk.records {
+                    if !use_ann {
+                        matrix.extend_from_slice(&record.vector);
+                    }
+                    // Keep vectors only in the contiguous matrix to avoid doubling memory.
+                    record.vector.clear();
+                    records.push(record);
+                    if !use_ann && records.len() >= target_vectors {
+                        budget_capped = true;
+                        break;
+                    }
+                }
+                chunks_loaded += 1;
+                if budget_capped {
+                    break;
+                }
+            }
+        }
+
+        (records, matrix, chunks_loaded, budget_capped)
+    };
 
     if budget_capped {
         record_ai_warning(
