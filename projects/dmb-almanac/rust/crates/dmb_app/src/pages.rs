@@ -3096,6 +3096,17 @@ macro_rules! optional_resource_from_param {
     };
 }
 
+macro_rules! resource_from_param_or_default {
+    ($source:expr, $parse:expr, $default:expr, $loader:expr) => {
+        Resource::new($source, |raw: String| async move {
+            let Ok(parsed) = $parse(&raw) else {
+                return $default;
+            };
+            $loader(parsed).await
+        })
+    };
+}
+
 macro_rules! detail_page_with_primary_resource {
     (
         back_href: $back_href:expr,
@@ -4177,17 +4188,19 @@ pub fn release_detail_page() -> impl IntoView {
         |raw: &str| parse_slug_param(raw, "slug"),
         load_release
     );
-    let tracks = Resource::new(slug, |slug: String| async move {
-        let Some(parsed_slug) = parse_slug_param(&slug, "slug").ok() else {
-            return Some(Vec::new());
-        };
-        let release = load_release(parsed_slug).await;
-        if let Some(release) = release {
-            Some(load_release_tracks(release.id).await)
-        } else {
-            Some(Vec::new())
+    let tracks = resource_from_param_or_default!(
+        slug,
+        |raw: &str| parse_slug_param(raw, "slug"),
+        Some(Vec::new()),
+        |parsed_slug| async move {
+            let release = load_release(parsed_slug).await;
+            if let Some(release) = release {
+                Some(load_release_tracks(release.id).await)
+            } else {
+                Some(Vec::new())
+            }
         }
-    });
+    );
 
     view! {
         <section class="page">
@@ -6586,12 +6599,12 @@ pub fn curated_list_detail_page() -> impl IntoView {
         lists.into_iter().find(|list| list.id == id)
     });
 
-    let items = Resource::new(list_id, |id: String| async move {
-        let Ok(id) = parse_list_id_param(&id) else {
-            return Vec::new();
-        };
-        load_curated_list_items(id, 200).await
-    });
+    let items = resource_from_param_or_default!(
+        list_id,
+        parse_list_id_param,
+        Vec::new(),
+        |id| async move { load_curated_list_items(id, 200).await }
+    );
 
     #[cfg(feature = "hydrate")]
     {
