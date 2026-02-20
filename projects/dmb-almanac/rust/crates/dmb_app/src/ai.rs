@@ -583,41 +583,11 @@ fn webgpu_matrix_allowed(matrix_bytes: u64, policy_cap: u64) -> bool {
     matrix_bytes <= policy_cap.min(WEBGPU_MATRIX_CAP_BYTES)
 }
 
-#[cfg(feature = "hydrate")]
-fn cap_embedding_index_inner(
-    records: Vec<EmbeddingRecord>,
-    matrix: Vec<f32>,
-    dim: usize,
-    ivf: Option<AnnIvfIndex>,
-    use_ann: bool,
-) -> (
-    Vec<EmbeddingRecord>,
-    Vec<f32>,
-    Option<AnnIvfIndex>,
-    AnnCapDiagnostics,
-) {
-    let policy = cap_policy_from_navigator();
-    cap_embedding_index_with_policy(records, matrix, dim, ivf, use_ann, policy)
-}
-
 #[cfg(any(feature = "hydrate", test))]
 fn estimate_ivf_bytes(ivf: &AnnIvfIndex) -> u64 {
     let centroid_floats: usize = ivf.centroids.iter().map(std::vec::Vec::len).sum();
     let list_entries: usize = ivf.lists.iter().map(std::vec::Vec::len).sum();
     (centroid_floats as u64 * 4).saturating_add(list_entries as u64 * 4)
-}
-
-#[cfg(feature = "hydrate")]
-fn estimate_ivf_bytes_from_meta(meta: &dmb_core::AnnIndexMeta) -> Option<u64> {
-    let clusters = meta.cluster_count.unwrap_or(0);
-    if clusters == 0 || meta.dim == 0 {
-        return None;
-    }
-    let centroid_bytes = (clusters as u64)
-        .saturating_mul(meta.dim as u64)
-        .saturating_mul(4);
-    let list_bytes = (meta.record_count as u64).saturating_mul(4);
-    Some(centroid_bytes.saturating_add(list_bytes))
 }
 
 #[cfg(any(feature = "hydrate", test))]
@@ -1500,7 +1470,17 @@ async fn load_ivf_index(meta: &dmb_core::AnnIndexMeta) -> Option<AnnIvfIndex> {
     }
     let file = meta.index_file.as_deref()?;
     let policy = cap_policy_from_navigator();
-    if let Some(estimate) = estimate_ivf_bytes_from_meta(meta) {
+    let clusters = meta.cluster_count.unwrap_or(0);
+    let estimate = if clusters == 0 || meta.dim == 0 {
+        None
+    } else {
+        let centroid_bytes = (clusters as u64)
+            .saturating_mul(meta.dim as u64)
+            .saturating_mul(4);
+        let list_bytes = (meta.record_count as u64).saturating_mul(4);
+        Some(centroid_bytes.saturating_add(list_bytes))
+    };
+    if let Some(estimate) = estimate {
         let cap = ivf_cap_bytes_for_matrix(policy.cap_bytes);
         if estimate > cap {
             record_ai_warning(
@@ -1686,8 +1666,14 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     }
 
     let dim = manifest.dim as usize;
-    let (records, matrix, ivf, mut diagnostics) =
-        cap_embedding_index_inner(records, matrix, dim, ivf, use_ann);
+    let (records, matrix, ivf, mut diagnostics) = cap_embedding_index_with_policy(
+        records,
+        matrix,
+        dim,
+        ivf,
+        use_ann,
+        cap_policy_from_navigator(),
+    );
     diagnostics.chunks_loaded = Some(chunks_loaded);
     diagnostics.records_loaded = Some(records.len());
     diagnostics.budget_capped = budget_capped;
