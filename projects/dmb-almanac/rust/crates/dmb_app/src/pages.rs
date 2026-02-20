@@ -5612,18 +5612,6 @@ fn hydrate_my_shows_state(
 }
 
 #[cfg(feature = "hydrate")]
-fn render_my_shows_message_view(message: Option<(String, bool)>) -> Option<AnyView> {
-    message.map(|(msg, is_error)| {
-        let class_name = if is_error {
-            "form-message form-message--error"
-        } else {
-            "form-message"
-        };
-        view! { <p class=class_name>{msg}</p> }.into_any()
-    })
-}
-
-#[cfg(feature = "hydrate")]
 fn render_saved_show_rows<F>(saved: Vec<UserAttendedShow>, on_remove: F) -> impl IntoView
 where
     F: Fn(i32) + Clone + 'static,
@@ -5794,7 +5782,14 @@ pub fn my_shows_page() -> impl IntoView {
             {move || {
                 #[cfg(feature = "hydrate")]
                 {
-                    render_my_shows_message_view(message.get())
+                    message.get().map(|(msg, is_error)| {
+                        let class_name = if is_error {
+                            "form-message form-message--error"
+                        } else {
+                            "form-message"
+                        };
+                        view! { <p class=class_name>{msg}</p> }.into_any()
+                    })
                 }
                 #[cfg(not(feature = "hydrate"))]
                 {
