@@ -3753,7 +3753,14 @@ pub fn song_detail_page() -> impl IntoView {
         if let Some(song) = song {
             return render_song_detail_content(song).into_any();
         }
-        render_song_missing_state(seed_data_state).into_any()
+        render_import_or_missing_with_link(
+            seed_data_state,
+            "Song details are still loading",
+            "Song not found",
+            "This song slug could not be resolved.",
+            "/songs",
+            "Browse songs",
+        )
     };
 
     let song = optional_resource_from_param!(slug, parse_route_slug_param, load_song);
@@ -3850,19 +3857,6 @@ fn render_song_detail_content(song: Song) -> impl IntoView {
         {render_song_slot_distribution(total_plays, slot_rows)}
     }
     .into_any()
-}
-
-fn render_song_missing_state(
-    seed_data_state: RwSignal<crate::data::SeedDataState>,
-) -> impl IntoView {
-    render_import_or_missing_with_link(
-        seed_data_state,
-        "Song details are still loading",
-        "Song not found",
-        "This song slug could not be resolved.",
-        "/songs",
-        "Browse songs",
-    )
 }
 
 #[must_use]
@@ -3971,19 +3965,6 @@ fn render_release_detail_card(release: &Release) -> impl IntoView {
         </div>
     }
     .into_any()
-}
-
-fn render_release_missing_state(
-    seed_data_state: RwSignal<crate::data::SeedDataState>,
-) -> impl IntoView {
-    render_import_or_missing_with_link(
-        seed_data_state,
-        "Release details are still loading",
-        "Release not found",
-        "This release slug could not be resolved.",
-        "/releases",
-        "Browse releases",
-    )
 }
 
 fn filter_release_tracks(
@@ -4203,7 +4184,14 @@ pub fn release_detail_page() -> impl IntoView {
         if let Some(release) = release {
             return render_release_detail_card(&release).into_any();
         }
-        render_release_missing_state(seed_data_state).into_any()
+        render_import_or_missing_with_link(
+            seed_data_state,
+            "Release details are still loading",
+            "Release not found",
+            "This release slug could not be resolved.",
+            "/releases",
+            "Browse releases",
+        )
     };
 
     let release = optional_resource_from_param!(slug, parse_route_slug_param, load_release);
