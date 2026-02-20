@@ -172,6 +172,37 @@ fn to_server_error(err: sqlx::Error) -> ServerFnError {
     ServerFnError::ServerError(err.to_string())
 }
 
+#[cfg(feature = "ssr")]
+type SqliteQuery<'q> = sqlx::query::Query<'q, sqlx::Sqlite, sqlx::sqlite::SqliteArguments<'q>>;
+
+#[cfg(feature = "ssr")]
+async fn fetch_optional_row<'q>(
+    query: SqliteQuery<'q>,
+    pool: &sqlx::SqlitePool,
+) -> Result<Option<sqlx::sqlite::SqliteRow>, ServerFnError> {
+    query.fetch_optional(pool).await.map_err(to_server_error)
+}
+
+#[cfg(feature = "ssr")]
+async fn fetch_rows<'q>(
+    query: SqliteQuery<'q>,
+    pool: &sqlx::SqlitePool,
+) -> Result<Vec<sqlx::sqlite::SqliteRow>, ServerFnError> {
+    query.fetch_all(pool).await.map_err(to_server_error)
+}
+
+#[cfg(feature = "ssr")]
+fn map_rows<T>(
+    rows: Vec<sqlx::sqlite::SqliteRow>,
+    mut map: impl FnMut(sqlx::sqlite::SqliteRow) -> Result<T, ServerFnError>,
+) -> Result<Vec<T>, ServerFnError> {
+    let mut out = Vec::with_capacity(rows.len());
+    for row in rows {
+        out.push(map(row)?);
+    }
+    Ok(out)
+}
+
 #[cfg(not(feature = "ssr"))]
 #[allow(dead_code)]
 fn ssr_only<T>() -> Result<T, ServerFnError> {
@@ -458,13 +489,14 @@ pub async fn get_show(id: i32) -> Result<Option<Show>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = sqlx::query(
-            "SELECT id, date, venue_id, tour_id, song_count, rarity_index FROM shows WHERE id = ?",
+        let row = fetch_optional_row(
+            sqlx::query(
+                "SELECT id, date, venue_id, tour_id, song_count, rarity_index FROM shows WHERE id = ?",
+            )
+            .bind(id),
+            &pool,
         )
-        .bind(id)
-        .fetch_optional(&pool)
-        .await
-        .map_err(to_server_error)?;
+        .await?;
 
         if let Some(row) = row {
             let date: String = row_string(&row, "date")?;
@@ -494,13 +526,14 @@ pub async fn get_song(slug: String) -> Result<Option<Song>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = sqlx::query(
-            "SELECT id, slug, title, sort_title, total_performances, last_played_date, opener_count, closer_count, encore_count FROM songs WHERE slug = ?",
+        let row = fetch_optional_row(
+            sqlx::query(
+                "SELECT id, slug, title, sort_title, total_performances, last_played_date, opener_count, closer_count, encore_count FROM songs WHERE slug = ?",
+            )
+            .bind(slug),
+            &pool,
         )
-        .bind(slug)
-        .fetch_optional(&pool)
-        .await
-        .map_err(to_server_error)?;
+        .await?;
 
         if let Some(row) = row {
             return Ok(Some(row_song(&row)?));
@@ -520,13 +553,14 @@ pub async fn get_venue(id: i32) -> Result<Option<Venue>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = sqlx::query(
-            "SELECT id, name, city, state, country, country_code, venue_type, total_shows FROM venues WHERE id = ?",
+        let row = fetch_optional_row(
+            sqlx::query(
+                "SELECT id, name, city, state, country, country_code, venue_type, total_shows FROM venues WHERE id = ?",
+            )
+            .bind(id),
+            &pool,
         )
-        .bind(id)
-        .fetch_optional(&pool)
-        .await
-        .map_err(to_server_error)?;
+        .await?;
 
         if let Some(row) = row {
             return Ok(Some(row_venue(&row)?));
@@ -546,17 +580,18 @@ pub async fn get_tour(year: i32) -> Result<Option<Tour>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = sqlx::query(
-            "SELECT id, year, name, total_shows
-             FROM tours
-             WHERE year = ?
-             ORDER BY year DESC, total_shows DESC, id DESC
-             LIMIT 1",
+        let row = fetch_optional_row(
+            sqlx::query(
+                "SELECT id, year, name, total_shows
+                 FROM tours
+                 WHERE year = ?
+                 ORDER BY year DESC, total_shows DESC, id DESC
+                 LIMIT 1",
+            )
+            .bind(year),
+            &pool,
         )
-        .bind(year)
-        .fetch_optional(&pool)
-        .await
-        .map_err(to_server_error)?;
+        .await?;
 
         if let Some(row) = row {
             return Ok(Some(row_tour(&row)?));
@@ -576,11 +611,11 @@ pub async fn get_tour_by_id(id: i32) -> Result<Option<Tour>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = sqlx::query("SELECT id, year, name, total_shows FROM tours WHERE id = ?")
-            .bind(id)
-            .fetch_optional(&pool)
-            .await
-            .map_err(to_server_error)?;
+        let row = fetch_optional_row(
+            sqlx::query("SELECT id, year, name, total_shows FROM tours WHERE id = ?").bind(id),
+            &pool,
+        )
+        .await?;
 
         if let Some(row) = row {
             return Ok(Some(row_tour(&row)?));
@@ -600,12 +635,12 @@ pub async fn get_guest(slug: String) -> Result<Option<Guest>, ServerFnError> {
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row =
+        let row = fetch_optional_row(
             sqlx::query("SELECT id, name, slug, total_appearances FROM guests WHERE slug = ?")
-                .bind(slug)
-                .fetch_optional(&pool)
-                .await
-                .map_err(to_server_error)?;
+                .bind(slug),
+            &pool,
+        )
+        .await?;
 
         if let Some(row) = row {
             return Ok(Some(row_guest(&row)?));
@@ -625,13 +660,14 @@ pub async fn get_release(slug: String) -> Result<Option<Release>, ServerFnError>
     #[cfg(feature = "ssr")]
     {
         let pool = pool().await?;
-        let row = sqlx::query(
-            "SELECT id, title, slug, release_type, release_date FROM releases WHERE slug = ?",
+        let row = fetch_optional_row(
+            sqlx::query(
+                "SELECT id, title, slug, release_type, release_date FROM releases WHERE slug = ?",
+            )
+            .bind(slug),
+            &pool,
         )
-        .bind(slug)
-        .fetch_optional(&pool)
-        .await
-        .map_err(to_server_error)?;
+        .await?;
 
         if let Some(row) = row {
             return Ok(Some(row_release(&row)?));
@@ -655,16 +691,14 @@ pub async fn get_all_releases() -> Result<Vec<Release>, ServerFnError> {
         }
 
         let pool = pool().await?;
-        let rows = sqlx::query(
-            "SELECT id, title, slug, release_type, release_date FROM releases ORDER BY release_date DESC, id DESC",
+        let rows = fetch_rows(
+            sqlx::query(
+                "SELECT id, title, slug, release_type, release_date FROM releases ORDER BY release_date DESC, id DESC",
+            ),
+            &pool,
         )
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
-            out.push(row_release(&row)?);
-        }
+        .await?;
+        let out = map_rows(rows, |row| row_release(&row))?;
         write_ttl_cache(&ALL_RELEASES_CACHE, &out);
         Ok(out)
     }
@@ -684,19 +718,19 @@ pub async fn get_release_tracks(release_id: i32) -> Result<Vec<ReleaseTrack>, Se
         }
 
         let pool = pool().await?;
-        let rows = sqlx::query(
-            "SELECT id, release_id, song_id, show_id, track_number, disc_number, duration_seconds, notes
-             FROM release_tracks
-             WHERE release_id = ?
-             ORDER BY disc_number, track_number, id",
+        let rows = fetch_rows(
+            sqlx::query(
+                "SELECT id, release_id, song_id, show_id, track_number, disc_number, duration_seconds, notes
+                 FROM release_tracks
+                 WHERE release_id = ?
+                 ORDER BY disc_number, track_number, id",
+            )
+            .bind(release_id),
+            &pool,
         )
-        .bind(release_id)
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
-            out.push(ReleaseTrack {
+        .await?;
+        let out = map_rows(rows, |row| {
+            Ok(ReleaseTrack {
                 id: row_i32(&row, "id")?,
                 release_id: row_i32(&row, "release_id")?,
                 song_id: row_opt_i32(&row, "song_id")?,
@@ -705,8 +739,8 @@ pub async fn get_release_tracks(release_id: i32) -> Result<Vec<ReleaseTrack>, Se
                 disc_number: row_opt_i32(&row, "disc_number")?,
                 duration_seconds: row_opt_i32(&row, "duration_seconds")?,
                 notes: row_opt_string(&row, "notes")?,
-            });
-        }
+            })
+        })?;
         write_ttl_keyed_cache(&RELEASE_TRACKS_CACHE, release_id, &out);
         Ok(out)
     }
@@ -726,24 +760,24 @@ pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, Serv
         }
 
         let pool = pool().await?;
-        let rows = sqlx::query(
-            "SELECT se.id, se.show_id, se.song_id, se.position, se.set_name, se.slot, se.duration_seconds,
-                    se.segue_into_song_id, se.is_segue, se.is_tease, se.tease_of_song_id, se.notes,
-                    sh.date as show_date,
-                    s.slug as song_slug, s.title as song_title, s.sort_title as song_sort_title,
-                    s.total_performances, s.last_played_date, s.opener_count, s.closer_count, s.encore_count
-             FROM setlist_entries se
-             LEFT JOIN shows sh ON sh.id = se.show_id
-             LEFT JOIN songs s ON s.id = se.song_id
-             WHERE se.show_id = ?
-             ORDER BY se.position, se.id",
+        let rows = fetch_rows(
+            sqlx::query(
+                "SELECT se.id, se.show_id, se.song_id, se.position, se.set_name, se.slot, se.duration_seconds,
+                        se.segue_into_song_id, se.is_segue, se.is_tease, se.tease_of_song_id, se.notes,
+                        sh.date as show_date,
+                        s.slug as song_slug, s.title as song_title, s.sort_title as song_sort_title,
+                        s.total_performances, s.last_played_date, s.opener_count, s.closer_count, s.encore_count
+                 FROM setlist_entries se
+                 LEFT JOIN shows sh ON sh.id = se.show_id
+                 LEFT JOIN songs s ON s.id = se.song_id
+                 WHERE se.show_id = ?
+                 ORDER BY se.position, se.id",
+            )
+            .bind(show_id),
+            &pool,
         )
-        .bind(show_id)
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
+        .await?;
+        let out = map_rows(rows, |row| {
             let show_date: Option<String> = row_opt_string(&row, "show_date")?;
             let year = show_date
                 .as_deref()
@@ -763,7 +797,7 @@ pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, Serv
                     encore_count: "encore_count",
                 },
             )?;
-            out.push(SetlistEntry {
+            Ok(SetlistEntry {
                 id: row_i32(&row, "id")?,
                 show_id: row_i32(&row, "show_id")?,
                 song_id: row_i32(&row, "song_id")?,
@@ -779,8 +813,8 @@ pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, Serv
                 tease_of_song_id: row_opt_i32(&row, "tease_of_song_id")?,
                 notes: row_opt_string(&row, "notes")?,
                 song,
-            });
-        }
+            })
+        })?;
         write_ttl_keyed_cache(&SETLIST_ENTRIES_CACHE, show_id, &out);
         Ok(out)
     }
@@ -805,27 +839,27 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
         }
 
         let pool = pool().await?;
-        let rows = sqlx::query(
-            "SELECT ll.id, ll.song_id, ll.last_played_date, ll.last_played_show_id,
-                    ll.days_since, ll.shows_since, ll.notes, ll.configuration, ll.is_liberated,
-                    ll.liberated_date, ll.liberated_show_id,
-                    s.slug as song_slug, s.title as song_title, s.sort_title as song_sort_title,
-                    s.total_performances, s.last_played_date as song_last_played_date,
-                    s.opener_count, s.closer_count, s.encore_count,
-                    sh.date as show_date, v.name as venue_name, v.city as venue_city, v.state as venue_state
-             FROM liberation_list ll
-             LEFT JOIN songs s ON ll.song_id = s.id
-             LEFT JOIN shows sh ON ll.last_played_show_id = sh.id
-             LEFT JOIN venues v ON sh.venue_id = v.id
-             ORDER BY ll.days_since DESC, ll.id DESC
-             LIMIT ?",
+        let rows = fetch_rows(
+            sqlx::query(
+                "SELECT ll.id, ll.song_id, ll.last_played_date, ll.last_played_show_id,
+                        ll.days_since, ll.shows_since, ll.notes, ll.configuration, ll.is_liberated,
+                        ll.liberated_date, ll.liberated_show_id,
+                        s.slug as song_slug, s.title as song_title, s.sort_title as song_sort_title,
+                        s.total_performances, s.last_played_date as song_last_played_date,
+                        s.opener_count, s.closer_count, s.encore_count,
+                        sh.date as show_date, v.name as venue_name, v.city as venue_city, v.state as venue_state
+                 FROM liberation_list ll
+                 LEFT JOIN songs s ON ll.song_id = s.id
+                 LEFT JOIN shows sh ON ll.last_played_show_id = sh.id
+                 LEFT JOIN venues v ON sh.venue_id = v.id
+                 ORDER BY ll.days_since DESC, ll.id DESC
+                 LIMIT ?",
+            )
+            .bind(limit),
+            &pool,
         )
-        .bind(limit)
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
+        .await?;
+        let out = map_rows(rows, |row| {
             let song = row_optional_song(
                 &row,
                 SongColumns {
@@ -854,7 +888,7 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
             } else {
                 None
             };
-            out.push(LiberationEntry {
+            Ok(LiberationEntry {
                 id: row_i32(&row, "id")?,
                 song_id: row_i32(&row, "song_id")?,
                 days_since: row_opt_i32(&row, "days_since")?,
@@ -868,8 +902,8 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
                 liberated_show_id: row_opt_i32(&row, "liberated_show_id")?,
                 song,
                 last_show,
-            });
-        }
+            })
+        })?;
         write_ttl_keyed_cache(&LIBERATION_LIST_CACHE, limit, &out);
         Ok(out)
     }
@@ -889,19 +923,17 @@ pub async fn get_curated_lists() -> Result<Vec<CuratedList>, ServerFnError> {
         }
 
         let pool = pool().await?;
-        let rows = sqlx::query(
-            "SELECT id, original_id, title, slug, category, description, item_count, is_featured,
-                    sort_order, created_at, updated_at
-             FROM curated_lists
-             ORDER BY sort_order, id",
+        let rows = fetch_rows(
+            sqlx::query(
+                "SELECT id, original_id, title, slug, category, description, item_count, is_featured,
+                        sort_order, created_at, updated_at
+                 FROM curated_lists
+                 ORDER BY sort_order, id",
+            ),
+            &pool,
         )
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
-            out.push(row_curated_list(&row)?);
-        }
+        .await?;
+        let out = map_rows(rows, |row| row_curated_list(&row))?;
         write_ttl_cache(&CURATED_LISTS_CACHE, &out);
         Ok(out)
     }
@@ -930,23 +962,21 @@ pub async fn get_curated_list_items(
         }
 
         let pool = pool().await?;
-        let rows = sqlx::query(
-            "SELECT id, list_id, position, item_type, show_id, song_id, venue_id, guest_id, release_id,
-                    item_title, item_link, notes, metadata, created_at
-             FROM curated_list_items
-             WHERE list_id = ?
-             ORDER BY position, id
-             LIMIT ?",
+        let rows = fetch_rows(
+            sqlx::query(
+                "SELECT id, list_id, position, item_type, show_id, song_id, venue_id, guest_id, release_id,
+                        item_title, item_link, notes, metadata, created_at
+                 FROM curated_list_items
+                 WHERE list_id = ?
+                 ORDER BY position, id
+                 LIMIT ?",
+            )
+            .bind(list_id)
+            .bind(limit),
+            &pool,
         )
-        .bind(list_id)
-        .bind(limit)
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
-            out.push(row_curated_list_item(&row)?);
-        }
+        .await?;
+        let out = map_rows(rows, |row| row_curated_list_item(&row))?;
         write_ttl_keyed_cache(&CURATED_LIST_ITEMS_CACHE, cache_key, &out);
         Ok(out)
     }
@@ -968,34 +998,32 @@ pub async fn get_recent_shows(limit: usize) -> Result<Vec<ShowSummary>, ServerFn
 
         let pool = pool().await?;
         let sql_limit = limit as i64;
-        let rows = sqlx::query(
-            r#"
-            SELECT
-              s.id,
-              s.date,
-              s.year,
-              s.venue_id,
-              v.name AS venue_name,
-              v.city AS venue_city,
-              v.state AS venue_state,
-              t.name AS tour_name,
-              t.year AS tour_year
-            FROM shows s
-            JOIN venues v ON v.id = s.venue_id
-            LEFT JOIN tours t ON t.id = s.tour_id
-            ORDER BY s.date DESC
-            LIMIT ?
-            "#,
+        let rows = fetch_rows(
+            sqlx::query(
+                r#"
+                SELECT
+                  s.id,
+                  s.date,
+                  s.year,
+                  s.venue_id,
+                  v.name AS venue_name,
+                  v.city AS venue_city,
+                  v.state AS venue_state,
+                  t.name AS tour_name,
+                  t.year AS tour_year
+                FROM shows s
+                JOIN venues v ON v.id = s.venue_id
+                LEFT JOIN tours t ON t.id = s.tour_id
+                ORDER BY s.date DESC
+                LIMIT ?
+                "#,
+            )
+            .bind(sql_limit),
+            &pool,
         )
-        .bind(sql_limit)
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
+        .await?;
 
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
-            out.push(row_show_summary(&row)?);
-        }
+        let out = map_rows(rows, |row| row_show_summary(&row))?;
         write_ttl_keyed_cache(&RECENT_SHOWS_CACHE, limit, &out);
         Ok(out)
     }
@@ -1017,24 +1045,22 @@ pub async fn get_top_songs(limit: usize) -> Result<Vec<Song>, ServerFnError> {
 
         let pool = pool().await?;
         let sql_limit = limit as i64;
-        let rows = sqlx::query(
-            r#"
-            SELECT id, slug, title, sort_title, total_performances, last_played_date,
-                   opener_count, closer_count, encore_count
-            FROM songs
-            ORDER BY COALESCE(total_performances, 0) DESC, title ASC
-            LIMIT ?
-            "#,
+        let rows = fetch_rows(
+            sqlx::query(
+                r#"
+                SELECT id, slug, title, sort_title, total_performances, last_played_date,
+                       opener_count, closer_count, encore_count
+                FROM songs
+                ORDER BY COALESCE(total_performances, 0) DESC, title ASC
+                LIMIT ?
+                "#,
+            )
+            .bind(sql_limit),
+            &pool,
         )
-        .bind(sql_limit)
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
+        .await?;
 
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
-            out.push(row_song(&row)?);
-        }
+        let out = map_rows(rows, |row| row_song(&row))?;
         write_ttl_keyed_cache(&TOP_SONGS_CACHE, limit, &out);
         Ok(out)
     }
@@ -1056,23 +1082,21 @@ pub async fn get_top_venues(limit: usize) -> Result<Vec<Venue>, ServerFnError> {
 
         let pool = pool().await?;
         let sql_limit = limit as i64;
-        let rows = sqlx::query(
-            r#"
-            SELECT id, name, city, state, country, country_code, venue_type, total_shows
-            FROM venues
-            ORDER BY COALESCE(total_shows, 0) DESC, name ASC
-            LIMIT ?
-            "#,
+        let rows = fetch_rows(
+            sqlx::query(
+                r#"
+                SELECT id, name, city, state, country, country_code, venue_type, total_shows
+                FROM venues
+                ORDER BY COALESCE(total_shows, 0) DESC, name ASC
+                LIMIT ?
+                "#,
+            )
+            .bind(sql_limit),
+            &pool,
         )
-        .bind(sql_limit)
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
+        .await?;
 
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
-            out.push(row_venue(&row)?);
-        }
+        let out = map_rows(rows, |row| row_venue(&row))?;
         write_ttl_keyed_cache(&TOP_VENUES_CACHE, limit, &out);
         Ok(out)
     }
@@ -1094,23 +1118,21 @@ pub async fn get_top_guests(limit: usize) -> Result<Vec<Guest>, ServerFnError> {
 
         let pool = pool().await?;
         let sql_limit = limit as i64;
-        let rows = sqlx::query(
-            r#"
-            SELECT id, name, slug, total_appearances
-            FROM guests
-            ORDER BY COALESCE(total_appearances, 0) DESC, name ASC
-            LIMIT ?
-            "#,
+        let rows = fetch_rows(
+            sqlx::query(
+                r#"
+                SELECT id, name, slug, total_appearances
+                FROM guests
+                ORDER BY COALESCE(total_appearances, 0) DESC, name ASC
+                LIMIT ?
+                "#,
+            )
+            .bind(sql_limit),
+            &pool,
         )
-        .bind(sql_limit)
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
+        .await?;
 
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
-            out.push(row_guest(&row)?);
-        }
+        let out = map_rows(rows, |row| row_guest(&row))?;
         write_ttl_keyed_cache(&TOP_GUESTS_CACHE, limit, &out);
         Ok(out)
     }
@@ -1132,23 +1154,21 @@ pub async fn get_recent_tours(limit: usize) -> Result<Vec<Tour>, ServerFnError> 
 
         let pool = pool().await?;
         let sql_limit = limit as i64;
-        let rows = sqlx::query(
-            r#"
-            SELECT id, year, name, total_shows
-            FROM tours
-            ORDER BY year DESC, total_shows DESC, id DESC
-            LIMIT ?
-            "#,
+        let rows = fetch_rows(
+            sqlx::query(
+                r#"
+                SELECT id, year, name, total_shows
+                FROM tours
+                ORDER BY year DESC, total_shows DESC, id DESC
+                LIMIT ?
+                "#,
+            )
+            .bind(sql_limit),
+            &pool,
         )
-        .bind(sql_limit)
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
+        .await?;
 
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
-            out.push(row_tour(&row)?);
-        }
+        let out = map_rows(rows, |row| row_tour(&row))?;
         write_ttl_keyed_cache(&RECENT_TOURS_CACHE, limit, &out);
         Ok(out)
     }
@@ -1170,23 +1190,21 @@ pub async fn get_recent_releases(limit: usize) -> Result<Vec<Release>, ServerFnE
 
         let pool = pool().await?;
         let sql_limit = limit as i64;
-        let rows = sqlx::query(
-            r#"
-            SELECT id, title, slug, release_type, release_date
-            FROM releases
-            ORDER BY release_date DESC, id DESC
-            LIMIT ?
-            "#,
+        let rows = fetch_rows(
+            sqlx::query(
+                r#"
+                SELECT id, title, slug, release_type, release_date
+                FROM releases
+                ORDER BY release_date DESC, id DESC
+                LIMIT ?
+                "#,
+            )
+            .bind(sql_limit),
+            &pool,
         )
-        .bind(sql_limit)
-        .fetch_all(&pool)
-        .await
-        .map_err(to_server_error)?;
+        .await?;
 
-        let mut out = Vec::with_capacity(rows.len());
-        for row in rows {
-            out.push(row_release(&row)?);
-        }
+        let out = map_rows(rows, |row| row_release(&row))?;
         write_ttl_keyed_cache(&RECENT_RELEASES_CACHE, limit, &out);
         Ok(out)
     }

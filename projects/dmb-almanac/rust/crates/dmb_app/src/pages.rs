@@ -167,8 +167,9 @@ fn import_in_progress_state(
 }
 
 fn normalize_search_filter(raw: &str) -> String {
-    match raw.trim().to_ascii_lowercase().as_str() {
-        "song" | "show" | "venue" | "tour" | "guest" | "release" => raw.trim().to_ascii_lowercase(),
+    let normalized = raw.trim().to_ascii_lowercase();
+    match normalized.as_str() {
+        "song" | "show" | "venue" | "tour" | "guest" | "release" => normalized,
         _ => "all".to_string(),
     }
 }
@@ -2563,6 +2564,15 @@ fn text_matches_query(value: &str, query: &str) -> bool {
     value.to_ascii_lowercase().contains(query)
 }
 
+fn normalized_nonempty_lower(raw: Option<&str>, fallback: &str) -> String {
+    let normalized = raw.unwrap_or_default().trim().to_ascii_lowercase();
+    if normalized.is_empty() {
+        fallback.to_string()
+    } else {
+        normalized
+    }
+}
+
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 struct ShowContext {
     show: Show,
@@ -2611,12 +2621,7 @@ fn format_mb_u64(bytes: u64) -> String {
 }
 
 fn normalized_set_key(raw: Option<&str>) -> String {
-    let normalized = raw.unwrap_or_default().trim().to_ascii_lowercase();
-    if normalized.is_empty() {
-        "unspecified".to_string()
-    } else {
-        normalized
-    }
+    normalized_nonempty_lower(raw, "unspecified")
 }
 
 fn setlist_set_label(key: &str) -> String {
@@ -6265,12 +6270,7 @@ fn render_curated_list_cards(list: Vec<CuratedList>) -> impl IntoView {
 }
 
 fn normalized_curated_item_type(raw: &str) -> String {
-    let normalized = raw.trim().to_ascii_lowercase();
-    if normalized.is_empty() {
-        "other".to_string()
-    } else {
-        normalized
-    }
+    normalized_nonempty_lower(Some(raw), "other")
 }
 
 fn curated_item_type_label(type_key: &str) -> String {
