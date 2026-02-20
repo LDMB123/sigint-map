@@ -2442,14 +2442,6 @@ async fn load_all_releases() -> Vec<Release> {
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
-async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
-    load_with_hydrate_or_ssr_list!(
-        dmb_idb::list_release_tracks(_release_id),
-        get_release_tracks(_release_id)
-    )
-}
-
-#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_curated_lists() -> Vec<CuratedList> {
     load_with_hydrate_or_ssr_list!(dmb_idb::list_curated_lists(), get_curated_lists())
 }
@@ -4077,7 +4069,10 @@ pub fn release_detail_page() -> impl IntoView {
         |slug: String| async move {
             let release = load_entity_by_slug!(slug, dmb_idb::get_release_by_slug, get_release);
             Some(match release {
-                Some(release) => load_release_tracks(release.id).await,
+                Some(_release) => load_with_hydrate_or_ssr_list!(
+                    dmb_idb::list_release_tracks(_release.id),
+                    get_release_tracks(_release.id)
+                ),
                 None => Vec::new(),
             })
         }
