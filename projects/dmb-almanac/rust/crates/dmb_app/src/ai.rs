@@ -1545,29 +1545,6 @@ async fn load_embedding_manifest_with_cache(version: &str) -> Option<EmbeddingMa
 }
 
 #[cfg(feature = "hydrate")]
-async fn load_ann_backing(manifest_dim: u32) -> (Vec<f32>, bool, Option<AnnIvfIndex>) {
-    let ann_meta = load_ann_meta().await;
-    let matrix = if let Some(meta) = ann_meta.as_ref() {
-        load_ann_vectors(meta, manifest_dim)
-            .await
-            .unwrap_or_else(Vec::new)
-    } else {
-        Vec::new()
-    };
-    let use_ann = !matrix.is_empty();
-    let ivf = if use_ann {
-        if let Some(meta) = ann_meta.as_ref() {
-            load_ivf_index(meta).await
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-    (matrix, use_ann, ivf)
-}
-
-#[cfg(feature = "hydrate")]
 async fn load_records_and_matrix_from_chunks(
     manifest: &EmbeddingManifest,
     mut matrix: Vec<f32>,
@@ -1626,7 +1603,24 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
         (policy.cap_bytes / (manifest.dim as u64 * 4)).max(1) as usize
     };
     let target_vectors = max_vectors.max(MIN_SAMPLE_RECORDS);
-    let (matrix, use_ann, ivf) = load_ann_backing(manifest.dim).await;
+    let ann_meta = load_ann_meta().await;
+    let matrix = if let Some(meta) = ann_meta.as_ref() {
+        load_ann_vectors(meta, manifest.dim)
+            .await
+            .unwrap_or_else(Vec::new)
+    } else {
+        Vec::new()
+    };
+    let use_ann = !matrix.is_empty();
+    let ivf = if use_ann {
+        if let Some(meta) = ann_meta.as_ref() {
+            load_ivf_index(meta).await
+        } else {
+            None
+        }
+    } else {
+        None
+    };
     let (records, matrix, chunks_loaded, budget_capped) =
         load_records_and_matrix_from_chunks(&manifest, matrix, use_ann, target_vectors).await;
 
