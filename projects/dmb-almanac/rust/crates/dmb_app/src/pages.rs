@@ -4670,68 +4670,6 @@ macro_rules! load_stats_hydrate_or_default {
 // ---------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
-async fn load_stats_overview() -> StatsOverview {
-    load_stats_hydrate_or_default!({
-        let stores = [
-            dmb_idb::TABLE_SHOWS,
-            dmb_idb::TABLE_SONGS,
-            dmb_idb::TABLE_VENUES,
-            dmb_idb::TABLE_TOURS,
-            dmb_idb::TABLE_GUESTS,
-            dmb_idb::TABLE_SETLIST_ENTRIES,
-        ];
-
-        let mut counts_by_store: HashMap<String, u32> = HashMap::new();
-        if let Ok((entries, _missing)) = dmb_idb::count_stores_with_missing(&stores).await {
-            for (store, count) in entries {
-                counts_by_store.insert(store, count);
-            }
-        }
-
-        let shows = counts_by_store
-            .get(dmb_idb::TABLE_SHOWS)
-            .copied()
-            .unwrap_or(0);
-        let songs = counts_by_store
-            .get(dmb_idb::TABLE_SONGS)
-            .copied()
-            .unwrap_or(0);
-        let venues = counts_by_store
-            .get(dmb_idb::TABLE_VENUES)
-            .copied()
-            .unwrap_or(0);
-        let tours = counts_by_store
-            .get(dmb_idb::TABLE_TOURS)
-            .copied()
-            .unwrap_or(0);
-        let guests = counts_by_store
-            .get(dmb_idb::TABLE_GUESTS)
-            .copied()
-            .unwrap_or(0);
-        let setlists = counts_by_store
-            .get(dmb_idb::TABLE_SETLIST_ENTRIES)
-            .copied()
-            .unwrap_or(0);
-
-        let avg_songs_per_show = if shows > 0 {
-            setlists as f32 / shows as f32
-        } else {
-            0.0
-        };
-
-        StatsOverview {
-            show_count: shows,
-            song_count: songs,
-            venue_count: venues,
-            tour_count: tours,
-            guest_count: guests,
-            setlist_count: setlists,
-            avg_songs_per_show,
-        }
-    })
-}
-
-#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_songs() -> StatsSongs {
     load_stats_hydrate_or_default!({
         let top_played = dmb_idb::stats_top_songs(25).await.unwrap_or_default();
@@ -5229,10 +5167,70 @@ fn render_stats_guests_content(data: StatsGuests) -> impl IntoView {
 }
 
 #[must_use]
+#[allow(clippy::too_many_lines)]
 pub fn stats_page() -> impl IntoView {
     let active_tab = RwSignal::new(0u8);
 
-    let overview = unit_resource(load_stats_overview);
+    let overview = unit_resource(|| async {
+        load_stats_hydrate_or_default!({
+            let stores = [
+                dmb_idb::TABLE_SHOWS,
+                dmb_idb::TABLE_SONGS,
+                dmb_idb::TABLE_VENUES,
+                dmb_idb::TABLE_TOURS,
+                dmb_idb::TABLE_GUESTS,
+                dmb_idb::TABLE_SETLIST_ENTRIES,
+            ];
+
+            let mut counts_by_store: HashMap<String, u32> = HashMap::new();
+            if let Ok((entries, _missing)) = dmb_idb::count_stores_with_missing(&stores).await {
+                for (store, count) in entries {
+                    counts_by_store.insert(store, count);
+                }
+            }
+
+            let shows = counts_by_store
+                .get(dmb_idb::TABLE_SHOWS)
+                .copied()
+                .unwrap_or(0);
+            let songs = counts_by_store
+                .get(dmb_idb::TABLE_SONGS)
+                .copied()
+                .unwrap_or(0);
+            let venues = counts_by_store
+                .get(dmb_idb::TABLE_VENUES)
+                .copied()
+                .unwrap_or(0);
+            let tours = counts_by_store
+                .get(dmb_idb::TABLE_TOURS)
+                .copied()
+                .unwrap_or(0);
+            let guests = counts_by_store
+                .get(dmb_idb::TABLE_GUESTS)
+                .copied()
+                .unwrap_or(0);
+            let setlists = counts_by_store
+                .get(dmb_idb::TABLE_SETLIST_ENTRIES)
+                .copied()
+                .unwrap_or(0);
+
+            let avg_songs_per_show = if shows > 0 {
+                setlists as f32 / shows as f32
+            } else {
+                0.0
+            };
+
+            StatsOverview {
+                show_count: shows,
+                song_count: songs,
+                venue_count: venues,
+                tour_count: tours,
+                guest_count: guests,
+                setlist_count: setlists,
+                avg_songs_per_show,
+            }
+        })
+    });
     let songs = unit_resource(load_stats_songs);
     let shows = unit_resource(load_stats_shows);
     let venues = unit_resource(load_stats_venues);
