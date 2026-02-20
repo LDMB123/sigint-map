@@ -2186,33 +2186,6 @@ fn normalize_releases(items: Vec<Release>, limit: usize) -> Vec<Release> {
     })
 }
 
-#[cfg(feature = "hydrate")]
-fn hydrate_show_summary(
-    show: Show,
-    venues: &HashMap<i32, Venue>,
-    tours: &HashMap<i32, Tour>,
-) -> ShowSummary {
-    let (venue_name, venue_city, venue_state) = match venues.get(&show.venue_id) {
-        Some(venue) => (venue.name.clone(), venue.city.clone(), venue.state.clone()),
-        None => (format!("Venue #{}", show.venue_id), String::new(), None),
-    };
-    let (tour_name, tour_year) = match show.tour_id.and_then(|id| tours.get(&id)) {
-        Some(tour) => (Some(tour.name.clone()), Some(tour.year)),
-        None => (None, None),
-    };
-    ShowSummary {
-        id: show.id,
-        date: show.date,
-        year: show.year,
-        venue_id: show.venue_id,
-        venue_name,
-        venue_city,
-        venue_state,
-        tour_name,
-        tour_year,
-    }
-}
-
 macro_rules! load_with_limit_fallback {
     ($limit:expr, $idb_loader:expr, $server_loader:expr, $normalize:expr) => {{
         #[cfg(feature = "hydrate")]
@@ -2606,7 +2579,32 @@ pub fn shows_page() -> impl IntoView {
                 normalize_show_summaries(
                     shows
                         .into_iter()
-                        .map(|show| hydrate_show_summary(show, &venues, &tours))
+                        .map(|show| {
+                            let (venue_name, venue_city, venue_state) = match venues
+                                .get(&show.venue_id)
+                            {
+                                Some(venue) => {
+                                    (venue.name.clone(), venue.city.clone(), venue.state.clone())
+                                }
+                                None => (format!("Venue #{}", show.venue_id), String::new(), None),
+                            };
+                            let (tour_name, tour_year) =
+                                match show.tour_id.and_then(|id| tours.get(&id)) {
+                                    Some(tour) => (Some(tour.name.clone()), Some(tour.year)),
+                                    None => (None, None),
+                                };
+                            ShowSummary {
+                                id: show.id,
+                                date: show.date,
+                                year: show.year,
+                                venue_id: show.venue_id,
+                                venue_name,
+                                venue_city,
+                                venue_state,
+                                tour_name,
+                                tour_year,
+                            }
+                        })
                         .collect(),
                     limit,
                 )
