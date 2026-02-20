@@ -714,6 +714,37 @@ fn refresh_ann_cap_override_signals(state: AiDiagnosticsState) {
 }
 
 #[cfg(feature = "hydrate")]
+fn apply_worker_threshold_override(state: AiDiagnosticsState, value: Option<usize>) {
+    crate::ai::set_worker_threshold_override(value);
+    refresh_worker_threshold_signals(state);
+}
+
+#[cfg(feature = "hydrate")]
+fn apply_ann_cap_override(state: AiDiagnosticsState, value: Option<u64>) {
+    crate::ai::set_ann_cap_override_mb(value);
+    refresh_ann_cap_override_signals(state);
+}
+
+#[cfg(feature = "hydrate")]
+fn set_benchmark_cancelled_state(bench_running: RwSignal<bool>, bench_stage: RwSignal<String>) {
+    bench_running.set(false);
+    bench_stage.set("Cancelled".to_string());
+}
+
+#[cfg(feature = "hydrate")]
+fn cancel_benchmark_if_requested(
+    bench_cancelled: RwSignal<bool>,
+    bench_running: RwSignal<bool>,
+    bench_stage: RwSignal<String>,
+) -> bool {
+    if !bench_cancelled.get_untracked() {
+        return false;
+    }
+    set_benchmark_cancelled_state(bench_running, bench_stage);
+    true
+}
+
+#[cfg(feature = "hydrate")]
 fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
     let _ = state.caps.try_set(crate::ai::detect_ai_capabilities());
     let _ = state
@@ -933,32 +964,29 @@ fn action_run_benchmark(state: AiDiagnosticsState) {
             bench_cancelled.set(false);
 
             let sample = crate::ai::prepare_benchmark_sample(4000).await;
-            if bench_cancelled.get_untracked() {
-                bench_running.set(false);
-                bench_stage.set("Cancelled".to_string());
+            if cancel_benchmark_if_requested(bench_cancelled, bench_running, bench_stage) {
                 return;
             }
             let Some(sample) = sample else {
-                bench_running.set(false);
-                bench_stage.set("Cancelled".to_string());
+                set_benchmark_cancelled_state(bench_running, bench_stage);
                 return;
             };
 
             bench_progress.set(0.2);
             bench_stage.set("CPU".to_string());
             let cpu_ms = crate::ai::benchmark_cpu(&sample);
-            if bench_cancelled.get_untracked() || cpu_ms.is_none() {
-                bench_running.set(false);
-                bench_stage.set("Cancelled".to_string());
+            if cpu_ms.is_none() {
+                set_benchmark_cancelled_state(bench_running, bench_stage);
+                return;
+            }
+            if cancel_benchmark_if_requested(bench_cancelled, bench_running, bench_stage) {
                 return;
             }
 
             bench_progress.set(0.6);
             bench_stage.set("GPU".to_string());
             let (gpu_ms, backend) = crate::ai::benchmark_gpu(&sample).await;
-            if bench_cancelled.get_untracked() {
-                bench_running.set(false);
-                bench_stage.set("Cancelled".to_string());
+            if cancel_benchmark_if_requested(bench_cancelled, bench_running, bench_stage) {
                 return;
             }
 
@@ -1067,8 +1095,7 @@ fn action_apply_worker_threshold(state: AiDiagnosticsState) {
             .trim()
             .parse::<usize>()
             .ok();
-        crate::ai::set_worker_threshold_override(parsed);
-        refresh_worker_threshold_signals(state);
+        apply_worker_threshold_override(state, parsed);
     }
 }
 
@@ -1077,8 +1104,7 @@ fn action_clear_worker_threshold(state: AiDiagnosticsState) {
     let _ = state;
     #[cfg(feature = "hydrate")]
     {
-        crate::ai::set_worker_threshold_override(None);
-        refresh_worker_threshold_signals(state);
+        apply_worker_threshold_override(state, None);
     }
 }
 
@@ -1093,8 +1119,7 @@ fn action_apply_ann_cap_override(state: AiDiagnosticsState) {
             .trim()
             .parse::<u64>()
             .ok();
-        crate::ai::set_ann_cap_override_mb(parsed);
-        refresh_ann_cap_override_signals(state);
+        apply_ann_cap_override(state, parsed);
     }
 }
 
@@ -1103,8 +1128,7 @@ fn action_clear_ann_cap_override(state: AiDiagnosticsState) {
     let _ = state;
     #[cfg(feature = "hydrate")]
     {
-        crate::ai::set_ann_cap_override_mb(None);
-        refresh_ann_cap_override_signals(state);
+        apply_ann_cap_override(state, None);
     }
 }
 
