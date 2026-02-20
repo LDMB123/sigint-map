@@ -3068,6 +3068,10 @@ fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
     Ok(year)
 }
 
+fn parse_list_id_param(raw: &str) -> Result<i32, String> {
+    parse_positive_i32_param(raw, "listId")
+}
+
 fn render_param_subhead<T>(label: &str, parsed: Result<T, String>) -> AnyView
 where
     T: std::fmt::Display,
@@ -6577,17 +6581,13 @@ pub fn curated_list_detail_page() -> impl IntoView {
     let active_filter = RwSignal::new("all".to_string());
     let query = RwSignal::new(String::new());
 
-    let list = optional_resource_from_param!(
-        list_id,
-        |raw: &str| parse_positive_i32_param(raw, "listId"),
-        |id| async move {
-            let lists = load_curated_lists().await;
-            lists.into_iter().find(|list| list.id == id)
-        }
-    );
+    let list = optional_resource_from_param!(list_id, parse_list_id_param, |id| async move {
+        let lists = load_curated_lists().await;
+        lists.into_iter().find(|list| list.id == id)
+    });
 
     let items = Resource::new(list_id, |id: String| async move {
-        let Ok(id) = parse_positive_i32_param(&id, "listId") else {
+        let Ok(id) = parse_list_id_param(&id) else {
             return Vec::new();
         };
         load_curated_list_items(id, 200).await
@@ -6609,7 +6609,7 @@ pub fn curated_list_detail_page() -> impl IntoView {
             {detail_nav("/lists", "Back to curated lists")}
             <h1>"Curated List Details"</h1>
             <p class="lead">"Highlights, context, and quick filtering for every item in this collection."</p>
-            {move || render_param_subhead("List ID", parse_positive_i32_param(&list_id(), "listId"))}
+            {move || render_param_subhead("List ID", parse_list_id_param(&list_id()))}
             <Suspense
                 fallback=move || {
                     loading_state(
@@ -6624,7 +6624,7 @@ pub fn curated_list_detail_page() -> impl IntoView {
                     if let Some(list_val) = list_meta {
                         render_curated_list_detail_content(list_val, list_items, active_filter, query)
                             .into_any()
-                    } else if parse_positive_i32_param(&list_id(), "listId").is_err() {
+                    } else if parse_list_id_param(&list_id()).is_err() {
                         view! {
                             <section class="status-card status-card--empty">
                                 <p class="status-title">"Invalid list id"</p>
