@@ -2418,11 +2418,6 @@ where
     Resource::new(|| (), move |()| loader())
 }
 
-#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
-async fn load_curated_lists() -> Vec<CuratedList> {
-    load_with_hydrate_or_ssr_list!(dmb_idb::list_curated_lists(), get_curated_lists())
-}
-
 #[cfg(feature = "hydrate")]
 async fn load_user_attended_shows() -> Vec<UserAttendedShow> {
     dmb_idb::list_user_attended_shows()
@@ -6445,7 +6440,9 @@ pub fn discography_page() -> impl IntoView {
 
 #[must_use]
 pub fn curated_lists_page() -> impl IntoView {
-    let items = unit_resource(load_curated_lists);
+    let items = unit_resource(|| async {
+        load_with_hydrate_or_ssr_list!(dmb_idb::list_curated_lists(), get_curated_lists())
+    });
 
     view! {
         <section class="page">
@@ -6476,7 +6473,8 @@ pub fn curated_list_detail_page() -> impl IntoView {
         list_id,
         |raw: &str| parse_positive_i32_param(raw, "listId"),
         |id: i32| async move {
-            let lists = load_curated_lists().await;
+            let lists: Vec<CuratedList> =
+                load_with_hydrate_or_ssr_list!(dmb_idb::list_curated_lists(), get_curated_lists());
             lists.into_iter().find(|list| list.id == id)
         }
     );
