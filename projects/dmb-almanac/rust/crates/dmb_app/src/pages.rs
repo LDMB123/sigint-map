@@ -3095,6 +3095,18 @@ fn route_param_or_default(param_name: &'static str) -> impl Fn() -> String + Cop
     move || params.with(|p| p.get(param_name).unwrap_or_default())
 }
 
+fn reset_filter_and_query_on_route_change(
+    route_param: impl Fn() -> String + Copy + 'static,
+    active_filter: RwSignal<String>,
+    query: RwSignal<String>,
+) {
+    Effect::new(move |_| {
+        let _ = route_param();
+        active_filter.set("all".to_string());
+        query.set(String::new());
+    });
+}
+
 macro_rules! optional_resource_from_param {
     ($source:expr, $parse:expr, $loader:expr) => {
         Resource::new($source, |raw: String| async move {
@@ -3641,14 +3653,7 @@ pub fn show_detail_page() -> impl IntoView {
 
     hydrate_saved_show_ids(saved_show_ids.clone());
 
-    let show_id_for_reset = show_id.clone();
-    let active_set_for_reset = active_set.clone();
-    let setlist_query_for_reset = setlist_query.clone();
-    Effect::new(move |_| {
-        let _ = show_id_for_reset();
-        active_set_for_reset.set("all".to_string());
-        setlist_query_for_reset.set(String::new());
-    });
+    reset_filter_and_query_on_route_change(show_id, active_set, setlist_query);
 
     let show = optional_resource_from_param!(show_id, parse_show_id_param, load_show_context);
     let setlist = optional_resource_from_param!(show_id, parse_show_id_param, |id| async move {
@@ -4167,16 +4172,7 @@ pub fn release_detail_page() -> impl IntoView {
     let seed_data_state = use_seed_data_state();
     let active_disc = RwSignal::new("all".to_string());
     let track_query = RwSignal::new(String::new());
-    let slug_for_reset = slug.clone();
-    {
-        let active_disc_signal = active_disc.clone();
-        let track_query_signal = track_query.clone();
-        Effect::new(move |_| {
-            let _ = slug_for_reset();
-            active_disc_signal.set("all".to_string());
-            track_query_signal.set(String::new());
-        });
-    }
+    reset_filter_and_query_on_route_change(slug, active_disc, track_query);
 
     let render = move |release: Option<Release>| {
         if let Some(release) = release {
@@ -6606,13 +6602,7 @@ pub fn curated_list_detail_page() -> impl IntoView {
 
     #[cfg(feature = "hydrate")]
     {
-        let active_filter_signal = active_filter.clone();
-        let query_signal = query.clone();
-        Effect::new(move |_| {
-            let _ = list_id();
-            active_filter_signal.set("all".to_string());
-            query_signal.set(String::new());
-        });
+        reset_filter_and_query_on_route_change(list_id, active_filter, query);
     }
 
     view! {
