@@ -677,11 +677,6 @@ fn storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
 }
 
 #[cfg(feature = "hydrate")]
-fn storage_flag_enabled(value: &str) -> bool {
-    value == "1" || value.eq_ignore_ascii_case("true")
-}
-
-#[cfg(feature = "hydrate")]
 fn refresh_worker_threshold_signals(state: AiDiagnosticsState) {
     let current = crate::ai::worker_threshold_value();
     state.worker_threshold_current.set(current);
@@ -818,7 +813,9 @@ fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
                 let _ = state.worker_threshold_input.try_set(value);
             }
             if let Some(value) = storage_item(&storage, crate::ai::WEBGPU_DISABLE_KEY) {
-                let _ = state.webgpu_disabled.try_set(storage_flag_enabled(&value));
+                let _ = state
+                    .webgpu_disabled
+                    .try_set(value == "1" || value.eq_ignore_ascii_case("true"));
             }
         }
     }
