@@ -760,6 +760,17 @@ where
 }
 
 #[cfg(feature = "hydrate")]
+fn store_benchmark_sample_and_refresh_history(
+    benchmark_history: RwSignal<Vec<crate::ai::AiBenchmarkSample>>,
+    full: Option<crate::ai::AiBenchmark>,
+    subset: Option<crate::ai::AiSubsetBenchmark>,
+    worker: Option<crate::ai::AiWorkerBenchmark>,
+) {
+    crate::ai::store_benchmark_sample(full, subset, worker);
+    benchmark_history.set(crate::ai::benchmark_history());
+}
+
+#[cfg(feature = "hydrate")]
 fn set_benchmark_cancelled_state(bench_running: RwSignal<bool>, bench_stage: RwSignal<String>) {
     bench_running.set(false);
     bench_stage.set("Cancelled".to_string());
@@ -1017,8 +1028,7 @@ fn action_run_benchmark(state: AiDiagnosticsState) {
                 backend,
             };
             bench.set(Some(result.clone()));
-            crate::ai::store_benchmark_sample(Some(result), None, None);
-            benchmark_history.set(crate::ai::benchmark_history());
+            store_benchmark_sample_and_refresh_history(benchmark_history, Some(result), None, None);
             bench_running.set(false);
         });
     }
@@ -1041,8 +1051,7 @@ fn action_run_worker_benchmark(state: AiDiagnosticsState) {
         spawn_local(async move {
             let result = crate::ai::benchmark_worker_threshold().await;
             worker_bench.set(result.clone());
-            crate::ai::store_benchmark_sample(None, None, result);
-            benchmark_history.set(crate::ai::benchmark_history());
+            store_benchmark_sample_and_refresh_history(benchmark_history, None, None, result);
             refresh_worker_threshold_signals(state);
             worker_failure.set(crate::ai::worker_failure_status());
             webgpu_runtime.set(load_webgpu_runtime_telemetry());
