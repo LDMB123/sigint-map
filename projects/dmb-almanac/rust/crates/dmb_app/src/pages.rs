@@ -2135,10 +2135,6 @@ async fn load_release(slug: String) -> Option<Release> {
     load_entity_by_slug!(slug, dmb_idb::get_release_by_slug, get_release)
 }
 
-async fn load_tour(year: i32) -> Option<Tour> {
-    load_entity_by_id!(year, dmb_idb::get_tour, get_tour)
-}
-
 async fn load_venue(id: i32) -> Option<Venue> {
     load_entity_by_id!(id, dmb_idb::get_venue, get_venue)
 }
@@ -4222,7 +4218,7 @@ pub fn tour_year_page() -> impl IntoView {
             }
             Ok(year)
         },
-        load_tour
+        |year: i32| async move { load_entity_by_id!(year, dmb_idb::get_tour, get_tour) }
     );
 
     detail_page_with_primary_resource!(
