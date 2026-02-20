@@ -1388,26 +1388,6 @@ pub async fn load_embedding_manifest_meta() -> Option<EmbeddingManifest> {
 }
 
 #[cfg(feature = "hydrate")]
-async fn hydrate_missing_embedding_chunks(manifest: &EmbeddingManifest) {
-    for chunk in &manifest.chunks {
-        if dmb_idb::get_embedding_chunk(chunk.chunk_id)
-            .await
-            .ok()
-            .flatten()
-            .is_some()
-        {
-            continue;
-        }
-        let url = format!("/data/{}", chunk.file);
-        if let Some(payload) = fetch_json::<EmbeddingChunk>(&url).await {
-            let _ = dmb_idb::store_embedding_chunk(&payload).await;
-        } else {
-            record_ai_warning("embedding_chunk_fetch_failed", Some(chunk.file.clone()));
-        }
-    }
-}
-
-#[cfg(feature = "hydrate")]
 pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     if let Some(existing) = EMBEDDING_INDEX.get() {
         return Some(existing.clone());
@@ -1484,7 +1464,22 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
             }
         };
         dmb_idb::store_embedding_manifest(&fetched).await.ok()?;
-        hydrate_missing_embedding_chunks(&fetched).await;
+        for chunk in &fetched.chunks {
+            if dmb_idb::get_embedding_chunk(chunk.chunk_id)
+                .await
+                .ok()
+                .flatten()
+                .is_some()
+            {
+                continue;
+            }
+            let url = format!("/data/{}", chunk.file);
+            if let Some(payload) = fetch_json::<EmbeddingChunk>(&url).await {
+                let _ = dmb_idb::store_embedding_chunk(&payload).await;
+            } else {
+                record_ai_warning("embedding_chunk_fetch_failed", Some(chunk.file.clone()));
+            }
+        }
         dmb_idb::get_embedding_manifest(CORE_SCHEMA_VERSION)
             .await
             .ok()
