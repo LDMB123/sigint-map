@@ -3069,16 +3069,12 @@ fn parse_positive_i32_param(raw: &str, param_name: &str) -> Result<i32, String> 
     Ok(value)
 }
 
-fn parse_slug_param(raw: &str, param_name: &str) -> Result<String, String> {
+fn parse_route_slug_param(raw: &str) -> Result<String, String> {
     let slug = raw.trim();
     if slug.is_empty() {
-        return Err(format!("Missing `{param_name}` parameter."));
+        return Err("Missing `slug` parameter.".to_string());
     }
     Ok(slug.to_string())
-}
-
-fn parse_route_slug_param(raw: &str) -> Result<String, String> {
-    parse_slug_param(raw, "slug")
 }
 
 fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
