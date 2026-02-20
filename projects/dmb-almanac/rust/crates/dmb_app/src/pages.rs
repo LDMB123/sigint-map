@@ -5611,46 +5611,6 @@ fn hydrate_my_shows_state(
     });
 }
 
-#[cfg(feature = "hydrate")]
-fn render_saved_show_rows<F>(saved: Vec<UserAttendedShow>, on_remove: F) -> impl IntoView
-where
-    F: Fn(i32) + Clone + 'static,
-{
-    let count = saved.len();
-    view! {
-        <>
-            <p class="list-summary">{format!("Showing {count} saved shows")}</p>
-            <ul class="result-list">
-                {saved
-                    .into_iter()
-                    .map(move |item| {
-                        let href = format!("/shows/{}", item.show_id);
-                        let date = item
-                            .show_date
-                            .clone()
-                            .unwrap_or_else(|| "Unknown date".to_string());
-                        let show_id = item.show_id;
-                        let on_remove_click = on_remove.clone();
-                        view! {
-                            <li class="result-card">
-                                <span class="pill">{format!("#{}", show_id)}</span>
-                                <div class="result-body">
-                                    <a class="result-label" href=href>{date}</a>
-                                    <span class="result-meta">{format!("Show ID {show_id}")}</span>
-                                </div>
-                                <button type="button" class="pill pill--ghost" on:click=move |_| on_remove_click(show_id)>
-                                    "Remove"
-                                </button>
-                            </li>
-                        }
-                    })
-                    .collect::<Vec<_>>()}
-            </ul>
-        </>
-    }
-    .into_any()
-}
-
 #[must_use]
 #[allow(clippy::too_many_lines)]
 pub fn my_shows_page() -> impl IntoView {
@@ -5788,7 +5748,46 @@ pub fn my_shows_page() -> impl IntoView {
                         )
                         .into_any()
                     } else {
-                        render_saved_show_rows(saved, on_remove.clone()).into_any()
+                        let count = saved.len();
+                        view! {
+                            <>
+                                <p class="list-summary">{format!("Showing {count} saved shows")}</p>
+                                <ul class="result-list">
+                                    {saved
+                                        .into_iter()
+                                        .map({
+                                            let on_remove = on_remove.clone();
+                                            move |item| {
+                                                let href = format!("/shows/{}", item.show_id);
+                                                let date = item
+                                                    .show_date
+                                                    .clone()
+                                                    .unwrap_or_else(|| "Unknown date".to_string());
+                                                let show_id = item.show_id;
+                                                let on_remove_click = on_remove.clone();
+                                                view! {
+                                                    <li class="result-card">
+                                                        <span class="pill">{format!("#{}", show_id)}</span>
+                                                        <div class="result-body">
+                                                            <a class="result-label" href=href>{date}</a>
+                                                            <span class="result-meta">{format!("Show ID {show_id}")}</span>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            class="pill pill--ghost"
+                                                            on:click=move |_| on_remove_click(show_id)
+                                                        >
+                                                            "Remove"
+                                                        </button>
+                                                    </li>
+                                                }
+                                            }
+                                        })
+                                        .collect::<Vec<_>>()}
+                                </ul>
+                            </>
+                        }
+                        .into_any()
                     }
                 }
                 #[cfg(not(feature = "hydrate"))]
