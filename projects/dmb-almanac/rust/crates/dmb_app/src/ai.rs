@@ -1543,7 +1543,55 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     }
     maybe_seed_ai_config().await;
     if embedding_sample_enabled() {
-        if let Some(sample_index) = load_embedding_sample_index().await {
+        let entries =
+            fetch_json::<Vec<EmbeddingSampleEntry>>("/data/embedding-sample.json").await?;
+        if !entries.is_empty() {
+            let dim = EMBEDDING_DIM;
+            let mut records = Vec::with_capacity(entries.len());
+            let mut matrix = Vec::with_capacity(entries.len() * dim);
+            for entry in entries {
+                let vector = if let Some(vector) = entry.vector.clone() {
+                    vector
+                } else {
+                    let text = entry.text.clone().unwrap_or_default();
+                    hashed_embedding(&text, dim)
+                };
+                matrix.extend_from_slice(&vector);
+                records.push(EmbeddingRecord {
+                    id: entry.id,
+                    kind: entry.kind,
+                    slug: entry.slug,
+                    label: entry.label.or(entry.text).filter(|v| !v.is_empty()),
+                    vector,
+                });
+            }
+            let diagnostics = AnnCapDiagnostics {
+                cap_bytes: (matrix.len() as u64).saturating_mul(4),
+                cap_override_mb: None,
+                matrix_bytes_before: (matrix.len() as u64).saturating_mul(4),
+                matrix_bytes_after: (matrix.len() as u64).saturating_mul(4),
+                ivf_bytes: None,
+                ivf_cap_bytes: None,
+                vectors_before: records.len(),
+                vectors_after: records.len(),
+                dim,
+                ivf_dropped: false,
+                used_ann: false,
+                capped: false,
+                device_memory_gb: None,
+                policy_tier: "sample".to_string(),
+                chunks_loaded: Some(1),
+                records_loaded: Some(records.len()),
+                budget_capped: false,
+            };
+            let _ = ANN_CAP_DIAGNOSTICS.set(diagnostics.clone());
+            store_ai_telemetry_snapshot(Some(&diagnostics));
+            let sample_index = Arc::new(EmbeddingIndex {
+                dim,
+                records,
+                matrix,
+                ivf: None,
+            });
             let _ = EMBEDDING_INDEX.set(sample_index.clone());
             return Some(sample_index);
         }
@@ -1652,60 +1700,6 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
 #[allow(clippy::unused_async)]
 pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     None
-}
-
-#[cfg(feature = "hydrate")]
-async fn load_embedding_sample_index() -> Option<Arc<EmbeddingIndex>> {
-    let entries = fetch_json::<Vec<EmbeddingSampleEntry>>("/data/embedding-sample.json").await?;
-    if entries.is_empty() {
-        return None;
-    }
-    let dim = EMBEDDING_DIM;
-    let mut records = Vec::with_capacity(entries.len());
-    let mut matrix = Vec::with_capacity(entries.len() * dim);
-    for entry in entries {
-        let vector = if let Some(vector) = entry.vector.clone() {
-            vector
-        } else {
-            let text = entry.text.clone().unwrap_or_default();
-            hashed_embedding(&text, dim)
-        };
-        matrix.extend_from_slice(&vector);
-        records.push(EmbeddingRecord {
-            id: entry.id,
-            kind: entry.kind,
-            slug: entry.slug,
-            label: entry.label.or(entry.text).filter(|v| !v.is_empty()),
-            vector,
-        });
-    }
-    let diagnostics = AnnCapDiagnostics {
-        cap_bytes: (matrix.len() as u64).saturating_mul(4),
-        cap_override_mb: None,
-        matrix_bytes_before: (matrix.len() as u64).saturating_mul(4),
-        matrix_bytes_after: (matrix.len() as u64).saturating_mul(4),
-        ivf_bytes: None,
-        ivf_cap_bytes: None,
-        vectors_before: records.len(),
-        vectors_after: records.len(),
-        dim,
-        ivf_dropped: false,
-        used_ann: false,
-        capped: false,
-        device_memory_gb: None,
-        policy_tier: "sample".to_string(),
-        chunks_loaded: Some(1),
-        records_loaded: Some(records.len()),
-        budget_capped: false,
-    };
-    let _ = ANN_CAP_DIAGNOSTICS.set(diagnostics.clone());
-    store_ai_telemetry_snapshot(Some(&diagnostics));
-    Some(Arc::new(EmbeddingIndex {
-        dim,
-        records,
-        matrix,
-        ivf: None,
-    }))
 }
 
 pub async fn semantic_search(
