@@ -2187,33 +2187,6 @@ fn normalize_releases(items: Vec<Release>, limit: usize) -> Vec<Release> {
 }
 
 #[cfg(feature = "hydrate")]
-fn collect_present_pairs<K, V>(pairs: Vec<(K, Option<V>)>) -> HashMap<K, V>
-where
-    K: Eq + std::hash::Hash,
-{
-    let mut out = HashMap::with_capacity(pairs.len());
-    for (key, value) in pairs {
-        if let Some(value) = value {
-            out.insert(key, value);
-        }
-    }
-    out
-}
-
-#[cfg(feature = "hydrate")]
-fn collect_show_related_ids(shows: &[Show]) -> (HashSet<i32>, HashSet<i32>) {
-    let mut venue_ids: HashSet<i32> = HashSet::new();
-    let mut tour_ids: HashSet<i32> = HashSet::new();
-    for show in shows {
-        venue_ids.insert(show.venue_id);
-        if let Some(tour_id) = show.tour_id {
-            tour_ids.insert(tour_id);
-        }
-    }
-    (venue_ids, tour_ids)
-}
-
-#[cfg(feature = "hydrate")]
 async fn load_idb_entities_by_id<T, Loader, LoaderFuture>(
     ids: HashSet<i32>,
     loader: Loader,
@@ -2227,7 +2200,14 @@ where
         let entity = spawn_local_to_send(loader(id)).await;
         (id, entity)
     });
-    collect_present_pairs(join_all(futs).await)
+    let pairs = join_all(futs).await;
+    let mut out = HashMap::with_capacity(pairs.len());
+    for (id, entity) in pairs {
+        if let Some(entity) = entity {
+            out.insert(id, entity);
+        }
+    }
+    out
 }
 
 #[cfg(feature = "hydrate")]
@@ -2276,7 +2256,14 @@ async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
             );
         }
 
-        let (venue_ids, tour_ids) = collect_show_related_ids(&shows);
+        let mut venue_ids: HashSet<i32> = HashSet::new();
+        let mut tour_ids: HashSet<i32> = HashSet::new();
+        for show in &shows {
+            venue_ids.insert(show.venue_id);
+            if let Some(tour_id) = show.tour_id {
+                tour_ids.insert(tour_id);
+            }
+        }
         let venues: HashMap<i32, Venue> = load_idb_entities_by_id(venue_ids, |id| async move {
             dmb_idb::get_venue(id).await.ok().flatten()
         })
