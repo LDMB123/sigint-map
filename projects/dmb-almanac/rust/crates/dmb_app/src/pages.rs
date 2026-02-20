@@ -2172,6 +2172,15 @@ async fn load_venue(id: i32) -> Option<Venue> {
     load_entity_by_id!(id, dmb_idb::get_venue, get_venue)
 }
 
+async fn load_curated_list(id: i32) -> Option<CuratedList> {
+    let lists = load_curated_lists().await;
+    lists.into_iter().find(|list| list.id == id)
+}
+
+async fn load_curated_list_items_page(id: i32) -> Vec<CuratedListItem> {
+    load_curated_list_items(id, 200).await
+}
+
 fn normalize_with_limit<T>(
     mut items: Vec<T>,
     limit: usize,
@@ -6587,16 +6596,13 @@ pub fn curated_list_detail_page() -> impl IntoView {
     let active_filter = RwSignal::new("all".to_string());
     let query = RwSignal::new(String::new());
 
-    let list = optional_resource_from_param!(list_id, parse_list_id_param, |id| async move {
-        let lists = load_curated_lists().await;
-        lists.into_iter().find(|list| list.id == id)
-    });
+    let list = optional_resource_from_param!(list_id, parse_list_id_param, load_curated_list);
 
     let items = resource_from_param_or_default!(
         list_id,
         parse_list_id_param,
         Vec::new(),
-        |id| async move { load_curated_list_items(id, 200).await }
+        load_curated_list_items_page
     );
 
     #[cfg(feature = "hydrate")]
