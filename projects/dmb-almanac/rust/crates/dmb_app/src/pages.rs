@@ -2087,141 +2087,89 @@ pub fn ai_smoke_page() -> impl IntoView {
     }
 }
 
-async fn load_show(id: i32) -> Option<Show> {
-    #[cfg(feature = "hydrate")]
-    {
-        let show =
-            spawn_local_to_send(async move { dmb_idb::get_show(id).await.ok().flatten() }).await;
-        if show.is_some() {
-            return show;
+macro_rules! load_with_idb_fallback {
+    ($idb_future:expr, $api_future:expr) => {{
+        #[cfg(feature = "hydrate")]
+        {
+            let cached = spawn_local_to_send($idb_future).await;
+            if cached.is_some() {
+                cached
+            } else {
+                $api_future.await
+            }
         }
-        get_show(id).await.ok().flatten()
-    }
+        #[cfg(not(feature = "hydrate"))]
+        {
+            $api_future.await
+        }
+    }};
+}
 
-    #[cfg(not(feature = "hydrate"))]
-    {
-        get_show(id).await.ok().flatten()
-    }
+async fn load_show(id: i32) -> Option<Show> {
+    load_with_idb_fallback!(
+        async move { dmb_idb::get_show(id).await.ok().flatten() },
+        async move { get_show(id).await.ok().flatten() }
+    )
 }
 
 async fn load_song(slug: String) -> Option<Song> {
     if slug.is_empty() {
         return None;
     }
-    #[cfg(feature = "hydrate")]
-    {
-        let idb_slug = slug.clone();
-        let song =
-            spawn_local_to_send(async move { dmb_idb::get_song(&idb_slug).await.ok().flatten() })
-                .await;
-        if song.is_some() {
-            return song;
-        }
-        get_song(slug).await.ok().flatten()
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        get_song(slug).await.ok().flatten()
-    }
+    load_with_idb_fallback!(
+        {
+            let idb_slug = slug.clone();
+            async move { dmb_idb::get_song(&idb_slug).await.ok().flatten() }
+        },
+        async move { get_song(slug).await.ok().flatten() }
+    )
 }
 
 async fn load_guest(slug: String) -> Option<Guest> {
     if slug.is_empty() {
         return None;
     }
-    #[cfg(feature = "hydrate")]
-    {
-        let idb_slug = slug.clone();
-        let guest = spawn_local_to_send(async move {
-            dmb_idb::get_guest_by_slug(&idb_slug).await.ok().flatten()
-        })
-        .await;
-        if guest.is_some() {
-            return guest;
-        }
-        get_guest(slug).await.ok().flatten()
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        get_guest(slug).await.ok().flatten()
-    }
+    load_with_idb_fallback!(
+        {
+            let idb_slug = slug.clone();
+            async move { dmb_idb::get_guest_by_slug(&idb_slug).await.ok().flatten() }
+        },
+        async move { get_guest(slug).await.ok().flatten() }
+    )
 }
 
 async fn load_release(slug: String) -> Option<Release> {
     if slug.is_empty() {
         return None;
     }
-    #[cfg(feature = "hydrate")]
-    {
-        let idb_slug = slug.clone();
-        let release = spawn_local_to_send(async move {
-            dmb_idb::get_release_by_slug(&idb_slug).await.ok().flatten()
-        })
-        .await;
-        if release.is_some() {
-            return release;
-        }
-        get_release(slug).await.ok().flatten()
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        get_release(slug).await.ok().flatten()
-    }
+    load_with_idb_fallback!(
+        {
+            let idb_slug = slug.clone();
+            async move { dmb_idb::get_release_by_slug(&idb_slug).await.ok().flatten() }
+        },
+        async move { get_release(slug).await.ok().flatten() }
+    )
 }
 
 async fn load_tour(year: i32) -> Option<Tour> {
-    #[cfg(feature = "hydrate")]
-    {
-        let tour =
-            spawn_local_to_send(async move { dmb_idb::get_tour(year).await.ok().flatten() }).await;
-        if tour.is_some() {
-            return tour;
-        }
-        get_tour(year).await.ok().flatten()
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        get_tour(year).await.ok().flatten()
-    }
+    load_with_idb_fallback!(
+        async move { dmb_idb::get_tour(year).await.ok().flatten() },
+        async move { get_tour(year).await.ok().flatten() }
+    )
 }
 
 async fn load_tour_by_id(id: i32) -> Option<Tour> {
-    #[cfg(feature = "hydrate")]
-    {
-        let tour =
-            spawn_local_to_send(async move { dmb_idb::get_tour_by_id(id).await.ok().flatten() })
-                .await;
-        if tour.is_some() {
-            return tour;
-        }
-        get_tour_by_id(id).await.ok().flatten()
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        get_tour_by_id(id).await.ok().flatten()
-    }
+    load_with_idb_fallback!(
+        async move { dmb_idb::get_tour_by_id(id).await.ok().flatten() },
+        async move { get_tour_by_id(id).await.ok().flatten() }
+    )
 }
 
 async fn load_venue(id: i32) -> Option<Venue> {
-    #[cfg(feature = "hydrate")]
-    {
-        let venue =
-            spawn_local_to_send(async move { dmb_idb::get_venue(id).await.ok().flatten() }).await;
-        if venue.is_some() {
-            return venue;
-        }
-        get_venue(id).await.ok().flatten()
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        get_venue(id).await.ok().flatten()
-    }
+    load_with_idb_fallback!(
+        async move { dmb_idb::get_venue(id).await.ok().flatten() },
+        async move { get_venue(id).await.ok().flatten() }
+    )
 }
 
 fn normalize_show_summaries(mut items: Vec<ShowSummary>, limit: usize) -> Vec<ShowSummary> {
