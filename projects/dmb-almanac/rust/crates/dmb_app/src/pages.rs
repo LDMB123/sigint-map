@@ -2388,6 +2388,18 @@ macro_rules! load_with_limit_fallback {
     }};
 }
 
+macro_rules! load_with_limit_sources {
+    ($limit:expr, $idb_loader:path, $server_loader:path, $normalize:expr) => {{
+        let limit = $limit;
+        load_with_limit_fallback!(
+            limit,
+            move || async move { $idb_loader(limit).await.ok() },
+            move || async move { $server_loader(limit).await.unwrap_or_default() },
+            $normalize
+        )
+    }};
+}
+
 macro_rules! load_with_hydrate_or_ssr_fallback {
     ($idb_loader:expr, $server_loader:expr) => {{
         #[cfg(feature = "hydrate")]
@@ -2415,46 +2427,46 @@ macro_rules! load_with_hydrate_or_ssr_list {
 }
 
 async fn load_top_songs(limit: usize) -> Vec<Song> {
-    load_with_limit_fallback!(
+    load_with_limit_sources!(
         limit,
-        move || async move { dmb_idb::stats_top_songs(limit).await.ok() },
-        move || async move { get_top_songs(limit).await.unwrap_or_default() },
+        dmb_idb::stats_top_songs,
+        get_top_songs,
         normalize_songs
     )
 }
 
 async fn load_top_venues(limit: usize) -> Vec<Venue> {
-    load_with_limit_fallback!(
+    load_with_limit_sources!(
         limit,
-        move || async move { dmb_idb::list_top_venues(limit).await.ok() },
-        move || async move { get_top_venues(limit).await.unwrap_or_default() },
+        dmb_idb::list_top_venues,
+        get_top_venues,
         normalize_venues
     )
 }
 
 async fn load_top_guests(limit: usize) -> Vec<Guest> {
-    load_with_limit_fallback!(
+    load_with_limit_sources!(
         limit,
-        move || async move { dmb_idb::list_top_guests(limit).await.ok() },
-        move || async move { get_top_guests(limit).await.unwrap_or_default() },
+        dmb_idb::list_top_guests,
+        get_top_guests,
         normalize_guests
     )
 }
 
 async fn load_recent_tours(limit: usize) -> Vec<Tour> {
-    load_with_limit_fallback!(
+    load_with_limit_sources!(
         limit,
-        move || async move { dmb_idb::list_recent_tours(limit).await.ok() },
-        move || async move { get_recent_tours(limit).await.unwrap_or_default() },
+        dmb_idb::list_recent_tours,
+        get_recent_tours,
         normalize_tours
     )
 }
 
 async fn load_recent_releases(limit: usize) -> Vec<Release> {
-    load_with_limit_fallback!(
+    load_with_limit_sources!(
         limit,
-        move || async move { dmb_idb::list_recent_releases(limit).await.ok() },
-        move || async move { get_recent_releases(limit).await.unwrap_or_default() },
+        dmb_idb::list_recent_releases,
+        get_recent_releases,
         normalize_releases
     )
 }
