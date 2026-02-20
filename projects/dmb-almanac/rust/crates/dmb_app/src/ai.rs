@@ -127,6 +127,11 @@ fn local_storage() -> Option<web_sys::Storage> {
 }
 
 #[cfg(feature = "hydrate")]
+fn with_local_storage<T>(callback: impl FnOnce(&web_sys::Storage) -> T) -> Option<T> {
+    local_storage().map(|storage| callback(&storage))
+}
+
+#[cfg(feature = "hydrate")]
 fn storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
     storage.get_item(key).ok().flatten()
 }
@@ -143,7 +148,7 @@ fn remove_storage_item(storage: &web_sys::Storage, key: &str) {
 
 #[cfg(feature = "hydrate")]
 fn local_storage_item(key: &str) -> Option<String> {
-    local_storage().and_then(|storage| storage_item(&storage, key))
+    with_local_storage(|storage| storage_item(storage, key)).flatten()
 }
 
 #[cfg(feature = "hydrate")]
@@ -156,16 +161,12 @@ where
 
 #[cfg(feature = "hydrate")]
 fn set_local_storage_item(key: &str, value: &str) {
-    if let Some(storage) = local_storage() {
-        set_storage_item(&storage, key, value);
-    }
+    let _ = with_local_storage(|storage| set_storage_item(storage, key, value));
 }
 
 #[cfg(feature = "hydrate")]
 fn remove_local_storage_item(key: &str) {
-    if let Some(storage) = local_storage() {
-        remove_storage_item(&storage, key);
-    }
+    let _ = with_local_storage(|storage| remove_storage_item(storage, key));
 }
 
 #[cfg(feature = "hydrate")]
@@ -180,14 +181,13 @@ fn set_local_storage_flag(key: &str, enabled: bool) {
 
 #[cfg(feature = "hydrate")]
 fn record_ai_warning_once(warn_key: &str, event: &str, details: &str) {
-    let Some(storage) = local_storage() else {
-        return;
-    };
-    if storage_item(&storage, warn_key).is_some() {
-        return;
-    }
-    set_storage_item(&storage, warn_key, "1");
-    record_ai_warning(event, Some(details.to_string()));
+    let _ = with_local_storage(|storage| {
+        if storage_item(storage, warn_key).is_some() {
+            return;
+        }
+        set_storage_item(storage, warn_key, "1");
+        record_ai_warning(event, Some(details.to_string()));
+    });
 }
 
 #[cfg(feature = "hydrate")]
@@ -842,15 +842,15 @@ pub fn worker_failure_status() -> WorkerFailureStatus {
 
 #[cfg(feature = "hydrate")]
 pub fn clear_worker_failure_status() {
-    if let Some(storage) = local_storage() {
+    let _ = with_local_storage(|storage| {
         for key in [
             WORKER_FAILURE_UNTIL_KEY,
             WORKER_FAILURE_REASON_KEY,
             WORKER_COOLDOWN_WARN_KEY,
         ] {
-            remove_storage_item(&storage, key);
+            remove_storage_item(storage, key);
         }
-    }
+    });
     let _ = dmb_clear_worker_failure_status();
 }
 
@@ -1011,27 +1011,26 @@ pub fn load_ai_telemetry_snapshot() -> Option<AiTelemetrySnapshot> {
 fn record_ai_warning(event: &str, details: Option<String>) {
     #[cfg(feature = "hydrate")]
     {
-        let Some(storage) = local_storage() else {
-            return;
-        };
-        let mut events: Vec<AiWarningEvent> = storage
-            .get_item(AI_WARNING_EVENTS_KEY)
-            .ok()
-            .flatten()
-            .and_then(|payload| serde_json::from_str(&payload).ok())
-            .unwrap_or_default();
-        events.push(AiWarningEvent {
-            timestamp_ms: js_sys::Date::now(),
-            event: event.to_string(),
-            details,
+        let _ = with_local_storage(|storage| {
+            let mut events: Vec<AiWarningEvent> = storage
+                .get_item(AI_WARNING_EVENTS_KEY)
+                .ok()
+                .flatten()
+                .and_then(|payload| serde_json::from_str(&payload).ok())
+                .unwrap_or_default();
+            events.push(AiWarningEvent {
+                timestamp_ms: js_sys::Date::now(),
+                event: event.to_string(),
+                details,
+            });
+            if events.len() > AI_WARNING_EVENTS_LIMIT {
+                let excess = events.len() - AI_WARNING_EVENTS_LIMIT;
+                events.drain(0..excess);
+            }
+            if let Ok(payload) = serde_json::to_string(&events) {
+                set_storage_item(storage, AI_WARNING_EVENTS_KEY, &payload);
+            }
         });
-        if events.len() > AI_WARNING_EVENTS_LIMIT {
-            let excess = events.len() - AI_WARNING_EVENTS_LIMIT;
-            events.drain(0..excess);
-        }
-        if let Ok(payload) = serde_json::to_string(&events) {
-            set_storage_item(&storage, AI_WARNING_EVENTS_KEY, &payload);
-        }
     }
     #[cfg(not(feature = "hydrate"))]
     {
@@ -1165,17 +1164,16 @@ pub fn ai_config_mismatch_status_message(
 
 #[cfg(feature = "hydrate")]
 pub fn sync_ai_config_meta(version: Option<&str>, generated_at: Option<&str>) -> bool {
-    let Some(storage) = local_storage() else {
-        return false;
-    };
-    if let Some(version) = version {
-        set_storage_item(&storage, AI_CONFIG_VERSION_KEY, version);
-    }
-    if let Some(generated_at) = generated_at {
-        set_storage_item(&storage, AI_CONFIG_GENERATED_AT_KEY, generated_at);
-    }
-    set_storage_item(&storage, AI_CONFIG_SEEDED_KEY, "1");
-    true
+    with_local_storage(|storage| {
+        if let Some(version) = version {
+            set_storage_item(storage, AI_CONFIG_VERSION_KEY, version);
+        }
+        if let Some(generated_at) = generated_at {
+            set_storage_item(storage, AI_CONFIG_GENERATED_AT_KEY, generated_at);
+        }
+        set_storage_item(storage, AI_CONFIG_SEEDED_KEY, "1");
+    })
+    .is_some()
 }
 
 #[cfg(feature = "hydrate")]
