@@ -838,22 +838,12 @@ pub fn worker_max_floats_value() -> Option<usize> {
     read_worker_max_floats()
 }
 
-#[cfg(feature = "hydrate")]
-fn read_worker_failure_until() -> Option<f64> {
-    local_storage_parse(WORKER_FAILURE_UNTIL_KEY)
-}
-
-#[cfg(feature = "hydrate")]
-fn read_worker_failure_reason() -> Option<String> {
-    local_storage_item(WORKER_FAILURE_REASON_KEY)
-}
-
 #[cfg_attr(not(feature = "hydrate"), must_use)]
 pub fn worker_failure_status() -> WorkerFailureStatus {
     #[cfg(feature = "hydrate")]
     {
         let now = js_sys::Date::now();
-        let until = read_worker_failure_until();
+        let until = local_storage_parse(WORKER_FAILURE_UNTIL_KEY);
         let remaining = until.and_then(|ts| if ts <= now { None } else { Some(ts - now) });
         if remaining.is_some() {
             record_ai_warning_once(
@@ -865,7 +855,7 @@ pub fn worker_failure_status() -> WorkerFailureStatus {
         WorkerFailureStatus {
             cooldown_until_ms: until,
             cooldown_remaining_ms: remaining,
-            last_error: read_worker_failure_reason(),
+            last_error: local_storage_item(WORKER_FAILURE_REASON_KEY),
         }
     }
     #[cfg(not(feature = "hydrate"))]
@@ -1264,17 +1254,12 @@ pub async fn load_ann_meta() -> Option<dmb_core::AnnIndexMeta> {
 }
 
 #[cfg(feature = "hydrate")]
-fn default_tuning() -> AiTuning {
-    AiTuning {
+pub async fn load_ai_tuning() -> AiTuning {
+    local_storage_json("dmb-ai-tuning").unwrap_or(AiTuning {
         probe_override: None,
         target_latency_ms: 12.0,
         last_latency_ms: None,
-    }
-}
-
-#[cfg(feature = "hydrate")]
-pub async fn load_ai_tuning() -> AiTuning {
-    local_storage_json("dmb-ai-tuning").unwrap_or_else(default_tuning)
+    })
 }
 
 #[cfg(feature = "hydrate")]
@@ -1480,21 +1465,18 @@ pub fn store_benchmark_sample(
 }
 
 #[cfg(feature = "hydrate")]
-fn benchmark_latency_ms(sample: &AiBenchmarkSample) -> Option<f64> {
-    if let Some(subset) = &sample.subset {
-        return Some(subset.gpu_ms.unwrap_or(subset.cpu_ms));
-    }
-    if let Some(full) = &sample.full {
-        return Some(full.gpu_ms.unwrap_or(full.cpu_ms));
-    }
-    None
-}
-
-#[cfg(feature = "hydrate")]
 pub fn suggest_target_latency_from_history() -> Option<f64> {
     let mut latencies: Vec<f64> = load_benchmark_history()
         .iter()
-        .filter_map(benchmark_latency_ms)
+        .filter_map(|sample| {
+            if let Some(subset) = &sample.subset {
+                return Some(subset.gpu_ms.unwrap_or(subset.cpu_ms));
+            }
+            sample
+                .full
+                .as_ref()
+                .map(|full| full.gpu_ms.unwrap_or(full.cpu_ms))
+        })
         .collect();
     if latencies.is_empty() {
         return None;
