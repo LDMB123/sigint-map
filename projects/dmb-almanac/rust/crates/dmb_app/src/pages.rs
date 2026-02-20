@@ -3435,17 +3435,6 @@ fn render_show_context(
     render_show_detail_missing(show_id_raw, seed_data_state).into_any()
 }
 
-fn render_show_save_message(save_message: RwSignal<Option<(String, bool)>>) -> impl IntoView {
-    save_message.get().map(|(msg, is_error)| {
-        let class_name = if is_error {
-            "form-message form-message--error"
-        } else {
-            "form-message"
-        };
-        view! { <p class=class_name>{msg}</p> }
-    })
-}
-
 fn render_setlist_filter_buttons(
     total_count: usize,
     set_counts: Vec<(String, usize)>,
@@ -3697,7 +3686,16 @@ pub fn show_detail_page() -> impl IntoView {
             {detail_nav("/shows", "Back to shows")}
             <h1>"Show Details"</h1>
             {move || render_route_param_subhead("Show ID", &show_id_for_heading(), parse_show_id_param)}
-            {move || render_show_save_message(save_message_for_render.clone())}
+            {move || {
+                save_message_for_render.get().map(|(msg, is_error)| {
+                    let class_name = if is_error {
+                        "form-message form-message--error"
+                    } else {
+                        "form-message"
+                    };
+                    view! { <p class=class_name>{msg}</p> }
+                })
+            }}
             <Suspense fallback=move || loading_state("Loading show", "Fetching show summary and context.")>
                 {move || {
                     render_show_context(
