@@ -2396,6 +2396,23 @@ macro_rules! load_with_limit_fallback {
     }};
 }
 
+macro_rules! load_with_hydrate_or_ssr_fallback {
+    ($idb_loader:expr, $server_loader:expr) => {{
+        #[cfg(feature = "hydrate")]
+        {
+            load_hydrate_with_server_fallback($idb_loader, $server_loader).await
+        }
+        #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
+        {
+            $server_loader().await
+        }
+        #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
+        {
+            Vec::new()
+        }
+    }};
+}
+
 async fn load_top_songs(limit: usize) -> Vec<Song> {
     load_with_limit_fallback!(
         limit,
@@ -2443,148 +2460,69 @@ async fn load_recent_releases(limit: usize) -> Vec<Release> {
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_all_releases() -> Vec<Release> {
+    let releases = load_with_hydrate_or_ssr_fallback!(
+        move || async move { dmb_idb::list_all_releases().await.ok() },
+        move || async move { get_all_releases().await.unwrap_or_default() }
+    );
     #[cfg(feature = "hydrate")]
     {
-        let releases = load_hydrate_with_server_fallback(
-            move || async move { dmb_idb::list_all_releases().await.ok() },
-            move || async move { get_all_releases().await.unwrap_or_default() },
-        )
-        .await;
         if !releases.is_empty() {
             return releases;
         }
         get_recent_releases(200).await.unwrap_or_default()
     }
-
-    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
+    #[cfg(not(feature = "hydrate"))]
     {
-        get_all_releases().await.unwrap_or_default()
-    }
-
-    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-    {
-        Vec::new()
+        releases
     }
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_release_tracks(_release_id: i32) -> Vec<ReleaseTrack> {
-    #[cfg(feature = "hydrate")]
-    {
-        load_hydrate_with_server_fallback(
-            move || async move { dmb_idb::list_release_tracks(_release_id).await.ok() },
-            move || async move { get_release_tracks(_release_id).await.unwrap_or_default() },
-        )
-        .await
-    }
-
-    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
-    {
-        get_release_tracks(_release_id).await.unwrap_or_default()
-    }
-
-    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-    {
-        Vec::new()
-    }
+    load_with_hydrate_or_ssr_fallback!(
+        move || async move { dmb_idb::list_release_tracks(_release_id).await.ok() },
+        move || async move { get_release_tracks(_release_id).await.unwrap_or_default() }
+    )
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_setlist_entries(_show_id: i32) -> Vec<SetlistEntry> {
-    #[cfg(feature = "hydrate")]
-    {
-        load_hydrate_with_server_fallback(
-            move || async move { dmb_idb::list_setlist_entries(_show_id).await.ok() },
-            move || async move { get_setlist_entries(_show_id).await.unwrap_or_default() },
-        )
-        .await
-    }
-
-    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
-    {
-        get_setlist_entries(_show_id).await.unwrap_or_default()
-    }
-
-    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-    {
-        Vec::new()
-    }
+    load_with_hydrate_or_ssr_fallback!(
+        move || async move { dmb_idb::list_setlist_entries(_show_id).await.ok() },
+        move || async move { get_setlist_entries(_show_id).await.unwrap_or_default() }
+    )
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_liberation_list(_limit: usize) -> Vec<LiberationEntry> {
-    #[cfg(feature = "hydrate")]
-    {
-        load_hydrate_with_server_fallback(
-            move || async move { dmb_idb::list_liberation_entries(_limit).await.ok() },
-            move || async move { get_liberation_list(_limit as i32).await.unwrap_or_default() },
-        )
-        .await
-    }
-
-    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
-    {
-        get_liberation_list(_limit as i32).await.unwrap_or_default()
-    }
-
-    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-    {
-        Vec::new()
-    }
+    load_with_hydrate_or_ssr_fallback!(
+        move || async move { dmb_idb::list_liberation_entries(_limit).await.ok() },
+        move || async move { get_liberation_list(_limit as i32).await.unwrap_or_default() }
+    )
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_curated_lists() -> Vec<CuratedList> {
-    #[cfg(feature = "hydrate")]
-    {
-        load_hydrate_with_server_fallback(
-            move || async move { dmb_idb::list_curated_lists().await.ok() },
-            move || async move { get_curated_lists().await.unwrap_or_default() },
-        )
-        .await
-    }
-
-    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
-    {
-        get_curated_lists().await.unwrap_or_default()
-    }
-
-    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-    {
-        Vec::new()
-    }
+    load_with_hydrate_or_ssr_fallback!(
+        move || async move { dmb_idb::list_curated_lists().await.ok() },
+        move || async move { get_curated_lists().await.unwrap_or_default() }
+    )
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_curated_list_items(_list_id: i32, _limit: usize) -> Vec<CuratedListItem> {
-    #[cfg(feature = "hydrate")]
-    {
-        load_hydrate_with_server_fallback(
-            move || async move {
-                dmb_idb::list_curated_list_items(_list_id, _limit)
-                    .await
-                    .ok()
-            },
-            move || async move {
-                get_curated_list_items(_list_id, _limit as i32)
-                    .await
-                    .unwrap_or_default()
-            },
-        )
-        .await
-    }
-
-    #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
-    {
-        get_curated_list_items(_list_id, _limit as i32)
-            .await
-            .unwrap_or_default()
-    }
-
-    #[cfg(not(any(feature = "hydrate", feature = "ssr")))]
-    {
-        Vec::new()
-    }
+    load_with_hydrate_or_ssr_fallback!(
+        move || async move {
+            dmb_idb::list_curated_list_items(_list_id, _limit)
+                .await
+                .ok()
+        },
+        move || async move {
+            get_curated_list_items(_list_id, _limit as i32)
+                .await
+                .unwrap_or_default()
+        }
+    )
 }
 
 #[cfg(feature = "hydrate")]
