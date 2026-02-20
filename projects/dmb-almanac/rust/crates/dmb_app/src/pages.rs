@@ -4435,40 +4435,6 @@ struct SearchResultCounts {
     releases: usize,
 }
 
-fn count_search_results(items: &[SearchResult]) -> SearchResultCounts {
-    let mut counts = SearchResultCounts {
-        all: items.len(),
-        ..SearchResultCounts::default()
-    };
-
-    for item in items {
-        match item.result_type.as_str() {
-            "song" => counts.songs += 1,
-            "show" => counts.shows += 1,
-            "venue" => counts.venues += 1,
-            "tour" => counts.tours += 1,
-            "guest" => counts.guests += 1,
-            "release" => counts.releases += 1,
-            _ => {}
-        }
-    }
-
-    counts
-}
-
-fn search_summary_label(selected_filter: &str) -> &'static str {
-    match selected_filter {
-        "all" => "all results",
-        "song" => "songs",
-        "venue" => "venues",
-        "tour" => "tours",
-        "guest" => "guests",
-        "release" => "releases",
-        "show" => "shows",
-        _ => "results",
-    }
-}
-
 fn render_search_filter_buttons(
     active_filter: RwSignal<String>,
     counts: SearchResultCounts,
@@ -4596,14 +4562,37 @@ fn render_search_results_content(
         .into_any();
     }
 
-    let counts = count_search_results(&items);
+    let mut counts = SearchResultCounts {
+        all: items.len(),
+        ..SearchResultCounts::default()
+    };
+    for item in &items {
+        match item.result_type.as_str() {
+            "song" => counts.songs += 1,
+            "show" => counts.shows += 1,
+            "venue" => counts.venues += 1,
+            "tour" => counts.tours += 1,
+            "guest" => counts.guests += 1,
+            "release" => counts.releases += 1,
+            _ => {}
+        }
+    }
     let selected_filter = normalize_search_filter(&active_filter.get());
     let filtered_items: Vec<_> = items
         .into_iter()
         .filter(|item| selected_filter == "all" || item.result_type == selected_filter)
         .collect();
     let filtered_count = filtered_items.len();
-    let summary_label = search_summary_label(&selected_filter);
+    let summary_label = match selected_filter.as_str() {
+        "all" => "all results",
+        "song" => "songs",
+        "venue" => "venues",
+        "tour" => "tours",
+        "guest" => "guests",
+        "release" => "releases",
+        "show" => "shows",
+        _ => "results",
+    };
 
     view! {
         <>
