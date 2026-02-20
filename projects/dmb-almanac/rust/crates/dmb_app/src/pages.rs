@@ -2422,51 +2422,6 @@ where
     Resource::new(|| (), move |()| loader())
 }
 
-async fn load_top_songs(limit: usize) -> Vec<Song> {
-    load_with_limit_sources!(
-        limit,
-        dmb_idb::stats_top_songs,
-        get_top_songs,
-        normalize_songs
-    )
-}
-
-async fn load_top_venues(limit: usize) -> Vec<Venue> {
-    load_with_limit_sources!(
-        limit,
-        dmb_idb::list_top_venues,
-        get_top_venues,
-        normalize_venues
-    )
-}
-
-async fn load_top_guests(limit: usize) -> Vec<Guest> {
-    load_with_limit_sources!(
-        limit,
-        dmb_idb::list_top_guests,
-        get_top_guests,
-        normalize_guests
-    )
-}
-
-async fn load_recent_tours(limit: usize) -> Vec<Tour> {
-    load_with_limit_sources!(
-        limit,
-        dmb_idb::list_recent_tours,
-        get_recent_tours,
-        normalize_tours
-    )
-}
-
-async fn load_recent_releases(limit: usize) -> Vec<Release> {
-    load_with_limit_sources!(
-        limit,
-        dmb_idb::list_recent_releases,
-        get_recent_releases,
-        normalize_releases
-    )
-}
-
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_all_releases() -> Vec<Release> {
     let releases = load_with_hydrate_or_ssr_fallback!(
@@ -2835,7 +2790,9 @@ pub fn songs_page() -> impl IntoView {
         "Top songs by total performances.",
         "Loading songs",
         "Calculating song performance rankings.",
-        || load_top_songs(50),
+        || async {
+            load_with_limit_sources!(50, dmb_idb::stats_top_songs, get_top_songs, normalize_songs)
+        },
         render,
     )
 }
@@ -2875,7 +2832,14 @@ pub fn venues_page() -> impl IntoView {
         "Most visited venues by show count.",
         "Loading venues",
         "Fetching venue totals and rankings.",
-        || load_top_venues(50),
+        || async {
+            load_with_limit_sources!(
+                50,
+                dmb_idb::list_top_venues,
+                get_top_venues,
+                normalize_venues
+            )
+        },
         render,
     )
 }
@@ -2912,7 +2876,14 @@ pub fn guests_page() -> impl IntoView {
         "Most frequent guest appearances.",
         "Loading guests",
         "Collecting guest appearance counts.",
-        || load_top_guests(50),
+        || async {
+            load_with_limit_sources!(
+                50,
+                dmb_idb::list_top_guests,
+                get_top_guests,
+                normalize_guests
+            )
+        },
         render,
     )
 }
@@ -2949,7 +2920,14 @@ pub fn tours_page() -> impl IntoView {
         "Most recent tours, newest first.",
         "Loading tours",
         "Fetching latest tour activity.",
-        || load_recent_tours(25),
+        || async {
+            load_with_limit_sources!(
+                25,
+                dmb_idb::list_recent_tours,
+                get_recent_tours,
+                normalize_tours
+            )
+        },
         render,
     )
 }
@@ -2990,7 +2968,14 @@ pub fn releases_page() -> impl IntoView {
         "Latest official releases and recordings.",
         "Loading releases",
         "Fetching latest release metadata.",
-        || load_recent_releases(25),
+        || async {
+            load_with_limit_sources!(
+                25,
+                dmb_idb::list_recent_releases,
+                get_recent_releases,
+                normalize_releases
+            )
+        },
         render,
     )
 }
