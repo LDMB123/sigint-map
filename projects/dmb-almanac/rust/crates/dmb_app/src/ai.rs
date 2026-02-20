@@ -1348,16 +1348,6 @@ pub async fn refresh_ai_config() -> bool {
 }
 
 #[cfg(feature = "hydrate")]
-fn should_run_worker_benchmark() -> bool {
-    local_storage_item(WEBGPU_WORKER_BENCH_KEY).is_none()
-}
-
-#[cfg(feature = "hydrate")]
-fn mark_worker_benchmark_ran() {
-    set_local_storage_item(WEBGPU_WORKER_BENCH_KEY, &js_sys::Date::now().to_string());
-}
-
-#[cfg(feature = "hydrate")]
 pub fn ai_config_seeded() -> bool {
     local_storage_flag_enabled(AI_CONFIG_SEEDED_KEY)
 }
@@ -1393,11 +1383,6 @@ pub fn benchmark_history() -> Vec<AiBenchmarkSample> {
 }
 
 #[cfg(feature = "hydrate")]
-fn store_benchmark_history(samples: &[AiBenchmarkSample]) {
-    set_local_storage_json(BENCHMARK_HISTORY_KEY, samples);
-}
-
-#[cfg(feature = "hydrate")]
 pub fn store_benchmark_sample(
     full: Option<AiBenchmark>,
     subset: Option<AiSubsetBenchmark>,
@@ -1417,7 +1402,7 @@ pub fn store_benchmark_sample(
         let trim = history.len() - BENCHMARK_HISTORY_LIMIT;
         history.drain(0..trim);
     }
-    store_benchmark_history(&history);
+    set_local_storage_json(BENCHMARK_HISTORY_KEY, &history);
     store_ai_telemetry_snapshot(ann_cap_diagnostics().as_ref());
 }
 
@@ -1653,10 +1638,10 @@ async fn load_records_and_matrix_from_chunks(
 
 #[cfg(feature = "hydrate")]
 fn schedule_embedding_background_tasks(caps: AiCapabilities) {
-    if caps.webgpu_enabled && should_run_worker_benchmark() {
+    if caps.webgpu_enabled && local_storage_item(WEBGPU_WORKER_BENCH_KEY).is_none() {
         spawn_local(async move {
             let _ = benchmark_worker_threshold().await;
-            mark_worker_benchmark_ran();
+            set_local_storage_item(WEBGPU_WORKER_BENCH_KEY, &js_sys::Date::now().to_string());
         });
     }
     if caps.webgpu_worker {
