@@ -130,14 +130,6 @@ fn storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
 }
 
 #[cfg(feature = "hydrate")]
-fn storage_json<T>(storage: &web_sys::Storage, key: &str) -> Option<T>
-where
-    T: serde::de::DeserializeOwned,
-{
-    storage_item(storage, key).and_then(|payload| serde_json::from_str(&payload).ok())
-}
-
-#[cfg(feature = "hydrate")]
 fn set_storage_item(storage: &web_sys::Storage, key: &str, value: &str) {
     let _ = storage.set_item(key, value);
 }
@@ -1029,8 +1021,9 @@ fn record_ai_warning(event: &str, details: Option<String>) {
     #[cfg(feature = "hydrate")]
     {
         let _ = with_local_storage(|storage| {
-            let mut events: Vec<AiWarningEvent> =
-                storage_json(storage, AI_WARNING_EVENTS_KEY).unwrap_or_default();
+            let mut events: Vec<AiWarningEvent> = storage_item(storage, AI_WARNING_EVENTS_KEY)
+                .and_then(|payload| serde_json::from_str(&payload).ok())
+                .unwrap_or_default();
             events.push(AiWarningEvent {
                 timestamp_ms: js_sys::Date::now(),
                 event: event.to_string(),
