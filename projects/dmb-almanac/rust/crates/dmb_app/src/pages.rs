@@ -3993,34 +3993,6 @@ fn render_release_track_filter_buttons(
         .collect::<Vec<_>>()
 }
 
-fn render_release_track_empty_state(
-    has_filters: bool,
-    active_disc: RwSignal<String>,
-    track_query: RwSignal<String>,
-) -> impl IntoView {
-    view! {
-        <section class="status-card status-card--empty">
-            <p class="status-title">"No tracks match this view"</p>
-            <p class="muted">"Try another disc filter or clear the search query."</p>
-            {has_filters.then(|| view! {
-                <div class="pill-row">
-                    <button
-                        type="button"
-                        class="pill pill--ghost"
-                        on:click=move |_| {
-                            active_disc.set("all".to_string());
-                            track_query.set(String::new());
-                        }
-                    >
-                        "Clear filters"
-                    </button>
-                </div>
-            })}
-        </section>
-    }
-    .into_any()
-}
-
 fn render_release_track_rows(filtered_tracks: Vec<ReleaseTrack>) -> impl IntoView {
     view! {
         <ol id="release-track-results" class="tracklist" aria-label="Release tracks">
@@ -4100,8 +4072,7 @@ fn render_release_tracks_content(
     let total_count = items.len();
     let disc_counts = release_track_disc_counts(&items);
     let active_key = active_disc.get();
-    let query_raw = track_query.get();
-    let query_text = query_raw.trim().to_string();
+    let query_text = track_query.get().trim().to_string();
     let query_normalized = query_text.to_ascii_lowercase();
     let filtered_tracks = items
         .into_iter()
@@ -4152,7 +4123,27 @@ fn render_release_tracks_content(
             {summary}
         </p>
         {if filtered_tracks.is_empty() {
-            render_release_track_empty_state(has_filters, active_disc, track_query).into_any()
+            view! {
+                <section class="status-card status-card--empty">
+                    <p class="status-title">"No tracks match this view"</p>
+                    <p class="muted">"Try another disc filter or clear the search query."</p>
+                    {has_filters.then(|| view! {
+                        <div class="pill-row">
+                            <button
+                                type="button"
+                                class="pill pill--ghost"
+                                on:click=move |_| {
+                                    active_disc.set("all".to_string());
+                                    track_query.set(String::new());
+                                }
+                            >
+                                "Clear filters"
+                            </button>
+                        </div>
+                    })}
+                </section>
+            }
+                .into_any()
         } else {
             render_release_track_rows(filtered_tracks).into_any()
         }}
