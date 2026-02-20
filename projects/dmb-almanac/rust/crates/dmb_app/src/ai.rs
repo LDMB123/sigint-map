@@ -597,12 +597,6 @@ fn ivf_cap_bytes_for_matrix(cap_bytes: u64) -> u64 {
 }
 
 #[cfg(any(feature = "hydrate", test))]
-fn target_vectors_for_cap(cap_bytes: u64, dim: usize, record_count: usize) -> usize {
-    let max_vectors = (cap_bytes / (dim as u64 * 4)).max(1) as usize;
-    max_vectors.max(MIN_SAMPLE_RECORDS).min(record_count.max(1))
-}
-
-#[cfg(any(feature = "hydrate", test))]
 fn truncate_for_ann_cap(
     mut records: Vec<EmbeddingRecord>,
     mut matrix: Vec<f32>,
@@ -698,7 +692,10 @@ fn cap_embedding_index_with_policy(
         return (records, matrix, ivf, diagnostics);
     }
 
-    let target_vectors = target_vectors_for_cap(cap_bytes, dim, records.len());
+    let max_vectors = (cap_bytes / (dim as u64 * 4)).max(1) as usize;
+    let target_vectors = max_vectors
+        .max(MIN_SAMPLE_RECORDS)
+        .min(records.len().max(1));
 
     let (new_records, new_matrix) = if use_ann {
         truncate_for_ann_cap(records, matrix, dim, target_vectors)
