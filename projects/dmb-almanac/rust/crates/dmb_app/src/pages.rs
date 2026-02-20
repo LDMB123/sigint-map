@@ -3092,6 +3092,29 @@ macro_rules! optional_resource_from_param {
     };
 }
 
+macro_rules! detail_page_with_primary_resource {
+    (
+        back_href: $back_href:expr,
+        back_label: $back_label:expr,
+        title: $title:literal,
+        subhead: $subhead:expr,
+        loading_title: $loading_title:expr,
+        loading_message: $loading_message:expr,
+        content: $content:expr $(,)?
+    ) => {
+        view! {
+            <section class="page">
+                {detail_nav($back_href, $back_label)}
+                <h1>{$title}</h1>
+                {$subhead}
+                <Suspense fallback=move || loading_state($loading_title, $loading_message)>
+                    {$content}
+                </Suspense>
+            </section>
+        }
+    };
+}
+
 fn render_import_or_missing_with_link(
     seed_data_state: RwSignal<crate::data::SeedDataState>,
     importing_title: &'static str,
@@ -3687,16 +3710,15 @@ pub fn song_detail_page() -> impl IntoView {
     let song =
         optional_resource_from_param!(slug, |raw: &str| parse_slug_param(raw, "slug"), load_song);
 
-    view! {
-        <section class="page">
-            {detail_nav("/songs", "Back to songs")}
-            <h1>"Song Details"</h1>
-            {move || render_param_subhead("Slug", parse_slug_param(&slug(), "slug"))}
-            <Suspense fallback=move || loading_state("Loading song", "Fetching song profile and performance stats.")>
-                {move || render(song.get().unwrap_or(None))}
-            </Suspense>
-        </section>
-    }
+    detail_page_with_primary_resource!(
+        back_href: "/songs",
+        back_label: "Back to songs",
+        title: "Song Details",
+        subhead: move || render_param_subhead("Slug", parse_slug_param(&slug(), "slug")),
+        loading_title: "Loading song",
+        loading_message: "Fetching song profile and performance stats.",
+        content: move || render(song.get().unwrap_or(None)),
+    )
 }
 
 fn render_song_slot_distribution(
@@ -3860,16 +3882,15 @@ pub fn guest_detail_page() -> impl IntoView {
     let guest =
         optional_resource_from_param!(slug, |raw: &str| parse_slug_param(raw, "slug"), load_guest);
 
-    view! {
-        <section class="page">
-            {detail_nav("/guests", "Back to guests")}
-            <h1>"Guest Details"</h1>
-            {move || render_param_subhead("Slug", parse_slug_param(&slug(), "slug"))}
-            <Suspense fallback=move || loading_state("Loading guest", "Fetching guest appearance profile.")>
-                {move || render(guest.get().unwrap_or(None))}
-            </Suspense>
-        </section>
-    }
+    detail_page_with_primary_resource!(
+        back_href: "/guests",
+        back_label: "Back to guests",
+        title: "Guest Details",
+        subhead: move || render_param_subhead("Slug", parse_slug_param(&slug(), "slug")),
+        loading_title: "Loading guest",
+        loading_message: "Fetching guest appearance profile.",
+        content: move || render(guest.get().unwrap_or(None)),
+    )
 }
 
 fn render_release_detail_card(release: &Release) -> impl IntoView {
@@ -4255,16 +4276,15 @@ pub fn tour_year_page() -> impl IntoView {
 
     let tour = optional_resource_from_param!(year, parse_tour_year_param, load_tour);
 
-    view! {
-        <section class="page">
-            {detail_nav("/tours", "Back to tours")}
-            <h1>"Tour Details"</h1>
-            {move || render_param_subhead("Year", parse_tour_year_param(&year()))}
-            <Suspense fallback=move || loading_state("Loading tour", "Fetching tour details for this year.")>
-                {move || render(tour.get().unwrap_or(None))}
-            </Suspense>
-        </section>
-    }
+    detail_page_with_primary_resource!(
+        back_href: "/tours",
+        back_label: "Back to tours",
+        title: "Tour Details",
+        subhead: move || render_param_subhead("Year", parse_tour_year_param(&year())),
+        loading_title: "Loading tour",
+        loading_message: "Fetching tour details for this year.",
+        content: move || render(tour.get().unwrap_or(None)),
+    )
 }
 
 #[must_use]
@@ -4346,18 +4366,17 @@ pub fn venue_detail_page() -> impl IntoView {
         load_venue
     );
 
-    view! {
-        <section class="page">
-            {detail_nav("/venues", "Back to venues")}
-            <h1>"Venue Details"</h1>
-            {move || {
-                render_param_subhead("Venue ID", parse_positive_i32_param(&venue_id(), "venueId"))
-            }}
-            <Suspense fallback=move || loading_state("Loading venue", "Fetching venue profile and location.")>
-                {move || render(venue.get().unwrap_or(None))}
-            </Suspense>
-        </section>
-    }
+    detail_page_with_primary_resource!(
+        back_href: "/venues",
+        back_label: "Back to venues",
+        title: "Venue Details",
+        subhead: move || {
+            render_param_subhead("Venue ID", parse_positive_i32_param(&venue_id(), "venueId"))
+        },
+        loading_title: "Loading venue",
+        loading_message: "Fetching venue profile and location.",
+        content: move || render(venue.get().unwrap_or(None)),
+    )
 }
 
 fn search_result_href(item: &dmb_core::SearchResult) -> Option<String> {
