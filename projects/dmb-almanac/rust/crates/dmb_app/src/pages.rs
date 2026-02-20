@@ -3078,6 +3078,11 @@ where
     }
 }
 
+fn route_param_or_default(param_name: &'static str) -> impl Fn() -> String + Copy {
+    let params = use_params_map();
+    move || params.with(|p| p.get(param_name).unwrap_or_default())
+}
+
 fn hydrate_saved_show_ids(saved_show_ids: RwSignal<std::collections::HashSet<i32>>) {
     #[cfg(feature = "hydrate")]
     {
@@ -3550,8 +3555,7 @@ fn render_show_setlist_content(
 
 #[must_use]
 pub fn show_detail_page() -> impl IntoView {
-    let params = use_params_map();
-    let show_id = move || params.with(|p| p.get("showId").unwrap_or_default());
+    let show_id = route_param_or_default("showId");
     let seed_data_state = use_seed_data_state();
     let active_set = RwSignal::new("all".to_string());
     let setlist_query = RwSignal::new(String::new());
@@ -3639,8 +3643,7 @@ pub fn show_detail_page() -> impl IntoView {
 
 #[must_use]
 pub fn song_detail_page() -> impl IntoView {
-    let params = use_params_map();
-    let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
+    let slug = route_param_or_default("slug");
     let seed_data_state = use_seed_data_state();
     let render = move |song: Option<Song>| {
         if let Some(song) = song {
@@ -3771,8 +3774,7 @@ fn render_song_missing_state(
 
 #[must_use]
 pub fn guest_detail_page() -> impl IntoView {
-    let params = use_params_map();
-    let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
+    let slug = route_param_or_default("slug");
     let seed_data_state = use_seed_data_state();
     let render = move |guest: Option<Guest>| match guest {
         Some(guest) => {
@@ -4119,8 +4121,7 @@ fn render_release_tracks_content(
 
 #[must_use]
 pub fn release_detail_page() -> impl IntoView {
-    let params = use_params_map();
-    let slug = move || params.with(|p| p.get("slug").unwrap_or_default());
+    let slug = route_param_or_default("slug");
     let seed_data_state = use_seed_data_state();
     let active_disc = RwSignal::new("all".to_string());
     let track_query = RwSignal::new(String::new());
@@ -4188,8 +4189,7 @@ pub fn release_detail_page() -> impl IntoView {
 
 #[must_use]
 pub fn tour_year_page() -> impl IntoView {
-    let params = use_params_map();
-    let year = move || params.with(|p| p.get("year").unwrap_or_default());
+    let year = route_param_or_default("year");
     let seed_data_state = use_seed_data_state();
     let render = move |tour: Option<Tour>| match tour {
         Some(tour) => {
@@ -4277,8 +4277,7 @@ pub fn tour_year_page() -> impl IntoView {
 
 #[must_use]
 pub fn venue_detail_page() -> impl IntoView {
-    let params = use_params_map();
-    let venue_id = move || params.with(|p| p.get("venueId").unwrap_or_default());
+    let venue_id = route_param_or_default("venueId");
     let seed_data_state = use_seed_data_state();
     let render = move |venue: Option<Venue>| match venue {
         Some(venue) => {
@@ -6571,8 +6570,7 @@ pub fn curated_lists_page() -> impl IntoView {
 
 #[must_use]
 pub fn curated_list_detail_page() -> impl IntoView {
-    let params = use_params_map();
-    let list_id = move || params.with(|params| params.get("listId").unwrap_or_default());
+    let list_id = route_param_or_default("listId");
     let seed_data_state = use_seed_data_state();
     let active_filter = RwSignal::new("all".to_string());
     let query = RwSignal::new(String::new());
