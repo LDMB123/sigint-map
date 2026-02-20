@@ -1607,21 +1607,6 @@ async fn load_records_and_matrix_from_chunks(
 }
 
 #[cfg(feature = "hydrate")]
-fn schedule_embedding_background_tasks(caps: AiCapabilities) {
-    if caps.webgpu_enabled && local_storage_item(WEBGPU_WORKER_BENCH_KEY).is_none() {
-        spawn_local(async move {
-            let _ = benchmark_worker_threshold().await;
-            set_local_storage_item(WEBGPU_WORKER_BENCH_KEY, &js_sys::Date::now().to_string());
-        });
-    }
-    if caps.webgpu_worker {
-        spawn_local(async move {
-            warm_webgpu_worker().await;
-        });
-    }
-}
-
-#[cfg(feature = "hydrate")]
 pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     if let Some(existing) = EMBEDDING_INDEX.get() {
         return Some(existing.clone());
@@ -1681,7 +1666,18 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
         ivf,
     });
     let _ = EMBEDDING_INDEX.set(index.clone());
-    schedule_embedding_background_tasks(detect_ai_capabilities());
+    let caps = detect_ai_capabilities();
+    if caps.webgpu_enabled && local_storage_item(WEBGPU_WORKER_BENCH_KEY).is_none() {
+        spawn_local(async move {
+            let _ = benchmark_worker_threshold().await;
+            set_local_storage_item(WEBGPU_WORKER_BENCH_KEY, &js_sys::Date::now().to_string());
+        });
+    }
+    if caps.webgpu_worker {
+        spawn_local(async move {
+            warm_webgpu_worker().await;
+        });
+    }
     Some(index)
 }
 
