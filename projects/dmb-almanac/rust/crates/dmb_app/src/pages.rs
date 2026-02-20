@@ -4670,65 +4670,6 @@ macro_rules! load_stats_hydrate_or_default {
 // ---------------------------------------------------------------------------
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
-async fn load_stats_shows() -> StatsShows {
-    load_stats_hydrate_or_default!({
-        let shows: Vec<Show> = dmb_idb::list_all(dmb_idb::TABLE_SHOWS)
-            .await
-            .unwrap_or_default();
-        let recent_tours = dmb_idb::list_recent_tours(25).await.unwrap_or_default();
-
-        let years: Vec<u32> = shows.iter().map(|s| s.year as u32).collect();
-        let rarity_values: Vec<f64> = shows
-            .iter()
-            .filter_map(|s| s.rarity_index.map(|r| r as f64))
-            .collect();
-
-        let shows_by_year = if years.is_empty() {
-            Vec::new()
-        } else {
-            let map = dmb_wasm::aggregate_by_year(&years);
-            js_map_to_u32_pairs(&map)
-        };
-
-        let shows_by_decade = if years.is_empty() {
-            Vec::new()
-        } else {
-            let map = dmb_wasm::aggregate_by_decade(&years);
-            js_map_to_u32_pairs(&map)
-        };
-
-        let (rarity_min, rarity_q1, rarity_median, rarity_q3, rarity_max) =
-            if rarity_values.is_empty() {
-                (0.0, 0.0, 0.0, 0.0, 0.0)
-            } else {
-                match dmb_wasm::calculate_quartiles(&rarity_values) {
-                    Ok(obj) => {
-                        let get = |key: &str| -> f64 {
-                            js_sys::Reflect::get(&obj, &JsValue::from_str(key))
-                                .ok()
-                                .and_then(|v| v.as_f64())
-                                .unwrap_or(0.0)
-                        };
-                        (get("min"), get("q1"), get("median"), get("q3"), get("max"))
-                    }
-                    Err(_) => (0.0, 0.0, 0.0, 0.0, 0.0),
-                }
-            };
-
-        StatsShows {
-            shows_by_year,
-            shows_by_decade,
-            rarity_min,
-            rarity_q1,
-            rarity_median,
-            rarity_q3,
-            rarity_max,
-            recent_tours,
-        }
-    })
-}
-
-#[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
 async fn load_stats_venues() -> StatsVenues {
     load_stats_hydrate_or_default!({
         let top_venues = dmb_idb::list_top_venues(25).await.unwrap_or_default();
@@ -5229,7 +5170,63 @@ pub fn stats_page() -> impl IntoView {
             }
         })
     });
-    let shows = unit_resource(load_stats_shows);
+    let shows = unit_resource(|| async {
+        load_stats_hydrate_or_default!({
+            let shows: Vec<Show> = dmb_idb::list_all(dmb_idb::TABLE_SHOWS)
+                .await
+                .unwrap_or_default();
+            let recent_tours = dmb_idb::list_recent_tours(25).await.unwrap_or_default();
+
+            let years: Vec<u32> = shows.iter().map(|s| s.year as u32).collect();
+            let rarity_values: Vec<f64> = shows
+                .iter()
+                .filter_map(|s| s.rarity_index.map(|r| r as f64))
+                .collect();
+
+            let shows_by_year = if years.is_empty() {
+                Vec::new()
+            } else {
+                let map = dmb_wasm::aggregate_by_year(&years);
+                js_map_to_u32_pairs(&map)
+            };
+
+            let shows_by_decade = if years.is_empty() {
+                Vec::new()
+            } else {
+                let map = dmb_wasm::aggregate_by_decade(&years);
+                js_map_to_u32_pairs(&map)
+            };
+
+            let (rarity_min, rarity_q1, rarity_median, rarity_q3, rarity_max) =
+                if rarity_values.is_empty() {
+                    (0.0, 0.0, 0.0, 0.0, 0.0)
+                } else {
+                    match dmb_wasm::calculate_quartiles(&rarity_values) {
+                        Ok(obj) => {
+                            let get = |key: &str| -> f64 {
+                                js_sys::Reflect::get(&obj, &JsValue::from_str(key))
+                                    .ok()
+                                    .and_then(|v| v.as_f64())
+                                    .unwrap_or(0.0)
+                            };
+                            (get("min"), get("q1"), get("median"), get("q3"), get("max"))
+                        }
+                        Err(_) => (0.0, 0.0, 0.0, 0.0, 0.0),
+                    }
+                };
+
+            StatsShows {
+                shows_by_year,
+                shows_by_decade,
+                rarity_min,
+                rarity_q1,
+                rarity_median,
+                rarity_q3,
+                rarity_max,
+                recent_tours,
+            }
+        })
+    });
     let venues = unit_resource(load_stats_venues);
     let guests = unit_resource(load_stats_guests);
 
