@@ -2321,26 +2321,6 @@ where
     }
 }
 
-#[cfg(feature = "hydrate")]
-async fn load_hydrate_with_server_fallback<T, IdbLoad, IdbFut, ServerLoad, ServerFut>(
-    idb_loader: IdbLoad,
-    server_loader: ServerLoad,
-) -> Vec<T>
-where
-    T: Send + 'static,
-    IdbLoad: FnOnce() -> IdbFut + Send + 'static,
-    IdbFut: std::future::Future<Output = Option<Vec<T>>> + 'static,
-    ServerLoad: FnOnce() -> ServerFut,
-    ServerFut: std::future::Future<Output = Vec<T>>,
-{
-    let local_items = spawn_local_to_send(idb_loader()).await.unwrap_or_default();
-    if !local_items.is_empty() {
-        local_items
-    } else {
-        server_loader().await
-    }
-}
-
 macro_rules! load_with_limit_fallback {
     ($limit:expr, $idb_loader:expr, $server_loader:expr, $normalize:expr) => {{
         #[cfg(feature = "hydrate")]
@@ -2376,7 +2356,12 @@ macro_rules! load_with_hydrate_or_ssr_fallback {
     ($idb_loader:expr, $server_loader:expr) => {{
         #[cfg(feature = "hydrate")]
         {
-            load_hydrate_with_server_fallback($idb_loader, $server_loader).await
+            let local_items = spawn_local_to_send($idb_loader()).await.unwrap_or_default();
+            if !local_items.is_empty() {
+                local_items
+            } else {
+                $server_loader().await
+            }
         }
         #[cfg(all(not(feature = "hydrate"), feature = "ssr"))]
         {
