@@ -115,13 +115,6 @@ fn window_property(window: &web_sys::Window, name: &str) -> JsValue {
 }
 
 #[cfg(feature = "hydrate")]
-fn window_cross_origin_isolated(window: &web_sys::Window) -> bool {
-    window_property(window, "crossOriginIsolated")
-        .as_bool()
-        .unwrap_or(false)
-}
-
-#[cfg(feature = "hydrate")]
 fn local_storage() -> Option<web_sys::Storage> {
     web_sys::window().and_then(|window| window.local_storage().ok().flatten())
 }
@@ -245,7 +238,9 @@ pub fn detect_ai_capabilities() -> AiCapabilities {
     let webgpu_disabled = read_webgpu_disabled().unwrap_or(false);
     let webgpu_worker = window_property(&window, "dmbWebgpuScoresWorker").is_function();
     let webnn = js_value_exists(&navigator_property(&navigator, "ml"));
-    let threads = window_cross_origin_isolated(&window);
+    let threads = window_property(&window, "crossOriginIsolated")
+        .as_bool()
+        .unwrap_or(false);
 
     let webgpu_enabled = webgpu_available && !webgpu_disabled;
     AiCapabilities {
