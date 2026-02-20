@@ -1478,14 +1478,6 @@ async fn load_ivf_index(meta: &dmb_core::AnnIndexMeta) -> Option<AnnIvfIndex> {
 }
 
 #[cfg(feature = "hydrate")]
-async fn read_cached_embedding_manifest(version: &str) -> Option<EmbeddingManifest> {
-    dmb_idb::get_embedding_manifest(version)
-        .await
-        .ok()
-        .flatten()
-}
-
-#[cfg(feature = "hydrate")]
 async fn hydrate_missing_embedding_chunks(manifest: &EmbeddingManifest) {
     for chunk in &manifest.chunks {
         if dmb_idb::get_embedding_chunk(chunk.chunk_id)
@@ -1507,7 +1499,11 @@ async fn hydrate_missing_embedding_chunks(manifest: &EmbeddingManifest) {
 
 #[cfg(feature = "hydrate")]
 async fn load_embedding_manifest_with_cache(version: &str) -> Option<EmbeddingManifest> {
-    if let Some(manifest) = read_cached_embedding_manifest(version).await {
+    if let Some(manifest) = dmb_idb::get_embedding_manifest(version)
+        .await
+        .ok()
+        .flatten()
+    {
         return Some(manifest);
     }
 
@@ -1520,7 +1516,10 @@ async fn load_embedding_manifest_with_cache(version: &str) -> Option<EmbeddingMa
     };
     dmb_idb::store_embedding_manifest(&fetched).await.ok()?;
     hydrate_missing_embedding_chunks(&fetched).await;
-    read_cached_embedding_manifest(version).await
+    dmb_idb::get_embedding_manifest(version)
+        .await
+        .ok()
+        .flatten()
 }
 
 #[cfg(feature = "hydrate")]
