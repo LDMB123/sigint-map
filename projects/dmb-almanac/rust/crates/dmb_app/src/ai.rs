@@ -584,13 +584,6 @@ fn webgpu_matrix_allowed(matrix_bytes: u64, policy_cap: u64) -> bool {
 }
 
 #[cfg(any(feature = "hydrate", test))]
-fn estimate_ivf_bytes(ivf: &AnnIvfIndex) -> u64 {
-    let centroid_floats: usize = ivf.centroids.iter().map(std::vec::Vec::len).sum();
-    let list_entries: usize = ivf.lists.iter().map(std::vec::Vec::len).sum();
-    (centroid_floats as u64 * 4).saturating_add(list_entries as u64 * 4)
-}
-
-#[cfg(any(feature = "hydrate", test))]
 fn ivf_cap_bytes_for_matrix(cap_bytes: u64) -> u64 {
     let scaled = (cap_bytes as f64 * IVF_CAP_RATIO) as u64;
     scaled.clamp(IVF_MIN_CAP_BYTES, IVF_MAX_CAP_BYTES)
@@ -612,7 +605,11 @@ fn cap_embedding_index_with_policy(
 ) {
     let cap_bytes = policy.cap_bytes;
     let matrix_bytes = matrix.len() as u64 * 4;
-    let ivf_bytes = ivf.as_ref().map(estimate_ivf_bytes);
+    let ivf_bytes = ivf.as_ref().map(|ivf| {
+        let centroid_floats: usize = ivf.centroids.iter().map(std::vec::Vec::len).sum();
+        let list_entries: usize = ivf.lists.iter().map(std::vec::Vec::len).sum();
+        (centroid_floats as u64 * 4).saturating_add(list_entries as u64 * 4)
+    });
     let ivf_cap_bytes = ivf_bytes.map(|_| ivf_cap_bytes_for_matrix(cap_bytes));
     let mut ivf_dropped = false;
     if let (Some(bytes), Some(cap)) = (ivf_bytes, ivf_cap_bytes) {
