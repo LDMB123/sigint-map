@@ -2119,10 +2119,6 @@ macro_rules! load_entity_by_slug {
     }};
 }
 
-async fn load_show(id: i32) -> Option<Show> {
-    load_entity_by_id!(id, dmb_idb::get_show, get_show)
-}
-
 fn normalize_with_limit<T>(
     mut items: Vec<T>,
     limit: usize,
@@ -3507,7 +3503,7 @@ pub fn show_detail_page() -> impl IntoView {
         show_id,
         |raw: &str| parse_positive_i32_param(raw, "showId"),
         |id: i32| async move {
-            let show = load_show(id).await?;
+            let show = load_entity_by_id!(id, dmb_idb::get_show, get_show)?;
             let venue = load_entity_by_id!(show.venue_id, dmb_idb::get_venue, get_venue);
             let tour = if let Some(tour_id) = show.tour_id {
                 load_entity_by_id!(tour_id, dmb_idb::get_tour_by_id, get_tour_by_id)
@@ -5707,7 +5703,7 @@ async fn add_my_show_and_refresh(
     message: RwSignal<Option<(String, bool)>>,
     loading: RwSignal<bool>,
 ) {
-    let show_date = load_show(show_id).await.map(|show| show.date);
+    let show_date = load_entity_by_id!(show_id, dmb_idb::get_show, get_show).map(|show| show.date);
     if add_user_attended_show(show_id, show_date).await {
         items.set(load_user_attended_shows().await);
         input.set(String::new());
