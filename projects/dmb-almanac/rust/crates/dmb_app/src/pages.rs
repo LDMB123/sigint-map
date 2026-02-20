@@ -117,16 +117,6 @@ async fn wait_ms(ms: i32) {
 }
 
 #[cfg(feature = "hydrate")]
-async fn copy_text_to_clipboard(text: &str) -> bool {
-    let Some(window) = web_sys::window() else {
-        return false;
-    };
-    let clipboard = window.navigator().clipboard();
-    let promise = clipboard.write_text(text);
-    JsFuture::from(promise).await.is_ok()
-}
-
-#[cfg(feature = "hydrate")]
 fn current_search_param(name: &str) -> Option<String> {
     let window = web_sys::window()?;
     let search = window.location().search().ok()?;
@@ -378,7 +368,13 @@ fn detail_nav(href: &'static str, label: &'static str) -> impl IntoView {
                 let href = web_sys::window()
                     .and_then(|window| window.location().href().ok())
                     .unwrap_or_default();
-                let copied = copy_text_to_clipboard(&href).await;
+                let copied = if let Some(window) = web_sys::window() {
+                    let clipboard = window.navigator().clipboard();
+                    let promise = clipboard.write_text(&href);
+                    JsFuture::from(promise).await.is_ok()
+                } else {
+                    false
+                };
                 if copied {
                     copy_label_signal.set(String::from("Copied"));
                 } else {
@@ -1151,38 +1147,6 @@ fn benchmark_diff_json(history: &[crate::ai::AiBenchmarkSample]) -> serde_json::
     }
 }
 
-#[cfg(feature = "hydrate")]
-fn download_json_snapshot(window: &web_sys::Window, json: &str) {
-    let array = js_sys::Array::new();
-    array.push(&wasm_bindgen::JsValue::from_str(json));
-    let Ok(blob) = web_sys::Blob::new_with_str_sequence(&array) else {
-        return;
-    };
-    let Ok(url) = web_sys::Url::create_object_url_with_blob(&blob) else {
-        return;
-    };
-    let Some(document) = window.document() else {
-        let _ = web_sys::Url::revoke_object_url(&url);
-        return;
-    };
-    let Ok(element) = document.create_element("a") else {
-        let _ = web_sys::Url::revoke_object_url(&url);
-        return;
-    };
-    let Ok(anchor) = element.dyn_into::<web_sys::HtmlAnchorElement>() else {
-        let _ = web_sys::Url::revoke_object_url(&url);
-        return;
-    };
-
-    anchor.set_href(&url);
-    anchor.set_download(&format!(
-        "ai-diagnostics-{}.json",
-        js_sys::Date::now() as i64
-    ));
-    anchor.click();
-    let _ = web_sys::Url::revoke_object_url(&url);
-}
-
 fn action_export_diagnostics(state: AiDiagnosticsState) {
     #[cfg(not(feature = "hydrate"))]
     let _ = state;
@@ -1221,7 +1185,34 @@ fn action_export_diagnostics(state: AiDiagnosticsState) {
         });
 
         if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
-            download_json_snapshot(&window, &json);
+            let array = js_sys::Array::new();
+            array.push(&wasm_bindgen::JsValue::from_str(&json));
+            let Ok(blob) = web_sys::Blob::new_with_str_sequence(&array) else {
+                return;
+            };
+            let Ok(url) = web_sys::Url::create_object_url_with_blob(&blob) else {
+                return;
+            };
+            let Some(document) = window.document() else {
+                let _ = web_sys::Url::revoke_object_url(&url);
+                return;
+            };
+            let Ok(element) = document.create_element("a") else {
+                let _ = web_sys::Url::revoke_object_url(&url);
+                return;
+            };
+            let Ok(anchor) = element.dyn_into::<web_sys::HtmlAnchorElement>() else {
+                let _ = web_sys::Url::revoke_object_url(&url);
+                return;
+            };
+
+            anchor.set_href(&url);
+            anchor.set_download(&format!(
+                "ai-diagnostics-{}.json",
+                js_sys::Date::now() as i64
+            ));
+            anchor.click();
+            let _ = web_sys::Url::revoke_object_url(&url);
         }
     }
 }
