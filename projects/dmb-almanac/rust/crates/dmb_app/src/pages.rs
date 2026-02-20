@@ -3081,10 +3081,6 @@ fn parse_tour_year_param(raw: &str) -> Result<i32, String> {
     Ok(year)
 }
 
-fn parse_show_id_param(raw: &str) -> Result<i32, String> {
-    parse_positive_i32_param(raw, "showId")
-}
-
 fn render_param_subhead<T>(label: &str, parsed: Result<T, String>) -> AnyView
 where
     T: std::fmt::Display,
@@ -3389,7 +3385,7 @@ fn render_show_detail_missing(
         .into_any();
     }
 
-    match parse_show_id_param(show_id_raw) {
+    match parse_positive_i32_param(show_id_raw, "showId") {
         Ok(parsed_show_id) => {
             let my_shows_href = format!("/my-shows?showId={parsed_show_id}");
             view! {
@@ -3662,10 +3658,16 @@ pub fn show_detail_page() -> impl IntoView {
 
     reset_filter_and_query_on_route_change(show_id, active_set, setlist_query);
 
-    let show = optional_resource_from_param!(show_id, parse_show_id_param, load_show_context);
-    let setlist = optional_resource_from_param!(show_id, parse_show_id_param, |id| async move {
-        Some(load_setlist_entries(id).await)
-    });
+    let show = optional_resource_from_param!(
+        show_id,
+        |raw: &str| parse_positive_i32_param(raw, "showId"),
+        load_show_context
+    );
+    let setlist = optional_resource_from_param!(
+        show_id,
+        |raw: &str| parse_positive_i32_param(raw, "showId"),
+        |id| async move { Some(load_setlist_entries(id).await) }
+    );
 
     let show_id_for_heading = show_id.clone();
     let show_id_for_render = show_id.clone();
@@ -3681,7 +3683,11 @@ pub fn show_detail_page() -> impl IntoView {
         <section class="page">
             {detail_nav("/shows", "Back to shows")}
             <h1>"Show Details"</h1>
-            {move || render_route_param_subhead("Show ID", &show_id_for_heading(), parse_show_id_param)}
+            {move || render_route_param_subhead(
+                "Show ID",
+                &show_id_for_heading(),
+                |raw: &str| parse_positive_i32_param(raw, "showId"),
+            )}
             {move || {
                 save_message_for_render.get().map(|(msg, is_error)| {
                     let class_name = if is_error {
@@ -5776,7 +5782,7 @@ fn hydrate_my_shows_state(
         let Some(raw_show_id) = raw_show_id else {
             return;
         };
-        match parse_show_id_param(&raw_show_id) {
+        match parse_positive_i32_param(&raw_show_id, "showId") {
             Ok(show_id) => {
                 input_signal.set(show_id.to_string());
                 if message_signal.get_untracked().is_none() {
