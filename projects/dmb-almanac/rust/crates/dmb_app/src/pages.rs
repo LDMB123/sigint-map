@@ -2301,37 +2301,14 @@ async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
     }
 }
 
-#[cfg(feature = "hydrate")]
-async fn load_hydrate_with_server_fallback_and_limit<T, IdbLoad, IdbFut, ServerLoad, ServerFut>(
-    limit: usize,
-    idb_loader: IdbLoad,
-    server_loader: ServerLoad,
-    normalize: fn(Vec<T>, usize) -> Vec<T>,
-) -> Vec<T>
-where
-    T: Send + 'static,
-    IdbLoad: FnOnce() -> IdbFut + Send + 'static,
-    IdbFut: std::future::Future<Output = Option<Vec<T>>> + 'static,
-    ServerLoad: FnOnce() -> ServerFut,
-    ServerFut: std::future::Future<Output = Vec<T>>,
-{
-    match spawn_local_to_send(idb_loader()).await {
-        Some(items) if !items.is_empty() => normalize(items, limit),
-        _ => normalize(server_loader().await, limit),
-    }
-}
-
 macro_rules! load_with_limit_fallback {
     ($limit:expr, $idb_loader:expr, $server_loader:expr, $normalize:expr) => {{
         #[cfg(feature = "hydrate")]
         {
-            load_hydrate_with_server_fallback_and_limit(
-                $limit,
-                $idb_loader,
-                $server_loader,
-                $normalize,
-            )
-            .await
+            match spawn_local_to_send($idb_loader()).await {
+                Some(items) if !items.is_empty() => $normalize(items, $limit),
+                _ => $normalize($server_loader().await, $limit),
+            }
         }
         #[cfg(not(feature = "hydrate"))]
         {
