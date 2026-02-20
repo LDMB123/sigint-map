@@ -2123,10 +2123,6 @@ async fn load_show(id: i32) -> Option<Show> {
     load_entity_by_id!(id, dmb_idb::get_show, get_show)
 }
 
-async fn load_venue(id: i32) -> Option<Venue> {
-    load_entity_by_id!(id, dmb_idb::get_venue, get_venue)
-}
-
 fn normalize_with_limit<T>(
     mut items: Vec<T>,
     limit: usize,
@@ -3517,7 +3513,7 @@ pub fn show_detail_page() -> impl IntoView {
         |raw: &str| parse_positive_i32_param(raw, "showId"),
         |id: i32| async move {
             let show = load_show(id).await?;
-            let venue = load_venue(show.venue_id).await;
+            let venue = load_entity_by_id!(show.venue_id, dmb_idb::get_venue, get_venue);
             let tour = if let Some(tour_id) = show.tour_id {
                 load_entity_by_id!(tour_id, dmb_idb::get_tour_by_id, get_tour_by_id)
             } else {
@@ -4251,7 +4247,7 @@ pub fn venue_detail_page() -> impl IntoView {
     let venue = optional_resource_from_param!(
         venue_id,
         |raw: &str| parse_positive_i32_param(raw, "venueId"),
-        load_venue
+        |id: i32| async move { load_entity_by_id!(id, dmb_idb::get_venue, get_venue) }
     );
 
     detail_page_with_primary_resource!(
