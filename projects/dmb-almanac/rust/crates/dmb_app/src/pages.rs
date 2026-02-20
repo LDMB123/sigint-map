@@ -2152,6 +2152,14 @@ async fn load_release(slug: String) -> Option<Release> {
     load_entity_by_slug!(slug, dmb_idb::get_release_by_slug, get_release)
 }
 
+async fn load_release_tracks_by_slug(slug: String) -> Option<Vec<ReleaseTrack>> {
+    let release = load_release(slug).await;
+    Some(match release {
+        Some(release) => load_release_tracks(release.id).await,
+        None => Vec::new(),
+    })
+}
+
 async fn load_tour(year: i32) -> Option<Tour> {
     load_entity_by_id!(year, dmb_idb::get_tour, get_tour)
 }
@@ -4188,14 +4196,7 @@ pub fn release_detail_page() -> impl IntoView {
         slug,
         parse_route_slug_param,
         Some(Vec::new()),
-        |parsed_slug| async move {
-            let release = load_release(parsed_slug).await;
-            if let Some(release) = release {
-                Some(load_release_tracks(release.id).await)
-            } else {
-                Some(Vec::new())
-            }
-        }
+        load_release_tracks_by_slug
     );
 
     view! {
