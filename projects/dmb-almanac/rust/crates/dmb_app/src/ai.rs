@@ -147,6 +147,14 @@ fn local_storage_item(key: &str) -> Option<String> {
 }
 
 #[cfg(feature = "hydrate")]
+fn local_storage_parse<T>(key: &str) -> Option<T>
+where
+    T: std::str::FromStr,
+{
+    local_storage_item(key)?.parse::<T>().ok()
+}
+
+#[cfg(feature = "hydrate")]
 fn set_local_storage_item(key: &str, value: &str) {
     if let Some(storage) = local_storage() {
         set_storage_item(&storage, key, value);
@@ -774,8 +782,7 @@ async fn webgpu_probe_ok() -> bool {
 
 #[cfg(feature = "hydrate")]
 fn read_worker_threshold() -> Option<usize> {
-    let value = local_storage_item(WORKER_THRESHOLD_KEY)?;
-    value.parse::<usize>().ok()
+    local_storage_parse(WORKER_THRESHOLD_KEY)
 }
 
 #[cfg(feature = "hydrate")]
@@ -799,8 +806,7 @@ pub fn worker_max_floats_value() -> Option<usize> {
 
 #[cfg(feature = "hydrate")]
 fn read_worker_failure_until() -> Option<f64> {
-    let value = local_storage_item(WORKER_FAILURE_UNTIL_KEY)?;
-    value.parse::<f64>().ok()
+    local_storage_parse(WORKER_FAILURE_UNTIL_KEY)
 }
 
 #[cfg(feature = "hydrate")]
@@ -864,10 +870,7 @@ pub fn set_worker_threshold_override(value: Option<usize>) {
 
 #[cfg(feature = "hydrate")]
 fn read_ann_cap_override_mb() -> Option<u64> {
-    let value = local_storage_item(ANN_CAP_OVERRIDE_KEY)?;
-    value
-        .parse::<u64>()
-        .ok()
+    local_storage_parse::<u64>(ANN_CAP_OVERRIDE_KEY)
         .map(|mb| mb.clamp(MIN_ANN_CAP_MB, MAX_ANN_CAP_MB))
 }
 
@@ -1419,7 +1422,7 @@ pub fn ai_config_generated_at() -> Option<String> {
 
 #[cfg(feature = "hydrate")]
 pub fn webgpu_worker_bench_timestamp() -> Option<f64> {
-    local_storage_item(WEBGPU_WORKER_BENCH_KEY).and_then(|value| value.parse::<f64>().ok())
+    local_storage_parse(WEBGPU_WORKER_BENCH_KEY)
 }
 
 #[cfg(feature = "hydrate")]

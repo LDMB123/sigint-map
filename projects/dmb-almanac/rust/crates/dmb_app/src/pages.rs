@@ -714,6 +714,19 @@ fn refresh_ann_cap_override_signals(state: AiDiagnosticsState) {
 }
 
 #[cfg(feature = "hydrate")]
+fn refresh_runtime_metrics_signals(state: AiDiagnosticsState) {
+    let _ = state
+        .webgpu_runtime
+        .try_set(load_webgpu_runtime_telemetry());
+    let _ = state
+        .apple_silicon_profile
+        .try_set(load_apple_silicon_profile());
+    let _ = state
+        .idb_runtime_metrics
+        .try_set(load_idb_runtime_metrics());
+}
+
+#[cfg(feature = "hydrate")]
 fn apply_worker_threshold_override(state: AiDiagnosticsState, value: Option<usize>) {
     crate::ai::set_worker_threshold_override(value);
     refresh_worker_threshold_signals(state);
@@ -723,6 +736,14 @@ fn apply_worker_threshold_override(state: AiDiagnosticsState, value: Option<usiz
 fn apply_ann_cap_override(state: AiDiagnosticsState, value: Option<u64>) {
     crate::ai::set_ann_cap_override_mb(value);
     refresh_ann_cap_override_signals(state);
+}
+
+#[cfg(feature = "hydrate")]
+fn parse_optional_signal_value<T>(input: RwSignal<String>) -> Option<T>
+where
+    T: std::str::FromStr,
+{
+    input.get_untracked().trim().parse::<T>().ok()
 }
 
 #[cfg(feature = "hydrate")]
@@ -776,15 +797,7 @@ fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
     let _ = state
         .worker_bench_timestamp
         .try_set(crate::ai::webgpu_worker_bench_timestamp());
-    let _ = state
-        .webgpu_runtime
-        .try_set(load_webgpu_runtime_telemetry());
-    let _ = state
-        .apple_silicon_profile
-        .try_set(load_apple_silicon_profile());
-    let _ = state
-        .idb_runtime_metrics
-        .try_set(load_idb_runtime_metrics());
+    refresh_runtime_metrics_signals(state);
 
     if let Some(window) = web_sys::window() {
         let isolated =
@@ -1037,11 +1050,7 @@ fn action_refresh_runtime_metrics(state: AiDiagnosticsState) {
     let _ = state;
     #[cfg(feature = "hydrate")]
     {
-        state.webgpu_runtime.set(load_webgpu_runtime_telemetry());
-        state
-            .apple_silicon_profile
-            .set(load_apple_silicon_profile());
-        state.idb_runtime_metrics.set(load_idb_runtime_metrics());
+        refresh_runtime_metrics_signals(state);
     }
 }
 
@@ -1089,12 +1098,7 @@ fn action_apply_worker_threshold(state: AiDiagnosticsState) {
     let _ = state;
     #[cfg(feature = "hydrate")]
     {
-        let parsed = state
-            .worker_threshold_input
-            .get_untracked()
-            .trim()
-            .parse::<usize>()
-            .ok();
+        let parsed = parse_optional_signal_value(state.worker_threshold_input);
         apply_worker_threshold_override(state, parsed);
     }
 }
@@ -1113,12 +1117,7 @@ fn action_apply_ann_cap_override(state: AiDiagnosticsState) {
     let _ = state;
     #[cfg(feature = "hydrate")]
     {
-        let parsed = state
-            .ann_cap_override_input
-            .get_untracked()
-            .trim()
-            .parse::<u64>()
-            .ok();
+        let parsed = parse_optional_signal_value(state.ann_cap_override_input);
         apply_ann_cap_override(state, parsed);
     }
 }
