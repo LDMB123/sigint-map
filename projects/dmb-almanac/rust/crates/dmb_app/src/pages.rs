@@ -3089,10 +3089,6 @@ fn parse_show_id_param(raw: &str) -> Result<i32, String> {
     parse_positive_i32_param(raw, "showId")
 }
 
-fn parse_venue_id_param(raw: &str) -> Result<i32, String> {
-    parse_positive_i32_param(raw, "venueId")
-}
-
 fn parse_list_id_param(raw: &str) -> Result<i32, String> {
     parse_positive_i32_param(raw, "listId")
 }
@@ -4352,13 +4348,21 @@ pub fn venue_detail_page() -> impl IntoView {
         ),
     };
 
-    let venue = optional_resource_from_param!(venue_id, parse_venue_id_param, load_venue);
+    let venue = optional_resource_from_param!(
+        venue_id,
+        |raw: &str| parse_positive_i32_param(raw, "venueId"),
+        load_venue
+    );
 
     detail_page_with_primary_resource!(
         back_href: "/venues",
         back_label: "Back to venues",
         title: "Venue Details",
-        subhead: move || render_route_param_subhead("Venue ID", &venue_id(), parse_venue_id_param),
+        subhead: move || render_route_param_subhead(
+            "Venue ID",
+            &venue_id(),
+            |raw: &str| parse_positive_i32_param(raw, "venueId"),
+        ),
         loading_title: "Loading venue",
         loading_message: "Fetching venue profile and location.",
         content: move || render(venue.get().unwrap_or(None)),
@@ -6392,8 +6396,7 @@ fn render_curated_list_detail_content(
     let total_count = items.len();
     let type_counts = curated_item_type_counts(&items);
     let active_key = active_filter.get();
-    let query_raw = query.get();
-    let query_text = query_raw.trim().to_string();
+    let query_text = query.get().trim().to_string();
     let query_normalized = query_text.to_ascii_lowercase();
 
     let filtered_items = items
