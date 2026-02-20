@@ -5624,47 +5624,6 @@ fn hydrate_my_shows_state(
 }
 
 #[cfg(feature = "hydrate")]
-async fn add_my_show_and_refresh(
-    show_id: i32,
-    items: RwSignal<Vec<UserAttendedShow>>,
-    input: RwSignal<String>,
-    message: RwSignal<Option<(String, bool)>>,
-    loading: RwSignal<bool>,
-) {
-    let show_date = load_entity_by_id!(show_id, dmb_idb::get_show, get_show).map(|show| show.date);
-    if add_user_attended_show(show_id, show_date).await {
-        items.set(load_user_attended_shows().await);
-        input.set(String::new());
-        message.set(Some((format!("Saved show {show_id} locally."), false)));
-    } else {
-        message.set(Some((
-            "Unable to save this show. Please try again.".to_string(),
-            true,
-        )));
-    }
-    loading.set(false);
-}
-
-#[cfg(feature = "hydrate")]
-async fn remove_my_show_and_refresh(
-    show_id: i32,
-    items: RwSignal<Vec<UserAttendedShow>>,
-    message: RwSignal<Option<(String, bool)>>,
-    loading: RwSignal<bool>,
-) {
-    if remove_user_attended_show(show_id).await {
-        items.set(load_user_attended_shows().await);
-        message.set(Some((format!("Removed show {show_id}."), false)));
-    } else {
-        message.set(Some((
-            "Unable to remove this show. Please try again.".to_string(),
-            true,
-        )));
-    }
-    loading.set(false);
-}
-
-#[cfg(feature = "hydrate")]
 fn render_my_shows_message_view(message: Option<(String, bool)>) -> Option<AnyView> {
     message.map(|(msg, is_error)| {
         let class_name = if is_error {
@@ -5741,6 +5700,7 @@ where
 }
 
 #[must_use]
+#[allow(clippy::too_many_lines)]
 pub fn my_shows_page() -> impl IntoView {
     let items = RwSignal::new(Vec::<UserAttendedShow>::new());
     let input = RwSignal::new(String::new());
@@ -5778,7 +5738,19 @@ pub fn my_shows_page() -> impl IntoView {
             message.set(None);
             loading.set(true);
             spawn_local(async move {
-                add_my_show_and_refresh(show_id, items, input, message, loading).await;
+                let show_date =
+                    load_entity_by_id!(show_id, dmb_idb::get_show, get_show).map(|show| show.date);
+                if add_user_attended_show(show_id, show_date).await {
+                    items.set(load_user_attended_shows().await);
+                    input.set(String::new());
+                    message.set(Some((format!("Saved show {show_id} locally."), false)));
+                } else {
+                    message.set(Some((
+                        "Unable to save this show. Please try again.".to_string(),
+                        true,
+                    )));
+                }
+                loading.set(false);
             });
         }
     };
@@ -5797,7 +5769,16 @@ pub fn my_shows_page() -> impl IntoView {
             let loading = loading.clone();
             spawn_local(async move {
                 loading.set(true);
-                remove_my_show_and_refresh(show_id, items, message, loading).await;
+                if remove_user_attended_show(show_id).await {
+                    items.set(load_user_attended_shows().await);
+                    message.set(Some((format!("Removed show {show_id}."), false)));
+                } else {
+                    message.set(Some((
+                        "Unable to remove this show. Please try again.".to_string(),
+                        true,
+                    )));
+                }
+                loading.set(false);
             });
         }
     };
