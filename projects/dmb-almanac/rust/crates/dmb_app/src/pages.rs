@@ -2377,119 +2377,68 @@ where
     }
 }
 
-async fn load_top_songs(limit: usize) -> Vec<Song> {
-    #[cfg(feature = "hydrate")]
-    {
-        load_hydrate_with_server_fallback_and_limit(
-            limit,
-            move || async move { dmb_idb::stats_top_songs(limit).await.ok() },
-            move || async move { get_top_songs(limit).await.unwrap_or_default() },
-            normalize_songs,
-        )
-        .await
-    }
+macro_rules! load_with_limit_fallback {
+    ($limit:expr, $idb_loader:expr, $server_loader:expr, $normalize:expr) => {{
+        #[cfg(feature = "hydrate")]
+        {
+            load_hydrate_with_server_fallback_and_limit(
+                $limit,
+                $idb_loader,
+                $server_loader,
+                $normalize,
+            )
+            .await
+        }
+        #[cfg(not(feature = "hydrate"))]
+        {
+            load_server_with_limit($limit, $server_loader(), $normalize).await
+        }
+    }};
+}
 
-    #[cfg(not(feature = "hydrate"))]
-    {
-        load_server_with_limit(
-            limit,
-            async move { get_top_songs(limit).await.unwrap_or_default() },
-            normalize_songs,
-        )
-        .await
-    }
+async fn load_top_songs(limit: usize) -> Vec<Song> {
+    load_with_limit_fallback!(
+        limit,
+        move || async move { dmb_idb::stats_top_songs(limit).await.ok() },
+        move || async move { get_top_songs(limit).await.unwrap_or_default() },
+        normalize_songs
+    )
 }
 
 async fn load_top_venues(limit: usize) -> Vec<Venue> {
-    #[cfg(feature = "hydrate")]
-    {
-        load_hydrate_with_server_fallback_and_limit(
-            limit,
-            move || async move { dmb_idb::list_top_venues(limit).await.ok() },
-            move || async move { get_top_venues(limit).await.unwrap_or_default() },
-            normalize_venues,
-        )
-        .await
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        load_server_with_limit(
-            limit,
-            async move { get_top_venues(limit).await.unwrap_or_default() },
-            normalize_venues,
-        )
-        .await
-    }
+    load_with_limit_fallback!(
+        limit,
+        move || async move { dmb_idb::list_top_venues(limit).await.ok() },
+        move || async move { get_top_venues(limit).await.unwrap_or_default() },
+        normalize_venues
+    )
 }
 
 async fn load_top_guests(limit: usize) -> Vec<Guest> {
-    #[cfg(feature = "hydrate")]
-    {
-        load_hydrate_with_server_fallback_and_limit(
-            limit,
-            move || async move { dmb_idb::list_top_guests(limit).await.ok() },
-            move || async move { get_top_guests(limit).await.unwrap_or_default() },
-            normalize_guests,
-        )
-        .await
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        load_server_with_limit(
-            limit,
-            async move { get_top_guests(limit).await.unwrap_or_default() },
-            normalize_guests,
-        )
-        .await
-    }
+    load_with_limit_fallback!(
+        limit,
+        move || async move { dmb_idb::list_top_guests(limit).await.ok() },
+        move || async move { get_top_guests(limit).await.unwrap_or_default() },
+        normalize_guests
+    )
 }
 
 async fn load_recent_tours(limit: usize) -> Vec<Tour> {
-    #[cfg(feature = "hydrate")]
-    {
-        load_hydrate_with_server_fallback_and_limit(
-            limit,
-            move || async move { dmb_idb::list_recent_tours(limit).await.ok() },
-            move || async move { get_recent_tours(limit).await.unwrap_or_default() },
-            normalize_tours,
-        )
-        .await
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        load_server_with_limit(
-            limit,
-            async move { get_recent_tours(limit).await.unwrap_or_default() },
-            normalize_tours,
-        )
-        .await
-    }
+    load_with_limit_fallback!(
+        limit,
+        move || async move { dmb_idb::list_recent_tours(limit).await.ok() },
+        move || async move { get_recent_tours(limit).await.unwrap_or_default() },
+        normalize_tours
+    )
 }
 
 async fn load_recent_releases(limit: usize) -> Vec<Release> {
-    #[cfg(feature = "hydrate")]
-    {
-        load_hydrate_with_server_fallback_and_limit(
-            limit,
-            move || async move { dmb_idb::list_recent_releases(limit).await.ok() },
-            move || async move { get_recent_releases(limit).await.unwrap_or_default() },
-            normalize_releases,
-        )
-        .await
-    }
-
-    #[cfg(not(feature = "hydrate"))]
-    {
-        load_server_with_limit(
-            limit,
-            async move { get_recent_releases(limit).await.unwrap_or_default() },
-            normalize_releases,
-        )
-        .await
-    }
+    load_with_limit_fallback!(
+        limit,
+        move || async move { dmb_idb::list_recent_releases(limit).await.ok() },
+        move || async move { get_recent_releases(limit).await.unwrap_or_default() },
+        normalize_releases
+    )
 }
 
 #[cfg_attr(not(feature = "hydrate"), allow(clippy::unused_async))]
