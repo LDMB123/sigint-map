@@ -2658,10 +2658,6 @@ fn titleize_words_with_fallback(raw: &str, fallback: &str) -> String {
     }
 }
 
-fn titleize_label(raw: &str) -> String {
-    titleize_words_with_fallback(raw, "Unknown")
-}
-
 fn format_mb_u64(bytes: u64) -> String {
     let tenths = (u128::from(bytes) * 10) / 1_000_000;
     format!("{}.{} MB", tenths / 10, tenths % 10)
@@ -2675,7 +2671,7 @@ fn setlist_set_label(key: &str) -> String {
     if key == "unspecified" {
         "Unspecified".to_string()
     } else {
-        titleize_label(key)
+        titleize_words_with_fallback(key, "Unknown")
     }
 }
 
@@ -3516,7 +3512,9 @@ fn render_setlist_entries_list(filtered_items: Vec<SetlistEntry>) -> impl IntoVi
                     let slot = entry
                         .slot
                         .as_deref()
-                        .map_or_else(|| "Song".to_string(), titleize_label);
+                        .map_or_else(|| "Song".to_string(), |raw| {
+                            titleize_words_with_fallback(raw, "Unknown")
+                        });
                     let set_label = setlist_set_label(&normalized_set_key(entry.set_name.as_deref()));
                     let song_href = entry.song.as_ref().and_then(|song| {
                         let slug = song.slug.trim();
