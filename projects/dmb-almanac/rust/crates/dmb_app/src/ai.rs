@@ -1568,16 +1568,6 @@ async fn load_ann_backing(manifest_dim: u32) -> (Vec<f32>, bool, Option<AnnIvfIn
 }
 
 #[cfg(feature = "hydrate")]
-fn target_vectors_for_manifest(policy: &CapPolicy, dim: u32) -> usize {
-    let max_vectors = if dim == 0 {
-        0usize
-    } else {
-        (policy.cap_bytes / (dim as u64 * 4)).max(1) as usize
-    };
-    max_vectors.max(MIN_SAMPLE_RECORDS)
-}
-
-#[cfg(feature = "hydrate")]
 async fn load_records_and_matrix_from_chunks(
     manifest: &EmbeddingManifest,
     mut matrix: Vec<f32>,
@@ -1645,7 +1635,12 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     }
     let manifest = load_embedding_manifest_with_cache(CORE_SCHEMA_VERSION).await?;
     let policy = cap_policy_from_navigator();
-    let target_vectors = target_vectors_for_manifest(&policy, manifest.dim);
+    let max_vectors = if manifest.dim == 0 {
+        0usize
+    } else {
+        (policy.cap_bytes / (manifest.dim as u64 * 4)).max(1) as usize
+    };
+    let target_vectors = max_vectors.max(MIN_SAMPLE_RECORDS);
     let (matrix, use_ann, ivf) = load_ann_backing(manifest.dim).await;
     let (records, matrix, chunks_loaded, budget_capped) =
         load_records_and_matrix_from_chunks(&manifest, matrix, use_ann, target_vectors).await;
