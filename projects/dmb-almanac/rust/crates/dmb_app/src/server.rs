@@ -196,10 +196,21 @@ fn opt_i64_to_i32(value: Option<i64>) -> Option<i32> {
 }
 
 #[cfg(feature = "ssr")]
+fn row_get<T>(row: &sqlx::sqlite::SqliteRow, column: &str) -> Result<T, ServerFnError>
+where
+    for<'r> T: sqlx::Decode<'r, sqlx::Sqlite> + sqlx::Type<sqlx::Sqlite>,
+{
+    row.try_get::<T, _>(column).map_err(to_server_error)
+}
+
+#[cfg(feature = "ssr")]
 fn row_i32(row: &sqlx::sqlite::SqliteRow, column: &str) -> Result<i32, ServerFnError> {
-    row.try_get::<i64, _>(column)
-        .map(|raw| raw as i32)
-        .map_err(to_server_error)
+    row_get::<i64>(row, column).map(|raw| raw as i32)
+}
+
+#[cfg(feature = "ssr")]
+fn row_string(row: &sqlx::sqlite::SqliteRow, column: &str) -> Result<String, ServerFnError> {
+    row_get(row, column)
 }
 
 #[cfg(feature = "ssr")]
@@ -209,9 +220,15 @@ fn opt_i64_to_bool(value: Option<i64>) -> Option<bool> {
 
 #[cfg(feature = "ssr")]
 fn row_opt_i32(row: &sqlx::sqlite::SqliteRow, column: &str) -> Result<Option<i32>, ServerFnError> {
-    row.try_get::<Option<i64>, _>(column)
-        .map(opt_i64_to_i32)
-        .map_err(to_server_error)
+    row_get::<Option<i64>>(row, column).map(opt_i64_to_i32)
+}
+
+#[cfg(feature = "ssr")]
+fn row_opt_string(
+    row: &sqlx::sqlite::SqliteRow,
+    column: &str,
+) -> Result<Option<String>, ServerFnError> {
+    row_get(row, column)
 }
 
 #[cfg(feature = "ssr")]
@@ -219,12 +236,16 @@ fn row_opt_bool(
     row: &sqlx::sqlite::SqliteRow,
     column: &str,
 ) -> Result<Option<bool>, ServerFnError> {
-    row.try_get::<Option<i64>, _>(column)
-        .map(opt_i64_to_bool)
-        .map_err(to_server_error)
+    row_get::<Option<i64>>(row, column).map(opt_i64_to_bool)
 }
 
 #[cfg(feature = "ssr")]
+fn row_opt_f32(row: &sqlx::sqlite::SqliteRow, column: &str) -> Result<Option<f32>, ServerFnError> {
+    row_get::<Option<f64>>(row, column).map(|value| value.map(|raw| raw as f32))
+}
+
+#[cfg(feature = "ssr")]
+#[derive(Clone, Copy)]
 struct SongColumns<'a> {
     id: &'a str,
     slug: &'a str,
@@ -238,37 +259,165 @@ struct SongColumns<'a> {
 }
 
 #[cfg(feature = "ssr")]
-fn row_optional_song(
+const SONG_COLUMNS: SongColumns<'static> = SongColumns {
+    id: "id",
+    slug: "slug",
+    title: "title",
+    sort_title: "sort_title",
+    total_performances: "total_performances",
+    last_played_date: "last_played_date",
+    opener_count: "opener_count",
+    closer_count: "closer_count",
+    encore_count: "encore_count",
+};
+
+#[cfg(feature = "ssr")]
+fn row_song_with_identity(
     row: &sqlx::sqlite::SqliteRow,
     columns: SongColumns<'_>,
-) -> Result<Option<Song>, ServerFnError> {
-    let slug = row
-        .try_get::<Option<String>, _>(columns.slug)
-        .map_err(to_server_error)?;
-    let title = row
-        .try_get::<Option<String>, _>(columns.title)
-        .map_err(to_server_error)?;
-    let (Some(slug), Some(title)) = (slug, title) else {
-        return Ok(None);
-    };
-
-    Ok(Some(Song {
+    slug: String,
+    title: String,
+) -> Result<Song, ServerFnError> {
+    Ok(Song {
         id: row_i32(row, columns.id)?,
         slug,
         title,
-        sort_title: row
-            .try_get::<Option<String>, _>(columns.sort_title)
-            .map_err(to_server_error)?,
+        sort_title: row_opt_string(row, columns.sort_title)?,
         total_performances: row_opt_i32(row, columns.total_performances)?,
-        last_played_date: row
-            .try_get::<Option<String>, _>(columns.last_played_date)
-            .map_err(to_server_error)?,
+        last_played_date: row_opt_string(row, columns.last_played_date)?,
         is_liberated: None,
         opener_count: row_opt_i32(row, columns.opener_count)?,
         closer_count: row_opt_i32(row, columns.closer_count)?,
         encore_count: row_opt_i32(row, columns.encore_count)?,
         search_text: None,
-    }))
+    })
+}
+
+#[cfg(feature = "ssr")]
+fn row_song(row: &sqlx::sqlite::SqliteRow) -> Result<Song, ServerFnError> {
+    row_song_with_identity(
+        row,
+        SONG_COLUMNS,
+        row_string(row, SONG_COLUMNS.slug)?,
+        row_string(row, SONG_COLUMNS.title)?,
+    )
+}
+
+#[cfg(feature = "ssr")]
+fn row_optional_song(
+    row: &sqlx::sqlite::SqliteRow,
+    columns: SongColumns<'_>,
+) -> Result<Option<Song>, ServerFnError> {
+    let slug = row_opt_string(row, columns.slug)?;
+    let title = row_opt_string(row, columns.title)?;
+    let (Some(slug), Some(title)) = (slug, title) else {
+        return Ok(None);
+    };
+
+    row_song_with_identity(row, columns, slug, title).map(Some)
+}
+
+#[cfg(feature = "ssr")]
+fn row_venue(row: &sqlx::sqlite::SqliteRow) -> Result<Venue, ServerFnError> {
+    Ok(Venue {
+        id: row_i32(row, "id")?,
+        name: row_string(row, "name")?,
+        city: row_string(row, "city")?,
+        state: row_opt_string(row, "state")?,
+        country: row_string(row, "country")?,
+        country_code: row_opt_string(row, "country_code")?,
+        venue_type: row_opt_string(row, "venue_type")?,
+        total_shows: row_opt_i32(row, "total_shows")?,
+        search_text: None,
+    })
+}
+
+#[cfg(feature = "ssr")]
+fn row_tour(row: &sqlx::sqlite::SqliteRow) -> Result<Tour, ServerFnError> {
+    Ok(Tour {
+        id: row_i32(row, "id")?,
+        year: row_i32(row, "year")?,
+        name: row_string(row, "name")?,
+        total_shows: row_opt_i32(row, "total_shows")?,
+        search_text: None,
+    })
+}
+
+#[cfg(feature = "ssr")]
+fn row_guest(row: &sqlx::sqlite::SqliteRow) -> Result<Guest, ServerFnError> {
+    Ok(Guest {
+        id: row_i32(row, "id")?,
+        slug: row_string(row, "slug")?,
+        name: row_string(row, "name")?,
+        total_appearances: row_opt_i32(row, "total_appearances")?,
+        search_text: None,
+    })
+}
+
+#[cfg(feature = "ssr")]
+fn row_release(row: &sqlx::sqlite::SqliteRow) -> Result<Release, ServerFnError> {
+    Ok(Release {
+        id: row_i32(row, "id")?,
+        title: row_string(row, "title")?,
+        slug: row_string(row, "slug")?,
+        release_type: row_opt_string(row, "release_type")?,
+        release_date: row_opt_string(row, "release_date")?,
+        search_text: None,
+    })
+}
+
+#[cfg(feature = "ssr")]
+fn row_show_summary(row: &sqlx::sqlite::SqliteRow) -> Result<ShowSummary, ServerFnError> {
+    Ok(ShowSummary {
+        id: row_i32(row, "id")?,
+        date: row_string(row, "date")?,
+        year: row_i32(row, "year")?,
+        venue_id: row_i32(row, "venue_id")?,
+        venue_name: row_string(row, "venue_name")?,
+        venue_city: row_string(row, "venue_city")?,
+        venue_state: row_opt_string(row, "venue_state")?,
+        tour_name: row_opt_string(row, "tour_name")?,
+        tour_year: row_opt_i32(row, "tour_year")?,
+    })
+}
+
+#[cfg(feature = "ssr")]
+fn row_curated_list(row: &sqlx::sqlite::SqliteRow) -> Result<CuratedList, ServerFnError> {
+    Ok(CuratedList {
+        id: row_i32(row, "id")?,
+        original_id: row_opt_string(row, "original_id")?,
+        title: row_string(row, "title")?,
+        slug: row_string(row, "slug")?,
+        category: row_string(row, "category")?,
+        description: row_opt_string(row, "description")?,
+        item_count: row_opt_i32(row, "item_count")?,
+        is_featured: row_opt_bool(row, "is_featured")?,
+        sort_order: row_opt_i32(row, "sort_order")?,
+        created_at: row_opt_string(row, "created_at")?,
+        updated_at: row_opt_string(row, "updated_at")?,
+    })
+}
+
+#[cfg(feature = "ssr")]
+fn row_curated_list_item(row: &sqlx::sqlite::SqliteRow) -> Result<CuratedListItem, ServerFnError> {
+    let metadata = row_opt_string(row, "metadata")?;
+    let metadata = metadata.and_then(|raw| serde_json::from_str(&raw).ok());
+    Ok(CuratedListItem {
+        id: row_i32(row, "id")?,
+        list_id: row_i32(row, "list_id")?,
+        position: row_i32(row, "position")?,
+        item_type: row_string(row, "item_type")?,
+        show_id: row_opt_i32(row, "show_id")?,
+        song_id: row_opt_i32(row, "song_id")?,
+        venue_id: row_opt_i32(row, "venue_id")?,
+        guest_id: row_opt_i32(row, "guest_id")?,
+        release_id: row_opt_i32(row, "release_id")?,
+        item_title: row_opt_string(row, "item_title")?,
+        item_link: row_opt_string(row, "item_link")?,
+        notes: row_opt_string(row, "notes")?,
+        metadata,
+        created_at: row_opt_string(row, "created_at")?,
+    })
 }
 
 #[server(GetHomeStats, "/api")]
@@ -318,7 +467,7 @@ pub async fn get_show(id: i32) -> Result<Option<Show>, ServerFnError> {
         .map_err(to_server_error)?;
 
         if let Some(row) = row {
-            let date: String = row.try_get::<String, _>("date").map_err(to_server_error)?;
+            let date: String = row_string(&row, "date")?;
             let show = Show {
                 id: row_i32(&row, "id")?,
                 date: date.clone(),
@@ -326,10 +475,7 @@ pub async fn get_show(id: i32) -> Result<Option<Show>, ServerFnError> {
                 tour_id: row_opt_i32(&row, "tour_id")?,
                 year: year_from_date(&date),
                 song_count: row_opt_i32(&row, "song_count")?,
-                rarity_index: row
-                    .try_get::<Option<f64>, _>("rarity_index")
-                    .map_err(to_server_error)?
-                    .map(|v| v as f32),
+                rarity_index: row_opt_f32(&row, "rarity_index")?,
             };
             return Ok(Some(show));
         }
@@ -357,24 +503,7 @@ pub async fn get_song(slug: String) -> Result<Option<Song>, ServerFnError> {
         .map_err(to_server_error)?;
 
         if let Some(row) = row {
-            let song = Song {
-                id: row_i32(&row, "id")?,
-                slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
-                title: row.try_get::<String, _>("title").map_err(to_server_error)?,
-                sort_title: row
-                    .try_get::<Option<String>, _>("sort_title")
-                    .map_err(to_server_error)?,
-                total_performances: row_opt_i32(&row, "total_performances")?,
-                last_played_date: row
-                    .try_get::<Option<String>, _>("last_played_date")
-                    .map_err(to_server_error)?,
-                is_liberated: None,
-                opener_count: row_opt_i32(&row, "opener_count")?,
-                closer_count: row_opt_i32(&row, "closer_count")?,
-                encore_count: row_opt_i32(&row, "encore_count")?,
-                search_text: None,
-            };
-            return Ok(Some(song));
+            return Ok(Some(row_song(&row)?));
         }
 
         Ok(None)
@@ -400,26 +529,7 @@ pub async fn get_venue(id: i32) -> Result<Option<Venue>, ServerFnError> {
         .map_err(to_server_error)?;
 
         if let Some(row) = row {
-            let venue = Venue {
-                id: row_i32(&row, "id")?,
-                name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                city: row.try_get::<String, _>("city").map_err(to_server_error)?,
-                state: row
-                    .try_get::<Option<String>, _>("state")
-                    .map_err(to_server_error)?,
-                country: row
-                    .try_get::<String, _>("country")
-                    .map_err(to_server_error)?,
-                country_code: row
-                    .try_get::<Option<String>, _>("country_code")
-                    .map_err(to_server_error)?,
-                venue_type: row
-                    .try_get::<Option<String>, _>("venue_type")
-                    .map_err(to_server_error)?,
-                total_shows: row_opt_i32(&row, "total_shows")?,
-                search_text: None,
-            };
-            return Ok(Some(venue));
+            return Ok(Some(row_venue(&row)?));
         }
 
         Ok(None)
@@ -449,14 +559,7 @@ pub async fn get_tour(year: i32) -> Result<Option<Tour>, ServerFnError> {
         .map_err(to_server_error)?;
 
         if let Some(row) = row {
-            let tour = Tour {
-                id: row_i32(&row, "id")?,
-                year: row_i32(&row, "year")?,
-                name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                total_shows: row_opt_i32(&row, "total_shows")?,
-                search_text: None,
-            };
-            return Ok(Some(tour));
+            return Ok(Some(row_tour(&row)?));
         }
 
         Ok(None)
@@ -480,14 +583,7 @@ pub async fn get_tour_by_id(id: i32) -> Result<Option<Tour>, ServerFnError> {
             .map_err(to_server_error)?;
 
         if let Some(row) = row {
-            let tour = Tour {
-                id: row_i32(&row, "id")?,
-                year: row_i32(&row, "year")?,
-                name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                total_shows: row_opt_i32(&row, "total_shows")?,
-                search_text: None,
-            };
-            return Ok(Some(tour));
+            return Ok(Some(row_tour(&row)?));
         }
 
         Ok(None)
@@ -512,14 +608,7 @@ pub async fn get_guest(slug: String) -> Result<Option<Guest>, ServerFnError> {
                 .map_err(to_server_error)?;
 
         if let Some(row) = row {
-            let guest = Guest {
-                id: row_i32(&row, "id")?,
-                slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
-                name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                total_appearances: row_opt_i32(&row, "total_appearances")?,
-                search_text: None,
-            };
-            return Ok(Some(guest));
+            return Ok(Some(row_guest(&row)?));
         }
 
         Ok(None)
@@ -545,19 +634,7 @@ pub async fn get_release(slug: String) -> Result<Option<Release>, ServerFnError>
         .map_err(to_server_error)?;
 
         if let Some(row) = row {
-            let release = Release {
-                id: row_i32(&row, "id")?,
-                title: row.try_get::<String, _>("title").map_err(to_server_error)?,
-                slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
-                release_type: row
-                    .try_get::<Option<String>, _>("release_type")
-                    .map_err(to_server_error)?,
-                release_date: row
-                    .try_get::<Option<String>, _>("release_date")
-                    .map_err(to_server_error)?,
-                search_text: None,
-            };
-            return Ok(Some(release));
+            return Ok(Some(row_release(&row)?));
         }
 
         Ok(None)
@@ -586,18 +663,7 @@ pub async fn get_all_releases() -> Result<Vec<Release>, ServerFnError> {
         .map_err(to_server_error)?;
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            out.push(Release {
-                id: row_i32(&row, "id")?,
-                title: row.try_get::<String, _>("title").map_err(to_server_error)?,
-                slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
-                release_type: row
-                    .try_get::<Option<String>, _>("release_type")
-                    .map_err(to_server_error)?,
-                release_date: row
-                    .try_get::<Option<String>, _>("release_date")
-                    .map_err(to_server_error)?,
-                search_text: None,
-            });
+            out.push(row_release(&row)?);
         }
         write_ttl_cache(&ALL_RELEASES_CACHE, &out);
         Ok(out)
@@ -638,9 +704,7 @@ pub async fn get_release_tracks(release_id: i32) -> Result<Vec<ReleaseTrack>, Se
                 track_number: row_opt_i32(&row, "track_number")?,
                 disc_number: row_opt_i32(&row, "disc_number")?,
                 duration_seconds: row_opt_i32(&row, "duration_seconds")?,
-                notes: row
-                    .try_get::<Option<String>, _>("notes")
-                    .map_err(to_server_error)?,
+                notes: row_opt_string(&row, "notes")?,
             });
         }
         write_ttl_keyed_cache(&RELEASE_TRACKS_CACHE, release_id, &out);
@@ -680,9 +744,7 @@ pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, Serv
         .map_err(to_server_error)?;
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            let show_date: Option<String> = row
-                .try_get::<Option<String>, _>("show_date")
-                .map_err(to_server_error)?;
+            let show_date: Option<String> = row_opt_string(&row, "show_date")?;
             let year = show_date
                 .as_deref()
                 .and_then(|d| d.get(0..4))
@@ -706,12 +768,8 @@ pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, Serv
                 show_id: row_i32(&row, "show_id")?,
                 song_id: row_i32(&row, "song_id")?,
                 position: row_i32(&row, "position")?,
-                set_name: row
-                    .try_get::<Option<String>, _>("set_name")
-                    .map_err(to_server_error)?,
-                slot: row
-                    .try_get::<Option<String>, _>("slot")
-                    .map_err(to_server_error)?,
+                set_name: row_opt_string(&row, "set_name")?,
+                slot: row_opt_string(&row, "slot")?,
                 show_date,
                 year,
                 duration_seconds: row_opt_i32(&row, "duration_seconds")?,
@@ -719,9 +777,7 @@ pub async fn get_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>, Serv
                 is_segue: row_opt_bool(&row, "is_segue")?,
                 is_tease: row_opt_bool(&row, "is_tease")?,
                 tease_of_song_id: row_opt_i32(&row, "tease_of_song_id")?,
-                notes: row
-                    .try_get::<Option<String>, _>("notes")
-                    .map_err(to_server_error)?,
+                notes: row_opt_string(&row, "notes")?,
                 song,
             });
         }
@@ -788,19 +844,11 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
             let last_show = if let Some(show_id) = last_show_id {
                 Some(LiberationLastShow {
                     id: show_id,
-                    date: row
-                        .try_get::<Option<String>, _>("show_date")
-                        .map_err(to_server_error)?,
+                    date: row_opt_string(&row, "show_date")?,
                     venue: Some(LiberationVenue {
-                        name: row
-                            .try_get::<Option<String>, _>("venue_name")
-                            .map_err(to_server_error)?,
-                        city: row
-                            .try_get::<Option<String>, _>("venue_city")
-                            .map_err(to_server_error)?,
-                        state: row
-                            .try_get::<Option<String>, _>("venue_state")
-                            .map_err(to_server_error)?,
+                        name: row_opt_string(&row, "venue_name")?,
+                        city: row_opt_string(&row, "venue_city")?,
+                        state: row_opt_string(&row, "venue_state")?,
                     }),
                 })
             } else {
@@ -812,19 +860,11 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
                 days_since: row_opt_i32(&row, "days_since")?,
                 shows_since: row_opt_i32(&row, "shows_since")?,
                 is_liberated: row_opt_bool(&row, "is_liberated")?,
-                last_played_date: row
-                    .try_get::<Option<String>, _>("last_played_date")
-                    .map_err(to_server_error)?,
+                last_played_date: row_opt_string(&row, "last_played_date")?,
                 last_played_show_id: row_opt_i32(&row, "last_played_show_id")?,
-                notes: row
-                    .try_get::<Option<String>, _>("notes")
-                    .map_err(to_server_error)?,
-                configuration: row
-                    .try_get::<Option<String>, _>("configuration")
-                    .map_err(to_server_error)?,
-                liberated_date: row
-                    .try_get::<Option<String>, _>("liberated_date")
-                    .map_err(to_server_error)?,
+                notes: row_opt_string(&row, "notes")?,
+                configuration: row_opt_string(&row, "configuration")?,
+                liberated_date: row_opt_string(&row, "liberated_date")?,
                 liberated_show_id: row_opt_i32(&row, "liberated_show_id")?,
                 song,
                 last_show,
@@ -860,29 +900,7 @@ pub async fn get_curated_lists() -> Result<Vec<CuratedList>, ServerFnError> {
         .map_err(to_server_error)?;
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            out.push(CuratedList {
-                id: row_i32(&row, "id")?,
-                original_id: row
-                    .try_get::<Option<String>, _>("original_id")
-                    .map_err(to_server_error)?,
-                title: row.try_get::<String, _>("title").map_err(to_server_error)?,
-                slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
-                category: row
-                    .try_get::<String, _>("category")
-                    .map_err(to_server_error)?,
-                description: row
-                    .try_get::<Option<String>, _>("description")
-                    .map_err(to_server_error)?,
-                item_count: row_opt_i32(&row, "item_count")?,
-                is_featured: row_opt_bool(&row, "is_featured")?,
-                sort_order: row_opt_i32(&row, "sort_order")?,
-                created_at: row
-                    .try_get::<Option<String>, _>("created_at")
-                    .map_err(to_server_error)?,
-                updated_at: row
-                    .try_get::<Option<String>, _>("updated_at")
-                    .map_err(to_server_error)?,
-            });
+            out.push(row_curated_list(&row)?);
         }
         write_ttl_cache(&CURATED_LISTS_CACHE, &out);
         Ok(out)
@@ -927,36 +945,7 @@ pub async fn get_curated_list_items(
         .map_err(to_server_error)?;
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            let metadata: Option<String> = row
-                .try_get::<Option<String>, _>("metadata")
-                .map_err(to_server_error)?;
-            let metadata = metadata.and_then(|raw| serde_json::from_str(&raw).ok());
-            out.push(CuratedListItem {
-                id: row_i32(&row, "id")?,
-                list_id: row_i32(&row, "list_id")?,
-                position: row_i32(&row, "position")?,
-                item_type: row
-                    .try_get::<String, _>("item_type")
-                    .map_err(to_server_error)?,
-                show_id: row_opt_i32(&row, "show_id")?,
-                song_id: row_opt_i32(&row, "song_id")?,
-                venue_id: row_opt_i32(&row, "venue_id")?,
-                guest_id: row_opt_i32(&row, "guest_id")?,
-                release_id: row_opt_i32(&row, "release_id")?,
-                item_title: row
-                    .try_get::<Option<String>, _>("item_title")
-                    .map_err(to_server_error)?,
-                item_link: row
-                    .try_get::<Option<String>, _>("item_link")
-                    .map_err(to_server_error)?,
-                notes: row
-                    .try_get::<Option<String>, _>("notes")
-                    .map_err(to_server_error)?,
-                metadata,
-                created_at: row
-                    .try_get::<Option<String>, _>("created_at")
-                    .map_err(to_server_error)?,
-            });
+            out.push(row_curated_list_item(&row)?);
         }
         write_ttl_keyed_cache(&CURATED_LIST_ITEMS_CACHE, cache_key, &out);
         Ok(out)
@@ -1005,25 +994,7 @@ pub async fn get_recent_shows(limit: usize) -> Result<Vec<ShowSummary>, ServerFn
 
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            out.push(ShowSummary {
-                id: row_i32(&row, "id")?,
-                date: row.try_get::<String, _>("date").map_err(to_server_error)?,
-                year: row_i32(&row, "year")?,
-                venue_id: row_i32(&row, "venue_id")?,
-                venue_name: row
-                    .try_get::<String, _>("venue_name")
-                    .map_err(to_server_error)?,
-                venue_city: row
-                    .try_get::<String, _>("venue_city")
-                    .map_err(to_server_error)?,
-                venue_state: row
-                    .try_get::<Option<String>, _>("venue_state")
-                    .map_err(to_server_error)?,
-                tour_name: row
-                    .try_get::<Option<String>, _>("tour_name")
-                    .map_err(to_server_error)?,
-                tour_year: row_opt_i32(&row, "tour_year")?,
-            });
+            out.push(row_show_summary(&row)?);
         }
         write_ttl_keyed_cache(&RECENT_SHOWS_CACHE, limit, &out);
         Ok(out)
@@ -1062,23 +1033,7 @@ pub async fn get_top_songs(limit: usize) -> Result<Vec<Song>, ServerFnError> {
 
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            out.push(Song {
-                id: row_i32(&row, "id")?,
-                slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
-                title: row.try_get::<String, _>("title").map_err(to_server_error)?,
-                sort_title: row
-                    .try_get::<Option<String>, _>("sort_title")
-                    .map_err(to_server_error)?,
-                total_performances: row_opt_i32(&row, "total_performances")?,
-                last_played_date: row
-                    .try_get::<Option<String>, _>("last_played_date")
-                    .map_err(to_server_error)?,
-                is_liberated: None,
-                opener_count: row_opt_i32(&row, "opener_count")?,
-                closer_count: row_opt_i32(&row, "closer_count")?,
-                encore_count: row_opt_i32(&row, "encore_count")?,
-                search_text: None,
-            });
+            out.push(row_song(&row)?);
         }
         write_ttl_keyed_cache(&TOP_SONGS_CACHE, limit, &out);
         Ok(out)
@@ -1116,25 +1071,7 @@ pub async fn get_top_venues(limit: usize) -> Result<Vec<Venue>, ServerFnError> {
 
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            out.push(Venue {
-                id: row_i32(&row, "id")?,
-                name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                city: row.try_get::<String, _>("city").map_err(to_server_error)?,
-                state: row
-                    .try_get::<Option<String>, _>("state")
-                    .map_err(to_server_error)?,
-                country: row
-                    .try_get::<String, _>("country")
-                    .map_err(to_server_error)?,
-                country_code: row
-                    .try_get::<Option<String>, _>("country_code")
-                    .map_err(to_server_error)?,
-                venue_type: row
-                    .try_get::<Option<String>, _>("venue_type")
-                    .map_err(to_server_error)?,
-                total_shows: row_opt_i32(&row, "total_shows")?,
-                search_text: None,
-            });
+            out.push(row_venue(&row)?);
         }
         write_ttl_keyed_cache(&TOP_VENUES_CACHE, limit, &out);
         Ok(out)
@@ -1172,13 +1109,7 @@ pub async fn get_top_guests(limit: usize) -> Result<Vec<Guest>, ServerFnError> {
 
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            out.push(Guest {
-                id: row_i32(&row, "id")?,
-                slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
-                name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                total_appearances: row_opt_i32(&row, "total_appearances")?,
-                search_text: None,
-            });
+            out.push(row_guest(&row)?);
         }
         write_ttl_keyed_cache(&TOP_GUESTS_CACHE, limit, &out);
         Ok(out)
@@ -1216,13 +1147,7 @@ pub async fn get_recent_tours(limit: usize) -> Result<Vec<Tour>, ServerFnError> 
 
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            out.push(Tour {
-                id: row_i32(&row, "id")?,
-                year: row_i32(&row, "year")?,
-                name: row.try_get::<String, _>("name").map_err(to_server_error)?,
-                total_shows: row_opt_i32(&row, "total_shows")?,
-                search_text: None,
-            });
+            out.push(row_tour(&row)?);
         }
         write_ttl_keyed_cache(&RECENT_TOURS_CACHE, limit, &out);
         Ok(out)
@@ -1260,18 +1185,7 @@ pub async fn get_recent_releases(limit: usize) -> Result<Vec<Release>, ServerFnE
 
         let mut out = Vec::with_capacity(rows.len());
         for row in rows {
-            out.push(Release {
-                id: row_i32(&row, "id")?,
-                title: row.try_get::<String, _>("title").map_err(to_server_error)?,
-                slug: row.try_get::<String, _>("slug").map_err(to_server_error)?,
-                release_type: row
-                    .try_get::<Option<String>, _>("release_type")
-                    .map_err(to_server_error)?,
-                release_date: row
-                    .try_get::<Option<String>, _>("release_date")
-                    .map_err(to_server_error)?,
-                search_text: None,
-            });
+            out.push(row_release(&row)?);
         }
         write_ttl_keyed_cache(&RECENT_RELEASES_CACHE, limit, &out);
         Ok(out)

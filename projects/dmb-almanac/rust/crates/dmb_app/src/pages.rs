@@ -6,6 +6,7 @@ use leptos::tachys::view::any_view::IntoAny;
 #[cfg(feature = "hydrate")]
 use leptos::task::spawn_local;
 use leptos_router::hooks::use_params_map;
+use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
 #[cfg(feature = "hydrate")]
@@ -2174,71 +2175,71 @@ async fn load_venue(id: i32) -> Option<Venue> {
     )
 }
 
-fn normalize_show_summaries(mut items: Vec<ShowSummary>, limit: usize) -> Vec<ShowSummary> {
-    items.sort_by(|a, b| b.date.cmp(&a.date).then_with(|| b.id.cmp(&a.id)));
+fn normalize_with_limit<T>(
+    mut items: Vec<T>,
+    limit: usize,
+    mut compare: impl FnMut(&T, &T) -> Ordering,
+) -> Vec<T> {
+    items.sort_by(|a, b| compare(a, b));
     items.truncate(limit);
     items
 }
 
-fn normalize_songs(mut items: Vec<Song>, limit: usize) -> Vec<Song> {
-    items.sort_by(|a, b| {
+fn normalize_show_summaries(items: Vec<ShowSummary>, limit: usize) -> Vec<ShowSummary> {
+    normalize_with_limit(items, limit, |a, b| {
+        b.date.cmp(&a.date).then_with(|| b.id.cmp(&a.id))
+    })
+}
+
+fn normalize_songs(items: Vec<Song>, limit: usize) -> Vec<Song> {
+    normalize_with_limit(items, limit, |a, b| {
         b.total_performances
             .unwrap_or(0)
             .cmp(&a.total_performances.unwrap_or(0))
             .then_with(|| a.title.cmp(&b.title))
             .then_with(|| a.id.cmp(&b.id))
-    });
-    items.truncate(limit);
-    items
+    })
 }
 
-fn normalize_venues(mut items: Vec<Venue>, limit: usize) -> Vec<Venue> {
-    items.sort_by(|a, b| {
+fn normalize_venues(items: Vec<Venue>, limit: usize) -> Vec<Venue> {
+    normalize_with_limit(items, limit, |a, b| {
         b.total_shows
             .unwrap_or(0)
             .cmp(&a.total_shows.unwrap_or(0))
             .then_with(|| a.name.cmp(&b.name))
             .then_with(|| a.id.cmp(&b.id))
-    });
-    items.truncate(limit);
-    items
+    })
 }
 
-fn normalize_guests(mut items: Vec<Guest>, limit: usize) -> Vec<Guest> {
-    items.sort_by(|a, b| {
+fn normalize_guests(items: Vec<Guest>, limit: usize) -> Vec<Guest> {
+    normalize_with_limit(items, limit, |a, b| {
         b.total_appearances
             .unwrap_or(0)
             .cmp(&a.total_appearances.unwrap_or(0))
             .then_with(|| a.name.cmp(&b.name))
             .then_with(|| a.id.cmp(&b.id))
-    });
-    items.truncate(limit);
-    items
+    })
 }
 
-fn normalize_tours(mut items: Vec<Tour>, limit: usize) -> Vec<Tour> {
-    items.sort_by(|a, b| {
+fn normalize_tours(items: Vec<Tour>, limit: usize) -> Vec<Tour> {
+    normalize_with_limit(items, limit, |a, b| {
         b.year
             .cmp(&a.year)
             .then_with(|| b.total_shows.unwrap_or(0).cmp(&a.total_shows.unwrap_or(0)))
             .then_with(|| a.name.cmp(&b.name))
             .then_with(|| a.id.cmp(&b.id))
-    });
-    items.truncate(limit);
-    items
+    })
 }
 
-fn normalize_releases(mut items: Vec<Release>, limit: usize) -> Vec<Release> {
-    items.sort_by(|a, b| {
+fn normalize_releases(items: Vec<Release>, limit: usize) -> Vec<Release> {
+    normalize_with_limit(items, limit, |a, b| {
         b.release_date
             .as_deref()
             .unwrap_or("")
             .cmp(a.release_date.as_deref().unwrap_or(""))
             .then_with(|| a.title.cmp(&b.title))
             .then_with(|| a.id.cmp(&b.id))
-    });
-    items.truncate(limit);
-    items
+    })
 }
 
 async fn load_recent_shows(limit: usize) -> Vec<ShowSummary> {
@@ -2554,6 +2555,14 @@ fn format_location(city: &str, state: Option<&str>) -> String {
     }
 }
 
+fn optional_text_matches_query(value: Option<&str>, query: &str) -> bool {
+    value.is_some_and(|text| text.to_ascii_lowercase().contains(query))
+}
+
+fn text_matches_query(value: &str, query: &str) -> bool {
+    value.to_ascii_lowercase().contains(query)
+}
+
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 struct ShowContext {
     show: Show,
@@ -2572,7 +2581,7 @@ async fn load_show_context(id: i32) -> Option<ShowContext> {
     Some(ShowContext { show, venue, tour })
 }
 
-fn titleize_label(raw: &str) -> String {
+fn titleize_words_with_fallback(raw: &str, fallback: &str) -> String {
     let normalized = raw.trim().replace(['-', '_'], " ");
     let mut words = normalized
         .split_whitespace()
@@ -2586,10 +2595,14 @@ fn titleize_label(raw: &str) -> String {
         .collect::<Vec<_>>();
     words.retain(|word| !word.is_empty());
     if words.is_empty() {
-        "Unknown".to_string()
+        fallback.to_string()
     } else {
         words.join(" ")
     }
+}
+
+fn titleize_label(raw: &str) -> String {
+    titleize_words_with_fallback(raw, "Unknown")
 }
 
 fn format_mb_u64(bytes: u64) -> String {
@@ -2634,19 +2647,10 @@ fn setlist_entry_matches_query(entry: &SetlistEntry, query: &str) -> bool {
     let in_song_title = entry
         .song
         .as_ref()
-        .is_some_and(|song| song.title.to_ascii_lowercase().contains(query));
-    let in_slot = entry
-        .slot
-        .as_deref()
-        .is_some_and(|slot| slot.to_ascii_lowercase().contains(query));
-    let in_set = entry
-        .set_name
-        .as_deref()
-        .is_some_and(|set| set.to_ascii_lowercase().contains(query));
-    let in_notes = entry
-        .notes
-        .as_deref()
-        .is_some_and(|notes| notes.to_ascii_lowercase().contains(query));
+        .is_some_and(|song| text_matches_query(&song.title, query));
+    let in_slot = optional_text_matches_query(entry.slot.as_deref(), query);
+    let in_set = optional_text_matches_query(entry.set_name.as_deref(), query);
+    let in_notes = optional_text_matches_query(entry.notes.as_deref(), query);
     in_song_title || in_slot || in_set || in_notes
 }
 
@@ -2682,10 +2686,7 @@ fn release_track_matches_query(track: &ReleaseTrack, query: &str) -> bool {
     if query.is_empty() {
         return true;
     }
-    let in_notes = track
-        .notes
-        .as_deref()
-        .is_some_and(|notes| notes.to_ascii_lowercase().contains(query));
+    let in_notes = optional_text_matches_query(track.notes.as_deref(), query);
     let in_numbers = format!(
         "{} {} {} {}",
         track.song_id.unwrap_or(0),
@@ -6281,27 +6282,7 @@ fn curated_item_type_label(type_key: &str) -> String {
         "release" => "Release".to_string(),
         "tour" => "Tour".to_string(),
         "other" => "Other".to_string(),
-        custom => {
-            let cleaned = custom.replace(['-', '_'], " ");
-            let mut words = cleaned
-                .split_whitespace()
-                .map(|word| {
-                    let mut chars = word.chars();
-                    match chars.next() {
-                        Some(first) => {
-                            format!("{}{}", first.to_ascii_uppercase(), chars.as_str())
-                        }
-                        None => String::new(),
-                    }
-                })
-                .collect::<Vec<_>>();
-            words.retain(|word| !word.is_empty());
-            if words.is_empty() {
-                "Other".to_string()
-            } else {
-                words.join(" ")
-            }
-        }
+        custom => titleize_words_with_fallback(custom, "Other"),
     }
 }
 
@@ -6390,15 +6371,9 @@ fn curated_item_matches_query(item: &CuratedListItem, query: &str) -> bool {
     if query.is_empty() {
         return true;
     }
-    let in_title = item
-        .item_title
-        .as_deref()
-        .is_some_and(|title| title.to_ascii_lowercase().contains(query));
-    let in_notes = item
-        .notes
-        .as_deref()
-        .is_some_and(|notes| notes.to_ascii_lowercase().contains(query));
-    let in_type = item.item_type.to_ascii_lowercase().contains(query);
+    let in_title = optional_text_matches_query(item.item_title.as_deref(), query);
+    let in_notes = optional_text_matches_query(item.notes.as_deref(), query);
+    let in_type = text_matches_query(&item.item_type, query);
     in_title || in_notes || in_type
 }
 

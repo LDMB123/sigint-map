@@ -137,8 +137,26 @@ fn storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
 }
 
 #[cfg(feature = "hydrate")]
+fn storage_json<T>(storage: &web_sys::Storage, key: &str) -> Option<T>
+where
+    T: serde::de::DeserializeOwned,
+{
+    storage_item(storage, key).and_then(|payload| serde_json::from_str(&payload).ok())
+}
+
+#[cfg(feature = "hydrate")]
 fn set_storage_item(storage: &web_sys::Storage, key: &str, value: &str) {
     let _ = storage.set_item(key, value);
+}
+
+#[cfg(feature = "hydrate")]
+fn set_storage_json<T>(storage: &web_sys::Storage, key: &str, value: &T)
+where
+    T: Serialize + ?Sized,
+{
+    if let Ok(payload) = serde_json::to_string(value) {
+        set_storage_item(storage, key, &payload);
+    }
 }
 
 #[cfg(feature = "hydrate")]
@@ -152,6 +170,14 @@ fn local_storage_item(key: &str) -> Option<String> {
 }
 
 #[cfg(feature = "hydrate")]
+fn local_storage_json<T>(key: &str) -> Option<T>
+where
+    T: serde::de::DeserializeOwned,
+{
+    local_storage_item(key).and_then(|payload| serde_json::from_str(&payload).ok())
+}
+
+#[cfg(feature = "hydrate")]
 fn local_storage_parse<T>(key: &str) -> Option<T>
 where
     T: std::str::FromStr,
@@ -162,6 +188,14 @@ where
 #[cfg(feature = "hydrate")]
 fn set_local_storage_item(key: &str, value: &str) {
     let _ = with_local_storage(|storage| set_storage_item(storage, key, value));
+}
+
+#[cfg(feature = "hydrate")]
+fn set_local_storage_json<T>(key: &str, value: &T)
+where
+    T: Serialize + ?Sized,
+{
+    let _ = with_local_storage(|storage| set_storage_json(storage, key, value));
 }
 
 #[cfg(feature = "hydrate")]
@@ -988,9 +1022,7 @@ fn store_ai_telemetry_snapshot(ann_cap: Option<&AnnCapDiagnostics>) {
         "aiConfigSeeded": Some(ai_config_seeded()),
         "embeddingSampleEnabled": Some(embedding_sample_enabled()),
     });
-    if let Ok(json) = serde_json::to_string(&payload) {
-        set_local_storage_item(AI_TELEMETRY_KEY, &json);
-    }
+    set_local_storage_json(AI_TELEMETRY_KEY, &payload);
 }
 
 #[cfg(feature = "hydrate")]
@@ -1012,12 +1044,8 @@ fn record_ai_warning(event: &str, details: Option<String>) {
     #[cfg(feature = "hydrate")]
     {
         let _ = with_local_storage(|storage| {
-            let mut events: Vec<AiWarningEvent> = storage
-                .get_item(AI_WARNING_EVENTS_KEY)
-                .ok()
-                .flatten()
-                .and_then(|payload| serde_json::from_str(&payload).ok())
-                .unwrap_or_default();
+            let mut events: Vec<AiWarningEvent> =
+                storage_json(storage, AI_WARNING_EVENTS_KEY).unwrap_or_default();
             events.push(AiWarningEvent {
                 timestamp_ms: js_sys::Date::now(),
                 event: event.to_string(),
@@ -1027,9 +1055,7 @@ fn record_ai_warning(event: &str, details: Option<String>) {
                 let excess = events.len() - AI_WARNING_EVENTS_LIMIT;
                 events.drain(0..excess);
             }
-            if let Ok(payload) = serde_json::to_string(&events) {
-                set_storage_item(storage, AI_WARNING_EVENTS_KEY, &payload);
-            }
+            set_storage_json(storage, AI_WARNING_EVENTS_KEY, &events);
         });
     }
     #[cfg(not(feature = "hydrate"))]
@@ -1041,9 +1067,7 @@ fn record_ai_warning(event: &str, details: Option<String>) {
 
 #[cfg(feature = "hydrate")]
 pub fn load_ai_warning_events() -> Vec<AiWarningEvent> {
-    local_storage_item(AI_WARNING_EVENTS_KEY)
-        .and_then(|payload| serde_json::from_str(&payload).ok())
-        .unwrap_or_default()
+    local_storage_json(AI_WARNING_EVENTS_KEY).unwrap_or_default()
 }
 
 #[cfg(feature = "hydrate")]
@@ -1250,19 +1274,12 @@ fn default_tuning() -> AiTuning {
 
 #[cfg(feature = "hydrate")]
 pub async fn load_ai_tuning() -> AiTuning {
-    if let Some(payload) = local_storage_item("dmb-ai-tuning") {
-        if let Ok(tuning) = serde_json::from_str::<AiTuning>(&payload) {
-            return tuning;
-        }
-    }
-    default_tuning()
+    local_storage_json("dmb-ai-tuning").unwrap_or_else(default_tuning)
 }
 
 #[cfg(feature = "hydrate")]
 pub async fn store_ai_tuning(tuning: &AiTuning) {
-    if let Ok(payload) = serde_json::to_string(tuning) {
-        set_local_storage_item("dmb-ai-tuning", &payload);
-    }
+    set_local_storage_json("dmb-ai-tuning", tuning);
 }
 
 #[cfg(feature = "hydrate")]
@@ -1290,10 +1307,7 @@ struct AiConfigSeed {
 
 #[cfg(feature = "hydrate")]
 fn load_benchmark_history() -> Vec<AiBenchmarkSample> {
-    let Some(payload) = local_storage_item(BENCHMARK_HISTORY_KEY) else {
-        return Vec::new();
-    };
-    serde_json::from_str::<Vec<AiBenchmarkSample>>(&payload).unwrap_or_default()
+    local_storage_json(BENCHMARK_HISTORY_KEY).unwrap_or_default()
 }
 
 #[cfg(feature = "hydrate")]
@@ -1327,9 +1341,7 @@ fn set_seed_json_field<T: Serialize>(
         return;
     }
     if let Some(value) = value {
-        if let Ok(payload) = serde_json::to_string(value) {
-            set_storage_item(storage, key, &payload);
-        }
+        set_storage_json(storage, key, value);
     }
 }
 
@@ -1440,9 +1452,7 @@ pub fn benchmark_history() -> Vec<AiBenchmarkSample> {
 
 #[cfg(feature = "hydrate")]
 fn store_benchmark_history(samples: &[AiBenchmarkSample]) {
-    if let Ok(payload) = serde_json::to_string(samples) {
-        set_local_storage_item(BENCHMARK_HISTORY_KEY, &payload);
-    }
+    set_local_storage_json(BENCHMARK_HISTORY_KEY, samples);
 }
 
 #[cfg(feature = "hydrate")]
