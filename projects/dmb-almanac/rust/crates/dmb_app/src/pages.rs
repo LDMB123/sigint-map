@@ -4230,63 +4230,6 @@ fn render_search_filter_buttons(
     }
 }
 
-fn render_search_result_rows(items: Vec<SearchResult>) -> impl IntoView {
-    view! {
-        <ul id="search-results-list" class="result-list">
-            {items
-                .into_iter()
-                .map(|item| {
-                    let label = item.label.clone();
-                    let kind = item.result_type.clone();
-                    let href = search_result_href(&item);
-                    view! {
-                        <li class="result-card">
-                            <span class="pill">{kind}</span>
-                            <div class="result-body">
-                                {move || match &href {
-                                    Some(link) => view! {
-                                        <a class="result-label" href=link.clone()>{label.clone()}</a>
-                                    }
-                                    .into_any(),
-                                    None => view! { <span class="result-label">{label.clone()}</span> }.into_any(),
-                                }}
-                            </div>
-                            <span class="result-score">{format!("{:.2}", item.score)}</span>
-                        </li>
-                    }
-                })
-                .collect::<Vec<_>>()}
-        </ul>
-    }
-}
-
-fn render_filtered_search_results(
-    items: Vec<SearchResult>,
-    active_filter: RwSignal<String>,
-) -> impl IntoView {
-    if items.is_empty() {
-        let reset_filter = active_filter.clone();
-        return view! {
-            <section class="status-card status-card--empty">
-                <p class="status-title">"No results in this category"</p>
-                <p class="muted">"Try another filter or switch back to All results."</p>
-                <p>
-                    <button
-                        type="button"
-                        class="pill pill--ghost"
-                        on:click=move |_| reset_filter.set("all".to_string())
-                    >
-                        "Show all results"
-                    </button>
-                </p>
-            </section>
-        }
-        .into_any();
-    }
-
-    render_search_result_rows(items).into_any()
-}
-
 fn render_search_results_content(
     items: Vec<SearchResult>,
     query: &str,
@@ -4336,6 +4279,56 @@ fn render_search_results_content(
         "show" => "shows",
         _ => "results",
     };
+    let filtered_results = if filtered_items.is_empty() {
+        let reset_filter = active_filter.clone();
+        view! {
+            <section class="status-card status-card--empty">
+                <p class="status-title">"No results in this category"</p>
+                <p class="muted">"Try another filter or switch back to All results."</p>
+                <p>
+                    <button
+                        type="button"
+                        class="pill pill--ghost"
+                        on:click=move |_| reset_filter.set("all".to_string())
+                    >
+                        "Show all results"
+                    </button>
+                </p>
+            </section>
+        }
+        .into_any()
+    } else {
+        view! {
+            <ul id="search-results-list" class="result-list">
+                {filtered_items
+                    .into_iter()
+                    .map(|item| {
+                        let label = item.label.clone();
+                        let kind = item.result_type.clone();
+                        let href = search_result_href(&item);
+                        view! {
+                            <li class="result-card">
+                                <span class="pill">{kind}</span>
+                                <div class="result-body">
+                                    {move || match &href {
+                                        Some(link) => view! {
+                                            <a class="result-label" href=link.clone()>{label.clone()}</a>
+                                        }
+                                        .into_any(),
+                                        None => {
+                                            view! { <span class="result-label">{label.clone()}</span> }.into_any()
+                                        }
+                                    }}
+                                </div>
+                                <span class="result-score">{format!("{:.2}", item.score)}</span>
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </ul>
+        }
+        .into_any()
+    };
 
     view! {
         <>
@@ -4343,7 +4336,7 @@ fn render_search_results_content(
             <p class="list-summary" role="status" aria-live="polite">
                 {format!("Showing {filtered_count} {summary_label} for \"{query}\"")}
             </p>
-            {render_filtered_search_results(filtered_items, active_filter)}
+            {filtered_results}
         </>
     }
     .into_any()
