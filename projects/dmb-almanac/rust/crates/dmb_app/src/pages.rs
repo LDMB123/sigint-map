@@ -4374,72 +4374,6 @@ fn render_search_results_content(
 }
 
 #[cfg(feature = "hydrate")]
-fn initialize_search_route_signals(
-    query: RwSignal<String>,
-    active_filter: RwSignal<String>,
-    search_url_ready: RwSignal<bool>,
-) {
-    Effect::new(move |_| {
-        let route_query = current_search_param("q").unwrap_or_default();
-        let route_filter =
-            normalize_search_filter(&current_search_param("type").unwrap_or_default());
-        query.set(route_query);
-        active_filter.set(route_filter);
-        search_url_ready.set(true);
-    });
-}
-
-#[cfg(feature = "hydrate")]
-fn initialize_search_url_sync(
-    query: RwSignal<String>,
-    active_filter: RwSignal<String>,
-    search_url_ready: RwSignal<bool>,
-) {
-    Effect::new(move |_| {
-        if !search_url_ready.get() {
-            return;
-        }
-        let Some(window) = web_sys::window() else {
-            return;
-        };
-        let query_value = query.get();
-        let query_trimmed = query_value.trim();
-        let active_filter_value = active_filter.get();
-        let filter = normalize_search_filter(&active_filter_value);
-        let pathname = window.location().pathname().unwrap_or_default();
-        let hash = window.location().hash().unwrap_or_default();
-        let Ok(params) = web_sys::UrlSearchParams::new_with_str("") else {
-            return;
-        };
-        if !query_trimmed.is_empty() {
-            params.set("q", query_trimmed);
-        }
-        if filter != "all" {
-            params.set("type", &filter);
-        }
-        let encoded = params.to_string().as_string().unwrap_or_default();
-        let query_string = if encoded.is_empty() {
-            String::new()
-        } else {
-            format!("?{encoded}")
-        };
-        let next = format!("{pathname}{query_string}{hash}");
-        let current = format!(
-            "{}{}{}",
-            pathname,
-            window.location().search().unwrap_or_default(),
-            hash
-        );
-        if next == current {
-            return;
-        }
-        if let Ok(history) = window.history() {
-            let _ = history.replace_state_with_url(&JsValue::NULL, "", Some(&next));
-        }
-    });
-}
-
-#[cfg(feature = "hydrate")]
 fn spawn_embedding_index_load(embedding_index: RwSignal<Option<SharedEmbeddingIndex>>) {
     spawn_local(async move {
         embedding_index.set(crate::ai::load_embedding_index().await);
@@ -4504,16 +4438,64 @@ pub fn search_page() -> impl IntoView {
 
     #[cfg(feature = "hydrate")]
     {
-        initialize_search_route_signals(
-            query.clone(),
-            active_filter.clone(),
-            search_url_ready.clone(),
-        );
-        initialize_search_url_sync(
-            query.clone(),
-            active_filter.clone(),
-            search_url_ready.clone(),
-        );
+        let route_query = query.clone();
+        let route_active_filter = active_filter.clone();
+        let route_search_url_ready = search_url_ready.clone();
+        Effect::new(move |_| {
+            let route_query_value = current_search_param("q").unwrap_or_default();
+            let route_filter =
+                normalize_search_filter(&current_search_param("type").unwrap_or_default());
+            route_query.set(route_query_value);
+            route_active_filter.set(route_filter);
+            route_search_url_ready.set(true);
+        });
+
+        let sync_query = query.clone();
+        let sync_active_filter = active_filter.clone();
+        let sync_search_url_ready = search_url_ready.clone();
+        Effect::new(move |_| {
+            if !sync_search_url_ready.get() {
+                return;
+            }
+            let Some(window) = web_sys::window() else {
+                return;
+            };
+            let query_value = sync_query.get();
+            let query_trimmed = query_value.trim();
+            let active_filter_value = sync_active_filter.get();
+            let filter = normalize_search_filter(&active_filter_value);
+            let pathname = window.location().pathname().unwrap_or_default();
+            let hash = window.location().hash().unwrap_or_default();
+            let Ok(params) = web_sys::UrlSearchParams::new_with_str("") else {
+                return;
+            };
+            if !query_trimmed.is_empty() {
+                params.set("q", query_trimmed);
+            }
+            if filter != "all" {
+                params.set("type", &filter);
+            }
+            let encoded = params.to_string().as_string().unwrap_or_default();
+            let query_string = if encoded.is_empty() {
+                String::new()
+            } else {
+                format!("?{encoded}")
+            };
+            let next = format!("{pathname}{query_string}{hash}");
+            let current = format!(
+                "{}{}{}",
+                pathname,
+                window.location().search().unwrap_or_default(),
+                hash
+            );
+            if next == current {
+                return;
+            }
+            if let Ok(history) = window.history() {
+                let _ = history.replace_state_with_url(&JsValue::NULL, "", Some(&next));
+            }
+        });
+
         initialize_search_results_effect(query.clone(), results.clone());
     }
 
