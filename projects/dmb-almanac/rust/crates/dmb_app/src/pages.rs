@@ -164,45 +164,6 @@ fn normalize_search_filter(raw: &str) -> String {
     }
 }
 
-#[cfg(feature = "hydrate")]
-fn sync_search_query_params(query: &str, active_filter: &str) {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let query_trimmed = query.trim();
-    let filter = normalize_search_filter(active_filter);
-    let pathname = window.location().pathname().unwrap_or_default();
-    let hash = window.location().hash().unwrap_or_default();
-    let Ok(params) = web_sys::UrlSearchParams::new_with_str("") else {
-        return;
-    };
-    if !query_trimmed.is_empty() {
-        params.set("q", query_trimmed);
-    }
-    if filter != "all" {
-        params.set("type", &filter);
-    }
-    let encoded = params.to_string().as_string().unwrap_or_default();
-    let query_string = if encoded.is_empty() {
-        String::new()
-    } else {
-        format!("?{encoded}")
-    };
-    let next = format!("{pathname}{query_string}{hash}");
-    let current = format!(
-        "{}{}{}",
-        pathname,
-        window.location().search().unwrap_or_default(),
-        hash
-    );
-    if next == current {
-        return;
-    }
-    if let Ok(history) = window.history() {
-        let _ = history.replace_state_with_url(&JsValue::NULL, "", Some(&next));
-    }
-}
-
 #[must_use]
 pub fn home_page() -> impl IntoView {
     let stats = unit_resource(|| async { get_home_stats().await.ok() });
@@ -4438,7 +4399,43 @@ fn initialize_search_url_sync(
         if !search_url_ready.get() {
             return;
         }
-        sync_search_query_params(&query.get(), &active_filter.get());
+        let Some(window) = web_sys::window() else {
+            return;
+        };
+        let query_value = query.get();
+        let query_trimmed = query_value.trim();
+        let active_filter_value = active_filter.get();
+        let filter = normalize_search_filter(&active_filter_value);
+        let pathname = window.location().pathname().unwrap_or_default();
+        let hash = window.location().hash().unwrap_or_default();
+        let Ok(params) = web_sys::UrlSearchParams::new_with_str("") else {
+            return;
+        };
+        if !query_trimmed.is_empty() {
+            params.set("q", query_trimmed);
+        }
+        if filter != "all" {
+            params.set("type", &filter);
+        }
+        let encoded = params.to_string().as_string().unwrap_or_default();
+        let query_string = if encoded.is_empty() {
+            String::new()
+        } else {
+            format!("?{encoded}")
+        };
+        let next = format!("{pathname}{query_string}{hash}");
+        let current = format!(
+            "{}{}{}",
+            pathname,
+            window.location().search().unwrap_or_default(),
+            hash
+        );
+        if next == current {
+            return;
+        }
+        if let Ok(history) = window.history() {
+            let _ = history.replace_state_with_url(&JsValue::NULL, "", Some(&next));
+        }
     });
 }
 
