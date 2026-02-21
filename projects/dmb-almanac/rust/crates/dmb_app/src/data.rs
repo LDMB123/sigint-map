@@ -112,6 +112,14 @@ pub struct SqliteParityReport {
 }
 
 #[derive(Clone, Debug, Default)]
+pub struct SqliteParitySummaryReport {
+    pub available: bool,
+    pub sqlite_tables_present: usize,
+    pub sqlite_tables_expected: usize,
+    pub missing_tables: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default)]
 pub struct SqliteParityEntry {
     pub store: String,
     pub sqlite_table: String,
@@ -411,6 +419,19 @@ struct SqliteParityResponse {
 }
 
 #[cfg(feature = "hydrate")]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SqliteParitySummaryResponse {
+    available: bool,
+    #[serde(default)]
+    sqlite_tables_present: usize,
+    #[serde(default)]
+    sqlite_tables_expected: usize,
+    #[serde(default)]
+    missing_tables: Vec<String>,
+}
+
+#[cfg(feature = "hydrate")]
 const SQLITE_PARITY_CACHE_TTL_MS: f64 = 10_000.0;
 
 #[cfg(feature = "hydrate")]
@@ -421,6 +442,19 @@ define_thread_ttl_cache!(
     read_sqlite_parity_cache,
     write_sqlite_parity_cache,
     clear_sqlite_parity_cache
+);
+
+#[cfg(feature = "hydrate")]
+const SQLITE_PARITY_SUMMARY_CACHE_TTL_MS: f64 = 10_000.0;
+
+#[cfg(feature = "hydrate")]
+define_thread_ttl_cache!(
+    SQLITE_PARITY_SUMMARY_CACHE,
+    SqliteParitySummaryReport,
+    SQLITE_PARITY_SUMMARY_CACHE_TTL_MS,
+    read_sqlite_parity_summary_cache,
+    write_sqlite_parity_summary_cache,
+    clear_sqlite_parity_summary_cache
 );
 
 #[cfg(feature = "hydrate")]
@@ -508,6 +542,40 @@ pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
 #[allow(clippy::unused_async)]
 pub async fn fetch_sqlite_parity_report() -> Option<SqliteParityReport> {
     None
+}
+
+#[cfg(feature = "hydrate")]
+pub async fn fetch_sqlite_parity_summary_report() -> Option<SqliteParitySummaryReport> {
+    cached_thread_ttl_value(
+        read_sqlite_parity_summary_cache,
+        write_sqlite_parity_summary_cache,
+        || async {
+            let response =
+                fetch_json::<SqliteParitySummaryResponse>("/api/data-parity-summary").await?;
+            Some(SqliteParitySummaryReport {
+                available: response.available,
+                sqlite_tables_present: response.sqlite_tables_present,
+                sqlite_tables_expected: response.sqlite_tables_expected,
+                missing_tables: response.missing_tables,
+            })
+        },
+    )
+    .await
+}
+
+#[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
+pub async fn fetch_sqlite_parity_summary_report() -> Option<SqliteParitySummaryReport> {
+    None
+}
+
+pub fn clear_parity_diagnostics_cache() {
+    #[cfg(feature = "hydrate")]
+    {
+        clear_sqlite_parity_cache();
+        clear_integrity_report_cache();
+        clear_sqlite_parity_summary_cache();
+    }
 }
 
 #[cfg(feature = "hydrate")]
@@ -1052,8 +1120,7 @@ fn integrity_failure_status(mismatches: &[IntegrityMismatch]) -> ImportStatus {
 
 #[cfg(feature = "hydrate")]
 pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
-    clear_sqlite_parity_cache();
-    clear_integrity_report_cache();
+    clear_parity_diagnostics_cache();
     set_import_progress(status, "Checking offline data…", 0.0);
     migrate_previous_version_data(status).await;
 

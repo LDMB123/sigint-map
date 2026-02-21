@@ -10,7 +10,7 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
 #[cfg(feature = "hydrate")]
-use futures::future::join_all;
+use futures::future::{join, join_all};
 #[cfg(feature = "hydrate")]
 use std::collections::{HashMap, HashSet};
 #[cfg(feature = "hydrate")]
@@ -65,16 +65,6 @@ fn spawn_local_to_send<T: Send + 'static>(
         let _ = tx.send(fut.await);
     });
     async move { rx.await.expect("spawn_local task canceled") }
-}
-
-#[cfg(feature = "hydrate")]
-fn spawn_local_try_set<T: Send + Sync + 'static>(
-    signal: RwSignal<T>,
-    fut: impl std::future::Future<Output = T> + 'static,
-) {
-    spawn_local(async move {
-        let _ = signal.try_set(fut.await);
-    });
 }
 
 #[cfg(feature = "hydrate")]
@@ -553,8 +543,10 @@ struct AiDiagnosticsState {
     worker_bench_timestamp: RwSignal<Option<f64>>,
     worker_failure: RwSignal<crate::ai::WorkerFailureStatus>,
     webgpu_probe: RwSignal<Option<bool>>,
+    sqlite_parity_summary: RwSignal<Option<crate::data::SqliteParitySummaryReport>>,
     sqlite_parity: RwSignal<Option<crate::data::SqliteParityReport>>,
     integrity_report: RwSignal<Option<crate::data::IntegrityReport>>,
+    parity_check_running: RwSignal<bool>,
     webgpu_runtime: RwSignal<Option<WebgpuRuntimeTelemetry>>,
     apple_silicon_profile: RwSignal<Option<AppleSiliconProfile>>,
     idb_runtime_metrics: RwSignal<Option<IdbRuntimeMetrics>>,
@@ -595,8 +587,10 @@ impl AiDiagnosticsState {
             worker_bench_timestamp: RwSignal::new(None::<f64>),
             worker_failure: RwSignal::new(crate::ai::WorkerFailureStatus::default()),
             webgpu_probe: RwSignal::new(None::<bool>),
+            sqlite_parity_summary: RwSignal::new(None::<crate::data::SqliteParitySummaryReport>),
             sqlite_parity: RwSignal::new(None::<crate::data::SqliteParityReport>),
             integrity_report: RwSignal::new(None::<crate::data::IntegrityReport>),
+            parity_check_running: RwSignal::new(false),
             webgpu_runtime: RwSignal::new(None::<WebgpuRuntimeTelemetry>),
             apple_silicon_profile: RwSignal::new(None::<AppleSiliconProfile>),
             idb_runtime_metrics: RwSignal::new(None::<IdbRuntimeMetrics>),
@@ -605,56 +599,53 @@ impl AiDiagnosticsState {
 }
 
 #[cfg(feature = "hydrate")]
-fn storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
-    storage.get_item(key).ok().flatten()
-}
-
-#[cfg(feature = "hydrate")]
 fn refresh_worker_threshold_signals(state: AiDiagnosticsState) {
     let current = crate::ai::worker_threshold_value();
-    state.worker_threshold_current.set(current);
-    state
-        .worker_threshold_input
-        .set(current.map(|value| value.to_string()).unwrap_or_default());
+    let input = current.map(|value| value.to_string()).unwrap_or_default();
+    batch(move || {
+        state.worker_threshold_current.set(current);
+        state.worker_threshold_input.set(input);
+    });
 }
 
 #[cfg(feature = "hydrate")]
 fn refresh_ann_cap_override_signals(state: AiDiagnosticsState) {
     let current = crate::ai::ann_cap_override_mb();
-    state.ann_cap_override_value.set(current);
-    state
-        .ann_cap_override_input
-        .set(current.map(|value| value.to_string()).unwrap_or_default());
+    let input = current.map(|value| value.to_string()).unwrap_or_default();
+    batch(move || {
+        state.ann_cap_override_value.set(current);
+        state.ann_cap_override_input.set(input);
+    });
 }
 
 #[cfg(feature = "hydrate")]
 fn refresh_runtime_metrics_signals(state: AiDiagnosticsState) {
-    let _ = state
-        .webgpu_runtime
-        .try_set(load_webgpu_runtime_telemetry());
-    let _ = state.apple_silicon_profile.try_set(
-        js_get_apple_silicon_profile()
-            .ok()
-            .and_then(|value| serde_wasm_bindgen::from_value(value).ok()),
-    );
-    let _ = state.idb_runtime_metrics.try_set(
-        dmb_idb::js_idb_runtime_metrics()
-            .ok()
-            .and_then(|value| serde_wasm_bindgen::from_value(value).ok()),
-    );
+    let webgpu_runtime = load_webgpu_runtime_telemetry();
+    let apple_silicon_profile = js_get_apple_silicon_profile()
+        .ok()
+        .and_then(|value| serde_wasm_bindgen::from_value(value).ok());
+    let idb_runtime_metrics = dmb_idb::js_idb_runtime_metrics()
+        .ok()
+        .and_then(|value| serde_wasm_bindgen::from_value(value).ok());
+    batch(move || {
+        let _ = state.webgpu_runtime.try_set(webgpu_runtime);
+        let _ = state.apple_silicon_profile.try_set(apple_silicon_profile);
+        let _ = state.idb_runtime_metrics.try_set(idb_runtime_metrics);
+    });
 }
 
 #[cfg(feature = "hydrate")]
 fn refresh_ai_config_signals(state: AiDiagnosticsState) {
-    let _ = state
-        .ai_config_seeded
-        .try_set(crate::ai::ai_config_seeded());
-    let _ = state
-        .ai_config_version
-        .try_set(crate::ai::ai_config_version());
-    let _ = state
-        .ai_config_generated_at
-        .try_set(crate::ai::ai_config_generated_at());
+    let local_state = crate::ai::local_state_snapshot();
+    batch(move || {
+        let _ = state.ai_config_seeded.try_set(local_state.ai_config_seeded);
+        let _ = state
+            .ai_config_version
+            .try_set(local_state.ai_config_version);
+        let _ = state
+            .ai_config_generated_at
+            .try_set(local_state.ai_config_generated_at);
+    });
 }
 
 #[cfg(feature = "hydrate")]
@@ -709,28 +700,53 @@ fn cancel_benchmark_if_requested(
 
 #[cfg(feature = "hydrate")]
 fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
-    let _ = state.caps.try_set(crate::ai::detect_ai_capabilities());
-    let _ = state
-        .worker_max_floats
-        .try_set(crate::ai::worker_max_floats_value());
-    let _ = state.ann_caps.try_set(crate::ai::ann_cap_diagnostics());
+    let caps = crate::ai::detect_ai_capabilities();
+    let worker_max_floats = crate::ai::worker_max_floats_value();
+    let ann_caps = crate::ai::ann_cap_diagnostics();
+    let worker_failure = crate::ai::worker_failure_status();
+    let local_state = crate::ai::local_state_snapshot();
 
-    refresh_worker_threshold_signals(state);
-    refresh_ann_cap_override_signals(state);
+    let worker_threshold_input = local_state.worker_threshold_raw.clone().unwrap_or_else(|| {
+        local_state
+            .worker_threshold
+            .map(|value| value.to_string())
+            .unwrap_or_default()
+    });
+    let ann_cap_override_input = local_state
+        .ann_cap_override_mb
+        .map(|value| value.to_string())
+        .unwrap_or_default();
 
-    let _ = state
-        .worker_failure
-        .try_set(crate::ai::worker_failure_status());
-    refresh_ai_config_signals(state);
-    let _ = state
-        .embedding_sample_enabled
-        .try_set(crate::ai::embedding_sample_enabled());
-    let _ = state
-        .ai_warnings
-        .try_set(crate::ai::load_ai_warning_events());
-    let _ = state
-        .worker_bench_timestamp
-        .try_set(crate::ai::webgpu_worker_bench_timestamp());
+    batch(move || {
+        let _ = state.caps.try_set(caps);
+        let _ = state.worker_max_floats.try_set(worker_max_floats);
+        let _ = state.ann_caps.try_set(ann_caps);
+        let _ = state.worker_failure.try_set(worker_failure);
+        let _ = state
+            .embedding_sample_enabled
+            .try_set(local_state.embedding_sample_enabled);
+        let _ = state.ai_warnings.try_set(local_state.ai_warnings);
+        let _ = state
+            .worker_bench_timestamp
+            .try_set(local_state.worker_bench_timestamp);
+        let _ = state
+            .worker_threshold_current
+            .try_set(local_state.worker_threshold);
+        let _ = state.worker_threshold_input.try_set(worker_threshold_input);
+        let _ = state
+            .ann_cap_override_value
+            .try_set(local_state.ann_cap_override_mb);
+        let _ = state.ann_cap_override_input.try_set(ann_cap_override_input);
+        let _ = state.ai_config_seeded.try_set(local_state.ai_config_seeded);
+        let _ = state
+            .ai_config_version
+            .try_set(local_state.ai_config_version);
+        let _ = state
+            .ai_config_generated_at
+            .try_set(local_state.ai_config_generated_at);
+        let _ = state.webgpu_disabled.try_set(local_state.webgpu_disabled);
+    });
+
     refresh_runtime_metrics_signals(state);
 
     if let Some(window) = web_sys::window() {
@@ -740,17 +756,8 @@ fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
                 .and_then(|value| value.as_bool())
                 .unwrap_or(false);
         let _ = state.cross_origin_isolated.try_set(Some(isolated));
-
-        if let Some(storage) = window.local_storage().ok().flatten() {
-            if let Some(value) = storage_item(&storage, crate::ai::WORKER_THRESHOLD_KEY) {
-                let _ = state.worker_threshold_input.try_set(value);
-            }
-            if let Some(value) = storage_item(&storage, crate::ai::WEBGPU_DISABLE_KEY) {
-                let _ = state
-                    .webgpu_disabled
-                    .try_set(value == "1" || value.eq_ignore_ascii_case("true"));
-            }
-        }
+    } else {
+        let _ = state.cross_origin_isolated.try_set(Some(false));
     }
 }
 
@@ -766,64 +773,136 @@ fn refresh_ai_config_meta_mismatch(state: AiDiagnosticsState) {
         )
         .await
         {
-            let _ = local_version.try_set(reconciled.local_version.clone());
-            let _ = local_generated_at.try_set(reconciled.local_generated_at.clone());
-            let _ = mismatch.try_set(crate::ai::ai_config_mismatch_status_message(
-                &reconciled,
-                "Remote AI config differs (",
-                ").",
-            ));
+            batch(move || {
+                let _ = local_version.try_set(reconciled.local_version.clone());
+                let _ = local_generated_at.try_set(reconciled.local_generated_at.clone());
+                let _ = mismatch.try_set(crate::ai::ai_config_mismatch_status_message(
+                    &reconciled,
+                    "Remote AI config differs (",
+                    ").",
+                ));
+            });
         }
     });
 }
 
 #[cfg(feature = "hydrate")]
 fn spawn_ai_diagnostics_background_loads(state: AiDiagnosticsState) {
-    spawn_local_try_set(state.ann_meta, crate::ai::load_ann_meta());
-    spawn_local_try_set(state.embed_meta, crate::ai::load_embedding_manifest_meta());
-    spawn_local_try_set(state.tuning, async {
-        Some(crate::ai::load_ai_tuning().await)
+    let ann_meta = state.ann_meta;
+    let embed_meta = state.embed_meta;
+    let tuning = state.tuning;
+    let benchmark_history = state.benchmark_history;
+    let telemetry_snapshot = state.telemetry_snapshot;
+    let webgpu_probe = state.webgpu_probe;
+    spawn_local(async move {
+        let (
+            loaded_ann_meta,
+            loaded_embed_meta,
+            loaded_tuning,
+            loaded_benchmark_history,
+            loaded_telemetry_snapshot,
+            loaded_webgpu_probe,
+        ) = futures::join!(
+            crate::ai::load_ann_meta(),
+            crate::ai::load_embedding_manifest_meta(),
+            async { Some(crate::ai::load_ai_tuning().await) },
+            async { crate::ai::benchmark_history() },
+            async { crate::ai::load_ai_telemetry_snapshot() },
+            crate::ai::probe_webgpu_device(),
+        );
+
+        batch(move || {
+            let _ = ann_meta.try_set(loaded_ann_meta);
+            let _ = embed_meta.try_set(loaded_embed_meta);
+            let _ = tuning.try_set(loaded_tuning);
+            let _ = benchmark_history.try_set(loaded_benchmark_history);
+            let _ = telemetry_snapshot.try_set(loaded_telemetry_snapshot);
+            let _ = webgpu_probe.try_set(loaded_webgpu_probe);
+        });
     });
-    spawn_local_try_set(state.benchmark_history, async {
-        crate::ai::benchmark_history()
-    });
-    spawn_local_try_set(state.telemetry_snapshot, async {
-        crate::ai::load_ai_telemetry_snapshot()
-    });
-    spawn_local_try_set(state.webgpu_probe, crate::ai::probe_webgpu_device());
 }
 
 #[cfg(feature = "hydrate")]
 fn spawn_ai_diagnostics_parity_refresh(state: AiDiagnosticsState) {
-    let sqlite_parity = state.sqlite_parity.clone();
-    let integrity_report = state.integrity_report.clone();
+    let sqlite_parity = state.sqlite_parity;
+    let integrity_report = state.integrity_report;
+    let sqlite_parity_summary = state.sqlite_parity_summary;
+    let parity_check_running = state.parity_check_running;
+    parity_check_running.set(true);
     spawn_local(async move {
-        let mut parity = crate::data::fetch_sqlite_parity_report().await;
-        let mut integrity = crate::data::fetch_integrity_report().await;
+        let (mut parity, mut integrity) = fetch_parity_diagnostics_bundle().await;
         update_parity_diagnostics_signals(
             sqlite_parity,
             integrity_report,
             parity.clone(),
             integrity.clone(),
         );
-        if parity_diagnostics_clean(&parity, &integrity) {
-            return;
-        }
-
-        for _ in 0..6 {
-            wait_ms(12_000).await;
-            parity = crate::data::fetch_sqlite_parity_report().await;
-            integrity = crate::data::fetch_integrity_report().await;
+        if parity_diagnostics_retryable(&parity, &integrity) {
+            wait_ms(1_200).await;
+            (parity, integrity) = fetch_parity_diagnostics_bundle().await;
             update_parity_diagnostics_signals(
                 sqlite_parity,
                 integrity_report,
                 parity.clone(),
                 integrity.clone(),
             );
-            if parity_diagnostics_clean(&parity, &integrity) {
-                break;
-            }
         }
+        let summary = parity_summary_from_report(&parity);
+        if summary.is_some() {
+            batch(move || {
+                let _ = sqlite_parity_summary.try_set(summary);
+                parity_check_running.set(false);
+            });
+        } else {
+            let fetched_summary = crate::data::fetch_sqlite_parity_summary_report().await;
+            batch(move || {
+                let _ = sqlite_parity_summary.try_set(fetched_summary);
+                parity_check_running.set(false);
+            });
+        }
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn parity_summary_from_report(
+    parity: &Option<crate::data::SqliteParityReport>,
+) -> Option<crate::data::SqliteParitySummaryReport> {
+    parity.as_ref().map(|report| {
+        let expected = dmb_core::sqlite_parity_tables().count();
+        let missing_tables = report.missing_tables.clone();
+        let present = if report.available {
+            expected.saturating_sub(missing_tables.len())
+        } else {
+            0
+        };
+
+        crate::data::SqliteParitySummaryReport {
+            available: report.available,
+            sqlite_tables_present: present,
+            sqlite_tables_expected: expected,
+            missing_tables,
+        }
+    })
+}
+
+#[cfg(feature = "hydrate")]
+async fn fetch_parity_diagnostics_bundle() -> (
+    Option<crate::data::SqliteParityReport>,
+    Option<crate::data::IntegrityReport>,
+) {
+    join(
+        crate::data::fetch_sqlite_parity_report(),
+        crate::data::fetch_integrity_report(),
+    )
+    .await
+}
+
+#[cfg(feature = "hydrate")]
+fn spawn_ai_diagnostics_parity_summary_refresh(state: AiDiagnosticsState) {
+    let sqlite_parity_summary = state.sqlite_parity_summary;
+    spawn_local(async move {
+        let _ =
+            sqlite_parity_summary.try_set(crate::data::fetch_sqlite_parity_summary_report().await);
     });
 }
 
@@ -834,24 +913,23 @@ fn update_parity_diagnostics_signals(
     parity: Option<crate::data::SqliteParityReport>,
     integrity: Option<crate::data::IntegrityReport>,
 ) {
-    let _ = sqlite_parity.try_set(parity);
-    let _ = integrity_report.try_set(integrity);
+    batch(move || {
+        let _ = sqlite_parity.try_set(parity);
+        let _ = integrity_report.try_set(integrity);
+    });
 }
 
 #[cfg(feature = "hydrate")]
-fn parity_diagnostics_clean(
+fn parity_diagnostics_retryable(
     parity: &Option<crate::data::SqliteParityReport>,
     integrity: &Option<crate::data::IntegrityReport>,
 ) -> bool {
-    let parity_has_mismatches = parity
-        .as_ref()
-        .map(|report| report.total_mismatches > 0)
-        .unwrap_or(false);
-    let integrity_has_mismatches = integrity
-        .as_ref()
-        .map(|report| report.total_mismatches > 0)
-        .unwrap_or(false);
-    !parity_has_mismatches && !integrity_has_mismatches
+    parity.is_none()
+        || integrity.is_none()
+        || parity
+            .as_ref()
+            .map(|report| report.available && !report.idb_count_failures.is_empty())
+            .unwrap_or(false)
 }
 
 macro_rules! hydrate_action {
@@ -871,8 +949,23 @@ fn initialize_ai_diagnostics_state(state: AiDiagnosticsState) {
             apply_runtime_snapshot_values(state.clone());
             refresh_ai_config_meta_mismatch(state.clone());
             spawn_ai_diagnostics_background_loads(state.clone());
-            spawn_ai_diagnostics_parity_refresh(state.clone());
+            spawn_ai_diagnostics_parity_summary_refresh(state.clone());
         });
+    });
+}
+
+fn action_run_parity_refresh(state: AiDiagnosticsState) {
+    hydrate_action!(state, {
+        if state.parity_check_running.get_untracked() {
+            return;
+        }
+        crate::data::clear_parity_diagnostics_cache();
+        batch(move || {
+            state.sqlite_parity_summary.set(None);
+            state.sqlite_parity.set(None);
+            state.integrity_report.set(None);
+        });
+        spawn_ai_diagnostics_parity_refresh(state);
     });
 }
 
@@ -881,8 +974,10 @@ fn action_load_ann_caps(state: AiDiagnosticsState) {
         if state.ann_caps_loading.get_untracked() {
             return;
         }
-        state.ann_caps_loading.set(true);
-        state.ann_caps_error.set(None);
+        batch(move || {
+            state.ann_caps_loading.set(true);
+            state.ann_caps_error.set(None);
+        });
 
         let ann_caps = state.ann_caps.clone();
         let ann_caps_loading = state.ann_caps_loading.clone();
@@ -892,8 +987,10 @@ fn action_load_ann_caps(state: AiDiagnosticsState) {
             if loaded.is_none() {
                 ann_caps_error.set(Some("Embedding index load failed.".to_string()));
             }
-            ann_caps.set(crate::ai::ann_cap_diagnostics());
-            ann_caps_loading.set(false);
+            batch(move || {
+                ann_caps.set(crate::ai::ann_cap_diagnostics());
+                ann_caps_loading.set(false);
+            });
         });
     });
 }
@@ -1092,8 +1189,11 @@ fn action_export_diagnostics(state: AiDiagnosticsState) {
         let Some(window) = web_sys::window() else {
             return;
         };
-        let storage = window.local_storage().ok().flatten();
-        let storage_value = |key: &str| storage.as_ref().and_then(|store| storage_item(store, key));
+        let local_state = crate::ai::local_state_snapshot();
+        let telemetry_snapshot = state
+            .telemetry_snapshot
+            .get_untracked()
+            .or_else(crate::ai::load_ai_telemetry_snapshot);
         let history_snapshot = state.benchmark_history.get_untracked();
         let snapshot = serde_json::json!({
             "timestampMs": js_sys::Date::now(),
@@ -1111,14 +1211,14 @@ fn action_export_diagnostics(state: AiDiagnosticsState) {
             "appleSiliconProfile": state.apple_silicon_profile.get_untracked(),
             "idbRuntimeMetrics": state.idb_runtime_metrics.get_untracked(),
             "crossOriginIsolated": state.cross_origin_isolated.get_untracked(),
-            "workerThresholdOverride": storage_value(crate::ai::WORKER_THRESHOLD_KEY),
+            "workerThresholdOverride": local_state.worker_threshold_raw,
             "workerMaxFloats": crate::ai::worker_max_floats_value(),
-            "aiTelemetry": storage_value(crate::ai::AI_TELEMETRY_KEY),
-            "aiConfigVersion": storage_value(crate::ai::AI_CONFIG_VERSION_KEY),
-            "aiConfigGeneratedAt": storage_value(crate::ai::AI_CONFIG_GENERATED_AT_KEY),
-            "aiConfigSeeded": storage_value(crate::ai::AI_CONFIG_SEEDED_KEY),
-            "embeddingSampleEnabled": storage_value(crate::ai::EMBEDDING_SAMPLE_KEY),
-            "aiWarnings": storage_value(crate::ai::AI_WARNING_EVENTS_KEY),
+            "aiTelemetry": telemetry_snapshot,
+            "aiConfigVersion": local_state.ai_config_version,
+            "aiConfigGeneratedAt": local_state.ai_config_generated_at,
+            "aiConfigSeeded": local_state.ai_config_seeded,
+            "embeddingSampleEnabled": local_state.embedding_sample_enabled,
+            "aiWarnings": local_state.ai_warnings,
         });
 
         if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
@@ -1155,10 +1255,37 @@ fn action_export_diagnostics(state: AiDiagnosticsState) {
 }
 
 fn render_ai_parity_card(state: AiDiagnosticsState) -> impl IntoView {
+    let run_click_state = state;
+    let run_label_state = state;
+    let run_disabled_state = state;
+
     view! {
         <div class="card">
             <h2>"Parity"</h2>
             <ul class="list">
+                <li>{move || {
+                    state.sqlite_parity_summary.get().map_or_else(
+                        || "SQLite table coverage: n/a".to_string(),
+                        |summary| {
+                            if !summary.available {
+                                "SQLite table coverage: unavailable".to_string()
+                            } else if summary.missing_tables.is_empty() {
+                                format!(
+                                    "SQLite table coverage: {}/{} present",
+                                    summary.sqlite_tables_present,
+                                    summary.sqlite_tables_expected
+                                )
+                            } else {
+                                format!(
+                                    "SQLite table coverage: {}/{} present ({} missing)",
+                                    summary.sqlite_tables_present,
+                                    summary.sqlite_tables_expected,
+                                    summary.missing_tables.len()
+                                )
+                            }
+                        },
+                    )
+                }}</li>
                 <li>{move || {
                     state.integrity_report.get().map_or_else(
                         || "IDB integrity: n/a".to_string(),
@@ -1186,7 +1313,57 @@ fn render_ai_parity_card(state: AiDiagnosticsState) -> impl IntoView {
                     )
                 }}</li>
             </ul>
+            <p>
+                <button
+                    type="button"
+                    class="pill pill--ghost"
+                    on:click=move |_| action_run_parity_refresh(run_click_state)
+                    disabled=move || run_disabled_state.parity_check_running.get()
+                >
+                    {move || {
+                        if run_label_state.parity_check_running.get() {
+                            "Running full parity check…"
+                        } else {
+                            "Run full parity check"
+                        }
+                    }}
+                </button>
+            </p>
             <p class="muted">"Detailed mismatches are shown in the PWA Status panel."</p>
+        </div>
+    }
+}
+
+fn render_ai_config_card(state: AiDiagnosticsState) -> impl IntoView {
+    let refresh_state = state;
+    let export_state = state;
+
+    view! {
+        <div class="card">
+            <h2>"AI Config"</h2>
+            <ul class="list">
+                <li>{move || format!("Seeded: {}", if state.ai_config_seeded.get() { "yes" } else { "no" })}</li>
+                <li>{move || format!("Version: {}", state.ai_config_version.get().unwrap_or_else(|| "n/a".to_string()))}</li>
+                <li>{move || format!("Generated: {}", state.ai_config_generated_at.get().unwrap_or_else(|| "n/a".to_string()))}</li>
+                <li>{move || state.ai_config_mismatch.get().unwrap_or_else(|| "Remote AI config matches local metadata.".to_string())}</li>
+            </ul>
+            <p class="muted">
+                "Keys: "
+                <code>"dmb-ai-config-seeded"</code>
+                ", "
+                <code>"dmb-ai-config-version"</code>
+                ", "
+                <code>"dmb-ai-config-generated-at"</code>
+            </p>
+            <p>
+                <button type="button" class="pill" on:click=move |_| action_refresh_ai_config(refresh_state)>
+                    "Refresh AI config"
+                </button>
+                " "
+                <button type="button" class="pill pill--ghost" on:click=move |_| action_export_diagnostics(export_state)>
+                    "Export diagnostics JSON"
+                </button>
+            </p>
         </div>
     }
 }
@@ -1195,54 +1372,16 @@ fn render_ai_capabilities_list(state: AiDiagnosticsState) -> impl IntoView {
     view! {
         <ul class="list">
             <li>{move || format!("WebGPU available: {}", if state.caps.get().webgpu_available { "yes" } else { "no" })}</li>
-            <li>{move || format!(
-                "WebGPU device probe: {}",
-                state.webgpu_probe.get().map_or("n/a", |ok| if ok { "ready" } else { "failed" })
-            )}</li>
             <li>{move || format!("WebGPU enabled: {}", if state.caps.get().webgpu_enabled { "yes" } else { "no" })}</li>
-            <li>{move || format!("GPU Worker: {}", if state.caps.get().webgpu_worker { "on" } else { "off" })}</li>
-            <li>{move || format!("WebNN: {}", if state.caps.get().webnn { "on" } else { "off" })}</li>
-            <li>{move || format!("SIMD: {}", if state.caps.get().wasm_simd { "on" } else { "off" })}</li>
-            <li>{move || format!("Threads: {}", if state.caps.get().threads { "on" } else { "off" })}</li>
-            <li>{move || format!(
-                "Scoring backend: {}",
-                if state.caps.get().webgpu_enabled { "WebGPU" } else { "WASM SIMD" }
-            )}</li>
-            <li>{move || format!(
-                "Cross-Origin Isolated: {}",
-                state.cross_origin_isolated.get().map_or("n/a", |value| if value { "on" } else { "off" })
-            )}</li>
-            <li>{move || format!("AI config seeded: {}", if state.ai_config_seeded.get() { "yes" } else { "no" })}</li>
-            <li>{move || format!(
-                "AI config version: {}",
-                state.ai_config_version.get().unwrap_or_else(|| "n/a".to_string())
-            )}</li>
-            <li>{move || format!(
-                "AI config generated: {}",
-                state.ai_config_generated_at.get().unwrap_or_else(|| "n/a".to_string())
-            )}</li>
-            <li>{move || format!(
-                "Worker bench: {}",
-                state.worker_bench_timestamp.get().map_or_else(
-                    || "n/a".to_string(),
-                    |timestamp| format!("{:.1}m ago", ((js_sys::Date::now() - timestamp) / 60000.0).max(0.0))
-                )
-            )}</li>
-            <li>{move || format!(
-                "Worker max floats: {}",
-                state.worker_max_floats.get().map_or_else(|| "n/a".to_string(), |value| value.to_string())
-            )}</li>
-            <li>{move || format!(
-                "Worker cooldown: {}",
-                state.worker_failure.get().cooldown_remaining_ms.map_or_else(
-                    || "none".to_string(),
-                    |ms| format!("{:.0}s", (ms / 1000.0).max(0.0))
-                )
-            )}</li>
-            <li>{move || format!(
-                "Worker last error: {}",
-                state.worker_failure.get().last_error.clone().unwrap_or_else(|| "none".to_string())
-            )}</li>
+            <li>{move || format!("WebGPU worker: {}", if state.caps.get().webgpu_worker { "yes" } else { "no" })}</li>
+            <li>{move || format!("WebNN: {}", if state.caps.get().webnn { "yes" } else { "no" })}</li>
+            <li>{move || format!("WASM SIMD: {}", if state.caps.get().wasm_simd { "yes" } else { "no" })}</li>
+            <li>{move || format!("Threads: {}", if state.caps.get().threads { "yes" } else { "no" })}</li>
+            <li>{move || format!("Cross-origin isolated: {}", state.cross_origin_isolated.get().map_or("n/a", |value| if value { "yes" } else { "no" }))}</li>
+            <li>{move || format!("Worker max floats: {}", state.worker_max_floats.get().map_or_else(|| "n/a".to_string(), |value| value.to_string()))}</li>
+            <li>{move || format!("Worker threshold override: {}", state.worker_threshold_current.get().map_or_else(|| "auto".to_string(), |value| value.to_string()))}</li>
+            <li>{move || format!("Worker bench timestamp: {}", state.worker_bench_timestamp.get().map_or_else(|| "n/a".to_string(), |value| format!("{value:.0}")))}</li>
+            <li>{move || format!("WebGPU probe: {}", state.webgpu_probe.get().map_or("n/a", |value| if value { "yes" } else { "no" }))}</li>
         </ul>
     }
 }
@@ -1715,6 +1854,7 @@ fn render_ai_diagnostics_cards(state: AiDiagnosticsState) -> impl IntoView {
     view! {
         <div class="card-grid">
             {render_ai_parity_card(state.clone())}
+            {render_ai_config_card(state.clone())}
             {render_ai_capabilities_card(state.clone())}
             {render_embedding_sample_card(state.clone())}
             {render_ai_warnings_card(state.clone())}

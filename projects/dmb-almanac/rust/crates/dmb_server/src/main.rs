@@ -274,6 +274,7 @@ async fn main() {
         .route("/api/health", get(api_health))
         .route("/api/ai-health", get(api_ai_health))
         .route("/api/data-parity", get(api_data_parity))
+        .route("/api/data-parity-summary", get(api_data_parity_summary))
         .route("/sitemap.xml", get(sitemap))
         .route("/sitemap-static.xml", get(sitemap))
         .route("/sitemap-shows.xml", get(sitemap))
@@ -695,6 +696,102 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn data_parity_summary_unavailable_without_sqlite_pool() {
+        let leptos = LeptosOptions::builder()
+            .output_name("dmb_app")
+            .site_root("static")
+            .site_pkg_dir("pkg")
+            .build();
+        let state = AppState {
+            leptos,
+            db: None,
+            data_parity_cache: new_data_parity_cache(),
+        };
+        let app = Router::new()
+            .route("/api/data-parity-summary", get(api_data_parity_summary))
+            .with_state(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/data-parity-summary")
+                    .body(Body::empty())
+                    .expect("request body"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let payload = parse_json_body(response).await;
+        assert_eq!(
+            payload.get("available").and_then(Value::as_bool),
+            Some(false)
+        );
+        assert_eq!(
+            payload.get("sqliteTablesPresent").and_then(Value::as_u64),
+            Some(0)
+        );
+        assert!(
+            payload
+                .get("sqliteTablesExpected")
+                .and_then(Value::as_u64)
+                .is_some(),
+            "expected sqliteTablesExpected in summary payload"
+        );
+    }
+
+    #[tokio::test]
+    async fn data_parity_summary_unavailable_from_cached_parity_response() {
+        let leptos = LeptosOptions::builder()
+            .output_name("dmb_app")
+            .site_root("static")
+            .site_pkg_dir("pkg")
+            .build();
+        let state = AppState {
+            leptos,
+            db: None,
+            data_parity_cache: new_data_parity_cache(),
+        };
+        let app = Router::new()
+            .route("/api/data-parity", get(api_data_parity))
+            .route("/api/data-parity-summary", get(api_data_parity_summary))
+            .with_state(state);
+
+        let parity_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/data-parity")
+                    .body(Body::empty())
+                    .expect("request body"),
+            )
+            .await
+            .expect("parity response");
+        assert_eq!(parity_response.status(), StatusCode::OK);
+
+        let summary_response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/data-parity-summary")
+                    .body(Body::empty())
+                    .expect("request body"),
+            )
+            .await
+            .expect("summary response");
+        assert_eq!(summary_response.status(), StatusCode::OK);
+
+        let payload = parse_json_body(summary_response).await;
+        assert_eq!(
+            payload.get("available").and_then(Value::as_bool),
+            Some(false)
+        );
+        assert_eq!(
+            payload.get("sqliteTablesPresent").and_then(Value::as_u64),
+            Some(0)
+        );
+    }
+
+    #[tokio::test]
     async fn data_parity_reports_counts_and_missing_tables_for_partial_schema() {
         let pool = SqlitePoolOptions::new()
             .max_connections(1)
@@ -748,6 +845,67 @@ mod tests {
                 .and_then(Value::as_u64),
             Some(2)
         );
+        let missing_tables = payload
+            .get("missingTables")
+            .and_then(Value::as_array)
+            .expect("missingTables array");
+        let missing: Vec<&str> = missing_tables.iter().filter_map(Value::as_str).collect();
+        assert!(missing.contains(&"shows"));
+        assert!(missing.contains(&"venues"));
+    }
+
+    #[tokio::test]
+    async fn data_parity_summary_reports_missing_tables_for_partial_schema() {
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .expect("sqlite pool");
+        sqlx::query("CREATE TABLE songs (id INTEGER PRIMARY KEY)")
+            .execute(&pool)
+            .await
+            .expect("create songs");
+
+        let leptos = LeptosOptions::builder()
+            .output_name("dmb_app")
+            .site_root("static")
+            .site_pkg_dir("pkg")
+            .build();
+        let state = AppState {
+            leptos,
+            db: Some(pool),
+            data_parity_cache: new_data_parity_cache(),
+        };
+        let app = Router::new()
+            .route("/api/data-parity-summary", get(api_data_parity_summary))
+            .with_state(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/data-parity-summary")
+                    .body(Body::empty())
+                    .expect("request body"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let payload = parse_json_body(response).await;
+        assert_eq!(
+            payload.get("available").and_then(Value::as_bool),
+            Some(true)
+        );
+        assert_eq!(
+            payload.get("sqliteTablesPresent").and_then(Value::as_u64),
+            Some(1)
+        );
+        let expected = payload
+            .get("sqliteTablesExpected")
+            .and_then(Value::as_u64)
+            .expect("sqliteTablesExpected");
+        assert!(expected > 1, "expected more than one parity table");
+
         let missing_tables = payload
             .get("missingTables")
             .and_then(Value::as_array)
@@ -1045,6 +1203,60 @@ async fn api_data_parity(
     (StatusCode::OK, Json(response))
 }
 
+async fn api_data_parity_summary(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> impl IntoResponse {
+    let expected = sqlite_parity_tables().count();
+
+    if let Some(cache_entry) = state.data_parity_cache.read().await.as_ref().cloned() {
+        if cache_entry.generated_at.elapsed() <= DATA_PARITY_CACHE_TTL {
+            let missing_tables = cache_entry.response.missing_tables;
+            let present = if cache_entry.response.available {
+                expected.saturating_sub(missing_tables.len())
+            } else {
+                0
+            };
+            let response = DataParitySummaryResponse {
+                available: cache_entry.response.available,
+                sqlite_tables_present: present,
+                sqlite_tables_expected: expected,
+                missing_tables,
+            };
+            return (StatusCode::OK, Json(response));
+        }
+    }
+
+    let Some(pool) = state.db.as_ref() else {
+        let response = DataParitySummaryResponse {
+            available: false,
+            sqlite_tables_present: 0,
+            sqlite_tables_expected: expected,
+            missing_tables: Vec::new(),
+        };
+        return (StatusCode::OK, Json(response));
+    };
+
+    let existing_tables = fetch_existing_tables(pool).await;
+    let mut missing_tables = Vec::new();
+    let mut present = 0usize;
+    for table in sqlite_parity_tables() {
+        if existing_tables.contains(table) {
+            present += 1;
+        } else {
+            missing_tables.push(table.to_string());
+        }
+    }
+    missing_tables.sort_unstable();
+
+    let response = DataParitySummaryResponse {
+        available: true,
+        sqlite_tables_present: present,
+        sqlite_tables_expected: expected,
+        missing_tables,
+    };
+    (StatusCode::OK, Json(response))
+}
+
 #[derive(Serialize)]
 struct HealthResponse {
     status: &'static str,
@@ -1068,6 +1280,15 @@ struct AiHealthResponse {
 struct DataParityResponse {
     available: bool,
     counts: HashMap<String, u64>,
+    missing_tables: Vec<String>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DataParitySummaryResponse {
+    available: bool,
+    sqlite_tables_present: usize,
+    sqlite_tables_expected: usize,
     missing_tables: Vec<String>,
 }
 

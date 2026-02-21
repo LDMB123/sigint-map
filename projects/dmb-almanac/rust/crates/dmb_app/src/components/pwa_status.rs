@@ -386,15 +386,16 @@ struct PwaStatusState {
 
 #[cfg(feature = "hydrate")]
 async fn refresh_data_diagnostics(state: PwaStatusState) {
-    state
-        .manifest_diff
-        .set(crate::data::fetch_manifest_diff().await);
-    state
-        .integrity_report
-        .set(crate::data::fetch_integrity_report().await);
-    state
-        .sqlite_parity
-        .set(crate::data::fetch_sqlite_parity_report().await);
+    let (manifest_diff, integrity_report, sqlite_parity) = futures::join!(
+        crate::data::fetch_manifest_diff(),
+        crate::data::fetch_integrity_report(),
+        crate::data::fetch_sqlite_parity_report(),
+    );
+    batch(move || {
+        state.manifest_diff.set(manifest_diff);
+        state.integrity_report.set(integrity_report);
+        state.sqlite_parity.set(sqlite_parity);
+    });
 }
 
 impl PwaStatusState {

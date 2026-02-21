@@ -2,6 +2,9 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 #[cfg(feature = "hydrate")]
+use std::cell::RefCell;
+
+#[cfg(feature = "hydrate")]
 use dmb_core::EMBEDDING_DIM;
 use dmb_core::{hashed_embedding, AnnIvfIndex, EmbeddingRecord, SearchResult};
 
@@ -199,6 +202,55 @@ fn set_local_storage_flag(key: &str, enabled: bool) {
 }
 
 #[cfg(feature = "hydrate")]
+thread_local! {
+    static WEBGPU_DISABLED_CACHE: RefCell<Option<bool>> = const { RefCell::new(None) };
+    static WORKER_THRESHOLD_READY: RefCell<bool> = const { RefCell::new(false) };
+}
+
+#[cfg(feature = "hydrate")]
+fn parse_webgpu_disabled(value: Option<String>) -> bool {
+    value
+        .map(|item| item == "1" || item.eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+}
+
+#[cfg(feature = "hydrate")]
+fn webgpu_disabled_value() -> bool {
+    WEBGPU_DISABLED_CACHE.with(|cache| {
+        if let Some(value) = *cache.borrow() {
+            return value;
+        }
+        let loaded = parse_webgpu_disabled(local_storage_item(WEBGPU_DISABLE_KEY));
+        *cache.borrow_mut() = Some(loaded);
+        loaded
+    })
+}
+
+#[cfg(feature = "hydrate")]
+fn storage_flag_enabled(storage: &web_sys::Storage, key: &str) -> bool {
+    matches!(storage_item(storage, key).as_deref(), Some("1"))
+}
+
+#[cfg(feature = "hydrate")]
+fn worker_threshold_ready() -> bool {
+    WORKER_THRESHOLD_READY.with(|ready| *ready.borrow())
+}
+
+#[cfg(feature = "hydrate")]
+fn mark_worker_threshold_ready() {
+    WORKER_THRESHOLD_READY.with(|ready| {
+        *ready.borrow_mut() = true;
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn reset_worker_threshold_ready() {
+    WORKER_THRESHOLD_READY.with(|ready| {
+        *ready.borrow_mut() = false;
+    });
+}
+
+#[cfg(feature = "hydrate")]
 fn record_ai_warning_once(warn_key: &str, event: &str, details: &str) {
     let _ = with_local_storage(|storage| {
         if storage_item(storage, warn_key).is_some() {
@@ -215,36 +267,8 @@ pub fn detect_ai_capabilities() -> AiCapabilities {
         return AiCapabilities::default();
     };
     ensure_default_worker_threshold();
-    let navigator = window.navigator();
-
-    let webgpu = js_value_exists(&navigator_property(&navigator, "gpu"));
-    let webgpu_helper = window_property(&window, "dmbWebgpuScores").is_function();
-    let webgpu_available = webgpu && webgpu_helper;
-    if webgpu && !webgpu_helper {
-        record_ai_warning_once(
-            WEBGPU_HELPER_WARN_KEY,
-            "webgpu_helper_missing",
-            "navigator.gpu present but WebGPU helper missing",
-        );
-    }
-    let webgpu_disabled = local_storage_item(WEBGPU_DISABLE_KEY)
-        .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
-        .unwrap_or(false);
-    let webgpu_worker = window_property(&window, "dmbWebgpuScoresWorker").is_function();
-    let webnn = js_value_exists(&navigator_property(&navigator, "ml"));
-    let threads = window_property(&window, "crossOriginIsolated")
-        .as_bool()
-        .unwrap_or(false);
-
-    let webgpu_enabled = webgpu_available && !webgpu_disabled;
-    AiCapabilities {
-        webgpu_available,
-        webgpu_enabled,
-        webgpu_worker: webgpu_worker && webgpu_enabled,
-        webnn,
-        wasm_simd: true,
-        threads,
-    }
+    let webgpu_disabled = webgpu_disabled_value();
+    detect_ai_capabilities_with_webgpu_disabled(&window, webgpu_disabled)
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -755,6 +779,12 @@ fn read_worker_threshold() -> Option<usize> {
 }
 
 #[cfg(feature = "hydrate")]
+fn parse_worker_threshold(raw: Option<String>) -> Option<usize> {
+    raw.and_then(|value| value.parse::<usize>().ok())
+        .map(clamp_worker_threshold)
+}
+
+#[cfg(feature = "hydrate")]
 fn read_worker_max_floats() -> Option<usize> {
     let value = dmb_get_worker_limits().ok()?;
     serde_wasm_bindgen::from_value::<WorkerLimitsResult>(value)
@@ -777,21 +807,7 @@ pub fn worker_max_floats_value() -> Option<usize> {
 pub fn worker_failure_status() -> WorkerFailureStatus {
     #[cfg(feature = "hydrate")]
     {
-        let now = js_sys::Date::now();
-        let until = local_storage_parse(WORKER_FAILURE_UNTIL_KEY);
-        let remaining = until.and_then(|ts| if ts <= now { None } else { Some(ts - now) });
-        if remaining.is_some() {
-            record_ai_warning_once(
-                WORKER_COOLDOWN_WARN_KEY,
-                "webgpu_worker_cooldown",
-                "WebGPU worker in cooldown; using direct scoring",
-            );
-        }
-        WorkerFailureStatus {
-            cooldown_until_ms: until,
-            cooldown_remaining_ms: remaining,
-            last_error: local_storage_item(WORKER_FAILURE_REASON_KEY),
-        }
+        with_local_storage(worker_failure_status_from_storage).unwrap_or_default()
     }
     #[cfg(not(feature = "hydrate"))]
     {
@@ -822,6 +838,7 @@ pub fn set_worker_threshold_override(value: Option<usize>) {
         }
         None => {
             remove_local_storage_item(WORKER_THRESHOLD_KEY);
+            reset_worker_threshold_ready();
             ensure_default_worker_threshold();
         }
     }
@@ -855,17 +872,25 @@ pub fn set_ann_cap_override_mb(value: Option<u64>) {
 #[cfg(feature = "hydrate")]
 pub fn set_webgpu_disabled(disabled: bool) {
     set_local_storage_flag(WEBGPU_DISABLE_KEY, disabled);
+    WEBGPU_DISABLED_CACHE.with(|cache| {
+        *cache.borrow_mut() = Some(disabled);
+    });
 }
 
 #[cfg(feature = "hydrate")]
 fn store_worker_threshold(value: usize) {
     set_local_storage_item(WORKER_THRESHOLD_KEY, &value.to_string());
     let _ = dmb_set_worker_threshold(value as f64);
+    mark_worker_threshold_ready();
 }
 
 #[cfg(feature = "hydrate")]
 fn ensure_default_worker_threshold() {
+    if worker_threshold_ready() {
+        return;
+    }
     if read_worker_threshold().is_some() {
+        mark_worker_threshold_ready();
         return;
     }
     let Some(window) = web_sys::window() else {
@@ -892,27 +917,114 @@ fn clamp_worker_threshold(value: usize) -> usize {
 }
 
 #[cfg(feature = "hydrate")]
+fn detect_ai_capabilities_with_webgpu_disabled(
+    window: &web_sys::Window,
+    webgpu_disabled: bool,
+) -> AiCapabilities {
+    let navigator = window.navigator();
+    let webgpu = js_value_exists(&navigator_property(&navigator, "gpu"));
+    let webgpu_helper = window_property(window, "dmbWebgpuScores").is_function();
+    let webgpu_available = webgpu && webgpu_helper;
+    if webgpu && !webgpu_helper {
+        record_ai_warning_once(
+            WEBGPU_HELPER_WARN_KEY,
+            "webgpu_helper_missing",
+            "navigator.gpu present but WebGPU helper missing",
+        );
+    }
+    let webgpu_worker = window_property(window, "dmbWebgpuScoresWorker").is_function();
+    let webnn = js_value_exists(&navigator_property(&navigator, "ml"));
+    let threads = window_property(window, "crossOriginIsolated")
+        .as_bool()
+        .unwrap_or(false);
+
+    let webgpu_enabled = webgpu_available && !webgpu_disabled;
+    AiCapabilities {
+        webgpu_available,
+        webgpu_enabled,
+        webgpu_worker: webgpu_worker && webgpu_enabled,
+        webnn,
+        wasm_simd: true,
+        threads,
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn worker_failure_status_from_storage(storage: &web_sys::Storage) -> WorkerFailureStatus {
+    let now = js_sys::Date::now();
+    let until =
+        storage_item(storage, WORKER_FAILURE_UNTIL_KEY).and_then(|raw| raw.parse::<f64>().ok());
+    let remaining = until.and_then(|ts| if ts <= now { None } else { Some(ts - now) });
+    if remaining.is_some() {
+        record_ai_warning_once(
+            WORKER_COOLDOWN_WARN_KEY,
+            "webgpu_worker_cooldown",
+            "WebGPU worker in cooldown; using direct scoring",
+        );
+    }
+    WorkerFailureStatus {
+        cooldown_until_ms: until,
+        cooldown_remaining_ms: remaining,
+        last_error: storage_item(storage, WORKER_FAILURE_REASON_KEY),
+    }
+}
+
+#[cfg(feature = "hydrate")]
+#[derive(Debug, Clone, Default)]
+struct TelemetryStorageSnapshot {
+    ann_cap_override_mb: Option<u64>,
+    worker_threshold: Option<usize>,
+    worker_failure: WorkerFailureStatus,
+    ai_config_version: Option<String>,
+    ai_config_generated_at: Option<String>,
+    ai_config_seeded: bool,
+    embedding_sample_enabled: bool,
+    webgpu_disabled: bool,
+}
+
+#[cfg(feature = "hydrate")]
+fn telemetry_storage_snapshot(storage: &web_sys::Storage) -> TelemetryStorageSnapshot {
+    TelemetryStorageSnapshot {
+        ann_cap_override_mb: storage_item(storage, ANN_CAP_OVERRIDE_KEY)
+            .and_then(|raw| raw.parse::<u64>().ok())
+            .map(|mb| mb.clamp(MIN_ANN_CAP_MB, MAX_ANN_CAP_MB)),
+        worker_threshold: parse_worker_threshold(storage_item(storage, WORKER_THRESHOLD_KEY)),
+        worker_failure: worker_failure_status_from_storage(storage),
+        ai_config_version: storage_item(storage, AI_CONFIG_VERSION_KEY),
+        ai_config_generated_at: storage_item(storage, AI_CONFIG_GENERATED_AT_KEY),
+        ai_config_seeded: storage_flag_enabled(storage, AI_CONFIG_SEEDED_KEY),
+        embedding_sample_enabled: storage_flag_enabled(storage, EMBEDDING_SAMPLE_KEY),
+        webgpu_disabled: parse_webgpu_disabled(storage_item(storage, WEBGPU_DISABLE_KEY)),
+    }
+}
+
+#[cfg(feature = "hydrate")]
 fn store_ai_telemetry_snapshot(ann_cap: Option<&AnnCapDiagnostics>) {
-    let caps = detect_ai_capabilities();
-    let worker_status = worker_failure_status();
+    ensure_default_worker_threshold();
+    let local_state = with_local_storage(telemetry_storage_snapshot).unwrap_or_default();
+    let caps = web_sys::window()
+        .map(|window| {
+            detect_ai_capabilities_with_webgpu_disabled(&window, local_state.webgpu_disabled)
+        })
+        .unwrap_or_default();
     let payload = serde_json::json!({
         "timestampMs": js_sys::Date::now(),
         "annCap": ann_cap,
-        "annCapOverrideMb": ann_cap_override_mb(),
-        "workerThreshold": read_worker_threshold(),
+        "annCapOverrideMb": local_state.ann_cap_override_mb,
+        "workerThreshold": local_state.worker_threshold,
         "workerMaxFloats": read_worker_max_floats(),
-        "workerFailureUntilMs": worker_status.cooldown_until_ms,
-        "workerFailureRemainingMs": worker_status.cooldown_remaining_ms,
-        "workerFailureReason": worker_status.last_error,
+        "workerFailureUntilMs": local_state.worker_failure.cooldown_until_ms,
+        "workerFailureRemainingMs": local_state.worker_failure.cooldown_remaining_ms,
+        "workerFailureReason": local_state.worker_failure.last_error,
         "webgpuAvailable": caps.webgpu_available,
         "webgpuEnabled": caps.webgpu_enabled,
         "webgpuWorker": caps.webgpu_worker,
         "webnn": caps.webnn,
         "threads": caps.threads,
-        "aiConfigVersion": ai_config_version(),
-        "aiConfigGeneratedAt": ai_config_generated_at(),
-        "aiConfigSeeded": Some(ai_config_seeded()),
-        "embeddingSampleEnabled": Some(embedding_sample_enabled()),
+        "aiConfigVersion": local_state.ai_config_version,
+        "aiConfigGeneratedAt": local_state.ai_config_generated_at,
+        "aiConfigSeeded": Some(local_state.ai_config_seeded),
+        "embeddingSampleEnabled": Some(local_state.embedding_sample_enabled),
     });
     set_local_storage_json(AI_TELEMETRY_KEY, &payload);
 }
@@ -1288,6 +1400,64 @@ pub async fn refresh_ai_config() -> bool {
 #[cfg(feature = "hydrate")]
 pub fn ai_config_seeded() -> bool {
     local_storage_flag_enabled(AI_CONFIG_SEEDED_KEY)
+}
+
+#[cfg(feature = "hydrate")]
+#[derive(Debug, Clone, Default)]
+pub struct AiLocalStateSnapshot {
+    pub worker_threshold: Option<usize>,
+    pub worker_threshold_raw: Option<String>,
+    pub ann_cap_override_mb: Option<u64>,
+    pub ai_config_seeded: bool,
+    pub ai_config_version: Option<String>,
+    pub ai_config_generated_at: Option<String>,
+    pub embedding_sample_enabled: bool,
+    pub ai_warnings: Vec<AiWarningEvent>,
+    pub worker_bench_timestamp: Option<f64>,
+    pub webgpu_disabled: bool,
+}
+
+#[cfg(feature = "hydrate")]
+pub fn local_state_snapshot() -> AiLocalStateSnapshot {
+    with_local_storage(|storage| {
+        let worker_threshold_raw = storage_item(storage, WORKER_THRESHOLD_KEY);
+        let worker_threshold = parse_worker_threshold(worker_threshold_raw.clone());
+
+        let ann_cap_override_mb = storage_item(storage, ANN_CAP_OVERRIDE_KEY)
+            .and_then(|raw| raw.parse::<u64>().ok())
+            .map(|mb| mb.clamp(MIN_ANN_CAP_MB, MAX_ANN_CAP_MB));
+
+        let ai_config_seeded = matches!(
+            storage_item(storage, AI_CONFIG_SEEDED_KEY).as_deref(),
+            Some("1")
+        );
+        let ai_config_version = storage_item(storage, AI_CONFIG_VERSION_KEY);
+        let ai_config_generated_at = storage_item(storage, AI_CONFIG_GENERATED_AT_KEY);
+        let embedding_sample_enabled = matches!(
+            storage_item(storage, EMBEDDING_SAMPLE_KEY).as_deref(),
+            Some("1")
+        );
+        let ai_warnings = storage_item(storage, AI_WARNING_EVENTS_KEY)
+            .and_then(|payload| serde_json::from_str::<Vec<AiWarningEvent>>(&payload).ok())
+            .unwrap_or_default();
+        let worker_bench_timestamp =
+            storage_item(storage, WEBGPU_WORKER_BENCH_KEY).and_then(|raw| raw.parse::<f64>().ok());
+        let webgpu_disabled = parse_webgpu_disabled(storage_item(storage, WEBGPU_DISABLE_KEY));
+
+        AiLocalStateSnapshot {
+            worker_threshold,
+            worker_threshold_raw,
+            ann_cap_override_mb,
+            ai_config_seeded,
+            ai_config_version,
+            ai_config_generated_at,
+            embedding_sample_enabled,
+            ai_warnings,
+            worker_bench_timestamp,
+            webgpu_disabled,
+        }
+    })
+    .unwrap_or_default()
 }
 
 #[cfg(feature = "hydrate")]
