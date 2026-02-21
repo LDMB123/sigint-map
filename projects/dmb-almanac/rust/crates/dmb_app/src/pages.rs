@@ -4349,61 +4349,6 @@ fn render_search_results_content(
     .into_any()
 }
 
-#[cfg(feature = "hydrate")]
-fn spawn_embedding_index_load(embedding_index: RwSignal<Option<SharedEmbeddingIndex>>) {
-    spawn_local(async move {
-        embedding_index.set(crate::ai::load_embedding_index().await);
-    });
-}
-
-#[cfg(feature = "hydrate")]
-fn initialize_search_results_effect(query: RwSignal<String>, results: RwSignal<Vec<SearchResult>>) {
-    let embedding_index = RwSignal::new(None::<SharedEmbeddingIndex>);
-    let search_run = RwSignal::new(0_u64);
-
-    spawn_embedding_index_load(embedding_index.clone());
-
-    Effect::new(move |_| {
-        let current_query = query.get();
-        let current_index = embedding_index.get();
-        let run_id = search_run.get_untracked().wrapping_add(1);
-        search_run.set(run_id);
-        let results_signal = results.clone();
-        let search_run_signal = search_run.clone();
-
-        spawn_local(async move {
-            // Debounce keystrokes to reduce repeated prefix/semantic lookups.
-            wait_ms(120).await;
-            if search_run_signal.get_untracked() != run_id {
-                return;
-            }
-
-            let trimmed = current_query.trim().to_string();
-            let items = if trimmed.is_empty() {
-                Vec::new()
-            } else {
-                let prefix = dmb_idb::search_global(&trimmed).await.unwrap_or_default();
-                let semantic = if trimmed.chars().count() >= 2 {
-                    if let Some(index) = current_index {
-                        crate::ai::semantic_search(&trimmed, &index, 12).await
-                    } else {
-                        Vec::new()
-                    }
-                } else {
-                    Vec::new()
-                };
-                merge_search_results(prefix, semantic, 40)
-            };
-
-            // Drop stale async results from superseded queries.
-            if search_run_signal.get_untracked() != run_id {
-                return;
-            }
-            results_signal.set(items);
-        });
-    });
-}
-
 #[must_use]
 pub fn search_page() -> impl IntoView {
     let query = RwSignal::new(String::new());
@@ -4472,7 +4417,55 @@ pub fn search_page() -> impl IntoView {
             }
         });
 
-        initialize_search_results_effect(query.clone(), results.clone());
+        let embedding_index = RwSignal::new(None::<SharedEmbeddingIndex>);
+        let search_run = RwSignal::new(0_u64);
+
+        let embedding_index_signal = embedding_index.clone();
+        spawn_local(async move {
+            embedding_index_signal.set(crate::ai::load_embedding_index().await);
+        });
+
+        let search_query = query.clone();
+        let search_results = results.clone();
+        Effect::new(move |_| {
+            let current_query = search_query.get();
+            let current_index = embedding_index.get();
+            let run_id = search_run.get_untracked().wrapping_add(1);
+            search_run.set(run_id);
+            let results_signal = search_results.clone();
+            let search_run_signal = search_run.clone();
+
+            spawn_local(async move {
+                // Debounce keystrokes to reduce repeated prefix/semantic lookups.
+                wait_ms(120).await;
+                if search_run_signal.get_untracked() != run_id {
+                    return;
+                }
+
+                let trimmed = current_query.trim().to_string();
+                let items = if trimmed.is_empty() {
+                    Vec::new()
+                } else {
+                    let prefix = dmb_idb::search_global(&trimmed).await.unwrap_or_default();
+                    let semantic = if trimmed.chars().count() >= 2 {
+                        if let Some(index) = current_index {
+                            crate::ai::semantic_search(&trimmed, &index, 12).await
+                        } else {
+                            Vec::new()
+                        }
+                    } else {
+                        Vec::new()
+                    };
+                    merge_search_results(prefix, semantic, 40)
+                };
+
+                // Drop stale async results from superseded queries.
+                if search_run_signal.get_untracked() != run_id {
+                    return;
+                }
+                results_signal.set(items);
+            });
+        });
     }
 
     let value_query = query.clone();
@@ -5453,7 +5446,10 @@ pub fn assistant_page() -> impl IntoView {
 
     #[cfg(feature = "hydrate")]
     {
-        spawn_embedding_index_load(embedding_index.clone());
+        let embedding_index_signal = embedding_index.clone();
+        spawn_local(async move {
+            embedding_index_signal.set(crate::ai::load_embedding_index().await);
+        });
 
         let index_signal = embedding_index.clone();
         let results_signal = results.clone();
