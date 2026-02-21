@@ -5361,24 +5361,6 @@ fn render_string_bar_chart(data: &[(String, u32)], limit: usize) -> impl IntoVie
     .into_any()
 }
 
-fn render_assistant_index_status(embedding_index: Option<SharedEmbeddingIndex>) -> impl IntoView {
-    match embedding_index {
-        None => {
-            loading_state("Loading embedding index", "Preparing local vector search.").into_any()
-        }
-        Some(index) => view! {
-            <p class="list-summary">
-                "Embedding vectors loaded: "
-                {index.records.len()}
-                " (dim "
-                {index.dim}
-                ")"
-            </p>
-        }
-        .into_any(),
-    }
-}
-
 fn render_assistant_results(query: &str, items: Vec<dmb_core::SearchResult>) -> impl IntoView {
     let trimmed = query.trim().to_string();
     if trimmed.len() < 2 {
@@ -5467,7 +5449,27 @@ pub fn assistant_page() -> impl IntoView {
         <section class="page">
             <h1>"AI Assistant"</h1>
             <p class="lead">"Offline-first semantic recommendations and answers."</p>
-            {move || render_assistant_index_status(embedding_index.get())}
+            {move || {
+                match embedding_index.get() {
+                    None => {
+                        loading_state(
+                            "Loading embedding index",
+                            "Preparing local vector search.",
+                        )
+                            .into_any()
+                    }
+                    Some(index) => view! {
+                        <p class="list-summary">
+                            "Embedding vectors loaded: "
+                            {index.records.len()}
+                            " (dim "
+                            {index.dim}
+                            ")"
+                        </p>
+                    }
+                    .into_any(),
+                }
+            }}
 
             <div class="assistant-search">
                 <input
