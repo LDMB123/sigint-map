@@ -5552,51 +5552,6 @@ pub fn not_found_page() -> impl IntoView {
     }
 }
 
-#[cfg(feature = "hydrate")]
-fn hydrate_my_shows_state(
-    items: RwSignal<Vec<UserAttendedShow>>,
-    loading: RwSignal<bool>,
-    input: RwSignal<String>,
-    message: RwSignal<Option<(String, bool)>>,
-) {
-    let items_signal = items.clone();
-    let loading_signal = loading.clone();
-    spawn_local(async move {
-        items_signal.set(load_user_attended_shows().await);
-        loading_signal.set(false);
-    });
-
-    let input_signal = input.clone();
-    let message_signal = message.clone();
-    Effect::new(move |_| {
-        let raw_show_id = current_search_param("showId");
-        let Some(raw_show_id) = raw_show_id else {
-            return;
-        };
-        match parse_positive_i32_param(&raw_show_id, "showId") {
-            Ok(show_id) => {
-                input_signal.set(show_id.to_string());
-                if message_signal.get_untracked().is_none() {
-                    message_signal.set(Some((
-                        format!(
-                            "Show {show_id} prefilled from link. Click Add to save it locally."
-                        ),
-                        false,
-                    )));
-                }
-            }
-            Err(_) => {
-                if message_signal.get_untracked().is_none() {
-                    message_signal.set(Some((
-                        "Invalid showId query parameter. Enter a positive show ID.".to_string(),
-                        true,
-                    )));
-                }
-            }
-        }
-    });
-}
-
 #[must_use]
 #[allow(clippy::too_many_lines)]
 pub fn my_shows_page() -> impl IntoView {
@@ -5608,7 +5563,42 @@ pub fn my_shows_page() -> impl IntoView {
 
     #[cfg(feature = "hydrate")]
     {
-        hydrate_my_shows_state(items, loading, input, message);
+        let items_signal = items.clone();
+        let loading_signal = loading.clone();
+        spawn_local(async move {
+            items_signal.set(load_user_attended_shows().await);
+            loading_signal.set(false);
+        });
+
+        let input_signal = input.clone();
+        let message_signal = message.clone();
+        Effect::new(move |_| {
+            let raw_show_id = current_search_param("showId");
+            let Some(raw_show_id) = raw_show_id else {
+                return;
+            };
+            match parse_positive_i32_param(&raw_show_id, "showId") {
+                Ok(show_id) => {
+                    input_signal.set(show_id.to_string());
+                    if message_signal.get_untracked().is_none() {
+                        message_signal.set(Some((
+                            format!(
+                                "Show {show_id} prefilled from link. Click Add to save it locally."
+                            ),
+                            false,
+                        )));
+                    }
+                }
+                Err(_) => {
+                    if message_signal.get_untracked().is_none() {
+                        message_signal.set(Some((
+                            "Invalid showId query parameter. Enter a positive show ID.".to_string(),
+                            true,
+                        )));
+                    }
+                }
+            }
+        });
     }
 
     #[cfg(feature = "hydrate")]
