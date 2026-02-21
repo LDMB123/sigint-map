@@ -77,30 +77,6 @@ fn spawn_local_try_set<T: Send + Sync + 'static>(
     });
 }
 
-fn focus_stats_tab(idx: u8) {
-    #[cfg(feature = "hydrate")]
-    {
-        let Some(window) = web_sys::window() else {
-            return;
-        };
-        let Some(document) = window.document() else {
-            return;
-        };
-        let tab_id = format!("stats-tab-{idx}");
-        let Some(element) = document.get_element_by_id(&tab_id) else {
-            return;
-        };
-        let Ok(tab) = element.dyn_into::<web_sys::HtmlElement>() else {
-            return;
-        };
-        let _ = tab.focus();
-    }
-    #[cfg(not(feature = "hydrate"))]
-    {
-        let _ = idx;
-    }
-}
-
 #[cfg(feature = "hydrate")]
 async fn wait_ms(ms: i32) {
     let options = js_sys::Object::new();
@@ -4673,7 +4649,27 @@ fn render_stats_tabs(active_tab: RwSignal<u8>) -> impl IntoView {
                                 if let Some(next_idx) = next {
                                     ev.prevent_default();
                                     keydown_active_tab.set(next_idx);
-                                    focus_stats_tab(next_idx);
+                                    #[cfg(feature = "hydrate")]
+                                    {
+                                        let Some(window) = web_sys::window() else {
+                                            return;
+                                        };
+                                        let Some(document) = window.document() else {
+                                            return;
+                                        };
+                                        let tab_id = format!("stats-tab-{next_idx}");
+                                        let Some(element) = document.get_element_by_id(&tab_id) else {
+                                            return;
+                                        };
+                                        let Ok(tab) = element.dyn_into::<web_sys::HtmlElement>() else {
+                                            return;
+                                        };
+                                        let _ = tab.focus();
+                                    }
+                                    #[cfg(not(feature = "hydrate"))]
+                                    {
+                                        let _ = next_idx;
+                                    }
                                 }
                             }
                         >
@@ -5397,25 +5393,6 @@ fn render_assistant_index_status(embedding_index: Option<SharedEmbeddingIndex>) 
     }
 }
 
-#[cfg(feature = "hydrate")]
-fn spawn_assistant_semantic_search(
-    current_query: String,
-    current_index: Option<SharedEmbeddingIndex>,
-    results_signal: RwSignal<Vec<SearchResult>>,
-) {
-    spawn_local(async move {
-        let trimmed = current_query.trim().to_string();
-        let items = if trimmed.len() < 2 {
-            Vec::new()
-        } else if let Some(index) = current_index {
-            crate::ai::semantic_search(&trimmed, &index, 8).await
-        } else {
-            Vec::new()
-        };
-        results_signal.set(items);
-    });
-}
-
 fn render_assistant_results(query: &str, items: Vec<dmb_core::SearchResult>) -> impl IntoView {
     let trimmed = query.trim().to_string();
     if trimmed.len() < 2 {
@@ -5483,7 +5460,17 @@ pub fn assistant_page() -> impl IntoView {
         Effect::new(move |_| {
             let current_query = query.get();
             let current_index = index_signal.get();
-            spawn_assistant_semantic_search(current_query, current_index, results_signal);
+            spawn_local(async move {
+                let trimmed = current_query.trim().to_string();
+                let items = if trimmed.len() < 2 {
+                    Vec::new()
+                } else if let Some(index) = current_index {
+                    crate::ai::semantic_search(&trimmed, &index, 8).await
+                } else {
+                    Vec::new()
+                };
+                results_signal.set(items);
+            });
         });
     }
 
