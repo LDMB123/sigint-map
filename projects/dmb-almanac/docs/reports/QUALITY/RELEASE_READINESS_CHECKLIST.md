@@ -1,6 +1,6 @@
 # Release Readiness Checklist (Rust App)
 
-Date: 2026-02-15  
+Date: 2026-02-21  
 Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 
 This checklist is the Phase 5 quality gate for release decisions.
@@ -15,26 +15,24 @@ This checklist is the Phase 5 quality gate for release decisions.
 - [x] Route full-path smoke gate passes (`rust/crates/dmb_app/tests/route_smoke.rs`).
 - [x] Accessibility baseline automation passes (`rust/crates/dmb_app/tests/a11y_routes.rs`).
 - [x] Core parity assertions pass (`cargo test -p dmb_core parity`).
-- [x] Server payload validation regressions pass (`cargo test -p dmb_server rejects_` and `cargo test -p dmb_server csp_report_requires_report_object`).
+- [x] Server API regression suite passes (`cargo test -p dmb_server`).
 
 ## Regression Scenarios
 
 - [x] Empty dataset handling covered by deterministic normalization/unit tests in
   `rust/crates/dmb_app/src/pages.rs`.
-- [x] Corrupted input handling covered by server validation tests in
+- [x] Server parity and availability edge cases are covered in
   `rust/crates/dmb_server/src/main.rs`:
-  - non-object payload rejection,
-  - missing event key rejection,
-  - missing CSP report object rejection,
-  - oversized payload rejection.
-- [x] Stale cache fallback covered by `data_parity_ignores_stale_cache_entries`
-  in `rust/crates/dmb_server/src/main.rs`.
+  - sqlite-unavailable responses stay deterministic,
+  - partial-schema responses report missing tables,
+  - stale parity cache entries are ignored.
 - [x] PWA update edge-state behavior covered by tests in
   `rust/crates/dmb_app/src/components/pwa_status.rs`
   (snooze window, clock skew, parser reliability).
-- [ ] Offline no-network manual spot-check completed for this release window
-  (use `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md` and generated report).
-- [ ] AI timeout/degradation manual pass completed on target runtime profile.
+- [x] Offline no-network behavior validated by Rust E2E (`tests/e2e/rust-offline.spec.js`)
+  via `bash scripts/cutover-rehearsal.sh` on 2026-02-21.
+- [x] AI timeout/degradation release-window check completed via Rust E2E
+  (`e2e/tests/e2e/rust-ai-degradation.spec.js`) on 2026-02-21.
 
 ## UX and Content
 

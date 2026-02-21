@@ -61,8 +61,7 @@ jobs:
       - name: Phase 5 regression gates (parity + server validation)
         run: |
           cargo test -p dmb_core parity
-          cargo test -p dmb_server rejects_
-          cargo test -p dmb_server data_parity_ignores_stale_cache_entries
+          cargo test -p dmb_server
           cargo test -p dmb_app --features ssr normalize_helpers_handle_empty_input
 
   rust-pipeline-validate:
@@ -179,3 +178,20 @@ jobs:
 
       - name: Clippy app (Hydrate)
         run: cargo clippy -p dmb_app --features hydrate --all-targets -- -D warnings
+
+  rust-security-audit:
+    name: Rust Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          cache: true
+
+      - name: Run security audit gate
+        run: bash scripts/security-audit.sh

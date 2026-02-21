@@ -4,10 +4,13 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENFORCE=0
 
-TARGET_BUDGET_GB="${TARGET_BUDGET_GB:-20}"
+# Full release/cutover rehearsals can exceed 75 GiB in `rust/target`
+# once debug + release + wasm + test artifacts are present.
+TARGET_BUDGET_GB="${TARGET_BUDGET_GB:-80}"
 RUST_TMP_BUDGET_GB="${RUST_TMP_BUDGET_GB:-1}"
 PLAYWRIGHT_CACHE_BUDGET_GB="${PLAYWRIGHT_CACHE_BUDGET_GB:-5}"
-PROJECT_BUDGET_GB="${PROJECT_BUDGET_GB:-30}"
+# Keep project-root budget above rust-target by default so aggregate checks are coherent.
+PROJECT_BUDGET_GB="${PROJECT_BUDGET_GB:-$((TARGET_BUDGET_GB + 10))}"
 
 for arg in "$@"; do
   case "$arg" in

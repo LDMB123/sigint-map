@@ -181,6 +181,7 @@ echo "[cutover] ensure Playwright Chromium (install if needed)"
 		(cd "${E2E_DIR}" && RUST_E2E="${RUST_E2E}" BASE_URL="${BASE_URL}" npm run test:e2e -- \
 		  tests/e2e/rust-runtime.spec.js \
 		  tests/e2e/rust-offline.spec.js \
+		  tests/e2e/rust-ai-degradation.spec.js \
 		  tests/e2e/rust-import-completes.spec.js \
 		  tests/e2e/rust-visual.spec.js \
 		  tests/e2e/rust-search.spec.js \

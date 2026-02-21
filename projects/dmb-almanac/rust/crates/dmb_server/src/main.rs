@@ -323,6 +323,7 @@ async fn main() {
         ))
         .with_state(state);
     let coop_enabled = coop_coep_enabled();
+    let app = apply_baseline_security_headers(app);
     let app = apply_coop_headers(app, coop_enabled);
     if !coop_enabled {
         tracing::warn!(
@@ -351,6 +352,27 @@ fn coop_coep_enabled() -> bool {
         Ok(value) => value != "0" && value.to_lowercase() != "false",
         Err(_) => true,
     }
+}
+
+fn apply_baseline_security_headers(app: Router) -> Router {
+    app.layer(SetResponseHeaderLayer::if_not_present(
+        HeaderName::from_static("x-content-type-options"),
+        HeaderValue::from_static("nosniff"),
+    ))
+    .layer(SetResponseHeaderLayer::if_not_present(
+        HeaderName::from_static("x-frame-options"),
+        HeaderValue::from_static("DENY"),
+    ))
+    .layer(SetResponseHeaderLayer::if_not_present(
+        HeaderName::from_static("referrer-policy"),
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
+    ))
+    .layer(SetResponseHeaderLayer::if_not_present(
+        HeaderName::from_static("permissions-policy"),
+        HeaderValue::from_static(
+            "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+        ),
+    ))
 }
 
 fn apply_coop_headers(app: Router, enabled: bool) -> Router {
@@ -431,6 +453,45 @@ mod tests {
                 .get("cross-origin-embedder-policy")
                 .and_then(|v| v.to_str().ok()),
             Some("require-corp")
+        );
+    }
+
+    #[tokio::test]
+    async fn baseline_security_headers_enabled() {
+        let app =
+            apply_baseline_security_headers(Router::new().route("/health", get(|| async { "ok" })));
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .expect("request body"),
+            )
+            .await
+            .expect("response");
+        assert_eq!(response.status(), StatusCode::OK);
+        let headers = response.headers();
+        assert_eq!(
+            headers
+                .get("x-content-type-options")
+                .and_then(|v| v.to_str().ok()),
+            Some("nosniff")
+        );
+        assert_eq!(
+            headers.get("x-frame-options").and_then(|v| v.to_str().ok()),
+            Some("DENY")
+        );
+        assert_eq!(
+            headers.get("referrer-policy").and_then(|v| v.to_str().ok()),
+            Some("strict-origin-when-cross-origin")
+        );
+        assert_eq!(
+            headers
+                .get("permissions-policy")
+                .and_then(|v| v.to_str().ok()),
+            Some(
+                "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+            )
         );
     }
 
