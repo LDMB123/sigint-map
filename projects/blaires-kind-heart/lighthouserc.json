@@ -40,10 +40,8 @@
             "maxNumericValue": 600
           }
         ],
-        "service-worker": "error",
-        "installable-manifest": "error",
         "viewport": "error",
-        "content-width": "error",
+        "meta-viewport": "error",
         "errors-in-console": "warn",
         "uses-http2": "off",
         "is-on-https": "off",

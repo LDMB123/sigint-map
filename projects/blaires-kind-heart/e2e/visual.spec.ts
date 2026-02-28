@@ -31,6 +31,10 @@ async function stabilizeForSnapshots(page: import("@playwright/test").Page): Pro
         opacity: 0 !important;
         filter: none !important;
       }
+      .toast, [popover].toast {
+        display: none !important;
+        visibility: hidden !important;
+      }
       .loading-screen::before,
       .loading-screen::after,
       .panel-body::before,
@@ -107,32 +111,35 @@ async function waitForDomSettle(
   quietMs = 300,
   timeoutMs = 10_000
 ): Promise<void> {
-  await page.waitForFunction(
-    async ({ sel, quiet }) => {
+  // Install MutationObserver that sets a data attribute after quiet period
+  await page.evaluate(
+    ({ sel, quiet }) => {
       const root = document.querySelector(sel);
-      if (!root) {
-        return false;
-      }
-      await new Promise<void>(resolve => {
-        let timer = window.setTimeout(done, quiet);
-        const observer = new MutationObserver(() => {
-          clearTimeout(timer);
-          timer = window.setTimeout(done, quiet);
-        });
-        function done(): void {
-          observer.disconnect();
-          resolve();
-        }
-        observer.observe(root, {
-          subtree: true,
-          childList: true,
-          attributes: true,
-          characterData: true
-        });
+      if (!root) return;
+      root.removeAttribute("data-dom-settled");
+      let timer = window.setTimeout(done, quiet);
+      const observer = new MutationObserver(() => {
+        clearTimeout(timer);
+        timer = window.setTimeout(done, quiet);
       });
-      return true;
+      function done(): void {
+        observer.disconnect();
+        root!.setAttribute("data-dom-settled", "true");
+      }
+      observer.observe(root, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ["class", "style", "hidden"],
+        characterData: true,
+      });
     },
-    { sel: selector, quiet: quietMs },
+    { sel: selector, quiet: quietMs }
+  );
+  // Synchronous poll for the attribute set by the observer
+  await page.waitForFunction(
+    (sel) => document.querySelector(sel)?.hasAttribute("data-dom-settled") === true,
+    selector,
     { timeout: timeoutMs }
   );
 }

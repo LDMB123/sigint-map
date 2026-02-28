@@ -7,12 +7,16 @@
   padding: 0;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 html {
   font-family: var(--font-family);
   font-size: 16px;
   color: var(--color-text);
   background: var(--color-bg);
-  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -62,7 +66,7 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: url('/noise.png') repeat;
+  background: url('/noise.webp') repeat;
   background-size: 64px 64px;
   mix-blend-mode: soft-light;
   opacity: 0.6;
@@ -73,6 +77,40 @@ body::before {
 /* Page Visibility API: Pause all animations when tab hidden (GPU savings) */
 body[data-animations-paused] * {
   animation-play-state: paused !important;
+}
+
+/* When animations are paused (tab hidden / headless preview), prevent entrance
+   animations from locking elements at their from-keyframe opacity:0 state.
+   fill-mode:both + paused = stuck invisible. Force final visible state instead.
+   Covers: home, stories, tracker, quests, rewards, games panels. */
+body[data-animations-paused] .entrance-visible,
+body[data-animations-paused] .home-btn,
+body[data-animations-paused] .home-title,
+body[data-animations-paused] .story-cover,
+body[data-animations-paused] .story-illustration,
+body[data-animations-paused] .story-scene,
+body[data-animations-paused] .story-scene--enter,
+body[data-animations-paused] .story-text,
+body[data-animations-paused] .story-choice,
+body[data-animations-paused] .story-feedback,
+body[data-animations-paused] .kind-btn,
+body[data-animations-paused] .act-item,
+body[data-animations-paused] .quest-card,
+body[data-animations-paused] .sticker-slot--new,
+body[data-animations-paused] .sticker-cell--new,
+body[data-animations-paused] .sticker-detail-overlay,
+body[data-animations-paused] .sticker-detail-card,
+body[data-animations-paused] .game-card,
+body[data-animations-paused] .game-end-screen,
+body[data-animations-paused] .memory-card,
+body[data-animations-paused] .paint-template-picker,
+body[data-animations-paused] .paint-pattern-picker,
+body[data-animations-paused] .magic-entrance,
+body[data-animations-paused] .scale-pop-in,
+body[data-animations-paused] .fade-in-up {
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
 }
 
 /* Safe area insets for iPad */
@@ -111,108 +149,8 @@ body[data-animations-paused] * {
   border: 0;
 }
 
-/* ====== LOADING SCREEN ====== */
-.loading-screen {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-loading);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xl);
-  background: linear-gradient(135deg, #FFE4ED, #E8D5FF, #D6EFFF, #D4F5E0, #FFF4C7, #FFE4ED);
-  background-size: 400% 400%;
-  animation: rainbow-bg-shift 6s ease-in-out infinite;
-
-  &[hidden] {
-    display: none;
-  }
-
-  &::before,
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  /* Phase 4.8: Reduced from 6 radial gradients to 2 for 66% reduction */
-  &::before {
-    background:
-      radial-gradient(8px 8px at 25% 35%, rgba(255, 143, 171, 0.7), transparent),
-      radial-gradient(8px 8px at 75% 65%, rgba(181, 126, 255, 0.6), transparent);
-    animation: loading-sparkle-drift 8s ease-in-out infinite alternate;
-  }
-
-  /* Phase 4.8: Reduced from 4 radial gradients to 1 for 75% reduction */
-  &::after {
-    background: radial-gradient(6px 6px at 50% 50%, rgba(255, 211, 45, 0.65), transparent);
-    animation: loading-sparkle-float 12s ease-in-out infinite alternate-reverse;
-  }
-
-  &--exit {
-    animation: loading-exit 0.6s var(--ease-smooth) forwards;
-  }
-}
-
-.loading-sparkle {
-  width: min(200px, 45vw);
-  height: auto;
-  filter: drop-shadow(0 8px 32px rgba(181, 126, 255, 0.5));
-  animation: sparkle-float 2s var(--ease-elastic) infinite alternate;
-  position: relative;
-  z-index: 1;
-}
-
-@keyframes sparkle-float {
-  0% { transform: translateY(0) scale(1); }
-  100% { transform: translateY(-8px) scale(1.03); }
-}
-
-.loading-title {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-pink-dark);
-  text-align: center;
-  text-shadow: 0 2px 12px rgba(255, 143, 171, 0.4);
-  position: relative;
-  z-index: 1;
-}
-
-.loading-bar {
-  width: min(280px, 80%);
-  height: 14px;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  border: 2px solid rgba(255, 143, 171, 0.3);
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 0 12px rgba(255, 143, 171, 0.25);
-}
-
-.loading-bar-fill {
-  height: 100%;
-  background: var(--gradient-rainbow);
-  background-size: 200% 100%;
-  border-radius: var(--radius-sm);
-  animation: shimmer-slide 2s linear infinite;
-  transition: width var(--duration-normal) var(--ease-smooth);
-}
-
-@keyframes rainbow-bg-shift {
-  0%, 100% { background-position: 0% 50%; }
-  25% { background-position: 50% 100%; }
-  50% { background-position: 100% 50%; }
-  75% { background-position: 50% 0%; }
-}
-
-@keyframes loading-exit {
-  0% { transform: scale(1); opacity: 1; filter: blur(0); }
-  100% { transform: scale(1.1); opacity: 0; filter: blur(8px); }
-}
+/* Loading screen styles are inlined in index.html for LCP <2s target.
+   See <style> block in <head> — do not duplicate here. */
 
 /* ====== TOAST (Popover API) ====== */
 .toast {
@@ -232,29 +170,50 @@ body[data-animations-paused] * {
   text-align: center;
   max-width: min(360px, 90vw);
   animation: toast-pop var(--duration-normal) var(--ease-elastic);
+}
 
-  &--exit {
-    animation: toast-exit var(--duration-normal) var(--ease-snap) forwards;
-  }
+.toast--exit {
+  animation: toast-exit var(--duration-normal) var(--ease-snap) forwards;
 }
 
 @keyframes toast-pop {
-  0% { transform: scale(0.3); opacity: 0; }
-  60% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes toast-exit {
-  0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(0.8) translateY(20px); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0.8) translateY(20px);
+    opacity: 0;
+  }
 }
 
 /* ====== PANEL SYSTEM ====== */
 .panel {
   position: fixed;
   inset: 0;
-  z-index: var(--z-panel);
-  background: var(--color-bg);
+  z-index: var(--z-panel-full);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: color-mix(in srgb, var(--color-bg) 75%, transparent);
+  backdrop-filter: var(--backdrop-heavy);
+  -webkit-backdrop-filter: var(--backdrop-heavy);
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -266,9 +225,17 @@ body[data-animations-paused] * {
 
   &[hidden] {
     display: none;
-    /* Defer rendering of hidden panels until needed (Safari 26.2) */
-    content-visibility: auto;
-    contain-intrinsic-size: auto 100vh;
+    /* Note: content-visibility: auto removed — contradicts display: none
+       (display: none already prevents rendering, content-visibility is redundant) */
+
+    /* Stop ALL animations on hidden panels — saves GPU cycles on A15.
+       display:none alone doesn't reliably stop CSS animations in Safari;
+       the compositor may still process them. */
+    & *,
+    &::before,
+    &::after {
+      animation-play-state: paused !important;
+    }
   }
 
   /* Phase 3: GPU acceleration hints during View Transitions */
@@ -279,8 +246,9 @@ body[data-animations-paused] * {
 
 .panel-header {
   display: flex;
-  align-items: center;
-  gap: var(--space-md);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
   padding: var(--space-md) var(--space-lg);
   background:
     /* Animated shimmer sweep */
@@ -290,7 +258,7 @@ body[data-animations-paused] * {
     /* Frosted glass base */
     linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 250, 252, 0.85) 100%);
   background-size: 200% 100%, 3px 3px, 100% 100%;
-  backdrop-filter: blur(8px) saturate(1.5); /* Optimized from blur(24px) for mobile performance */
+  backdrop-filter: var(--backdrop-heavy);
   border-bottom: 2px solid rgba(255, 143, 171, 0.2);
   /* Inner glow for depth */
   box-shadow:
@@ -305,8 +273,15 @@ body[data-animations-paused] * {
 }
 
 @keyframes panel-header-shimmer {
-  0%, 100% { background-position: -200% 0, 0 0, 0 0; }
-  50% { background-position: 200% 0, 0 0, 0 0; }
+
+  0%,
+  100% {
+    background-position: -200% 0, 0 0, 0 0;
+  }
+
+  50% {
+    background-position: 200% 0, 0 0, 0 0;
+  }
 }
 
 .panel-back {
@@ -330,6 +305,110 @@ body[data-animations-paused] * {
   }
 }
 
+/* ── Floating Back Button (for full screen arenas) ── */
+.floating-back-btn {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: var(--z-overlay);
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border: 3px solid var(--color-purple);
+  background: var(--color-surface);
+  border-radius: var(--radius-round);
+  font-size: var(--font-size-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-md), 0 0 12px rgba(181, 126, 255, 0.4);
+  transition: transform var(--duration-fast) var(--ease-bounce), background-color var(--duration-fast);
+  touch-action: manipulation;
+}
+
+.floating-back-btn:active {
+  transform: scale(0.85);
+  background: var(--color-purple-light);
+}
+
+/* ── Breadcrumb Navigation ── */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0;
+  font-size: var(--font-size-md);
+}
+
+.breadcrumb-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  min-width: 48px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.breadcrumb-btn:active {
+  background-color: rgba(255, 143, 171, 0.15);
+  transform: scale(0.92);
+}
+
+.breadcrumb-sep {
+  color: var(--color-text-muted);
+  font-size: 1.2rem;
+  user-select: none;
+}
+
+.breadcrumb-current {
+  font-size: 1.1rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+/* ── Panel Color Identity ── */
+#panel-tracker .panel-header {
+  border-bottom: 3px solid var(--color-pink);
+}
+
+#panel-adventures .panel-header {
+  border-bottom: 3px solid var(--color-purple);
+}
+
+#panel-mystuff .panel-header {
+  border-bottom: 3px solid var(--color-gold);
+}
+
+#panel-quests .panel-header {
+  border-bottom: 3px solid var(--color-purple);
+}
+
+#panel-stories .panel-header {
+  border-bottom: 3px solid var(--color-purple);
+}
+
+#panel-games .panel-header {
+  border-bottom: 3px solid var(--color-orange);
+}
+
+#panel-rewards .panel-header {
+  border-bottom: 3px solid var(--color-gold);
+}
+
+#panel-gardens .panel-header {
+  border-bottom: 3px solid var(--color-green);
+}
+
+#panel-progress .panel-header {
+  border-bottom: 3px solid var(--color-blue);
+}
+
 .panel-title {
   flex: 1;
   font-family: var(--font-family-display);
@@ -342,6 +421,7 @@ body[data-animations-paused] * {
 .panel-body {
   flex: 1;
   padding: var(--space-lg);
+  min-height: 200px;
   /* Extra bottom padding: safe area + room for companion overlay */
   padding-bottom: calc(max(var(--space-lg), env(safe-area-inset-bottom, 0px)) + 160px);
   /* Phase 2.1: Isolate panel layout from document tree (faster View Transitions) */
@@ -369,88 +449,104 @@ body[data-animations-paused] * {
   animation: float-emoji 3s ease-in-out infinite;
 }
 
-/* ====== ONBOARDING OVERLAY ====== */
-.onboarding-overlay {
+/* ====== ONBOARDING SPOTLIGHT SYSTEM ====== */
+.onboarding-spotlight-overlay {
   position: fixed;
   inset: 0;
-  z-index: var(--z-loading);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xl);
-  background: linear-gradient(135deg, var(--color-purple-light), var(--color-pink-light), var(--color-yellow-light), var(--color-blue-light));
-  background-size: 400% 400%;
-  animation: onboarding-gradient 6s ease infinite;
+  z-index: var(--z-onboarding);
+  background: rgba(88, 44, 131, 0.65);
+  pointer-events: none;
+}
+
+.onboarding-spotlight {
+  position: absolute;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 0 0 9999px rgba(88, 44, 131, 0.65);
+  pointer-events: none;
+  transition: all var(--duration-normal) var(--ease-standard);
+}
+
+
+@keyframes spotlight-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 9999px rgba(88, 44, 131, 0.65), 0 0 0 0 rgba(255, 143, 171, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 0 9999px rgba(88, 44, 131, 0.65), 0 0 20px 8px rgba(255, 143, 171, 0.5);
+  }
+}
+
+.onboarding-dialog {
+  position: fixed;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-onboarding-dialog);
+  background: var(--color-white);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl) var(--space-2xl, 2rem);
+  box-shadow: var(--shadow-card-hover);
   text-align: center;
-  padding: var(--space-xl);
+  max-width: min(380px, 88vw);
+  animation: onboarding-dialog-pop var(--duration-normal) var(--ease-overshoot) forwards;
 }
 
-.onboarding-sparkle {
-  font-size: 9rem;
-  line-height: 1;
-  animation: onboarding-bounce 2s var(--ease-bounce) infinite alternate;
-  filter: drop-shadow(0 6px 24px rgba(181, 126, 255, 0.5));
+@keyframes onboarding-dialog-pop {
+  0% {
+    transform: translateX(-50%) scale(0.5);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
 }
 
-.onboarding-title {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-heavy);
-  color: var(--color-pink-dark);
-  text-shadow: 0 3px 16px rgba(255, 143, 171, 0.3);
-}
-
-.onboarding-subtitle {
-  font-size: var(--font-size-xl);
+.onboarding-dialog-text {
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   color: var(--color-text);
-  max-width: 340px;
   line-height: 1.5;
+  margin-bottom: var(--space-lg);
 }
 
-.onboarding-btn {
-  padding: var(--space-lg) var(--space-2xl);
-  background: var(--gradient-magic);
+.onboarding-dialog-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md) var(--space-xl);
+  background: var(--gradient-button-pink);
   color: var(--color-white);
   border: none;
-  border-radius: var(--radius-xl);
-  font-size: var(--font-size-xl);
+  border-radius: 999px;
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-heavy);
   font-family: inherit;
+  min-height: 48px;
   cursor: pointer;
-  box-shadow: var(--shadow-glow-rainbow);
-  min-height: var(--touch-large);
-  transition: transform var(--duration-fast) var(--ease-bounce);
+  box-shadow: var(--shadow-card-hover);
+  transition: transform var(--duration-fast) var(--ease-overshoot);
+  animation: jelly-wobble 0.6s var(--ease-overshoot);
+}
+
+.onboarding-dialog-btn:active {
+  transform: scale(0.93);
+}
+
+.onboarding-dialog-sparkle {
+  width: 120px;
+  height: auto;
+  margin-bottom: var(--space-md);
+}
+
+/* Elevate spotlighted element above overlay */
+.onboarding-elevated {
   position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%);
-    animation: shimmer-slide 2.5s ease-in-out infinite;
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-}
-
-@keyframes onboarding-gradient {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-@keyframes onboarding-bounce {
-  from { transform: translateY(0) rotate(-5deg); }
-  to { transform: translateY(-24px) rotate(5deg); }
-}
-
-@keyframes shimmer-slide {
-  0% { background-position: -150% 0, 0 0; }
-  50%, 100% { background-position: 150% 0, 0 0; }
+  z-index: var(--z-onboarding-elevated);
 }
 
 /* ====== STAGGER ENTRANCE (boot sequence) ====== */
@@ -462,7 +558,7 @@ body[data-animations-paused] * {
   opacity: 0;
   transform: scale(0.7) translateY(20px);
   transition: opacity var(--duration-normal) var(--ease-smooth),
-              transform var(--duration-normal) var(--ease-bounce);
+    transform var(--duration-normal) var(--ease-bounce);
 }
 
 .entrance-visible {
@@ -481,29 +577,58 @@ body[data-animations-paused] * {
 
 /* Stagger home buttons — Safari 26.2 sibling-index() */
 [data-home-btn].entrance-visible {
+  /* Safari 26.2 sibling-index() — auto-calculate position in DOM */
   transition-delay: calc(200ms + (sibling-index() - 1) * 80ms);
 }
 
 /* Sparkle gets a more dramatic entrance — flies in from below */
 [data-companion].entrance-visible {
   animation: sparkle-entrance 0.6s var(--ease-elastic) forwards;
-  animation-delay: 670ms; /* Phase 1.3: Delayed start for dramatic finale */
+  animation-delay: 670ms;
+  /* Phase 1.3: Delayed start for dramatic finale */
 }
 
 @keyframes sparkle-entrance {
-  0% { opacity: 0; transform: scale(0.3) translateY(80px); }
-  60% { opacity: 1; transform: scale(1.1) translateY(-10px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateY(80px);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scale(1.1) translateY(-10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
-@keyframes loading-sparkle-drift {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(15px, -20px) rotate(180deg); }
-  100% { transform: translate(-10px, 10px) rotate(360deg); }
+/* ====== INLINE EMOJI REPLACEMENTS ====== */
+/* Utilities to cleanly inject .webp stickers into text flows without breaking line height */
+.inline-emoji {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1.4em;
+  height: 1.4em;
+  margin-top: -0.2em;
+  margin-bottom: -0.1em;
+  margin-right: 0.25em;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
-@keyframes loading-sparkle-float {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-20px, 15px) scale(1.1); }
-  100% { transform: translate(10px, -10px) scale(0.95); }
+/* ── Accessibility: reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .toast-notification,
+  .panel-header,
+  .onboarding-dialog,
+  .jelly-wobble,
+  .sparkle-entrance,
+  .idle-glow-pulse,
+  .float-emoji {
+    animation: none !important;
+    transition: none !important;
+  }
 }

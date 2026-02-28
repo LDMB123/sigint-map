@@ -1,138 +1,58 @@
 # Persistence Contract
 
-Last updated: 2026-02-14
-Owner: Engineering
+Defines the invariants that must hold between the Rust client (`db_client.rs`),
+the JS worker (`public/db-worker.js`), and the Mom Mode export/restore flow
+(`rust/mom_mode.rs`). Verified by `npm run qa:db-contract`.
 
-This document defines the data-layer contract for local persistence and the required checks that protect it.
+## Worker Protocol
 
-## Scope
-- SQLite worker schema and migration behavior.
-- Rust/worker protocol compatibility.
-- Storage backend probe behavior and fallback chain.
-- Queue/error table lifecycle that is owned outside the worker schema bootstrap.
-- Required verification gate: `npm run qa:db-contract`.
+The Rust client and the DB worker communicate via a versioned message protocol.
+`DB_WORKER_API_VERSION` must match on both sides:
 
-## Canonical Sources
-- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/public/db-worker.js`
-- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/rust/db_messages.rs`
-- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/rust/offline_queue.rs`
-- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/rust/errors/reporter.rs`
-- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/scripts/check-db-contract.mjs`
-- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/e2e/db-contract.spec.ts`
+- **Rust** (`rust/db_messages.rs`): `DB_WORKER_API_VERSION: u16 = 1`
+- **Worker** (`public/db-worker.js`): `self.DB_WORKER_API_VERSION = 1`
 
-## Protocol Contract
-- `DB_WORKER_API_VERSION` in Rust must match `self.DB_WORKER_API_VERSION` in the worker.
-- Worker must reject incompatible legacy clients below `self.DB_WORKER_MIN_CLIENT_API_VERSION`.
-- Required request types: `Init`, `Exec`, `Query`, `Export`, `Restore`.
-- `Init` response may include additive metadata fields (`backend`, `backend_probe_*`) and clients must ignore unknown fields for forward compatibility.
+If the client version is below `DB_WORKER_MIN_CLIENT_API_VERSION`, the worker
+rejects the connection and the app shows a hard error.
 
-## Backend Probe Contract
-- Probe mode is native-capability-only (`backend_probe_mode=native`).
-- Legacy UA probe path has been removed (probe version `3`).
-- `db_probe` URL query parameter is deprecated and must not be relied on by clients.
-- Native probe requirements:
-  - OPFS sync path must require both `navigator.storage.getDirectory` and `FileSystemSyncAccessHandle`.
-  - If native capability check fails, worker must continue fallback chain (`kvvfs` then `memory+blob`).
-- Compatibility rule:
-  - `Init` response remains additive and must preserve `backend_probe_*` metadata fields.
+## Schema Version
 
-## Schema Version Contract
-- Worker schema version is defined by `DB_SCHEMA_VERSION` in `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/public/db-worker.js`.
-- Persisted value is stored at `meta.schema_version`.
-- On startup, worker must fail fast if persisted `meta.schema_version` is newer than `DB_SCHEMA_VERSION` (downgrade protection).
-- After successful migrations/bootstrap, worker must write current `DB_SCHEMA_VERSION` into `meta.schema_version`.
-- Any schema change that affects storage shape must include:
-  1. migration update,
-  2. `DB_SCHEMA_VERSION` bump when compatibility boundary changes,
-  3. gate/doc updates in this file and `qa:db-contract`.
+The worker tracks `meta.schema_version` in the `meta` table. On every open:
 
-## Schema Contract
-Required core tables in worker bootstrap schema:
-- `kind_acts`
-- `quests`
-- `streaks`
-- `stories_progress`
-- `stickers`
-- `settings`
-- `ai_cache`
-- `meta`
-- `game_scores`
-- `weekly_goals`
-- `mom_notes`
-- `skill_mastery`
-- `weekly_insights`
-- `reflection_prompts`
-- `badges`
-- `companion_skins`
-- `gardens`
-
-Required worker migrations:
-- `kind_acts.reflection_type`
-- `kind_acts.bonus_context`
-- `kind_acts.emotion_selected`
-- `kind_acts.combo_day`
-- `stories_progress.unlock_tier`
-- `weekly_insights.skill_breakdown`
-
-Externally-owned persistence tables:
-- `offline_queue` is created/managed by `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/rust/offline_queue.rs`.
-- `errors` is created/managed by `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/rust/errors/reporter.rs`.
-
-## Integrity and Durability Contract
-- DB integrity must pass: `PRAGMA integrity_check = ok`.
-- Foreign key check must be empty: `PRAGMA foreign_key_check` returns zero rows.
-- Queue flush order must be deterministic (`ORDER BY timestamp ASC`).
-- Successful queue entries must be selectively deleted (not full-table destructive cleanup).
+1. Read the stored `meta.schema_version`.
+2. If stored version > `DB_SCHEMA_VERSION` → throw (downgrade protection).
+3. Apply any pending migrations in order.
+4. Write the new `meta.schema_version`.
 
 ## Export Contract
-- Parent dashboard must expose both:
-  - JSON backup export (`data-mom-export-json`)
-  - Kind acts CSV export (`data-mom-export-csv`)
-- Exported settings data must exclude `parent_pin`.
-- Filename contract:
-  - `blaires-kind-heart-export-YYYY-MM-DD.json`
-  - `blaires-kind-heart-kind-acts-YYYY-MM-DD.csv`
-- Runtime gate must validate downloaded payload content:
-  - JSON has `export_format_version = 1` and valid `schema_version`
-  - JSON `tables.settings` excludes `parent_pin`
-  - CSV header matches the canonical kind-acts export columns
+
+Mom Mode surfaces three data-export actions in the dashboard:
+
+- **Export JSON** (`data-mom-export-json`): Full snapshot of all tables.
+  Filename: `blaires-kind-heart-export-<date>.json`.
+  The payload includes `export_format_version: 1`.
+  `parent_pin` is excluded from the exported settings rows
+  (`SELECT key, value FROM settings WHERE key != 'parent_pin'`).
+
+- **Export Acts CSV** (`data-mom-export-csv`): Kind-acts log only.
+  Filename: `blaires-kind-heart-kind-acts-<date>.csv`.
+  Columns: `id,category,description,hearts_earned,created_at,day_key,reflection_type,emotion_selected,bonus_context,combo_day`.
 
 ## Restore Contract
-- Parent dashboard must expose restore controls:
-  - Restore trigger (`data-mom-restore-json`)
-  - Hidden file input (`data-mom-restore-input`)
-- Restore payload must be a JSON backup with:
-  - `export_format_version = 1`
-  - `schema_version` present and `<= DB_SCHEMA_VERSION`
-  - `tables` object payload
-- Worker restore behavior requirements:
-  - Apply restore in one transaction.
-  - Preserve current `settings.parent_pin` even when restoring settings data.
-  - Rewrite `meta.schema_version` to current `DB_SCHEMA_VERSION` after restore.
-- Runtime gate must validate round-trip behavior:
-  - Post-export mutations are removed after restore.
-  - Pre-export rows are restored.
-  - `parent_pin` remains intact after restore.
+
+- **Restore JSON** (`data-mom-restore-json`): Re-imports a previously exported
+  snapshot via `data-mom-restore-input` (hidden `<input type="file">`).
+- Dispatches `restore_snapshot_for_test` / `db_client::restore_snapshot` which
+  sends a `Restore` request to the worker.
+- The worker calls `restoreFromSnapshot(snapshotJson)`, deletes all rows, and
+  re-inserts from the snapshot.
+- `parent_pin` in settings is preserved across restores
+  (`DELETE FROM settings WHERE key != 'parent_pin'`).
+- After import, `writeSchemaVersion(db, DB_SCHEMA_VERSION)` re-stamps the
+  schema version.
 
 ## QA Gate
-Run:
-```bash
-npm run qa:db-contract
-```
 
-This gate executes:
-1. Static contract checks (`scripts/check-db-contract.mjs`).
-2. Runtime worker contract test (`e2e/db-contract.spec.ts` via Playwright).
-
-## Change Process
-Any persistence-affecting change must:
-1. Update canonical implementation files.
-2. Update this document if behavior/ownership changes.
-3. Update static/runtime contract checks when schema/protocol changes.
-4. Run `npm run qa:db-contract` locally before merge.
-5. Keep migrations additive/backward-compatible unless an explicit breaking migration plan is approved.
-
-## Pending Decisions
-- Keep or retire `quest_chains` and `weekly_themes` schema surfaces.
-- Define schema-version bump policy for additive vs compatibility-breaking migrations.
-- Expand export scope beyond current JSON+CSV baseline (for example, signed archive or selective export UI).
+Run `npm run qa:db-contract` to verify all static + runtime invariants listed
+above. The check covers source patterns in `db-worker.js`, `db_messages.rs`,
+`offline_queue.rs`, `errors/reporter.rs`, `mom_mode.rs`, and this document.

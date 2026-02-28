@@ -103,6 +103,25 @@ test.describe("critical user flows", () => {
     ]);
     expect(triggered).toBe(true);
 
+    const confirmed = await Promise.race([
+      page.evaluate(() => {
+        return new Promise<boolean>((resolve) => {
+          const check = setInterval(() => {
+            const btn = document.querySelector(".quest-confirm-prompt button");
+            if (btn) {
+              clearInterval(check);
+              btn.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+              resolve(true);
+            }
+          }, 100);
+        });
+      }),
+      new Promise<boolean>((resolve) => {
+        setTimeout(() => resolve(false), 8_000);
+      })
+    ]);
+    expect(confirmed).toBe(true);
+
     await expect
       .poll(() => page.evaluate(() => document.querySelectorAll(".quest-card--done").length), { timeout: 30_000 })
       .toBeGreaterThan(0);

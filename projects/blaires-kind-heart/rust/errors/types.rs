@@ -46,44 +46,44 @@ pub enum AppError {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ErrorSeverity {
-    Critical,  // App-breaking, requires immediate attention
-    Error,     // Functionality broken, but app continues
-    Warning,   // Degraded functionality, user should know
-    Info,      // FYI, no action needed
+    Critical, // App-breaking, requires immediate attention
+    Error,    // Functionality broken, but app continues
+    Warning,  // Degraded functionality, user should know
+    Info,     // FYI, no action needed
 }
 
 impl AppError {
     /// Get the severity level for this error type.
-    pub fn severity(&self) -> ErrorSeverity {
+    pub const fn severity(&self) -> ErrorSeverity {
         match self {
-            AppError::DatabaseInit { .. } => ErrorSeverity::Critical,
-            AppError::RenderPanic { .. } => ErrorSeverity::Critical,
-            AppError::StorageQuota { .. } => ErrorSeverity::Critical,
-            AppError::DatabaseOperation { .. } => ErrorSeverity::Error,
-            AppError::OfflineQueueFlush { .. } => ErrorSeverity::Error,
-            AppError::StickerMapping { .. } => ErrorSeverity::Error,
-            AppError::WebLockTimeout { .. } => ErrorSeverity::Error,
+            AppError::DatabaseInit { .. }
+            | AppError::RenderPanic { .. }
+            | AppError::StorageQuota { .. } => ErrorSeverity::Critical,
+            AppError::DatabaseOperation { .. }
+            | AppError::OfflineQueueFlush { .. }
+            | AppError::StickerMapping { .. }
+            | AppError::WebLockTimeout { .. } => ErrorSeverity::Error,
             AppError::GpuTimeout { .. } => ErrorSeverity::Warning,
             AppError::Generic { .. } => ErrorSeverity::Info,
         }
     }
 
     /// Get a short title for display.
-    #[allow(dead_code)]
+    #[allow(dead_code)] // Called from debug::tabs::errors — compiler can't trace gesture-triggered path
     pub fn title(&self) -> String {
         match self {
-            AppError::DatabaseInit { backend, .. } => format!("DB Init Failed ({})", backend),
-            AppError::DatabaseOperation { operation, .. } => format!("DB {} Failed", operation),
+            AppError::DatabaseInit { backend, .. } => format!("DB Init Failed ({backend})"),
+            AppError::DatabaseOperation { operation, .. } => format!("DB {operation} Failed"),
             AppError::GpuTimeout { .. } => "GPU Timeout".to_string(),
             AppError::OfflineQueueFlush { failed_count, .. } => {
-                format!("Queue Flush Failed ({} items)", failed_count)
+                format!("Queue Flush Failed ({failed_count} items)")
             }
             AppError::StickerMapping { skill_name, .. } => {
-                format!("Unknown Skill: {}", skill_name)
+                format!("Unknown Skill: {skill_name}")
             }
-            AppError::RenderPanic { component, .. } => format!("Render Panic: {}", component),
+            AppError::RenderPanic { component, .. } => format!("Render Panic: {component}"),
             AppError::StorageQuota { .. } => "Storage Quota Exceeded".to_string(),
-            AppError::WebLockTimeout { lock_name, .. } => format!("Lock Timeout: {}", lock_name),
+            AppError::WebLockTimeout { lock_name, .. } => format!("Lock Timeout: {lock_name}"),
             AppError::Generic { message, .. } => message.clone(),
         }
     }
@@ -92,18 +92,31 @@ impl AppError {
     pub fn description(&self) -> String {
         match self {
             AppError::DatabaseInit { backend, reason } => {
-                format!("Failed to initialize {} database: {}", backend, reason)
+                format!("Failed to initialize {backend} database: {reason}")
             }
-            AppError::DatabaseOperation { operation, sql, error } => {
-                format!("Operation '{}' failed on query '{}': {}", operation, sql, error)
+            AppError::DatabaseOperation {
+                operation,
+                sql,
+                error,
+            } => {
+                format!("Operation '{operation}' failed on query '{sql}': {error}")
             }
-            AppError::GpuTimeout { timeout_ms, context } => {
-                format!("GPU init timed out after {}ms: {}", timeout_ms, context)
+            AppError::GpuTimeout {
+                timeout_ms,
+                context,
+            } => {
+                format!("GPU init timed out after {timeout_ms}ms: {context}")
             }
-            AppError::OfflineQueueFlush { failed_count, reason } => {
-                format!("{} offline mutations failed to flush: {}", failed_count, reason)
+            AppError::OfflineQueueFlush {
+                failed_count,
+                reason,
+            } => {
+                format!("{failed_count} offline mutations failed to flush: {reason}")
             }
-            AppError::StickerMapping { skill_name, available_skills } => {
+            AppError::StickerMapping {
+                skill_name,
+                available_skills,
+            } => {
                 format!(
                     "Skill '{}' not found. Available: {}",
                     skill_name,
@@ -111,20 +124,24 @@ impl AppError {
                 )
             }
             AppError::RenderPanic { component, info } => {
-                format!("Component '{}' panicked during render: {}", component, info)
+                format!("Component '{component}' panicked during render: {info}")
             }
-            AppError::StorageQuota { requested_bytes, available_bytes } => {
+            AppError::StorageQuota {
+                requested_bytes,
+                available_bytes,
+            } => {
                 format!(
-                    "Storage quota exceeded. Requested: {} bytes, Available: {} bytes",
-                    requested_bytes, available_bytes
-                )
+                    "Storage quota exceeded. Requested: {requested_bytes} bytes, Available: {available_bytes} bytes")
             }
-            AppError::WebLockTimeout { lock_name, timeout_ms } => {
-                format!("Failed to acquire lock '{}' after {}ms", lock_name, timeout_ms)
+            AppError::WebLockTimeout {
+                lock_name,
+                timeout_ms,
+            } => {
+                format!("Failed to acquire lock '{lock_name}' after {timeout_ms}ms")
             }
             AppError::Generic { message, context } => {
                 if let Some(ctx) = context {
-                    format!("{} ({})", message, ctx)
+                    format!("{message} ({ctx})")
                 } else {
                     message.clone()
                 }

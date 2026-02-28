@@ -1,38 +1,33 @@
-# App Status - Blaire's Kind Heart
+# App Status
 
-Last updated: 2026-02-15
+Last updated: 2026-02-27
 
-## Executive Status
-- Runtime and contract checks are passing in the latest local verification cycle.
-- PWA health check passes in managed-server mode.
-- Full Playwright E2E suite passed in latest run.
-- Documentation has been reorganized and is now below the active token budget target.
-- Repository surface is cleaner (root screenshots archived, duplicate active docs removed).
-- iPadOS 26.2 simulator regression evidence has been captured via Xcode simulator tooling.
-- Rust dead-code warnings reduced from 4→3 with targeted `#[allow(dead_code)]` annotations.
+## Current State
 
-## Latest Verified Snapshot (2026-02-15)
-- `node --check public/runtime-diagnostics.js`: PASS
-- `node --check public/db-worker.js`: PASS
-- `npm run qa:pwa-contract`: PASS (`ok: true`)
-- `npm run qa:runtime`: PASS (`1 passed`)
-- `npm run qa:db-contract`: PASS (`2 passed`)
-- `npm run test:e2e`: PASS (`39 passed`, `1 skipped`)
-- `npm run test:e2e:all`: PASS (`40 passed`, `1 skipped`)
-- `npm run qa:docs-links`: PASS
-- `npm run qa:rust-warning-drift`: PASS (`warning_count=3`, `baseline=3`, improved from previous `4`)
-- `npm run test:e2e:webkit`: PASS (`1 passed`)
-- `npx playwright install webkit`: PASS (installed missing local WebKit runtime required by `test:e2e:all`)
-- `npm run token:baseline`: PASS (`active_est_tokens=24465`)
-- `npm run qa:docs-budget`: PASS (`budget=25000`)
-- Xcode iPad simulator panel capture: PASS (`home`, `stories`, `tracker` screenshots captured)
+- Build: production-ready (Trunk release, WASM optimized)
+- QA gates: all core release gates PASS as of 2026-02-21
+- Game polish: 23 fixes shipped 2026-02-27 (gameplay bugs, CSS, a11y)
+- Target: iPad mini 6, iPadOS 26.2, Safari 26.2
 
-Reference: `docs/STATUS_LEDGER.md`.
+## Physical Device Testing
 
-## Active Risks
-1. Physical iPad mini 6 regression has not yet been rerun for this verification cycle (simulator pass complete).
-2. QA-triggered release builds show 3 remaining dead-code warnings (debug utilities preserved with `#[allow(dead_code)]`).
+No physical iPad run recorded yet for this build.
+See `docs/TESTING.md` for iPad regression test procedure.
 
-## Immediate Next Actions
-1. Run and record physical iPad regression using `docs/TESTING.md`.
-2. Keep doc budget healthy as new docs are added (`npm run qa:docs-budget`).
+## Known Limitations
+
+- Physical iPad mini 6 regression run still required for this release cycle
+- webkit-smoke e2e tests require explicit `npm run test:e2e:webkit` (or `npm run test:e2e:all`)
+
+## Feature Status
+
+All core features implemented and verified:
+- Kind act tracker with hearts, streaks, and stickers
+- Quest system with weekly goals
+- Story engine (multi-page interactive stories)
+- Rewards panel with sticker collection (45 stickers)
+- Games: Memory, Hug-a-Heart, Catcher, Paint, Unicorn Run (deep polish pass complete)
+- Garden system with growth stages
+- Companion (Sparkle the Unicorn) with expressions
+- Mom mode with PIN protection
+- Offline-first via OPFS SQLite + service worker

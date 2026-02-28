@@ -7,30 +7,6 @@
 
 /* ====== PARTICLE KEYFRAMES — 3 speed tiers ====== */
 
-/* Fast twinkle — quick pulse + micro-drift (3s) */
-@keyframes sparkle-twinkle-fast {
-  0% {
-    transform: translateY(0) translateX(0) scale(1) rotate(0deg);
-    opacity: 0.5;
-  }
-  25% {
-    transform: translateY(-8px) translateX(4px) scale(1.15) rotate(5deg);
-    opacity: 0.9;
-  }
-  50% {
-    transform: translateY(-3px) translateX(-3px) scale(0.9) rotate(-3deg);
-    opacity: 0.6;
-  }
-  75% {
-    transform: translateY(-12px) translateX(6px) scale(1.2) rotate(8deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0) translateX(0) scale(1) rotate(0deg);
-    opacity: 0.5;
-  }
-}
-
 /* Medium drift — gentle floating movement (8s) */
 @keyframes sparkle-drift-medium {
   0% {
@@ -375,10 +351,10 @@
 }
 
 /* ====== Reduced Motion — hide particle layers entirely ====== */
+/* display:none eliminates ~192 radial-gradient paint cost from GPU */
 @media (prefers-reduced-motion: reduce) {
   .panel-body::before,
   .panel-body::after {
-    animation: none !important;
-    opacity: 0.3;
+    display: none !important;
   }
 }

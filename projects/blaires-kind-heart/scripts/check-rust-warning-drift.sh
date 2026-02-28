@@ -24,7 +24,13 @@ if ! cargo clippy --all-targets --all-features -- -W dead_code -W unused -W unre
   exit 1
 fi
 
-WARNING_COUNT="$(rg -c "^warning:" "${OUT_FILE}" || true)"
+WARNING_COUNT="$(awk '/^warning:/{c++} END {print c+0}' "${OUT_FILE}")"
+if ! [[ "${WARNING_COUNT}" =~ ^[0-9]+$ ]]; then
+  cat "${OUT_FILE}"
+  echo "[rust-warning-drift] FAIL: unable to parse warning count '${WARNING_COUNT}'"
+  rm -f "${OUT_FILE}"
+  exit 1
+fi
 echo "[rust-warning-drift] warning_count=${WARNING_COUNT}"
 echo "[rust-warning-drift] baseline=${BASELINE_COUNT}"
 

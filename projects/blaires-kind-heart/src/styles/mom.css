@@ -20,7 +20,7 @@
 .mom-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: var(--z-prompt);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -73,12 +73,13 @@
     transform var(--duration-fast) var(--ease-bounce),
     box-shadow var(--duration-fast) var(--ease-smooth);
 
-  &--filled {
-    background: linear-gradient(135deg, var(--color-purple) 0%, var(--color-purple-vivid) 100%);
-    border-color: var(--color-purple);
-    transform: scale(1.15);
-    box-shadow: 0 0 12px rgba(155, 48, 255, 0.35);
-  }
+}
+
+.mom-pin-dot--filled {
+  background: linear-gradient(135deg, var(--color-purple) 0%, var(--color-purple-vivid) 100%);
+  border-color: var(--color-purple);
+  transform: scale(1.15);
+  box-shadow: 0 0 12px rgba(155, 48, 255, 0.35);
 }
 
 /* Number Pad — large, friendly digits */
@@ -118,15 +119,16 @@
     box-shadow: 0 2px 8px rgba(181, 126, 255, 0.3);
   }
 
-  &--del {
-    background: var(--color-pink-light);
-    color: var(--color-pink-dark);
-    font-size: var(--font-size-xl);
+}
 
-    &:active {
-      background: var(--color-pink);
-      color: var(--color-white);
-    }
+.mom-numpad-btn--del {
+  background: var(--color-pink-light);
+  color: var(--color-pink-dark);
+  font-size: var(--font-size-xl);
+
+  &:active {
+    background: var(--color-pink);
+    color: var(--color-white);
   }
 }
 
@@ -340,25 +342,26 @@
   font-size: var(--font-size-md);
   min-height: var(--touch-min);
 
-  &--off {
-    background: var(--color-surface-raised);
-    color: var(--color-text-light);
-    border-color: var(--color-purple-light);
+}
 
-    &:active {
-      background: var(--color-purple-light);
-    }
+.mom-goal-toggle--off {
+  background: var(--color-surface-raised);
+  color: var(--color-text-light);
+  border-color: var(--color-purple-light);
+
+  &:active {
+    background: var(--color-purple-light);
   }
+}
 
-  &--on {
-    background: linear-gradient(135deg, var(--color-green-light) 0%, rgba(94, 201, 139, 0.3) 100%);
-    color: var(--color-green-vivid);
-    border-color: var(--color-green);
-    box-shadow: 0 0 0 2px rgba(0, 210, 106, 0.1);
+.mom-goal-toggle--on {
+  background: linear-gradient(135deg, var(--color-green-light) 0%, rgba(94, 201, 139, 0.3) 100%);
+  color: var(--color-green-vivid);
+  border-color: var(--color-green);
+  box-shadow: 0 0 0 2px rgba(0, 210, 106, 0.1);
 
-    &:active {
-      background: var(--color-green-light);
-    }
+  &:active {
+    background: var(--color-green-light);
   }
 }
 
@@ -439,11 +442,23 @@
       0 2px 6px rgba(123, 63, 191, 0.2);
   }
 
-  /* Saved confirmation flash */
-  &--saved {
-    background: linear-gradient(135deg, var(--color-green) 0%, var(--color-green-vivid) 100%);
-    box-shadow:
-      0 0 20px rgba(0, 210, 106, 0.3),
-      0 4px 12px rgba(94, 201, 139, 0.3);
+}
+
+/* Saved confirmation flash */
+.mom-save-btn--saved {
+  background: linear-gradient(135deg, var(--color-green) 0%, var(--color-green-vivid) 100%);
+  box-shadow:
+    0 0 20px rgba(0, 210, 106, 0.3),
+    0 4px 12px rgba(94, 201, 139, 0.3);
+}
+
+/* ── Accessibility: reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .mom-overlay,
+  .mom-pin-card,
+  .mom-panel,
+  .mom-pin-error {
+    animation: none !important;
+    transition: none !important;
   }
 }

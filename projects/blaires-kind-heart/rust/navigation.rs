@@ -1,29 +1,21 @@
-//! Panel navigation via Navigation API + View Transitions (Safari 26.2).
-//! 5 panels: home-scene, panel-tracker, panel-quests, panel-stories, panel-rewards.
-//! The browser's Navigation API handles history + back/forward.
-//! View Transitions API handles animation. Rust just connects them.
-
-use wasm_bindgen::closure::Closure;
-use wasm_bindgen::JsCast;
-use wasm_bindgen::JsValue;
-use web_sys::{CustomEvent, CustomEventInit, Element, Event};
-
-use crate::animations;
 use crate::bindings;
+use crate::companion;
 use crate::constants::*;
 use crate::dom;
+use crate::native_apis;
 use crate::speech;
-
+use crate::synth_audio;
 use std::cell::RefCell;
-
-/// Build `{panel: "..."}` as a JS object — replaces serde PanelState.
+use std::fmt::Write;
+use std::rc::Rc;
+use wasm_bindgen::closure::Closure;
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{Element, Event};
 fn panel_state_js(panel_id: &str) -> JsValue {
     let obj = js_sys::Object::new();
     let _ = js_sys::Reflect::set(&obj, &"panel".into(), &panel_id.into());
     obj.into()
 }
-
-/// Extract `panel` field from a JS object — replaces serde PanelState deserialization.
 fn panel_from_js(state: &JsValue) -> Option<String> {
     if state.is_null() || state.is_undefined() {
         return None;
@@ -32,48 +24,36 @@ fn panel_from_js(state: &JsValue) -> Option<String> {
         .ok()
         .and_then(|v| v.as_string())
 }
-
-/// Build `{state: {panel: "..."}, history: "push"}` — replaces serde NavigateOptions.
-fn navigate_opts_js(panel_id: &str) -> JsValue {
-    let obj = js_sys::Object::new();
-    let _ = js_sys::Reflect::set(&obj, &"state".into(), &panel_state_js(panel_id));
-    let _ = js_sys::Reflect::set(&obj, &"history".into(), &"push".into());
-    obj.into()
-}
-
-thread_local! {
-    static FOCUS_BEFORE_PANEL: RefCell<Option<Element>> = const { RefCell::new(None) };
-}
-
-// ── Init ──
-
+thread_local! { static FOCUS_BEFORE_PANEL: RefCell<Option<Element>> = const { RefCell::new(None) }; }
 pub fn init() {
     listen_navigate_event();
     listen_navigate_error();
-    if !try_restore_current_entry() {
-        if !try_restore_hash_panel() {
-            // Replace current entry with state instead of pushing to avoid duplicate entries
-            replace_panel_state(PANEL_HOME);
-        }
+    if !try_restore_current_entry() && !try_restore_hash_panel() {
+        replace_panel_state(PANEL_HOME);
     }
     bind_panel_buttons();
+    bind_swipe_back();
 }
-
-// ── Navigation API listeners ──
-
 fn listen_navigate_event() {
-    let Some(nav) = get_navigation_object() else { return };
+    let Some(nav) = get_navigation_object() else {
+        return;
+    };
     dom::on(nav.as_ref(), "navigate", move |event: Event| {
-        let Ok(nav_event) = event.dyn_into::<bindings::NavigateEvent>() else { return };
-        if !nav_event.can_intercept() { return; }
+        let Ok(nav_event) = event.dyn_into::<bindings::NavigateEvent>() else {
+            return;
+        };
+        if !nav_event.can_intercept() {
+            return;
+        }
         if !nav_event.download_request().is_null() && !nav_event.download_request().is_undefined() {
             return;
         }
         let nav_type = nav_event.navigation_type();
         let dest = nav_event.destination();
         let state = dest.get_state();
-        let Some(panel) = panel_from_js(&state) else { return };
-
+        let Some(panel) = panel_from_js(&state) else {
+            return;
+        };
         if nav_type == "traverse" {
             let id = panel;
             let handler = Closure::<dyn FnMut()>::once(move || {
@@ -86,51 +66,42 @@ fn listen_navigate_event() {
         }
     });
 }
-
 fn listen_navigate_error() {
-    let Some(nav) = get_navigation_object() else { return };
+    let Some(nav) = get_navigation_object() else {
+        return;
+    };
     dom::on(nav.as_ref(), "navigateerror", move |event: Event| {
         let err_event: &bindings::NavigateErrorEvent = event.unchecked_ref();
         let message = err_event.message().unwrap_or_else(|| "unknown".into());
-        web_sys::console::warn_1(&format!("[nav] error: {message}").into());
+        dom::warn(&format!("[nav] error: {message}"));
     });
 }
-
-// ── Programmatic navigation ──
-
 fn push_panel_state(panel_id: &str) {
     let Some(nav) = get_navigation_object() else {
-        // Fallback: use location.hash if Navigation API unavailable
         fallback_navigate_hash(panel_id);
         return;
     };
-    let mut url = String::with_capacity(1 + panel_id.len());
-    url.push('#');
-    url.push_str(panel_id);
-
-    // Phase 7: Wrap in try-catch pattern for error handling
-    // If navigation fails (returns error), fall back to location.hash
-    let result = nav.navigate(&url, &navigate_opts_js(panel_id));
-
-    // Check if result indicates an error (JavaScript exceptions become JsValue errors)
-    // In practice, Navigation API errors are caught by navigateerror event listener
-    // This is defensive fallback in case of synchronous failures
+    let opts = js_sys::Object::new();
+    let _ = js_sys::Reflect::set(&opts, &"state".into(), &panel_state_js(panel_id));
+    let _ = js_sys::Reflect::set(&opts, &"history".into(), &"push".into());
+    let result = dom::with_buf(|buf| {
+        let _ = write!(buf, "#{panel_id}");
+        nav.navigate(buf, &opts.into())
+    });
     if result.is_undefined() || result.is_null() {
-        web_sys::console::warn_1(&"[nav] Navigation API returned null/undefined, using fallback".into());
+        dom::warn("[nav] Navigation API returned null/undefined, using fallback");
         fallback_navigate_hash(panel_id);
     }
 }
-
-/// Replace current entry's state without pushing a new history entry.
-/// Used to add state to the initial page load without creating duplicates.
 fn replace_panel_state(panel_id: &str) {
-    let Some(nav) = get_navigation_object() else { return };
+    let Some(nav) = get_navigation_object() else {
+        return;
+    };
     let update_opts = js_sys::Object::new();
     let _ = js_sys::Reflect::set(&update_opts, &"state".into(), &panel_state_js(panel_id));
     nav.update_current_entry(&update_opts.into());
 }
-
-pub fn go_back() {
+fn go_back() {
     let Some(nav) = get_navigation_object() else {
         close_panel_to_home();
         return;
@@ -141,11 +112,14 @@ pub fn go_back() {
     }
     let _ = nav.back();
 }
-
 fn try_restore_current_entry() -> bool {
-    let Some(nav) = get_navigation_object() else { return false };
+    let Some(nav) = get_navigation_object() else {
+        return false;
+    };
     let current = nav.current_entry();
-    if current.is_null() || current.is_undefined() { return false; }
+    if current.is_null() || current.is_undefined() {
+        return false;
+    }
     let entry: bindings::NavigationHistoryEntry = match current.dyn_into() {
         Ok(e) => e,
         Err(_) => return false,
@@ -160,194 +134,291 @@ fn try_restore_current_entry() -> bool {
         None => false,
     }
 }
-
 fn try_restore_hash_panel() -> bool {
     let hash = dom::window().location().hash().unwrap_or_default();
     let panel_id = hash.trim_start_matches('#');
     if panel_id.is_empty() {
         return false;
     }
-
-    let selector = format!("#{panel_id}.panel");
-    if dom::query(&selector).is_none() {
+    let panel_exists = dom::with_buf(|buf| {
+        let _ = write!(buf, "#{panel_id}.panel");
+        dom::query(buf).is_some()
+    });
+    if !panel_exists {
         return false;
     }
-
     apply_panel_transition(panel_id);
     replace_panel_state(panel_id);
     true
 }
-
 fn get_navigation_object() -> Option<bindings::Navigation> {
     let window = dom::window();
     let win: &bindings::NavigationWindow = window.unchecked_ref();
     win.navigation().dyn_into::<bindings::Navigation>().ok()
 }
-
-/// Fallback navigation using location.hash when Navigation API fails
 fn fallback_navigate_hash(panel_id: &str) {
     let window = dom::window();
     let location = window.location();
-    let mut hash = String::with_capacity(1 + panel_id.len());
-    hash.push('#');
-    hash.push_str(panel_id);
-    let _ = location.set_hash(&hash);
+    dom::with_buf(|buf| {
+        let _ = write!(buf, "#{panel_id}");
+        let _ = location.set_hash(buf);
+    });
 }
-
-// ── Button bindings (event delegation — 1 listener for all buttons) ──
-
+fn set_transition_direction(direction: &str) {
+    if let Some(root) = dom::document().document_element() {
+        dom::set_attr(&root, "data-transition", direction);
+    }
+}
 fn bind_panel_buttons() {
-    let doc = dom::document();
-    let cb = Closure::<dyn FnMut(Event)>::new(move |event: Event| {
-        let target = event.target().and_then(|t| t.dyn_into::<Element>().ok());
-        let Some(el) = target else { return };
-
-        if let Ok(Some(open_btn)) = el.closest(&format!("[{ATTR_PANEL_OPEN}]")) {
-            if let Some(panel_id) = open_btn.get_attribute(ATTR_PANEL_OPEN) {
-                open_panel(&panel_id);
+    dom::on(
+        dom::document().unchecked_ref(),
+        "click",
+        move |event: Event| {
+            let Some(el) = dom::event_target_element(&event) else {
+                return;
+            };
+            if dom::closest(&el, "[data-nav-home]").is_some() {
+                close_panel_to_home();
+                return;
             }
-            return;
-        }
-        if let Ok(Some(close_btn)) = el.closest(&format!("[{ATTR_PANEL_CLOSE}]")) {
-            if let Ok(Some(panel)) = close_btn.closest(SELECTOR_PANEL) {
-                if let Some(id) = panel.get_attribute("id") {
-                    close_panel(&id);
+            if let Some(btn) = dom::closest(&el, "[data-nav-panel]") {
+                if let Some(panel_id) = dom::get_attr(&btn, "data-nav-panel") {
+                    close_panel_to_home();
+                    let panel = panel_id;
+                    dom::set_timeout_once(50, move || {
+                        open_panel(&panel);
+                    });
+                    return;
+                }
+            }
+            if let Some(open_btn) = dom::closest(&el, "[data-panel-open]") {
+                if let Some(panel_id) = dom::get_attr(&open_btn, ATTR_PANEL_OPEN) {
+                    open_panel(&panel_id);
+                }
+                return;
+            }
+            if let Some(close_btn) = dom::closest(&el, "[data-panel-close]") {
+                if let Some(panel) = dom::closest(&close_btn, SELECTOR_PANEL) {
+                    if dom::get_attr(&panel, "id").is_some() {
+                        go_back();
+                    }
+                }
+                return;
+            }
+            if let Some(tab_btn) = dom::closest(&el, "[data-tab]") {
+                if let Some(tab_id) = dom::get_attr(&tab_btn, "data-tab") {
+                    switch_tab(&tab_btn, &tab_id);
+                }
+            }
+        },
+    );
+}
+fn switch_tab(clicked_btn: &Element, tab_id: &str) {
+    let Some(panel_body) = dom::closest(clicked_btn, ".panel-body--tabs") else {
+        return;
+    };
+    if let Ok(tabs) = panel_body.query_selector_all("[data-tab]") {
+        for i in 0..tabs.length() {
+            if let Some(btn) = tabs.item(i) {
+                if let Some(el) = btn.dyn_ref::<Element>() {
+                    dom::set_attr(el, "aria-selected", "false");
+                    let _ = el.class_list().remove_1("tab-btn--active");
                 }
             }
         }
-    });
-    let _ = doc.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
-    cb.forget();
+    }
+    dom::set_attr(clicked_btn, "aria-selected", "true");
+    let _ = clicked_btn.class_list().add_1("tab-btn--active");
+    if let Ok(contents) = panel_body.query_selector_all("[data-tab-content]") {
+        for i in 0..contents.length() {
+            if let Some(content) = contents.item(i) {
+                if let Some(el) = content.dyn_ref::<Element>() {
+                    if dom::get_attr(el, "data-tab-content").as_deref() == Some(tab_id) {
+                        dom::remove_attr(el, "hidden");
+                    } else {
+                        dom::set_attr(el, ATTR_HIDDEN, "");
+                    }
+                }
+            }
+        }
+    }
 }
-
-// ── Panel open / close ──
-
-fn open_panel(panel_id: &str) {
+fn haptic(_ms: u32) {
+    native_apis::vibrate_tap();
+}
+fn play_panel_sound(panel_id: &str) {
+    match panel_id {
+        "panel-tracker" => synth_audio::gentle(),
+        "panel-quests" => synth_audio::fanfare(),
+        "panel-stories" => synth_audio::dreamy(),
+        "panel-rewards" => synth_audio::sparkle(),
+        "panel-gardens" => synth_audio::gentle(),
+        "panel-games" => synth_audio::chime(),
+        "panel-adventures" => synth_audio::magic_wand(),
+        "panel-mystuff" => synth_audio::sparkle(),
+        _ => {}
+    }
+}
+fn narrate_panel(panel_id: &str) {
+    let phrase = match panel_id {
+        "panel-tracker" => "Be Kind!",
+        "panel-adventures" => "Adventures!",
+        "panel-mystuff" => "My Stuff!",
+        "panel-quests" => "Let's do a quest!",
+        "panel-stories" => "Story time!",
+        "panel-games" => "Let's play!",
+        "panel-rewards" => "Your stickers!",
+        "panel-gardens" => "Your gardens!",
+        _ => return,
+    };
+    speech::speak(phrase);
+}
+pub fn open_panel(panel_id: &str) {
+    set_transition_direction("forward");
     FOCUS_BEFORE_PANEL.with(|cell| {
         if let Ok(mut guard) = cell.try_borrow_mut() {
             *guard = dom::active_element();
         }
     });
-
     push_panel_state(panel_id);
-
     apply_panel_transition(panel_id);
-
-    let id = panel_id.to_string();
-    if let Some(panel) = dom::query(&format!("#{id}")) {
-        dom::focus_first(&panel);
-    }
-}
-
-fn close_panel(_panel_id: &str) {
-    go_back();
-}
-
-fn close_panel_to_home() {
-    with_view_transition(|| {
-        // Hide all panels
-        for panel in dom::query_all(SELECTOR_PANEL) {
-            let _ = panel.set_attribute(ATTR_HIDDEN, "");
+    play_panel_sound(panel_id);
+    haptic(15);
+    narrate_panel(panel_id);
+    companion::check_first_visit(panel_id);
+    dom::with_buf(|buf| {
+        let _ = write!(buf, "#{panel_id}");
+        if let Some(panel) = dom::query(buf) {
+            dom::focus_first(&panel);
         }
-        // Restore home hub (#app.home-scene)
+    });
+}
+pub fn close_panel_to_home() {
+    set_transition_direction("back");
+    haptic(8);
+    with_view_transition(|| {
+        dom::for_each_match(SELECTOR_PANEL, |panel| {
+            dom::set_attr(&panel, ATTR_HIDDEN, "");
+        });
         if let Some(home) = dom::query(SELECTOR_APP) {
-            let _ = home.remove_attribute(ATTR_ARIA_HIDDEN);
-            let _ = home.remove_attribute(ATTR_INERT);
+            dom::remove_attr(&home, ATTR_ARIA_HIDDEN);
+            dom::remove_attr(&home, ATTR_INERT);
             dom::set_dataset(&home, ATTR_ACTIVE_PANEL, PANEL_HOME);
         }
     });
-
     FOCUS_BEFORE_PANEL.with(|cell| {
         if let Some(el) = cell.try_borrow_mut().ok().and_then(|mut g| g.take()) {
             dom::focus_element(&el);
         }
     });
 }
-
 fn apply_panel_transition(panel_id: &str) {
-    // Cancel any ongoing speech when navigating away
     speech::stop();
-
-    // Phase 3 Optimization: Add will-change hint for GPU layer before View Transition
-    // This allows browser to prepare compositor layer in advance for smoother animation
-    if let Some(panel) = dom::query(&format!("[data-panel='{}']", panel_id)) {
-        let _ = panel.class_list().add_1("transitioning");
-    }
-
-    // Phase 3: GPU particles now render during View Transitions (separate compositor layer)
-    // No need to pause - will-change creates isolated layer avoiding contention
-
+    dom::with_buf(|buf| {
+        let _ = write!(buf, "[data-panel='{panel_id}']");
+        if let Some(panel) = dom::query(buf) {
+            let _ = panel.class_list().add_1("transitioning");
+        }
+    });
     let id = panel_id.to_string();
-    let event_id = panel_id.to_string();
-
-    dispatch_event(EVENT_PANEL_LEAVING, "target_panel", panel_id);
-
+    dom::dispatch_kv_event(EVENT_PANEL_LEAVING, "target_panel", panel_id);
     with_view_transition(move || {
         let going_home = id == PANEL_HOME;
-
-        // Show/hide panels
-        for panel in dom::query_all(SELECTOR_PANEL) {
-            let pid = panel.get_attribute("id").unwrap_or_default();
-            if pid == id {
-                let _ = panel.remove_attribute(ATTR_HIDDEN);
-                let _ = panel.remove_attribute(ATTR_ARIA_HIDDEN);
-                // Magic entrance animation for opening panel
-                animations::magic_entrance(&panel);
+        dom::for_each_match(SELECTOR_PANEL, |panel| {
+            if dom::get_attr(&panel, "id").unwrap_or_default() == id {
+                dom::remove_attr(&panel, ATTR_HIDDEN);
+                dom::remove_attr(&panel, ATTR_ARIA_HIDDEN);
             } else {
-                let _ = panel.set_attribute(ATTR_HIDDEN, "");
+                dom::set_attr(&panel, ATTR_HIDDEN, "");
             }
-        }
-
-        // Handle the home hub (#app is the home scene, not a .panel)
+        });
         if let Some(home) = dom::query(SELECTOR_APP) {
             if going_home {
-                let _ = home.remove_attribute(ATTR_ARIA_HIDDEN);
-                let _ = home.remove_attribute(ATTR_INERT);
+                dom::remove_attr(&home, ATTR_ARIA_HIDDEN);
+                dom::remove_attr(&home, ATTR_INERT);
             } else {
-                let _ = home.set_attribute(ATTR_ARIA_HIDDEN, "true");
-                let _ = home.set_attribute(ATTR_INERT, "");
+                dom::set_attr(&home, ATTR_ARIA_HIDDEN, "true");
+                dom::set_attr(&home, ATTR_INERT, "");
             }
             dom::set_dataset(&home, ATTR_ACTIVE_PANEL, &id);
         }
     });
-
-    // Phase 3: Remove will-change after View Transition completes (~300ms)
-    // Avoids excessive GPU memory usage when animation is done
     let panel_id_cleanup = panel_id.to_string();
     crate::dom::set_timeout_once(350, move || {
-        if let Some(panel) = dom::query(&format!("[data-panel='{}']", panel_id_cleanup)) {
-            let _ = panel.class_list().remove_1("transitioning");
+        dom::with_buf(|buf| {
+            let _ = write!(buf, "[data-panel='{panel_id_cleanup}']");
+            if let Some(panel) = dom::query(buf) {
+                let _ = panel.class_list().remove_1("transitioning");
+            }
+        });
+    });
+    dom::dispatch_kv_event(EVENT_PANEL_OPENED, "target_panel", panel_id);
+}
+fn bind_swipe_back() {
+    let start_x: Rc<RefCell<Option<f64>>> = Rc::new(RefCell::new(None));
+    let start_y: Rc<RefCell<Option<f64>>> = Rc::new(RefCell::new(None));
+
+    let sx = start_x.clone();
+    let sy = start_y.clone();
+    let touchstart = Closure::<dyn Fn(web_sys::TouchEvent)>::new(move |e: web_sys::TouchEvent| {
+        if let Some(touch) = e.touches().get(0) {
+            let x = f64::from(touch.client_x());
+            if x < 30.0 {
+                *sx.borrow_mut() = Some(x);
+                *sy.borrow_mut() = Some(f64::from(touch.client_y()));
+            } else {
+                *sx.borrow_mut() = None;
+            }
         }
     });
 
-    dispatch_event(EVENT_PANEL_OPENED, "target_panel", &event_id);
+    let sx2 = start_x;
+    let sy2 = start_y;
+    let touchend = Closure::<dyn Fn(web_sys::TouchEvent)>::new(move |e: web_sys::TouchEvent| {
+        let Some(start) = *sx2.borrow() else { return };
+        let Some(start_vert) = *sy2.borrow() else {
+            return;
+        };
+        if let Some(touch) = e.changed_touches().get(0) {
+            let dx = f64::from(touch.client_x()) - start;
+            let dy = (f64::from(touch.client_y()) - start_vert).abs();
+            if dx > 80.0 && dy < dx * 0.5 {
+                go_back();
+            }
+        }
+        *sx2.borrow_mut() = None;
+    });
+
+    let doc = dom::document();
+    let _ = doc.add_event_listener_with_callback("touchstart", touchstart.as_ref().unchecked_ref());
+    let _ = doc.add_event_listener_with_callback("touchend", touchend.as_ref().unchecked_ref());
+    touchstart.forget();
+    touchend.forget();
 }
-
-fn dispatch_event(name: &str, key: &str, value: &str) {
-    let init = CustomEventInit::new();
-    let detail = js_sys::Object::new();
-    let _ = js_sys::Reflect::set(&detail, &key.into(), &value.into());
-    init.set_detail(&detail.into());
-    if let Ok(event) = CustomEvent::new_with_event_init_dict(name, &init) {
-        let _ = dom::document().dispatch_event(&event);
-    }
-}
-
-// ── View Transition wrapper ──
-
 pub fn with_view_transition<F: FnOnce() + 'static>(update: F) {
     use js_sys::Reflect;
     use wasm_bindgen::JsValue;
-
     let doc = dom::document();
-    let cb = Closure::<dyn FnMut()>::once(update);
+    let vt_func = Reflect::get(&doc, &JsValue::from_str("startViewTransition"))
+        .ok()
+        .and_then(|v| v.dyn_into::<js_sys::Function>().ok());
 
-    // Safari 26.2 View Transitions API via reflection (web-sys bindings incomplete)
-    if let Ok(start_vt) = Reflect::get(&doc, &JsValue::from_str("startViewTransition")) {
-        if let Ok(func) = start_vt.dyn_into::<js_sys::Function>() {
-            let _ = func.call1(&doc, cb.as_ref().unchecked_ref());
+    match vt_func {
+        Some(func) => {
+            let cb = Closure::<dyn FnMut()>::once(update);
+            let result = func.call1(&doc, cb.as_ref().unchecked_ref());
+            if result.is_err() {
+                // If startViewTransition throws (e.g. already active), run update manually
+                crate::dom::warn("View transition skipped (already active or failed), applying update immediately.");
+                if let Ok(js_cb) = cb.into_js_value().dyn_into::<js_sys::Function>() {
+                    let _ = js_cb.call0(&js_sys::global());
+                }
+            } else {
+                cb.forget();
+            }
+        }
+        None => {
+            update();
         }
     }
-
-    cb.forget();
 }

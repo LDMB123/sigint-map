@@ -1,12 +1,10 @@
 //! Performance.mark() and Performance.measure() wrappers for boot phase tracking.
 
+use crate::dom;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use crate::dom;
 
-thread_local! {
-    static PERF_MONITOR: RefCell<PerfMonitor> = RefCell::new(PerfMonitor::new());
-}
+thread_local! { static PERF_MONITOR: RefCell<PerfMonitor> = RefCell::new(PerfMonitor::new()); }
 
 pub struct PerfMonitor {
     marks: HashMap<String, f64>,
@@ -19,12 +17,8 @@ impl PerfMonitor {
         }
     }
 
-    /// Record a performance mark with the current timestamp.
     pub fn mark_internal(&mut self, name: &str) {
-        let ts = dom::window()
-            .performance()
-            .map(|p| p.now())
-            .unwrap_or(0.0);
+        let ts = dom::window().performance().map_or(0.0, |p| p.now());
 
         self.marks.insert(name.to_string(), ts);
 
@@ -34,14 +28,13 @@ impl PerfMonitor {
         }
     }
 
-    /// Create a performance measure between two marks.
     pub fn measure_internal(&self, name: &str, start_mark: &str, end_mark: &str) {
         if let Some(perf) = dom::window().performance() {
             let _ = perf.measure_with_start_mark_and_end_mark(name, start_mark, end_mark);
         }
     }
 
-    /// Get the duration between two marks in milliseconds.
+    #[cfg_attr(not(debug_assertions), allow(dead_code))]
     pub fn duration(&self, start_mark: &str, end_mark: &str) -> Option<f64> {
         let start = self.marks.get(start_mark)?;
         let end = self.marks.get(end_mark)?;
@@ -49,23 +42,21 @@ impl PerfMonitor {
     }
 }
 
-/// Record a performance mark (global API).
 pub fn mark(name: &str) {
     PERF_MONITOR.with(|m| m.borrow_mut().mark_internal(name));
 }
 
-/// Create a performance measure between two marks (global API).
 pub fn measure(name: &str, start_mark: &str, end_mark: &str) {
     PERF_MONITOR.with(|m| m.borrow().measure_internal(name, start_mark, end_mark));
 }
 
-/// Get duration between two marks in milliseconds.
+#[cfg_attr(not(debug_assertions), allow(dead_code))]
 pub fn duration(start_mark: &str, end_mark: &str) -> Option<f64> {
     PERF_MONITOR.with(|m| m.borrow().duration(start_mark, end_mark))
 }
 
 /// Get all performance marks (for debug panel).
-#[allow(dead_code)]
+#[allow(dead_code)] // Called from debug::tabs::performance — compiler can't trace gesture-triggered path
 pub fn get_marks() -> Vec<(String, f64)> {
     PERF_MONITOR.with(|m| {
         m.borrow()

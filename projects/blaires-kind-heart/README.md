@@ -11,16 +11,16 @@ Target platform: iPad mini 6 (A15, 4GB RAM), iPadOS 26.2, Safari 26.2.
 - Command-by-command evidence: `docs/STATUS_LEDGER.md`
 - Full documentation map: `docs/INDEX.md`
 
-## Current Standing (verified on 2026-02-15)
+## Current Standing (verified on 2026-02-21)
 - PWA contract check: PASS (`npm run qa:pwa-contract`)
 - Runtime diagnostics check: PASS (`npm run qa:runtime`)
 - DB contract check: PASS (`npm run qa:db-contract`)
-- Core E2E suite: PASS (`npm run test:e2e` -> `39 passed`, `1 skipped`)
-- Full E2E suite: PASS (`npm run test:e2e:all` -> `40 passed`, `1 skipped`)
+- Full E2E suite: PASS (`npm run test:e2e:all` -> `46 passed`, `1 skipped`)
+- Lighthouse CI: PASS (`npm run lighthouse:ci`)
 - Docs link gate: PASS (`npm run qa:docs-links`)
-- Rust warning drift gate: PASS (`npm run qa:rust-warning-drift`, baseline=`4`)
+- Rust warning drift gate: PASS (`npm run qa:rust-warning-drift`, baseline=`3`)
 - Docs token budget check: PASS (`npm run qa:docs-budget`)
-- Token baseline currently within target (`active_est_tokens=24465`)
+- Active docs token budget well within target (`active_est_tokens=6046`)
 - Xcode iPad simulator regression evidence captured; physical iPad mini 6 rerun still pending for this cycle
 
 ## Quick Commands
@@ -59,4 +59,4 @@ npm run qa:docs-budget
 - `docs/` active documentation
 - `docs/archive/` historical/low-frequency documentation and artifacts
 
-Last updated: 2026-02-15
+Last updated: 2026-02-21

@@ -38,7 +38,7 @@ const CONTRACTS = [
     file: "public/sw-assets.js",
     patterns: [
       {
-        regex: /"runtime-diagnostics\.js"/,
+        regex: /['"]\/runtime-diagnostics\.js['"]/,
         description: "precaches runtime-diagnostics.js",
       },
     ],

@@ -4,12 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib"]
 path = "rust/lib.rs"
-
-[[bin]]
-name = "blaires-kind-heart"
-path = "rust/main.rs"
 
 [dependencies]
 wasm-bindgen = "0.2.108"
@@ -19,12 +15,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde-wasm-bindgen = "0.6.5"
 console_error_panic_hook = "0.1"
-futures-channel = "0.3"
-futures = "0.3"
-chrono = "0.4"
-once_cell = "1.19"
-tract-onnx = { version = "0.21", default-features = false, optional = true }
-ndarray = { version = "0.15", optional = true }
+futures = { version = "0.3", default-features = false, features = ["std", "async-await"] }
 web-sys = { version = "0.3.85", features = [
   "console",
   "AddEventListenerOptions",
@@ -36,56 +27,40 @@ web-sys = { version = "0.3.85", features = [
   "HtmlImageElement",
   "HtmlCanvasElement",
   "HtmlDetailsElement",
+  "HtmlDialogElement",
   "CanvasRenderingContext2d",
   "CanvasGradient",
   "Node",
   "NodeList",
   "DomTokenList",
   "CssStyleDeclaration",
+  "DomRect",
+  "DomStringMap",
+  "DocumentFragment",
   "Event",
   "EventTarget",
   "KeyboardEvent",
   "PointerEvent",
-  "DomRect",
-  "Storage",
-  "StorageManager",
-  "StorageEstimate",
+  "MouseEvent",
+  "TouchEvent",
+  "TouchList",
+  "Touch",
   "Navigator",
   "Location",
-  "History",
-  "Headers",
-  "Request",
-  "RequestInit",
-  "Response",
-  # Audio — Web Audio API for sound effects
-  "AudioContext",
-  "AudioContextState",
-  "BaseAudioContext",
-  "AudioDestinationNode",
-  "GainNode",
-  "AudioNode",
-  "AudioParam",
-  "AudioBuffer",
-  "AudioBufferSourceNode",
-  "OscillatorNode",
-  "OscillatorType",
-  "ConvolverNode",
-  "Blob",
-  "BlobPropertyBag",
-  "File",
-  "FileList",
-  "FileReader",
+  "StorageManager",
+  "StorageEstimate",
+  "Crypto",
   "CustomEvent",
   "CustomEventInit",
-  "ShareData",
-  "ErrorEvent",
-  "PopStateEvent",
-  "PromiseRejectionEvent",
-  "Crypto",
-  "SubtleCrypto",
-  "Url",
   "VisibilityState",
   "Performance",
+  "PerformanceObserver",
+  "PerformanceObserverInit",
+  "PerformanceObserverEntryList",
+  "PerformanceEntry",
+  "IntersectionObserver",
+  "IntersectionObserverInit",
+  "IntersectionObserverEntry",
   "MessageEvent",
   "Worker",
   "WorkerOptions",
@@ -93,49 +68,33 @@ web-sys = { version = "0.3.85", features = [
   "ServiceWorkerContainer",
   "ServiceWorkerRegistration",
   "ServiceWorker",
-  # Typed API bindings
   "AbortController",
   "AbortSignal",
   "SpeechSynthesis",
   "SpeechSynthesisUtterance",
+  "SpeechSynthesisEvent",
   "SpeechSynthesisVoice",
-  "DomRectReadOnly",
-  "DomStringMap",
+  # Audio — Web Audio API for sound effects
+  "AudioContext",
+  "AudioContextState",
+  "BaseAudioContext",
+  "AudioDestinationNode",
+  "AudioNode",
+  "AudioParam",
+  "AudioBuffer",
+  "OscillatorNode",
+  "OscillatorType",
+  "GainNode",
+  "ConvolverNode",
   "Animation",
-  "ImageBitmap",
   "ImageData",
   "MediaQueryList",
   "Screen",
-  # Intersection Observer (lazy loading, visibility-triggered animations)
-  "IntersectionObserver",
-  "IntersectionObserverInit",
-  "IntersectionObserverEntry",
-  # ResizeObserver
-  "ResizeObserver",
-  "ResizeObserverEntry",
-  "ResizeObserverSize",
-  # Performance Observer (Event Timing / INP monitoring)
-  "PerformanceObserver",
-  "PerformanceObserverInit",
-  "PerformanceObserverEntryList",
-  "PerformanceEntry",
-  # Dialog API (Safari 15.4+) — now in web-sys 0.3.85
-  "HtmlDialogElement",
-  # ViewTransition API (Safari 26.2) — now in web-sys 0.3.85
-  "ViewTransition",
-  # WakeLock API (Safari 26.2) — now in web-sys 0.3.85
-  "WakeLock",
-  "WakeLockSentinel",
-  "WakeLockType",
-  # Unstable APIs still requiring custom bindings in bindings.rs:
-  # NavigateEvent, Navigation API, Popover API, Scheduler, LockManager, WebGPU,
-  # KeyframeAnimationOptions, ScreenOrientation, OrientationLockType,
-  # FileSystem, OffscreenCanvas
+  "ShareData",
 ] }
 
 [features]
 default = []
-ml-onnx = ["tract-onnx", "ndarray"]
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.58"

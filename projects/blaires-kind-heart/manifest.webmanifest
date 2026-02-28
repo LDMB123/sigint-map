@@ -48,25 +48,29 @@
       "name": "Kind Acts",
       "short_name": "Tracker",
       "description": "Log your kind acts",
-      "url": "./#panel-tracker"
+      "url": "./#panel-tracker",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Quests",
       "short_name": "Quests",
       "description": "Today's kindness quests",
-      "url": "./#panel-quests"
+      "url": "./#panel-quests",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Stories",
       "short_name": "Stories",
       "description": "Read kindness stories",
-      "url": "./#panel-stories"
+      "url": "./#panel-stories",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Stickers",
       "short_name": "Stickers",
       "description": "Your sticker collection",
-      "url": "./#panel-rewards"
+      "url": "./#panel-rewards",
+      "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

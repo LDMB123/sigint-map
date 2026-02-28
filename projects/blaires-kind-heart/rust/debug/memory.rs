@@ -3,9 +3,7 @@
 use std::cell::RefCell;
 use wasm_bindgen::JsCast;
 
-thread_local! {
-    static SNAPSHOTS: RefCell<Vec<MemorySnapshot>> = const { RefCell::new(Vec::new()) };
-}
+thread_local! { static SNAPSHOTS: RefCell<Vec<MemorySnapshot>> = const { RefCell::new(Vec::new()) }; }
 
 #[derive(Debug, Clone)]
 pub struct MemorySnapshot {
@@ -17,8 +15,13 @@ pub struct MemorySnapshot {
 
 /// Capture a memory snapshot with optional label.
 pub fn capture_snapshot(label: &str) -> MemorySnapshot {
-    let mem = wasm_bindgen::memory().dyn_into::<js_sys::WebAssembly::Memory>().unwrap();
-    let buffer = mem.buffer().dyn_into::<js_sys::ArrayBuffer>().unwrap();
+    let mem = wasm_bindgen::memory()
+        .dyn_into::<js_sys::WebAssembly::Memory>()
+        .expect("wasm memory");
+    let buffer = mem
+        .buffer()
+        .dyn_into::<js_sys::ArrayBuffer>()
+        .expect("wasm buffer");
     let byte_length = buffer.byte_length() as usize;
 
     let snapshot = MemorySnapshot {
@@ -47,36 +50,15 @@ pub fn get_snapshots() -> Vec<MemorySnapshot> {
     SNAPSHOTS.with(|snaps| snaps.borrow().clone())
 }
 
-/// Track memory allocation for a code block.
-/// Returns (result, allocated_bytes).
-#[allow(dead_code)]
-pub fn track_allocation<T, F: FnOnce() -> T>(label: &str, f: F) -> (T, i64) {
-    let before = capture_snapshot(&format!("{} (before)", label));
-    let result = f();
-    let after = capture_snapshot(&format!("{} (after)", label));
-
-    let allocated = after.heap_bytes as i64 - before.heap_bytes as i64;
-
-    if allocated.abs() > 10_000 {
-        // Log significant allocations/deallocations (>10KB)
-        web_sys::console::log_1(
-            &format!(
-                "[memory] {} allocated {} bytes ({} pages)",
-                label,
-                allocated,
-                (allocated / 65536).abs()
-            )
-            .into(),
-        );
-    }
-
-    (result, allocated)
-}
-
 /// Get current heap usage in bytes.
 pub fn current_heap_bytes() -> usize {
-    let mem = wasm_bindgen::memory().dyn_into::<js_sys::WebAssembly::Memory>().unwrap();
-    mem.buffer().dyn_into::<js_sys::ArrayBuffer>().unwrap().byte_length() as usize
+    let mem = wasm_bindgen::memory()
+        .dyn_into::<js_sys::WebAssembly::Memory>()
+        .expect("wasm memory");
+    mem.buffer()
+        .dyn_into::<js_sys::ArrayBuffer>()
+        .expect("wasm buffer")
+        .byte_length() as usize
 }
 
 /// Get current WASM pages allocated.
@@ -109,7 +91,7 @@ pub fn detect_leak_pattern() -> bool {
         }
 
         let recent = &snapshots[snapshots.len() - 50..];
-        let first_heap = recent.first().map(|s| s.heap_bytes).unwrap_or(0);
+        let first_heap = recent.first().map_or(0, |s| s.heap_bytes);
         let max_heap = recent.iter().map(|s| s.heap_bytes).max().unwrap_or(0);
 
         // Check if heap grew >20MB without any decrease
@@ -123,7 +105,7 @@ pub fn detect_leak_pattern() -> bool {
 /// Format bytes as human-readable string (KB/MB).
 pub fn format_bytes(bytes: usize) -> String {
     if bytes < 1024 {
-        format!("{} B", bytes)
+        format!("{bytes} B")
     } else if bytes < 1024 * 1024 {
         format!("{:.1} KB", bytes as f64 / 1024.0)
     } else {

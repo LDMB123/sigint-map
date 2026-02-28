@@ -1,27 +1,17 @@
-//! Mom Mode — parent dashboard with PIN protection.
-//! Long-press (3s) on app title → PIN entry overlay → goal setting + notes.
-//! PIN stored in `settings` table as `parent_pin`.
-
+use crate::{
+    constants, db_client, dom, parent_insights, render, speech, state::AppState, synth_audio,
+    utils, weekly_goals,
+};
+use futures::join;
 use std::cell::RefCell;
 use std::rc::Rc;
-use futures::join;
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, Event};
-
-use crate::{
-    db_client, dom, render, speech, state::AppState, synth_audio, utils, weekly_goals,
-};
-
-thread_local! {
-    static MOM_STATE: RefCell<Option<MomModeState>> = const { RefCell::new(None) };
-}
-
+thread_local! { static MOM_STATE: RefCell<Option<MomModeState>> = const { RefCell::new(None) }; }
 struct MomModeState {
     state: Rc<RefCell<AppState>>,
     pin_set: bool,
 }
-
 pub fn init(state: Rc<RefCell<AppState>>) {
     MOM_STATE.with(|m| {
         *m.borrow_mut() = Some(MomModeState {
@@ -29,56 +19,34 @@ pub fn init(state: Rc<RefCell<AppState>>) {
             pin_set: false,
         });
     });
-
     bind_long_press();
-
-    // Check if PIN exists on boot
-    let s = state.clone();
-    wasm_bindgen_futures::spawn_local(async move {
-        check_pin_exists(s).await;
-    });
+    wasm_bindgen_futures::spawn_local(check_pin_exists(state));
 }
-
 async fn check_pin_exists(state: Rc<RefCell<AppState>>) {
-    if let Ok(rows) = db_client::query(
-        "SELECT value FROM settings WHERE key = 'parent_pin'",
-        vec![],
-    ).await {
-        let has_pin = rows.as_array().map(|a| !a.is_empty()).unwrap_or(false);
-        MOM_STATE.with(|m| {
-            if let Some(mom) = m.borrow_mut().as_mut() {
-                mom.pin_set = has_pin;
-            }
-        });
-        state.borrow_mut().parent_pin_set = has_pin;
-    }
+    let has_pin = db_client::get_setting("parent_pin").await.is_some();
+    MOM_STATE.with(|m| {
+        if let Some(mom) = m.borrow_mut().as_mut() {
+            mom.pin_set = has_pin;
+        }
+    });
+    state.borrow_mut().parent_pin_set = has_pin;
 }
-
-/// Long-press on the app title (3 seconds) to trigger Mom Mode.
 fn bind_long_press() {
-    let Some(title) = dom::query(".home-title") else { return };
-
+    let Some(title) = dom::query(".home-title") else {
+        return;
+    };
     let timer_id: Rc<RefCell<Option<i32>>> = Rc::new(RefCell::new(None));
-
-    // Pointer down — start timer
     let timer_down = timer_id.clone();
     dom::on(title.unchecked_ref(), "pointerdown", move |_: Event| {
         let timer_ref = timer_down.clone();
-        let cb = Closure::<dyn FnMut()>::once(move || {
+        let id = dom::set_timeout_cancelable(constants::MOM_MODE_LONG_PRESS_MS, move || {
             *timer_ref.borrow_mut() = None;
             synth_audio::chime();
             show_pin_overlay();
         });
-        let id = dom::window()
-            .set_timeout_with_callback_and_timeout_and_arguments_0(
-                cb.as_ref().unchecked_ref(), 3000,
-            ).unwrap_or(0);
-        cb.forget();
         *timer_down.borrow_mut() = Some(id);
     });
-
-    // Pointer up / cancel — clear timer
-    let timer_up = timer_id.clone();
+    let timer_up = timer_id;
     let cancel = move |_: Event| {
         if let Some(id) = timer_up.borrow_mut().take() {
             dom::window().clear_timeout_with_handle(id);
@@ -88,145 +56,151 @@ fn bind_long_press() {
     dom::on(title.unchecked_ref(), "pointerup", cancel);
     dom::on(title.unchecked_ref(), "pointercancel", cancel2);
 }
-
 fn show_pin_overlay() {
-    let is_setup = MOM_STATE.with(|m| {
-        m.borrow().as_ref().map(|s| !s.pin_set).unwrap_or(true)
-    });
-
+    let is_setup = MOM_STATE.with(|m| m.borrow().as_ref().is_none_or(|s| !s.pin_set));
     let doc = dom::document();
-    let overlay = render::create_el_with_class(&doc, "dialog", "mom-overlay");
-    let _ = overlay.set_attribute("data-mom-overlay", "");
-    let _ = overlay.set_attribute("aria-label", "Enter PIN");
-
-    let card = render::create_el_with_class(&doc, "div", "mom-pin-card");
-
-    let title = render::create_el_with_class(&doc, "h2", "mom-pin-title");
+    let Some(overlay) =
+        render::create_el_with_data(&doc, "dialog", "mom-overlay", "data-mom-overlay")
+    else {
+        return;
+    };
+    dom::set_attr(&overlay, "aria-label", "Enter PIN");
+    let Some(card) = render::create_el_with_class(&doc, "div", "mom-pin-card") else {
+        return;
+    };
+    let Some(title) = render::create_el_with_class(&doc, "h2", "mom-pin-title") else {
+        return;
+    };
     if is_setup {
-        title.set_text_content(Some("\u{1F49C} Hi Mom! Set a 4-digit code"));
+        title.set_text_content(None);
+        dom::safe_set_inner_html(
+            &title,
+            r#"<img src="illustrations/stickers/heart-purple.webp" class="inline-emoji"/> Hi Mom! Set a 4-digit code"#,
+        );
     } else {
-        title.set_text_content(Some("\u{1F512} Enter your PIN"));
+        title.set_text_content(None);
+        dom::safe_set_inner_html(
+            &title,
+            r#"<img src="illustrations/stickers/lock-gold.webp" class="inline-emoji"/> Enter your PIN"#,
+        );
     }
     let _ = card.append_child(&title);
-
-    // PIN display dots
-    let dots = render::create_el_with_class(&doc, "div", "mom-pin-dots");
-    let _ = dots.set_attribute("data-pin-dots", "");
+    let Some(dots) = render::create_el_with_data(&doc, "div", "mom-pin-dots", "data-pin-dots")
+    else {
+        return;
+    };
     for i in 0..4 {
-        let dot = render::create_el_with_class(&doc, "span", "mom-pin-dot");
-        let _ = dot.set_attribute("data-dot", &i.to_string());
-        dot.set_text_content(Some("\u{25CB}")); // empty circle
+        let Some(dot) = render::create_el_with_class(&doc, "span", "mom-pin-dot") else {
+            continue;
+        };
+        dom::set_attr(&dot, "data-dot", &i.to_string());
+        dot.set_text_content(Some("\u{25CB}"));
         let _ = dots.append_child(&dot);
     }
     let _ = card.append_child(&dots);
-
-    // Number pad (1-9, 0, backspace)
-    let pad = render::create_el_with_class(&doc, "div", "mom-numpad");
+    let Some(pad) = render::create_el_with_class(&doc, "div", "mom-numpad") else {
+        return;
+    };
     for n in 1..=9 {
-        let btn = render::create_button(&doc, "mom-numpad-btn", &n.to_string());
-        let _ = btn.set_attribute("data-pin-digit", &n.to_string());
+        let Some(btn) = render::create_button(&doc, "mom-numpad-btn", &n.to_string()) else {
+            continue;
+        };
+        dom::set_attr(&btn, "data-pin-digit", &n.to_string());
+        dom::set_attr(&btn, "aria-label", &format!("digit {n}"));
         let _ = pad.append_child(&btn);
     }
-    // Empty cell + 0 + backspace
-    let empty = render::create_el_with_class(&doc, "div", "mom-numpad-spacer");
+    let Some(empty) = render::create_el_with_class(&doc, "div", "mom-numpad-spacer") else {
+        return;
+    };
     let _ = pad.append_child(&empty);
-
-    let zero_btn = render::create_button(&doc, "mom-numpad-btn", "0");
-    let _ = zero_btn.set_attribute("data-pin-digit", "0");
+    let Some(zero_btn) = render::create_button(&doc, "mom-numpad-btn", "0") else {
+        return;
+    };
+    dom::set_attr(&zero_btn, "data-pin-digit", "0");
+    dom::set_attr(&zero_btn, "aria-label", "digit 0");
     let _ = pad.append_child(&zero_btn);
-
-    let del_btn = render::create_button(&doc, "mom-numpad-btn mom-numpad-btn--del", "\u{232B}");
-    let _ = del_btn.set_attribute("data-pin-delete", "");
+    let Some(del_btn) = render::create_button_with_data(
+        &doc,
+        "mom-numpad-btn mom-numpad-btn--del",
+        "\u{232B}",
+        "data-pin-delete",
+    ) else {
+        return;
+    };
+    dom::set_attr(&del_btn, "aria-label", "Delete");
     let _ = pad.append_child(&del_btn);
-
     let _ = card.append_child(&pad);
-
-    // Error message (hidden)
-    let error = render::create_el_with_class(&doc, "p", "mom-pin-error");
-    let _ = error.set_attribute("data-pin-error", "");
-    let _ = error.set_attribute("hidden", "");
-    error.set_text_content(Some("Wrong PIN — try again!"));
+    let Some(error) = render::create_el_with_data(&doc, "p", "mom-pin-error", "data-pin-error")
+    else {
+        return;
+    };
+    dom::set_attr(&error, "hidden", "");
+    error.set_text_content(Some("\u{1F512} That\u{2019}s not quite right \u{2014} try again!"));
     let _ = card.append_child(&error);
-
-    // Cancel button
-    let cancel = render::create_button(&doc, "mom-cancel-btn", "\u{2715} Cancel");
-    let _ = cancel.set_attribute("data-mom-cancel", "");
+    let Some(cancel) = render::create_button_with_data(
+        &doc,
+        "mom-cancel-btn",
+        "\u{2715} Cancel",
+        "data-mom-cancel",
+    ) else {
+        return;
+    };
     let _ = card.append_child(&cancel);
-
     let _ = overlay.append_child(&card);
-
-    if let Some(body) = doc.body() {
-        let _ = body.append_child(&overlay);
-    }
-
-    // Native <dialog> showModal() provides focus trap + Escape + backdrop
+    let _ = dom::body().append_child(&overlay);
     let dialog: &web_sys::HtmlDialogElement = overlay.unchecked_ref();
     if let Err(e) = dialog.show_modal() {
-        web_sys::console::warn_1(&format!("[mom_mode] PIN dialog.show_modal() failed: {:?}", e).into());
-        return;  // Don't show broken PIN UI
+        dom::warn(&format!("[mom_mode] PIN dialog.show_modal() failed: {e:?}"));
+        return;
     }
-
     bind_pin_interactions(is_setup);
 }
-
 fn bind_pin_interactions(is_setup: bool) {
-    let Some(overlay) = dom::query("[data-mom-overlay]") else { return };
+    let Some(overlay) = dom::query("[data-mom-overlay]") else {
+        return;
+    };
     let entered = Rc::new(RefCell::new(String::new()));
-
-    // Cancel button
     if let Some(cancel) = dom::query("[data-mom-cancel]") {
         dom::on(cancel.unchecked_ref(), "click", move |_: Event| {
             close_pin_overlay();
         });
     }
-
-    // Native <dialog> fires "cancel" on Escape — no manual keydown listener needed
     dom::on(overlay.unchecked_ref(), "cancel", move |_: Event| {
         close_pin_overlay();
     });
-
-    // Digit buttons (event delegation on numpad)
-    let entered_click = entered.clone();
+    let entered_click = entered;
     let setup = is_setup;
     dom::on(overlay.unchecked_ref(), "click", move |event: Event| {
-        let target = event.target().and_then(|t| t.dyn_into::<Element>().ok());
-        let Some(el) = target else { return };
-
-        // Handle delete
-        if el.closest("[data-pin-delete]").ok().flatten().is_some() {
+        let Some(el) = dom::event_target_element(&event) else {
+            return;
+        };
+        if dom::closest(&el, "[data-pin-delete]").is_some() {
             let mut pin = entered_click.borrow_mut();
             pin.pop();
             update_pin_dots(pin.len());
-            // Hide error
             dom::hide("[data-pin-error]");
             return;
         }
-
-        // Handle digit
-        if let Ok(Some(btn)) = el.closest("[data-pin-digit]") {
-            if let Some(digit) = btn.get_attribute("data-pin-digit") {
+        if let Some(btn) = dom::closest(&el, "[data-pin-digit]") {
+            if let Some(digit) = dom::get_attr(&btn, "data-pin-digit") {
                 let mut pin = entered_click.borrow_mut();
                 if pin.len() < 4 {
                     pin.push_str(&digit);
                     update_pin_dots(pin.len());
-
                     if pin.len() == 4 {
                         let full_pin = pin.clone();
                         drop(pin);
                         if setup {
-                            // Save new PIN
-                            let pin_val = full_pin.clone();
+                            let pin_val = full_pin;
                             wasm_bindgen_futures::spawn_local(async move {
                                 save_pin(&pin_val).await;
                             });
                         } else {
-                            // Verify PIN — clone entered Rc so we can clear it on failure
-                            let pin_val = full_pin.clone();
+                            let pin_val = full_pin;
                             let entered_reset = entered_click.clone();
                             wasm_bindgen_futures::spawn_local(async move {
                                 let ok = verify_pin(&pin_val).await;
                                 if !ok {
-                                    // Clear entered state so user can retry
                                     entered_reset.borrow_mut().clear();
                                 }
                             });
@@ -237,298 +211,352 @@ fn bind_pin_interactions(is_setup: bool) {
         }
     });
 }
-
 fn update_pin_dots(count: usize) {
+    use std::fmt::Write;
     for i in 0..4 {
-        let selector = format!("[data-dot=\"{i}\"]");
-        if let Some(dot) = dom::query(&selector) {
+        let selector = dom::with_buf(|buf| {
+            let _ = write!(buf, "{i}");
+            buf.clone()
+        });
+        if let Some(dot) = dom::query_data("dot", &selector) {
             if i < count {
-                dot.set_text_content(Some("\u{25CF}")); // filled circle
-                let _ = dot.set_attribute("class", "mom-pin-dot mom-pin-dot--filled");
+                dot.set_text_content(Some("\u{25CF}"));
+                dom::set_attr(&dot, "class", "mom-pin-dot mom-pin-dot--filled");
             } else {
-                dot.set_text_content(Some("\u{25CB}")); // empty circle
-                let _ = dot.set_attribute("class", "mom-pin-dot");
+                dot.set_text_content(Some("\u{25CB}"));
+                dom::set_attr(&dot, "class", "mom-pin-dot");
             }
         }
     }
 }
-
 async fn save_pin(pin: &str) {
-    let _ = db_client::exec(
-        "INSERT OR REPLACE INTO settings (key, value) VALUES ('parent_pin', ?1)",
-        vec![pin.to_string()],
-    ).await;
-
+    db_client::set_setting("parent_pin", pin).await;
     MOM_STATE.with(|m| {
         if let Some(mom) = m.borrow_mut().as_mut() {
             mom.pin_set = true;
             mom.state.borrow_mut().parent_pin_set = true;
         }
     });
-
-    // Close PIN overlay and show dashboard
     close_pin_overlay();
     speech::speak("PIN set! Welcome to Mom Mode!");
     show_dashboard();
 }
-
 async fn verify_pin(entered: &str) -> bool {
-    if let Ok(rows) = db_client::query(
-        "SELECT value FROM settings WHERE key = 'parent_pin'",
-        vec![],
-    ).await {
-        let stored = rows.as_array()
-            .and_then(|a| a.first())
-            .and_then(|r| r.get("value"))
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
-
-        if entered == stored {
-            close_pin_overlay();
-            synth_audio::chime();
-            show_dashboard();
-            return true;
-        } else {
-            // Wrong PIN — show error, reset dots
-            dom::show("[data-pin-error]");
-            update_pin_dots(0);
-            return false;
-        }
-    }
-    false
-}
-
-/// Get stored parent PIN or default "1234"
-pub async fn get_parent_pin() -> String {
-    if let Ok(rows) = db_client::query(
-        "SELECT value FROM settings WHERE key = 'parent_pin'",
-        vec![],
-    ).await {
-        rows.as_array()
-            .and_then(|a| a.first())
-            .and_then(|r| r.get("value"))
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| "1234".to_string())
+    let Some(stored) = get_parent_pin().await else {
+        dom::warn("[mom_mode] No PIN stored — cannot verify");
+        dom::show("[data-pin-error]");
+        update_pin_dots(0);
+        return false;
+    };
+    if entered == stored {
+        close_pin_overlay();
+        synth_audio::chime();
+        show_dashboard();
+        true
     } else {
-        "1234".to_string()
+        dom::show("[data-pin-error]");
+        update_pin_dots(0);
+        false
     }
 }
-
+pub async fn get_parent_pin() -> Option<String> {
+    db_client::get_setting("parent_pin").await
+}
+fn close_dialog(selector: &str) {
+    if let Some(el) = dom::query(selector) {
+        el.unchecked_ref::<web_sys::HtmlDialogElement>().close();
+        el.remove();
+    }
+}
 fn close_pin_overlay() {
-    if let Some(overlay) = dom::query("[data-mom-overlay]") {
-        let dialog: &web_sys::HtmlDialogElement = overlay.unchecked_ref();
-        dialog.close();
-        overlay.remove();
-    }
+    close_dialog("[data-mom-overlay]");
 }
-
 fn show_dashboard() {
     let doc = dom::document();
-    let overlay = render::create_el_with_class(&doc, "dialog", "mom-overlay mom-overlay--dashboard");
-    let _ = overlay.set_attribute("data-mom-dashboard", "");
-    let _ = overlay.set_attribute("aria-label", "Mom's Dashboard");
-
-    let card = render::create_el_with_class(&doc, "div", "mom-dashboard-card");
-
-    // Header
-    let header = render::create_el_with_class(&doc, "div", "mom-dashboard-header");
-    let title = render::create_el_with_class(&doc, "h2", "mom-dashboard-title");
-    title.set_text_content(Some("\u{1F49C} Mom's Dashboard"));
+    let Some(overlay) = render::create_el_with_data(
+        &doc,
+        "dialog",
+        "mom-overlay mom-overlay--dashboard",
+        "data-mom-dashboard",
+    ) else {
+        return;
+    };
+    dom::set_attr(&overlay, "aria-label", "Mom's Dashboard");
+    let Some(card) = render::create_el_with_class(&doc, "div", "mom-dashboard-card") else {
+        return;
+    };
+    let Some(header) = render::create_el_with_class(&doc, "div", "mom-dashboard-header") else {
+        return;
+    };
+    let Some(title) = render::create_el_with_class(&doc, "h2", "mom-dashboard-title") else {
+        return;
+    };
+    dom::safe_set_inner_html(&title, r#"<img src="illustrations/stickers/heart-purple.webp" class="inline-emoji"/> Mom's Dashboard"#);
     let _ = header.append_child(&title);
-    let close_btn = render::create_button(&doc, "mom-close-btn", "\u{2715}");
-    let _ = close_btn.set_attribute("data-mom-close", "");
+    let Some(close_btn) =
+        render::create_button_with_data(&doc, "mom-close-btn", "\u{2715}", "data-mom-close")
+    else {
+        return;
+    };
     let _ = header.append_child(&close_btn);
     let _ = card.append_child(&header);
-
-    // Current week
     let week = utils::week_key();
-    let week_label = render::create_el_with_class(&doc, "p", "mom-week-label");
-    week_label.set_text_content(Some(&format!("\u{1F4C5} Week: {week}")));
+    let Some(week_label) = render::create_el_with_class(&doc, "p", "mom-week-label") else {
+        return;
+    };
+    if let Some(img) = render::create_img(&doc, "illustrations/stickers/calendar-magic.webp", "Calendar", "inline-emoji") {
+        let _ = week_label.append_child(&img);
+    }
+    render::append_text(&doc, &week_label, "span", "", &format!(" Week: {week}"));
     let _ = card.append_child(&week_label);
-
-    // Goal setting section
-    let goals_section = render::create_el_with_class(&doc, "div", "mom-goals-section");
-    let goals_title = render::create_el_with_class(&doc, "h3", "mom-section-title");
-    goals_title.set_text_content(Some("\u{2B50} Set Weekly Goals"));
+    let Some(insights_section) =
+        render::create_el_with_data(&doc, "div", "mom-insights-section", "data-mom-insights")
+    else {
+        return;
+    };
+    let Some(insights_title) = render::create_el_with_class(&doc, "h3", "mom-section-title") else {
+        return;
+    };
+    dom::safe_set_inner_html(&insights_title, r#"<img src="illustrations/stickers/chart-sparkle.webp" class="inline-emoji"/> Weekly Insights"#);
+    let _ = insights_section.append_child(&insights_title);
+    let Some(insights_loader) = render::create_el_with_class(&doc, "div", "mom-insights-loader")
+    else {
+        return;
+    };
+    insights_loader.set_text_content(Some("Loading Blaire's analytics..."));
+    let _ = insights_section.append_child(&insights_loader);
+    let _ = card.append_child(&insights_section);
+    let Some(goals_section) = render::create_el_with_class(&doc, "div", "mom-goals-section") else {
+        return;
+    };
+    let Some(goals_title) = render::create_el_with_class(&doc, "h3", "mom-section-title") else {
+        return;
+    };
+    dom::safe_set_inner_html(&goals_title, r#"<img src="illustrations/stickers/glowing-star.webp" class="inline-emoji"/> Set Weekly Goals"#);
     let _ = goals_section.append_child(&goals_title);
-
-    // Goal type cards
     let goal_types = [
-        ("acts", "\u{1F49D}", "Kind Acts", "How many kind acts this week?", 5, 30, 10),
-        ("quests", "\u{2B50}", "Quest Days", "Complete quests on how many days?", 1, 7, 3),
-        ("stories", "\u{1F4D6}", "Stories", "Read how many stories?", 1, 5, 2),
-        ("games", "\u{1F3AE}", "Games", "Play how many games?", 1, 10, 5),
-        ("hearts", "\u{1F49C}", "Hearts", "Earn how many hearts?", 10, 100, 25),
+        (
+            "acts",
+            r#"<img src="illustrations/stickers/heart-sparkle.webp" class="inline-emoji"/>"#,
+            "Kind Acts",
+            "How many kind acts this week?",
+            5,
+            30,
+            10,
+        ),
+        (
+            "quests",
+            r#"<img src="illustrations/stickers/star-gold.webp" class="inline-emoji"/>"#,
+            "Quest Days",
+            "Complete quests on how many days?",
+            1,
+            7,
+            3,
+        ),
+        (
+            "stories",
+            r#"<img src="illustrations/stickers/book-magic.webp" class="inline-emoji"/>"#,
+            "Stories",
+            "Read how many stories?",
+            1,
+            5,
+            2,
+        ),
+        (
+            "games",
+            r#"<img src="illustrations/stickers/game-controller.webp" class="inline-emoji"/>"#,
+            "Games",
+            "Play how many games?",
+            1,
+            10,
+            5,
+        ),
+        (
+            "hearts",
+            r#"<img src="illustrations/stickers/heart-purple.webp" class="inline-emoji"/>"#,
+            "Hearts",
+            "Earn how many hearts?",
+            10,
+            100,
+            25,
+        ),
     ];
-
     for (goal_type, emoji, label, desc, _min, _max, default) in &goal_types {
-        let goal_card = render::create_el_with_class(&doc, "div", "mom-goal-card");
-        let _ = goal_card.set_attribute("data-goal-type", goal_type);
-
-        let goal_header = render::create_el_with_class(&doc, "div", "mom-goal-header");
-        let emoji_el = render::create_el_with_class(&doc, "span", "mom-goal-emoji");
-        emoji_el.set_text_content(Some(emoji));
-        let label_el = render::create_el_with_class(&doc, "span", "mom-goal-label");
-        label_el.set_text_content(Some(label));
-        let _ = goal_header.append_child(&emoji_el);
-        let _ = goal_header.append_child(&label_el);
+        let Some(goal_card) = render::create_el_with_class(&doc, "div", "mom-goal-card") else {
+            continue;
+        };
+        dom::set_attr(&goal_card, "data-goal-type", goal_type);
+        let Some(goal_header) = render::create_el_with_class(&doc, "div", "mom-goal-header") else {
+            continue;
+        };
+        if emoji.starts_with("<img") {
+            let Some(spark_span) = render::create_el_with_class(&doc, "span", "mom-goal-emoji") else { continue; };
+            dom::safe_set_inner_html(&spark_span, emoji);
+            let _ = goal_header.append_child(&spark_span);
+        } else {
+            render::append_text(&doc, &goal_header, "span", "mom-goal-emoji", emoji);
+        }
+        render::append_text(&doc, &goal_header, "span", "mom-goal-label", label);
         let _ = goal_card.append_child(&goal_header);
-
-        let desc_el = render::create_el_with_class(&doc, "p", "mom-goal-desc");
-        desc_el.set_text_content(Some(desc));
-        let _ = goal_card.append_child(&desc_el);
-
-        // Slider row: [-] [value] [+]
-        let slider_row = render::create_el_with_class(&doc, "div", "mom-slider-row");
-
-        let minus_btn = render::create_button(&doc, "mom-slider-btn", "\u{2796}");
-        let _ = minus_btn.set_attribute("data-slider-minus", goal_type);
+        render::append_text(&doc, &goal_card, "p", "mom-goal-desc", desc);
+        let Some(slider_row) = render::create_el_with_class(&doc, "div", "mom-slider-row") else {
+            continue;
+        };
+        let Some(minus_btn) = render::create_button(&doc, "mom-slider-btn", "\u{2796}") else {
+            continue;
+        };
+        dom::set_attr(&minus_btn, "data-slider-minus", goal_type);
         let _ = slider_row.append_child(&minus_btn);
-
-        let value_el = render::create_el_with_class(&doc, "span", "mom-slider-value");
-        let _ = value_el.set_attribute("data-slider-value", goal_type);
+        let Some(value_el) = render::create_el_with_class(&doc, "span", "mom-slider-value") else {
+            continue;
+        };
+        dom::set_attr(&value_el, "data-slider-value", goal_type);
         value_el.set_text_content(Some(&default.to_string()));
         let _ = slider_row.append_child(&value_el);
-
-        let plus_btn = render::create_button(&doc, "mom-slider-btn", "\u{2795}");
-        let _ = plus_btn.set_attribute("data-slider-plus", goal_type);
+        let Some(plus_btn) = render::create_button(&doc, "mom-slider-btn", "\u{2795}") else {
+            continue;
+        };
+        dom::set_attr(&plus_btn, "data-slider-plus", goal_type);
         let _ = slider_row.append_child(&plus_btn);
-
         let _ = goal_card.append_child(&slider_row);
-
-        // Toggle: active/inactive
-        let toggle_btn = render::create_button(&doc, "mom-goal-toggle mom-goal-toggle--off", "Add Goal");
-        let _ = toggle_btn.set_attribute("data-goal-toggle", goal_type);
+        let Some(toggle_btn) =
+            render::create_button(&doc, "mom-goal-toggle mom-goal-toggle--off", "Add Goal")
+        else {
+            continue;
+        };
+        dom::set_attr(&toggle_btn, "data-goal-toggle", goal_type);
         let _ = goal_card.append_child(&toggle_btn);
-
         let _ = goals_section.append_child(&goal_card);
     }
-
     let _ = card.append_child(&goals_section);
-
-    // Mom's note section
-    let note_section = render::create_el_with_class(&doc, "div", "mom-note-section");
-    let note_title = render::create_el_with_class(&doc, "h3", "mom-section-title");
-    note_title.set_text_content(Some("\u{1F4DD} Note for Blaire"));
+    let Some(note_section) = render::create_el_with_class(&doc, "div", "mom-note-section") else {
+        return;
+    };
+    let Some(note_title) = render::create_el_with_class(&doc, "h3", "mom-section-title") else {
+        return;
+    };
+    dom::safe_set_inner_html(&note_title, r#"<img src="illustrations/stickers/pencil-star.webp" class="inline-emoji"/> Note for Blaire"#);
     let _ = note_section.append_child(&note_title);
-
-    let note_input = render::create_el_with_class(&doc, "textarea", "mom-note-input");
-    let _ = note_input.set_attribute("data-mom-note", "");
-    let _ = note_input.set_attribute("placeholder", "Write an encouragement note for Blaire...");
-    // Note: Removed rows="3" — Safari 26.2 field-sizing:content handles auto-grow
+    let Some(note_input) =
+        render::create_el_with_data(&doc, "textarea", "mom-note-input", "data-mom-note")
+    else {
+        return;
+    };
+    dom::set_attr(
+        &note_input,
+        "placeholder",
+        "Write an encouragement note for Blaire...",
+    );
     let _ = note_section.append_child(&note_input);
     let _ = card.append_child(&note_section);
-
-    // Save button
-    let save_btn = render::create_button(&doc, "mom-save-btn", "\u{1F49C} Save Goals");
-    let _ = save_btn.set_attribute("data-mom-save", "");
+    let Some(save_btn) = render::create_button_with_data(
+        &doc,
+        "mom-save-btn",
+        "\u{1F49C} Save Goals",
+        "data-mom-save",
+    ) else {
+        return;
+    };
     let _ = card.append_child(&save_btn);
-
-    // Export / restore controls
-    let export_row = render::create_el_with_class(&doc, "div", "mom-export-row");
-    let export_json = render::create_button(&doc, "mom-export-btn", "\u{1F4E6} Export JSON");
-    let _ = export_json.set_attribute("data-mom-export-json", "");
+    let Some(export_row) = render::create_el_with_class(&doc, "div", "mom-export-row") else {
+        return;
+    };
+    let Some(export_json) = render::create_button_with_data(
+        &doc,
+        "mom-export-btn",
+        "\u{1F4E6} Export JSON",
+        "data-mom-export-json",
+    ) else {
+        return;
+    };
     let _ = export_row.append_child(&export_json);
-    let export_csv = render::create_button(&doc, "mom-export-btn", "\u{1F4CA} Export CSV");
-    let _ = export_csv.set_attribute("data-mom-export-csv", "");
+    let Some(export_csv) = render::create_button_with_data(
+        &doc,
+        "mom-export-btn",
+        "\u{1F4CA} Export CSV",
+        "data-mom-export-csv",
+    ) else {
+        return;
+    };
     let _ = export_row.append_child(&export_csv);
-    let restore_json = render::create_button(&doc, "mom-export-btn", "\u{1F504} Restore JSON");
-    let _ = restore_json.set_attribute("data-mom-restore-json", "");
+    let Some(restore_json) = render::create_button_with_data(
+        &doc,
+        "mom-export-btn",
+        "\u{1F504} Restore JSON",
+        "data-mom-restore-json",
+    ) else {
+        return;
+    };
     let _ = export_row.append_child(&restore_json);
     let _ = card.append_child(&export_row);
-
-    let restore_input = render::create_el_with_class(&doc, "input", "mom-restore-input");
-    let _ = restore_input.set_attribute("data-mom-restore-input", "");
-    let _ = restore_input.set_attribute("type", "file");
-    let _ = restore_input.set_attribute("accept", "application/json");
-    let _ = restore_input.set_attribute("hidden", "");
-    let _ = card.append_child(&restore_input);
-
-    let _ = overlay.append_child(&card);
-
-    if let Some(body) = doc.body() {
-        let _ = body.append_child(&overlay);
+    let Some(restore_input) = render::create_el_with_class(&doc, "input", "mom-restore-input")
+    else {
+        return;
+    };
+    for (k, v) in [
+        ("data-mom-restore-input", ""),
+        ("type", "file"),
+        ("accept", "application/json"),
+        ("hidden", ""),
+    ] {
+        dom::set_attr(&restore_input, k, v);
     }
-
-    // Native <dialog> showModal() provides focus trap + Escape + backdrop
+    let _ = card.append_child(&restore_input);
+    let _ = overlay.append_child(&card);
+    let _ = dom::body().append_child(&overlay);
     let dialog: &web_sys::HtmlDialogElement = overlay.unchecked_ref();
     if let Err(e) = dialog.show_modal() {
-        web_sys::console::warn_1(&format!("[mom_mode] dashboard dialog.show_modal() failed: {:?}", e).into());
-        return;  // Don't show broken dashboard UI
+        dom::warn(&format!(
+            "[mom_mode] dashboard dialog.show_modal() failed: {e:?}"
+        ));
+        return;
     }
-
     bind_dashboard_interactions();
-
-    // Load existing goals for this week
-    wasm_bindgen_futures::spawn_local(async move {
-        load_existing_goals().await;
-    });
+    wasm_bindgen_futures::spawn_local(load_existing_goals());
 }
-
 fn bind_dashboard_interactions() {
-    let Some(dashboard) = dom::query("[data-mom-dashboard]") else { return };
-
-    // Close button
+    let Some(dashboard) = dom::query("[data-mom-dashboard]") else {
+        return;
+    };
     let dash_close = dashboard.clone();
     if let Some(close_btn) = dom::query("[data-mom-close]") {
         dom::on(close_btn.unchecked_ref(), "click", move |_: Event| {
             dash_close.remove();
         });
     }
-
-    // Goal toggles and sliders (event delegation)
     dom::on(dashboard.unchecked_ref(), "click", move |event: Event| {
-        let target = event.target().and_then(|t| t.dyn_into::<Element>().ok());
-        let Some(el) = target else { return };
-
-        // Toggle goal on/off
-        if let Some(goal_type) = el.get_attribute("data-goal-toggle") {
+        let Some(el) = dom::event_target_element(&event) else {
+            return;
+        };
+        if let Some(goal_type) = dom::get_attr(&el, "data-goal-toggle") {
             toggle_goal(&el, &goal_type);
             return;
         }
-
-        // Slider minus
-        if let Some(goal_type) = el.get_attribute("data-slider-minus")
-            .or_else(|| el.closest("[data-slider-minus]").ok().flatten()
-                .and_then(|e| e.get_attribute("data-slider-minus")))
-        {
-            adjust_slider(&goal_type, -1);
+        for (attr, delta) in [("data-slider-minus", -1), ("data-slider-plus", 1)] {
+            if let Some(goal_type) = closest_attr(&el, attr) {
+                adjust_slider(&goal_type, delta);
+                return;
+            }
+        }
+        let spawn_if =
+            |sel: &str, f: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>| -> bool {
+                if dom::closest(&el, sel).is_some() {
+                    wasm_bindgen_futures::spawn_local(f);
+                    true
+                } else {
+                    false
+                }
+            };
+        if spawn_if("[data-mom-save]", Box::pin(save_goals())) {
             return;
         }
-
-        // Slider plus
-        if let Some(goal_type) = el.get_attribute("data-slider-plus")
-            .or_else(|| el.closest("[data-slider-plus]").ok().flatten()
-                .and_then(|e| e.get_attribute("data-slider-plus")))
-        {
-            adjust_slider(&goal_type, 1);
+        if spawn_if("[data-mom-export-json]", Box::pin(export_json_backup())) {
             return;
         }
-
-        // Save goals
-        if el.closest("[data-mom-save]").ok().flatten().is_some() {
-            wasm_bindgen_futures::spawn_local(async move {
-                save_goals().await;
-            });
+        if spawn_if("[data-mom-export-csv]", Box::pin(export_kind_acts_csv())) {
             return;
         }
-
-        if el.closest("[data-mom-export-json]").ok().flatten().is_some() {
-            wasm_bindgen_futures::spawn_local(async move {
-                export_json_backup().await;
-            });
-            return;
-        }
-
-        if el.closest("[data-mom-export-csv]").ok().flatten().is_some() {
-            wasm_bindgen_futures::spawn_local(async move {
-                export_kind_acts_csv().await;
-            });
-            return;
-        }
-
-        if el.closest("[data-mom-restore-json]").ok().flatten().is_some() {
+        if dom::closest(&el, "[data-mom-restore-json]").is_some() {
             if let Some(input_el) = dom::query("[data-mom-restore-input]") {
                 let _ = js_sys::Reflect::get(input_el.as_ref(), &"click".into())
                     .ok()
@@ -537,27 +565,83 @@ fn bind_dashboard_interactions() {
             }
         }
     });
+    if let Some(restore_input) = dom::query("[data-mom-restore-input]") {
+        dom::on(
+            restore_input.unchecked_ref(),
+            "change",
+            move |event: Event| {
+                let Some(target) = event.target() else { return };
+                let files = js_sys::Reflect::get(target.as_ref(), &"files".into()).ok();
+                let file = files.and_then(|fl| {
+                    js_sys::Reflect::get(&fl, &wasm_bindgen::JsValue::from(0u32)).ok()
+                });
+                let Some(file) = file.filter(|f| !f.is_undefined() && !f.is_null()) else {
+                    return;
+                };
+                let text_fn = js_sys::Reflect::get(&file, &"text".into())
+                    .ok()
+                    .and_then(|f| f.dyn_into::<js_sys::Function>().ok());
+                let Some(text_fn) = text_fn else { return };
+                let promise = match text_fn.call0(&file) {
+                    Ok(p) => p,
+                    Err(_) => return,
+                };
+                let promise = js_sys::Promise::from(promise);
+                wasm_bindgen_futures::spawn_local(async move {
+                    match wasm_bindgen_futures::JsFuture::from(promise).await {
+                        Ok(text_val) => {
+                            if let Some(snapshot_json) = text_val.as_string() {
+                                if let Err(e) = db_client::restore_snapshot(snapshot_json).await {
+                                    dom::warn(&format!(
+                                        "[mom_mode] restore_snapshot failed: {e:?}"
+                                    ));
+                                    dom::toast("Restore failed \u{274C}");
+                                } else {
+                                    dom::toast("Restored! \u{2705}");
+                                    speech::speak("Restore complete!");
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            dom::warn(&format!("[mom_mode] file read failed: {e:?}"));
+                            dom::toast("Could not read file \u{274C}");
+                        }
+                    }
+                });
+            },
+        );
+    }
 }
-
+fn closest_attr(el: &Element, attr: &str) -> Option<String> {
+    dom::get_attr(el, attr).or_else(|| {
+        dom::with_buf(|buf| {
+            buf.push('[');
+            buf.push_str(attr);
+            buf.push(']');
+            dom::closest(el, buf).and_then(|e| dom::get_attr(&e, attr))
+        })
+    })
+}
 fn toggle_goal(btn: &Element, _goal_type: &str) {
-    let current_class = btn.get_attribute("class").unwrap_or_default();
-    if current_class.contains("--off") {
-        let _ = btn.set_attribute("class", "mom-goal-toggle mom-goal-toggle--on");
+    if dom::get_attr(btn, "class")
+        .unwrap_or_default()
+        .contains("--off")
+    {
+        dom::set_attr(btn, "class", "mom-goal-toggle mom-goal-toggle--on");
         btn.set_text_content(Some("\u{2705} Active"));
     } else {
-        let _ = btn.set_attribute("class", "mom-goal-toggle mom-goal-toggle--off");
+        dom::set_attr(btn, "class", "mom-goal-toggle mom-goal-toggle--off");
         btn.set_text_content(Some("Add Goal"));
     }
 }
-
 fn adjust_slider(goal_type: &str, delta: i32) {
-    let selector = format!("[data-slider-value=\"{goal_type}\"]");
-    let Some(value_el) = dom::query(&selector) else { return };
-
-    let current: i32 = value_el.text_content()
+    let Some(value_el) = dom::query_data("slider-value", goal_type) else {
+        return;
+    };
+    let current: i32 = value_el
+        .text_content()
         .and_then(|s| s.parse().ok())
         .unwrap_or(0);
-
     let (min, max) = match goal_type {
         "acts" => (5, 30),
         "quests" => (1, 7),
@@ -566,44 +650,35 @@ fn adjust_slider(goal_type: &str, delta: i32) {
         "hearts" => (10, 100),
         _ => (1, 100),
     };
-
     let step = if goal_type == "hearts" { 5 } else { 1 };
-    let new_val = (current + delta * step).max(min).min(max);
-    value_el.set_text_content(Some(&new_val.to_string()));
+    value_el.set_text_content(Some(
+        &(current + delta * step).max(min).min(max).to_string(),
+    ));
 }
-
 async fn save_goals() {
     let week = utils::week_key();
     let now = utils::now_epoch_ms() as i64;
-
-    // Clear existing goals for this week
     let _ = db_client::exec(
         "DELETE FROM weekly_goals WHERE week_key = ?1",
         vec![week.clone()],
-    ).await;
-
-    // Collect active goals
+    )
+    .await;
     let goal_types = ["acts", "quests", "stories", "games", "hearts"];
     for goal_type in &goal_types {
-        let toggle_sel = format!("[data-goal-toggle=\"{goal_type}\"]");
-        let Some(toggle) = dom::query(&toggle_sel) else { continue };
-        let class = toggle.get_attribute("class").unwrap_or_default();
-        if !class.contains("--on") { continue; }
-
-        let value_sel = format!("[data-slider-value=\"{goal_type}\"]");
-        let target: u32 = dom::query(&value_sel)
+        let Some(toggle) = dom::query_data("goal-toggle", goal_type) else {
+            continue;
+        };
+        let class = dom::get_attr(&toggle, "class").unwrap_or_default();
+        if !class.contains("--on") {
+            continue;
+        }
+        let target: u32 = dom::query_data("slider-value", goal_type)
             .and_then(|el| el.text_content())
             .and_then(|s| s.parse().ok())
             .unwrap_or(10);
-
         let id = utils::create_id();
-        let _ = db_client::exec(
-            "INSERT INTO weekly_goals (id, week_key, goal_type, target, progress, created_at) VALUES (?1, ?2, ?3, ?4, 0, ?5)",
-            vec![id, week.clone(), goal_type.to_string(), target.to_string(), now.to_string()],
-        ).await;
+        let _ = db_client::exec( "INSERT INTO weekly_goals (id, week_key, goal_type, target, progress, created_at) VALUES (?1, ?2, ?3, ?4, 0, ?5)", vec![id, week.clone(), goal_type.to_string(), target.to_string(), now.to_string()],).await;
     }
-
-    // Save mom's note
     if let Some(note_el) = dom::query("[data-mom-note]") {
         let note_text = js_sys::Reflect::get(note_el.as_ref(), &"value".into())
             .ok()
@@ -611,31 +686,17 @@ async fn save_goals() {
             .unwrap_or_default();
         if !note_text.trim().is_empty() {
             let note_id = utils::create_id();
-            let _ = db_client::exec(
-                "INSERT OR REPLACE INTO mom_notes (id, week_key, note_text, created_at) VALUES (?1, ?2, ?3, ?4)",
-                vec![note_id, week.clone(), note_text.trim().to_string(), now.to_string()],
-            ).await;
+            let _ = db_client::exec( "INSERT OR REPLACE INTO mom_notes (id, week_key, note_text, created_at) VALUES (?1, ?2, ?3, ?4)", vec![note_id, week.clone(), note_text.trim().to_string(), now.to_string()],).await;
         }
     }
-
-    // Close dashboard
     close_dashboard();
-
-    // Notify weekly_goals module to refresh
     weekly_goals::refresh_goals();
-
     speech::speak("Goals saved! Let's have a great week!");
     synth_audio::chime();
 }
-
 fn close_dashboard() {
-    if let Some(dash) = dom::query("[data-mom-dashboard]") {
-        let dialog: &web_sys::HtmlDialogElement = dash.unchecked_ref();
-        dialog.close();
-        dash.remove();
-    }
+    close_dialog("[data-mom-dashboard]");
 }
-
 async fn load_existing_goals() {
     let week = utils::week_key();
     let (goals_rows, note_rows) = join!(
@@ -645,35 +706,31 @@ async fn load_existing_goals() {
         ),
         db_client::query(
             "SELECT note_text FROM mom_notes WHERE week_key = ?1 ORDER BY created_at DESC LIMIT 1",
-            vec![week],
+            vec![week.clone()],
         )
     );
 
     if let Ok(rows) = goals_rows {
         if let Some(arr) = rows.as_array() {
             for row in arr {
-                let Some(goal_type) = row.get("goal_type").and_then(|v| v.as_str()) else { continue };
+                let Some(goal_type) = row.get("goal_type").and_then(|v| v.as_str()) else {
+                    continue;
+                };
                 let target = row.get("target").and_then(|v| v.as_u64()).unwrap_or(10) as u32;
-
-                // Set slider value
-                let value_sel = format!("[data-slider-value=\"{goal_type}\"]");
-                if let Some(value_el) = dom::query(&value_sel) {
+                if let Some(value_el) = dom::query_data("slider-value", goal_type) {
                     value_el.set_text_content(Some(&target.to_string()));
                 }
-
-                // Activate toggle
-                let toggle_sel = format!("[data-goal-toggle=\"{goal_type}\"]");
-                if let Some(toggle) = dom::query(&toggle_sel) {
-                    let _ = toggle.set_attribute("class", "mom-goal-toggle mom-goal-toggle--on");
+                if let Some(toggle) = dom::query_data("goal-toggle", goal_type) {
+                    dom::set_attr(&toggle, "class", "mom-goal-toggle mom-goal-toggle--on");
                     toggle.set_text_content(Some("\u{2705} Active"));
                 }
             }
         }
     }
 
-    // Load existing note
     if let Ok(rows) = note_rows {
-        if let Some(note) = rows.as_array()
+        if let Some(note) = rows
+            .as_array()
             .and_then(|a| a.first())
             .and_then(|r| r.get("note_text"))
             .and_then(|v| v.as_str())
@@ -683,103 +740,214 @@ async fn load_existing_goals() {
             }
         }
     }
+
+    render_insights(&week).await;
 }
 
+async fn render_insights(week_key: &str) {
+    let Some(insights_box) = dom::query("[data-mom-insights]") else {
+        return;
+    };
+    if let Some(loader) = dom::query(".mom-insights-loader") {
+        loader.remove();
+    }
+
+    let doc = dom::document();
+    let insights_opt = parent_insights::get_weekly_insights(week_key).await;
+
+    let Some(insights) = insights_opt else {
+        render::append_text(
+            &doc,
+            &insights_box,
+            "p",
+            "mom-insight-empty",
+            "\u{2728} No kindness acts logged yet this week! Play some games to generate insights.",
+        );
+        return;
+    };
+
+    let Some(summary) = render::create_el_with_class(&doc, "div", "mom-insight-summary") else {
+        return;
+    };
+    render::append_text(
+        &doc,
+        &summary,
+        "p",
+        "mom-insight-pattern",
+        &insights.pattern_text,
+    );
+
+    dom::with_buf(|buf| {
+        use std::fmt::Write;
+        let _ = write!(
+            buf,
+            "Reflection Rate: {}% of acts were followed by an emotional reflection",
+            insights.reflection_rate
+        );
+        render::append_text(&doc, &summary, "p", "mom-insight-reflection", buf);
+    });
+    let _ = insights_box.append_child(&summary);
+
+    if !insights.skill_breakdown.is_empty() {
+        let Some(bars) = render::create_el_with_class(&doc, "div", "mom-insight-bars") else {
+            return;
+        };
+        for skill in insights.skill_breakdown {
+            let Some(row) = render::create_el_with_class(&doc, "div", "mom-skill-row") else {
+                continue;
+            };
+            let Some(label) = render::create_el_with_class(&doc, "div", "mom-skill-label") else {
+                continue;
+            };
+
+            let emoji = match skill.skill_type.as_str() {
+                "helping" => "\u{1F91D}",
+                "sharing" => "\u{1F381}",
+                "comforting" => "\u{1F917}",
+                "bravery" => "\u{1F981}",
+                "patience" => "\u{23F3}",
+                "inclusion" => "\u{1F46D}",
+                "gratitude" => "\u{1F64F}",
+                "listening" => "\u{1F442}",
+                _ => "\u{1F49C}",
+            };
+
+            dom::with_buf(|buf| {
+                use std::fmt::Write;
+                let _ = write!(
+                    buf,
+                    "{} {}",
+                    emoji,
+                    crate::skill_progression::skill_to_friendly_name(&skill.skill_type)
+                );
+                label.set_text_content(Some(buf));
+            });
+            let _ = row.append_child(&label);
+
+            let Some(track) = render::create_el_with_class(&doc, "div", "mom-skill-track") else {
+                continue;
+            };
+            let Some(fill) = render::create_el_with_class(&doc, "div", "mom-skill-fill") else {
+                continue;
+            };
+
+            dom::with_buf(|buf| {
+                use std::fmt::Write;
+                let _ = write!(buf, "width: {}%;", skill.percentage);
+                dom::set_attr(&fill, "style", buf);
+            });
+            let _ = track.append_child(&fill);
+            let _ = row.append_child(&track);
+
+            let Some(pct) = render::create_el_with_class(&doc, "div", "mom-skill-pct") else {
+                continue;
+            };
+            dom::with_buf(|buf| {
+                use std::fmt::Write;
+                let _ = write!(buf, "{}%", skill.percentage);
+                pct.set_text_content(Some(buf));
+            });
+            let _ = row.append_child(&pct);
+
+            let _ = bars.append_child(&row);
+        }
+        let _ = insights_box.append_child(&bars);
+    }
+}
 fn trigger_text_download(file_name: &str, text: &str, mime_type: &str) {
     let encoded = js_sys::encode_uri_component(text)
         .as_string()
         .unwrap_or_default();
     let href = format!("data:{mime_type};charset=utf-8,{encoded}");
-    let document = dom::document();
-    let anchor = document.create_element("a").ok();
-    let Some(a) = anchor else { return };
-    let _ = a.set_attribute("href", &href);
-    let _ = a.set_attribute("download", file_name);
-    if let Some(body) = document.body() {
-        let _ = body.append_child(&a);
-        let _ = js_sys::Reflect::get(a.as_ref(), &"click".into())
-            .ok()
-            .and_then(|f| f.dyn_into::<js_sys::Function>().ok())
-            .and_then(|f| f.call0(a.as_ref()).ok());
-        a.remove();
-    }
+    let Ok(a) = dom::document().create_element("a") else {
+        return;
+    };
+    dom::set_attr(&a, "href", &href);
+    dom::set_attr(&a, "download", file_name);
+    let _ = dom::body().append_child(&a);
+    let _ = js_sys::Reflect::get(a.as_ref(), &"click".into())
+        .ok()
+        .and_then(|f| f.dyn_into::<js_sys::Function>().ok())
+        .and_then(|f| f.call0(a.as_ref()).ok());
+    a.remove();
 }
-
+fn today_iso_day() -> String {
+    let stamp = js_sys::Date::new_0()
+        .to_iso_string()
+        .as_string()
+        .unwrap_or_default();
+    stamp.split('T').next().unwrap_or("unknown-day").to_string()
+}
 async fn export_json_backup() {
-    let stamp = js_sys::Date::new_0().to_iso_string().as_string().unwrap_or_default();
-    let day = stamp.split('T').next().unwrap_or("unknown-day").to_string();
+    let day = today_iso_day();
     let file_name = format!("blaires-kind-heart-export-{day}.json");
-
-    let (kind_acts_result, settings_result, quests_result) = join!(
-        db_client::query(
-            "SELECT id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day FROM kind_acts ORDER BY created_at ASC",
-            vec![],
-        ),
-        db_client::query(
-            "SELECT key, value FROM settings WHERE key != 'parent_pin'",
-            vec![],
-        ),
-        db_client::query(
-            "SELECT * FROM quests ORDER BY day_key ASC",
-            vec![],
-        )
-    );
-
-    let kind_acts = kind_acts_result.unwrap_or(serde_json::json!([]));
-    let settings = settings_result.unwrap_or(serde_json::json!([]));
-    let quests = quests_result.unwrap_or(serde_json::json!([]));
-
-    let payload = serde_json::json!({
-        "export_format_version": 1,
-        "schema_version": 1,
-        "exported_at": stamp,
-        "tables": {
-            "kind_acts": kind_acts,
-            "settings": settings,
-            "quests": quests
-        }
-    });
-
+    let stamp = js_sys::Date::new_0()
+        .to_iso_string()
+        .as_string()
+        .unwrap_or_default();
+    let (kind_acts_result, settings_result, quests_result) = join!( db_client::query( "SELECT id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day FROM kind_acts ORDER BY created_at ASC", vec![],), db_client::query("SELECT key, value FROM settings WHERE key != 'parent_pin'", vec![],), db_client::query("SELECT * FROM quests ORDER BY day_key ASC", vec![],));
+    let (Ok(kind_acts), Ok(settings), Ok(quests)) = (kind_acts_result, settings_result, quests_result) else {
+        dom::toast("Export failed \u{2014} please try again.");
+        return;
+    };
+    let payload = serde_json::json!({ "export_format_version": 1, "schema_version": 1, "exported_at": stamp, "tables": { "kind_acts": kind_acts, "settings": settings, "quests": quests }});
     if let Ok(json) = serde_json::to_string_pretty(&payload) {
         trigger_text_download(&file_name, &json, "application/json");
     }
 }
-
 async fn export_kind_acts_csv() {
-    let stamp = js_sys::Date::new_0().to_iso_string().as_string().unwrap_or_default();
-    let day = stamp.split('T').next().unwrap_or("unknown-day").to_string();
+    let day = today_iso_day();
     let file_name = format!("blaires-kind-heart-kind-acts-{day}.csv");
     let header = "id,category,description,hearts_earned,created_at,day_key,reflection_type,emotion_selected,bonus_context,combo_day";
-
-    let rows = db_client::query(
-        "SELECT id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day FROM kind_acts ORDER BY created_at ASC",
-        vec![],
-    ).await.unwrap_or(serde_json::json!([]));
-
+    let rows = db_client::query( "SELECT id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day FROM kind_acts ORDER BY created_at ASC", vec![],).await.unwrap_or(serde_json::json!([]));
     let mut csv = String::from(header);
     if let Some(array) = rows.as_array() {
         for row in array {
             let fields = [
-                row.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                row.get("category").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                row.get("description").and_then(|v| v.as_str()).unwrap_or("").replace(',', " "),
-                row.get("hearts_earned").and_then(|v| v.as_i64()).unwrap_or(0).to_string(),
-                row.get("created_at").and_then(|v| v.as_i64()).unwrap_or(0).to_string(),
-                row.get("day_key").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                row.get("reflection_type").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                row.get("emotion_selected").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                row.get("bonus_context").and_then(|v| v.as_str()).unwrap_or("").replace(',', " "),
-                row.get("combo_day").and_then(|v| v.as_i64()).unwrap_or(0).to_string(),
+                row.get("id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                row.get("category")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                row.get("description")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .replace(',', " "),
+                row.get("hearts_earned")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0)
+                    .to_string(),
+                row.get("created_at")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0)
+                    .to_string(),
+                row.get("day_key")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                row.get("reflection_type")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                row.get("emotion_selected")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                row.get("bonus_context")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .replace(',', " "),
+                row.get("combo_day")
+                    .and_then(|v| v.as_i64())
+                    .unwrap_or(0)
+                    .to_string(),
             ];
             csv.push('\n');
             csv.push_str(&fields.join(","));
         }
     }
-
     trigger_text_download(&file_name, &csv, "text/csv");
-}
-
-#[allow(dead_code)]
-pub async fn restore_snapshot(snapshot_json: String) -> Result<(), JsValue> {
-    db_client::restore_snapshot(snapshot_json).await
 }

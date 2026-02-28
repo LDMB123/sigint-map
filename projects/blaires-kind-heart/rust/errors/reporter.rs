@@ -1,4 +1,6 @@
 //! Error reporting and persistence to IndexedDB.
+//! Used by debug panel (`cfg(debug_assertions)` only — dead in release builds).
+#![allow(dead_code)]
 
 use super::types::AppError;
 use crate::db_client;
@@ -6,9 +8,7 @@ use std::cell::RefCell;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::console;
 
-thread_local! {
-    static ERROR_BUFFER: RefCell<Vec<ErrorRecord>> = const { RefCell::new(Vec::new()) };
-}
+thread_local! { static ERROR_BUFFER: RefCell<Vec<ErrorRecord>> = const { RefCell::new(Vec::new()) }; }
 
 #[derive(Debug, Clone)]
 struct ErrorRecord {
@@ -17,14 +17,13 @@ struct ErrorRecord {
 }
 
 /// Report an error: log to console, store to IndexedDB, and buffer for debug panel.
-#[allow(dead_code)]
 pub fn report(error: AppError) {
     let timestamp = js_sys::Date::now();
     let severity = error.severity();
     let description = error.description();
 
     // Console logging with severity
-    console::error_1(&format!("[{}] {}", severity, description).into());
+    console::error_1(&format!("[{severity}] {description}").into());
 
     // Buffer for debug panel (keep last 100 errors in memory)
     ERROR_BUFFER.with(|buf| {
@@ -42,19 +41,17 @@ pub fn report(error: AppError) {
     });
 
     // Persist to IndexedDB asynchronously
-    let error_clone = error.clone();
     spawn_local(async move {
-        if let Err(e) = persist_error(error_clone, timestamp).await {
-            console::warn_1(&format!("[error_reporter] Failed to persist error: {:?}", e).into());
+        if let Err(e) = persist_error(error, timestamp).await {
+            console::warn_1(&format!("[error_reporter] Failed to persist error: {e:?}").into());
         }
     });
 }
 
 /// Persist error to IndexedDB errors table.
-#[allow(dead_code)]
 async fn persist_error(error: AppError, timestamp: f64) -> Result<(), String> {
-    let error_json = serde_json::to_string(&error)
-        .map_err(|e| format!("Serialization failed: {}", e))?;
+    let error_json =
+        serde_json::to_string(&error).map_err(|e| format!("Serialization failed: {e}"))?;
 
     let sql = "INSERT INTO errors (timestamp, severity, error_json) VALUES (?, ?, ?)";
     let params = vec![
@@ -65,7 +62,7 @@ async fn persist_error(error: AppError, timestamp: f64) -> Result<(), String> {
 
     db_client::exec(sql, params)
         .await
-        .map_err(|e| format!("DB insert failed: {:?}", e))?;
+        .map_err(|e| format!("DB insert failed: {e:?}"))?;
 
     Ok(())
 }
@@ -77,7 +74,6 @@ pub fn log_diagnostic(context: &str, msg: &str) {
 }
 
 /// Get recent errors from in-memory buffer (for debug panel).
-#[allow(dead_code)]
 pub fn get_recent_errors(limit: usize) -> Vec<(AppError, f64)> {
     ERROR_BUFFER.with(|buf| {
         let buffer = buf.borrow();
@@ -91,7 +87,6 @@ pub fn get_recent_errors(limit: usize) -> Vec<(AppError, f64)> {
 }
 
 /// Clear old errors from IndexedDB (older than 7 days).
-#[allow(dead_code)]
 pub async fn clear_old_errors() -> Result<usize, String> {
     let seven_days_ago = js_sys::Date::now() - (7.0 * 24.0 * 60.0 * 60.0 * 1000.0);
 
@@ -100,30 +95,22 @@ pub async fn clear_old_errors() -> Result<usize, String> {
 
     db_client::exec(sql, params)
         .await
-        .map_err(|e| format!("Cleanup failed: {:?}", e))?;
+        .map_err(|e| format!("Cleanup failed: {e:?}"))?;
 
     // Return count would require SELECT changes_count, using 0 for now
     Ok(0)
 }
 
 /// Initialize errors table schema if not exists.
+/// Tables now created in db-worker.js SCHEMA (Wave 9).
+/// Schema reference:
+///   CREATE TABLE IF NOT EXISTS errors (
+///     id INTEGER PRIMARY KEY AUTOINCREMENT,
+///     timestamp REAL NOT NULL,
+///     severity INTEGER NOT NULL,
+///     error_json TEXT NOT NULL
+///   );
+///   CREATE INDEX IF NOT EXISTS idx_errors_timestamp ON errors(timestamp);
 pub async fn init_schema() -> Result<(), String> {
-    let create_table_sql = r#"
-        CREATE TABLE IF NOT EXISTS errors (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp REAL NOT NULL,
-            severity INTEGER NOT NULL,
-            error_json TEXT NOT NULL
-        );
-    "#;
-    db_client::exec(create_table_sql, vec![])
-        .await
-        .map_err(|e| format!("Schema table init failed: {:?}", e))?;
-
-    let create_index_sql = "CREATE INDEX IF NOT EXISTS idx_errors_timestamp ON errors(timestamp);";
-    db_client::exec(create_index_sql, vec![])
-        .await
-        .map_err(|e| format!("Schema index init failed: {:?}", e))?;
-
     Ok(())
 }

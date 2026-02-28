@@ -1,42 +1,65 @@
 /* Daily quests panel — golden sparkle background */
 #panel-quests .panel-body {
   background:
-    url('/illustrations/backgrounds/quests-bg.webp') center / cover no-repeat,
-    linear-gradient(180deg, rgba(255, 245, 208, 0.85) 0%, rgba(255, 224, 230, 0.75) 100%);
+    linear-gradient(180deg,
+      rgba(255, 240, 219, 0.4) 0%,
+      rgba(255, 211, 45, 0.3) 50%,
+      rgba(181, 126, 255, 0.25) 100%),
+    url('/illustrations/backgrounds/quests-bg.webp') center / cover no-repeat;
+  /* Phase 1.9: Subtle background animation — removed for performance, using static blended bg instead */
 }
 
-/* ====== Keyframes (top-level only) ====== */
 
-@keyframes quest-entrance {
-  from { transform: translateX(-20px) scale(0.9) rotateX(10deg); opacity: 0; }
-  to { transform: translateX(0) scale(1) rotateX(0deg); opacity: 1; }
+.quests-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
-@keyframes quest-stamp-pop {
-  0% { transform: translateY(-50%) rotate(-12deg) scale(0); }
-  60% { transform: translateY(-50%) rotate(-12deg) scale(1.2); }
-  100% { transform: translateY(-50%) rotate(-12deg) scale(1); }
+.quests-progress-bar {
+  height: 24px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-full);
+  border: 2px solid rgba(181, 126, 255, 0.3);
+  overflow: visible;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-@keyframes quest-timer-glow {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 159, 67, 0.3)); }
-  50% { filter: drop-shadow(0 0 16px rgba(255, 159, 67, 0.5)); }
+.quests-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-pink), var(--color-purple));
+  border-radius: var(--radius-full);
+  transition: width 0.8s var(--ease-elastic);
+  position: relative;
+  min-width: 0;
 }
 
-@keyframes check-pop {
-  from { transform: scale(0) rotate(-45deg); }
-  50% { transform: scale(1.3) rotate(10deg); }
-  to { transform: scale(1) rotate(0deg); }
+/* Hide sparkle when no progress — animation: none required because float-emoji sets opacity */
+.quests-progress-fill[style="width: 0%"] .quests-sparkle-marker {
+  opacity: 0;
+  animation: none;
+  pointer-events: none;
 }
 
-@keyframes bonus-gradient {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+.quests-sparkle-marker {
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 28px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  animation: float-emoji 2s var(--ease-bounce) infinite;
+  z-index: 2;
 }
 
-/* quests-done-pulse removed — .quests-body--all-done uses shared pulse-glow from animations.css */
-
-/* ====== Quest List ====== */
+.quests-progress-text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-purple);
+  text-align: right;
+  padding-right: var(--space-sm);
+}
 
 .quests-list {
   display: flex;
@@ -44,6 +67,61 @@
   gap: var(--space-lg);
   perspective: 800px;
 }
+
+/* ====== Keyframes (top-level only) ====== */
+
+@keyframes quest-entrance {
+  from {
+    transform: translateX(-20px) scale(0.9) rotateX(10deg);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0) scale(1) rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes quest-stamp-pop {
+  0% {
+    transform: translateY(-50%) rotate(-12deg) scale(0);
+  }
+
+  60% {
+    transform: translateY(-50%) rotate(-12deg) scale(1.2);
+  }
+
+  100% {
+    transform: translateY(-50%) rotate(-12deg) scale(1);
+  }
+}
+
+@keyframes check-pop {
+  from {
+    transform: scale(0) rotate(-45deg);
+  }
+
+  50% {
+    transform: scale(1.3) rotate(10deg);
+  }
+
+  to {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes bonus-gradient {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
 
 /* ====== Loading Skeletons ====== */
 
@@ -78,11 +156,11 @@
     0 4px 12px rgba(45, 27, 48, 0.08),
     0 8px 24px -4px rgba(255, 211, 45, 0.12),
     0 14px 32px -6px rgba(45, 27, 48, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    inset 0 0 0 2px rgba(255, 255, 255, 0.5);
   cursor: pointer;
   transition: transform var(--duration-fast) var(--ease-bounce),
-              box-shadow var(--duration-fast) var(--ease-smooth),
-              border-color var(--duration-fast) var(--ease-smooth);
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    border-color var(--duration-fast) var(--ease-smooth);
   position: relative;
   overflow: hidden;
   animation: quest-entrance 0.5s var(--ease-overshoot) both;
@@ -102,8 +180,8 @@
     z-index: 1;
   }
 
-  /* Safari 26.2 sibling-index() */
-  animation-delay: calc(sibling-index() * 0.1s);
+  /* Safari 26.2 sibling-index() — auto-calculate stagger position in DOM */
+  animation-delay: calc(0.1s + sibling-index() * 0.08s);
 
   &:active {
     /* Satisfying press-down: shrink + tilt forward + flatten shadow */
@@ -115,8 +193,7 @@
 
     .quest-emoji {
       transform: scale(1.25) rotate(-5deg) translateY(-2px);
-      filter: drop-shadow(0 4px 14px rgba(45, 27, 48, 0.2))
-              drop-shadow(0 0 18px rgba(255, 211, 45, 0.4));
+      filter: drop-shadow(0 4px 14px rgba(45, 27, 48, 0.2)) drop-shadow(0 0 18px rgba(255, 211, 45, 0.4));
     }
   }
 
@@ -128,57 +205,61 @@
       0 6px 16px rgba(45, 27, 48, 0.1),
       0 0 0 6px rgba(255, 211, 45, 0.2);
   }
+}
 
-  /* ─── Done state — glossy glass celebration ─── */
-  &--done {
-    position: relative;
-    border-color: var(--color-green);
-    background:
-      linear-gradient(135deg, var(--color-green-light) 0%, rgba(212, 245, 224, 0.9) 100%);
+/* ─── Done state — glossy glass celebration ─── */
+/* NOTE: standalone selector — CSS nesting &--done fails in browsers */
+.quest-card--done {
+  position: relative;
+  border-color: var(--color-green);
+  background:
+    linear-gradient(135deg, var(--color-green-light) 0%, rgba(212, 245, 224, 0.9) 100%);
+  box-shadow:
+    0 2px 4px rgba(45, 27, 48, 0.05),
+    0 6px 16px rgba(94, 201, 139, 0.18),
+    0 12px 28px rgba(94, 201, 139, 0.1),
+    0 0 20px rgba(94, 201, 139, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  backdrop-filter: var(--backdrop-medium-sat);
+  /* Override base .quest-card transition — snap to done state instantly.
+     Without this, border-color and box-shadow transitions freeze at their
+     pre-transition values when document.hidden is true (app switch, headless). */
+  transition: transform var(--duration-fast) var(--ease-bounce);
+
+  &::before {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.2) 30%, transparent 50%);
+  }
+
+  &::after {
+    content: "\2705";
+    position: absolute;
+    top: 50%;
+    right: var(--space-md);
+    transform: translateY(-50%) rotate(-12deg);
+    font-size: 2rem;
+    filter: drop-shadow(0 2px 8px rgba(255, 211, 45, 0.5));
+    animation: quest-stamp-pop 0.4s var(--ease-elastic) both;
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  &:active {
+    transform: scale(0.95) rotateX(3deg) translateY(2px);
     box-shadow:
-      0 2px 4px rgba(45, 27, 48, 0.05),
-      0 6px 16px rgba(94, 201, 139, 0.18),
-      0 12px 28px rgba(94, 201, 139, 0.1),
-      0 0 20px rgba(94, 201, 139, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(6px) saturate(1.2); /* Optimized from blur(8px) for mobile performance */
+      0 1px 3px rgba(94, 201, 139, 0.15),
+      inset 0 2px 6px rgba(50, 160, 100, 0.1);
+  }
 
-    &::before {
-      background: linear-gradient(160deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.2) 30%, transparent 50%);
-    }
+  .quest-title {
+    color: var(--color-green-vivid);
+  }
 
-    &::after {
-      content: "\2705";
-      position: absolute;
-      top: 50%;
-      right: var(--space-md);
-      transform: translateY(-50%) rotate(-12deg);
-      font-size: 2rem;
-      filter: drop-shadow(0 2px 8px rgba(255, 211, 45, 0.5));
-      animation: quest-stamp-pop 0.4s var(--ease-elastic) both;
-      pointer-events: none;
-      z-index: 3;
-    }
+  .quest-desc {
+    color: var(--color-green);
+  }
 
-    &:active {
-      transform: scale(0.95) rotateX(3deg) translateY(2px);
-      box-shadow:
-        0 1px 3px rgba(94, 201, 139, 0.15),
-        inset 0 2px 6px rgba(50, 160, 100, 0.1);
-    }
-
-    .quest-title {
-      color: var(--color-green-vivid);
-    }
-
-    .quest-desc {
-      color: var(--color-green);
-    }
-
-    .quest-emoji {
-      filter: drop-shadow(0 2px 8px rgba(94, 201, 139, 0.2))
-              drop-shadow(0 0 14px rgba(0, 210, 106, 0.25));
-    }
+  .quest-emoji {
+    filter: drop-shadow(0 2px 8px rgba(94, 201, 139, 0.2)) drop-shadow(0 0 14px rgba(0, 210, 106, 0.25));
   }
 }
 
@@ -187,10 +268,9 @@
 .quest-emoji {
   font-size: var(--font-size-3xl);
   flex-shrink: 0;
-  filter: drop-shadow(0 2px 8px rgba(45, 27, 48, 0.14))
-          drop-shadow(0 0 12px rgba(255, 211, 45, 0.15));
+  filter: drop-shadow(0 2px 8px rgba(45, 27, 48, 0.14)) drop-shadow(0 0 12px rgba(255, 211, 45, 0.15));
   transition: transform var(--duration-fast) var(--ease-elastic),
-              filter var(--duration-fast) var(--ease-smooth);
+    filter var(--duration-fast) var(--ease-smooth);
   position: relative;
   z-index: 2;
 }
@@ -216,12 +296,6 @@
   line-height: 1.4;
 }
 
-/* ─── Quest timer progress arc ─── */
-
-.quest-timer {
-  animation: quest-timer-glow 3s ease-in-out infinite;
-}
-
 /* ─── Checkmark circle ─── */
 
 .quest-check {
@@ -242,25 +316,25 @@
     inset 0 2px 4px rgba(45, 27, 48, 0.06),
     0 1px 3px rgba(255, 211, 45, 0.15);
   background: var(--color-surface);
+}
 
-  &--done {
-    background: var(--gradient-magic);
-    border-color: var(--color-green);
-    color: var(--color-white);
-    box-shadow:
-      0 2px 6px rgba(94, 201, 139, 0.3),
-      0 0 16px rgba(94, 201, 139, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4);
-    animation: check-pop 0.4s var(--ease-elastic);
+.quest-check--done {
+  background: var(--gradient-magic);
+  border-color: var(--color-green);
+  color: var(--color-white);
+  box-shadow:
+    0 2px 6px rgba(94, 201, 139, 0.3),
+    0 0 16px rgba(94, 201, 139, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  animation: check-pop 0.4s var(--ease-elastic);
 
-    &::after {
-      content: "";
-      position: absolute;
-      inset: 3px;
-      border-radius: inherit;
-      background: linear-gradient(160deg, rgba(255, 255, 255, 0.5) 0%, transparent 45%);
-      pointer-events: none;
-    }
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: inherit;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.5) 0%, transparent 45%);
+    pointer-events: none;
   }
 }
 
@@ -284,7 +358,8 @@
   position: relative;
   overflow: hidden;
   /* Frosted glass effect */
-  backdrop-filter: blur(4px) saturate(1.1); /* Optimized from blur(6px) for mobile performance */
+  backdrop-filter: blur(4px) saturate(1.1);
+  /* Optimized from blur(6px) for mobile performance */
 
   /* Glossy top highlight */
   &::before {
@@ -302,63 +377,84 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.4) 50%, transparent 65%);
+    background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.4) 50%, transparent 65%);
     mask-image: radial-gradient(ellipse 80% 80% at 50% 0%, black 60%, transparent 100%);
-    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 0%, black 60%, transparent 100%);
     transform: translateX(-150%);
-    animation: btn-shine 6s ease-in-out infinite;
+    animation: btn-shine 4s ease-in-out infinite;
+    /* aligned to home button shine cadence */
     pointer-events: none;
   }
 }
 
-.quests-bonus-emoji {
-  font-size: 4rem;
-  display: block;
-  filter: drop-shadow(0 4px 16px rgba(255, 211, 45, 0.5))
-          drop-shadow(0 0 24px rgba(255, 211, 45, 0.25));
-  animation: celebration-bounce 1.5s var(--ease-bounce) infinite alternate;
-  position: relative;
+
+
+/* ─── Focus state — subtle highlight for next quest ─── */
+
+.quest-card--focus {
+  border-color: rgba(255, 211, 45, 0.5);
+  box-shadow:
+    0 1px 2px rgba(45, 27, 48, 0.05),
+    0 4px 12px rgba(45, 27, 48, 0.08),
+    0 8px 24px -4px rgba(255, 211, 45, 0.18),
+    0 14px 32px -6px rgba(45, 27, 48, 0.06),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.5),
+    0 0 0 3px rgba(255, 211, 45, 0.15);
 }
 
-.quests-bonus-text {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-heavy);
-  margin-top: var(--space-md);
-  color: var(--color-pink-dark);
-  text-shadow: 0 2px 8px rgba(255, 143, 171, 0.25);
-  position: relative;
+/* ─── Confirm prompt ─── */
+
+.quest-confirm-prompt {
+  margin-top: var(--space-sm);
+
+  .kind-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-lg);
+    background: var(--gradient-magic);
+    color: var(--color-white);
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+    min-height: var(--touch-min);
+    box-shadow:
+      0 2px 8px rgba(181, 126, 255, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: transform var(--duration-fast) var(--ease-bounce),
+      box-shadow var(--duration-fast) var(--ease-smooth);
+    touch-action: manipulation;
+
+    &:active {
+      transform: scale(0.95);
+      box-shadow: 0 1px 4px rgba(181, 126, 255, 0.2);
+    }
+  }
 }
 
-/* ─── All quests complete state ─── */
+/* ─── Did you know? fact ─── */
 
-/* pulse-glow class (from animations.css) is added by Rust alongside this modifier */
-.quests-body--all-done {
-  animation: pulse-glow 3s ease-in-out infinite;
+.quest-did-you-know {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  line-height: 1.5;
+  border: 1px solid rgba(181, 126, 255, 0.15);
 }
 
-.quests-complete {
-  text-align: center;
-  padding: var(--space-2xl);
-  position: relative;
-}
+/* ====== Reduced Motion — respect user preference ====== */
+@media (prefers-reduced-motion: reduce) {
 
-.quests-complete-emoji {
-  font-size: 5rem;
-  display: block;
-  margin-bottom: var(--space-md);
-  animation: celebration-bounce 1s var(--ease-elastic) infinite alternate;
-  filter: drop-shadow(0 4px 20px rgba(255, 211, 45, 0.5))
-          drop-shadow(0 0 32px rgba(255, 143, 171, 0.3))
-          drop-shadow(0 0 48px rgba(181, 126, 255, 0.15));
-}
-
-.quests-complete-text {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-heavy);
-  color: var(--color-pink-dark);
-  text-shadow:
-    0 2px 12px rgba(255, 143, 171, 0.3),
-    0 0 24px rgba(181, 126, 255, 0.15);
+  .quest-card,
+  .quests-sparkle-marker,
+  .quest-check--done,
+  .quest-card--done::after,
+  .quests-bonus,
+  .quests-bonus::after {
+    animation: none !important;
+  }
 }

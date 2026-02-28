@@ -26,10 +26,6 @@ const TARGETS = [
     sourceCandidates: ["wasm-init.js", "public/wasm-init.js"],
   },
   {
-    target: "log-context.js",
-    sourceCandidates: ["public/log-context.js"],
-  },
-  {
     target: "runtime-diagnostics.js",
     sourceCandidates: ["public/runtime-diagnostics.js"],
   },

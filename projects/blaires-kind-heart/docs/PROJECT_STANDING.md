@@ -1,50 +1,33 @@
 # Project Standing
 
-Last updated: 2026-02-15
+Last updated: 2026-02-27
 
-## What This Repo Is
-`blaires-kind-heart` is an offline-first Rust/WASM PWA with:
-- A child-focused kindness UI and mini-games.
-- Service worker + offline shell behavior.
-- Browser-side persistence and diagnostics contracts.
-- Playwright-based quality gates (runtime, DB, a11y, visual, smoke).
+## Summary
 
-## Where It Stands Right Now
+Blaire's Kind Heart is a production-ready offline PWA for a 4-year-old.
+Target device: iPad mini 6, iPadOS 26.2, Safari 26.2.
 
-### Verified on 2026-02-15
-- `node --check public/runtime-diagnostics.js`: PASS
-- `node --check public/db-worker.js`: PASS
-- `npm run qa:pwa-contract`: PASS (`ok: true`, managed server mode)
-- `npm run qa:runtime`: PASS (`1 passed`)
-- `npm run qa:db-contract`: PASS (`2 passed`)
-- `npm run test:e2e`: PASS (`39 passed`, `1 skipped`)
-- `npm run test:e2e:all`: PASS (`40 passed`, `1 skipped`)
-- `npm run qa:docs-links`: PASS
-- `npm run qa:rust-warning-drift`: PASS (`warning_count=3`, `baseline=3`, improved from previous `4`)
-- `npm run test:e2e:webkit`: PASS (`1 passed`)
-- `npx playwright install webkit`: PASS (local WebKit runtime installed for cross-browser gate)
-- `npm run token:baseline`: PASS (`active_est_tokens=24465`)
-- `npm run qa:docs-budget`: PASS (`budget=25000`)
-- Xcode iPad simulator regression capture: PASS (`home/stories/tracker` panels captured)
+## QA Standing
 
-### Current Risk Snapshot
-1. Physical iPad mini 6 regression has not been re-run for this exact verification cycle (simulator run complete).
-2. Rust compile emits 3 dead-code warnings during QA runs (debug utilities preserved with `#[allow(dead_code)]`).
+All core release gates pass as of 2026-02-21, including full E2E and Lighthouse CI. See `docs/STATUS_LEDGER.md` for details.
 
-### Immediate Priorities
-1. Run and record a physical-device iPad regression cycle.
-2. Keep active docs under the 25k budget gate as docs evolve.
-3. Keep dead-code warnings from drifting upward (baseline enforced at 3 warnings).
+## Game Polish (2026-02-27)
 
-## Repository Reorganization Performed
-- Moved root screenshot files into `docs/archive/assets/root-screenshots/`.
-- Removed duplicated active docs that already existed in archive:
-  - Removed duplicate active testing docs (archived copies retained under `docs/archive/testing/`).
-  - Removed duplicate active report copy (archived canonical copy at `docs/archive/reports/safari-26.2-simplification-deep-dive.md`).
-- Added shared ignore rules for local/generated outputs in `.gitignore`.
+23 fixes across all 5 games — shield timing, flower lifecycle, stage selection, canvas events, CSS animations, accessibility. See `docs/STATUS_LEDGER.md` for full list.
 
-## Canonical Documentation Flow
-1. `docs/PROJECT_STANDING.md` (this file): high-level project state.
-2. `docs/APP_STATUS.md`: latest gate snapshot and operational status.
-3. `docs/STATUS_LEDGER.md`: command evidence and dated changes.
-4. `docs/INDEX.md`: active vs archived document map.
+## Technical Standing
+
+- Rust/WASM: builds clean, no warnings above baseline
+- DB schema: versioned migrations, contract tests pass
+- Service worker: offline-first, cache-first for all assets
+- OPFS SQLite: write-protected by Web Locks, no race conditions
+- Games: all 5 games polished and verified (Catcher, Memory, Hug, Paint, Unicorn)
+
+## Outstanding Work
+
+- Physical iPad regression run needed before deployment
+- Production firebase deploy pending app store review decision
+
+## History
+
+See `docs/archive/` for historical plans, reports, and design documents.

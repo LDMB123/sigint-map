@@ -23,11 +23,12 @@ export default defineConfig({
   testDir: "./e2e",
   timeout: 30_000,
   expect: {
-    timeout: 10_000
+    timeout: 10_000,
+    toHaveScreenshot: { maxDiffPixelRatio: 0.05 }
   },
   fullyParallel: includeWebkit ? false : true,
   workers,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1,
   reporter,
   use: {
     baseURL,

@@ -1,52 +1,71 @@
 # Status Ledger
 
-Last updated: 2026-02-15
-Purpose: concise evidence and change log for current app status.
+Last updated: 2026-02-27
 
-## Latest Verified Validation Entries
-| Date | Command | Result | Key Output |
-|---|---|---|---|
-| 2026-02-15 | `npm run qa:rust-warning-drift` | PASS | warning_count `3` within baseline `3` (improved from baseline `4`) |
-| 2026-02-15 | `npm run test:e2e` | PASS | `39 passed`, `1 skipped` (post-warning-fix verification) |
-| 2026-02-15 | `npx playwright install webkit` | PASS | Installed local WebKit browser runtime (`webkit-2248`) |
-| 2026-02-15 | `npm run test:e2e:all` | PASS | `40 passed`, `1 skipped` |
-| 2026-02-15 | `npm run qa:docs-links` | PASS | Active docs local-link validation passed |
-| 2026-02-15 | `npm run qa:docs-budget` | PASS | active docs within budget (`25000`) |
-| 2026-02-15 | `npm run token:baseline` | PASS | active docs `31`, active est tokens `24,465`, archive files `83` |
-| 2026-02-15 | `npm run qa:sim:ipad -- 2026-02-15` | PASS | Captured simulator evidence (`home/stories/tracker` + `http.log`) in docs archive |
-| 2026-02-15 | `xcrun simctl boot + openurl + io screenshot` (iPad mini simulator, iOS 26.2) | PASS | Captured `home.png`, `stories.png`, `tracker.png` |
-| 2026-02-15 | `xcrun xctrace list devices` | PASS | No physical iPad listed; only host Mac + simulators |
-| 2026-02-15 | `npm run test:e2e:webkit` | PASS | `1 passed` |
+## QA Gate Results
 
-Historical entries for 2026-02-13 through 2026-02-14 are archived in:
-`docs/archive/reports/status-ledger-history-2026-02-13-to-2026-02-14.md`.
+| Gate | Command | Status | Date |
+|------|---------|--------|------|
+| Runtime diagnostics | `npm run qa:runtime` | PASS | 2026-02-21 |
+| PWA contract | `npm run qa:pwa-contract` | PASS | 2026-02-21 |
+| DB contract | `npm run qa:db-contract` | PASS | 2026-02-21 |
+| Full E2E suite (46/1 skip) | `npm run test:e2e:all` | PASS* | 2026-02-21 |
+| Rust warning drift (baseline=3) | `npm run qa:rust-warning-drift` | PASS | 2026-02-21 |
+| Docs budget | `npm run qa:docs-budget` | PASS | 2026-02-21 |
+| Docs links | `npm run qa:docs-links` | PASS | 2026-02-21 |
+| Lighthouse CI | `npm run lighthouse:ci` | PASS | 2026-02-21 |
 
-## Notable Test Signal
-- Latest core regression run completed cleanly with `39 passed`, `1 skipped`.
-- Latest cross-browser regression run completed cleanly with `40 passed`, `1 skipped`.
-- Current iPad regression preflight run is documented in `docs/IPAD_REGRESSION_RUN_2026-02-15.md` with physical-device steps still pending.
+\* `1 skipped` is the expected non-blocking probe skip in the full Playwright matrix.
 
-## Change Entries
-| Date | Change | Status |
-|---|---|---|
-| 2026-02-15 | Fixed 3 dead-code warnings (added `#[allow(dead_code)]` to debug utilities) and updated baseline from 4→3 | Completed |
-| 2026-02-15 | Added reusable iPad simulator regression script (`qa:sim:ipad`) with archived evidence output path | Completed |
-| 2026-02-15 | Added active docs link-check gate (`qa:docs-links`) and CI enforcement | Completed |
-| 2026-02-15 | Added strict Rust warning-drift baseline gate (`qa:rust-warning-drift`) in CI | Completed |
-| 2026-02-15 | Added docs token budget gate script + CI enforcement (`qa:docs-budget`) | Completed |
-| 2026-02-15 | Archived full versions of largest active docs and replaced active files with summaries | Completed |
-| 2026-02-15 | Added dated iPad regression run report with explicit physical-device blocker | Completed |
-| 2026-02-15 | Moved root screenshot artifacts to `docs/archive/assets/root-screenshots/` | Completed |
-| 2026-02-15 | Removed duplicate active docs in `docs/testing/` (archived copies retained) | Completed |
-| 2026-02-15 | Removed duplicate report file from `docs/reports/` (archived copy retained) | Completed |
-| 2026-02-15 | Added shared ignore rules for local build/QA artifacts in `.gitignore` | Completed |
-| 2026-02-15 | Introduced canonical repo standing document (`docs/PROJECT_STANDING.md`) | Completed |
+## E2E Summary
 
-## Current Token Baseline
-- Active docs: 31 files, 97,861 bytes, ~24,465 estimated tokens.
-- Archive docs: 83 files, 774,662 bytes, ~193,665 estimated tokens.
+- 46 passed, 1 skipped
+- Critical flows: tracker, quests, stories all PASS
+- A11y: axe critical checks PASS across core panels
+- Visual gate: desktop + mobile snapshots PASS
+- DB contract runtime flows PASS (including mom export/restore)
+- WebKit smoke PASS
 
-## Next Validation Queue
-1. Run physical iPad regression and record results.
-2. Re-run `npm run test:e2e:all` after next runtime-affecting change.
-3. Keep `npm run qa:docs-budget` green after docs updates.
+## Build Status
+
+- `npm run build:release` PASS on 2026-02-21
+- Release WASM build completed cleanly
+- Source maps retained in `dist` per `scripts/build-verify-release.sh`
+
+## Work Completed 2026-02-27
+
+Deep game polish pass — 23 fixes across gameplay, CSS, and accessibility:
+
+- **Catcher**: Shield time source fix (`js_sys::Date::now()` → `browser_apis::now_ms()`), gravity cleanup, score guard
+- **Paint**: Added `pointercancel` handler for iPad system gestures
+- **Unicorn**: Flower life/scale lifecycle fix (were invisible and immortal)
+- **Hug Machine**: `pick_from_pool` rewrite — stages 6-15 now reachable via working buffer
+- **Memory Match**: Card color pink gradient, `card-shine-sweep` animation, `prefers-reduced-motion` guard
+- **Hub**: End screen stats, panel-leaving guard, companion conditional rendering
+- **CSS**: New-record style, btn-shine conflict resolved, hover states, design token hygiene
+- **A11y**: WCAG contrast fixes, kid-friendly text, CSS token consolidation
+- **Security/runtime**: Dead code cleanup across 13 modules
+
+Commits: `1273877`, `63defdf`, `30a20ba`, `772cef5`
+
+## Work Completed 2026-02-21
+
+- Hardened Lighthouse CI assertions to fail correctly on error-level assertion failures (`scripts/run-lighthouse-ci.sh`)
+- Updated Lighthouse assertions to current audit IDs (`lighthouserc.json`)
+- Added favicon link tags to app and offline entry points (`index.html`, `public/offline.html`)
+- Routed navigation haptics through guarded native haptics path and initialized haptics unlock listeners (`rust/navigation.rs`, `rust/native_apis.rs`, `rust/lib.rs`)
+- Re-ran full release gate set with all PASS results above
+
+## Outstanding Release Task
+
+- Physical iPad mini 6 (iPadOS 26.2 / Safari 26.2) regression evidence still required before final deployment approval.
+
+## History
+
+| Date | Milestone | Commits |
+|------|-----------|---------|
+| 2026-02-27 | Deep game polish — 23 fixes across gameplay, CSS, a11y | 1273877, 63defdf, 30a20ba, 772cef5 |
+| 2026-02-21 | Production hardening + full gate rerun complete | (working tree) |
+| 2026-02-20 | Production polish complete — all QA gates PASS | 8026800, 37fec45 |
+| 2026-02-20 | Reentrant with_buf fixes (rewards, game_memory) | 629cfd7 |
+| 2026-02-20 | Asset manifests, docs, e2e specs committed | aec8aae, 5957c05, bde4062 |

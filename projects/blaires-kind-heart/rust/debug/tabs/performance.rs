@@ -1,10 +1,12 @@
 //! Performance tab - displays boot phases, Web Vitals, performance marks.
 
 use crate::metrics;
+use std::fmt::Write;
 
 pub fn render() -> String {
     let marks = metrics::get_marks();
-    let mut output = String::from(r#"
+    let mut output = String::from(
+        r#"
         <div class="debug-section">
             <h4>Boot Performance</h4>
             <table style="width: 100%; font-family: monospace; font-size: 11px;">
@@ -12,7 +14,8 @@ pub fn render() -> String {
                     <th style="text-align: left;">Phase</th>
                     <th style="text-align: right;">Duration (ms)</th>
                 </tr>
-    "#);
+    "#,
+    );
 
     // Add phase durations
     let phases = vec![
@@ -29,22 +32,23 @@ pub fn render() -> String {
 
         let duration_str = if measure_name == "boot:total" {
             metrics::duration("boot:start", "boot:end")
-                .map(|d| format!("{:.2}", d))
-                .unwrap_or_else(|| "—".to_string())
+                .map_or_else(|| "—".to_string(), |d| format!("{d:.2}"))
         } else {
-            metrics::duration(&start, &end)
-                .map(|d| format!("{:.2}", d))
-                .unwrap_or_else(|| "—".to_string())
+            metrics::duration(&start, &end).map_or_else(|| "—".to_string(), |d| format!("{d:.2}"))
         };
 
-        let color = if measure_name == "boot:total" { "#0f0" } else { "#fff" };
-        output.push_str(&format!(
-            r#"<tr style="color: {};">
-                <td>{}</td>
-                <td style="text-align: right;">{}</td>
-            </tr>"#,
-            color, label, duration_str
-        ));
+        let color = if measure_name == "boot:total" {
+            "#0f0"
+        } else {
+            "#fff"
+        };
+        let _ = write!(
+            output,
+            r#"<tr style="color: {color};">
+                <td>{label}</td>
+                <td style="text-align: right;">{duration_str}</td>
+            </tr>"#
+        );
     }
 
     output.push_str(r#"
@@ -56,13 +60,14 @@ pub fn render() -> String {
     "#);
 
     for (name, timestamp) in marks {
-        output.push_str(&format!(
-            r#"<div style="color: #888;">{:.2}ms - {}</div>"#,
-            timestamp, name
-        ));
+        let _ = write!(
+            output,
+            r#"<div style="color: #888;">{timestamp:.2}ms - {name}</div>"#
+        );
     }
 
-    output.push_str(r#"
+    output.push_str(
+        r#"
             </div>
         </div>
         <div class="debug-section">
@@ -73,79 +78,90 @@ pub fn render() -> String {
                     <th style="text-align: right;">Value</th>
                     <th style="text-align: right;">Target</th>
                 </tr>
-    "#);
+    "#,
+    );
 
     // Get Web Vitals
     let vitals = metrics::get_vitals();
 
     // LCP (Largest Contentful Paint)
-    let lcp_str = vitals.lcp.map(|v| format!("{:.2}ms", v)).unwrap_or_else(|| "—".to_string());
+    let lcp_str = vitals
+        .lcp
+        .map_or_else(|| "—".to_string(), |v| format!("{v:.2}ms"));
     let lcp_color = match vitals.lcp {
         Some(v) if v <= 2500.0 => "#0f0",
         Some(v) if v <= 4000.0 => "#ff0",
         _ => "#f00",
     };
-    output.push_str(&format!(
-        r#"<tr style="color: {};">
+    let _ = write!(
+        output,
+        r#"<tr style="color: {lcp_color};">
             <td>LCP</td>
-            <td style="text-align: right;">{}</td>
+            <td style="text-align: right;">{lcp_str}</td>
             <td style="text-align: right; color: #888;">&lt; 2.5s</td>
-        </tr>"#,
-        lcp_color, lcp_str
-    ));
+        </tr>"#
+    );
 
     // FID (First Input Delay)
-    let fid_str = vitals.fid.map(|v| format!("{:.2}ms", v)).unwrap_or_else(|| "—".to_string());
+    let fid_str = vitals
+        .fid
+        .map_or_else(|| "—".to_string(), |v| format!("{v:.2}ms"));
     let fid_color = match vitals.fid {
         Some(v) if v <= 100.0 => "#0f0",
         Some(v) if v <= 300.0 => "#ff0",
         _ => "#f00",
     };
-    output.push_str(&format!(
-        r#"<tr style="color: {};">
+    let _ = write!(
+        output,
+        r#"<tr style="color: {fid_color};">
             <td>FID</td>
-            <td style="text-align: right;">{}</td>
+            <td style="text-align: right;">{fid_str}</td>
             <td style="text-align: right; color: #888;">&lt; 100ms</td>
-        </tr>"#,
-        fid_color, fid_str
-    ));
+        </tr>"#
+    );
 
     // CLS (Cumulative Layout Shift)
-    let cls_str = vitals.cls.map(|v| format!("{:.4}", v)).unwrap_or_else(|| "—".to_string());
+    let cls_str = vitals
+        .cls
+        .map_or_else(|| "—".to_string(), |v| format!("{v:.4}"));
     let cls_color = match vitals.cls {
         Some(v) if v <= 0.1 => "#0f0",
         Some(v) if v <= 0.25 => "#ff0",
         _ => "#f00",
     };
-    output.push_str(&format!(
-        r#"<tr style="color: {};">
+    let _ = write!(
+        output,
+        r#"<tr style="color: {cls_color};">
             <td>CLS</td>
-            <td style="text-align: right;">{}</td>
+            <td style="text-align: right;">{cls_str}</td>
             <td style="text-align: right; color: #888;">&lt; 0.1</td>
-        </tr>"#,
-        cls_color, cls_str
-    ));
+        </tr>"#
+    );
 
     // INP (Interaction to Next Paint)
-    let inp_str = vitals.inp.map(|v| format!("{:.2}ms", v)).unwrap_or_else(|| "—".to_string());
+    let inp_str = vitals
+        .inp
+        .map_or_else(|| "—".to_string(), |v| format!("{v:.2}ms"));
     let inp_color = match vitals.inp {
         Some(v) if v <= 200.0 => "#0f0",
         Some(v) if v <= 500.0 => "#ff0",
         _ => "#f00",
     };
-    output.push_str(&format!(
-        r#"<tr style="color: {};">
+    let _ = write!(
+        output,
+        r#"<tr style="color: {inp_color};">
             <td>INP</td>
-            <td style="text-align: right;">{}</td>
+            <td style="text-align: right;">{inp_str}</td>
             <td style="text-align: right; color: #888;">&lt; 200ms</td>
-        </tr>"#,
-        inp_color, inp_str
-    ));
+        </tr>"#
+    );
 
-    output.push_str(r#"
+    output.push_str(
+        r"
             </table>
         </div>
-    "#);
+    ",
+    );
 
     output
 }

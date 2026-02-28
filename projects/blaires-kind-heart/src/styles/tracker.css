@@ -36,8 +36,8 @@
     8px 8px 0 0 rgba(212, 86, 122, 0.08);
   transform: translateY(0);
   transition: transform var(--duration-fast) var(--ease-bounce),
-              box-shadow var(--duration-fast) var(--ease-smooth),
-              border-color var(--duration-fast) var(--ease-smooth);
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    border-color var(--duration-fast) var(--ease-smooth);
   position: relative;
   overflow: hidden;
   animation: kind-card-in 0.4s var(--ease-overshoot) both;
@@ -59,20 +59,13 @@
   /* Staggered entrance — Safari 26.2 sibling-index() */
   animation-delay: calc(sibling-index() * 0.05s);
 
+  /* Satisfying press-down: shrink + tilt forward + flatten shadow */
   &:active {
-    /* Satisfying press-down: shrink + tilt forward + flatten shadow */
     transform: scale(0.88) rotateX(4deg) translateY(2px);
     box-shadow:
       0 1px 3px rgba(45, 27, 48, 0.12),
       inset 0 2px 4px rgba(45, 27, 48, 0.08);
     transition-duration: var(--duration-instant);
-
-    & .kind-btn-emoji,
-    & .kind-btn-img {
-      transform: scale(1.35) translateY(-2px);
-      filter: drop-shadow(0 4px 12px rgba(45, 27, 48, 0.2))
-              drop-shadow(0 0 16px rgba(255, 211, 45, 0.4));
-    }
   }
 
   &:focus-visible {
@@ -83,165 +76,155 @@
       0 0 0 6px rgba(181, 126, 255, 0.2);
   }
 
-  /* ─── Color-coded kind act buttons — matches tracker.rs CATEGORIES ─── */
-  &--hug {
-    background: var(--gradient-button-pink);  /* Phase 2.4: Use CSS variable */
-    border-color: var(--color-pink);
-    color: var(--color-white);  /* White on dark pink background */
-    box-shadow:
-      0 2px 4px rgba(45, 27, 48, 0.06),
-      0 6px 16px rgba(255, 143, 171, 0.2),
-      0 12px 28px rgba(255, 143, 171, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
-
-    &:active {
-      box-shadow:
-        0 1px 3px rgba(255, 143, 171, 0.2),
-        inset 0 2px 6px rgba(212, 86, 122, 0.15);
-    }
+  .kind-btn-emoji {
+    font-size: 2.5rem;
+    filter: drop-shadow(0 2px 6px rgba(45, 27, 48, 0.15)) drop-shadow(0 0 10px rgba(255, 143, 171, 0.15));
+    transition: transform var(--duration-fast) var(--ease-elastic),
+      filter var(--duration-fast) var(--ease-smooth);
+    position: relative;
+    z-index: 2;
   }
 
-  &--nice-words {
-    background: var(--gradient-button-blue);  /* Phase 2.4: Use CSS variable */
-    border-color: var(--color-blue);
-    color: var(--color-white);  /* White on dark blue background */
-    box-shadow:
-      0 2px 4px rgba(45, 27, 48, 0.06),
-      0 6px 16px rgba(92, 184, 228, 0.2),
-      0 12px 28px rgba(92, 184, 228, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
-
-    &:active {
-      box-shadow:
-        0 1px 3px rgba(92, 184, 228, 0.2),
-        inset 0 2px 6px rgba(60, 140, 190, 0.15);
-    }
+  .kind-btn-img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.18)) drop-shadow(0 0 12px rgba(255, 255, 255, 0.3));
+    animation: float-emoji 4s var(--ease-bounce) infinite;
+    transition: transform var(--duration-fast) var(--ease-elastic),
+      filter var(--duration-fast) var(--ease-smooth);
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
   }
 
-  &--sharing {
-    background: var(--gradient-button-green);  /* Phase 2.4: Use CSS variable */
-    border-color: var(--color-green);
-    color: var(--color-white);  /* White on dark green background */
-    box-shadow:
-      0 2px 4px rgba(45, 27, 48, 0.06),
-      0 6px 16px rgba(94, 201, 139, 0.2),
-      0 12px 28px rgba(94, 201, 139, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  .kind-btn-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    text-align: center;
+    color: var(--color-text);
+    position: relative;
+    z-index: 2;
+  }
+}
 
-    &:active {
-      box-shadow:
-        0 1px 3px rgba(94, 201, 139, 0.2),
-        inset 0 2px 6px rgba(50, 160, 100, 0.15);
+/* ─── Color-coded kind act buttons — matches tracker.rs CATEGORIES ─── */
+
+/* standalone — &-- nesting unsupported */
+.kind-btn--hug {
+  background: var(--gradient-button-pink);
+  /* Phase 2.4: Use CSS variable */
+  border-color: var(--color-pink);
+  color: var(--color-white);
+  /* White on dark pink background */
+  box-shadow:
+    0 2px 4px rgba(45, 27, 48, 0.06),
+    0 6px 16px rgba(255, 143, 171, 0.2),
+    0 12px 28px rgba(255, 143, 171, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+
+  &:active {
+    box-shadow:
+      0 1px 3px rgba(255, 143, 171, 0.2),
+      inset 0 2px 6px rgba(212, 86, 122, 0.15);
+
+    .kind-btn-emoji,
+    .kind-btn-img {
+      transform: scale(1.35) translateY(-2px);
+      filter: drop-shadow(0 4px 12px rgba(45, 27, 48, 0.2)) drop-shadow(0 0 16px rgba(255, 211, 45, 0.4));
     }
   }
+}
 
-  &--helping {
-    background: var(--gradient-button-yellow);  /* Phase 2.4: Use CSS variable */
-    border-color: var(--color-yellow);
-    color: var(--color-text);  /* Dark text on light yellow background */
+.kind-btn--sharing {
+  background: var(--gradient-button-green);
+  /* Phase 2.4: Use CSS variable */
+  border-color: var(--color-green);
+  color: var(--color-white);
+  /* White on dark green background */
+  box-shadow:
+    0 2px 4px rgba(45, 27, 48, 0.06),
+    0 6px 16px rgba(94, 201, 139, 0.2),
+    0 12px 28px rgba(94, 201, 139, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+
+  &:active {
     box-shadow:
-      0 2px 4px rgba(45, 27, 48, 0.06),
-      0 6px 16px rgba(255, 211, 45, 0.2),
-      0 12px 28px rgba(255, 211, 45, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      0 1px 3px rgba(94, 201, 139, 0.2),
+      inset 0 2px 6px rgba(50, 160, 100, 0.15);
 
-    &:active {
-      box-shadow:
-        0 1px 3px rgba(255, 211, 45, 0.2),
-        inset 0 2px 6px rgba(200, 170, 20, 0.15);
+    .kind-btn-emoji,
+    .kind-btn-img {
+      transform: scale(1.35) translateY(-2px);
+      filter: drop-shadow(0 4px 12px rgba(45, 27, 48, 0.2)) drop-shadow(0 0 16px rgba(255, 211, 45, 0.4));
     }
   }
+}
 
-  &--love {
-    background: var(--gradient-button-purple);  /* Phase 2.4: Use CSS variable */
-    border-color: var(--color-purple);
-    color: var(--color-white);  /* White on dark purple background */
+.kind-btn--helping {
+  background: var(--gradient-button-yellow);
+  /* Phase 2.4: Use CSS variable */
+  border-color: var(--color-yellow);
+  color: var(--color-text);
+  /* Dark text on light yellow background */
+  box-shadow:
+    0 2px 4px rgba(45, 27, 48, 0.06),
+    0 6px 16px rgba(255, 211, 45, 0.2),
+    0 12px 28px rgba(255, 211, 45, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+
+  &:active {
     box-shadow:
-      0 2px 4px rgba(45, 27, 48, 0.06),
-      0 6px 16px rgba(181, 126, 255, 0.2),
-      0 12px 28px rgba(181, 126, 255, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      0 1px 3px rgba(255, 211, 45, 0.2),
+      inset 0 2px 6px rgba(200, 170, 20, 0.15);
 
-    &:active {
-      box-shadow:
-        0 1px 3px rgba(181, 126, 255, 0.2),
-        inset 0 2px 6px rgba(123, 63, 191, 0.15);
+    .kind-btn-emoji,
+    .kind-btn-img {
+      transform: scale(1.35) translateY(-2px);
+      filter: drop-shadow(0 4px 12px rgba(45, 27, 48, 0.2)) drop-shadow(0 0 16px rgba(255, 211, 45, 0.4));
     }
   }
+}
 
-  &--unicorn {
-    background: var(--gradient-button-orange);  /* Phase 2.4: Use CSS variable */
-    border-color: var(--color-orange);
-    color: var(--color-white);  /* White on dark orange background */
+.kind-btn--love {
+  background: var(--gradient-button-purple);
+  /* Phase 2.4: Use CSS variable */
+  border-color: var(--color-purple);
+  color: var(--color-white);
+  /* White on dark purple background */
+  box-shadow:
+    0 2px 4px rgba(45, 27, 48, 0.06),
+    0 6px 16px rgba(181, 126, 255, 0.2),
+    0 12px 28px rgba(181, 126, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+
+  &:active {
     box-shadow:
-      0 2px 4px rgba(45, 27, 48, 0.06),
-      0 6px 16px rgba(255, 159, 67, 0.25),
-      0 12px 28px rgba(255, 107, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      0 1px 3px rgba(181, 126, 255, 0.2),
+      inset 0 2px 6px rgba(123, 63, 191, 0.15);
 
-    &:active {
-      box-shadow:
-        0 1px 3px rgba(255, 159, 67, 0.2),
-        inset 0 2px 6px rgba(200, 80, 0, 0.15);
+    .kind-btn-emoji,
+    .kind-btn-img {
+      transform: scale(1.35) translateY(-2px);
+      filter: drop-shadow(0 4px 12px rgba(45, 27, 48, 0.2)) drop-shadow(0 0 16px rgba(255, 211, 45, 0.4));
     }
   }
 }
 
 @keyframes kind-card-in {
-  from { transform: scale(0.5) translateY(12px) rotateX(15deg); opacity: 0; }
-  to { transform: scale(1) translateY(0) rotateX(0deg); opacity: 1; }
-}
+  from {
+    transform: scale(0.5) translateY(12px) rotateX(15deg);
+    opacity: 0;
+  }
 
-.kind-btn-emoji {
-  font-size: 2.5rem;
-  filter: drop-shadow(0 2px 6px rgba(45, 27, 48, 0.15))
-          drop-shadow(0 0 10px rgba(255, 143, 171, 0.15));
-  transition: transform var(--duration-fast) var(--ease-elastic),
-              filter var(--duration-fast) var(--ease-smooth);
-  position: relative;
-  z-index: 2;
-}
-
-.kind-btn-img {
-  width: 64px;
-  height: 64px;
-  object-fit: contain;
-  border-radius: var(--radius-md);
-  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.18))
-          drop-shadow(0 0 12px rgba(255, 255, 255, 0.3));
-  animation: float-emoji 4s var(--ease-bounce) infinite;
-  transition: transform var(--duration-fast) var(--ease-elastic),
-              filter var(--duration-fast) var(--ease-smooth);
-  position: relative;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.kind-btn-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  text-align: center;
-  color: var(--color-text);
-  position: relative;
-  z-index: 2;
+  to {
+    transform: scale(1) translateY(0) rotateX(0deg);
+    opacity: 1;
+  }
 }
 
 /* ─── Today's acts list ─── */
-.acts-today {
-  margin-top: var(--space-xl);
-}
-
-.acts-today-title {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-heavy);
-  margin-bottom: var(--space-md);
-  color: var(--color-pink-dark);
-  text-shadow: 0 1px 6px rgba(255, 143, 171, 0.25);
-  padding-bottom: var(--space-sm);
-  border-bottom: 2px solid var(--color-pink-light);
-}
-
 .acts-list {
   list-style: none;
   display: flex;
@@ -265,8 +248,8 @@
   animation: act-slide-in 0.3s var(--ease-smooth) both;
   animation-delay: calc(sibling-index() * 0.04s);
   transition: transform var(--duration-fast) var(--ease-smooth),
-              box-shadow var(--duration-fast) var(--ease-smooth),
-              border-color var(--duration-fast) var(--ease-smooth);
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    border-color var(--duration-fast) var(--ease-smooth);
   position: relative;
   overflow: visible;
   min-height: var(--touch-min);
@@ -288,24 +271,31 @@
     border-left-color: var(--color-purple);
   }
 
-  /* Logged act celebration glow */
-  &--done {
-    box-shadow:
-      var(--shadow-md),
-      0 0 20px rgba(255, 211, 45, 0.4);
-    border-color: var(--color-yellow);
-  }
+}
+
+/* Logged act celebration glow */
+.act-item--done {
+  box-shadow:
+    var(--shadow-md),
+    0 0 20px rgba(255, 211, 45, 0.4);
+  border-color: var(--color-yellow);
 }
 
 @keyframes act-slide-in {
-  from { transform: translateX(-16px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(-16px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .act-item-emoji {
   font-size: 1.8rem;
-  filter: drop-shadow(0 2px 5px rgba(45, 27, 48, 0.12))
-          drop-shadow(0 0 8px rgba(255, 143, 171, 0.15));
+  filter: drop-shadow(0 2px 5px rgba(45, 27, 48, 0.12)) drop-shadow(0 0 8px rgba(255, 143, 171, 0.15));
 }
 
 .act-item-text {
@@ -335,8 +325,7 @@
   display: block;
   margin-bottom: var(--space-md);
   animation: companion-float 3s ease-in-out infinite;
-  filter: drop-shadow(0 4px 12px rgba(45, 27, 48, 0.12))
-          drop-shadow(0 0 16px rgba(181, 126, 255, 0.2));
+  filter: drop-shadow(0 4px 12px rgba(45, 27, 48, 0.12)) drop-shadow(0 0 16px rgba(181, 126, 255, 0.2));
 }
 
 /* ─── Category completion badge ─── */
@@ -352,115 +341,193 @@
     animation: float-emoji 3s ease-in-out infinite;
   }
 }
+
 /* float-emoji keyframe defined in animations.css */
 
-/* ─── Emotion Check-In UI ─── */
-[data-emotion-checkin] {
+/* ===== Feeling Prompt (replaces reflection + emotion) ===== */
+.feeling-prompt {
   position: fixed;
   inset: 0;
-  z-index: var(--z-overlay);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(6px); /* Optimized from blur(12px) for mobile performance */
+  z-index: var(--z-prompt);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-xl);
-  animation: emotion-fade-in 0.3s var(--ease-smooth);
+  gap: 24px;
+  background: rgba(255, 228, 237, 0.95);
+  backdrop-filter: var(--backdrop-medium);
+  padding: 24px;
 }
 
-@keyframes emotion-fade-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+/* ====== Emotion Check-In Modal (Scoped) ====== */
+@scope (.feeling-prompt) {
+  .feeling-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .feeling-sparkle {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+  }
+
+  .feeling-question {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  .feeling-faces {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+  }
+
+  .feeling-face {
+    width: 120px;
+    height: 120px;
+    border: none;
+    border-radius: 24px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: transform 0.15s var(--ease-bounce, cubic-bezier(0.34, 1.56, 0.64, 1));
+    animation: jelly-wobble 0.6s ease-out;
+  }
+
+  .feeling-face:active {
+    transform: scale(0.92);
+  }
+
+  .feel-happy {
+    background: var(--gradient-magic, linear-gradient(135deg, #FF8FAB, #FFB4C8));
+    color: var(--color-white);
+  }
+
+  .feel-proud {
+    background: var(--gradient-dreamy, linear-gradient(135deg, #B57EFF, #D4A5FF));
+    color: var(--color-white);
+  }
+
+  .feel-loving {
+    background: var(--gradient-golden, linear-gradient(135deg, #FFD32D, #FFE680));
+    color: var(--color-text);
+  }
+
+  .feeling-skip {
+    background: transparent;
+    border: 2px solid var(--color-pink-light);
+    border-radius: 16px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    min-height: var(--touch-min);
+  }
 }
 
-[data-emotion-prompt] {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-heavy);
+/* === Family Kindness Board === */
+.family-board-toggle {
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--color-purple-dark);
+  background: var(--color-surface);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  animation: idle-breathe 3s ease-in-out infinite;
+}
+
+.family-board-toggle:active {
+  transform: scale(0.96);
+}
+
+.family-board {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  margin-top: 0.75rem;
+  border: 2px solid var(--color-purple-dark);
+  animation: jelly-wobble 0.4s ease;
+}
+
+.family-board__title {
+  font-size: 1.2rem;
+  font-weight: 700;
   text-align: center;
-  margin-bottom: var(--space-xl);
-  color: var(--color-purple-dark);
-  text-shadow: 0 2px 8px rgba(181, 126, 255, 0.25);
+  margin-bottom: 0.75rem;
 }
 
-[data-emotion-grid] {
+.family-board__members {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-md);
-  max-width: 600px;
-  width: 100%;
-  margin-bottom: var(--space-lg);
+  gap: 0.5rem;
 }
 
-[data-emotion-grid] button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  min-width: 72px;
-  min-height: var(--touch-large);
-  padding: var(--space-md);
-  border: 3px solid var(--color-purple-light);
-  border-radius: var(--radius-lg);
+.family-board__member {
+  font-size: 2rem;
+  min-width: 3.5rem;
+  min-height: 3.5rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-pink-vivid);
   background: var(--color-surface);
   cursor: pointer;
-  font-family: inherit;
-  box-shadow: var(--shadow-md);
-  transition: transform var(--duration-fast) var(--ease-bounce),
-              border-color var(--duration-fast) var(--ease-smooth),
-              box-shadow var(--duration-fast) var(--ease-smooth);
-  touch-action: manipulation;
-  animation: emotion-btn-in 0.4s var(--ease-overshoot) both;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
 }
 
-@keyframes emotion-btn-in {
-  from { transform: scale(0.7) translateY(10px); opacity: 0; }
-  to { transform: scale(1) translateY(0); opacity: 1; }
+.family-board__member:active {
+  transform: scale(0.9);
 }
 
-/* Staggered entrance for emotion buttons — Safari 26.2 sibling-index() */
-[data-emotion-grid] button {
-  animation-delay: calc(0.05s + (sibling-index() - 1) * 0.03s);
+.family-board__categories {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  padding: 0.5rem;
 }
 
-[data-emotion-grid] button .emoji {
-  font-size: 2.5rem;
-  filter: drop-shadow(0 2px 6px rgba(45, 27, 48, 0.15));
-}
-
-[data-emotion-grid] button .label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-  text-align: center;
-}
-
-[data-emotion-grid] button:active {
-  animation: jelly-wobble 0.3s ease;
-  transform: scale(0.95);
-  border-color: var(--color-purple);
-  box-shadow: var(--shadow-lg);
-}
-
-/* Phase 2.2: Removed duplicate jelly-wobble keyframe — using animations.css version */
-
-[data-emotion-skip] {
-  min-height: var(--touch-min);
-  padding: var(--space-md) var(--space-xl);
-  border: 2px solid var(--color-purple-light);
-  border-radius: var(--radius-lg);
-  background: transparent;
-  color: var(--color-purple);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
+.family-board__category {
+  font-size: 2rem;
+  min-width: 3.5rem;
+  min-height: 3.5rem;
+  border-radius: 50%;
+  border: 3px solid var(--color-pink-vivid);
+  background: var(--color-surface);
   cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-smooth);
-  touch-action: manipulation;
+  animation: jelly-wobble 0.5s ease;
 }
 
-[data-emotion-skip]:active {
-  background: var(--color-purple-light);
-  transform: scale(0.98);
+.family-board__category:active {
+  transform: scale(0.9);
+}
+
+.family-board__cat-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+/* ====== Reduced Motion — respect user preference ====== */
+@media (prefers-reduced-motion: reduce) {
+
+  .kind-btn,
+  .float-emoji,
+  .companion-container,
+  .idle-breathe,
+  .companion-idle {
+    animation: none !important;
+  }
 }

@@ -1,208 +1,387 @@
-//! Sticker reward system — unicorns, balloons, achievements.
-//! Blaire earns stickers by being kind. She can show Mom and Dad.
-//! SQLite tracks what's earned. DOM renders the collection grid.
-
-use crate::{animations, companion, confetti, constants::SELECTOR_REWARDS_BODY, db_client, dom, render, speech, synth_audio, ui, utils};
-
-/// 30 sticker designs — unicorns, balloons, stars, animals.
-/// Blaire's favorites front-loaded so she earns them first.
-/// `image` links to Imagen 3 Pro generated PNGs when available.
+use crate::{
+    animations, companion, confetti, constants::SELECTOR_REWARDS_BODY, db_client, dom, render,
+    speech, synth_audio, ui, utils,
+};
+use std::fmt::Write;
+use wasm_bindgen::JsCast;
 struct StickerDesign {
     emoji: &'static str,
     name: &'static str,
     image: Option<&'static str>,
 }
-
 const STICKER_DESIGNS: &[StickerDesign] = &[
-    // Unicorns (Blaire's #1)
-    StickerDesign { emoji: "\u{1F984}", name: "Rainbow Unicorn", image: Some("./illustrations/stickers/unicorn-rainbow.png") },
-    StickerDesign { emoji: "\u{1F984}\u{2728}", name: "Sparkle Unicorn", image: Some("./illustrations/stickers/unicorn-sparkle.png") },
-    StickerDesign { emoji: "\u{1F984}\u{1F308}", name: "Magic Unicorn", image: Some("./illustrations/stickers/unicorn-magic.png") },
-    StickerDesign { emoji: "\u{1F984}\u{1F31F}", name: "Star Unicorn", image: Some("./illustrations/stickers/unicorn-star.png") },
-    StickerDesign { emoji: "\u{1F984}\u{1F49C}", name: "Purple Unicorn", image: Some("./illustrations/stickers/unicorn-purple.png") },
-    // Balloons (Blaire's #2)
-    StickerDesign { emoji: "\u{1F388}", name: "Red Balloon", image: Some("./illustrations/stickers/balloon-red.png") },
-    StickerDesign { emoji: "\u{1F388}\u{1F388}", name: "Double Balloon", image: Some("./illustrations/stickers/balloon-double.png") },
-    StickerDesign { emoji: "\u{1F389}", name: "Party Popper", image: Some("./illustrations/stickers/party-popper.png") },
-    StickerDesign { emoji: "\u{1F38A}", name: "Confetti Ball", image: None },
-    StickerDesign { emoji: "\u{1F38B}", name: "Tanabata Tree", image: None },
-    // Hearts & Stars (kindness theme)
-    StickerDesign { emoji: "\u{1F49C}", name: "Purple Heart", image: Some("./illustrations/stickers/heart-purple.png") },
-    StickerDesign { emoji: "\u{2B50}", name: "Gold Star", image: Some("./illustrations/stickers/star-gold.png") },
-    StickerDesign { emoji: "\u{1F31F}", name: "Glowing Star", image: None },
-    StickerDesign { emoji: "\u{1F496}", name: "Sparkling Heart", image: Some("./illustrations/stickers/heart-sparkling.png") },
-    StickerDesign { emoji: "\u{1F49D}", name: "Heart Ribbon", image: None },
-    // Animals
-    StickerDesign { emoji: "\u{1F430}", name: "Bunny", image: Some("./illustrations/stickers/bunny.png") },
-    StickerDesign { emoji: "\u{1F436}", name: "Puppy", image: Some("./illustrations/stickers/puppy.png") },
-    StickerDesign { emoji: "\u{1F431}", name: "Kitty", image: Some("./illustrations/stickers/kitty.png") },
-    StickerDesign { emoji: "\u{1F98B}", name: "Butterfly", image: Some("./illustrations/stickers/butterfly.png") },
-    StickerDesign { emoji: "\u{1F426}", name: "Bird", image: None },
-    // Nature
-    StickerDesign { emoji: "\u{1F33B}", name: "Sunflower", image: Some("./illustrations/stickers/sunflower.png") },
-    StickerDesign { emoji: "\u{1F308}", name: "Rainbow", image: Some("./illustrations/stickers/rainbow.png") },
-    StickerDesign { emoji: "\u{2600}\u{FE0F}", name: "Sunshine", image: None },
-    StickerDesign { emoji: "\u{1F338}", name: "Cherry Blossom", image: Some("./illustrations/stickers/cherry-blossom.png") },
-    StickerDesign { emoji: "\u{1F337}", name: "Tulip", image: None },
-    // Streak milestones (special — earned at 3, 7, 14, 30 day streaks)
-    StickerDesign { emoji: "\u{1F525}", name: "3 Day Fire", image: Some("./illustrations/stickers/streak-3-fire.png") },
-    StickerDesign { emoji: "\u{1F48E}", name: "7 Day Gem", image: Some("./illustrations/stickers/streak-7-gem.png") },
-    StickerDesign { emoji: "\u{1F451}", name: "14 Day Crown", image: Some("./illustrations/stickers/streak-14-crown.png") },
-    StickerDesign { emoji: "\u{1F3C6}", name: "30 Day Trophy", image: Some("./illustrations/stickers/streak-30-trophy.png") },
-    // Ultimate
-    StickerDesign { emoji: "\u{1F984}\u{1F451}", name: "Unicorn Queen", image: Some("./illustrations/stickers/unicorn-queen.png") },
-    // Goal achievements (earned via weekly goals)
-    StickerDesign { emoji: "\u{1F33B}\u{1F3C6}", name: "Garden Hero", image: None },
-    StickerDesign { emoji: "\u{1F31F}\u{1F3C6}", name: "Kindness Champion", image: None },
-    StickerDesign { emoji: "\u{1F49C}\u{2B50}", name: "Super Helper", image: None },
-    // Skill mastery badges (bronze/silver/gold for each skill category)
-    // Bronze badges (10+ acts)
-    StickerDesign { emoji: "\u{1F949}", name: "Bronze Sharing Master", image: None },
-    StickerDesign { emoji: "\u{1F949}", name: "Bronze Helping Master", image: None },
-    StickerDesign { emoji: "\u{1F949}", name: "Bronze Hug Master", image: None },
-    StickerDesign { emoji: "\u{1F949}", name: "Bronze Nice Words Master", image: None },
-    StickerDesign { emoji: "\u{1F949}", name: "Bronze Love Master", image: None },
-    StickerDesign { emoji: "\u{1F949}", name: "Bronze Unicorn Master", image: None },
-    // Silver badges (25+ acts)
-    StickerDesign { emoji: "\u{1F948}", name: "Silver Sharing Expert", image: None },
-    StickerDesign { emoji: "\u{1F948}", name: "Silver Helping Expert", image: None },
-    StickerDesign { emoji: "\u{1F948}", name: "Silver Hug Expert", image: None },
-    StickerDesign { emoji: "\u{1F948}", name: "Silver Nice Words Expert", image: None },
-    StickerDesign { emoji: "\u{1F948}", name: "Silver Love Expert", image: None },
-    StickerDesign { emoji: "\u{1F948}", name: "Silver Unicorn Expert", image: None },
-    // Gold badges (50+ acts)
-    StickerDesign { emoji: "\u{1F947}", name: "Gold Sharing Champion", image: None },
-    StickerDesign { emoji: "\u{1F947}", name: "Gold Helping Champion", image: None },
-    StickerDesign { emoji: "\u{1F947}", name: "Gold Hug Champion", image: None },
-    StickerDesign { emoji: "\u{1F947}", name: "Gold Nice Words Champion", image: None },
-    StickerDesign { emoji: "\u{1F947}", name: "Gold Love Champion", image: None },
-    StickerDesign { emoji: "\u{1F947}", name: "Gold Unicorn Champion", image: None },
+    StickerDesign {
+        emoji: "\u{1F984}",
+        name: "Rainbow Unicorn",
+        image: Some("./illustrations/stickers/unicorn-rainbow.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F984}\u{2728}",
+        name: "Sparkle Unicorn",
+        image: Some("./illustrations/stickers/unicorn-sparkle.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F984}\u{1F308}",
+        name: "Magic Unicorn",
+        image: Some("./illustrations/stickers/unicorn-magic.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F984}\u{1F31F}",
+        name: "Star Unicorn",
+        image: Some("./illustrations/stickers/unicorn-star.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F984}\u{1F49C}",
+        name: "Purple Unicorn",
+        image: Some("./illustrations/stickers/unicorn-purple.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F388}",
+        name: "Red Balloon",
+        image: Some("./illustrations/stickers/balloon-red.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F388}\u{1F388}",
+        name: "Double Balloon",
+        image: Some("./illustrations/stickers/balloon-double.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F389}",
+        name: "Party Popper",
+        image: Some("./illustrations/stickers/party-popper.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F38A}",
+        name: "Confetti Ball",
+        image: Some("./illustrations/stickers/confetti-ball.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F38B}",
+        name: "Tanabata Tree",
+        image: Some("./illustrations/stickers/tanabata-tree.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F49C}",
+        name: "Purple Heart",
+        image: Some("./illustrations/stickers/heart-purple.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{2B50}",
+        name: "Gold Star",
+        image: Some("./illustrations/stickers/star-gold.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F31F}",
+        name: "Glowing Star",
+        image: Some("./illustrations/stickers/glowing-star.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F496}",
+        name: "Sparkling Heart",
+        image: Some("./illustrations/stickers/heart-sparkling.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F49D}",
+        name: "Heart Ribbon",
+        image: Some("./illustrations/stickers/heart-ribbon.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F430}",
+        name: "Bunny",
+        image: Some("./illustrations/stickers/bunny.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F436}",
+        name: "Puppy",
+        image: Some("./illustrations/stickers/puppy.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F431}",
+        name: "Kitty",
+        image: Some("./illustrations/stickers/kitty.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F98B}",
+        name: "Butterfly",
+        image: Some("./illustrations/stickers/butterfly.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F426}",
+        name: "Bird",
+        image: Some("./illustrations/stickers/bird.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F33B}",
+        name: "Sunflower",
+        image: Some("./illustrations/stickers/sunflower.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F308}",
+        name: "Rainbow",
+        image: Some("./illustrations/stickers/rainbow.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{2600}\u{FE0F}",
+        name: "Sunshine",
+        image: Some("./illustrations/stickers/sunshine.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F338}",
+        name: "Cherry Blossom",
+        image: Some("./illustrations/stickers/cherry-blossom.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F337}",
+        name: "Tulip",
+        image: Some("./illustrations/stickers/tulip.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F525}",
+        name: "3 Day Fire",
+        image: Some("./illustrations/stickers/streak-3-fire.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F48E}",
+        name: "7 Day Gem",
+        image: Some("./illustrations/stickers/streak-7-gem.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F451}",
+        name: "14 Day Crown",
+        image: Some("./illustrations/stickers/streak-14-crown.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F3C6}",
+        name: "30 Day Trophy",
+        image: Some("./illustrations/stickers/streak-30-trophy.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F984}\u{1F451}",
+        name: "Unicorn Queen",
+        image: Some("./illustrations/stickers/unicorn-queen.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F33B}\u{1F3C6}",
+        name: "Garden Hero",
+        image: Some("./illustrations/stickers/garden-hero.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F31F}\u{1F3C6}",
+        name: "Kindness Champion",
+        image: Some("./illustrations/stickers/kindness-champion.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F49C}\u{2B50}",
+        name: "Super Helper",
+        image: Some("./illustrations/stickers/super-helper.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F949}",
+        name: "Bronze Sharing Master",
+        image: Some("./illustrations/stickers/mastery-bronze-sharing.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F949}",
+        name: "Bronze Helping Master",
+        image: Some("./illustrations/stickers/mastery-bronze-helping.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F949}",
+        name: "Bronze Hug Master",
+        image: Some("./illustrations/stickers/mastery-bronze-hug.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F949}",
+        name: "Bronze Love Master",
+        image: Some("./illustrations/stickers/mastery-bronze-love.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F948}",
+        name: "Silver Sharing Expert",
+        image: Some("./illustrations/stickers/mastery-silver-sharing.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F948}",
+        name: "Silver Helping Expert",
+        image: Some("./illustrations/stickers/mastery-silver-helping.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F948}",
+        name: "Silver Hug Expert",
+        image: Some("./illustrations/stickers/mastery-silver-hug.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F948}",
+        name: "Silver Love Expert",
+        image: Some("./illustrations/stickers/mastery-silver-love.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F947}",
+        name: "Gold Sharing Champion",
+        image: Some("./illustrations/stickers/mastery-gold-sharing.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F947}",
+        name: "Gold Helping Champion",
+        image: Some("./illustrations/stickers/mastery-gold-helping.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F947}",
+        name: "Gold Hug Champion",
+        image: Some("./illustrations/stickers/mastery-gold-hug.webp"),
+    },
+    StickerDesign {
+        emoji: "\u{1F947}",
+        name: "Gold Love Champion",
+        image: Some("./illustrations/stickers/mastery-gold-love.webp"),
+    },
 ];
-
 pub fn init() {
-    show_loading_skeleton();
-    // Render immediately — skeleton stays until hydrate_stickers_batch() is called by lib.rs
+    if let Some(body) = dom::query(SELECTOR_REWARDS_BODY) {
+        dom::set_attr(&body, "aria-busy", "true");
+        let doc = dom::document();
+        dom::safe_set_inner_html(&body, "");
+        for class in ["skeleton-header shimmer", "skeleton-count shimmer"] {
+            if let Some(el) = render::create_el_with_class(&doc, "div", class) {
+                let _ = body.append_child(&el);
+            }
+        }
+        if let Some(skeleton) =
+            render::build_skeleton(&doc, "sticker-skeleton", "skeleton-cell shimmer", 12)
+        {
+            let _ = body.append_child(&skeleton);
+        }
+    }
     render_sticker_grid();
-    // App-lifetime listener — locked sticker tap feedback (single registration — init() called once at boot)
     setup_locked_sticker_tap();
 }
-
-/// Show loading skeleton while stickers are being fetched/hydrated.
-/// Creates shimmer placeholders that get replaced by real stickers.
-fn show_loading_skeleton() {
-    let Some(body) = dom::query(SELECTOR_REWARDS_BODY) else { return };
-    let doc = dom::document();
-
-    // Clear body
-    dom::safe_set_inner_html(&body, "");
-
-    // Header skeleton
-    let header_skeleton = render::create_el_with_class(&doc, "div", "skeleton-header shimmer");
-    let _ = body.append_child(&header_skeleton);
-
-    // Count skeleton
-    let count_skeleton = render::create_el_with_class(&doc, "div", "skeleton-count shimmer");
-    let _ = body.append_child(&count_skeleton);
-
-    // Grid skeleton with 12 placeholder cells
-    let grid_skeleton = render::create_el_with_class(&doc, "div", "sticker-skeleton");
-    for _ in 0..12 {
-        let cell = render::create_el_with_class(&doc, "div", "skeleton-cell shimmer");
-        let _ = grid_skeleton.append_child(&cell);
-    }
-
-    let _ = body.append_child(&grid_skeleton);
-}
-
 fn render_sticker_grid() {
-    let Some(body) = dom::query(SELECTOR_REWARDS_BODY) else { return };
+    let Some(body) = dom::query(SELECTOR_REWARDS_BODY) else {
+        return;
+    };
     let doc = dom::document();
-    let grid = render::create_el_with_class(&doc, "div", "sticker-grid");
 
-    // Achievement summary at top — "Blaire's Sticker Collection"
-    let header = render::create_el_with_class(&doc, "div", "rewards-header");
-    header.set_text_content(Some("\u{1F984} Blaire's Sticker Collection \u{1F984}"));
-    let _ = body.append_child(&header);
+    let Some(header) = render::text_el(
+        &doc,
+        "div",
+        "rewards-header",
+        "🦄 Blaire's Sticker Collection 🦄",
+    ) else {
+        return;
+    };
 
-    // Count display — "X / 51 stickers earned!" (30 base + 3 goals + 18 mastery badges)
-    let count = render::create_el_with_class(&doc, "div", "sticker-count");
-    let _ = count.set_attribute("data-sticker-count", "");
-    let _ = count.set_attribute("aria-live", "polite");
-    count.set_text_content(Some("0 / 51 stickers earned!"));
-    let _ = body.append_child(&count);
+    // Dress-up area
+    let Some(dress_up_area) =
+        render::create_el_with_class(&doc, "div", "dress-up-area drop-shadow")
+    else {
+        return;
+    };
+    let Some(unicorn_avatar) = render::create_img(
+        &doc,
+        "illustrations/stickers/unicorn-rainbow.webp",
+        "Unicorn",
+        "dress-up-unicorn",
+    ) else {
+        return;
+    };
+    let _ = dress_up_area.append_child(&unicorn_avatar);
 
-    // Render all sticker slots — use Imagen PNGs when available
+    let Some(count) =
+        render::create_el_with_data(&doc, "div", "sticker-count", "data-sticker-count")
+    else {
+        return;
+    };
+    dom::set_attr(&count, "aria-live", "polite");
+    count.set_text_content(Some("\u{1F31F} No stickers yet \u{2014} be kind to earn your first! \u{1F49C}"));
+
+    let Some(grid) = render::create_el_with_class(&doc, "div", "sticker-grid") else {
+        return;
+    };
+
     for (i, design) in STICKER_DESIGNS.iter().enumerate() {
-        // Default: locked. DB hydration will unlock earned ones.
-        let cell = ui::sticker_item_with_image(design.emoji, design.image, false, false);
-        let _ = cell.set_attribute("data-sticker-idx", &i.to_string());
-        let _ = cell.set_attribute("title", design.name);
-        // Enhanced aria-label for screen readers
-        let aria_label = format!("{} sticker, locked", design.name);
-        let _ = cell.set_attribute("aria-label", &aria_label);
-        let _ = cell.set_attribute("role", "img");
+        let Some(cell) = ui::sticker_item_with_image(design.emoji, design.image, false, false)
+        else {
+            continue;
+        };
+        dom::with_buf(|buf| {
+            let _ = std::fmt::Write::write_fmt(buf, format_args!("{i}"));
+            dom::set_attr(&cell, "data-sticker-idx", buf);
+        });
+        dom::set_attr(&cell, "title", design.name);
+        dom::with_buf(|buf| {
+            let _ =
+                std::fmt::Write::write_fmt(buf, format_args!("{} sticker, locked", design.name));
+            dom::set_attr(&cell, "aria-label", buf);
+        });
+        dom::set_attr(&cell, "role", "img");
+
         let _ = grid.append_child(&cell);
     }
 
     dom::safe_set_inner_html(&body, "");
     let _ = body.append_child(&header);
+    let _ = body.append_child(&dress_up_area);
     let _ = body.append_child(&count);
     let _ = body.append_child(&grid);
-}
+    dom::remove_attr(&body, "aria-busy");
 
-/// Reveal a sticker cell at `idx` and play the sparkle animation.
+    setup_drag_and_drop();
+}
+fn persist_sticker_spawn(sticker_type: &str, source: &str) {
+    let id = utils::create_id();
+    let now = utils::now_epoch_ms();
+    let st = sticker_type.to_string();
+    let src = source.to_string();
+    crate::browser_apis::spawn_local_logged("sticker-persist", async move {
+        db_client::exec( "INSERT OR IGNORE INTO stickers (id, sticker_type, earned_at, source) VALUES (?1, ?2, ?3, ?4)", vec![id, st, now.to_string(), src],).await
+    });
+}
 fn reveal_sticker_at(idx: usize, emoji: &str, image: Option<&str>) {
-    if let Some(cell) = dom::query(&format!("[data-sticker-idx=\"{idx}\"]")) {
+    let selector = dom::with_buf(|buf| {
+        let _ = Write::write_fmt(buf, format_args!("{idx}"));
+        buf.clone()
+    });
+    let cell = dom::query_data("sticker-idx", &selector);
+    if let Some(cell) = cell {
         reveal_sticker_cell(&cell, emoji, image, true);
         animations::sparkle_reveal(&cell);
     }
 }
-
-/// Award a sticker. Called by tracker (every 5th act), quests (all 3 complete), stories (completion).
 pub fn award_sticker(source: &str) {
-    let next_idx = next_unlocked_sticker_index();
-    let Some(idx) = next_idx else { return }; // All 30 earned!
+    let Some(idx) = next_unlocked_sticker_index() else {
+        return;
+    };
     let design = &STICKER_DESIGNS[idx];
-
-    // SQLite write
     let id = utils::create_id();
     let now = utils::now_epoch_ms();
     let sticker_type = design.name.to_string();
     let source = source.to_string();
-
     db_client::exec_fire_and_forget(
         "sticker-save",
         "INSERT INTO stickers (id, sticker_type, earned_at, source) VALUES (?1, ?2, ?3, ?4)",
         vec![id, sticker_type, now.to_string(), source],
     );
-
-    // Reveal the sticker in the grid — prefer Imagen PNG over emoji
     reveal_sticker_at(idx, design.emoji, design.image);
-
-    // Update count
     update_sticker_count(idx + 1);
-
-    // ARIA announcement for screen readers
     let earned = idx + 1;
     let remaining = STICKER_DESIGNS.len() - earned;
-    dom::announce_live(&format!("Sticker earned! {} of {} collected, {} remaining", earned, STICKER_DESIGNS.len(), remaining));
-
-    // CELEBRATION based on sticker milestone!
+    dom::announce_live(&format!(
+        "Sticker earned! {} of {} collected, {} remaining",
+        earned,
+        STICKER_DESIGNS.len(),
+        remaining
+    ));
     if idx == 0 {
-        // FIRST STICKER EVER — Great celebration!
         confetti::celebrate(confetti::CelebrationTier::Great);
         speech::celebrate("Your FIRST sticker! This is SO special!");
     } else {
         synth_audio::sparkle();
         confetti::burst_unicorn();
     }
-
     dom::toast(&format!("New sticker: {} {}", design.emoji, design.name));
     speech::celebrate(&format!("New sticker! {}", design.name));
     companion::on_sticker_earned();
 }
-
-/// Award a streak milestone sticker (indices 25-28 in STICKER_DESIGNS).
 pub fn award_streak_sticker(streak_days: u32) {
     let idx = match streak_days {
         3 => 25,
@@ -212,28 +391,13 @@ pub fn award_streak_sticker(streak_days: u32) {
         _ => return,
     };
     let design = &STICKER_DESIGNS[idx];
-
-    let id = utils::create_id();
-    let now = utils::now_epoch_ms();
-    let sticker_type = design.name.to_string();
-
-    wasm_bindgen_futures::spawn_local(async move {
-        let _ = db_client::exec(
-            "INSERT OR IGNORE INTO stickers (id, sticker_type, earned_at, source) VALUES (?1, ?2, ?3, ?4)",
-            vec![id, sticker_type, now.to_string(), "streak".to_string()],
-        ).await;
-    });
-
+    persist_sticker_spawn(design.name, "streak");
     reveal_sticker_at(idx, design.emoji, design.image);
-
-    // Toast only (celebration happens in streaks::check_milestones)
-    dom::toast(&format!("{} day streak! {} {}", streak_days, design.emoji, design.name));
+    dom::toast(&format!(
+        "{} day streak! {} {}",
+        streak_days, design.emoji, design.name
+    ));
 }
-
-/// Award a goal-completion sticker.
-/// "Garden Hero" = all weekly goals complete (idx 30)
-/// "Kindness Champion" = repeated champion (idx 31)
-/// "Super Helper" = custom goal done (idx 32)
 pub fn award_goal_sticker(goal_sticker: &str) {
     let idx = match goal_sticker {
         "Garden Hero" => 30,
@@ -242,210 +406,238 @@ pub fn award_goal_sticker(goal_sticker: &str) {
         _ => return,
     };
     let design = &STICKER_DESIGNS[idx];
-
-    let id = utils::create_id();
-    let now = utils::now_epoch_ms();
-    let sticker_type = design.name.to_string();
-
-    wasm_bindgen_futures::spawn_local(async move {
-        let _ = db_client::exec(
-            "INSERT OR IGNORE INTO stickers (id, sticker_type, earned_at, source) VALUES (?1, ?2, ?3, ?4)",
-            vec![id, sticker_type, now.to_string(), "goal".to_string()],
-        ).await;
-    });
-
+    persist_sticker_spawn(design.name, "goal");
     reveal_sticker_at(idx, design.emoji, design.image);
-
     synth_audio::fanfare();
     confetti::burst_party();
-
     dom::toast(&format!("Goal sticker: {} {}", design.emoji, design.name));
     speech::celebrate(&format!("You earned the {} sticker!", design.name));
 }
-
-/// Award a skill mastery badge sticker.
-/// Called by skill_progression when reaching bronze (10), silver (25), or gold (50) acts.
-/// sticker_type format: "skill-bronze-sharing", "skill-silver-helping", "skill-gold-hug", etc.
-/// source: "skill-mastery"
-pub async fn award_mastery_sticker(sticker_type: &str, source: &str) {
-    // Find the sticker design by name pattern
-    let idx = STICKER_DESIGNS.iter().position(|d| {
-        // Match by converting sticker_type to expected name format
-        let expected_name = sticker_type_to_name(sticker_type);
-        d.name == expected_name
-    });
-
+pub fn award_mastery_sticker(sticker_type: &str, source: &str) {
+    let idx = STICKER_DESIGNS
+        .iter()
+        .position(|d| d.name == sticker_type_to_name(sticker_type));
     let Some(idx) = idx else { return };
     let design = &STICKER_DESIGNS[idx];
-
-    let id = utils::create_id();
-    let now = utils::now_epoch_ms();
-    let sticker_type_owned = sticker_type.to_string();
-    let source_owned = source.to_string();
-
-    let _ = db_client::exec(
-        "INSERT OR IGNORE INTO stickers (id, sticker_type, earned_at, source) VALUES (?1, ?2, ?3, ?4)",
-        vec![id, sticker_type_owned, now.to_string(), source_owned],
-    ).await;
-
+    persist_sticker_spawn(sticker_type, source);
     reveal_sticker_at(idx, design.emoji, design.image);
-
     synth_audio::fanfare();
     confetti::burst_party();
-
     dom::toast(&format!("Mastery badge: {} {}", design.emoji, design.name));
     speech::celebrate(&format!("You earned the {} badge!", design.name));
 }
-
-/// Convert sticker_type format to design name.
-/// "skill-bronze-sharing" => "Bronze Sharing Master"
-/// "skill-silver-helping" => "Silver Helping Expert"
-/// "skill-gold-hug" => "Gold Hug Champion"
 fn sticker_type_to_name(sticker_type: &str) -> String {
-    // Split sticker_type into [prefix, tier, skill]
-    // "skill-bronze-nice-words" → ["skill", "bronze", "nice-words"]
     let parts: Vec<&str> = sticker_type.splitn(3, '-').collect();
-    if parts.len() != 3 || parts[0] != "skill" { return String::new(); }
-
+    if parts.len() != 3 || parts[0] != "skill" {
+        return String::new();
+    }
     let tier = parts[1];
     let skill = parts[2];
-
-    // Capitalize skill name - handle multi-word skills
-    let skill_cap = match skill {
-        "nice-words" => "Nice Words",
-        "unicorn" => "Unicorn",
-        other => {
-            // Capitalize first letter for single-word skills
-            let mut c = other.chars();
-            match c.next() {
-                None => "",
-                Some(f) => &format!("{}{}", f.to_uppercase(), c.as_str()),
-            }
-        }
+    let skill_cap = {
+        let mut c = skill.chars();
+        let f = c.next().unwrap_or_default();
+        &format!("{}{}", f.to_uppercase(), c.as_str())
     };
-
     match tier {
-        "bronze" => format!("Bronze {} Master", skill_cap),
-        "silver" => format!("Silver {} Expert", skill_cap),
-        "gold" => format!("Gold {} Champion", skill_cap),
+        "bronze" => format!("Bronze {skill_cap} Master"),
+        "silver" => format!("Silver {skill_cap} Expert"),
+        "gold" => format!("Gold {skill_cap} Champion"),
         _ => String::new(),
     }
 }
-
 fn next_unlocked_sticker_index() -> Option<usize> {
-    // Simple: find first locked sticker cell in DOM (skip streak slots 25-28)
-    for i in 0..25 {
-        let sel = format!("[data-sticker-idx=\"{i}\"]");
-        if let Some(cell) = dom::query(&sel) {
+    for i in (0..25).chain(std::iter::once(29)) {
+        let selector = dom::with_buf(|buf| {
+            let _ = Write::write_fmt(buf, format_args!("{i}"));
+            buf.clone()
+        });
+        let cell = dom::query_data("sticker-idx", &selector);
+        if let Some(cell) = cell {
             if cell.class_list().contains("sticker-cell--locked") {
                 return Some(i);
             }
         }
     }
-    // Try ultimate slot
-    if let Some(cell) = dom::query("[data-sticker-idx=\"29\"]") {
-        if cell.class_list().contains("sticker-cell--locked") {
-            return Some(29);
-        }
-    }
     None
 }
-
 pub fn update_sticker_count(earned: usize) {
-    dom::set_text("[data-sticker-count]", &format!("{earned} / 51 stickers earned!"));
-    // Bounce the count element to celebrate the new number
+    dom::fmt_text("[data-sticker-count]", |buf| {
+        let _ = write!(buf, "{earned} / 45 stickers earned!");
+    });
     if let Some(el) = dom::query("[data-sticker-count]") {
         let _ = el.class_list().add_1("counter-bounce");
-        dom::set_timeout_once(350, move || {
-            if let Some(el) = dom::query("[data-sticker-count]") {
-                let _ = el.class_list().remove_1("counter-bounce");
-            }
-        });
+        dom::delayed_class_remove(el, "counter-bounce", 350);
     }
 }
-
-/// Set up tap feedback for locked sticker slots.
-/// Uses event delegation on the rewards body — fires jelly_wobble + toast hint.
 fn setup_locked_sticker_tap() {
-    use wasm_bindgen::JsCast;
-    let Some(body) = dom::query(SELECTOR_REWARDS_BODY) else { return };
+    let Some(body) = dom::query(SELECTOR_REWARDS_BODY) else {
+        return;
+    };
     let target: web_sys::EventTarget = body.into();
     dom::on(&target, "click", move |e| {
-        let Some(event) = e.dyn_ref::<web_sys::MouseEvent>() else { return };
-        let Some(el) = event.target() else { return };
-        let Some(elem) = el.dyn_ref::<web_sys::Element>() else { return };
-        // Walk up to find closest sticker cell (tap may land on img inside cell)
+        let Some(elem) = dom::event_target_element(&e) else {
+            return;
+        };
         let cell = if elem.class_list().contains("sticker-cell--locked") {
-            elem.clone()
-        } else if let Some(parent) = elem.closest(".sticker-cell--locked").ok().flatten() {
+            elem
+        } else if let Some(parent) = dom::closest(&elem, ".sticker-cell--locked") {
             parent
         } else {
             return;
         };
         animations::jelly_wobble(&cell);
-        dom::toast("Keep being kind to unlock! \u{1F495}");
+        dom::toast("Keep being kind to unlock! 💝");
     });
 }
 
-/// Batch hydrate multiple stickers at once (O(n) instead of O(n²)).
-/// Single DOM query using querySelectorAll, then lookup by index.
+fn setup_drag_and_drop() {
+    let dragging = std::rc::Rc::new(std::cell::RefCell::new(None::<web_sys::Element>));
+    let start_x = std::rc::Rc::new(std::cell::RefCell::new(0.0));
+    let start_y = std::rc::Rc::new(std::cell::RefCell::new(0.0));
+
+    let get_pos = |e: &web_sys::Event| -> (f64, f64) {
+        if let Some(mouse_e) = e.dyn_ref::<web_sys::MouseEvent>() {
+            (mouse_e.client_x() as f64, mouse_e.client_y() as f64)
+        } else if let Some(touch_e) = e.dyn_ref::<web_sys::TouchEvent>() {
+            if let Some(t) = touch_e.touches().get(0) {
+                (t.client_x() as f64, t.client_y() as f64)
+            } else {
+                (0.0, 0.0)
+            }
+        } else {
+            (0.0, 0.0)
+        }
+    };
+
+    let down_drag = dragging.clone();
+    let down_x = start_x.clone();
+    let down_y = start_y.clone();
+    let on_down = move |e: web_sys::Event| {
+        let Some(target) = dom::event_target_element(&e) else {
+            return;
+        };
+        if let Some(cell) = dom::closest(&target, ".sticker-cell--earned") {
+            let (x, y) = get_pos(&e);
+
+            // Create a clone to drag around
+            if let Some(clone) = cell
+                .clone_node_with_deep(true)
+                .ok()
+                .and_then(|n| n.dyn_into::<web_sys::Element>().ok())
+            {
+                let _ = clone.class_list().add_1("sticker-dragging");
+                crate::dom::set_attr(&clone, "style", &format!("position: fixed; left: {}px; top: {}px; transform: translate(-50%, -50%); z-index: 100;", x, y));
+                let Some(body) = dom::document().body() else { return; };
+                let _ = body.append_child(&clone);
+
+                *down_drag.borrow_mut() = Some(clone);
+                *down_x.borrow_mut() = x;
+                *down_y.borrow_mut() = y;
+            }
+        }
+    };
+
+    let move_drag = dragging.clone();
+    let on_move = move |e: web_sys::Event| {
+        if let Some(clone) = &*move_drag.borrow() {
+            e.prevent_default();
+            let (x, y) = get_pos(&e);
+            crate::dom::set_attr(clone, "style", &format!("position: fixed; left: {}px; top: {}px; transform: translate(-50%, -50%); z-index: 100;", x, y));
+        }
+    };
+
+    let up_drag = dragging.clone();
+    let on_up = move |e: web_sys::Event| {
+        if let Some(clone) = up_drag.borrow_mut().take() {
+            let (x, y) = get_pos(&e);
+
+            // Check if dropped over dress-up area
+            let dropped_on_target = if let Some(area) = dom::query(".dress-up-area") {
+                let rect = area.get_bounding_client_rect();
+                x >= rect.left() && x <= rect.right() && y >= rect.top() && y <= rect.bottom()
+            } else {
+                false
+            };
+
+            if dropped_on_target {
+                if let Some(area) = dom::query(".dress-up-area") {
+                    let rect = area.get_bounding_client_rect();
+                    let rel_x = x - rect.left();
+                    let rel_y = y - rect.top();
+
+                    let _ = clone.class_list().remove_1("sticker-dragging");
+                    let _ = clone.class_list().add_1("sticker-placed");
+                    crate::dom::set_attr(&clone, "style", &format!("position: absolute; left: {}px; top: {}px; transform: translate(-50%, -50%); z-index: 20;", rel_x, rel_y));
+                    let _ = area.append_child(&clone);
+
+                    synth_audio::tap();
+                    crate::confetti::float_emoji("#game-arena", "✨");
+                }
+            } else {
+                clone.remove();
+                synth_audio::whoosh();
+            }
+        }
+    };
+
+    if let Some(body) = dom::query(SELECTOR_REWARDS_BODY) {
+        let t: web_sys::EventTarget = body.into();
+        dom::on(&t, "mousedown", on_down.clone());
+        dom::on(&t, "touchstart", on_down);
+    }
+
+    let window: web_sys::EventTarget = dom::window().into();
+    dom::on(&window, "mousemove", on_move.clone());
+    dom::on(&window, "touchmove", on_move);
+    dom::on(&window, "mouseup", on_up.clone());
+    dom::on(&window, "touchend", on_up.clone());
+    dom::on(&window, "touchcancel", on_up);
+}
 pub fn hydrate_stickers_batch(sticker_types: &[String]) {
     use std::collections::{HashMap, HashSet};
-    use wasm_bindgen::JsCast;
-
-    // Build lookup: sticker_type -> index in STICKER_DESIGNS
     let mut type_to_idx: HashMap<&str, usize> = HashMap::new();
     for (i, design) in STICKER_DESIGNS.iter().enumerate() {
         type_to_idx.insert(design.name, i);
     }
-
-    // Build set of indices to unlock
     let mut indices_to_unlock: HashSet<usize> = HashSet::new();
     for stype in sticker_types {
         if let Some(&idx) = type_to_idx.get(stype.as_str()) {
             indices_to_unlock.insert(idx);
         }
     }
-
-    // Single querySelectorAll for all sticker cells (returns Vec<Element>)
-    let cells = dom::query_all("[data-sticker-idx]");
-    for cell in cells.iter() {
+    dom::for_each_match("[data-sticker-idx]", |cell| {
         if let Some(elem) = cell.dyn_ref::<web_sys::HtmlElement>() {
-            // Get the data-sticker-idx attribute
             if let Some(idx_str) = elem.dataset().get("stickerIdx") {
                 if let Ok(idx) = idx_str.parse::<usize>() {
-                    if indices_to_unlock.contains(&idx) {
+                    if idx < STICKER_DESIGNS.len() && indices_to_unlock.contains(&idx) {
                         let design = &STICKER_DESIGNS[idx];
-                        reveal_sticker_cell(cell, design.emoji, design.image, false);
+                        reveal_sticker_cell(&cell, design.emoji, design.image, false);
                     }
                 }
             }
         }
-    }
+    });
 }
-
-/// Reveal a sticker cell — shows Imagen PNG if available, otherwise emoji.
 fn reveal_sticker_cell(cell: &web_sys::Element, emoji: &str, image: Option<&str>, is_new: bool) {
     let class = if is_new {
         "sticker-cell sticker-cell--new rainbow-pulse"
     } else {
         "sticker-cell sticker-cell--earned"
     };
-    let _ = cell.set_attribute("class", class);
-
-    // Update aria-label to reflect unlocked status
-    if let Some(current_label) = cell.get_attribute("aria-label") {
-        let unlocked_label = current_label.replace(", locked", ", earned");
-        let _ = cell.set_attribute("aria-label", &unlocked_label);
+    dom::set_attr(cell, "class", class);
+    if let Some(current_label) = dom::get_attr(cell, "aria-label") {
+        dom::set_attr(
+            cell,
+            "aria-label",
+            &current_label.replace(", locked", ", earned"),
+        );
     }
-
-    // Clear existing content
     dom::safe_set_inner_html(cell, "");
-
     if let Some(src) = image {
         let doc = dom::document();
-        let img = render::create_img(&doc, src, emoji, "sticker-img");
-        let _ = cell.append_child(&img);
+        if let Some(img) = render::create_img(&doc, src, emoji, "sticker-img") {
+            let _ = cell.append_child(&img);
+        }
     } else {
         cell.set_text_content(Some(emoji));
     }

@@ -25,23 +25,19 @@ const DB_SCHEMA_VERSION = 1;
 const STMT_CACHE = new Map();
 const STMT_CACHE_MAX = 128;
 
+// Pre-computed at module level — avoids regex on every initDb() call
+const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
 // ── Tier 1: OPFS (synchronous access handle VFS) ──
 async function tryOpfs(sqlite3) {
   // Safari 26.2 does NOT support FileSystemSyncAccessHandle
-  // Skip OPFS detection entirely to avoid timeout
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  if (isSafari) {
-    console.log('[db-worker] Safari detected, skipping OPFS (not supported)');
-    return null;
-  }
+  if (IS_SAFARI) return null;
 
   if (!sqlite3.oo1.OpfsDb) return null;
   try {
     const opfs = new sqlite3.oo1.OpfsDb('/blaires-kind-heart.sqlite3', 'cw');
-    console.log('[db-worker] OPFS backend opened');
     return opfs;
   } catch (_) {
-    console.warn('[db-worker] OPFS backend unavailable');
     return null;
   }
 }
@@ -53,10 +49,8 @@ function tryKvvfs(sqlite3) {
       filename: 'file:blaires-kind-heart.sqlite3?vfs=kvvfs',
       flags: 'cw'
     });
-    console.log('[db-worker] kvvfs backend opened');
     return kvDb;
   } catch (_) {
-    console.warn('[db-worker] kvvfs backend unavailable');
     return null;
   }
 }
@@ -81,7 +75,7 @@ async function tryMemoryWithBlob(sqlite3) {
         0 // SQLITE_DESERIALIZE_FREEONCLOSE is 0 for copy mode
       );
       if (rc === 0) {
-        console.log(`[db-worker] Restored ${(bytes.length / 1024).toFixed(1)}KB from OPFS blob`);
+        // Restored from OPFS blob
       }
     }
   } catch (_) {
@@ -97,7 +91,6 @@ async function tryMemoryWithBlob(sqlite3) {
 
   // Phase 3: Removed periodic export — rely on pagehide-triggered Export request only
   // This reduces OPFS write churn while maintaining data safety (exports on navigation)
-  console.log('[db-worker] Memory + blob backend opened (pagehide-only export)');
   return memDb;
 }
 
@@ -110,7 +103,11 @@ async function exportToBlob(sqlite3, memDb) {
     await writable.write(bytes);
     await writable.close();
   } catch (err) {
-    console.warn('[db-worker] Blob export failed:', err);
+    const msg = String(err?.message ?? err);
+    if (msg.includes('quota') || msg.includes('QuotaExceeded')) {
+      self.postMessage({ type: 'quota-warning' });
+    }
+    // Other export failures non-critical — next pagehide will retry
   }
 }
 
@@ -180,6 +177,7 @@ const SCHEMA = `
     game_id TEXT NOT NULL,
     score INTEGER NOT NULL DEFAULT 0,
     level INTEGER NOT NULL DEFAULT 1,
+    combo INTEGER NOT NULL DEFAULT 0,
     duration_ms INTEGER NOT NULL DEFAULT 0,
     played_at INTEGER NOT NULL,
     day_key TEXT NOT NULL
@@ -285,6 +283,36 @@ const SCHEMA = `
     created_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_themes_week ON weekly_themes(week_key);
+
+  CREATE TABLE IF NOT EXISTS family_acts (
+    id TEXT PRIMARY KEY,
+    member TEXT NOT NULL,
+    category TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    day_key TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_family_acts_day ON family_acts(day_key);
+
+  CREATE TABLE IF NOT EXISTS companion_state (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS offline_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sql TEXT NOT NULL,
+    params TEXT NOT NULL,
+    timestamp REAL NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS errors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp REAL NOT NULL,
+    severity INTEGER NOT NULL,
+    error_json TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_errors_timestamp ON errors(timestamp);
 `;
 
 function readSchemaVersion(dbInstance) {
@@ -344,7 +372,11 @@ function restoreFromSnapshot(snapshotJson) {
     "companion_skins",
     "gardens",
     "quest_chains",
-    "weekly_themes"
+    "weekly_themes",
+    "family_acts",
+    "companion_state",
+    "offline_queue",
+    "errors"
   ];
 
   db.exec("BEGIN TRANSACTION");
@@ -362,7 +394,13 @@ function restoreFromSnapshot(snapshotJson) {
         if (entries.length === 0) {
           continue;
         }
-        const columns = entries.map(([column]) => column).join(", ");
+        const columns = entries.map(([column]) => {
+          const col = String(column).replace(/"/g, '""');
+          if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(col)) {
+            throw new Error(`Invalid column name: ${col}`);
+          }
+          return `"${col}"`;
+        }).join(", ");
         const placeholders = entries.map((_, index) => `?${index + 1}`).join(", ");
         const values = entries.map(([, value]) =>
           value === null || value === undefined ? null : value
@@ -416,52 +454,20 @@ async function initDb() {
       );
     }
 
-    // Run migrations for existing tables
-    try {
-      db.exec(`
-        ALTER TABLE kind_acts ADD COLUMN reflection_type TEXT DEFAULT NULL;
-      `);
-    } catch (_) { /* Column already exists */ }
-
-    try {
-      db.exec(`
-        ALTER TABLE kind_acts ADD COLUMN bonus_context TEXT DEFAULT NULL;
-      `);
-    } catch (_) { /* Column already exists */ }
-
-    // Add emotion_selected column for emotion vocabulary check-ins
-    try {
-      db.exec(`
-        ALTER TABLE kind_acts ADD COLUMN emotion_selected TEXT DEFAULT NULL;
-      `);
-    } catch (_) { /* Column already exists */ }
-
-    try {
-      db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_acts_category ON kind_acts(category);
-      `);
-    } catch (_) { /* Index already exists */ }
-
-    // Add combo_day column for daily combo detection
-    try {
-      db.exec(`
-        ALTER TABLE kind_acts ADD COLUMN combo_day INTEGER DEFAULT 0;
-      `);
-    } catch (_) { /* Column already exists */ }
-
-    // Add unlock_tier column for story progression
-    try {
-      db.exec(`
-        ALTER TABLE stories_progress ADD COLUMN unlock_tier INTEGER DEFAULT 0;
-      `);
-    } catch (_) { /* Column already exists */ }
-
-    // Add skill_breakdown column for parent insights caching
-    try {
-      db.exec(`
-        ALTER TABLE weekly_insights ADD COLUMN skill_breakdown TEXT DEFAULT NULL;
-      `);
-    } catch (_) { /* Column already exists */ }
+    // Run migrations — single loop avoids 8 redundant try-catch frames
+    const MIGRATIONS = [
+      "ALTER TABLE kind_acts ADD COLUMN reflection_type TEXT DEFAULT NULL;",
+      "ALTER TABLE kind_acts ADD COLUMN bonus_context TEXT DEFAULT NULL;",
+      "ALTER TABLE kind_acts ADD COLUMN emotion_selected TEXT DEFAULT NULL;",
+      "CREATE INDEX IF NOT EXISTS idx_acts_category ON kind_acts(category)",
+      "ALTER TABLE kind_acts ADD COLUMN combo_day INTEGER DEFAULT 0;",
+      "ALTER TABLE stories_progress ADD COLUMN unlock_tier INTEGER DEFAULT 0;",
+      "ALTER TABLE weekly_insights ADD COLUMN skill_breakdown TEXT DEFAULT NULL;",
+      "ALTER TABLE game_scores ADD COLUMN combo INTEGER NOT NULL DEFAULT 0",
+    ];
+    for (const sql of MIGRATIONS) {
+      try { db.exec(sql); } catch (_) { /* already applied */ }
+    }
 
     // Seed skill_mastery table if empty
     const skillCheck = db.exec('SELECT COUNT(*) as c FROM skill_mastery', { returnValue: 'resultRows' });
@@ -477,7 +483,7 @@ async function initDb() {
         );
       }
       db.exec('COMMIT');
-      console.log('[db-worker] Seeded skill_mastery with 6 categories');
+      // Seeded skill_mastery
     }
 
     // Seed reflection_prompts if empty
@@ -523,12 +529,12 @@ async function initDb() {
         );
       }
       db.exec('COMMIT');
-      console.log('[db-worker] Seeded reflection_prompts with templates');
+      // Seeded reflection_prompts
     }
 
     writeSchemaVersion(db, DB_SCHEMA_VERSION);
 
-    console.log(`[db-worker] Ready (backend: ${backend})`);
+    // DB ready
     return true;
   } catch (err) {
     console.error('[db-worker] Init failed:', err);
@@ -640,8 +646,11 @@ self.onmessage = async function(event) {
       if (params && params.length > 0) {
         stmt.bind(params);
       }
-      stmt.step();
-      stmt.reset(); // Reset for reuse, don't finalize cached statements
+      try {
+        stmt.step();
+      } finally {
+        try { stmt.reset(); } catch (_) {}
+      }
       self.postMessage({ type: 'Ok', request_id });
       return;
     }
@@ -658,14 +667,17 @@ self.onmessage = async function(event) {
       for (let i = 0; i < colCount; i++) {
         colNames.push(stmt.getColumnName(i));
       }
-      while (stmt.step()) {
-        const row = {};
-        for (let i = 0; i < colCount; i++) {
-          row[colNames[i]] = stmt.get(i);
+      try {
+        while (stmt.step()) {
+          const row = {};
+          for (let i = 0; i < colCount; i++) {
+            row[colNames[i]] = stmt.get(i);
+          }
+          rows.push(row);
         }
-        rows.push(row);
+      } finally {
+        try { stmt.reset(); } catch (_) {}
       }
-      stmt.reset(); // Reset for reuse, don't finalize cached statements
       self.postMessage({ type: 'Rows', request_id, data: rows });
       return;
     }
@@ -690,8 +702,11 @@ self.onmessage = async function(event) {
           if (params && params.length > 0) {
             stmt.bind(params);
           }
-          stmt.step();
-          stmt.reset(); // Reset for reuse, don't finalize cached statements
+          try {
+            stmt.step();
+          } finally {
+            try { stmt.reset(); } catch (_) {}
+          }
         }
         db.run('COMMIT');
         self.postMessage({ type: 'Ok', request_id });

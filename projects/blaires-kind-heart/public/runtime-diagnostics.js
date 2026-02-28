@@ -123,8 +123,9 @@
 
   function pushRuntimeEvent(event) {
     runtimeEvents.push(event);
-    if (runtimeEvents.length > MAX_STORED_EVENTS) {
-      runtimeEvents.splice(0, runtimeEvents.length - MAX_STORED_EVENTS);
+    // Trim when 25% over capacity — single slice instead of frequent splice(0,N)
+    if (runtimeEvents.length > MAX_STORED_EVENTS + (MAX_STORED_EVENTS >> 2)) {
+      runtimeEvents = runtimeEvents.slice(-MAX_STORED_EVENTS);
     }
     return event;
   }
@@ -236,6 +237,13 @@
       return;
     }
 
+    // Rate limiter: max 10 logged INP events per 10s window
+    var INP_RATE_WINDOW_MS = 10000;
+    var INP_RATE_MAX = 10;
+    var inpLogTimestamps = [];
+    var inpLogStart = 0; // index-based pruning avoids O(n) shift()
+    var inpSuppressedCount = 0;
+
     try {
       var observer = new globalScope.PerformanceObserver(function onInpEntries(list) {
         var entries = typeof list.getEntries === "function" ? list.getEntries() : [];
@@ -256,24 +264,39 @@
           var inputDelayMs = Math.max(0, processingStart - startTime);
           var processingDurationMs = Math.max(0, processingEnd - processingStart);
           var presentationDelayMs = Math.max(0, durationMs - (processingEnd - startTime));
-          var level = durationMs >= severeMs ? "error" : "warn";
+          var level = durationMs >= severeMs ? "warn" : "info";
 
-          record(
-            scope,
-            "inp",
-            {
-              interactionType: typeof entry.name === "string" ? entry.name : "unknown",
-              interactionId: Number.isFinite(entry.interactionId)
-                ? Number(entry.interactionId)
-                : null,
-              durationMs: durationMs,
-              inputDelayMs: inputDelayMs,
-              processingDurationMs: processingDurationMs,
-              presentationDelayMs: presentationDelayMs,
-              target: describeTarget(entry.target),
-            },
-            level,
-          );
+          var payload = Object.assign(createBaseEvent(scope, "inp"), {
+            interactionType: typeof entry.name === "string" ? entry.name : "unknown",
+            interactionId: Number.isFinite(entry.interactionId)
+              ? Number(entry.interactionId)
+              : null,
+            durationMs: durationMs,
+            inputDelayMs: inputDelayMs,
+            processingDurationMs: processingDurationMs,
+            presentationDelayMs: presentationDelayMs,
+            target: describeTarget(entry.target),
+          });
+          pushRuntimeEvent(payload);
+
+          // Rate-limited console logging (index-based pruning, no shift())
+          var now = Date.now();
+          while (inpLogStart < inpLogTimestamps.length && now - inpLogTimestamps[inpLogStart] > INP_RATE_WINDOW_MS) {
+            inpLogStart++;
+          }
+          // Compact when half the array is dead entries
+          if (inpLogStart > INP_RATE_MAX) {
+            inpLogTimestamps = inpLogTimestamps.slice(inpLogStart);
+            inpLogStart = 0;
+          }
+          if ((inpLogTimestamps.length - inpLogStart) < INP_RATE_MAX) {
+            inpLogTimestamps.push(now);
+            var suppMsg = inpSuppressedCount > 0 ? " (+" + inpSuppressedCount + " suppressed)" : "";
+            inpSuppressedCount = 0;
+            writeLog(level, "[diag:" + scope + "] inp " + Math.round(durationMs) + "ms " + (typeof entry.name === "string" ? entry.name : "unknown") + suppMsg);
+          } else {
+            inpSuppressedCount += 1;
+          }
         }
       });
 
@@ -315,6 +338,13 @@
       return;
     }
 
+    // Rate limiter: max 5 logged LoAF events per 10s window, only log severe (>= severeMs)
+    var LOAF_RATE_WINDOW_MS = 10000;
+    var LOAF_RATE_MAX = 5;
+    var loafLogTimestamps = [];
+    var loafLogStart = 0; // index-based pruning avoids O(n) shift()
+    var loafSuppressedCount = 0;
+
     try {
       var observer = new globalScope.PerformanceObserver(function onLoafEntries(list) {
         var entries = typeof list.getEntries === "function" ? list.getEntries() : [];
@@ -324,6 +354,9 @@
           if (durationMs < thresholdMs) {
             continue;
           }
+
+          // Only log severe LoAF events to console; always store in event buffer
+          var isSevere = durationMs >= severeMs;
 
           var scripts = Array.isArray(entry.scripts) ? entry.scripts : [];
           var topScripts = scripts
@@ -353,17 +386,34 @@
             })
             .slice(0, 3);
 
-          record(
-            scope,
-            "loaf",
-            {
-              durationMs: durationMs,
-              blockingDurationMs: toNumber(entry.blockingDuration, 0),
-              scriptCount: scripts.length,
-              topScripts: topScripts,
-            },
-            durationMs >= severeMs ? "error" : "warn",
-          );
+          var payload = Object.assign(createBaseEvent(scope, "loaf"), {
+            durationMs: durationMs,
+            blockingDurationMs: toNumber(entry.blockingDuration, 0),
+            scriptCount: scripts.length,
+            topScripts: topScripts,
+          });
+          pushRuntimeEvent(payload);
+
+          // Rate-limited console logging for severe frames only
+          if (isSevere) {
+            var now = Date.now();
+            // Prune old timestamps outside the window (index-based, no shift())
+            while (loafLogStart < loafLogTimestamps.length && now - loafLogTimestamps[loafLogStart] > LOAF_RATE_WINDOW_MS) {
+              loafLogStart++;
+            }
+            if (loafLogStart > LOAF_RATE_MAX) {
+              loafLogTimestamps = loafLogTimestamps.slice(loafLogStart);
+              loafLogStart = 0;
+            }
+            if ((loafLogTimestamps.length - loafLogStart) < LOAF_RATE_MAX) {
+              loafLogTimestamps.push(now);
+              var suppMsg = loafSuppressedCount > 0 ? " (+" + loafSuppressedCount + " suppressed)" : "";
+              loafSuppressedCount = 0;
+              writeLog("warn", "[diag:" + scope + "] loaf " + Math.round(durationMs) + "ms" + suppMsg);
+            } else {
+              loafSuppressedCount += 1;
+            }
+          }
         }
       });
 

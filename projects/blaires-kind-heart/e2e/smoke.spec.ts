@@ -10,7 +10,6 @@ const PANELS = [
   "panel-rewards",
   "panel-games",
   "panel-gardens",
-  "panel-progress"
 ] as const;
 
 test.describe("home smoke", () => {

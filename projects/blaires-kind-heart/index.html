@@ -1,11 +1,13 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="light" />
   <meta name="theme-color" content="#FFB7C5" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; trusted-types kindheart default; require-trusted-types-for 'script';" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; base-uri 'self'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; trusted-types kindheart default; require-trusted-types-for 'script';" />
 
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -16,6 +18,8 @@
   <meta name="description" content="Blaire's Kind Heart — a kindness adventure with stories, quests, and stickers!" />
 
   <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-180.png" />
   <link data-trunk rel="copy-file" href="manifest.webmanifest" />
   <link data-trunk rel="copy-file" href="wasm-init.js" />
   <link data-trunk rel="copy-file" href="public/sw.js" />
@@ -33,19 +37,18 @@
   <link data-trunk rel="copy-dir" href="assets/game-sprites" />
   <link data-trunk rel="copy-dir" href="assets/companions" />
   <link data-trunk rel="copy-dir" href="assets/gardens" />
-  <link data-trunk rel="copy-file" href="assets/noise.png" />
+  <link data-trunk rel="copy-file" href="assets/noise.webp" />
 
   <!-- WGSL shaders — Trunk copies to dist/ for include_str!() at compile time -->
   <link data-trunk rel="copy-dir" href="shaders" />
 
   <!-- Preload critical assets for faster LCP -->
-  <link rel="preload" as="image" href="./illustrations/blaire/sparkle-splash-optimized.png" fetchpriority="high" />
+  <link rel="preload" as="image" href="./illustrations/blaire/sparkle-splash-optimized.webp" fetchpriority="high" />
 
   <!-- Critical companion skin (default state) -->
   <link rel="preload" as="image" href="/companions/default_happy.webp" fetchpriority="high" />
 
-  <!-- Critical garden stage 1 (initial state) -->
-  <link rel="preload" as="image" href="/gardens/heart_stage_1.webp" fetchpriority="high" />
+  <!-- Garden images loaded on-demand when Gardens panel opens -->
 
   <link rel="modulepreload" href="./blaires-kind-heart.js" crossorigin />
   <script type="module" src="./wasm-init.js?js=blaires-kind-heart.js&wasm=blaires-kind-heart_bg.wasm"></script>
@@ -72,8 +75,6 @@
   <link data-trunk rel="css" href="src/styles/gardens.css" />
   <link data-trunk rel="css" href="src/styles/particles.css" />
   <link data-trunk rel="css" href="src/styles/scroll-effects.css" />
-  <link data-trunk rel="css" href="src/styles/particle-effects.css" />
-  <link data-trunk rel="css" href="src/styles/demo-overhaul.css" />
 
   <style>
     /* CRITICAL INLINE CSS: Loading screen + GPU canvas (for LCP <2s target) */
@@ -110,112 +111,99 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: var(--space-xl);
-      background: linear-gradient(135deg, #FFE4ED, #E8D5FF, #D6EFFF, #D4F5E0, #FFF4C7, #FFE4ED);
-      background-size: 400% 400%;
-      animation: rainbow-bg-shift 6s ease-in-out infinite;
+      background: linear-gradient(135deg, #FFE4ED, #E8D5FF);
     }
-    .loading-screen[hidden] { display: none; }
-    .loading-screen::before,
-    .loading-screen::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
+
+    .loading-screen[hidden] {
+      display: none;
     }
-    .loading-screen::before {
-      background:
-        radial-gradient(8px 8px at 25% 35%, rgba(255, 143, 171, 0.7), transparent),
-        radial-gradient(8px 8px at 75% 65%, rgba(181, 126, 255, 0.6), transparent);
-      animation: loading-sparkle-drift 8s ease-in-out infinite alternate;
-    }
-    .loading-screen::after {
-      background: radial-gradient(6px 6px at 50% 50%, rgba(255, 211, 45, 0.65), transparent);
-      animation: loading-sparkle-float 12s ease-in-out infinite alternate-reverse;
-    }
+
     .loading-screen--exit {
       animation: loading-exit 0.6s var(--ease-smooth) forwards;
     }
 
     .loading-sparkle {
-      width: min(200px, 45vw);
+      width: 180px;
       height: auto;
-      filter: drop-shadow(0 8px 32px rgba(181, 126, 255, 0.5));
-      animation: sparkle-float 2s var(--ease-elastic) infinite alternate;
-      position: relative;
-      z-index: 1;
+      animation: sparkle-bounce 1.2s ease-in-out infinite;
     }
 
-    .loading-title {
-      font-family: var(--font-family-display);
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-pink-dark);
-      text-align: center;
-      text-shadow: 0 2px 12px rgba(255, 143, 171, 0.4);
-      position: relative;
-      z-index: 1;
+    .loading-sparkle-particles {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
     }
 
-    .loading-bar {
-      width: min(280px, 80%);
-      height: 14px;
-      background: rgba(255, 255, 255, 0.5);
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      border: 2px solid rgba(255, 143, 171, 0.3);
-      position: relative;
-      z-index: 1;
+    .sparkle-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--color-pink, #FF8FAB);
+      animation: sparkle-float 2s ease-in-out infinite;
     }
 
-    .loading-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #FF8FAB, #B57EFF, #FFD32D);
-      background-size: 200% 100%;
-      animation: loading-progress 2s ease-in-out infinite;
-      border-radius: inherit;
-      transition: width 0.3s var(--ease-smooth);
+    .sparkle-dot:nth-child(2) {
+      animation-delay: 0.4s;
+      background: var(--color-purple, #B57EFF);
+    }
+
+    .sparkle-dot:nth-child(3) {
+      animation-delay: 0.8s;
+      background: var(--color-yellow, #FFD32D);
     }
 
     /* Keyframes */
-    @keyframes rainbow-bg-shift {
-      0%, 100% { background-position: 0% 50%; }
-      25% { background-position: 50% 100%; }
-      50% { background-position: 100% 50%; }
-      75% { background-position: 50% 0%; }
+    @keyframes sparkle-bounce {
+
+      0%,
+      100% {
+        transform: translateY(0) scale(1);
+      }
+
+      50% {
+        transform: translateY(-20px) scale(1.05);
+      }
     }
-    @keyframes loading-exit {
-      0% { transform: scale(1); opacity: 1; filter: blur(0); }
-      100% { transform: scale(1.1); opacity: 0; filter: blur(8px); }
-    }
-    @keyframes loading-sparkle-drift {
-      0% { transform: translate(0, 0) rotate(0deg); }
-      50% { transform: translate(15px, -20px) rotate(180deg); }
-      100% { transform: translate(-10px, 10px) rotate(360deg); }
-    }
-    @keyframes loading-sparkle-float {
-      0% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(-20px, 15px) scale(1.1); }
-      100% { transform: translate(10px, -10px) scale(0.95); }
-    }
+
     @keyframes sparkle-float {
-      0% { transform: translateY(0) scale(1); }
-      100% { transform: translateY(-8px) scale(1.03); }
+
+      0%,
+      100% {
+        transform: translateY(0);
+        opacity: 0.6;
+      }
+
+      50% {
+        transform: translateY(-10px);
+        opacity: 1;
+      }
     }
-    @keyframes loading-progress {
-      0% { background-position: 0% 0%; }
-      100% { background-position: 200% 0%; }
+
+    @keyframes loading-exit {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+        filter: blur(0);
+      }
+
+      100% {
+        transform: scale(1.1);
+        opacity: 0;
+        filter: blur(8px);
+      }
     }
   </style>
 </head>
+
 <body>
   <!-- Loading screen — dismissed by Rust boot_async() -->
-  <div id="loading-screen" class="loading-screen" aria-live="polite">
-    <img class="loading-sparkle" src="illustrations/blaire/sparkle-splash-optimized.png"
-         alt="Sparkle the unicorn" width="187" height="267" fetchpriority="high" />
-    <p class="loading-title">Getting your kindness world ready...</p>
-    <div class="loading-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-      <div class="loading-bar-fill" data-loading-bar></div>
+  <div id="loading-screen" class="loading-screen" role="status" aria-live="polite" aria-label="Loading application">
+    <img class="loading-sparkle" src="illustrations/blaire/sparkle-splash-optimized.webp" alt="Sparkle the unicorn"
+      width="187" height="267" fetchpriority="high" />
+    <div class="loading-sparkle-particles" aria-hidden="true">
+      <span class="sparkle-dot"></span>
+      <span class="sparkle-dot"></span>
+      <span class="sparkle-dot"></span>
     </div>
   </div>
 
@@ -235,53 +223,29 @@
       </header>
 
       <nav class="home-grid" aria-label="Main features">
-        <button class="home-btn home-btn--tracker" data-panel-open="panel-tracker" data-home-btn aria-label="Kind Acts Tracker">
-          <img class="home-btn-img" src="illustrations/buttons/btn-kind-acts.webp" alt="" aria-hidden="true" width="256" height="256" loading="eager">
-          <span class="home-btn-label">Kind Acts</span>
+        <button class="home-btn home-btn--tracker" data-panel-open="panel-tracker" data-home-btn aria-label="Be Kind!">
+          <img class="home-btn-img" src="illustrations/buttons/btn-kind-acts.webp" alt="Be Kind!" aria-hidden="true" />
+          <span class="home-btn-label">Be Kind!</span>
+          <span class="home-btn-badge" data-badge-hearts aria-label="Hearts today">0</span>
         </button>
 
-        <button class="home-btn home-btn--quests" data-panel-open="panel-quests" data-home-btn aria-label="Daily Quests">
-          <img class="home-btn-img" src="illustrations/buttons/btn-quests.webp" alt="" aria-hidden="true" width="256" height="256" loading="eager">
-          <span class="home-btn-label">Quests</span>
+        <button class="home-btn home-btn--adventures" data-panel-open="panel-adventures" data-home-btn
+          aria-label="Adventures!">
+          <img class="home-btn-img" src="illustrations/buttons/btn-quests.webp" alt="Adventures" aria-hidden="true" />
+          <span class="home-btn-label">Adventures!</span>
         </button>
 
-        <button class="home-btn home-btn--stories" data-panel-open="panel-stories" data-home-btn aria-label="Stories">
-          <img class="home-btn-img" src="illustrations/buttons/btn-stories.webp" alt="" aria-hidden="true" width="256" height="256" loading="eager">
-          <span class="home-btn-label">Stories</span>
-        </button>
-
-        <button class="home-btn home-btn--rewards" data-panel-open="panel-rewards" data-home-btn aria-label="Sticker Collection">
-          <img class="home-btn-img" src="illustrations/buttons/btn-stickers.webp" alt="" aria-hidden="true" width="256" height="256" loading="eager">
-          <span class="home-btn-label">Stickers</span>
-        </button>
-
-        <button class="home-btn home-btn--games" data-panel-open="panel-games" data-home-btn aria-label="Fun Games">
-          <img class="home-btn-img" src="illustrations/buttons/btn-games.webp" alt="" aria-hidden="true" width="256" height="256" loading="eager">
-          <span class="home-btn-label">Games</span>
-        </button>
-
-        <button class="home-btn home-btn--gardens" data-panel-open="panel-gardens" data-home-btn aria-label="My Gardens">
-          <span class="home-btn-emoji" aria-hidden="true">🌱</span>
-          <span class="home-btn-label">Gardens</span>
+        <button class="home-btn home-btn--mystuff" data-panel-open="panel-mystuff" data-home-btn aria-label="My Stuff!">
+          <img class="home-btn-img" src="illustrations/buttons/btn-stickers.webp" alt="My Stuff" aria-hidden="true" />
+          <span class="home-btn-label">My Stuff!</span>
         </button>
       </nav>
 
       <section class="home-streak" aria-label="Kindness streak">
-        <span class="streak-icon" aria-hidden="true">&#x1F525;</span>
-        <span data-streak aria-live="polite">0 day streak!</span>
+        <img src="illustrations/stickers/streak-3-fire.webp" class="streak-fire streak-fire-img" data-streak-fire aria-hidden="true"
+          alt="Streak Fire" />
+        <span data-streak aria-live="polite">0</span>
       </section>
-
-      <div class="home-special-row">
-        <button class="home-btn home-btn--progress" data-panel-open="panel-progress" data-home-btn aria-label="My Week Progress">
-          <img class="home-btn-img" src="illustrations/buttons/btn-my-week.webp" alt="" aria-hidden="true" width="256" height="256" loading="eager">
-          <span class="home-btn-label">My Week!</span>
-        </button>
-
-        <button class="home-btn home-btn--show-mom" data-show-mom data-home-btn aria-label="Show Mom and Dad">
-          <img class="home-btn-img" src="illustrations/buttons/btn-show-mom.webp" alt="" aria-hidden="true" width="256" height="256" loading="eager">
-          <span class="home-btn-label">Show Mom!</span>
-        </button>
-      </div>
     </main>
 
     <!-- Sparkle the Unicorn — fixed-position companion -->
@@ -290,7 +254,11 @@
     <!-- ====== TRACKER PANEL ====== -->
     <section id="panel-tracker" class="panel" hidden aria-label="Kind Acts Tracker">
       <header class="panel-header">
-        <button class="panel-back" data-panel-close aria-label="Back to home">&#x2190;</button>
+        <nav class="breadcrumb" aria-label="Navigation">
+          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <span class="breadcrumb-current" aria-current="page">💖 Be Kind</span>
+        </nav>
         <h2 class="panel-title">Kind Acts</h2>
         <div class="heart-counter" data-tracker-hearts>
           <span class="heart-icon" aria-hidden="true">&#x1F49C;</span>
@@ -305,7 +273,13 @@
     <!-- ====== QUESTS PANEL ====== -->
     <section id="panel-quests" class="panel" hidden aria-label="Daily Quests">
       <header class="panel-header">
-        <button class="panel-back" data-panel-close aria-label="Back to home">&#x2190;</button>
+        <nav class="breadcrumb" aria-label="Navigation">
+          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <button class="breadcrumb-btn" data-nav-panel="panel-adventures" aria-label="Adventures">🗺️</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <span class="breadcrumb-current" aria-current="page">🧭 Quests</span>
+        </nav>
         <h2 class="panel-title">Today's Quests</h2>
       </header>
       <div id="quests-body" class="panel-body" data-quests-body>
@@ -316,7 +290,13 @@
     <!-- ====== STORIES PANEL ====== -->
     <section id="panel-stories" class="panel" hidden aria-label="Stories">
       <header class="panel-header">
-        <button class="panel-back" data-panel-close aria-label="Back to home">&#x2190;</button>
+        <nav class="breadcrumb" aria-label="Navigation">
+          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <button class="breadcrumb-btn" data-nav-panel="panel-adventures" aria-label="Adventures">🗺️</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <span class="breadcrumb-current" aria-current="page">📖 Stories</span>
+        </nav>
         <h2 class="panel-title">Stories</h2>
       </header>
       <div id="stories-body" class="panel-body" data-stories-body>
@@ -327,7 +307,13 @@
     <!-- ====== REWARDS PANEL ====== -->
     <section id="panel-rewards" class="panel" hidden aria-label="Sticker Collection">
       <header class="panel-header">
-        <button class="panel-back" data-panel-close aria-label="Back to home">&#x2190;</button>
+        <nav class="breadcrumb" aria-label="Navigation">
+          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <button class="breadcrumb-btn" data-nav-panel="panel-mystuff" aria-label="My Stuff">✨</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <span class="breadcrumb-current" aria-current="page">⭐ Stickers</span>
+        </nav>
         <h2 class="panel-title">My Stickers</h2>
       </header>
       <div id="rewards-body" class="panel-body" data-rewards-body>
@@ -338,7 +324,13 @@
     <!-- ====== GAMES PANEL ====== -->
     <section id="panel-games" class="panel" hidden aria-label="Fun Games">
       <header class="panel-header">
-        <button class="panel-back" data-panel-close aria-label="Back to home">&#x2190;</button>
+        <nav class="breadcrumb" aria-label="Navigation">
+          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <button class="breadcrumb-btn" data-nav-panel="panel-adventures" aria-label="Adventures">🗺️</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <span class="breadcrumb-current" aria-current="page">🎮 Games</span>
+        </nav>
         <h2 class="panel-title">Games</h2>
       </header>
       <div id="games-body" class="panel-body" data-games-body>
@@ -347,12 +339,19 @@
       <div id="game-arena" class="game-arena" hidden data-game-arena role="region" aria-label="Game play area">
         <!-- Individual game renders here (catcher, memory, hug, paint, unicorn) -->
       </div>
+      <button id="game-exit-btn" class="floating-back-btn" hidden aria-label="Exit Game">⬅️</button>
     </section>
 
     <!-- ====== PROGRESS PANEL ====== -->
     <section id="panel-progress" class="panel" hidden aria-label="Weekly Progress">
       <header class="panel-header">
-        <button class="panel-back" data-panel-close aria-label="Back to home">&#x2190;</button>
+        <nav class="breadcrumb" aria-label="Navigation">
+          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <button class="breadcrumb-btn" data-nav-panel="panel-mystuff" aria-label="My Stuff">✨</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <span class="breadcrumb-current" aria-current="page">📊 My Week</span>
+        </nav>
         <h2 class="panel-title">My Week</h2>
       </header>
       <div id="progress-body" class="panel-body" data-progress-body>
@@ -363,13 +362,76 @@
     <!-- ====== GARDENS PANEL ====== -->
     <section id="panel-gardens" class="panel" hidden aria-label="My Gardens">
       <header class="panel-header">
-        <button class="panel-back" data-panel-close aria-label="Back to home">&#x2190;</button>
+        <nav class="breadcrumb" aria-label="Navigation">
+          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <button class="breadcrumb-btn" data-nav-panel="panel-mystuff" aria-label="My Stuff">✨</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <span class="breadcrumb-current" aria-current="page">🌱 Gardens</span>
+        </nav>
         <h2 class="panel-title">🌱 My Gardens</h2>
       </header>
       <div id="gardens-body" class="panel-body" data-gardens-body>
         <!-- Populated by gardens.rs -->
       </div>
     </section>
+
+    <!-- ====== ADVENTURES PANEL (intermediary) ====== -->
+    <section id="panel-adventures" class="panel" hidden aria-label="Adventures">
+      <header class="panel-header">
+        <nav class="breadcrumb" aria-label="Navigation">
+          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <span class="breadcrumb-current" aria-current="page">🗺️ Adventures</span>
+        </nav>
+        <h2 class="panel-title">Adventures!</h2>
+      </header>
+      <div class="panel-body">
+        <nav class="home-grid" aria-label="Adventure categories">
+          <button class="home-btn" data-panel-open="panel-quests" aria-label="Quests">
+            <img class="home-btn-img" src="illustrations/buttons/btn-quests.webp" alt="Quests" aria-hidden="true" />
+            <span class="home-btn-label">Quests</span>
+          </button>
+          <button class="home-btn" data-panel-open="panel-stories" aria-label="Stories">
+            <img class="home-btn-img" src="illustrations/buttons/btn-stories.webp" alt="Stories" aria-hidden="true" />
+            <span class="home-btn-label">Stories</span>
+          </button>
+          <button class="home-btn" data-panel-open="panel-games" aria-label="Games">
+            <img class="home-btn-img" src="illustrations/buttons/btn-games.webp" alt="Games" aria-hidden="true" />
+            <span class="home-btn-label">Games</span>
+          </button>
+        </nav>
+      </div>
+    </section>
+
+    <!-- ====== MY STUFF PANEL (intermediary) ====== -->
+    <section id="panel-mystuff" class="panel" hidden aria-label="My Stuff">
+      <header class="panel-header">
+        <nav class="breadcrumb" aria-label="Navigation">
+          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
+          <span class="breadcrumb-sep" aria-hidden="true">›</span>
+          <span class="breadcrumb-current" aria-current="page">✨ My Stuff</span>
+        </nav>
+        <h2 class="panel-title">My Stuff!</h2>
+      </header>
+      <div class="panel-body">
+        <nav class="home-grid" aria-label="My stuff categories">
+          <button class="home-btn" data-panel-open="panel-rewards" aria-label="Stickers">
+            <img class="home-btn-img" src="illustrations/buttons/btn-stickers.webp" alt="Stickers" aria-hidden="true" />
+            <span class="home-btn-label">Stickers</span>
+          </button>
+          <button class="home-btn" data-panel-open="panel-gardens" aria-label="Gardens">
+            <img class="home-btn-img" src="illustrations/buttons/btn-gardens.webp" alt="Gardens" aria-hidden="true" />
+            <span class="home-btn-label">Gardens</span>
+          </button>
+          <button class="home-btn" data-panel-open="panel-progress" aria-label="My Week">
+            <img class="home-btn-img" src="illustrations/buttons/btn-my-week.webp" alt="My Week" aria-hidden="true" />
+            <span class="home-btn-label">My Week</span>
+          </button>
+        </nav>
+      </div>
+    </section>
   </div>
 </body>
+
 </html>

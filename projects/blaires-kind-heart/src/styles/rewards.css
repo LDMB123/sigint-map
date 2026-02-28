@@ -1,23 +1,24 @@
 /* Sticker collection and streaks — illustrated background */
 #panel-rewards .panel-body {
   background:
-    linear-gradient(180deg, rgba(237, 224, 255, 0.8) 0%, rgba(214, 239, 255, 0.7) 100%),
+    linear-gradient(180deg, rgba(237, 224, 255, 0.4) 0%, rgba(214, 239, 255, 0.35) 100%),
     url(/illustrations/backgrounds/rewards-bg.webp) center / cover no-repeat;
 }
 
 /* ====== Keyframes (top-level only) ====== */
 
 @keyframes milestone-pop {
-  from { transform: scale(0); }
-  60% { transform: scale(1.25); }
-  to { transform: scale(1); }
-}
+  from {
+    transform: scale(0);
+  }
 
-@keyframes sticker-reveal {
-  0% { transform: scale(0) rotate(-360deg); opacity: 0; filter: blur(8px); }
-  40% { transform: scale(1.3) rotate(20deg); opacity: 1; filter: blur(0); }
-  70% { transform: scale(0.9) rotate(-5deg); }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  60% {
+    transform: scale(1.25);
+  }
+
+  to {
+    transform: scale(1);
+  }
 }
 
 /* ====== Header & Count ====== */
@@ -127,21 +128,69 @@
     transform: scale(0.95);
     transition-duration: var(--duration-instant);
   }
+}
 
-  &--earned {
-    background: var(--gradient-magic);
-    border-color: var(--color-green);
-    color: var(--color-white);
-    box-shadow: 0 0 12px rgba(130, 221, 160, 0.4);
-    animation: milestone-pop 0.4s var(--ease-elastic);
-  }
+.streak-milestone--earned {
+  background: var(--gradient-magic);
+  border-color: var(--color-green);
+  color: var(--color-white);
+  box-shadow: 0 0 12px rgba(130, 221, 160, 0.4);
+  animation: milestone-pop 0.4s var(--ease-elastic);
+}
+
+/* ====== Dress-Up Area ====== */
+
+.dress-up-area {
+  position: relative;
+  width: 90%;
+  max-width: 350px;
+  margin: var(--space-md) auto var(--space-xl);
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: var(--backdrop-medium);
+  border: 4px dashed var(--color-purple-light);
+  border-radius: var(--radius-2xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.dress-up-unicorn {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+.sticker-dragging,
+.sticker-placed {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  width: 80px;
+  height: 80px;
+}
+
+.sticker-dragging {
+  opacity: 0.9;
+  transform: scale(1.1);
+  pointer-events: none;
+}
+
+.sticker-placed {
+  cursor: grab;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
+  animation: scale-pop-in 0.3s var(--ease-elastic);
 }
 
 /* ====== Sticker Grid ====== */
 
 .sticker-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-md);
   perspective: 600px;
 }
@@ -153,13 +202,13 @@
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(6px); /* Optimized from blur(8px) for mobile performance */
+  backdrop-filter: var(--backdrop-medium);
   border: 2px solid rgba(255, 255, 255, 0.6);
   border-radius: var(--radius-xl);
   font-size: 2.8rem;
   position: relative;
   transition: transform var(--duration-fast) var(--ease-bounce),
-              box-shadow var(--duration-fast) var(--ease-smooth);
+    box-shadow var(--duration-fast) var(--ease-smooth);
   animation: idle-wiggle 5s ease-in-out infinite;
 }
 
@@ -171,11 +220,11 @@
   box-shadow: var(--shadow-md), 0 0 10px rgba(181, 126, 255, 0.2);
   background: linear-gradient(135deg, var(--color-surface), var(--color-purple-light));
   cursor: pointer;
-  backdrop-filter: blur(4px); /* Optimized from blur(6px) for mobile performance */
+  backdrop-filter: var(--backdrop-light);
   transform: translateZ(0) scale(1);
   transition: transform var(--duration-fast) var(--ease-bounce),
-              box-shadow var(--duration-fast) var(--ease-smooth);
-  background-image: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.4) 50%, transparent 65%);
+    box-shadow var(--duration-fast) var(--ease-smooth);
+  background-image: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.4) 50%, transparent 65%);
   background-size: 200% 100%;
   animation: shimmer-loading 6s ease-in-out infinite, idle-wiggle 6s ease-in-out infinite;
 
@@ -184,7 +233,7 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(160deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.15) 35%, transparent 55%);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.15) 35%, transparent 55%);
     pointer-events: none;
   }
 
@@ -211,25 +260,16 @@
   width: 80%;
   height: 80%;
   object-fit: contain;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.12));
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
 }
 
 /* ====== Streak Calendar ====== */
 
-.streak-calendar,
-.streak-days {
+.streak-calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: var(--space-xs);
   margin-top: var(--space-md);
-}
-
-.streak-calendar-title {
-  font-family: var(--font-family-display);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--space-md);
-  color: var(--color-orange);
 }
 
 .streak-day {
@@ -241,90 +281,24 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   transition: all var(--duration-fast) var(--ease-smooth);
-
-  &--active {
-    background: linear-gradient(135deg, var(--color-green-light), var(--color-green));
-    color: var(--color-white);
-    box-shadow: 0 0 8px rgba(130, 221, 160, 0.3);
-  }
-
-  &--today {
-    border: 3px solid var(--color-pink);
-    box-shadow: 0 0 10px rgba(255, 143, 171, 0.3);
-  }
-
-  &--empty {
-    color: var(--color-text-light);
-    opacity: 0.35;
-  }
 }
 
-/* ====== Milestone Badges ====== */
-
-.milestone-badges {
-  display: flex;
-  gap: var(--space-md);
-  margin-top: var(--space-lg);
-  overflow-x: auto;
-  padding-bottom: var(--space-sm);
-  scroll-snap-type: x mandatory;
+.streak-day--active {
+  background: linear-gradient(135deg, var(--color-green-light), var(--color-green));
+  color: var(--color-white);
+  box-shadow: 0 0 8px rgba(130, 221, 160, 0.3);
 }
 
-.milestone-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: var(--space-md);
-  background: var(--color-surface);
-  border: 2px solid var(--color-purple-light);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  min-width: var(--touch-large);
-  flex-shrink: 0;
-  scroll-snap-align: center;
-  transition: transform var(--duration-fast) var(--ease-bounce);
-
-  &:active {
-    transform: scale(0.93);
-  }
-
-  &--locked {
-    opacity: 0.25;
-    filter: grayscale(0.8);
-    border-color: var(--color-text-light);
-  }
-
-  &--earned {
-    box-shadow: var(--shadow-elevated), 0 0 8px #b57eff66, 0 0 16px #b57eff4d, 0 0 24px #b57eff26;
-    background: linear-gradient(135deg, var(--color-surface), var(--color-purple-light));
-    background-image: linear-gradient(170deg, rgba(255,255,255,0.4) 0%, transparent 40%),
-                      linear-gradient(135deg, var(--color-surface), var(--color-purple-light));
-    transition: all var(--duration-normal) var(--ease-elastic);
-  }
+.streak-day--today {
+  border: 3px solid var(--color-pink);
+  box-shadow: 0 0 10px rgba(255, 143, 171, 0.3);
 }
 
-.milestone-emoji {
-  font-size: 2.5rem;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.12));
+.streak-day--empty {
+  color: var(--color-text-light);
+  opacity: 0.35;
 }
 
-.milestone-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  text-align: center;
-}
-
-/* ====== Collection Progress Bar ====== */
-
-.sticker-progress-bar {
-  background: var(--gradient-rainbow);
-  background-size: 200% 100%;
-  animation: shimmer-loading 3s linear infinite;
-  border-radius: var(--radius-sm);
-  height: 12px;
-  transition: width var(--duration-slow) var(--ease-bounce);
-}
 
 /* ====== Sticker Detail Overlay ====== */
 
@@ -332,7 +306,7 @@
   position: fixed;
   inset: 0;
   background: rgba(45, 27, 48, 0.6);
-  backdrop-filter: blur(8px); /* Optimized from blur(12px) for mobile performance */
+  backdrop-filter: var(--backdrop-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -340,11 +314,15 @@
   animation: fade-in-up var(--duration-normal) var(--ease-smooth) both;
 }
 
-.sticker-detail-card {
-  font-size: 6rem;
-  padding: var(--space-2xl);
-  background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg), 0 0 40px rgba(181, 126, 255, 0.4);
-  animation: scale-pop-in var(--duration-normal) var(--ease-elastic) both;
+
+/* ====== Reduced Motion — respect user preference ====== */
+@media (prefers-reduced-motion: reduce) {
+
+  .sticker-card,
+  .idle-wiggle,
+  .idle-glow-pulse,
+  .shimmer-loading,
+  .sticker-detail-card {
+    animation: none !important;
+  }
 }

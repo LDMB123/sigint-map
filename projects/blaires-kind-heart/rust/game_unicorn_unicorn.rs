@@ -1,33 +1,28 @@
-//! Unicorn player entity for Unicorn Adventure.
-//! Smooth movement toward touch/pointer target with idle state animations.
-
 use web_sys::CanvasRenderingContext2d;
-
-const UNICORN_SIZE: f64 = 64.0;
-const MOVE_SPEED: f64 = 200.0; // pixels per second
+const UNICORN_FONT: &str = "64px serif";
+const MOVE_SPEED: f64 = 200.0;
 const COLLISION_RADIUS: f64 = 32.0;
-
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum IdleState {
-    Active,   // moving or just moved
-    Looking,  // stationary 4+ seconds - looking around
-    Sitting,  // stationary 8+ seconds - sitting down
+    Active,
+    Looking,
+    Sitting,
 }
-
 pub struct Unicorn {
     pub x: f64,
     pub y: f64,
     pub target_x: f64,
     pub target_y: f64,
     pub idle_state: IdleState,
-
-    // Animation state
     bounce_timer: f64,
     giggle_timer: f64,
     blink_timer: f64,
     next_blink: f64,
+    pub squash_timer: f64,
+    pub star_timer: f64,
+    pub dash_timer: f64,
+    was_moving: bool,
 }
-
 impl Unicorn {
     pub fn new() -> Self {
         Self {
@@ -40,26 +35,36 @@ impl Unicorn {
             giggle_timer: 0.0,
             blink_timer: 0.0,
             next_blink: 3.0 + js_sys::Math::random() * 2.0,
+            squash_timer: 0.0,
+            star_timer: 0.0,
+            dash_timer: 0.0,
+            was_moving: false,
         }
     }
-
     pub fn center_in(&mut self, width: f64, height: f64) {
         self.x = width / 2.0;
         self.y = height / 2.0;
         self.target_x = self.x;
         self.target_y = self.y;
     }
-
-    /// Update position toward target. Returns true if moved this frame.
+    pub fn dash(&mut self) {
+        if self.dash_timer <= 0.0 {
+            self.dash_timer = 0.5;
+            self.squash_timer = 0.3;
+        }
+    }
     pub fn update(&mut self, dt: f64, reduced_motion: bool) -> bool {
-        // Distance to target
+        let current_speed = if self.dash_timer > 0.0 {
+            self.dash_timer -= dt;
+            MOVE_SPEED * 3.5
+        } else {
+            MOVE_SPEED
+        };
         let dx = self.target_x - self.x;
         let dy = self.target_y - self.y;
         let dist = (dx * dx + dy * dy).sqrt();
-
         let moved = if dist > 1.0 {
-            // Move toward target
-            let speed = MOVE_SPEED * dt;
+            let speed = current_speed * dt;
             let move_dist = speed.min(dist);
             self.x += (dx / dist) * move_dist;
             self.y += (dy / dist) * move_dist;
@@ -67,87 +72,86 @@ impl Unicorn {
         } else {
             false
         };
-
-        // Animation timers
+        if moved {
+            self.star_timer -= dt;
+        }
+        if self.was_moving && !moved && !reduced_motion {
+            self.squash_timer = 0.3;
+        }
+        self.was_moving = moved;
+        if self.squash_timer > 0.0 {
+            self.squash_timer -= dt;
+        }
         if !reduced_motion {
             if moved {
-                self.bounce_timer += dt * 8.0; // fast bounce while moving
+                self.bounce_timer += dt * 8.0;
             } else {
-                self.bounce_timer += dt * 2.0; // slow gentle bounce when idle
+                self.bounce_timer += dt * 2.0;
             }
         }
-
         if self.giggle_timer > 0.0 {
             self.giggle_timer -= dt;
         }
-
-        // Blink system
         self.blink_timer += dt;
         if self.blink_timer >= self.next_blink {
             self.blink_timer = 0.0;
             self.next_blink = 2.0 + js_sys::Math::random() * 3.0;
         }
-
         moved
     }
-
     pub fn draw(&self, ctx: &CanvasRenderingContext2d, reduced_motion: bool) {
         ctx.save();
         ctx.translate(self.x, self.y).ok();
-
-        // Bounce animation
+        let mut scale_x = 1.0;
+        let mut scale_y = 1.0;
+        if self.squash_timer > 0.0 {
+            let progress = 1.0 - (self.squash_timer / 0.3);
+            let squash_amount = (progress * std::f64::consts::PI).sin() * 0.3;
+            scale_x += squash_amount;
+            scale_y -= squash_amount;
+        }
+        if self.dash_timer > 0.0 {
+            ctx.set_global_alpha(0.8);
+            let skew = if self.target_x > self.x { 0.2 } else { -0.2 };
+            ctx.transform(1.0, 0.0, skew, 1.0, 0.0, 0.0).ok();
+        }
+        ctx.scale(scale_x, scale_y).ok();
         let bounce_offset = if reduced_motion {
             0.0
         } else {
             (self.bounce_timer * std::f64::consts::TAU).sin() * 4.0
         };
         ctx.translate(0.0, bounce_offset).ok();
-
-        // Giggle wobble
         if self.giggle_timer > 0.0 && !reduced_motion {
             let wobble = (self.giggle_timer * 20.0).sin() * 8.0;
             ctx.rotate(wobble * std::f64::consts::PI / 180.0).ok();
         }
-
-        // Choose emoji based on idle state and blink
-        let is_blinking = self.blink_timer < 0.15;
-        let emoji = if is_blinking {
-            "\u{1F610}" // neutral face (blink)
+        let emoji = if self.blink_timer < 0.15 {
+            "\u{1F610}"
         } else {
             match self.idle_state {
                 IdleState::Active => {
                     if self.giggle_timer > 0.0 {
-                        "\u{1F606}" // laughing
+                        "\u{1F606}"
+                    } else if self.dash_timer > 0.0 {
+                        "\u{1F680}"
                     } else {
-                        "\u{1F984}" // unicorn
+                        "\u{1F984}"
                     }
                 }
-                IdleState::Looking => "\u{1F914}", // thinking
-                IdleState::Sitting => "\u{1F634}",  // sleeping
+                IdleState::Looking => "\u{1F914}",
+                IdleState::Sitting => "\u{1F634}",
             }
         };
-
-        // Draw unicorn emoji
-        ctx.set_font(&format!("{}px serif", UNICORN_SIZE));
+        ctx.set_font(UNICORN_FONT);
         ctx.set_text_align("center");
         ctx.set_text_baseline("middle");
         ctx.fill_text(emoji, 0.0, 0.0).ok();
-
         ctx.restore();
     }
-
     pub fn contains_point(&self, x: f64, y: f64) -> bool {
         let dx = x - self.x;
         let dy = y - self.y;
         (dx * dx + dy * dy).sqrt() < COLLISION_RADIUS
-    }
-
-    pub fn giggle(&mut self) {
-        self.giggle_timer = 0.5;
-    }
-
-    #[allow(dead_code)]
-    pub fn collision_radius(&self) -> f64 {
-        COLLISION_RADIUS
     }
 }

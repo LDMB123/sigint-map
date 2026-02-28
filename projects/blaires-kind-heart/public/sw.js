@@ -7,16 +7,15 @@
 // - Background: DEFERRED_ASSETS loaded after activation
 // - Runtime: Cache-first for all assets
 
-const CACHE_NAME = 'kindheart-v6'; // LCP Optimization: image compression + CSS cleanup
-
-importScripts("./runtime-diagnostics.js");
+const CACHE_NAME = 'kindheart-v75'; // runtime-diagnostics wired in SW
 
 // Import asset manifest (includes CRITICAL_ASSETS and DEFERRED_ASSETS)
 importScripts('./sw-assets.js');
+importScripts("./runtime-diagnostics.js");
+self.__BKH_RUNTIME_DIAGNOSTICS__?.install({ scope: "sw" });
 
-self.__BKH_RUNTIME_DIAGNOSTICS__?.install({
-  scope: "sw"
-});
+// Pre-compiled regex for hot fetch path (avoid per-request RegExp construction)
+const RE_APP_LOGIC = /\.(wasm|js)$/;
 
 // Install: precache CRITICAL assets only (fast boot)
 self.addEventListener('install', (event) => {
@@ -24,20 +23,21 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then((cache) => {
       // Only precache critical assets during install
       // Deferred assets loaded in background after activation
-      // Use Promise.allSettled for resilient caching (don't fail install if 1 asset missing)
+      // Use Promise.allSettled for resilient caching — but FATAL assets must succeed
+      const FATAL_PATTERNS = ['.wasm', '.js', '/index.html', '/offline.html'];
       return Promise.allSettled(
         CRITICAL_ASSETS.map(url =>
-          cache.add(url).catch(err => {
-            console.warn(`[SW Install] Failed to cache ${url}:`, err.message || err);
-            throw err; // Re-throw for allSettled to mark as rejected
-          })
+          cache.add(url).catch(err => { throw err; })
         )
       ).then(results => {
-        const cached = results.filter(r => r.status === 'fulfilled').length;
-        const failed = results.filter(r => r.status === 'rejected').length;
-        console.log(`[SW Install] Cached ${cached}/${CRITICAL_ASSETS.length} critical assets (${failed} failed)`);
-        if (failed > 0 && cached === 0) {
-          throw new Error('All critical assets failed to cache');
+        const fatalFailed = [];
+        results.forEach((r, i) => {
+          if (r.status === 'rejected' && FATAL_PATTERNS.some(p => CRITICAL_ASSETS[i].endsWith(p))) {
+            fatalFailed.push(CRITICAL_ASSETS[i]);
+          }
+        });
+        if (fatalFailed.length > 0) {
+          throw new Error(`Fatal assets failed to cache: ${fatalFailed.join(', ')}`);
         }
       });
     })
@@ -48,11 +48,13 @@ self.addEventListener('install', (event) => {
 
 // Listen for skip-waiting message from the app
 self.addEventListener('message', (event) => {
-  // Type validation: ensure event.data is an object with type property
-  if (event.data && typeof event.data === 'object' && typeof event.data.type === 'string') {
-    if (event.data.type === 'SKIP_WAITING') {
-      self.skipWaiting();
-    }
+  let data = event.data;
+  // Support both object messages and JSON string messages (Rust wasm_bindgen compat)
+  if (typeof data === 'string') {
+    try { data = JSON.parse(data); } catch (_) { return; }
+  }
+  if (data && typeof data === 'object' && data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });
 
@@ -74,20 +76,12 @@ self.addEventListener('activate', (event) => {
         // Cache each asset independently - if 1 of 71 fails, others still cache
         return Promise.allSettled(
           DEFERRED_ASSETS.map(url =>
-            cache.add(url).catch(err => {
-              console.warn(`[SW] Failed to cache ${url}:`, err.message || err);
-              throw err; // Re-throw for allSettled to mark as rejected
-            })
+            cache.add(url).catch(err => { throw err; })
           )
-        ).then(results => {
-          const cached = results.filter(r => r.status === 'fulfilled').length;
-          const failed = results.filter(r => r.status === 'rejected').length;
-          console.log(`[SW] Cached ${cached}/${DEFERRED_ASSETS.length} deferred assets (${failed} failed)`);
-        });
+        );
       })
-    ])
+    ]).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 // Fetch: cache-first for same-origin, network-only for cross-origin
@@ -110,21 +104,24 @@ self.addEventListener('fetch', (event) => {
   // All other requests: cache-first with stale-while-revalidate for app logic
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      // Phase 3.2: Stale-while-revalidate for WASM/JS files
-      // Serve cached immediately, update in background
-      const isAppLogic = /\.(wasm|js)$/.test(url.pathname);
+      // Phase 3.2: Stale-while-revalidate for utility JS/WASM files
+      // IMPORTANT: Exclude main app bundle (blaires-kind-heart.js + _bg.wasm)
+      // because JS glue and WASM binary are tightly coupled — updating one
+      // without the other causes version mismatch crashes on next load.
+      // Main app bundle updates atomically via SW CACHE_NAME version bump.
+      const isAppBundle = url.pathname.includes('blaires-kind-heart');
+      const isAppLogic = RE_APP_LOGIC.test(url.pathname) && !isAppBundle;
 
       if (cached && isAppLogic) {
-        // Serve stale, fetch fresh in background
-        const fetchPromise = fetch(event.request).then((response) => {
+        // Serve stale, fetch fresh in background (fire-and-forget)
+        fetch(event.request).then((response) => {
           if (response.ok) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, clone);
-            });
+            caches.open(CACHE_NAME).then((cache) =>
+              cache.put(event.request, clone)
+            ).catch(() => { }); // Ignore cache write failures (quota, etc.)
           }
-          return response;
-        }).catch(() => cached); // Fallback to cached on network error
+        }).catch(() => { }); // Ignore network errors for background revalidation
 
         return cached; // Return stale immediately
       }
@@ -136,9 +133,9 @@ self.addEventListener('fetch', (event) => {
         // Cache successful responses for next time
         if (response.ok) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
-          });
+          caches.open(CACHE_NAME).then((cache) =>
+            cache.put(event.request, clone)
+          ).catch(() => { }); // Ignore cache write failures (quota, etc.)
         }
         return response;
       });
@@ -153,6 +150,8 @@ self.addEventListener('fetch', (event) => {
         const bytes = Uint8Array.from(atob('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA='), c => c.charCodeAt(0));
         return new Response(bytes, { headers: { 'Content-Type': 'image/webp' } });
       }
+      // Catch-all: return 503 for CSS/JS/WASM etc. (never return undefined)
+      return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
     })
   );
 });

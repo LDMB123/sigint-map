@@ -37,9 +37,9 @@ All app logic in Rust. Only 3 JS files (spec-required):
 ## Key Patterns
 
 - **Boot**: Batched init with `scheduler_yield()` between phases
-- **Navigation**: Navigation API + View Transitions (5 panels: home, tracker, quests, stories, rewards)
+- **Navigation**: Navigation API + View Transitions (panels: home, tracker, adventures, mystuff, quests, stories, games, rewards, gardens, progress)
 - **State**: `Rc<RefCell<AppState>>` shared via thread_local
-- **DB writes**: Protected by Web Locks (`navigator.locks.request`)
+- **DB writes**: Protected by Web Locks from Rust side (`browser_apis::with_web_lock`)
 - **DOM**: Event delegation, Trusted Types, `data-*` attribute selectors
 
 ## Safari 26.2 APIs Used
@@ -65,11 +65,11 @@ SharedArrayBuffer (resizable), AbortSignal.timeout(), SpeechSynthesis, Web Audio
 
 ## Documentation
 
+- **Index**: See `docs/INDEX.md` for full doc map
 - **Icons**: See `docs/ICONS.md` for icon generation guide
-  - Quick start: `cd assets && python3 generate_icons.py`
-  - Archive: `docs/archive/ICON_*.md` for detailed specs
-- **Testing**: See `docs/testing/week3-manual-test-plan.md` for browser testing
-- **Validation**: See `docs/testing/week3-validation-report.md` for build verification
+- **Testing**: See `docs/TESTING.md` for QA procedures
+- **Status**: See `docs/STATUS_LEDGER.md` for QA gate results
+- **Handoff**: See `docs/HANDOFF.md` for session takeover runbook
 
 ## Rules
 

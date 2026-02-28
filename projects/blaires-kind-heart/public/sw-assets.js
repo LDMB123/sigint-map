@@ -23,7 +23,6 @@ const CRITICAL_ASSETS = [
   '/offline.html',
   '/manifest.webmanifest',
   '/wasm-init.js',
-  '/runtime-diagnostics.js',
   '/db-worker.js',
 
   // App WASM + JS glue (Trunk output):
@@ -42,11 +41,9 @@ const CRITICAL_ASSETS = [
   '/animations.css',
 
   // Background grain texture (2.5KB, used by app.css body):
-  '/noise.png',
+  '/noise.webp',
 
   // App icons (manifest requirement):
-  '/icons/app-icon-192.png',
-  '/icons/app-icon-512.png',
   '/icons/icon-180.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -56,6 +53,9 @@ const CRITICAL_ASSETS = [
 
   // Home screen background (first paint, WebP optimized):
   '/illustrations/backgrounds/home-bg.webp',
+
+  // Blaire splash screen (loading state, must be cached for first paint):
+  '/illustrations/blaire/sparkle-splash-optimized.webp',
 
   // Companion assets (default skin, visible on boot) - from manifest:
   ...MANIFEST_COMPANIONS.filter(path => path.includes('default_')),
@@ -80,21 +80,33 @@ const CRITICAL_ASSETS = [
   '/illustrations/buttons/btn-stickers.webp',
   '/illustrations/buttons/btn-stories.webp',
 
-  // Phase 5: Aggressive prefetching - Companion skin sampler (5 WebP, ~150KB)
-  // One happy expression per unlockable skin type for offline warmth - from manifest
+  // Runtime diagnostics (imported at SW startup via importScripts):
+  '/runtime-diagnostics.js',
+
+  // Phase 5 prefetch moved to DEFERRED_ASSETS — saves ~510KB from SW install critical path
+];
+
+// DEFERRED: Panel-specific assets (loaded after activation, non-blocking)
+const DEFERRED_ASSETS = [
+  // Panel CSS (Trunk.toml has filehash=false, so filenames are stable):
+  '/tracker.css',
+  '/quests.css',
+  '/stories.css',
+  '/rewards.css',
+  '/games.css',
+  '/gardens.css',
+  '/progress.css',
+  '/mom.css',
+  '/particles.css',
+  '/scroll-effects.css',
+
+  // Phase 5 prefetch (moved from CRITICAL for faster install):
+  // Companion skin sampler (5 WebP, ~150KB)
   ...MANIFEST_COMPANIONS.filter(path =>
     !path.includes('default_') && path.includes('_happy')
   ),
-
-  // Phase 5: Aggressive prefetching - Garden stage sampler (12 WebP, ~360KB)
-  // One stage_1 per garden type for instant gardens panel open - from manifest
+  // Garden stage sampler (12 WebP, ~360KB)
   ...MANIFEST_GARDENS.filter(path => path.includes('_stage_1')),
-];
-
-// DEFERRED: Panel-specific assets (loaded on demand)
-const DEFERRED_ASSETS = [
-  // Panel CSS: Now bundled by Trunk via <link data-trunk> in index.html.
-  // Trunk hashes filenames, so they're covered by the Trunk output cache.
 
   // WebGPU shaders (games panel only):
   '/shaders/particles_compute.wgsl',
@@ -107,76 +119,133 @@ const DEFERRED_ASSETS = [
   '/illustrations/backgrounds/games-bg.webp',
   '/illustrations/backgrounds/progress-bg.webp',
   '/illustrations/backgrounds/stories-bg.webp',
+  '/illustrations/backgrounds/gardens-bg.webp',
 
   // Stickers (rewards panel only):
-  '/illustrations/stickers/unicorn-rainbow.png',
-  '/illustrations/stickers/unicorn-sparkle.png',
-  '/illustrations/stickers/unicorn-magic.png',
-  '/illustrations/stickers/unicorn-star.png',
-  '/illustrations/stickers/unicorn-purple.png',
-  '/illustrations/stickers/balloon-red.png',
-  '/illustrations/stickers/balloon-double.png',
-  '/illustrations/stickers/party-popper.png',
-  '/illustrations/stickers/heart-purple.png',
-  '/illustrations/stickers/star-gold.png',
-  '/illustrations/stickers/heart-sparkling.png',
-  '/illustrations/stickers/bunny.png',
-  '/illustrations/stickers/puppy.png',
-  '/illustrations/stickers/kitty.png',
-  '/illustrations/stickers/butterfly.png',
-  '/illustrations/stickers/sunflower.png',
-  '/illustrations/stickers/rainbow.png',
-  '/illustrations/stickers/cherry-blossom.png',
-  '/illustrations/stickers/streak-3-fire.png',
-  '/illustrations/stickers/streak-7-gem.png',
-  '/illustrations/stickers/streak-14-crown.png',
-  '/illustrations/stickers/streak-30-trophy.png',
-  '/illustrations/stickers/unicorn-queen.png',
+  '/illustrations/stickers/unicorn-rainbow.webp',
+  '/illustrations/stickers/unicorn-sparkle.webp',
+  '/illustrations/stickers/unicorn-magic.webp',
+  '/illustrations/stickers/unicorn-star.webp',
+  '/illustrations/stickers/unicorn-purple.webp',
+  '/illustrations/stickers/balloon-red.webp',
+  '/illustrations/stickers/balloon-double.webp',
+  '/illustrations/stickers/party-popper.webp',
+  '/illustrations/stickers/heart-purple.webp',
+  '/illustrations/stickers/star-gold.webp',
+  '/illustrations/stickers/heart-sparkling.webp',
+  '/illustrations/stickers/bunny.webp',
+  '/illustrations/stickers/puppy.webp',
+  '/illustrations/stickers/kitty.webp',
+  '/illustrations/stickers/butterfly.webp',
+  '/illustrations/stickers/sunflower.webp',
+  '/illustrations/stickers/rainbow.webp',
+  '/illustrations/stickers/cherry-blossom.webp',
+  '/illustrations/stickers/streak-3-fire.webp',
+  '/illustrations/stickers/streak-7-gem.webp',
+  '/illustrations/stickers/streak-14-crown.webp',
+  '/illustrations/stickers/streak-30-trophy.webp',
+  '/illustrations/stickers/unicorn-queen.webp',
+
+  // Wave 6: Sticker art completion (22 new illustrations):
+  '/illustrations/stickers/confetti-ball.webp',
+  '/illustrations/stickers/tanabata-tree.webp',
+  '/illustrations/stickers/glowing-star.webp',
+  '/illustrations/stickers/heart-ribbon.webp',
+  '/illustrations/stickers/bird.webp',
+  '/illustrations/stickers/sunshine.webp',
+  '/illustrations/stickers/tulip.webp',
+  '/illustrations/stickers/garden-hero.webp',
+  '/illustrations/stickers/kindness-champion.webp',
+  '/illustrations/stickers/super-helper.webp',
+  '/illustrations/stickers/mastery-bronze-sharing.webp',
+  '/illustrations/stickers/mastery-bronze-helping.webp',
+  '/illustrations/stickers/mastery-bronze-hug.webp',
+  '/illustrations/stickers/mastery-bronze-love.webp',
+  '/illustrations/stickers/mastery-silver-sharing.webp',
+  '/illustrations/stickers/mastery-silver-helping.webp',
+  '/illustrations/stickers/mastery-silver-hug.webp',
+  '/illustrations/stickers/mastery-silver-love.webp',
+  '/illustrations/stickers/mastery-gold-sharing.webp',
+  '/illustrations/stickers/mastery-gold-helping.webp',
+  '/illustrations/stickers/mastery-gold-hug.webp',
+  '/illustrations/stickers/mastery-gold-love.webp',
 
   // Story illustrations (stories panel only):
-  '/illustrations/stories/lost-bunny-cover.png',
-  '/illustrations/stories/lost-bunny-1.png',
-  '/illustrations/stories/lost-bunny-end.png',
-  '/illustrations/stories/rainy-day-cover.png',
-  '/illustrations/stories/rainy-day-sharing.png',
-  '/illustrations/stories/rainy-day-end.png',
-  '/illustrations/stories/garden-surprise-cover.png',
-  '/illustrations/stories/garden-watering.png',
-  '/illustrations/stories/garden-end.png',
-  '/illustrations/stories/new-kid-cover.png',
-  '/illustrations/stories/new-kid-alone.png',
-  '/illustrations/stories/new-kid-end.png',
-  '/illustrations/stories/sharing-lunch-cover.png',
-  '/illustrations/stories/sharing-lunch-offer.png',
-  '/illustrations/stories/sharing-lunch-end.png',
+  '/illustrations/stories/lost-bunny-cover.webp',
+  '/illustrations/stories/lost-bunny-1.webp',
+  '/illustrations/stories/lost-bunny-end.webp',
+  '/illustrations/stories/rainy-day-cover.webp',
+  '/illustrations/stories/rainy-day-sharing.webp',
+  '/illustrations/stories/rainy-day-end.webp',
+  '/illustrations/stories/garden-surprise-cover.webp',
+  '/illustrations/stories/garden-watering.webp',
+  '/illustrations/stories/garden-end.webp',
+  '/illustrations/stories/new-kid-cover.webp',
+  '/illustrations/stories/new-kid-alone.webp',
+  '/illustrations/stories/new-kid-end.webp',
+  '/illustrations/stories/sharing-lunch-cover.webp',
+  '/illustrations/stories/sharing-lunch-offer.webp',
+  '/illustrations/stories/sharing-lunch-end.webp',
+
+  // Wave 5: New story illustrations (10 stories × 3 images):
+  '/illustrations/stories/unicorn-forest-cover.webp',
+  '/illustrations/stories/unicorn-forest-1.webp',
+  '/illustrations/stories/unicorn-forest-end.webp',
+  '/illustrations/stories/lonely-dragon-cover.webp',
+  '/illustrations/stories/lonely-dragon-1.webp',
+  '/illustrations/stories/lonely-dragon-end.webp',
+  '/illustrations/stories/fairy-village-cover.webp',
+  '/illustrations/stories/fairy-village-1.webp',
+  '/illustrations/stories/fairy-village-end.webp',
+  '/illustrations/stories/sibling-adventure-cover.webp',
+  '/illustrations/stories/sibling-adventure-1.webp',
+  '/illustrations/stories/sibling-adventure-end.webp',
+  '/illustrations/stories/grandpa-day-cover.webp',
+  '/illustrations/stories/grandpa-day-1.webp',
+  '/illustrations/stories/grandpa-day-end.webp',
+  '/illustrations/stories/new-neighbor-cover.webp',
+  '/illustrations/stories/new-neighbor-1.webp',
+  '/illustrations/stories/new-neighbor-end.webp',
+  '/illustrations/stories/lost-puppy-cover.webp',
+  '/illustrations/stories/lost-puppy-1.webp',
+  '/illustrations/stories/lost-puppy-end.webp',
+  '/illustrations/stories/library-helper-cover.webp',
+  '/illustrations/stories/library-helper-1.webp',
+  '/illustrations/stories/library-helper-end.webp',
+  '/illustrations/stories/park-cleanup-cover.webp',
+  '/illustrations/stories/park-cleanup-1.webp',
+  '/illustrations/stories/park-cleanup-end.webp',
+  '/illustrations/stories/birthday-surprise-cover.webp',
+  '/illustrations/stories/birthday-surprise-1.webp',
+  '/illustrations/stories/birthday-surprise-end.webp',
 
   // Kind-act icons (tracker panel only):
-  '/illustrations/acts/act-hug.png',
-  '/illustrations/acts/act-helping.png',
-  '/illustrations/acts/act-love.png',
-  '/illustrations/acts/act-nice-words.png',
-  '/illustrations/acts/act-sharing.png',
-  '/illustrations/acts/act-unicorn.png',
+  '/illustrations/acts/act-hug.webp',
+  '/illustrations/acts/act-helping.webp',
+  '/illustrations/acts/act-love.webp',
+  '/illustrations/acts/act-nice-words.webp',
+  '/illustrations/acts/act-sharing.webp',
+  '/illustrations/acts/act-unicorn.webp',
 
   // Game illustrations (games panel only):
-  '/illustrations/games/game-catcher.png',
-  '/illustrations/games/game-memory.png',
-  '/illustrations/games/game-hug.png',
-  '/illustrations/games/game-paint.png',
+  '/illustrations/games/game-catcher.webp',
+  '/illustrations/games/game-memory.webp',
+  '/illustrations/games/game-hug.webp',
+  '/illustrations/games/game-paint.webp',
 
   // Blaire character (rewards/mom panel):
-  '/illustrations/blaire/sparkle-unicorn.png',
-  '/illustrations/blaire/sparkle-splash-optimized.png',
+  '/illustrations/blaire/sparkle-unicorn.webp',
+  // sparkle-splash-optimized.webp moved to CRITICAL_ASSETS (loading screen)
 
   // Game sprites (games panel only):
-  '/game-sprites/bunny_sprite.png',
-  '/game-sprites/deer_sprite.png',
-  '/game-sprites/forest_background.png',
-  '/game-sprites/fox_sprite.png',
-  '/game-sprites/hedgehog_sprite.png',
-  '/game-sprites/owl_sprite.png',
-  '/game-sprites/sparkle_effect.png',
-  '/game-sprites/unicorn_sprite.png',
+  '/game-sprites/bunny_sprite.webp',
+  '/game-sprites/deer_sprite.webp',
+  '/game-sprites/forest_background.webp',
+  '/game-sprites/fox_sprite.webp',
+  '/game-sprites/hedgehog_sprite.webp',
+  '/game-sprites/owl_sprite.webp',
+  '/game-sprites/sparkle_effect.webp',
+  '/game-sprites/unicorn_sprite.webp',
 
   // Companion unlockable skins (rewards panel) - from manifest:
   // Phase 5: Moved *_happy variants to CRITICAL_ASSETS for prefetch
@@ -188,6 +257,3 @@ const DEFERRED_ASSETS = [
   // Phase 5: Moved stage_1 variants to CRITICAL_ASSETS for prefetch
   ...MANIFEST_GARDENS.filter(path => !path.includes('_stage_1')),
 ];
-
-// Combined manifest for Service Worker precache
-const PRECACHE_ASSETS = [...CRITICAL_ASSETS, ...DEFERRED_ASSETS];

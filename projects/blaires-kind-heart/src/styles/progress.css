@@ -2,74 +2,110 @@
 /* Lush, vibrant garden where flowers grow as Blaire completes goals */
 
 @keyframes bloom-bounce {
-  0% { transform: scale(0.3); opacity: 0.5; }
-  40% { transform: scale(1.35); opacity: 1; }
-  60% { transform: scale(0.95); }
-  80% { transform: scale(1.2); }
-  100% { transform: scale(1.15); }
+  0% {
+    transform: scale(0.3);
+    opacity: 0.5;
+  }
+
+  40% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+
+  60% {
+    transform: scale(0.95);
+  }
+
+  80% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1.15);
+  }
 }
 
 @keyframes rainbow-bar-scroll {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
 }
 
 @keyframes progress-shimmer {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
 }
 
 @keyframes trophy-glow {
   from {
-    box-shadow: 0 4px 16px rgba(255, 159, 67, 0.3), 0 0 20px rgba(255, 211, 45, 0.2);
+    filter: drop-shadow(0 4px 16px rgba(255, 159, 67, 0.3)) drop-shadow(0 0 20px rgba(255, 211, 45, 0.2));
   }
+
   to {
-    box-shadow: 0 4px 24px rgba(255, 159, 67, 0.5), 0 0 40px rgba(255, 211, 45, 0.4), 0 0 60px rgba(255, 143, 171, 0.2);
+    filter: drop-shadow(0 4px 24px rgba(255, 159, 67, 0.5)) drop-shadow(0 0 40px rgba(255, 211, 45, 0.4));
   }
 }
 
 @keyframes today-pulse {
-  0%, 100% {
-    box-shadow:
-      0 0 0 3px rgba(155, 48, 255, 0.15),
-      0 2px 8px rgba(181, 126, 255, 0.2);
+
+  0%,
+  100% {
+    filter: drop-shadow(0 2px 8px rgba(181, 126, 255, 0.2));
+    outline: 3px solid rgba(155, 48, 255, 0.15);
+    outline-offset: 0px;
   }
+
   50% {
-    box-shadow:
-      0 0 0 5px rgba(155, 48, 255, 0.25),
-      0 2px 14px rgba(181, 126, 255, 0.35);
+    filter: drop-shadow(0 2px 14px rgba(181, 126, 255, 0.35));
+    outline: 5px solid rgba(155, 48, 255, 0.25);
+    outline-offset: 0px;
   }
 }
 
 @keyframes today-glow {
-  0%, 100% {
-    box-shadow:
-      0 0 0 3px rgba(255, 211, 45, 0.25),
-      0 2px 12px rgba(181, 126, 255, 0.35),
-      0 0 22px rgba(255, 211, 45, 0.2);
+
+  0%,
+  100% {
+    filter: drop-shadow(0 2px 12px rgba(181, 126, 255, 0.35)) drop-shadow(0 0 22px rgba(255, 211, 45, 0.2));
+    outline: 3px solid rgba(255, 211, 45, 0.25);
+    outline-offset: 0px;
   }
+
   50% {
-    box-shadow:
-      0 0 0 5px rgba(255, 211, 45, 0.35),
-      0 2px 18px rgba(181, 126, 255, 0.45),
-      0 0 32px rgba(255, 211, 45, 0.3);
+    filter: drop-shadow(0 2px 18px rgba(181, 126, 255, 0.45)) drop-shadow(0 0 32px rgba(255, 211, 45, 0.3));
+    outline: 5px solid rgba(255, 211, 45, 0.35);
+    outline-offset: 0px;
   }
 }
 
 @keyframes progress-breathe {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.85; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.85;
+  }
 }
 
 #panel-progress .panel-body {
   background:
-    url('/illustrations/backgrounds/progress-bg.webp') center / cover no-repeat,
-    linear-gradient(
-      180deg,
-      rgba(212, 245, 224, 0.9) 0%,
-      rgba(94, 201, 139, 0.5) 40%,
-      rgba(92, 184, 228, 0.3) 100%
-    );
+    linear-gradient(180deg,
+      rgba(212, 245, 224, 0.4) 0%,
+      rgba(94, 201, 139, 0.25) 40%,
+      rgba(92, 184, 228, 0.2) 100%),
+    url('/illustrations/backgrounds/progress-bg.webp') center / cover no-repeat;
 }
 
 .progress-garden-header {
@@ -107,120 +143,118 @@
     var(--shadow-sm),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
   transition: transform var(--duration-normal) var(--ease-smooth),
-              box-shadow var(--duration-normal) var(--ease-smooth);
+    box-shadow var(--duration-normal) var(--ease-smooth);
   border: 1.5px solid rgba(94, 201, 139, 0.15);
 
   &:active {
     transform: scale(0.98);
   }
+}
 
-  /* Stage-specific row styling — increasing vibrancy as flowers grow */
-  &--stage-0 {
-    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-raised) 100%);
-    border-color: transparent;
+/* Stage-specific row styling — increasing vibrancy as flowers grow */
+.progress-row--stage-0 {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-raised) 100%);
+  border-color: transparent;
 
-    & .progress-plant {
-      opacity: 0.35;
-      filter: grayscale(0.6);
-      background: rgba(45, 27, 48, 0.04);
-    }
+  & .progress-plant {
+    opacity: 0.35;
+    filter: grayscale(0.6);
+    background: rgba(45, 27, 48, 0.04);
+  }
+}
+
+.progress-row--stage-1 {
+  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(212, 245, 224, 0.5) 100%);
+  border-color: rgba(94, 201, 139, 0.1);
+
+  & .progress-plant {
+    transform: scale(0.8);
+    opacity: 0.7;
+    background: rgba(212, 245, 224, 0.4);
   }
 
-  &--stage-1 {
-    background: linear-gradient(135deg, var(--color-surface) 0%, rgba(212, 245, 224, 0.5) 100%);
-    border-color: rgba(94, 201, 139, 0.1);
+  & .progress-bar-fill {
+    background: linear-gradient(90deg, var(--color-green-light) 0%, var(--color-green) 100%);
+  }
+}
 
-    & .progress-plant {
-      transform: scale(0.8);
-      opacity: 0.7;
-      background: rgba(212, 245, 224, 0.4);
-    }
+.progress-row--stage-2 {
+  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(212, 245, 224, 0.7) 100%);
+  border-color: rgba(94, 201, 139, 0.2);
 
-    & .progress-bar-fill {
-      background: linear-gradient(90deg, var(--color-green-light) 0%, var(--color-green) 100%);
-    }
+  & .progress-plant {
+    transform: scale(0.9);
+    background: rgba(212, 245, 224, 0.5);
+    filter: drop-shadow(0 2px 6px rgba(94, 201, 139, 0.2));
   }
 
-  &--stage-2 {
-    background: linear-gradient(135deg, var(--color-surface) 0%, rgba(212, 245, 224, 0.7) 100%);
-    border-color: rgba(94, 201, 139, 0.2);
+  & .progress-bar-fill {
+    background: linear-gradient(90deg, var(--color-green) 0%, var(--color-green-vivid) 100%);
+  }
+}
 
-    & .progress-plant {
-      transform: scale(0.9);
-      background: rgba(212, 245, 224, 0.5);
-      filter: drop-shadow(0 2px 6px rgba(94, 201, 139, 0.2));
-    }
+.progress-row--stage-3 {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-green-light) 100%);
+  border-color: rgba(94, 201, 139, 0.25);
+  box-shadow:
+    var(--shadow-sm),
+    0 2px 12px rgba(94, 201, 139, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 
-    & .progress-bar-fill {
-      background: linear-gradient(90deg, var(--color-green) 0%, var(--color-green-vivid) 100%);
-    }
+  & .progress-plant {
+    transform: scale(1.0);
+    background: rgba(212, 245, 224, 0.6);
+    filter: drop-shadow(0 3px 10px rgba(94, 201, 139, 0.3));
   }
 
-  &--stage-3 {
-    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-green-light) 100%);
-    border-color: rgba(94, 201, 139, 0.25);
-    box-shadow:
-      var(--shadow-sm),
-      0 2px 12px rgba(94, 201, 139, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  & .progress-bar-fill {
+    background: linear-gradient(90deg, var(--color-green-vivid) 0%, var(--color-blue) 50%, var(--color-purple) 100%);
+  }
+}
 
-    & .progress-plant {
-      transform: scale(1.0);
-      background: rgba(212, 245, 224, 0.6);
-      filter: drop-shadow(0 3px 10px rgba(94, 201, 139, 0.3));
-    }
+.progress-row--stage-4 {
+  background: linear-gradient(135deg, var(--color-green-light) 0%, var(--color-yellow-light) 50%, var(--color-surface) 100%);
+  border-color: rgba(0, 210, 106, 0.3);
+  box-shadow:
+    var(--shadow-md),
+    0 4px 20px rgba(94, 201, 139, 0.25),
+    0 0 30px rgba(255, 211, 45, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
 
-    & .progress-bar-fill {
-      background: linear-gradient(90deg, var(--color-green-vivid) 0%, var(--color-blue) 50%, var(--color-purple) 100%);
-    }
+  & .progress-plant {
+    transform: scale(1.15);
+    background: linear-gradient(135deg, rgba(255, 244, 199, 0.6), rgba(212, 245, 224, 0.6));
+    filter: drop-shadow(0 4px 14px rgba(0, 210, 106, 0.4));
+    animation: bloom-bounce 1s var(--ease-overshoot);
   }
 
-  &--stage-4 {
-    background: linear-gradient(135deg, var(--color-green-light) 0%, var(--color-yellow-light) 50%, var(--color-surface) 100%);
-    border-color: rgba(0, 210, 106, 0.3);
-    box-shadow:
-      var(--shadow-md),
-      0 4px 20px rgba(94, 201, 139, 0.25),
-      0 0 30px rgba(255, 211, 45, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  & .progress-label {
+    background: linear-gradient(90deg, var(--color-green-vivid), var(--color-yellow-vivid));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
 
-    & .progress-plant {
-      transform: scale(1.15);
-      background: linear-gradient(135deg, rgba(255, 244, 199, 0.6), rgba(212, 245, 224, 0.6));
-      filter: drop-shadow(0 4px 14px rgba(0, 210, 106, 0.4));
-      animation: bloom-bounce 1s var(--ease-overshoot);
-    }
+  & .progress-bar-fill {
+    background: var(--gradient-rainbow);
+    background-size: 200% 100%;
+    animation: rainbow-bar-scroll 3s linear infinite;
 
-    & .progress-label {
-      background: linear-gradient(90deg, var(--color-green-vivid), var(--color-yellow-vivid));
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    & .progress-bar-fill {
-      background: var(--gradient-rainbow);
-      background-size: 200% 100%;
-      animation: rainbow-bar-scroll 3s linear infinite;
-
-      &::after {
-        background: linear-gradient(
-          90deg,
+    &::after {
+      background: linear-gradient(90deg,
           transparent 0%,
           rgba(255, 255, 255, 0.5) 45%,
           rgba(255, 255, 255, 0.7) 50%,
           rgba(255, 255, 255, 0.5) 55%,
-          transparent 100%
-        );
-        background-size: 200% 100%;
-        animation: progress-shimmer 1.5s ease-in-out infinite;
-      }
+          transparent 100%);
+      background-size: 200% 100%;
+      animation: progress-shimmer 1.5s ease-in-out infinite;
     }
+  }
 
-    & .progress-text {
-      color: var(--color-green-vivid);
-      font-weight: var(--font-weight-bold);
-    }
+  & .progress-text {
+    color: var(--color-green-vivid);
+    font-weight: var(--font-weight-bold);
   }
 }
 
@@ -235,7 +269,7 @@
   text-align: center;
   border-radius: var(--radius-round);
   transition: transform var(--duration-slow) var(--ease-smooth),
-              filter var(--duration-slow) var(--ease-smooth);
+    filter var(--duration-slow) var(--ease-smooth);
 }
 
 /* Goal Info */
@@ -277,14 +311,12 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.4) 40%,
-      rgba(255, 255, 255, 0.6) 50%,
-      rgba(255, 255, 255, 0.4) 60%,
-      transparent 100%
-    );
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.4) 40%,
+        rgba(255, 255, 255, 0.6) 50%,
+        rgba(255, 255, 255, 0.4) 60%,
+        transparent 100%);
     background-size: 200% 100%;
     animation: progress-shimmer 2s ease-in-out infinite;
   }
@@ -301,11 +333,12 @@
 .progress-empty {
   text-align: center;
   font-size: var(--font-size-lg);
-  color: var(--color-text-light);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-purple-dark);
   padding: var(--space-2xl);
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.75);
   border-radius: var(--radius-lg);
-  border: 2px dashed rgba(94, 201, 139, 0.3);
+  border: 2px dashed rgba(94, 201, 139, 0.5);
 }
 
 /* ── Trophy (all complete) ── */
@@ -315,15 +348,12 @@
   font-family: var(--font-family-display);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-heavy);
-  color: var(--color-orange);
   padding: var(--space-lg);
   background: linear-gradient(135deg, var(--color-yellow-light) 0%, var(--color-yellow) 40%, var(--color-orange) 100%);
   border-radius: var(--radius-lg);
   margin-top: var(--space-md);
   animation: trophy-glow 2s ease-in-out infinite alternate;
-  box-shadow:
-    0 4px 16px rgba(255, 159, 67, 0.3),
-    0 0 30px rgba(255, 211, 45, 0.2);
+  filter: drop-shadow(0 4px 16px rgba(255, 159, 67, 0.3)) drop-shadow(0 0 30px rgba(255, 211, 45, 0.2));
   color: var(--color-white);
   text-shadow: 0 2px 8px rgba(255, 107, 0, 0.4);
 }
@@ -337,24 +367,11 @@
   padding: var(--space-lg) 0 var(--space-md);
 }
 
-.progress-day {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.progress-day-label {
-  font-size: 0.65rem;
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-light);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
 
 .progress-day-circle {
-  width: 48px;
-  height: 48px;
+  width: var(--touch-min);
+  /* 52px — app minimum touch target for 4-year-old fingers */
+  height: var(--touch-min);
   border-radius: var(--radius-round);
   background: var(--color-surface);
   display: flex;
@@ -369,36 +386,34 @@
     transform var(--duration-fast) var(--ease-bounce);
   box-shadow: var(--shadow-sm);
   border: 2px solid transparent;
+}
 
-  /* Active day (has activity) — filled gradient with glow */
-  &--active {
-    background: linear-gradient(135deg, var(--color-pink) 0%, var(--color-purple) 100%);
-    color: var(--color-white);
-    box-shadow:
-      0 2px 10px rgba(181, 126, 255, 0.35),
-      0 0 18px rgba(255, 143, 171, 0.25);
-    border-color: transparent;
-    animation: progress-breathe 3s ease-in-out infinite;
-  }
+/* Active day (has activity) — filled gradient with glow */
+.progress-day-circle--active {
+  background: linear-gradient(135deg, var(--color-pink) 0%, var(--color-purple) 100%);
+  color: var(--color-white);
+  box-shadow:
+    0 2px 10px rgba(181, 126, 255, 0.35),
+    0 0 18px rgba(255, 143, 171, 0.25);
+  border-color: transparent;
+  animation: progress-breathe 3s ease-in-out infinite;
+}
 
-  /* Today indicator — pulsing border ring */
-  &--today {
-    border: 2.5px solid var(--color-purple-vivid);
-    box-shadow:
-      0 0 0 3px rgba(155, 48, 255, 0.15),
-      0 2px 8px rgba(181, 126, 255, 0.2);
-    animation: today-pulse 2.5s ease-in-out infinite;
+/* Today indicator — pulsing border ring */
+.progress-day-circle--today {
+  border: 2.5px solid var(--color-purple-vivid);
+  outline: 3px solid rgba(155, 48, 255, 0.15);
+  outline-offset: 0px;
+  filter: drop-shadow(0 2px 8px rgba(181, 126, 255, 0.2));
+  animation: today-pulse 2.5s ease-in-out infinite;
+}
 
-    /* Today + active = extra glow */
-    &.progress-day-circle--active {
-      border-color: var(--color-yellow);
-      box-shadow:
-        0 0 0 3px rgba(255, 211, 45, 0.25),
-        0 2px 12px rgba(181, 126, 255, 0.35),
-        0 0 22px rgba(255, 211, 45, 0.2);
-      animation: today-glow 2.5s ease-in-out infinite;
-    }
-  }
+/* Today + active = extra glow */
+.progress-day-circle--today.progress-day-circle--active {
+  border-color: var(--color-yellow);
+  outline: 3px solid rgba(255, 211, 45, 0.25);
+  filter: drop-shadow(0 2px 12px rgba(181, 126, 255, 0.35)) drop-shadow(0 0 22px rgba(255, 211, 45, 0.2));
+  animation: today-glow 2.5s ease-in-out infinite;
 }
 
 /* ── Mom's Note ── */
@@ -463,15 +478,121 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.3) 45%,
-      rgba(255, 255, 255, 0.5) 50%,
-      rgba(255, 255, 255, 0.3) 55%,
-      transparent 100%
-    );
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 45%,
+        rgba(255, 255, 255, 0.5) 50%,
+        rgba(255, 255, 255, 0.3) 55%,
+        transparent 100%);
     background-size: 200% 100%;
     animation: progress-shimmer 3s ease-in-out infinite;
+  }
+}
+
+/* === Garden Timeline === */
+.garden-timeline {
+  margin: 1rem 0;
+}
+
+.garden-timeline__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.garden-timeline__empty {
+  text-align: center;
+  padding: 1rem;
+  font-size: 1rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-purple-dark);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-md);
+}
+
+.garden-timeline__strip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 0.5rem 0.25rem;
+}
+
+.timeline-day {
+  scroll-snap-align: center;
+  min-width: 3.25rem;
+  min-height: 3rem;
+  text-align: center;
+  padding: 0.4rem 0.25rem;
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  border: 2px solid transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.timeline-day--today {
+  border-color: var(--color-pink-vivid);
+  background: var(--color-pink-light);
+}
+
+.timeline-day--seed {
+  opacity: 0.5;
+}
+
+.timeline-day--sprout {
+  opacity: 0.7;
+}
+
+.timeline-day--flower {
+  opacity: 0.9;
+}
+
+.timeline-day--bloom {
+  opacity: 1;
+  animation: idle-glow-pulse 2s ease-in-out infinite;
+}
+
+.timeline-day__emoji {
+  font-size: 1.5rem;
+}
+
+.timeline-day__label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-top: 0.15rem;
+}
+
+.timeline-day:active {
+  transform: scale(0.92);
+}
+
+.timeline-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-purple-dark);
+  color: var(--color-white);
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 10;
+  animation: jelly-wobble 0.3s ease;
+}
+
+/* ====== Reduced Motion — respect user preference ====== */
+@media (prefers-reduced-motion: reduce) {
+
+  .progress-bar-fill,
+  .rainbow-bar-scroll,
+  .progress-shimmer,
+  .trophy-glow,
+  .progress-breathe,
+  .today-pulse,
+  .today-glow,
+  .timeline-day--bloom {
+    animation: none !important;
   }
 }
