@@ -1,6 +1,6 @@
 # Status Ledger
 
-Last updated: 2026-02-27
+Last updated: 2026-02-28
 
 ## QA Gate Results
 
@@ -31,6 +31,14 @@ Last updated: 2026-02-27
 - `npm run build:release` PASS on 2026-02-21
 - Release WASM build completed cleanly
 - Source maps retained in `dist` per `scripts/build-verify-release.sh`
+
+## Work Completed 2026-02-28
+
+Quest card polish:
+- **CSS transition freeze fix**: `.quest-card--done` border-color/box-shadow froze at pre-transition values when `document.hidden` was true (app switch, headless). Override base transition to only keep transform.
+- **Stale data-focus cleanup**: Remove `data-focus` attribute alongside `quest-card--focus` class on quest completion.
+
+Commits: `2cc1bef`
 
 ## Work Completed 2026-02-27
 
@@ -64,6 +72,7 @@ Commits: `1273877`, `63defdf`, `30a20ba`, `772cef5`
 
 | Date | Milestone | Commits |
 |------|-----------|---------|
+| 2026-02-28 | Quest card transition freeze fix + data-focus cleanup | 2cc1bef |
 | 2026-02-27 | Deep game polish — 23 fixes across gameplay, CSS, a11y | 1273877, 63defdf, 30a20ba, 772cef5 |
 | 2026-02-21 | Production hardening + full gate rerun complete | (working tree) |
 | 2026-02-20 | Production polish complete — all QA gates PASS | 8026800, 37fec45 |
