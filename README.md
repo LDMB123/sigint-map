@@ -17,8 +17,11 @@ AI-powered image generation experiments using Google Gemini APIs.
 - Prompt engineering
 - Image editing workflows
 
-### 3. [Blaire Unicorn](projects/blaire-unicorn/)
-Web game Progressive Web App.
+### 3. [Blaire's Kind Heart](projects/blaires-kind-heart/)
+Offline-first kindness PWA for a young child, built with Rust/WASM.
+- SQLite stored in OPFS
+- Safari 26.2 / iPadOS 26.2 target
+- All logic in Rust → WASM
 
 ### 4. [Emerson Violin PWA](projects/emerson-violin-pwa/)
 Offline-first violin teaching app for children with Red Panda coach.
@@ -39,7 +42,7 @@ Organized technical documentation in [`docs/`](docs/):
 ## Tools
 
 - **Claude Code Skills** - 118 custom skills in `.claude/skills/`
-- **GitHub Workflows** - 6 CI/CD workflows in `.github/workflows/`
+- **GitHub Workflows** - 8 CI/CD workflows in `.github/workflows/`
 
 ## Structure
 
@@ -55,7 +58,7 @@ ClaudeCodeProjects/
 ## Getting Started
 
 Each project has its own README with setup instructions. Start by exploring:
-- [`projects/dmb-almanac/`](projects/dmb-almanac/) - Main active project
+- [`projects/dmb-almanac/`](projects/dmb-almanac/) - Dave Matthews Band concert database
 - [`docs/`](docs/) - Technical documentation hub
 - [`.claude/skills/`](.claude/skills/) - Available automation skills
 

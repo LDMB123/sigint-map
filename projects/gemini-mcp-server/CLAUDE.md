@@ -26,9 +26,10 @@ npm run inspect # MCP inspector
 
 ## Tech Stack
 
-- TypeScript, Node.js
-- MCP SDK (`@modelcontextprotocol/sdk`)
+- TypeScript, Node.js >= 20.0.0
+- MCP SDK (`@modelcontextprotocol/sdk@^1.12.0`)
 - Google Gemini API (`@google/genai`)
+- Zod — request/response schema validation
 
 ## Key Details
 

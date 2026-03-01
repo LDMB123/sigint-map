@@ -25,7 +25,7 @@ imagen-experiments/
 │   │   ├── physics-engine.js   # Physics formulas (shared)
 │   │   ├── grounding.js        # Location grounding
 │   │   └── prompt-builder.js   # Template system (experimental)
-│   ├── vegas/            # vegas-v29-apex.js (latest; 39 iterations in _archived/)
+│   ├── vegas/            # V29 system: vegas-v29-apex.js + 9 runners + 82 prompt-packs/ variants
 │   ├── nashville/        # 6 Nashville concept scripts
 │   ├── batch/_archived/  # 41 historical batch runners (broken paths)
 │   └── experiments/      # 6 active scripts (14 in _archived/)

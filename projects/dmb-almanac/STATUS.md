@@ -1,6 +1,6 @@
 # DMB Almanac Status (Canonical)
 
-Date: 2026-02-15  
+Date: 2026-02-21
 Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 
 `STATUS.md` is the single source of truth for current repo state.  
@@ -9,14 +9,14 @@ Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 ## Current Snapshot
 
 - Rust-first, local-only offline PWA.
-- Active branch: `codex/dmb-almanac-handoff-20260215`
-- Latest stabilization commit: `c928bd74` (`Stabilize Rust hydration paths and harden E2E reliability`)
+- Active branch: `main`
+- Latest stabilization commit: `fef41d58` (`chore: finalize production readiness gates`)
 - Primary confidence gate is green:
   - `bash scripts/cutover-rehearsal.sh`
 - Remote Rust E2E gate is available:
   - `BASE_URL=http://127.0.0.1:<port> bash scripts/cutover-remote-e2e.sh`
 - Legacy JS prototype UI tree is removed; active implementation is Rust workspace only.
-- Latest full validation on this branch (2026-02-15) is green:
+- Latest full validation (2026-02-21) is green:
   - `cargo fmt --all --check`
   - `cargo clippy --workspace --all-targets -- -D warnings`
   - `cargo test --workspace`
@@ -28,7 +28,7 @@ Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 2. Continue reducing duplicate docs/context to lower token usage per session.
 3. Keep cleanup/disk-budget scripts in regular use to avoid local storage bloat.
 
-## All-In Polish Progress (2026-02-15)
+## All-In Polish Progress (2026-02-21)
 
 - Phase coverage advanced on route polish, UI state consistency, and server payload validation.
 - New progress report:
