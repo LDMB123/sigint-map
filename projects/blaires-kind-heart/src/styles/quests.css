@@ -17,22 +17,25 @@
 }
 
 .quests-progress-bar {
-  height: 24px;
-  background: rgba(255, 255, 255, 0.6);
+  height: 28px;
+  background: rgba(255, 255, 255, 0.65);
   border-radius: var(--radius-full);
-  border: 2px solid rgba(181, 126, 255, 0.3);
+  border: 2.5px solid rgba(181, 126, 255, 0.40);
   overflow: visible;
   position: relative;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .quests-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-pink), var(--color-purple));
+  background: linear-gradient(90deg, var(--color-pink-vivid), var(--color-purple), var(--color-purple-vivid));
   border-radius: var(--radius-full);
   transition: width 0.8s var(--ease-elastic);
   position: relative;
   min-width: 0;
+  box-shadow: 0 0 12px rgba(139, 31, 255, 0.45);
 }
 
 /* Hide sparkle when no progress — animation: none required because float-emoji sets opacity */
@@ -72,8 +75,13 @@
 
 @keyframes quest-entrance {
   from {
-    transform: translateX(-20px) scale(0.9) rotateX(10deg);
+    transform: translateX(-32px) scale(0.78) rotateX(18deg);
     opacity: 0;
+  }
+
+  60% {
+    transform: translateX(4px) scale(1.03) rotateX(-2deg);
+    opacity: 1;
   }
 
   to {
@@ -144,11 +152,13 @@
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-lg);
-  /* Parchment scroll texture */
+  /* Parchment scroll texture — aged paper with ruled lines and edge stain */
   background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 24px, rgba(200, 180, 160, 0.04) 24px, rgba(200, 180, 160, 0.04) 25px),
-    linear-gradient(135deg, #FFF8F0, #FFF4E6, #FFFAF5);
-  border: 2px solid rgba(255, 159, 67, 0.3);
+    repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(200, 160, 120, 0.06) 23px, rgba(200, 160, 120, 0.06) 24px),
+    radial-gradient(ellipse 70% 40% at 5% 50%, rgba(220, 190, 160, 0.12), transparent),
+    radial-gradient(ellipse 60% 50% at 95% 30%, rgba(240, 200, 160, 0.10), transparent),
+    linear-gradient(135deg, #FFF9F2 0%, #FFF4E6 40%, #FFF9F0 70%, #FFFAF5 100%);
+  border: 2px solid rgba(255, 159, 67, 0.40);
   border-radius: var(--radius-xl);
   /* Multi-layer 3D lifted shadow with color tint */
   box-shadow:
@@ -236,8 +246,8 @@
     top: 50%;
     right: var(--space-md);
     transform: translateY(-50%) rotate(-12deg);
-    font-size: 2rem;
-    filter: drop-shadow(0 2px 8px rgba(255, 211, 45, 0.5));
+    font-size: 2.6rem;
+    filter: drop-shadow(0 3px 12px rgba(0, 194, 96, 0.60)) drop-shadow(0 0 24px rgba(255, 211, 45, 0.45));
     animation: quest-stamp-pop 0.4s var(--ease-elastic) both;
     pointer-events: none;
     z-index: 3;

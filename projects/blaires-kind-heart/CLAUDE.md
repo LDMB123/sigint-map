@@ -25,6 +25,14 @@ trunk build --release
 
 # Serve over local network (iPad testing)
 trunk serve --address 0.0.0.0
+
+# Run visual regression tests (no --project=visual; pass file path directly)
+npm run test:e2e -- e2e/visual.spec.ts
+
+# Build inside a git worktree (reuse native build cache, avoids Xcode license errors)
+CARGO_TARGET_DIR=/path/to/main/project/target trunk build --release
+# Also needed for E2E in worktree: npm install first, then:
+CARGO_TARGET_DIR=/path/to/main/project/target npm run test:e2e
 ```
 
 ## Architecture
@@ -37,6 +45,8 @@ All app logic in Rust. Only 3 JS files (spec-required):
 ## Key Patterns
 
 - **Boot**: Batched init with `scheduler_yield()` between phases
+- **scheduler_yield**: Uses real `scheduler.yield()` via JS reflection + queueMicrotask fallback — do NOT simplify to queueMicrotask-only
+- **RAF in Rust**: `Closure<dyn FnMut(f64)>` receiving DOMHighResTimeStamp; cap frame delta at 50ms to prevent spiral-of-death after tab switch
 - **Navigation**: Navigation API + View Transitions (panels: home, tracker, adventures, mystuff, quests, stories, games, rewards, gardens, progress)
 - **State**: `Rc<RefCell<AppState>>` shared via thread_local
 - **DB writes**: Protected by Web Locks from Rust side (`browser_apis::with_web_lock`)

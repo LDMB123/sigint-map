@@ -47,16 +47,18 @@ body {
   min-height: 100dvh;
   overscroll-behavior: none;
 
-  /* Optimized dreamy background — 3 static gradient layers + blended grain (85% faster compositing, no animation) */
+  /* Optimized dreamy background — 4 static gradient layers + blended grain (85% faster compositing, no animation) */
   background:
-    /* Primary pink blob */
-    radial-gradient(circle 380px at 20% 30%, rgba(255, 143, 171, 0.22), transparent 65%),
+    /* Primary pink blob — vivid, large */
+    radial-gradient(circle 520px at 15% 25%, rgba(255, 45, 114, 0.20), transparent 65%),
     /* Purple blob */
-    radial-gradient(circle 320px at 80% 60%, rgba(181, 126, 255, 0.18), transparent 65%),
-    /* Blue accent blob */
-    radial-gradient(circle 280px at 50% 90%, rgba(92, 184, 228, 0.16), transparent 65%),
+    radial-gradient(circle 440px at 85% 58%, rgba(139, 31, 255, 0.17), transparent 65%),
+    /* Yellow-gold accent — top right */
+    radial-gradient(circle 340px at 88% 8%, rgba(255, 171, 0, 0.14), transparent 65%),
+    /* Blue accent — bottom */
+    radial-gradient(circle 380px at 48% 96%, rgba(0, 154, 238, 0.15), transparent 65%),
     var(--color-bg);
-  background-size: 150% 150%, 150% 150%, 150% 150%, auto;
+  background-size: 150% 150%, 150% 150%, 150% 150%, 150% 150%, auto;
 
   /* Grain overlay with soft-light blend (prevents opacity blocking) */
   position: relative;
@@ -160,7 +162,9 @@ body[data-animations-paused] .fade-in-up {
   translate: -50% 0;
   z-index: var(--z-toast);
   padding: var(--space-md) var(--space-lg);
-  background: var(--color-surface);
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--color-surface) 92%, var(--color-pink-light) 8%) 0%,
+    color-mix(in srgb, var(--color-surface) 88%, var(--color-purple-light) 12%) 100%);
   color: var(--color-text);
   border: 3px solid var(--color-pink);
   border-radius: var(--radius-xl);
@@ -251,25 +255,25 @@ body[data-animations-paused] .fade-in-up {
   gap: 0.1rem;
   padding: var(--space-md) var(--space-lg);
   background:
-    /* Animated shimmer sweep */
-    linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%),
-    /* Subtle grain texture */
-    repeating-linear-gradient(0deg, rgba(255, 143, 171, 0.02) 0px, transparent 1px, transparent 2px),
-    /* Frosted glass base */
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 250, 252, 0.85) 100%);
+    /* Animated shimmer sweep — brighter highlight */
+    linear-gradient(105deg, transparent 28%, rgba(255, 255, 255, 0.62) 50%, transparent 72%),
+    /* Subtle pink grain texture */
+    repeating-linear-gradient(0deg, rgba(255, 45, 114, 0.025) 0px, transparent 1px, transparent 2px),
+    /* Frosted glass base — slightly more opaque */
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 248, 252, 0.88) 100%);
   background-size: 200% 100%, 3px 3px, 100% 100%;
   backdrop-filter: var(--backdrop-heavy);
-  border-bottom: 2px solid rgba(255, 143, 171, 0.2);
-  /* Inner glow for depth */
+  border-bottom: 2px solid rgba(255, 143, 171, 0.25);
+  /* Inner glow for depth — stronger top highlight */
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 -1px 0 rgba(255, 143, 171, 0.08),
-    0 4px 16px rgba(255, 143, 171, 0.08);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(255, 143, 171, 0.12),
+    0 4px 20px rgba(255, 143, 171, 0.12);
   position: sticky;
   top: 0;
   z-index: 1;
-  /* Shimmer animation — 4s for livelier feel */
-  animation: panel-header-shimmer 4s ease-in-out infinite;
+  /* Shimmer animation — 3s linear for smooth, continuous sweep */
+  animation: panel-header-shimmer 3s linear infinite;
 }
 
 @keyframes panel-header-shimmer {
@@ -414,8 +418,13 @@ body[data-animations-paused] .fade-in-up {
   font-family: var(--font-family-display);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-heavy);
-  color: var(--color-pink-dark);
-  text-shadow: 0 1px 6px rgba(255, 143, 171, 0.2);
+  /* Gradient text: pink-dark → purple-dark for a magical feel */
+  background: linear-gradient(120deg, var(--color-pink-dark) 0%, var(--color-purple-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  /* drop-shadow instead of text-shadow (text-shadow doesn't work with transparent text-fill) */
+  filter: drop-shadow(0 1px 4px rgba(255, 45, 114, 0.22));
 }
 
 .panel-body {
@@ -556,7 +565,7 @@ body[data-animations-paused] .fade-in-up {
 [data-home-btn],
 [data-companion] {
   opacity: 0;
-  transform: scale(0.7) translateY(20px);
+  transform: scale(0.62) translateY(28px);
   transition: opacity var(--duration-normal) var(--ease-smooth),
     transform var(--duration-normal) var(--ease-bounce);
 }
@@ -591,17 +600,21 @@ body[data-animations-paused] .fade-in-up {
 @keyframes sparkle-entrance {
   0% {
     opacity: 0;
-    transform: scale(0.3) translateY(80px);
+    transform: scale(0.12) translateY(110px) rotate(-12deg);
   }
 
-  60% {
+  45% {
     opacity: 1;
-    transform: scale(1.1) translateY(-10px);
+    transform: scale(1.18) translateY(-18px) rotate(6deg);
+  }
+
+  70% {
+    transform: scale(0.94) translateY(6px) rotate(-2deg);
   }
 
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(1) translateY(0) rotate(0deg);
   }
 }
 

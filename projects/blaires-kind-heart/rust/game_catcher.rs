@@ -768,40 +768,57 @@ fn pick_item_kind(level: u32, rand: f64) -> ItemKind {
     }
 }
 fn start_gravity_loop() {
-    thread_local! { static LAST_TIME: std::cell::Cell<f64> = const { std::cell::Cell::new(0.0) }; }
-    LAST_TIME.with(|lt| lt.set(0.0));
-    
-    let closure_rc = Rc::new(RefCell::new(None::<Closure<dyn FnMut()>>));
-    
-    *closure_rc.borrow_mut() = Some(Closure::new(move || {
-        let timestamp = browser_apis::now_ms();
+    use std::cell::Cell;
+
+    let last_ts: Rc<Cell<f64>> = Rc::new(Cell::new(0.0));
+
+    let closure_rc: Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>> =
+        Rc::new(RefCell::new(None));
+    let closure_for_raf = closure_rc.clone();
+    let last_ts_inner = last_ts.clone();
+
+    *closure_rc.borrow_mut() = Some(Closure::new(move |timestamp: f64| {
         if !GAME.with(|g| g.borrow().as_ref().is_some_and(|game| game.active)) {
-            // We cannot easily clear the interval from here without an ID, but cleanup() does it.
-            return;
+            return; // loop stopped; cleanup() cancelled the RAF
         }
-        
-        let dt = LAST_TIME.with(|lt| {
-            let last = lt.get();
-            lt.set(timestamp);
-            if last == 0.0 { 16.0 } else { (timestamp - last).min(1000.0) }
-        });
-        
-        apply_gravity(dt);
-    }));
-    
-    let guard = closure_rc.borrow();
-    let Some(closure) = guard.as_ref() else { return; };
-    let func: &js_sys::Function = closure.as_ref().unchecked_ref();
-    dom::pin_closure_to_arena("__catcher_gravity_closure", func);
-    if let Ok(id) = dom::window().set_interval_with_callback_and_timeout_and_arguments_0(func, 16) {
-        GAME.with(|g| {
-            if let Some(game) = g.borrow_mut().as_mut() {
-                game.raf_id = Some(id);
+
+        let prev_ts = last_ts_inner.get();
+        let delta_ms = if prev_ts == 0.0 {
+            16.0
+        } else {
+            (timestamp - prev_ts).min(50.0)
+        };
+        last_ts_inner.set(timestamp);
+
+        apply_gravity(delta_ms);
+
+        // Schedule next frame
+        let win = dom::window();
+        if let Some(cb) = closure_for_raf.borrow().as_ref() {
+            if let Ok(id) = win.request_animation_frame(cb.as_ref().unchecked_ref()) {
+                GAME.with(|g| {
+                    if let Some(game) = g.borrow_mut().as_mut() {
+                        game.raf_id = Some(id);
+                    }
+                });
             }
-        });
+        }
+    }));
+
+    // Kick off the first frame
+    let win = dom::window();
+    if let Some(cb) = closure_rc.borrow().as_ref() {
+        let func: &js_sys::Function = cb.as_ref().unchecked_ref();
+        dom::pin_closure_to_arena("__catcher_gravity_closure", func);
+        if let Ok(id) = win.request_animation_frame(func) {
+            GAME.with(|g| {
+                if let Some(game) = g.borrow_mut().as_mut() {
+                    game.raf_id = Some(id);
+                }
+            });
+        }
     }
-    
-    drop(guard);
+
     std::mem::forget(closure_rc);
 }
 fn apply_gravity(dt_ms: f64) {
@@ -1160,7 +1177,7 @@ pub fn cleanup() {
                 window.clear_interval_with_handle(id);
             }
             if let Some(id) = game.raf_id.take() {
-                window.clear_interval_with_handle(id);
+                window.cancel_animation_frame(id).ok();
             }
         }
         *g.borrow_mut() = None;

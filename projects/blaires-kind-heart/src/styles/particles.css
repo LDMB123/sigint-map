@@ -7,6 +7,30 @@
 
 /* ====== PARTICLE KEYFRAMES — 3 speed tiers ====== */
 
+/* Fast twinkle — quick energetic pulsing (3s) */
+@keyframes sparkle-twinkle-fast {
+  0% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 0.5;
+  }
+  25% {
+    transform: translateY(-12px) translateX(8px) scale(1.2) rotate(10deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-18px) translateX(-5px) scale(0.85) rotate(-8deg);
+    opacity: 0.7;
+  }
+  75% {
+    transform: translateY(-8px) translateX(10px) scale(1.15) rotate(5deg);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+    opacity: 0.6;
+  }
+}
+
 /* Medium drift — gentle floating movement (8s) */
 @keyframes sparkle-drift-medium {
   0% {
@@ -348,6 +372,105 @@
       radial-gradient(8px 8px at 75% 85%, rgba(130, 221, 160, 0.5), transparent 70%),
       radial-gradient(6px 6px at 92% 68%, rgba(255, 211, 45, 0.6), transparent 70%);
   }
+}
+
+/* ====== HOME — pink/purple/yellow heart sparkles ====== */
+#panel-home .panel-body {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    animation: sparkle-drift-medium 9s ease-in-out infinite alternate;
+    background:
+      radial-gradient(11px 11px at 8% 14%, rgba(255, 45, 114, 0.80), transparent 70%),
+      radial-gradient(6px 6px at 22% 38%, rgba(181, 126, 255, 0.70), transparent 70%),
+      radial-gradient(14px 14px at 40% 10%, rgba(255, 143, 171, 0.65), transparent 70%),
+      radial-gradient(5px 5px at 55% 52%, rgba(255, 211, 45, 0.75), transparent 70%),
+      radial-gradient(9px 9px at 70% 25%, rgba(255, 45, 114, 0.60), transparent 70%),
+      radial-gradient(4px 4px at 88% 42%, rgba(232, 213, 255, 0.70), transparent 70%),
+      radial-gradient(12px 12px at 15% 65%, rgba(255, 143, 171, 0.55), transparent 70%),
+      radial-gradient(7px 7px at 34% 80%, rgba(255, 45, 114, 0.65), transparent 70%),
+      radial-gradient(8px 8px at 52% 88%, rgba(181, 126, 255, 0.60), transparent 70%),
+      radial-gradient(10px 10px at 72% 70%, rgba(255, 211, 45, 0.55), transparent 70%),
+      radial-gradient(5px 5px at 90% 80%, rgba(255, 143, 171, 0.70), transparent 70%),
+      radial-gradient(6px 6px at 48% 32%, rgba(255, 228, 237, 0.60), transparent 70%),
+      radial-gradient(9px 9px at 8% 90%, rgba(181, 126, 255, 0.50), transparent 70%),
+      radial-gradient(4px 4px at 65% 48%, rgba(255, 45, 114, 0.65), transparent 70%),
+      radial-gradient(11px 11px at 82% 18%, rgba(255, 211, 45, 0.55), transparent 70%),
+      radial-gradient(7px 7px at 30% 22%, rgba(255, 143, 171, 0.60), transparent 70%);
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    animation: sparkle-float-slow 13s ease-in-out infinite alternate-reverse;
+    background:
+      radial-gradient(5px 5px at 16% 30%, rgba(255, 45, 114, 0.60), transparent 70%),
+      radial-gradient(8px 8px at 42% 52%, rgba(181, 126, 255, 0.50), transparent 70%),
+      radial-gradient(6px 6px at 65% 20%, rgba(255, 211, 45, 0.65), transparent 70%),
+      radial-gradient(10px 10px at 84% 40%, rgba(255, 143, 171, 0.55), transparent 70%),
+      radial-gradient(4px 4px at 28% 70%, rgba(255, 45, 114, 0.60), transparent 70%),
+      radial-gradient(7px 7px at 55% 80%, rgba(232, 213, 255, 0.50), transparent 70%),
+      radial-gradient(9px 9px at 78% 88%, rgba(181, 126, 255, 0.55), transparent 70%),
+      radial-gradient(5px 5px at 10% 58%, rgba(255, 211, 45, 0.65), transparent 70%);
+  }
+}
+
+/* ====== GARDENS — green/teal/gold growth sparkles ====== */
+#panel-gardens .panel-body {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    animation: sparkle-drift-medium 10s ease-in-out infinite alternate;
+    background:
+      radial-gradient(10px 10px at 10% 12%, rgba(0, 194, 96, 0.80), transparent 70%),
+      radial-gradient(6px 6px at 26% 36%, rgba(94, 201, 139, 0.70), transparent 70%),
+      radial-gradient(14px 14px at 44% 8%, rgba(212, 245, 224, 0.65), transparent 70%),
+      radial-gradient(5px 5px at 60% 48%, rgba(255, 211, 45, 0.72), transparent 70%),
+      radial-gradient(8px 8px at 74% 20%, rgba(0, 194, 96, 0.62), transparent 70%),
+      radial-gradient(12px 12px at 90% 36%, rgba(130, 221, 160, 0.58), transparent 70%),
+      radial-gradient(4px 4px at 16% 62%, rgba(0, 194, 96, 0.68), transparent 70%),
+      radial-gradient(9px 9px at 34% 76%, rgba(94, 201, 139, 0.60), transparent 70%),
+      radial-gradient(7px 7px at 52% 86%, rgba(255, 211, 45, 0.55), transparent 70%),
+      radial-gradient(11px 11px at 70% 68%, rgba(212, 245, 224, 0.65), transparent 70%),
+      radial-gradient(5px 5px at 88% 80%, rgba(0, 194, 96, 0.60), transparent 70%),
+      radial-gradient(8px 8px at 22% 90%, rgba(130, 221, 160, 0.50), transparent 70%),
+      radial-gradient(6px 6px at 78% 52%, rgba(94, 201, 139, 0.65), transparent 70%),
+      radial-gradient(10px 10px at 42% 30%, rgba(255, 211, 45, 0.50), transparent 70%),
+      radial-gradient(4px 4px at 96% 16%, rgba(0, 194, 96, 0.70), transparent 70%),
+      radial-gradient(13px 13px at 58% 6%, rgba(130, 221, 160, 0.45), transparent 70%);
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    animation: sparkle-float-slow 16s ease-in-out infinite alternate-reverse;
+    background:
+      radial-gradient(6px 6px at 14% 26%, rgba(0, 194, 96, 0.60), transparent 70%),
+      radial-gradient(9px 9px at 40% 46%, rgba(94, 201, 139, 0.50), transparent 70%),
+      radial-gradient(5px 5px at 62% 16%, rgba(255, 211, 45, 0.65), transparent 70%),
+      radial-gradient(10px 10px at 82% 40%, rgba(212, 245, 224, 0.55), transparent 70%),
+      radial-gradient(7px 7px at 28% 70%, rgba(0, 194, 96, 0.60), transparent 70%),
+      radial-gradient(4px 4px at 55% 60%, rgba(130, 221, 160, 0.55), transparent 70%),
+      radial-gradient(8px 8px at 75% 84%, rgba(94, 201, 139, 0.50), transparent 70%),
+      radial-gradient(6px 6px at 92% 66%, rgba(255, 211, 45, 0.60), transparent 70%);
+  }
+}
+
+/* ====== REWARDS — upgrade with fast-twinkle third layer ====== */
+#panel-rewards .panel-body::before {
+  animation: sparkle-twinkle-fast 3s ease-in-out infinite alternate;
 }
 
 /* ====== Reduced Motion — hide particle layers entirely ====== */

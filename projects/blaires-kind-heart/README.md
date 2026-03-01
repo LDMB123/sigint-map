@@ -6,22 +6,20 @@ Target platform: iPad mini 6 (A15, 4GB RAM), iPadOS 26.2, Safari 26.2.
 
 ## Start Here
 - Fast takeover runbook: `docs/HANDOFF.md`
-- Project standing: `docs/PROJECT_STANDING.md`
-- Latest verified checks: `docs/APP_STATUS.md`
-- Command-by-command evidence: `docs/STATUS_LEDGER.md`
+- QA gate results and work history: `docs/STATUS_LEDGER.md`
 - Full documentation map: `docs/INDEX.md`
 
-## Current Standing (verified on 2026-02-21)
+## Current Standing (verified on 2026-02-28)
 - PWA contract check: PASS (`npm run qa:pwa-contract`)
 - Runtime diagnostics check: PASS (`npm run qa:runtime`)
 - DB contract check: PASS (`npm run qa:db-contract`)
 - Full E2E suite: PASS (`npm run test:e2e:all` -> `46 passed`, `1 skipped`)
+- Visual regression: PASS (16/16 snapshots)
 - Lighthouse CI: PASS (`npm run lighthouse:ci`)
 - Docs link gate: PASS (`npm run qa:docs-links`)
 - Rust warning drift gate: PASS (`npm run qa:rust-warning-drift`, baseline=`3`)
-- Docs token budget check: PASS (`npm run qa:docs-budget`)
-- Active docs token budget well within target (`active_est_tokens=6046`)
-- Xcode iPad simulator regression evidence captured; physical iPad mini 6 rerun still pending for this cycle
+- Docs token budget check: PASS (`npm run qa:docs-budget`, `active_est_tokens=4977`)
+- Physical iPad mini 6 (iPadOS 26.2 / Safari 26.2) regression still pending before final deploy
 
 ## Quick Commands
 ```bash
@@ -59,4 +57,4 @@ npm run qa:docs-budget
 - `docs/` active documentation
 - `docs/archive/` historical/low-frequency documentation and artifacts
 
-Last updated: 2026-02-21
+Last updated: 2026-02-28

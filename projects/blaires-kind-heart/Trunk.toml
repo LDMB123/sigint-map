@@ -23,6 +23,11 @@ args = [
     "--enable-reference-types",
     "--enable-sign-ext"
 ]
+[watch]
+# Prevent rebuild loop: pre_build hook writes these files, which would
+# trigger the file watcher, causing another build, ad infinitum.
+ignore = ["public/asset-manifest.js", "public/asset-manifest.json"]
+
 [serve]
 disable_csp = true
 no_autoreload = true

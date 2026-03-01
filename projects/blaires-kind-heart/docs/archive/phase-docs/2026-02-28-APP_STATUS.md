@@ -1,12 +1,13 @@
 # App Status
 
-Last updated: 2026-02-27
+Last updated: 2026-02-28
 
 ## Current State
 
 - Build: production-ready (Trunk release, WASM optimized)
-- QA gates: all core release gates PASS as of 2026-02-21
+- QA gates: all core release gates PASS as of 2026-02-28 (46 E2E, all contracts)
 - Game polish: 23 fixes shipped 2026-02-27 (gameplay bugs, CSS, a11y)
+- Dead code pass: orphaned public/wasm-init.js deleted, home.css reduced-motion cleaned (2026-02-28)
 - Target: iPad mini 6, iPadOS 26.2, Safari 26.2
 
 ## Physical Device Testing

@@ -1,3 +1,4 @@
+use crate::browser_apis;
 use std::cell::{Cell, RefCell};
 use web_sys::OscillatorType;
 thread_local! { static AUDIO_CTX: RefCell<Option<web_sys::AudioContext>> = const { RefCell::new(None) }; static ENABLED: Cell<bool> = const { Cell::new(true) }; static MASTER_VOL: Cell<f32> = const { Cell::new(0.5) }; static VOICE_POOL: RefCell<VoicePool> = const { RefCell::new(VoicePool::new()) }; static REVERB_NODE: RefCell<Option<web_sys::ConvolverNode>> = const { RefCell::new(None) }; static MUSIC_NODES: RefCell<Vec<web_sys::OscillatorNode>> = const { RefCell::new(Vec::new()) }; }
@@ -94,7 +95,7 @@ impl VoicePool {
 }
 #[inline]
 fn now_ms() -> f64 {
-    js_sys::Date::now()
+    browser_apis::now_ms()
 }
 fn get_sound_preset(sound: &str) -> SoundPreset {
     match sound {

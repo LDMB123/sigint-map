@@ -58,30 +58,30 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Activate: clean old caches + start background prefetch of deferred assets
+// Activate: claim clients immediately, then clean old caches + prefetch deferred assets
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    Promise.all([
-      // Clean old caches
-      caches.keys().then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key !== CACHE_NAME)
-            .map((key) => caches.delete(key))
-        )
-      ),
-      // Background prefetch deferred assets (non-blocking)
-      caches.open(CACHE_NAME).then((cache) => {
-        // Phase 3.1: Promise.allSettled for resilient partial caching
-        // Cache each asset independently - if 1 of 71 fails, others still cache
-        return Promise.allSettled(
-          DEFERRED_ASSETS.map(url =>
-            cache.add(url).catch(err => { throw err; })
-          )
-        );
-      })
-    ]).then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    // Claim clients first — SW takeover must not wait on cache operations
+    await self.clients.claim();
+
+    // Clean old caches
+    const keys = await caches.keys();
+    await Promise.all(
+      keys
+        .filter((key) => key !== CACHE_NAME)
+        .map((key) => caches.delete(key))
+    );
+
+    // Background prefetch deferred assets (non-blocking)
+    // Phase 3.1: Promise.allSettled for resilient partial caching
+    // Cache each asset independently - if 1 of 71 fails, others still cache
+    const cache = await caches.open(CACHE_NAME);
+    await Promise.allSettled(
+      DEFERRED_ASSETS.map(url =>
+        cache.add(url).catch(err => { throw err; })
+      )
+    );
+  })());
 });
 
 // Fetch: cache-first for same-origin, network-only for cross-origin

@@ -100,6 +100,10 @@ const DEFERRED_ASSETS = [
   '/particles.css',
   '/scroll-effects.css',
 
+  // Splash screens (home screen launch only — not needed for in-browser PWA):
+  '/icons/splash-1488x2266.png',
+  '/icons/splash-2266x1488.png',
+
   // Phase 5 prefetch (moved from CRITICAL for faster install):
   // Companion skin sampler (5 WebP, ~150KB)
   ...MANIFEST_COMPANIONS.filter(path =>

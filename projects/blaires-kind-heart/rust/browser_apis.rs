@@ -6,6 +6,23 @@ use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::AbortController;
 pub async fn scheduler_yield() {
+    // Try scheduler.yield() first (Prioritized Task Scheduling API — Safari 26.2+)
+    let global = js_sys::global();
+    if let Ok(sched) = js_sys::Reflect::get(&global, &"scheduler".into()) {
+        if !sched.is_undefined() && !sched.is_null() {
+            if let Ok(yield_fn) = js_sys::Reflect::get(&sched, &"yield".into()) {
+                if let Ok(f) = yield_fn.dyn_into::<js_sys::Function>() {
+                    if let Ok(result) = f.call0(&sched) {
+                        if let Ok(promise) = result.dyn_into::<js_sys::Promise>() {
+                            let _ = JsFuture::from(promise).await;
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Fallback: queueMicrotask
     yield_microtask().await;
 }
 async fn yield_microtask() {

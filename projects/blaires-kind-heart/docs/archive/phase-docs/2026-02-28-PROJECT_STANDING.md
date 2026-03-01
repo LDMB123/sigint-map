@@ -1,6 +1,6 @@
 # Project Standing
 
-Last updated: 2026-02-27
+Last updated: 2026-02-28
 
 ## Summary
 
@@ -14,6 +14,10 @@ All core release gates pass as of 2026-02-21, including full E2E and Lighthouse 
 ## Game Polish (2026-02-27)
 
 23 fixes across all 5 games — shield timing, flower lifecycle, stage selection, canvas events, CSS animations, accessibility. See `docs/STATUS_LEDGER.md` for full list.
+
+## Dead Code Pass (2026-02-28)
+
+Full 4-domain audit: Rust, CSS, JS/HTML/config, feature completeness. Deleted orphaned `public/wasm-init.js`, cleaned dead selectors from `home.css` reduced-motion block. All 10 nav panels confirmed working. See `docs/STATUS_LEDGER.md` for details.
 
 ## Technical Standing
 

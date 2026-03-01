@@ -544,7 +544,7 @@ async function initDb() {
 
 // ── Message handler ──
 self.onmessage = async function(event) {
-  const { request, request_id, api_version } = event.data;
+  const { request, request_id = 0, api_version } = event.data;
 
   if (typeof api_version === "number" && api_version < self.DB_WORKER_MIN_CLIENT_API_VERSION) {
     self.postMessage({

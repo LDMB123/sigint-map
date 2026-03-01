@@ -15,11 +15,15 @@
 @keyframes scroll-reveal {
   from {
     opacity: 0;
-    transform: translateY(30px) scale(0.92);
+    transform: translateY(40px) scale(0.88) rotate(-1.5deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.01) rotate(0.3deg);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0) scale(1) rotate(0deg);
   }
 }
 
@@ -52,10 +56,12 @@
      full-surface GPU repaint every scroll frame on A15. Use a fixed
      backdrop-filter on .panel-header (in app.css) instead. */
   from {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 250, 252, 0.7) 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 250, 252, 0.68) 100%);
+    box-shadow: none;
   }
   to {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 250, 252, 0.9) 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 250, 252, 0.92) 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
   }
 }
 
@@ -87,12 +93,14 @@
 
 @keyframes title-scroll-scale {
   from {
-    transform: scale(1);
+    transform: scale(1) translateY(0) rotate(0deg);
     opacity: 1;
+    filter: blur(0px);
   }
   to {
-    transform: scale(0.85);
-    opacity: 0.6;
+    transform: scale(0.78) translateY(-12px) rotate(-2deg);
+    opacity: 0.45;
+    filter: blur(1px);
   }
 }
 
@@ -116,7 +124,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 3px;
+    height: 4px;
     background: var(--gradient-rainbow);
     transform-origin: left;
     transform: scaleX(0);

@@ -1,13 +1,11 @@
 # Documentation Index
 
-Last updated: 2026-02-27
+Last updated: 2026-02-28 (session 5)
 Scope: active docs map for this repository.
 
 ## Active Docs
 
 ### Status & Tracking
-- `docs/APP_STATUS.md` - Current app state and device targets
-- `docs/PROJECT_STANDING.md` - Technical standing and outstanding work
 - `docs/STATUS_LEDGER.md` - QA gate results and work history
 - `docs/HANDOFF.md` - Fast takeover runbook for new sessions
 

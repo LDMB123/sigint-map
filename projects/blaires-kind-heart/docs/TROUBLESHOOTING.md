@@ -1,6 +1,6 @@
 # Troubleshooting (Operational Summary)
 
-Last updated: 2026-02-15
+Last updated: 2026-02-28
 Full reference: `docs/archive/reference-full/TROUBLESHOOTING.full.md`
 
 ## First Response Checklist
@@ -11,7 +11,7 @@ npm run qa:pwa-contract
 npm run qa:runtime
 npm run qa:db-contract
 ```
-3. Check latest known state in `docs/APP_STATUS.md` and `docs/STATUS_LEDGER.md`.
+3. Check latest known state in `docs/STATUS_LEDGER.md`.
 
 ## Common Failure Domains
 - Prompt sequencing/race conditions in reflection-emotion flows.

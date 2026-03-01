@@ -1,5 +1,7 @@
 # Persistence Contract
 
+Last updated: 2026-02-28
+
 Defines the invariants that must hold between the Rust client (`db_client.rs`),
 the JS worker (`public/db-worker.js`), and the Mom Mode export/restore flow
 (`rust/mom_mode.rs`). Verified by `npm run qa:db-contract`.

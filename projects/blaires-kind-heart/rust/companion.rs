@@ -684,6 +684,10 @@ pub(crate) fn show_bubble_typewriter(companion: &Element, text: &str) {
     let _ = companion.append_child(&bubble);
     let full_text = text.to_string();
     wasm_bindgen_futures::spawn_local(async move {
+        // Query once before the character loop to avoid repeated DOM queries per character.
+        let Some(bubble) = dom::query("[data-companion-bubble]") else {
+            return;
+        };
         let chars: Vec<char> = full_text.chars().collect();
         let mut shown = String::new();
         for ch in &chars {
@@ -691,9 +695,6 @@ pub(crate) fn show_bubble_typewriter(companion: &Element, text: &str) {
                 return;
             }
             shown.push(*ch);
-            let Some(bubble) = dom::query("[data-companion-bubble]") else {
-                return;
-            };
             bubble.set_text_content(Some(&shown));
             browser_apis::sleep_ms(theme::COMPANION_TYPEWRITER_CHAR_MS).await;
         }
@@ -704,9 +705,7 @@ pub(crate) fn show_bubble_typewriter(companion: &Element, text: &str) {
         if signal.as_ref().is_some_and(|s| s.aborted()) {
             return;
         }
-        if let Some(bubble) = dom::query("[data-companion-bubble]") {
-            bubble.remove();
-        }
+        bubble.remove();
         TYPEWRITER_ABORT.with(|cell| *cell.borrow_mut() = None);
     });
 }

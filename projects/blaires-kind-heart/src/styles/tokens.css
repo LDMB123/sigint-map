@@ -22,6 +22,7 @@
   --color-orange: #FF9233;
   --color-orange-vivid: #FF5D00;
   --color-gold: #f0b429;
+  --color-gold-vivid: #FFAE00;
   --color-red: #FF4545;
   --color-coral: #FF5F5F;
   --color-white: #FFFFFF;
@@ -40,6 +41,8 @@
   --gradient-dreamy: linear-gradient(135deg, #D4A5FF, #FFB7C5, #9CE0FF);
   --gradient-magic: linear-gradient(135deg, #8B1FFF 0%, #FF2D72 50%, #FFAB00 100%);
   --gradient-golden: linear-gradient(135deg, #FFAB00 0%, #FF5D00 50%, #FF2D72 100%);
+  --gradient-candy: linear-gradient(135deg, #FF2D72 0%, #FF8FAB 50%, #FFB7C5 100%);
+  --gradient-sunny: linear-gradient(135deg, #FFD32D 0%, #FFAB00 50%, #FF9233 100%);
 
   /* Emotion button gradients — richer liquid colors */
   --gradient-button-pink: linear-gradient(145deg, var(--color-pink) 0%, var(--color-pink-vivid) 100%);
@@ -57,6 +60,8 @@
   --shadow-glow-blue: 0 0 32px rgba(0, 154, 238, 0.70), 0 0 64px rgba(0, 154, 238, 0.40);
   --shadow-glow-green: 0 0 32px rgba(0, 194, 96, 0.70), 0 0 64px rgba(0, 194, 96, 0.40);
   --shadow-glow-rainbow: 0 16px 40px rgba(139, 31, 255, 0.55), 0 0 72px rgba(255, 45, 114, 0.45), 0 0 96px rgba(255, 171, 0, 0.35);
+  --shadow-glow-gold: 0 0 32px rgba(240, 180, 41, 0.80), 0 0 64px rgba(240, 180, 41, 0.45);
+  --shadow-glow-orange: 0 0 32px rgba(255, 146, 51, 0.70), 0 0 64px rgba(255, 93, 0, 0.40);
 
   /* Card hover/active shadows */
   --shadow-card-hover: 0 24px 56px rgba(255, 45, 114, 0.55), 0 0 48px rgba(139, 31, 255, 0.40);
@@ -83,10 +88,10 @@
   --font-family: "SF Pro Rounded", "SF Pro", system-ui, -apple-system, sans-serif;
   /* Display font: Playful rounded, emoji-friendly weight */
   --font-family-display: "SF Pro Rounded", "Chalkboard SE", "Comic Sans MS", system-ui, sans-serif;
-  --font-size-sm: 0.875rem;
-  --font-size-md: 1.05rem;
-  --font-size-lg: 1.3rem;
-  --font-size-xl: 1.6rem;
+  --font-size-sm: 0.9rem;
+  --font-size-md: 1.1rem;
+  --font-size-lg: 1.35rem;
+  --font-size-xl: 1.65rem;
   --font-size-2xl: 2.2rem;
   --font-size-3xl: 3rem;
   --font-size-4xl: 3.5rem;

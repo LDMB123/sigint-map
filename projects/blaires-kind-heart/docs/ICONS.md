@@ -1,6 +1,6 @@
 # Icons (Operational Summary)
 
-Last updated: 2026-02-15
+Last updated: 2026-02-28
 Full reference: `docs/archive/reference-full/ICONS.full.md`
 
 ## Source of Truth

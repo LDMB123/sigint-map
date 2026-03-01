@@ -28,10 +28,20 @@ try {
   performance.mark('wasm-parallel-start');
   // Safari 26.2: Use compileStreaming for 200-400ms faster WASM init.
   // Compilation starts during download (no arrayBuffer() round-trip).
-  const wasmFetch = fetch(wasmPath);
+  // Fallback: if compileStreaming fails (e.g. wrong MIME type from dev server),
+  // fetch as ArrayBuffer. New fetch() call required — the streaming response
+  // body is already consumed and cannot be re-read.
+  async function compileWasm() {
+    try {
+      return await WebAssembly.compileStreaming(fetch(wasmPath));
+    } catch (_) {
+      const buf = await fetch(wasmPath).then(r => r.arrayBuffer());
+      return await WebAssembly.compile(buf);
+    }
+  }
   const [bindings, wasmModule] = await Promise.all([
     import(jsPath),
-    WebAssembly.compileStreaming(wasmFetch)
+    compileWasm()
   ]);
   performance.mark('wasm-parallel-end');
   performance.measure('wasm-parallel-load', 'wasm-parallel-start', 'wasm-parallel-end');

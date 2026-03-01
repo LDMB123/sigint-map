@@ -81,10 +81,12 @@
 
   /* Satisfying press — card sinks into surface with 3D tilt */
   &:active {
-    transform: perspective(800px) scale(0.94) rotateX(4deg) rotateY(-2deg) translateZ(-8px);
+    transform: perspective(800px) scale(0.88) rotateX(8deg) rotateY(-3deg) translateZ(-16px);
     box-shadow:
       var(--shadow-sm),
-      0 2px 6px rgba(45, 27, 48, 0.1);
+      0 1px 4px rgba(45, 27, 48, 0.08),
+      inset 0 2px 8px rgba(45, 27, 48, 0.12);
+    transition-duration: var(--duration-instant);
   }
 
   /* Staggered entrance — cards tumble in from below */
@@ -116,8 +118,8 @@
   color: var(--color-text);
   box-shadow:
     var(--shadow-md),
-    0 8px 24px -4px rgba(255, 143, 171, 0.3),
-    0 12px 28px -8px rgba(45, 27, 48, 0.08);
+    0 8px 28px -4px rgba(255, 45, 114, 0.42),
+    0 16px 40px -8px rgba(255, 143, 171, 0.22);
 }
 
 
@@ -127,8 +129,8 @@
   color: var(--color-text);
   box-shadow:
     var(--shadow-md),
-    0 8px 24px -4px rgba(92, 184, 228, 0.3),
-    0 12px 28px -8px rgba(45, 27, 48, 0.08);
+    0 8px 28px -4px rgba(0, 154, 238, 0.42),
+    0 16px 40px -8px rgba(74, 176, 224, 0.22);
 }
 
 
@@ -138,8 +140,8 @@
   color: var(--color-text);
   box-shadow:
     var(--shadow-md),
-    0 8px 24px -4px rgba(181, 126, 255, 0.3),
-    0 12px 28px -8px rgba(45, 27, 48, 0.08);
+    0 8px 28px -4px rgba(139, 31, 255, 0.42),
+    0 16px 40px -8px rgba(181, 126, 255, 0.22);
 }
 
 
@@ -149,19 +151,19 @@
   color: var(--color-text);
   box-shadow:
     var(--shadow-md),
-    0 8px 24px -4px rgba(255, 211, 45, 0.3),
-    0 12px 28px -8px rgba(45, 27, 48, 0.08);
+    0 8px 28px -4px rgba(255, 171, 0, 0.45),
+    0 16px 40px -8px rgba(255, 211, 45, 0.22);
 }
 
 
 .game-card--unicorn {
-  background: linear-gradient(135deg, #67e8f9 0%, #06b6d4 100%);
+  background: linear-gradient(135deg, #a5f3fc 0%, #22d3ee 50%, #06b6d4 100%);
   border: 3px solid #0891b2;
   color: var(--color-text);
   box-shadow:
     var(--shadow-md),
-    0 8px 24px -4px rgba(6, 182, 212, 0.35),
-    0 12px 28px -8px rgba(103, 232, 249, 0.15);
+    0 8px 28px -4px rgba(6, 182, 212, 0.45),
+    0 16px 40px -8px rgba(103, 232, 249, 0.22);
 }
 
 
@@ -197,13 +199,19 @@
 
 @keyframes game-card-entrance {
   0% {
-    transform: perspective(800px) translateY(40px) rotateX(12deg) scale(0.7) translateZ(-30px);
+    transform: perspective(800px) translateY(56px) rotateX(22deg) scale(0.48) translateZ(-50px);
     opacity: 0;
-    filter: blur(4px);
+    filter: blur(6px);
   }
 
-  55% {
-    transform: perspective(800px) translateY(-4px) rotateX(-2deg) scale(1.03) translateZ(6px);
+  52% {
+    transform: perspective(800px) translateY(-8px) rotateX(-4deg) scale(1.06) translateZ(10px);
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  74% {
+    transform: perspective(800px) translateY(3px) rotateX(1deg) scale(0.98) translateZ(-2px);
     opacity: 1;
     filter: blur(0);
   }
@@ -345,9 +353,13 @@
   gap: var(--space-xl);
   padding: var(--space-xl);
   min-height: 100%;
-  background: linear-gradient(180deg,
-      rgba(255, 240, 245, 0.95) 0%,
-      var(--color-purple-light) 60%,
+  background:
+    radial-gradient(circle 320px at 20% 15%, rgba(255, 45, 114, 0.18), transparent 65%),
+    radial-gradient(circle 280px at 80% 75%, rgba(139, 31, 255, 0.16), transparent 65%),
+    radial-gradient(circle 200px at 60% 40%, rgba(255, 171, 0, 0.12), transparent 65%),
+    linear-gradient(180deg,
+      rgba(255, 240, 245, 0.98) 0%,
+      var(--color-purple-light) 55%,
       var(--color-pink-light) 100%);
   animation: game-card-entrance 0.55s var(--ease-overshoot) both;
 }
@@ -357,18 +369,24 @@
   font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-heavy);
   text-align: center;
-  color: var(--color-pink-dark);
-  text-shadow:
-    0 3px 16px rgba(255, 143, 171, 0.35),
-    0 0 40px rgba(181, 126, 255, 0.15);
+  background: linear-gradient(120deg, var(--color-pink-dark) 0%, var(--color-purple-vivid) 55%, var(--color-pink-vivid) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter:
+    drop-shadow(0 3px 12px rgba(255, 45, 114, 0.40))
+    drop-shadow(0 0 36px rgba(139, 31, 255, 0.20));
   animation: title-entrance 0.8s var(--ease-overshoot) both;
 }
 
 .game-end-title--new-record {
-  color: var(--color-gold, #ffb700);
-  text-shadow:
-    0 3px 16px rgba(255, 183, 0, 0.45),
-    0 0 40px rgba(255, 215, 0, 0.25);
+  background: linear-gradient(120deg, var(--color-gold-vivid) 0%, var(--color-yellow-vivid) 40%, var(--color-orange) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter:
+    drop-shadow(0 3px 14px rgba(255, 171, 0, 0.60))
+    drop-shadow(0 0 48px rgba(255, 93, 0, 0.35));
   animation:
     title-entrance 0.8s var(--ease-overshoot) both,
     celebration-pulse 1.2s ease-in-out 0.8s infinite;

@@ -27,13 +27,13 @@
   cursor: pointer;
   font-family: inherit;
   min-height: var(--touch-comfortable);
-  /* Paper-stack depth illusion */
+  /* Paper-stack depth illusion — deeper layers */
   box-shadow:
     var(--shadow-md),
-    4px 4px 0 -1px rgba(255, 255, 255, 0.7),
-    4px 4px 0 0 rgba(212, 86, 122, 0.15),
-    8px 8px 0 -1px rgba(255, 255, 255, 0.5),
-    8px 8px 0 0 rgba(212, 86, 122, 0.08);
+    4px 5px 0 -1px rgba(255, 255, 255, 0.72),
+    4px 5px 0 0 rgba(212, 86, 122, 0.22),
+    9px 10px 0 -1px rgba(255, 255, 255, 0.5),
+    9px 10px 0 0 rgba(212, 86, 122, 0.12);
   transform: translateY(0);
   transition: transform var(--duration-fast) var(--ease-bounce),
     box-shadow var(--duration-fast) var(--ease-smooth),
@@ -61,10 +61,10 @@
 
   /* Satisfying press-down: shrink + tilt forward + flatten shadow */
   &:active {
-    transform: scale(0.88) rotateX(4deg) translateY(2px);
+    transform: scale(0.82) rotateX(8deg) translateY(5px);
     box-shadow:
-      0 1px 3px rgba(45, 27, 48, 0.12),
-      inset 0 2px 4px rgba(45, 27, 48, 0.08);
+      0 1px 3px rgba(45, 27, 48, 0.14),
+      inset 0 3px 8px rgba(45, 27, 48, 0.14);
     transition-duration: var(--duration-instant);
   }
 
@@ -114,15 +114,13 @@
 /* standalone — &-- nesting unsupported */
 .kind-btn--hug {
   background: var(--gradient-button-pink);
-  /* Phase 2.4: Use CSS variable */
   border-color: var(--color-pink);
   color: var(--color-white);
-  /* White on dark pink background */
   box-shadow:
     0 2px 4px rgba(45, 27, 48, 0.06),
-    0 6px 16px rgba(255, 143, 171, 0.2),
-    0 12px 28px rgba(255, 143, 171, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    0 6px 20px rgba(255, 45, 114, 0.30),
+    0 14px 32px rgba(255, 143, 171, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
 
   &:active {
     box-shadow:
@@ -139,15 +137,13 @@
 
 .kind-btn--sharing {
   background: var(--gradient-button-green);
-  /* Phase 2.4: Use CSS variable */
   border-color: var(--color-green);
   color: var(--color-white);
-  /* White on dark green background */
   box-shadow:
     0 2px 4px rgba(45, 27, 48, 0.06),
-    0 6px 16px rgba(94, 201, 139, 0.2),
-    0 12px 28px rgba(94, 201, 139, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    0 6px 20px rgba(0, 194, 96, 0.30),
+    0 14px 32px rgba(77, 200, 130, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
 
   &:active {
     box-shadow:
@@ -164,15 +160,13 @@
 
 .kind-btn--helping {
   background: var(--gradient-button-yellow);
-  /* Phase 2.4: Use CSS variable */
   border-color: var(--color-yellow);
   color: var(--color-text);
-  /* Dark text on light yellow background */
   box-shadow:
     0 2px 4px rgba(45, 27, 48, 0.06),
-    0 6px 16px rgba(255, 211, 45, 0.2),
-    0 12px 28px rgba(255, 211, 45, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    0 6px 20px rgba(255, 171, 0, 0.32),
+    0 14px 32px rgba(255, 211, 45, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
 
   &:active {
     box-shadow:
@@ -189,15 +183,13 @@
 
 .kind-btn--love {
   background: var(--gradient-button-purple);
-  /* Phase 2.4: Use CSS variable */
   border-color: var(--color-purple);
   color: var(--color-white);
-  /* White on dark purple background */
   box-shadow:
     0 2px 4px rgba(45, 27, 48, 0.06),
-    0 6px 16px rgba(181, 126, 255, 0.2),
-    0 12px 28px rgba(181, 126, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    0 6px 20px rgba(139, 31, 255, 0.30),
+    0 14px 32px rgba(181, 126, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
 
   &:active {
     box-shadow:
@@ -214,8 +206,13 @@
 
 @keyframes kind-card-in {
   from {
-    transform: scale(0.5) translateY(12px) rotateX(15deg);
+    transform: scale(0.22) translateY(20px) rotateX(22deg);
     opacity: 0;
+  }
+
+  65% {
+    transform: scale(1.06) translateY(-4px) rotateX(-2deg);
+    opacity: 1;
   }
 
   to {
@@ -277,8 +274,10 @@
 .act-item--done {
   box-shadow:
     var(--shadow-md),
-    0 0 20px rgba(255, 211, 45, 0.4);
-  border-color: var(--color-yellow);
+    0 0 24px rgba(255, 171, 0, 0.50),
+    0 0 48px rgba(255, 211, 45, 0.25);
+  border-color: var(--color-yellow-vivid);
+  border-left-width: 6px;
 }
 
 @keyframes act-slide-in {

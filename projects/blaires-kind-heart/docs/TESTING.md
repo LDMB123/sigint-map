@@ -1,6 +1,6 @@
 # Testing Guide (Operational Summary)
 
-Last updated: 2026-02-15
+Last updated: 2026-02-28
 Full reference: `docs/archive/reference-full/TESTING.full.md`
 Historical test reports index: `docs/testing/README.md`
 
@@ -27,9 +27,9 @@ npm run test:e2e:all
 - Emotion selection persistence.
 - Offline queue correctness and DB integrity.
 - Service worker behavior and offline navigation.
-- Visual regressions on key panels.
+- Visual regressions on key panels (re-run after CSS changes; snapshots updated 2026-02-28).
 
 ## Minimum Release Evidence
 1. Latest PASS outputs in `docs/STATUS_LEDGER.md`.
-2. Physical iPad run status noted in `docs/APP_STATUS.md`.
+2. Physical iPad run status noted in `docs/STATUS_LEDGER.md` (Outstanding Release Task section).
 3. No unexplained new warnings in release/test logs.
