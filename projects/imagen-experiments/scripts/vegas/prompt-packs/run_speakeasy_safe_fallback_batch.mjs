@@ -1537,6 +1537,18 @@ function buildSafePolicyGuardrailBlock() {
   ].join('\n');
 }
 
+function buildIdentityFinalOverrideBlock() {
+  return [
+    'IDENTITY FINAL OVERRIDE (ABSOLUTE LAST PRIORITY CHECK):',
+    '- Match the exact adult person from the reference image, not a look-alike.',
+    '- Preserve core face geometry: eye spacing, jawline, cheekbone shape, smile structure, and brow shape.',
+    '- Preserve hair identity cues: blonde color family, part direction, and natural wave pattern.',
+    '- Preserve ethnicity and apparent age from the reference.',
+    '- Keep direct lens gaze with natural vergence and coherent catchlights.',
+    '- If any identity cue conflicts with styling changes, identity wins.'
+  ].join('\n');
+}
+
 const SAFE_LEXICON_REPLACEMENTS = [
   { pattern: /\bsexy\b/gi, replacement: 'high-fashion' },
   { pattern: /\bseductive\b/gi, replacement: 'confident' },
@@ -1747,6 +1759,7 @@ function applyPromptOverrides(promptText, variant, promptMeta = {}) {
       rebuilt.push(directionSupremacy);
     }
     let rebuiltPrompt = rebuilt.join('\n\n');
+    rebuiltPrompt = `${rebuiltPrompt.trim()}\n\n${buildIdentityFinalOverrideBlock()}`;
     rebuiltPrompt = applySafePolicyHardening(rebuiltPrompt, variant);
     rebuiltPrompt = enforcePromptWordTarget(rebuiltPrompt, variant, promptMeta);
     return rebuiltPrompt;
@@ -1836,6 +1849,7 @@ function applyPromptOverrides(promptText, variant, promptMeta = {}) {
   if (directionSupremacy) {
     updated = `${updated.trim()}\n\n${directionSupremacy}`;
   }
+  updated = `${updated.trim()}\n\n${buildIdentityFinalOverrideBlock()}`;
   updated = applySafePolicyHardening(updated, variant);
   updated = enforcePromptWordTarget(updated, variant, promptMeta);
   return updated;
