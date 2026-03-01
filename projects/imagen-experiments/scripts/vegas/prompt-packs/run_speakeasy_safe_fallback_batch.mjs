@@ -10,14 +10,24 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function parseNumberEnv(name, fallback) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === null || raw === '') return fallback;
+  const parsed = Number.parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-0925343693';
 const LOCATION = process.env.GOOGLE_CLOUD_LOCATION || 'global';
 const MODEL = process.env.MODEL || 'gemini-3-pro-image-preview';
-const ENDPOINT = `https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}:generateContent`;
+const DEFAULT_IMAGE_ENDPOINT = `https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}:generateContent`;
+const ENDPOINT = process.env.IMAGE_ENDPOINT || DEFAULT_IMAGE_ENDPOINT;
 const SCORER_MODEL = process.env.SCORER_MODEL || 'gemini-2.5-flash';
-const SCORER_ENDPOINT = `https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${SCORER_MODEL}:generateContent`;
+const DEFAULT_SCORER_ENDPOINT = `https://aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${SCORER_MODEL}:generateContent`;
+const SCORER_ENDPOINT = process.env.SCORER_ENDPOINT || DEFAULT_SCORER_ENDPOINT;
+const STATIC_ACCESS_TOKEN = (process.env.STATIC_ACCESS_TOKEN || '').trim();
 
-const PROMPT_FILE = process.argv[2] || path.join(__dirname, 'speakeasy_20_prompts_two_piece_cutting_edge_v16_revolutionary_physics_kernel.md');
+const PROMPT_FILE = process.argv[2] || path.join(__dirname, 'speakeasy_prompts_81_100_luxury_suite_v9_devils_advocate_hardened.md');
 const REFERENCE_IMAGE = process.argv[3] || '/Users/louisherman/Documents/70480559_10214041948152499_1422451704820924416_n.jpeg';
 const OUTPUT_BASE = process.env.OUTPUT_BASE
   || path.join(process.env.HOME || '/Users/louisherman', 'nanobanana-output', 'projects', 'img_1300');
@@ -61,11 +71,19 @@ const QUALITY_THRESHOLD_IDENTITY = Math.max(0, Math.min(10, parseFloat(process.e
 const QUALITY_THRESHOLD_GAZE = Math.max(0, Math.min(10, parseFloat(process.env.QUALITY_THRESHOLD_GAZE || '9.0')));
 const QUALITY_THRESHOLD_ATTIRE_REPLACEMENT = Math.max(
   0,
-  Math.min(10, parseFloat(process.env.QUALITY_THRESHOLD_ATTIRE_REPLACEMENT || '8.9'))
+  Math.min(10, parseFloat(process.env.QUALITY_THRESHOLD_ATTIRE_REPLACEMENT || '9.3'))
 );
-const QUALITY_THRESHOLD_EDGE = Math.max(0, Math.min(10, parseFloat(process.env.QUALITY_THRESHOLD_EDGE || '9.3')));
+const QUALITY_THRESHOLD_EDGE = Math.max(0, Math.min(10, parseFloat(process.env.QUALITY_THRESHOLD_EDGE || '9.5')));
 const QUALITY_THRESHOLD_REALISM = Math.max(0, Math.min(10, parseFloat(process.env.QUALITY_THRESHOLD_REALISM || '9.2')));
 const QUALITY_THRESHOLD_PHYSICS = Math.max(0, Math.min(10, parseFloat(process.env.QUALITY_THRESHOLD_PHYSICS || '9.3')));
+const QUALITY_THRESHOLD_SCENE_ADHERENCE = Math.max(
+  0,
+  Math.min(10, parseFloat(process.env.QUALITY_THRESHOLD_SCENE_ADHERENCE || '9.15'))
+);
+const QUALITY_THRESHOLD_POSE_ADHERENCE = Math.max(
+  0,
+  Math.min(10, parseFloat(process.env.QUALITY_THRESHOLD_POSE_ADHERENCE || '9.1'))
+);
 const UPLIFT_TARGET_OVERALL = Math.max(0, Math.min(10, parseFloat(process.env.UPLIFT_TARGET_OVERALL || '9.5')));
 const UPLIFT_TARGET_IDENTITY = Math.max(0, Math.min(10, parseFloat(process.env.UPLIFT_TARGET_IDENTITY || '9.5')));
 const UPLIFT_TARGET_GAZE = Math.max(0, Math.min(10, parseFloat(process.env.UPLIFT_TARGET_GAZE || '9.3')));
@@ -73,6 +91,8 @@ const UPLIFT_TARGET_ATTIRE = Math.max(0, Math.min(10, parseFloat(process.env.UPL
 const UPLIFT_TARGET_EDGE = Math.max(0, Math.min(10, parseFloat(process.env.UPLIFT_TARGET_EDGE || '9.6')));
 const UPLIFT_TARGET_REALISM = Math.max(0, Math.min(10, parseFloat(process.env.UPLIFT_TARGET_REALISM || '9.45')));
 const UPLIFT_TARGET_PHYSICS = Math.max(0, Math.min(10, parseFloat(process.env.UPLIFT_TARGET_PHYSICS || '9.45')));
+const UPLIFT_TARGET_SCENE = Math.max(0, Math.min(10, parseFloat(process.env.UPLIFT_TARGET_SCENE || '9.4')));
+const UPLIFT_TARGET_POSE = Math.max(0, Math.min(10, parseFloat(process.env.UPLIFT_TARGET_POSE || '9.35')));
 const PHYSICS_REALISM_PRIORITY_MULTIPLIER = Math.max(
   1,
   Math.min(5, parseFloat(process.env.PHYSICS_REALISM_PRIORITY_MULTIPLIER || '1'))
@@ -107,37 +127,65 @@ const EDGE_FIRST_ACCEPTANCE_ATTIRE_MIN = Math.max(
   0,
   Math.min(10, parseFloat(process.env.EDGE_FIRST_ACCEPTANCE_ATTIRE_MIN || '9.2'))
 );
-const DARING_EDITORIAL_MODE = process.env.DARING_EDITORIAL_MODE !== '0';
+const EDGE_FIRST_ACCEPTANCE_SCENE_MIN = Math.max(
+  0,
+  Math.min(10, parseFloat(process.env.EDGE_FIRST_ACCEPTANCE_SCENE_MIN || '9.2'))
+);
+const EDGE_FIRST_ACCEPTANCE_POSE_MIN = Math.max(
+  0,
+  Math.min(10, parseFloat(process.env.EDGE_FIRST_ACCEPTANCE_POSE_MIN || '9.15'))
+);
+const DARING_EDITORIAL_MODE = process.env.DARING_EDITORIAL_MODE === '1';
 const DARING_EDITORIAL_LEVEL = Math.max(1, Math.min(3, parseInt(process.env.DARING_EDITORIAL_LEVEL || '3', 10)));
 const DARING_EDITORIAL_FEATURE_COUNT_MIN = Math.max(
   2,
   Math.min(5, parseInt(process.env.DARING_EDITORIAL_FEATURE_COUNT_MIN || '3', 10))
 );
-const SCENE_DIRECTOR_BLUEPRINT_MODE = process.env.SCENE_DIRECTOR_BLUEPRINT_MODE !== '0';
-const EDITORIAL_EDGE_REBUILD_MODE = process.env.EDITORIAL_EDGE_REBUILD_MODE !== '0';
+const SCENE_DIRECTOR_BLUEPRINT_MODE = process.env.SCENE_DIRECTOR_BLUEPRINT_MODE === '1';
+const EDITORIAL_EDGE_REBUILD_MODE = process.env.EDITORIAL_EDGE_REBUILD_MODE === '1';
+const PROMPT_FIRST_PRIORITY_MODE = process.env.PROMPT_FIRST_PRIORITY_MODE === '1';
+const PROMPT_DIRECTION_SUPREMACY_MODE = process.env.PROMPT_DIRECTION_SUPREMACY_MODE !== '0';
 const SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT = process.env.SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT
   ? process.env.SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT !== '0'
   : EDITORIAL_EDGE_REBUILD_MODE;
-const ATTIRE_BOLD_BOOST = process.env.ATTIRE_BOLD_BOOST !== '0';
+const ATTIRE_BOLD_BOOST = process.env.ATTIRE_BOLD_BOOST === '1';
 const ATTIRE_BOLD_BOOST_LEVEL = Math.max(1, Math.min(3, parseInt(process.env.ATTIRE_BOLD_BOOST_LEVEL || '3', 10)));
-const SKIN_FORWARD_STYLING = process.env.SKIN_FORWARD_STYLING !== '0';
+const SKIN_FORWARD_STYLING = process.env.SKIN_FORWARD_STYLING === '1';
 const SKIN_FORWARD_LEVEL = Math.max(1, Math.min(3, parseInt(process.env.SKIN_FORWARD_LEVEL || '3', 10)));
-const SENSUAL_EDITORIAL_BOOST = process.env.SENSUAL_EDITORIAL_BOOST !== '0';
+const SENSUAL_EDITORIAL_BOOST = process.env.SENSUAL_EDITORIAL_BOOST === '1';
 const SENSUAL_EDITORIAL_LEVEL = Math.max(1, Math.min(3, parseInt(process.env.SENSUAL_EDITORIAL_LEVEL || '3', 10)));
+const SENSUAL_VARIANCE_GUARD = process.env.SENSUAL_VARIANCE_GUARD === '1';
+const SENSUAL_VARIANCE_LEVEL = Math.max(1, Math.min(3, parseInt(process.env.SENSUAL_VARIANCE_LEVEL || '2', 10)));
+const ENABLE_RESEARCH_MICRODETAIL_EXPANSION = process.env.ENABLE_RESEARCH_MICRODETAIL_EXPANSION !== '0';
+const PROMPT_TARGET_WORDS = Math.max(800, Math.min(2600, parseInt(process.env.PROMPT_TARGET_WORDS || '1500', 10)));
+const SAFE_POLICY_HARDENING = process.env.SAFE_POLICY_HARDENING !== '0';
+const SAFE_FALLBACK_SOURCE = (process.env.SAFE_FALLBACK_SOURCE || 'safe_prompt').trim().toLowerCase();
+const SAFE_FALLBACK_SOURCE_NORMALIZED = SAFE_FALLBACK_SOURCE === 'primary_prompt' ? 'primary_prompt' : 'safe_prompt';
+const SAFE_TRANSFER_PRIMARY_ANCHORS = process.env.SAFE_TRANSFER_PRIMARY_ANCHORS !== '0';
+const SCORER_INTENT_DIGEST_MAX_CHARS = Math.max(
+  500,
+  Math.min(2400, parseInt(process.env.SCORER_INTENT_DIGEST_MAX_CHARS || '900', 10))
+);
+const SCORER_UNAVAILABLE_POLICY = (process.env.SCORER_UNAVAILABLE_POLICY || 'soft_accept').trim().toLowerCase();
+const PHYSICS_CHECKLIST_ENFORCE = process.env.PHYSICS_CHECKLIST_ENFORCE !== '0';
+const PHYSICS_CHECKLIST_MIN = Math.max(
+  0,
+  Math.min(10, parseFloat(process.env.PHYSICS_CHECKLIST_MIN || '8.8'))
+);
 const DIRECT_CAMERA_GAZE_OVERRIDE = process.env.DIRECT_CAMERA_GAZE_OVERRIDE === '1';
 const PHYSICS_REALISM_OVERRIDE_LEVEL = Math.max(1, Math.min(10, parseInt(process.env.PHYSICS_REALISM_OVERRIDE_LEVEL || '10', 10)));
 const ANTI_AI_REALISM_BOOST = process.env.ANTI_AI_REALISM_BOOST === '1';
 const ANTI_AI_REALISM_LEVEL = Math.max(1, Math.min(10, parseInt(process.env.ANTI_AI_REALISM_LEVEL || '10', 10)));
-const ENABLE_MICRO_PHYSICS_SOLVER = process.env.ENABLE_MICRO_PHYSICS_SOLVER !== '0';
+const ENABLE_MICRO_PHYSICS_SOLVER = process.env.ENABLE_MICRO_PHYSICS_SOLVER === '1';
 const MICRO_PHYSICS_SOLVER_LEVEL = Math.max(1, Math.min(10, parseInt(process.env.MICRO_PHYSICS_SOLVER_LEVEL || '10', 10)));
-const ENABLE_FRONTIER_PROTOCOL = process.env.ENABLE_FRONTIER_PROTOCOL !== '0';
+const ENABLE_FRONTIER_PROTOCOL = process.env.ENABLE_FRONTIER_PROTOCOL === '1';
 const FRONTIER_WITH_SOLVER = process.env.FRONTIER_WITH_SOLVER === '1';
-const ENABLE_REVOLUTIONARY_PHYSICS_KERNEL = process.env.ENABLE_REVOLUTIONARY_PHYSICS_KERNEL !== '0';
+const ENABLE_REVOLUTIONARY_PHYSICS_KERNEL = process.env.ENABLE_REVOLUTIONARY_PHYSICS_KERNEL === '1';
 const REVOLUTIONARY_PHYSICS_KERNEL_LEVEL = Math.max(
   1,
   Math.min(10, parseInt(process.env.REVOLUTIONARY_PHYSICS_KERNEL_LEVEL || '10', 10))
 );
-const ENABLE_HYPER_MICRO_DETAIL = process.env.ENABLE_HYPER_MICRO_DETAIL !== '0';
+const ENABLE_HYPER_MICRO_DETAIL = process.env.ENABLE_HYPER_MICRO_DETAIL === '1';
 const HYPER_MICRO_DETAIL_LEVEL = Math.max(1, Math.min(10, parseInt(process.env.HYPER_MICRO_DETAIL_LEVEL || '10', 10)));
 const ENABLE_IDENTITY_SUPREMACY_LOCK = process.env.ENABLE_IDENTITY_SUPREMACY_LOCK !== '0';
 const IDENTITY_SUPREMACY_LEVEL = Math.max(1, Math.min(10, parseInt(process.env.IDENTITY_SUPREMACY_LEVEL || '10', 10)));
@@ -149,14 +197,95 @@ const FORENSIC_REALISM_TARGET_LEVEL = Math.max(
 const ENABLE_GOAL_MAXIMIZER = process.env.ENABLE_GOAL_MAXIMIZER === '1';
 const GOAL_MAXIMIZER_LEVEL = Math.max(1, Math.min(10, parseInt(process.env.GOAL_MAXIMIZER_LEVEL || '10', 10)));
 const SCORER_PARSE_REPAIR_RETRIES = Math.max(0, Math.min(3, parseInt(process.env.SCORER_PARSE_REPAIR_RETRIES || '3', 10)));
-const SCORER_HEURISTIC_MIN_FIELDS = Math.max(2, Math.min(6, parseInt(process.env.SCORER_HEURISTIC_MIN_FIELDS || '3', 10)));
+const SCORER_HEURISTIC_MIN_FIELDS = Math.max(2, Math.min(8, parseInt(process.env.SCORER_HEURISTIC_MIN_FIELDS || '3', 10)));
 const SCORER_REPAIR_MAX_OUTPUT_TOKENS = Math.max(
   180,
   Math.min(1200, parseInt(process.env.SCORER_REPAIR_MAX_OUTPUT_TOKENS || '420', 10))
 );
+const SCORER_SELF_HEAL_RETRIES = Math.max(
+  0,
+  Math.min(3, parseInt(process.env.SCORER_SELF_HEAL_RETRIES || '1', 10))
+);
+const SCORER_PARSE_REQUERY_ON_FAIL = process.env.SCORER_PARSE_REQUERY_ON_FAIL !== '0';
+const SCORER_PARSE_REQUERY_MAX_OUTPUT_TOKENS = Math.max(
+  280,
+  Math.min(1200, parseInt(process.env.SCORER_PARSE_REQUERY_MAX_OUTPUT_TOKENS || '700', 10))
+);
+const SCORER_FORCE_SCHEMA = process.env.SCORER_FORCE_SCHEMA !== '0';
+const SCORER_COMPACT_PROMPT = process.env.SCORER_COMPACT_PROMPT !== '0';
 const IMAGE_HTTP_RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const RATE_LIMIT_ADAPTIVE_COOLDOWN = process.env.RATE_LIMIT_ADAPTIVE_COOLDOWN === '1';
+const RATE_LIMIT_COOLDOWN_BASE_S = Math.max(0, parseNumberEnv('RATE_LIMIT_COOLDOWN_BASE_S', 18));
+const RATE_LIMIT_COOLDOWN_MAX_S = Math.max(
+  RATE_LIMIT_COOLDOWN_BASE_S,
+  parseNumberEnv('RATE_LIMIT_COOLDOWN_MAX_S', 120)
+);
+const RATE_LIMIT_COOLDOWN_GROWTH = Math.max(1, parseNumberEnv('RATE_LIMIT_COOLDOWN_GROWTH', 1.7));
+const RATE_LIMIT_COOLDOWN_DECAY_S = Math.max(0, parseNumberEnv('RATE_LIMIT_COOLDOWN_DECAY_S', 4));
+const ATTEMPT_WAIT_JITTER_S = Math.max(0, parseNumberEnv('ATTEMPT_WAIT_JITTER_S', 0));
+
+let adaptiveRateLimitCooldownS = 0;
+let adaptiveRateLimitCooldownUntilMs = 0;
+
+const SCORER_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    scores: {
+      type: 'OBJECT',
+      properties: {
+        identity: { type: 'NUMBER' },
+        gaze: { type: 'NUMBER' },
+        attireReplacement: { type: 'NUMBER' },
+        edge: { type: 'NUMBER' },
+        realism: { type: 'NUMBER' },
+        physics: { type: 'NUMBER' },
+        sceneAdherence: { type: 'NUMBER' },
+        poseAdherence: { type: 'NUMBER' }
+      },
+      required: ['identity', 'gaze', 'attireReplacement', 'edge', 'realism', 'physics', 'sceneAdherence', 'poseAdherence']
+    },
+    physicsChecklist: {
+      type: 'OBJECT',
+      properties: {
+        supportContact: { type: 'NUMBER' },
+        nonPenetration: { type: 'NUMBER' },
+        gravityDrape: { type: 'NUMBER' },
+        lightShadowGeometry: { type: 'NUMBER' },
+        materialResponse: { type: 'NUMBER' }
+      },
+      required: ['supportContact', 'nonPenetration', 'gravityDrape', 'lightShadowGeometry', 'materialResponse']
+    },
+    diagnostics: { type: 'STRING' },
+    rescueDirectives: {
+      type: 'ARRAY',
+      items: { type: 'STRING' }
+    },
+    confidence: { type: 'NUMBER' }
+  },
+  required: ['scores', 'diagnostics', 'rescueDirectives', 'confidence']
+};
+
+const SCORE_FIELD_ALIASES = {
+  identity: ['identity', 'identityMatch', 'identity_match'],
+  gaze: ['gaze', 'directGaze', 'direct_camera_gaze'],
+  attireReplacement: ['attireReplacement', 'attire_replacement', 'wardrobeReplacement'],
+  edge: ['edge', 'editorialEdge', 'editorial_edge'],
+  realism: ['realism', 'photorealism', 'photoRealism'],
+  physics: ['physics', 'physicsConsistency', 'physics_consistency'],
+  sceneAdherence: ['sceneAdherence', 'scene_adherence', 'sceneMatch', 'scene_match'],
+  poseAdherence: ['poseAdherence', 'pose_adherence', 'poseMatch', 'pose_match']
+};
+
+const REQUIRED_SCORER_SCORE_FIELDS = Object.keys(SCORE_FIELD_ALIASES).length;
 
 const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
+
+async function getAccessToken() {
+  if (STATIC_ACCESS_TOKEN) {
+    return STATIC_ACCESS_TOKEN;
+  }
+  return auth.getAccessToken();
+}
 
 function log(message) {
   const timestamp = new Date().toISOString();
@@ -178,7 +307,8 @@ function timestampForPath(date = new Date()) {
   const hh = String(date.getHours()).padStart(2, '0');
   const mm = String(date.getMinutes()).padStart(2, '0');
   const ss = String(date.getSeconds()).padStart(2, '0');
-  return `${y}${m}${d}-${hh}${mm}${ss}`;
+  const ms = String(date.getMilliseconds()).padStart(3, '0');
+  return `${y}${m}${d}-${hh}${mm}${ss}-${ms}-p${process.pid}`;
 }
 
 function wait(ms) {
@@ -186,8 +316,32 @@ function wait(ms) {
 }
 
 async function waitBeforeAttempt(seconds, label) {
-  log(`${label}: waiting ${seconds}s before attempt`);
-  await wait(seconds * 1000);
+  const baseSeconds = Math.max(0, Number(seconds) || 0);
+  let effectiveSeconds = baseSeconds;
+
+  if (RATE_LIMIT_ADAPTIVE_COOLDOWN) {
+    const remainingCooldownMs = adaptiveRateLimitCooldownUntilMs - Date.now();
+    if (remainingCooldownMs > 0) {
+      const remainingCooldownS = Math.ceil(remainingCooldownMs / 1000);
+      effectiveSeconds = Math.max(effectiveSeconds, remainingCooldownS);
+    }
+  }
+
+  const jitterSeconds = ATTEMPT_WAIT_JITTER_S > 0
+    ? Math.random() * ATTEMPT_WAIT_JITTER_S
+    : 0;
+  const totalSeconds = effectiveSeconds + jitterSeconds;
+
+  const details = [];
+  details.push(`base=${baseSeconds}s`);
+  if (effectiveSeconds > baseSeconds) {
+    details.push(`rateLimitCooldown=${effectiveSeconds}s`);
+  }
+  if (jitterSeconds > 0) {
+    details.push(`jitter=+${jitterSeconds.toFixed(1)}s`);
+  }
+  log(`${label}: waiting ${totalSeconds.toFixed(1)}s before attempt (${details.join(', ')})`);
+  await wait(Math.max(0, Math.round(totalSeconds * 1000)));
 }
 
 function parseRetryAfterMs(rawRetryAfter) {
@@ -201,6 +355,33 @@ function parseRetryAfterMs(rawRetryAfter) {
   return Math.max(0, retryDate - Date.now());
 }
 
+const CACHE_DIAGNOSTIC_HEADERS = [
+  'age',
+  'cache-control',
+  'pragma',
+  'etag',
+  'x-cache',
+  'x-cache-hit',
+  'x-cache-lookup',
+  'x-served-by',
+  'via',
+  'date'
+];
+
+function extractCacheDiagnosticHeaders(headersLike) {
+  if (!headersLike || typeof headersLike.get !== 'function') {
+    return null;
+  }
+  const diagnostics = {};
+  for (const headerName of CACHE_DIAGNOSTIC_HEADERS) {
+    const value = headersLike.get(headerName);
+    if (typeof value === 'string' && value.trim()) {
+      diagnostics[headerName] = value.trim();
+    }
+  }
+  return Object.keys(diagnostics).length ? diagnostics : null;
+}
+
 function computeImageRetryDelayMs({ attempt, retryAfterHeader = null }) {
   const retryAfterMs = parseRetryAfterMs(retryAfterHeader);
   if (retryAfterMs !== null) {
@@ -210,6 +391,33 @@ function computeImageRetryDelayMs({ attempt, retryAfterHeader = null }) {
   const exponentialMs = Math.min(IMAGE_HTTP_BACKOFF_MAX_MS, IMAGE_HTTP_BACKOFF_BASE_MS * (2 ** exp));
   const jitterMs = Math.floor(Math.random() * 750);
   return Math.max(IMAGE_HTTP_BACKOFF_MIN_MS, Math.min(IMAGE_HTTP_BACKOFF_MAX_MS, exponentialMs + jitterMs));
+}
+
+function armAdaptiveRateLimitCooldown({ label, status, retryAfterHeader = null }) {
+  if (!RATE_LIMIT_ADAPTIVE_COOLDOWN || status !== 429) return;
+  const retryAfterMs = parseRetryAfterMs(retryAfterHeader);
+  const retryAfterS = retryAfterMs !== null ? Math.ceil(retryAfterMs / 1000) : 0;
+  const grownCooldown = adaptiveRateLimitCooldownS > 0
+    ? adaptiveRateLimitCooldownS * RATE_LIMIT_COOLDOWN_GROWTH
+    : RATE_LIMIT_COOLDOWN_BASE_S;
+  const nextCooldownS = Math.min(
+    RATE_LIMIT_COOLDOWN_MAX_S,
+    Math.max(RATE_LIMIT_COOLDOWN_BASE_S, Math.max(grownCooldown, retryAfterS))
+  );
+  adaptiveRateLimitCooldownS = nextCooldownS;
+  adaptiveRateLimitCooldownUntilMs = Date.now() + (nextCooldownS * 1000);
+  log(
+    `${label}: adaptive 429 cooldown armed at ${nextCooldownS.toFixed(1)}s`
+    + (retryAfterS > 0 ? ` (retry-after=${retryAfterS}s)` : '')
+  );
+}
+
+function decayAdaptiveRateLimitCooldown() {
+  if (!RATE_LIMIT_ADAPTIVE_COOLDOWN || adaptiveRateLimitCooldownS <= 0) return;
+  adaptiveRateLimitCooldownS = Math.max(0, adaptiveRateLimitCooldownS - RATE_LIMIT_COOLDOWN_DECAY_S);
+  adaptiveRateLimitCooldownUntilMs = adaptiveRateLimitCooldownS > 0
+    ? Date.now() + (adaptiveRateLimitCooldownS * 1000)
+    : 0;
 }
 
 function extToMime(filePath) {
@@ -390,6 +598,38 @@ function buildSensualEditorialBlock(variant, level) {
     'GUARDRAILS:',
     '- Adult subject only; no nudity, no explicit sexual framing, no fetish framing.',
     '- Keep premium fashion-campaign intent and physically plausible anatomy at all times.'
+  ].join('\n');
+}
+
+function buildSensualVarianceBlock(variant, level, promptMeta = {}) {
+  if (variant !== 'primary') {
+    return '';
+  }
+  const intensityLine = level >= 3
+    ? 'Require a clearly seductive but non-explicit pose read: stronger torso arc, leg-line extension, and expressive hand choreography.'
+    : level === 2
+      ? 'Require a distinct sensual pose read: clear torso-leg flow and expressive hand choreography.'
+      : 'Require a mild sensual pose read with non-generic body language.';
+  const titleLine = promptMeta?.title
+    ? `Scene lock reminder: keep pose language specific to "${promptMeta.title}" rather than a generic lounge stance.`
+    : 'Scene lock reminder: keep pose language specific to this prompt scene.';
+  return [
+    'ANTI-HOMOGENIZATION SENSUAL VARIANCE LOCK (PRIMARY, NON-EXPLICIT):',
+    intensityLine,
+    titleLine,
+    '',
+    'Pose constraints (must all be visible):',
+    '- Include one active support contact (rail, table, chair, wall, ladder, or mic stand) with visible compression or grip tension.',
+    '- Include one explicit torsion cue (shoulder-pelvis counter-rotation, hip-led stride, or seated twist).',
+    '- Include one expressive hand action above waist level (collarbone trace, neckline touch, hair sweep, or frame interaction).',
+    '- Include one leg-line emphasis cue (cross-step, knee lift, slit-driven extension, or weight-shift projection).',
+    '',
+    'Reject default template poses:',
+    '- static hand-on-hip plus neutral crossed-leg only;',
+    '- rigid front-facing mannequin stance with no support interaction;',
+    '- repeated pose grammar from previous outputs when prompt anchors differ.',
+    '',
+    'Guardrails: adult subject only, no nudity, no explicit sexual framing.'
   ].join('\n');
 }
 
@@ -945,14 +1185,14 @@ function buildPhysicsRealismPriorityBlock(variant, multiplier, density) {
 
 function buildGoalMaximizerBlock(variant, level) {
   const floors = level >= 10
-    ? { identity: 9.6, gaze: 9.4, attire: 9.8, edge: 9.5, realism: 9.5, physics: 9.5 }
+    ? { identity: 9.6, gaze: 9.4, attire: 9.8, edge: 9.5, realism: 9.5, physics: 9.5, scene: 9.5, pose: 9.45 }
     : level >= 8
-      ? { identity: 9.5, gaze: 9.3, attire: 9.6, edge: 9.4, realism: 9.4, physics: 9.4 }
-      : { identity: 9.4, gaze: 9.2, attire: 9.4, edge: 9.3, realism: 9.3, physics: 9.3 };
+      ? { identity: 9.5, gaze: 9.3, attire: 9.6, edge: 9.4, realism: 9.4, physics: 9.4, scene: 9.35, pose: 9.3 }
+      : { identity: 9.4, gaze: 9.2, attire: 9.4, edge: 9.3, realism: 9.3, physics: 9.3, scene: 9.25, pose: 9.2 };
 
   return [
     'ALL-GOAL PERFORMANCE MAXIMIZER (HARD):',
-    `Target score floors: identity>=${floors.identity}, gaze>=${floors.gaze}, attireReplacement>=${floors.attire}, edge>=${floors.edge}, realism>=${floors.realism}, physics>=${floors.physics}.`,
+    `Target score floors: identity>=${floors.identity}, gaze>=${floors.gaze}, attireReplacement>=${floors.attire}, edge>=${floors.edge}, realism>=${floors.realism}, physics>=${floors.physics}, sceneAdherence>=${floors.scene}, poseAdherence>=${floors.pose}.`,
     variant === 'safe'
       ? '- Safe variant: preserve the same identity and edge mood with stronger boundary stability.'
       : '- Primary variant: maximize edge and realism simultaneously while remaining non-explicit.',
@@ -1178,16 +1418,307 @@ function buildEditorialEdgeRebuildCore(variant) {
   ].join('\n');
 }
 
+function collectPromptAnchorBullets(promptText) {
+  const lines = String(promptText || '')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+  const buckets = {
+    scene: [],
+    wardrobe: [],
+    pose: []
+  };
+  const headingMatchers = {
+    scene: /^(scene(?:\s+lock)?|setting(?:\s+lock)?)\s*:/i,
+    wardrobe: /^(wardrobe(?:\s+lock)?|attire(?:\s+lock)?)\s*:/i,
+    pose: /^(pose(?:\s+and\s+(?:framing|composition))?(?:\s+lock)?)\s*:/i
+  };
+  let activeKey = '';
+  for (const line of lines) {
+    if (headingMatchers.scene.test(line)) {
+      activeKey = 'scene';
+      continue;
+    }
+    if (headingMatchers.wardrobe.test(line)) {
+      activeKey = 'wardrobe';
+      continue;
+    }
+    if (headingMatchers.pose.test(line)) {
+      activeKey = 'pose';
+      continue;
+    }
+    if (/^[A-Za-z][A-Za-z0-9\s\-+/()]{2,40}:\s*$/i.test(line)) {
+      activeKey = '';
+      continue;
+    }
+    if (!activeKey) {
+      continue;
+    }
+    const normalized = line.startsWith('- ') ? line.slice(2).trim() : line.trim();
+    if (!normalized) {
+      continue;
+    }
+    buckets[activeKey].push(normalized);
+  }
+  return {
+    scene: buckets.scene.slice(0, 4),
+    wardrobe: buckets.wardrobe.slice(0, 4),
+    pose: buckets.pose.slice(0, 5)
+  };
+}
+
+function buildPrimaryAnchorTransferBlock(primaryPromptText) {
+  const anchors = collectPromptAnchorBullets(primaryPromptText);
+  const lines = [
+    'PRIMARY ANCHOR TRANSFER (SAFE FIDELITY BRIDGE):',
+    '- Use these anchors to preserve scene and pose fidelity while keeping policy-safe wording.'
+  ];
+  if (anchors.scene.length) {
+    lines.push('Scene anchors to preserve:');
+    lines.push(...anchors.scene.map(item => `- ${item}`));
+  }
+  if (anchors.wardrobe.length) {
+    lines.push('Wardrobe topology anchors to preserve:');
+    lines.push(...anchors.wardrobe.map(item => `- ${item}`));
+  }
+  if (anchors.pose.length) {
+    lines.push('Pose choreography anchors to preserve:');
+    lines.push(...anchors.pose.map(item => `- ${item}`));
+  }
+  lines.push('- Keep final styling high-fashion, non-explicit, and physically coherent.');
+  return lines.join('\n');
+}
+
+function buildPromptDirectionSupremacyBlock(promptText, promptMeta = {}, variant = 'primary') {
+  if (!PROMPT_DIRECTION_SUPREMACY_MODE) {
+    return '';
+  }
+  const anchors = collectPromptAnchorBullets(promptText);
+  const variantLine = variant === 'safe'
+    ? 'Safe variant: keep the same scene/pose anchors and wardrobe topology with safer coverage boundaries.'
+    : 'Primary variant: keep the same scene/pose anchors while maximizing non-explicit editorial intensity.';
+  const titleLine = promptMeta?.title
+    ? `Prompt title anchor: ${promptMeta.title}`
+    : 'Prompt title anchor: current prompt section';
+  const section = [
+    'PROMPT DIRECTION SUPREMACY (FINAL AUTHORITY):',
+    'If any global lock conflicts with prompt-specific scene/wardrobe/pose anchors, follow the prompt anchors.',
+    titleLine,
+    variantLine,
+    'Setting invariant: private intimate luxury suite only; never generic public venue substitution.',
+    variant === 'safe'
+      ? 'Wardrobe invariant: high-fashion two-piece lace cocktail-set topology (not conservative evening wear), with clear top/skirt separation.'
+      : 'Wardrobe invariant: sexy two-piece lace "evening-gown" attire (not conservative evening wear), with clear top/skirt separation.',
+    'Anti-template invariant: do not reuse a generic pose or styling template from other prompts.'
+  ];
+  if (anchors.scene.length) {
+    section.push('Scene anchors (must remain visible):');
+    section.push(...anchors.scene.map(item => `- ${item}`));
+  }
+  if (anchors.wardrobe.length) {
+    section.push('Wardrobe anchors (must remain visible):');
+    section.push(...anchors.wardrobe.map(item => `- ${item}`));
+  }
+  if (anchors.pose.length) {
+    section.push('Pose anchors (must remain visible):');
+    section.push(...anchors.pose.map(item => `- ${item}`));
+  }
+  return section.join('\n');
+}
+
+function buildSafePolicyGuardrailBlock() {
+  return [
+    'POLICY-SAFE FASHION GUARDRAILS (SAFE VARIANT, MANDATORY):',
+    '- Keep the subject clearly adult and fully non-explicit.',
+    '- Keep high-fashion editorial tone, never explicit sexual framing.',
+    '- Favor elegant cocktail styling language over provocative wording.',
+    '- Keep camera-facing confidence and couture detail while maintaining compliant coverage.',
+    '- Keep identity lock, scene lock, and photoreal microphysics lock unchanged.'
+  ].join('\n');
+}
+
+const SAFE_LEXICON_REPLACEMENTS = [
+  { pattern: /\bsexy\b/gi, replacement: 'high-fashion' },
+  { pattern: /\bseductive\b/gi, replacement: 'confident' },
+  { pattern: /\bprovocative\b/gi, replacement: 'assertive' },
+  { pattern: /\brevealing\b/gi, replacement: 'bold' },
+  { pattern: /\bskin-forward\b/gi, replacement: 'contour-forward' },
+  { pattern: /thigh-high hosiery/gi, replacement: 'sheer black stockings' },
+  { pattern: /intimate luxury-suite/gi, replacement: 'private luxury-suite' },
+  { pattern: /sexy editorial mood/gi, replacement: 'high-fashion editorial mood' },
+  { pattern: /sexy attire/gi, replacement: 'fashion-forward attire' }
+];
+
+function applySafePolicyHardening(promptText, variant) {
+  if (!SAFE_POLICY_HARDENING || variant !== 'safe') {
+    return promptText;
+  }
+  let hardened = String(promptText || '');
+  for (const { pattern, replacement } of SAFE_LEXICON_REPLACEMENTS) {
+    hardened = hardened.replace(pattern, replacement);
+  }
+  return `${hardened.trim()}\n\n${buildSafePolicyGuardrailBlock()}`;
+}
+
+function buildResearchMicrodetailFoundationBlock(variant, promptMeta = {}) {
+  const titleLine = promptMeta?.title
+    ? `Prompt anchor: ${promptMeta.title}`
+    : 'Prompt anchor: current section title';
+  const variantLine = variant === 'safe'
+    ? 'Safe variant strategy: preserve couture impact with policy-safe wording and compliant coverage geometry.'
+    : 'Primary variant strategy: maximize couture impact and photorealism while remaining non-explicit.';
+  return [
+    'RESEARCH-INFORMED MICRO-DETAIL STACK (GENERATION PROGRAM):',
+    titleLine,
+    variantLine,
+    'Use a staged generation plan inspired by recent multimodal research trends:',
+    '1) Layout-first planning: lock scene graph, support contacts, and camera-object geometry before texture detail.',
+    '2) Identity-first rendering: preserve craniofacial geometry, eye spacing, smile asymmetry, and hairline continuity before wardrobe stylization.',
+    '3) Pose-dynamics solve: enforce load-bearing contacts, center-of-mass plausibility, and torsion-driven fabric response.',
+    '4) Material-physics solve: model cloth strain fields, seam tension, drape directionality, and friction locks at body/garment boundaries.',
+    '5) Light-transport solve: maintain key/rim/fill consistency, physically plausible cast shadows, and coherent specular flow across skin, fabric, and metal.',
+    '6) Sensor realism solve: emulate camera pipeline cues (micro-contrast, realistic noise floor, depth falloff, highlight rolloff) rather than synthetic over-smoothing.',
+    '',
+    'Prompting approach (new technique synthesis):',
+    '- Constraint lattice prompting: express each requirement as a measurable invariant with explicit fail conditions.',
+    '- Causal chain prompting: for every visual claim, bind cause to effect (pose -> tension -> fold -> shadow).',
+    '- Micro-cue density prompting: require multiple independent realism cues per critical region (face, hands, slit edge, hosiery band, ankle, heel-floor contact).',
+    '- Counterfactual rejection prompting: explicitly reject known synthetic artifacts and conservative template regressions.',
+    '- Anchor persistence prompting: reassert scene hero props, wardrobe topology, and pose choreography at the end of the prompt to prevent drift.',
+    '',
+    'Human-perception quality gates:',
+    '- Prioritize facial believability, eye contact integrity, hand anatomy, and contact-shadow attachment.',
+    '- Avoid CGI signatures: waxy skin, tiled textures, detached speculars, edge halos, and implausible fold fields.',
+    '- Preserve physically plausible asymmetry: tiny left/right differences in expression, hair strands, and fabric micro-folds.',
+    '',
+    'Output objective:',
+    '- Deliver premium editorial photorealism with stable identity, coherent physics, and prompt-faithful scene execution.',
+    '- Keep the result visibly distinct per prompt title; do not collapse to a repeated template composition.'
+  ].join('\n');
+}
+
+function buildResearchMicrodetailModules(variant, promptMeta = {}) {
+  const promptAnchor = promptMeta?.title || 'prompt title';
+  const coverageCue = variant === 'safe'
+    ? 'Maintain policy-safe coverage while preserving contour clarity and couture readability.'
+    : 'Push contour definition and silhouette intensity while remaining non-explicit.';
+  return [
+    [
+      'MICRO-DETAIL MODULE A: FACE, EYES, AND IDENTITY STABILITY',
+      '- Keep iris geometry round and stable, with coherent corneal highlights from the dominant key light.',
+      '- Preserve eyelid thickness, lash direction, and subtle brow asymmetry for natural expression.',
+      '- Preserve nasolabial shape, philtrum depth, and tooth/lip contact geometry during smile expression.',
+      '- Preserve skin microstructure variation across forehead, cheeks, nose bridge, and jawline.',
+      '- Keep hair-part direction, flyaway distribution, and strand clumping physically plausible.',
+      '- Reject face drift, age drift, and ethnicity drift across lighting/viewpoint changes.',
+      coverageCue
+    ].join('\n'),
+    [
+      'MICRO-DETAIL MODULE B: GARMENT TOPOLOGY AND STRAIN FIELDS',
+      '- Preserve explicit two-piece topology and clear waist separation under all pose changes.',
+      '- Enforce seam continuity, stitch direction, and tension gradients near high-strain regions.',
+      '- Map fold hierarchy from macro drape to micro creases; avoid random fold inversions.',
+      '- At slit boundaries, show pressure transitions, controlled opening mechanics, and coherent shadow pockets.',
+      '- For stockings/hosiery, model denier-dependent translucency, band compression gradients, and angle-dependent sheen.',
+      '- Keep material response consistent with satin/lace/mesh optics and local curvature.',
+      '- Reject texture smear, clipping, and cloth-body interpenetration.'
+    ].join('\n'),
+    [
+      'MICRO-DETAIL MODULE C: KINEMATICS, CONTACTS, AND BALANCE',
+      '- Show one explicit support contact with visible compression and force direction.',
+      '- Align pelvis-shoulder counter-rotation with leg projection and hand placement intent.',
+      '- Keep weight-bearing foot mechanics credible: heel load path, toe-box angle, and ankle tension cues.',
+      '- Keep fingers anatomically consistent: joint lengths, natural bends, and believable tendon hints.',
+      '- Preserve center-of-mass plausibility relative to support polygon.',
+      '- Reject floating footwear, impossible balance, and disconnected limb trajectories.',
+      `- Keep choreography specific to "${promptAnchor}", not a generic fallback stance.`
+    ].join('\n'),
+    [
+      'MICRO-DETAIL MODULE D: LIGHTING, SHADOWS, AND REFLECTIONS',
+      '- Maintain single coherent key-light direction with plausible fill and rim contributions.',
+      '- Keep cast shadows attached to contact points with physically valid softness gradients.',
+      '- Keep reflection geometry coherent on marble, glass, lacquer, and metallic props.',
+      '- Preserve specular anisotropy where material demands it (satin, polished leather, brushed metal).',
+      '- Maintain plausible exposure: recoverable highlights and non-crushed shadow detail.',
+      '- Reject mismatched shadow vectors, mirror-space errors, and over-processed glow artifacts.'
+    ].join('\n'),
+    [
+      'MICRO-DETAIL MODULE E: CAMERA PIPELINE REALISM',
+      '- Emulate real-lens depth behavior: subject-priority sharpness and physically plausible falloff.',
+      '- Keep grain/noise subtle and sensor-like, not uniform synthetic dithering.',
+      '- Maintain natural skin tone transitions under mixed warm/cool practicals.',
+      '- Preserve micro-contrast on textiles and edges without artificial sharpening halos.',
+      '- Keep chromatic behavior physically plausible; avoid rainbow fringing and plastic color clipping.',
+      '- Reject over-smoothed skin, over-denoised textures, and flat dynamic range.'
+    ].join('\n'),
+    [
+      'MICRO-DETAIL MODULE F: FAILURE-MODE FIREWALL',
+      '- Reject conservative wardrobe downgrade, merged garments, or topology collapse into one-piece styling.',
+      '- Reject scene drift away from private luxury-suite anchors and hero props.',
+      '- Reject pose drift that removes support contact, torsion, expressive hand action, or leg-line mechanic.',
+      '- Reject synthetic signatures: repeated pore maps, mirrored asymmetry artifacts, detached contact shadows.',
+      '- Reject geometry defects: fused digits, twisted ankles, broken perspective, and floating objects.',
+      '- If any hard rejection is detected, re-solve from scene graph and kinematics before texture refinement.'
+    ].join('\n')
+  ];
+}
+
+function enforcePromptWordTarget(promptText, variant, promptMeta = {}) {
+  if (!ENABLE_RESEARCH_MICRODETAIL_EXPANSION) {
+    return promptText;
+  }
+  let expanded = String(promptText || '').trim();
+  if (!expanded) {
+    return expanded;
+  }
+
+  expanded = `${expanded}\n\n${buildResearchMicrodetailFoundationBlock(variant, promptMeta)}`;
+  if (countWords(expanded) >= PROMPT_TARGET_WORDS) {
+    return expanded;
+  }
+
+  const modules = buildResearchMicrodetailModules(variant, promptMeta);
+  if (!modules.length) {
+    return expanded;
+  }
+
+  let pass = 0;
+  while (countWords(expanded) < PROMPT_TARGET_WORDS && pass < 4) {
+    pass += 1;
+    for (const moduleText of modules) {
+      const passHeader = pass === 1 ? '' : `\nMICRO-DETAIL REINFORCEMENT PASS ${pass}:\n`;
+      expanded = `${expanded}${passHeader}\n${moduleText}`;
+      if (countWords(expanded) >= PROMPT_TARGET_WORDS) {
+        break;
+      }
+    }
+  }
+
+  return expanded;
+}
+
 function applyPromptOverrides(promptText, variant, promptMeta = {}) {
   const sceneDirectorBlueprint = buildSceneDirectorBlueprint(promptMeta.promptId, promptMeta.title, variant);
   if (EDITORIAL_EDGE_REBUILD_MODE) {
     const rebuilt = [];
     if (sceneDirectorBlueprint) {
       rebuilt.push(sceneDirectorBlueprint);
+    } else if (promptMeta?.title) {
+      rebuilt.push([
+        'SCENE DIRECTOR FALLBACK (TITLE-DERIVED):',
+        `Distinct scene identity: ${promptMeta.title}.`,
+        'Do not collapse to a generic lounge render; preserve the title-defined setting, mood, and framing intent.'
+      ].join('\n'));
     }
     rebuilt.push(buildEditorialEdgeRebuildCore(variant));
     if (DARING_EDITORIAL_MODE) {
       rebuilt.push(buildDaringEditorialBlock(variant, DARING_EDITORIAL_LEVEL));
+    }
+    if (SENSUAL_VARIANCE_GUARD) {
+      const sensualVarianceBlock = buildSensualVarianceBlock(variant, SENSUAL_VARIANCE_LEVEL, promptMeta);
+      if (sensualVarianceBlock) {
+        rebuilt.push(sensualVarianceBlock);
+      }
     }
     if (ENABLE_IDENTITY_SUPREMACY_LOCK) {
       rebuilt.push(buildIdentitySupremacyBlock(variant, IDENTITY_SUPREMACY_LEVEL));
@@ -1205,25 +1736,57 @@ function applyPromptOverrides(promptText, variant, promptMeta = {}) {
     if (DIRECT_CAMERA_GAZE_OVERRIDE) {
       rebuilt.push(buildDirectGazeRealismBlock(variant, PHYSICS_REALISM_OVERRIDE_LEVEL));
     }
-    return rebuilt.join('\n\n');
+    if (promptText?.trim()) {
+      rebuilt.push([
+        'PROMPT-SPECIFIC DIRECTIVES (MANDATORY):',
+        promptText.trim()
+      ].join('\n'));
+    }
+    const directionSupremacy = buildPromptDirectionSupremacyBlock(promptText, promptMeta, variant);
+    if (directionSupremacy) {
+      rebuilt.push(directionSupremacy);
+    }
+    let rebuiltPrompt = rebuilt.join('\n\n');
+    rebuiltPrompt = applySafePolicyHardening(rebuiltPrompt, variant);
+    rebuiltPrompt = enforcePromptWordTarget(rebuiltPrompt, variant, promptMeta);
+    return rebuiltPrompt;
   }
 
   let updated = promptText.trim();
-  if (ENABLE_IDENTITY_SUPREMACY_LOCK) {
-    updated = `${buildIdentitySupremacyBlock(variant, IDENTITY_SUPREMACY_LEVEL)}\n\n${updated}`;
-  }
-  if (PHYSICS_REALISM_PROMPT_HARD_MODE && PHYSICS_REALISM_PRIORITY_MULTIPLIER >= 2) {
-    updated = `${buildPhysicsRealismPriorityBlock(
-      variant,
-      PHYSICS_REALISM_PRIORITY_MULTIPLIER,
-      PHYSICS_REALISM_PROMPT_DENSITY
-    )}\n\n${updated}`;
-  }
-  if (DARING_EDITORIAL_MODE) {
-    updated = `${buildDaringEditorialBlock(variant, DARING_EDITORIAL_LEVEL)}\n\n${updated}`;
-  }
-  if (REFERENCE_IDENTITY_ONLY_LOCK || ATTIRE_REPLACEMENT_LOCK) {
-    updated = `${buildIdentityOnlyAttireReplacementLock(variant)}\n\n${updated}`;
+  if (PROMPT_FIRST_PRIORITY_MODE) {
+    if (ENABLE_IDENTITY_SUPREMACY_LOCK) {
+      updated = `${updated}\n\n${buildIdentitySupremacyBlock(variant, IDENTITY_SUPREMACY_LEVEL)}`;
+    }
+    if (PHYSICS_REALISM_PROMPT_HARD_MODE && PHYSICS_REALISM_PRIORITY_MULTIPLIER >= 2) {
+      updated = `${updated}\n\n${buildPhysicsRealismPriorityBlock(
+        variant,
+        PHYSICS_REALISM_PRIORITY_MULTIPLIER,
+        PHYSICS_REALISM_PROMPT_DENSITY
+      )}`;
+    }
+    if (DARING_EDITORIAL_MODE) {
+      updated = `${updated}\n\n${buildDaringEditorialBlock(variant, DARING_EDITORIAL_LEVEL)}`;
+    }
+    if (REFERENCE_IDENTITY_ONLY_LOCK || ATTIRE_REPLACEMENT_LOCK) {
+      updated = `${updated}\n\n${buildIdentityOnlyAttireReplacementLock(variant)}`;
+    }
+  } else {
+    if (ENABLE_IDENTITY_SUPREMACY_LOCK) {
+      updated = `${buildIdentitySupremacyBlock(variant, IDENTITY_SUPREMACY_LEVEL)}\n\n${updated}`;
+    }
+    if (PHYSICS_REALISM_PROMPT_HARD_MODE && PHYSICS_REALISM_PRIORITY_MULTIPLIER >= 2) {
+      updated = `${buildPhysicsRealismPriorityBlock(
+        variant,
+        PHYSICS_REALISM_PRIORITY_MULTIPLIER,
+        PHYSICS_REALISM_PROMPT_DENSITY
+      )}\n\n${updated}`;
+    }
+    if (DARING_EDITORIAL_MODE) {
+      updated = `${buildDaringEditorialBlock(variant, DARING_EDITORIAL_LEVEL)}\n\n${updated}`;
+    }
+    if (REFERENCE_IDENTITY_ONLY_LOCK || ATTIRE_REPLACEMENT_LOCK) {
+      updated = `${buildIdentityOnlyAttireReplacementLock(variant)}\n\n${updated}`;
+    }
   }
   if (ENABLE_FORENSIC_REALISM_TARGET) {
     updated = `${updated.trim()}\n\n${buildForensicRealismTargetBlock(FORENSIC_REALISM_TARGET_LEVEL)}`;
@@ -1237,6 +1800,12 @@ function applyPromptOverrides(promptText, variant, promptMeta = {}) {
   }
   if (SENSUAL_EDITORIAL_BOOST) {
     updated = `${updated.trim()}\n\n${buildSensualEditorialBlock(variant, SENSUAL_EDITORIAL_LEVEL)}`;
+  }
+  if (SENSUAL_VARIANCE_GUARD) {
+    const sensualVarianceBlock = buildSensualVarianceBlock(variant, SENSUAL_VARIANCE_LEVEL, promptMeta);
+    if (sensualVarianceBlock) {
+      updated = `${updated.trim()}\n\n${sensualVarianceBlock}`;
+    }
   }
   if (DIRECT_CAMERA_GAZE_OVERRIDE) {
     updated = `${updated.trim()}\n\n${buildDirectGazeRealismBlock(variant, PHYSICS_REALISM_OVERRIDE_LEVEL)}`;
@@ -1263,6 +1832,12 @@ function applyPromptOverrides(promptText, variant, promptMeta = {}) {
   if (sceneDirectorBlueprint) {
     updated = `${sceneDirectorBlueprint}\n\n${updated.trim()}`;
   }
+  const directionSupremacy = buildPromptDirectionSupremacyBlock(promptText, promptMeta, variant);
+  if (directionSupremacy) {
+    updated = `${updated.trim()}\n\n${directionSupremacy}`;
+  }
+  updated = applySafePolicyHardening(updated, variant);
+  updated = enforcePromptWordTarget(updated, variant, promptMeta);
   return updated;
 }
 
@@ -1358,7 +1933,17 @@ function parseHeuristicQualityPayload(text, minFields = SCORER_HEURISTIC_MIN_FIE
       /"photorealism"\s*:\s*([0-9]+(?:\.[0-9]+)?)/i,
       /photo[_\s-]*realism\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)/i
     ]),
-    physics: extractRegexNumber(raw, [/"physics"\s*:\s*([0-9]+(?:\.[0-9]+)?)/i, /physics[_\s-]*consistency\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)/i])
+    physics: extractRegexNumber(raw, [/"physics"\s*:\s*([0-9]+(?:\.[0-9]+)?)/i, /physics[_\s-]*consistency\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)/i]),
+    sceneAdherence: extractRegexNumber(raw, [
+      /"sceneAdherence"\s*:\s*([0-9]+(?:\.[0-9]+)?)/i,
+      /"scene_adherence"\s*:\s*([0-9]+(?:\.[0-9]+)?)/i,
+      /scene[_\s-]*adherence\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)/i
+    ]),
+    poseAdherence: extractRegexNumber(raw, [
+      /"poseAdherence"\s*:\s*([0-9]+(?:\.[0-9]+)?)/i,
+      /"pose_adherence"\s*:\s*([0-9]+(?:\.[0-9]+)?)/i,
+      /pose[_\s-]*adherence\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)/i
+    ])
   };
 
   const foundCount = Object.values(scores).filter(value => value !== null).length;
@@ -1388,10 +1973,10 @@ function parseHeuristicQualityPayload(text, minFields = SCORER_HEURISTIC_MIN_FIE
 
 function countParsedScoreFields(payload) {
   const scoreRoot = payload?.scores || payload || {};
-  const keys = ['identity', 'gaze', 'attireReplacement', 'edge', 'realism', 'physics'];
   let count = 0;
-  for (const key of keys) {
-    if (toScore(scoreRoot[key]) !== null) {
+  for (const aliases of Object.values(SCORE_FIELD_ALIASES)) {
+    const matched = aliases.some(alias => toScore(scoreRoot[alias]) !== null);
+    if (matched) {
       count += 1;
     }
   }
@@ -1424,7 +2009,7 @@ function buildScorerRepairPrompt({ scorerPrompt, invalidResponseText, attempt })
   return [
     'You are repairing invalid/truncated JSON from a visual QA scorer.',
     'Return ONLY one valid compact JSON object with this exact schema:',
-    '{"scores":{"identity":0,"gaze":0,"attireReplacement":0,"edge":0,"realism":0,"physics":0},"diagnostics":"max 18 words","rescueDirectives":["max 12 words"],"confidence":0.0}',
+    '{"scores":{"identity":0,"gaze":0,"attireReplacement":0,"edge":0,"realism":0,"physics":0,"sceneAdherence":0,"poseAdherence":0},"diagnostics":"max 18 words","rescueDirectives":["max 12 words"],"confidence":0.0}',
     '',
     'Rules:',
     '- Keep all score values numeric in [0,10].',
@@ -1450,12 +2035,14 @@ function clamp(value, min, max) {
 
 function qualityDimensionWeights() {
   const baseWeights = {
-    identity: 0.28,
-    gaze: 0.18,
+    identity: 0.24,
+    gaze: 0.14,
     attireReplacement: 0.08,
-    edge: 0.10,
-    realism: 0.18,
-    physics: 0.18
+    edge: 0.08,
+    realism: 0.14,
+    physics: 0.14,
+    sceneAdherence: 0.10,
+    poseAdherence: 0.08
   };
   return {
     ...baseWeights,
@@ -1467,12 +2054,14 @@ function qualityDimensionWeights() {
 
 function choiceDimensionWeights() {
   const baseWeights = {
-    identity: 0.42,
-    gaze: 0.16,
-    attireReplacement: 0.12,
+    identity: 0.34,
+    gaze: 0.12,
+    attireReplacement: 0.10,
     edge: 0.10,
     realism: 0.10,
-    physics: 0.10
+    physics: 0.10,
+    sceneAdherence: 0.08,
+    poseAdherence: 0.06
   };
   return {
     ...baseWeights,
@@ -1497,7 +2086,9 @@ function qualityThresholds() {
     attireReplacement: QUALITY_THRESHOLD_ATTIRE_REPLACEMENT,
     edge: QUALITY_THRESHOLD_EDGE,
     realism: QUALITY_THRESHOLD_REALISM,
-    physics: QUALITY_THRESHOLD_PHYSICS
+    physics: QUALITY_THRESHOLD_PHYSICS,
+    sceneAdherence: QUALITY_THRESHOLD_SCENE_ADHERENCE,
+    poseAdherence: QUALITY_THRESHOLD_POSE_ADHERENCE
   };
 }
 
@@ -1509,7 +2100,9 @@ function upliftTargets() {
     attireReplacement: UPLIFT_TARGET_ATTIRE,
     edge: UPLIFT_TARGET_EDGE,
     realism: UPLIFT_TARGET_REALISM,
-    physics: UPLIFT_TARGET_PHYSICS
+    physics: UPLIFT_TARGET_PHYSICS,
+    sceneAdherence: UPLIFT_TARGET_SCENE,
+    poseAdherence: UPLIFT_TARGET_POSE
   };
 }
 
@@ -1543,6 +2136,12 @@ function collectUpliftDeficiencies(quality) {
   if (clamp(Number(scores.physics) || 0, 0, 10) < targets.physics) {
     deficiencies.push(`physics<${targets.physics}`);
   }
+  if (clamp(Number(scores.sceneAdherence) || 0, 0, 10) < targets.sceneAdherence) {
+    deficiencies.push(`sceneAdherence<${targets.sceneAdherence}`);
+  }
+  if (clamp(Number(scores.poseAdherence) || 0, 0, 10) < targets.poseAdherence) {
+    deficiencies.push(`poseAdherence<${targets.poseAdherence}`);
+  }
   return deficiencies;
 }
 
@@ -1555,6 +2154,42 @@ function pickFirstScore(source, keys) {
     }
   }
   return null;
+}
+
+const PHYSICS_CHECKLIST_KEYS = [
+  'supportContact',
+  'nonPenetration',
+  'gravityDrape',
+  'lightShadowGeometry',
+  'materialResponse'
+];
+
+function parsePhysicsChecklist(value) {
+  const root = value && typeof value === 'object' ? value : {};
+  const checklist = {};
+  let found = 0;
+  for (const key of PHYSICS_CHECKLIST_KEYS) {
+    const score = toScore(root[key]);
+    if (score !== null) {
+      checklist[key] = score;
+      found += 1;
+    }
+  }
+  return found > 0 ? checklist : null;
+}
+
+function findPhysicsChecklistFailures(checklist, minScore = PHYSICS_CHECKLIST_MIN) {
+  if (!checklist || typeof checklist !== 'object') {
+    return [];
+  }
+  const failures = [];
+  for (const key of PHYSICS_CHECKLIST_KEYS) {
+    const value = checklist[key];
+    if (Number.isFinite(value) && clamp(value, 0, 10) < minScore) {
+      failures.push({ key, score: clamp(value, 0, 10), threshold: minScore });
+    }
+  }
+  return failures;
 }
 
 function normalizeRescueDirectives(value) {
@@ -1583,7 +2218,9 @@ function scoreQuality(qualityScores) {
     attireReplacement: 'attireReplacement',
     edge: 'edge',
     realism: 'realism',
-    physics: 'physics'
+    physics: 'physics',
+    sceneAdherence: 'sceneAdherence',
+    poseAdherence: 'poseAdherence'
   };
 
   const failedDimensions = [];
@@ -1613,8 +2250,28 @@ function scoreQuality(qualityScores) {
   };
 }
 
-function buildQualityScorerPrompt({ promptId, title, variant }) {
+function buildQualityScorerPrompt({ promptId, title, variant, promptIntentDigest }) {
   const thresholds = qualityThresholds();
+  if (SCORER_COMPACT_PROMPT) {
+    return [
+      'Strict visual QA. Return ONE compact JSON object only.',
+      'Score GENERATED image against REFERENCE identity and prompt intent.',
+      'Dimensions (0-10): identity, gaze, attireReplacement, edge, realism, physics, sceneAdherence, poseAdherence.',
+      'Checklist (0-10): supportContact, nonPenetration, gravityDrape, lightShadowGeometry, materialResponse.',
+      'Hard rules:',
+      '- If face mismatch is noticeable, identity <= 8.5.',
+      '- Penalize conservative outfit outcomes, scene drift, pose drift, and synthetic artifacts.',
+      '- If scene/hero props miss prompt anchors, cap sceneAdherence <= 8.2.',
+      '- If body language ignores prompt choreography, cap poseAdherence <= 8.2.',
+      '- If any checklist item clearly fails, cap physics <= 8.4 and realism <= 8.8.',
+      `Thresholds: identity>=${thresholds.identity}, gaze>=${thresholds.gaze}, attireReplacement>=${thresholds.attireReplacement}, edge>=${thresholds.edge}, realism>=${thresholds.realism}, physics>=${thresholds.physics}, sceneAdherence>=${thresholds.sceneAdherence}, poseAdherence>=${thresholds.poseAdherence}.`,
+      `Prompt metadata: id=${promptId}, title=${title}, variant=${variant}.`,
+      'Prompt intent digest:',
+      promptIntentDigest || '- unavailable',
+      'Output keys required: scores, physicsChecklist, diagnostics, rescueDirectives, confidence.',
+      'Keep response under 180 tokens.'
+    ].join('\n');
+  }
   return [
     'You are a strict visual QA evaluator for photoreal editorial portrait generation.',
     'Return ONLY compact JSON. No markdown, no prose outside JSON.',
@@ -1630,6 +2287,9 @@ function buildQualityScorerPrompt({ promptId, title, variant }) {
     '- edge: bold, skin-forward editorial styling impact while remaining non-explicit and fashion-forward.',
     '- realism: looks like real camera photography, not synthetic CGI.',
     '- physics: cloth/pose/lighting/material causality consistency, including stable garment-edge contact on exposed skin.',
+    '- sceneAdherence: prompt-specific setting and hero-prop match, including private intimate luxury-suite constraints.',
+    '- poseAdherence: prompt-specific pose choreography match (support contact, torsion cue, expressive hand action, leg-line mechanics).',
+    '- physicsChecklist: first-principles subscores for supportContact, nonPenetration, gravityDrape, lightShadowGeometry, materialResponse.',
     '',
     'Strict enforcement:',
     '- Identity is highest priority: if face mismatch is noticeable, score identity <= 8.5 and mark fail.',
@@ -1638,10 +2298,18 @@ function buildQualityScorerPrompt({ promptId, title, variant }) {
     '- Penalize any age/ethnicity/face-shape drift from the reference identity.',
     '- Penalize scene drift: if location/hero-prop intent is missed, reduce edge and realism scores.',
     '- Penalize conservative wardrobe outcomes: if the look lacks clear revealing editorial cues (high-cut line, side-waist cut, open-back/shoulder, sheer panel, or high slit), cap edge at <= 8.2.',
+    '- Penalize pose drift: if prompt-specific support-contact and limb choreography are missing, cap edge at <= 8.1 and physics at <= 8.8.',
+    '- Penalize wardrobe drift: if prompt-specific silhouette/cutline details are missing, cap attireReplacement at <= 8.8 and edge at <= 8.2.',
+    '- Penalize generic homogenization: if output defaults to a generic neutral stance not matching prompt intent, cap edge at <= 8.0.',
+    '- Penalize weak scene match: if prompt-specific suite location and hero props are missing/substituted, cap sceneAdherence at <= 8.2.',
+    '- Penalize weak pose match: if support-contact/torsion/expressive-hand/leg-line anchors are absent, cap poseAdherence at <= 8.2.',
     '- Penalize missing micro-cues in critical zones (slit boundary, hosiery band, knee contour, ankle/instep, heel-floor contact).',
+    '- First-principles checklist gate: if any checklist item clearly fails, cap physics <= 8.4 and realism <= 8.8.',
     '- Cap realism/physics below 9.0 when textures look smoothed, tiled, or detached from lighting/contact behavior.',
     '',
     `Prompt metadata: id=${promptId}, title=${title}, variant=${variant}`,
+    'Prompt intent digest (scene, wardrobe, and pose anchors that must be visible):',
+    promptIntentDigest || '- Intent digest unavailable; infer cautiously from metadata.',
     'Thresholds:',
     `- identity >= ${thresholds.identity}`,
     `- gaze >= ${thresholds.gaze}`,
@@ -1649,6 +2317,8 @@ function buildQualityScorerPrompt({ promptId, title, variant }) {
     `- edge >= ${thresholds.edge}`,
     `- realism >= ${thresholds.realism}`,
     `- physics >= ${thresholds.physics}`,
+    `- sceneAdherence >= ${thresholds.sceneAdherence}`,
+    `- poseAdherence >= ${thresholds.poseAdherence}`,
     '',
     'Output schema (single object only):',
     '{',
@@ -1658,7 +2328,16 @@ function buildQualityScorerPrompt({ promptId, title, variant }) {
     '    "attireReplacement": 0,',
     '    "edge": 0,',
     '    "realism": 0,',
-    '    "physics": 0',
+    '    "physics": 0,',
+    '    "sceneAdherence": 0,',
+    '    "poseAdherence": 0',
+    '  },',
+    '  "physicsChecklist": {',
+    '    "supportContact": 0,',
+    '    "nonPenetration": 0,',
+    '    "gravityDrape": 0,',
+    '    "lightShadowGeometry": 0,',
+    '    "materialResponse": 0',
     '  },',
     '  "diagnostics": "max 18 words",',
     '  "rescueDirectives": ["max 12 words", "max 12 words", "max 12 words"],',
@@ -1666,7 +2345,7 @@ function buildQualityScorerPrompt({ promptId, title, variant }) {
     '}',
     '',
     'Example valid output:',
-    '{"scores":{"identity":9.2,"gaze":9.0,"attireReplacement":9.4,"edge":9.1,"realism":9.0,"physics":9.1},"diagnostics":"Strong identity and coherent scene physics.","rescueDirectives":["tighten lens-locked gaze","increase slit-edge pressure cues","reduce synthetic smoothing"],"confidence":0.93}',
+    '{"scores":{"identity":9.2,"gaze":9.0,"attireReplacement":9.4,"edge":9.1,"realism":9.0,"physics":9.1,"sceneAdherence":9.2,"poseAdherence":9.1},"physicsChecklist":{"supportContact":9.1,"nonPenetration":9.0,"gravityDrape":9.2,"lightShadowGeometry":8.9,"materialResponse":9.0},"diagnostics":"Strong identity and coherent scene physics.","rescueDirectives":["tighten lens-locked gaze","increase slit-edge pressure cues","reduce synthetic smoothing"],"confidence":0.93}',
     '',
     'Directives must be non-explicit and physics-driven.',
     'Keep total response under 220 tokens.',
@@ -1679,7 +2358,8 @@ async function requestScorerApi({
   parts,
   maxOutputTokens,
   temperature = 0,
-  responseMimeType = 'application/json'
+  responseMimeType = 'application/json',
+  responseSchema = null
 }) {
   const payload = {
     contents: [
@@ -1694,11 +2374,15 @@ async function requestScorerApi({
       responseMimeType
     }
   };
+  if (responseSchema) {
+    payload.generationConfig.responseSchema = responseSchema;
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let response;
   let responseText = '';
+  let responseHeaders = null;
 
   try {
     response = await fetch(SCORER_ENDPOINT, {
@@ -1714,15 +2398,17 @@ async function requestScorerApi({
           : {})
       },
       body: JSON.stringify(payload),
-      ...(HTTP_CACHE_BYPASS ? { cache: 'no-store' } : {}),
+        ...(HTTP_CACHE_BYPASS ? { cache: 'no-store' } : {}),
       signal: controller.signal
     });
+    responseHeaders = extractCacheDiagnosticHeaders(response.headers);
     responseText = await response.text();
   } catch (error) {
     return {
       ok: false,
       errorType: 'network',
-      message: error instanceof Error ? error.message : String(error)
+      message: error instanceof Error ? error.message : String(error),
+      responseHeaders
     };
   } finally {
     clearTimeout(timeout);
@@ -1743,19 +2429,21 @@ async function requestScorerApi({
       errorType: 'http',
       status: response.status,
       statusText: response.statusText,
-      responseSnippet: responseText.slice(0, 4000)
+      responseSnippet: responseText.slice(0, 4000),
+      responseHeaders
     };
   }
 
   return {
     ok: true,
     body,
-    responseText
+    responseText,
+    responseHeaders
   };
 }
 
 async function callScorerModel({ scorerPrompt, referenceInlineData, generatedImagePart }) {
-  const accessToken = await auth.getAccessToken();
+  const accessToken = await getAccessToken();
   if (!accessToken) {
     return {
       ok: false,
@@ -1772,7 +2460,8 @@ async function callScorerModel({ scorerPrompt, referenceInlineData, generatedIma
       { inlineData: generatedImagePart.inlineData }
     ],
     maxOutputTokens: QUALITY_GATE_MAX_OUTPUT_TOKENS,
-    temperature: 0
+    temperature: 0,
+    responseSchema: SCORER_FORCE_SCHEMA ? SCORER_RESPONSE_SCHEMA : null
   });
 
   if (!primaryRequest.ok) {
@@ -1780,10 +2469,11 @@ async function callScorerModel({ scorerPrompt, referenceInlineData, generatedIma
   }
 
   let deferredHeuristic = null;
+  let workingText = '';
   const maybeStoreHeuristic = (candidate, rawText, parserName) => {
     if (candidate.parser !== 'heuristic') return null;
     const scoreFieldCount = Number.isFinite(candidate.scoreFieldCount) ? candidate.scoreFieldCount : 0;
-    if (scoreFieldCount >= 6) {
+    if (scoreFieldCount >= REQUIRED_SCORER_SCORE_FIELDS) {
       return {
         ok: true,
         parsed: candidate.parsed,
@@ -1802,38 +2492,101 @@ async function callScorerModel({ scorerPrompt, referenceInlineData, generatedIma
     return null;
   };
 
-  const primaryTexts = collectTextParts(primaryRequest.body);
-  for (const text of primaryTexts) {
-    const parsedCandidate = tryParseQualityPayload(text);
-    if (!parsedCandidate) continue;
-    if (parsedCandidate.parser === 'json') {
+  const resolveParsedFromRequest = (request, parserPrefix = '') => {
+    const withPrefix = (parserName) => (parserPrefix ? `${parserPrefix}-${parserName}` : parserName);
+    let localWorkingText = '';
+    const texts = collectTextParts(request.body);
+    for (const text of texts) {
+      const parsedCandidate = tryParseQualityPayload(text);
+      if (!parsedCandidate) continue;
+      if (parsedCandidate.parser === 'json') {
+        if ((parsedCandidate.scoreFieldCount || 0) < REQUIRED_SCORER_SCORE_FIELDS) {
+          if (!localWorkingText) {
+            localWorkingText = text;
+          }
+          continue;
+        }
+        return {
+          ok: true,
+          parsed: parsedCandidate.parsed,
+          rawText: text,
+          parser: withPrefix('json'),
+          responseHeaders: request.responseHeaders || null
+        };
+      }
+      const completeHeuristic = maybeStoreHeuristic(parsedCandidate, text, withPrefix('heuristic'));
+      if (completeHeuristic) {
+        return {
+          ...completeHeuristic,
+          responseHeaders: request.responseHeaders || null
+        };
+      }
+    }
+
+    if (!localWorkingText) {
+      localWorkingText = texts.join('\n').trim() || request.responseText || '';
+    }
+    if (localWorkingText) {
+      workingText = localWorkingText;
+    }
+    const parsedFallback = tryParseQualityPayload(localWorkingText);
+    if (!parsedFallback) {
+      return null;
+    }
+    if (parsedFallback.parser === 'json') {
+      if ((parsedFallback.scoreFieldCount || 0) < REQUIRED_SCORER_SCORE_FIELDS) {
+        return null;
+      }
       return {
         ok: true,
-        parsed: parsedCandidate.parsed,
-        rawText: text,
-        parser: parsedCandidate.parser
+        parsed: parsedFallback.parsed,
+        rawText: localWorkingText,
+        parser: withPrefix('json'),
+        responseHeaders: request.responseHeaders || null
       };
     }
-    const completeHeuristic = maybeStoreHeuristic(parsedCandidate, text, 'heuristic');
+    const completeHeuristic = maybeStoreHeuristic(parsedFallback, localWorkingText, withPrefix('heuristic'));
     if (completeHeuristic) {
-      return completeHeuristic;
+      return {
+        ...completeHeuristic,
+        responseHeaders: request.responseHeaders || null
+      };
     }
+    return null;
+  };
+
+  const primaryResolved = resolveParsedFromRequest(primaryRequest);
+  if (primaryResolved) {
+    return primaryResolved;
   }
 
-  let workingText = primaryTexts.join('\n').trim() || primaryRequest.responseText || '';
-  const primaryFallback = tryParseQualityPayload(workingText);
-  if (primaryFallback) {
-    if (primaryFallback.parser === 'json') {
-      return {
-        ok: true,
-        parsed: primaryFallback.parsed,
-        rawText: workingText,
-        parser: primaryFallback.parser
-      };
-    }
-    const completeHeuristic = maybeStoreHeuristic(primaryFallback, workingText, 'heuristic');
-    if (completeHeuristic) {
-      return completeHeuristic;
+  if (SCORER_PARSE_REQUERY_ON_FAIL) {
+    const requeryPrompt = [
+      scorerPrompt,
+      '',
+      'REQUERY MODE:',
+      '- Emit exactly one valid compact JSON object with required keys.',
+      '- No prose, no markdown, no code fences.',
+      '- Keep diagnostics short and directives concise.'
+    ].join('\n');
+    const requeryRequest = await requestScorerApi({
+      accessToken,
+      parts: [
+        { text: requeryPrompt },
+        { inlineData: referenceInlineData },
+        { inlineData: generatedImagePart.inlineData }
+      ],
+      maxOutputTokens: SCORER_PARSE_REQUERY_MAX_OUTPUT_TOKENS,
+      temperature: 0,
+      responseSchema: null
+    });
+    if (requeryRequest.ok) {
+      const requeryResolved = resolveParsedFromRequest(requeryRequest, 'requery');
+      if (requeryResolved) {
+        return requeryResolved;
+      }
+    } else if (!workingText && requeryRequest.responseSnippet) {
+      workingText = String(requeryRequest.responseSnippet);
     }
   }
 
@@ -1848,7 +2601,8 @@ async function callScorerModel({ scorerPrompt, referenceInlineData, generatedIma
       accessToken,
       parts: [{ text: repairPrompt }],
       maxOutputTokens: SCORER_REPAIR_MAX_OUTPUT_TOKENS,
-      temperature: 0
+      temperature: 0,
+      responseSchema: SCORER_FORCE_SCHEMA ? SCORER_RESPONSE_SCHEMA : null
     });
 
     if (!repairRequest.ok) {
@@ -1860,16 +2614,26 @@ async function callScorerModel({ scorerPrompt, referenceInlineData, generatedIma
       const repaired = tryParseQualityPayload(repairText);
       if (!repaired) continue;
       if (repaired.parser === 'json') {
+        if ((repaired.scoreFieldCount || 0) < REQUIRED_SCORER_SCORE_FIELDS) {
+          if (repairText) {
+            workingText = repairText;
+          }
+          continue;
+        }
         return {
           ok: true,
           parsed: repaired.parsed,
           rawText: repairText,
-          parser: 'repair-json'
+          parser: 'repair-json',
+          responseHeaders: repairRequest.responseHeaders || null
         };
       }
       const completeHeuristic = maybeStoreHeuristic(repaired, repairText, 'repair-heuristic');
       if (completeHeuristic) {
-        return completeHeuristic;
+        return {
+          ...completeHeuristic,
+          responseHeaders: repairRequest.responseHeaders || null
+        };
       }
     }
 
@@ -1877,16 +2641,27 @@ async function callScorerModel({ scorerPrompt, referenceInlineData, generatedIma
     const repairedFallback = tryParseQualityPayload(joinedRepairText);
     if (repairedFallback) {
       if (repairedFallback.parser === 'json') {
-        return {
-          ok: true,
-          parsed: repairedFallback.parsed,
-          rawText: joinedRepairText,
-          parser: 'repair-json'
-        };
-      }
-      const completeHeuristic = maybeStoreHeuristic(repairedFallback, joinedRepairText, 'repair-heuristic');
-      if (completeHeuristic) {
-        return completeHeuristic;
+        if ((repairedFallback.scoreFieldCount || 0) < REQUIRED_SCORER_SCORE_FIELDS) {
+          if (joinedRepairText) {
+            workingText = joinedRepairText;
+          }
+        } else {
+          return {
+            ok: true,
+            parsed: repairedFallback.parsed,
+            rawText: joinedRepairText,
+            parser: 'repair-json',
+            responseHeaders: repairRequest.responseHeaders || null
+          };
+        }
+      } else {
+        const completeHeuristic = maybeStoreHeuristic(repairedFallback, joinedRepairText, 'repair-heuristic');
+        if (completeHeuristic) {
+          return {
+            ...completeHeuristic,
+            responseHeaders: repairRequest.responseHeaders || null
+          };
+        }
       }
     }
 
@@ -1895,19 +2670,15 @@ async function callScorerModel({ scorerPrompt, referenceInlineData, generatedIma
     }
   }
 
-  if (deferredHeuristic) {
-    return {
-      ok: true,
-      parsed: deferredHeuristic.parsed,
-      rawText: deferredHeuristic.rawText,
-      parser: `${deferredHeuristic.parser}-partial`
-    };
+  if (deferredHeuristic?.rawText && !workingText) {
+    workingText = deferredHeuristic.rawText;
   }
 
   return {
     ok: false,
     errorType: 'parse',
-    responseSnippet: String(workingText || primaryRequest.responseText || '').slice(0, 2000)
+    responseSnippet: String(workingText || primaryRequest.responseText || '').slice(0, 2000),
+    responseHeaders: primaryRequest.responseHeaders || null
   };
 }
 
@@ -1915,6 +2686,7 @@ async function evaluateImageQuality({
   promptId,
   title,
   variant,
+  promptIntentDigest,
   referenceInlineData,
   imagePart
 }) {
@@ -1927,11 +2699,13 @@ async function evaluateImageQuality({
       failedDimensions: [],
       overallScore: null,
       diagnostics: null,
-      rescueDirectives: []
+      rescueDirectives: [],
+      physicsChecklist: null,
+      physicsChecklistFailures: []
     };
   }
 
-  const scorerPrompt = buildQualityScorerPrompt({ promptId, title, variant });
+  const scorerPrompt = buildQualityScorerPrompt({ promptId, title, variant, promptIntentDigest });
   const scoreResult = await callScorerModel({
     scorerPrompt,
     referenceInlineData,
@@ -1948,25 +2722,30 @@ async function evaluateImageQuality({
         status: scoreResult.status || null,
         statusText: scoreResult.statusText || null,
         message: scoreResult.message || null,
-        responseSnippet: scoreResult.responseSnippet || null
+        responseSnippet: scoreResult.responseSnippet || null,
+        responseHeaders: scoreResult.responseHeaders || null
       },
       scores: null,
       failedDimensions: [],
       overallScore: null,
       diagnostics: 'scorer unavailable',
-      rescueDirectives: []
+      rescueDirectives: [],
+      physicsChecklist: null,
+      physicsChecklistFailures: []
     };
   }
 
   const parsed = scoreResult.parsed || {};
   const scoresRoot = parsed.scores || parsed;
   const scores = {
-    identity: pickFirstScore(scoresRoot, ['identity', 'identityMatch', 'identity_match']),
-    gaze: pickFirstScore(scoresRoot, ['gaze', 'directGaze', 'direct_camera_gaze']),
-    attireReplacement: pickFirstScore(scoresRoot, ['attireReplacement', 'attire_replacement', 'wardrobeReplacement']),
-    edge: pickFirstScore(scoresRoot, ['edge', 'editorialEdge', 'editorial_edge']),
-    realism: pickFirstScore(scoresRoot, ['realism', 'photorealism', 'photoRealism']),
-    physics: pickFirstScore(scoresRoot, ['physics', 'physicsConsistency', 'physics_consistency'])
+    identity: pickFirstScore(scoresRoot, SCORE_FIELD_ALIASES.identity),
+    gaze: pickFirstScore(scoresRoot, SCORE_FIELD_ALIASES.gaze),
+    attireReplacement: pickFirstScore(scoresRoot, SCORE_FIELD_ALIASES.attireReplacement),
+    edge: pickFirstScore(scoresRoot, SCORE_FIELD_ALIASES.edge),
+    realism: pickFirstScore(scoresRoot, SCORE_FIELD_ALIASES.realism),
+    physics: pickFirstScore(scoresRoot, SCORE_FIELD_ALIASES.physics),
+    sceneAdherence: pickFirstScore(scoresRoot, SCORE_FIELD_ALIASES.sceneAdherence),
+    poseAdherence: pickFirstScore(scoresRoot, SCORE_FIELD_ALIASES.poseAdherence)
   };
 
   const missingScoreKeys = Object.entries(scores)
@@ -1981,13 +2760,16 @@ async function evaluateImageQuality({
       scorerError: {
         errorType: 'parse',
         message: `Incomplete scorer payload (missing score fields): ${missingScoreKeys.join(', ')}`,
-        responseSnippet: scoreResult.rawText ? String(scoreResult.rawText).slice(0, 2000) : null
+        responseSnippet: scoreResult.rawText ? String(scoreResult.rawText).slice(0, 2000) : null,
+        responseHeaders: scoreResult.responseHeaders || null
       },
       scores,
       failedDimensions: [],
       overallScore: null,
       diagnostics: 'scorer incomplete',
       rescueDirectives: [],
+      physicsChecklist: null,
+      physicsChecklistFailures: [],
       confidence: clamp(Number(parsed.confidence) || 0, 0, 1),
       raw: parsed
     };
@@ -2004,19 +2786,64 @@ async function evaluateImageQuality({
       scorerError: {
         errorType: 'parse',
         message: 'Rejected scorer payload with all-zero scores (likely repair artifact)',
-        responseSnippet: scoreResult.rawText ? String(scoreResult.rawText).slice(0, 2000) : null
+        responseSnippet: scoreResult.rawText ? String(scoreResult.rawText).slice(0, 2000) : null,
+        responseHeaders: scoreResult.responseHeaders || null
       },
       scores,
       failedDimensions: [],
       overallScore: null,
       diagnostics: 'scorer invalid',
       rescueDirectives: [],
+      physicsChecklist: null,
+      physicsChecklistFailures: [],
       confidence: clamp(Number(parsed.confidence) || 0, 0, 1),
       raw: parsed
     };
   }
 
+  const minScore = Math.min(...scoreValues);
+  const maxScore = Math.max(...scoreValues);
+  const nearUniformScores = Number.isFinite(minScore) && Number.isFinite(maxScore) && (maxScore - minScore) <= 0.15;
+  const looksLikeRepairArtifact = String(scoreResult.parser || '').startsWith('repair');
+  if (nearUniformScores && looksLikeRepairArtifact) {
+    return {
+      enabled: true,
+      pass: false,
+      scorerAvailable: false,
+      scorerParser: scoreResult.parser || 'unknown',
+      scorerError: {
+        errorType: 'parse',
+        message: 'Rejected near-uniform repaired scores (likely repair artifact)',
+        responseSnippet: scoreResult.rawText ? String(scoreResult.rawText).slice(0, 2000) : null,
+        responseHeaders: scoreResult.responseHeaders || null
+      },
+      scores,
+      failedDimensions: [],
+      overallScore: null,
+      diagnostics: 'scorer invalid',
+      rescueDirectives: [],
+      physicsChecklist: null,
+      physicsChecklistFailures: [],
+      confidence: clamp(Number(parsed.confidence) || 0, 0, 1),
+      raw: parsed
+    };
+  }
+
+  const physicsChecklist = parsePhysicsChecklist(parsed.physicsChecklist || parsed.physics_checklist);
+  const physicsChecklistFailures = PHYSICS_CHECKLIST_ENFORCE
+    ? findPhysicsChecklistFailures(physicsChecklist, PHYSICS_CHECKLIST_MIN)
+    : [];
   const quality = scoreQuality(scores);
+  if (physicsChecklistFailures.length) {
+    const minChecklistScore = Math.min(...physicsChecklistFailures.map(item => item.score));
+    quality.pass = false;
+    quality.failedDimensions.push({
+      key: 'physicsChecklist',
+      label: 'physicsChecklist',
+      score: Number.isFinite(minChecklistScore) ? minChecklistScore : 0,
+      threshold: PHYSICS_CHECKLIST_MIN
+    });
+  }
   const rescueDirectives = normalizeRescueDirectives(parsed.rescueDirectives || parsed.rescue_directives);
   return {
     enabled: true,
@@ -2028,18 +2855,83 @@ async function evaluateImageQuality({
     overallScore: quality.overallScore,
     diagnostics: typeof parsed.diagnostics === 'string' ? parsed.diagnostics.trim() : null,
     rescueDirectives,
+    physicsChecklist,
+    physicsChecklistFailures,
     confidence: clamp(Number(parsed.confidence) || 0, 0, 1),
     raw: parsed
   };
 }
 
+async function evaluateImageQualityWithSelfHealing({
+  promptId,
+  title,
+  variant,
+  promptIntentDigest,
+  referenceInlineData,
+  imagePart,
+  logLabel
+}) {
+  let quality = await evaluateImageQuality({
+    promptId,
+    title,
+    variant,
+    promptIntentDigest,
+    referenceInlineData,
+    imagePart
+  });
+
+  if (!ENABLE_QUALITY_GATE || quality.scorerAvailable || SCORER_SELF_HEAL_RETRIES <= 0) {
+    return quality;
+  }
+
+  let retriesRemaining = SCORER_SELF_HEAL_RETRIES;
+  while (
+    retriesRemaining > 0
+    && !quality.scorerAvailable
+    && quality.scorerError?.errorType === 'parse'
+  ) {
+    const attemptNumber = (SCORER_SELF_HEAL_RETRIES - retriesRemaining) + 1;
+    if (logLabel) {
+      log(`${logLabel}: scorer parse issue, self-heal retry ${attemptNumber}/${SCORER_SELF_HEAL_RETRIES}`);
+    }
+
+    const rescored = await evaluateImageQuality({
+      promptId,
+      title,
+      variant,
+      promptIntentDigest,
+      referenceInlineData,
+      imagePart
+    });
+
+    quality = rescored;
+    if (quality.scorerAvailable) {
+      if (logLabel) {
+        log(`${logLabel}: scorer self-heal recovered`);
+      }
+      break;
+    }
+
+    retriesRemaining -= 1;
+  }
+
+  return quality;
+}
+
 function buildPrimaryRescuePrompt({ basePrompt, qualityEvaluation, rescueRound = 1 }) {
   const failingLabels = qualityEvaluation.failedDimensions.map(item => item.label);
+  const checklistFailureKeys = Array.isArray(qualityEvaluation.physicsChecklistFailures)
+    ? qualityEvaluation.physicsChecklistFailures.map(item => item.key)
+    : [];
+  if (checklistFailureKeys.length) {
+    failingLabels.push(`physicsChecklist(${checklistFailureKeys.join(',')})`);
+  }
   const fallbackDirectives = [
     'Tighten identity lock to the reference face geometry and expression micro-details.',
     'Force unmistakable direct lens-locked eye alignment with natural vergence.',
     'Lock the explicit prompt scene anchor (location and hero props) so the final frame clearly matches the intended set.',
-    'Replace any source-style clothing cues with clear upscale editorial cocktail styling.',
+    'Honor prompt-specific wardrobe descriptors exactly; avoid generic template substitutions.',
+    'Honor prompt-specific pose choreography (support contact, torsion, expressive hand, leg-line mechanics).',
     'Increase skin-forward but non-explicit cut architecture: shoulders, upper back, waist windows, and leg-line clarity.',
     'Increase physical causality in cloth strain, seam tension, support anchors, and material highlights at slit, hosiery band, knee, ankle, and heel contact zones.',
     'Increase micro-detail density by one tier: stitch continuity, pore breakup, hair flyaways, and contact-shadow pockets must all be visible.',
@@ -2066,6 +2958,31 @@ function buildPrimaryRescuePrompt({ basePrompt, qualityEvaluation, rescueRound =
       'Ensure every critical zone has dense contact cues, not texture-only detail.'
     );
   }
+  if (checklistFailureKeys.includes('supportContact')) {
+    targetedDirectives.push(
+      'Fix support-contact mechanics: center of mass projection must land on true support with visible compression cues.'
+    );
+  }
+  if (checklistFailureKeys.includes('nonPenetration')) {
+    targetedDirectives.push(
+      'Eliminate all interpenetration and float errors at limbs, garment boundaries, and contact surfaces.'
+    );
+  }
+  if (checklistFailureKeys.includes('gravityDrape')) {
+    targetedDirectives.push(
+      'Recompute gravity-consistent drape so slit, hem, and hosiery deformation follow one gravity vector.'
+    );
+  }
+  if (checklistFailureKeys.includes('lightShadowGeometry')) {
+    targetedDirectives.push(
+      'Align key-light direction, catchlights, and cast-shadow geometry across face, torso, legs, and environment.'
+    );
+  }
+  if (checklistFailureKeys.includes('materialResponse')) {
+    targetedDirectives.push(
+      'Correct material optics so sheen and roughness response match satin, mesh, hosiery, and metal surfaces.'
+    );
+  }
   if (failingKeys.has('realism')) {
     targetedDirectives.push(
       'Increase camera-authentic detail: natural skin texture, non-repeating fabric fibers, and coherent depth-of-field transitions.'
@@ -2084,6 +3001,16 @@ function buildPrimaryRescuePrompt({ basePrompt, qualityEvaluation, rescueRound =
   if (failingKeys.has('attireReplacement')) {
     targetedDirectives.push(
       'Force complete wardrobe replacement with clear two-piece topology and no carryover from source casual clothing.'
+    );
+  }
+  if (failingKeys.has('sceneAdherence')) {
+    targetedDirectives.push(
+      'Rebuild exact prompt scene anchors (intimate luxury-suite location, hero props, and light logic); do not substitute generic venues.'
+    );
+  }
+  if (failingKeys.has('poseAdherence')) {
+    targetedDirectives.push(
+      'Rebuild exact prompt pose choreography: one active support contact, one torsion cue, one expressive hand action, and one leg-line mechanic.'
     );
   }
   if (failingKeys.has('edge')) {
@@ -2130,8 +3057,16 @@ function compareQualityForChoice(candidateA, candidateB) {
   const bGaze = clamp(Number(bScores.gaze) || 0, 0, 10);
   const aEdge = clamp(Number(aScores.edge) || 0, 0, 10);
   const bEdge = clamp(Number(bScores.edge) || 0, 0, 10);
+  const aScene = clamp(Number(aScores.sceneAdherence) || 0, 0, 10);
+  const bScene = clamp(Number(bScores.sceneAdherence) || 0, 0, 10);
+  const aPose = clamp(Number(aScores.poseAdherence) || 0, 0, 10);
+  const bPose = clamp(Number(bScores.poseAdherence) || 0, 0, 10);
   const identityDrop = aIdentity - bIdentity;
   const gazeDrop = aGaze - bGaze;
+  const scenePoseGain = (bScene + bPose) - (aScene + aPose);
+  if (scenePoseGain >= 0.3 && identityDrop <= 0.15 && gazeDrop <= 0.15) {
+    return candidateB;
+  }
   if (PHYSICS_REALISM_PRIORITY_MULTIPLIER >= 3) {
     const aRealism = clamp(Number(aScores.realism) || 0, 0, 10);
     const aPhysics = clamp(Number(aScores.physics) || 0, 0, 10);
@@ -2161,13 +3096,17 @@ function compareQualityForChoice(candidateA, candidateB) {
     + clamp(Number(aScores.attireReplacement) || 0, 0, 10) * weights.attireReplacement
     + clamp(Number(aScores.edge) || 0, 0, 10) * weights.edge
     + clamp(Number(aScores.realism) || 0, 0, 10) * weights.realism
-    + clamp(Number(aScores.physics) || 0, 0, 10) * weights.physics;
+    + clamp(Number(aScores.physics) || 0, 0, 10) * weights.physics
+    + clamp(Number(aScores.sceneAdherence) || 0, 0, 10) * weights.sceneAdherence
+    + clamp(Number(aScores.poseAdherence) || 0, 0, 10) * weights.poseAdherence;
   const bGoalPriority = clamp(Number(bScores.identity) || 0, 0, 10) * weights.identity
     + clamp(Number(bScores.gaze) || 0, 0, 10) * weights.gaze
     + clamp(Number(bScores.attireReplacement) || 0, 0, 10) * weights.attireReplacement
     + clamp(Number(bScores.edge) || 0, 0, 10) * weights.edge
     + clamp(Number(bScores.realism) || 0, 0, 10) * weights.realism
-    + clamp(Number(bScores.physics) || 0, 0, 10) * weights.physics;
+    + clamp(Number(bScores.physics) || 0, 0, 10) * weights.physics
+    + clamp(Number(bScores.sceneAdherence) || 0, 0, 10) * weights.sceneAdherence
+    + clamp(Number(bScores.poseAdherence) || 0, 0, 10) * weights.poseAdherence;
   if (bGoalPriority > aGoalPriority + 0.035) {
     return candidateB;
   }
@@ -2204,11 +3143,15 @@ function isEdgeFirstAcceptable(quality) {
   const identity = clamp(Number(scores.identity) || 0, 0, 10);
   const gaze = clamp(Number(scores.gaze) || 0, 0, 10);
   const attireReplacement = clamp(Number(scores.attireReplacement) || 0, 0, 10);
+  const sceneAdherence = clamp(Number(scores.sceneAdherence) || 0, 0, 10);
+  const poseAdherence = clamp(Number(scores.poseAdherence) || 0, 0, 10);
   return (
     edge >= EDGE_FIRST_ACCEPTANCE_EDGE_MIN
     && identity >= EDGE_FIRST_ACCEPTANCE_IDENTITY_MIN
     && gaze >= EDGE_FIRST_ACCEPTANCE_GAZE_MIN
     && attireReplacement >= EDGE_FIRST_ACCEPTANCE_ATTIRE_MIN
+    && sceneAdherence >= EDGE_FIRST_ACCEPTANCE_SCENE_MIN
+    && poseAdherence >= EDGE_FIRST_ACCEPTANCE_POSE_MIN
   );
 }
 
@@ -2220,7 +3163,7 @@ function isQualityAcceptableForFinal(quality, variant = 'primary') {
     return true;
   }
   if (!quality.scorerAvailable) {
-    return false;
+    return SCORER_UNAVAILABLE_POLICY === 'soft_accept';
   }
   if (variant === 'primary' && isEdgeFirstAcceptable(quality)) {
     return true;
@@ -2229,7 +3172,7 @@ function isQualityAcceptableForFinal(quality, variant = 'primary') {
 }
 
 function parsePromptSections(markdown) {
-  const headingRegex = /^## Prompt\s+(\d{2})\s+-\s+(.+)$/gm;
+  const headingRegex = /^## Prompt\s+(\d{2,3})\s+-\s+(.+)$/gm;
   const headings = [];
   let match;
   while ((match = headingRegex.exec(markdown)) !== null) {
@@ -2281,6 +3224,97 @@ function parsePromptSections(markdown) {
   return sections;
 }
 
+function extractPromptIntentDigest(promptText, maxChars = SCORER_INTENT_DIGEST_MAX_CHARS) {
+  const rawLines = String(promptText || '')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+  if (!rawLines.length) {
+    return '';
+  }
+
+  const sectionRules = [
+    { key: 'scene', regex: /^scene\s*:/i },
+    { key: 'wardrobe', regex: /^wardrobe\s*:/i },
+    { key: 'pose', regex: /^pose(?:\s+and\s+framing)?\s*:/i },
+    {
+      key: 'physics',
+      regex: /^(?:micro-physics(?:\s+realism\s+checks)?|physics(?:\s+and\s+micro(?:detail|[-\s]detail))?\s+checks?|first-principles physics checklist)\s*:/i
+    },
+    {
+      key: 'lightTransport',
+      regex: /^(?:light-transport checks|lighting physics checks|shadow coherence checks)\s*:/i
+    },
+    {
+      key: 'failureHotspots',
+      regex: /^failure hotspots(?:\s+to\s+avoid)?\s*:/i
+    },
+    { key: 'reject', regex: /^reject\s*:/i }
+  ];
+  const ignorePatterns = [
+    /^performance patch/i,
+    /^safe performance patch/i,
+    /^devils-advocate/i,
+    /^adult subject only/i,
+    /^identity(?:\s+lock|\s+and\s+gaze)?\s*:/i,
+    /^camera\s*:/i,
+    /^run uniqueness token/i,
+    /^token=/i,
+    /^---$/
+  ];
+
+  let activeSection = '';
+  const picked = [];
+  for (const rawLine of rawLines) {
+    const line = rawLine.replace(/\s+/g, ' ').trim();
+    if (!line || ignorePatterns.some(pattern => pattern.test(line))) {
+      continue;
+    }
+
+    const sectionMatch = sectionRules.find(rule => rule.regex.test(line));
+    if (sectionMatch) {
+      activeSection = sectionMatch.key;
+      picked.push(line);
+      continue;
+    }
+
+    if (/^#+\s+/.test(line)) {
+      activeSection = '';
+      continue;
+    }
+
+    if (line.startsWith('- ')) {
+      if (activeSection) {
+        picked.push(line);
+      }
+      continue;
+    }
+
+    if (activeSection) {
+      picked.push(`- ${line}`);
+    }
+  }
+
+  const deduped = [];
+  const seen = new Set();
+  for (const line of picked) {
+    const key = line.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(line);
+    }
+  }
+
+  const digest = deduped.slice(0, 30).join('\n');
+  if (!digest) {
+    return '';
+  }
+  if (digest.length <= maxChars) {
+    return digest;
+  }
+  return `${digest.slice(0, maxChars - 3)}...`;
+}
+
 async function loadReferenceInlineData(referenceImagePath) {
   const buffer = await fs.readFile(referenceImagePath);
   const mimeType = extToMime(referenceImagePath);
@@ -2293,7 +3327,7 @@ async function loadReferenceInlineData(referenceImagePath) {
 async function callImageModel({ promptText, referenceInlineData, label }) {
   await waitBeforeAttempt(WAIT_BEFORE_ATTEMPT_S, label);
 
-  const accessToken = await auth.getAccessToken();
+  const accessToken = await getAccessToken();
   if (!accessToken) {
     return {
       ok: false,
@@ -2328,6 +3362,7 @@ async function callImageModel({ promptText, referenceInlineData, label }) {
     let response;
     let responseText = '';
     let body = null;
+    let responseHeaders = null;
 
     try {
       response = await fetch(ENDPOINT, {
@@ -2346,6 +3381,7 @@ async function callImageModel({ promptText, referenceInlineData, label }) {
         ...(HTTP_CACHE_BYPASS ? { cache: 'no-store' } : {}),
         signal: controller.signal
       });
+      responseHeaders = extractCacheDiagnosticHeaders(response.headers);
 
       responseText = await response.text();
       if (responseText) {
@@ -2377,6 +3413,11 @@ async function callImageModel({ promptText, referenceInlineData, label }) {
 
     if (!response.ok) {
       const shouldRetry = requestAttempt < maxHttpAttempts && IMAGE_HTTP_RETRYABLE_STATUSES.has(response.status);
+      armAdaptiveRateLimitCooldown({
+        label,
+        status: response.status,
+        retryAfterHeader: response.headers.get('retry-after')
+      });
       if (shouldRetry) {
         const retryDelayMs = computeImageRetryDelayMs({
           attempt: requestAttempt,
@@ -2394,23 +3435,28 @@ async function callImageModel({ promptText, referenceInlineData, label }) {
         status: response.status,
         statusText: response.statusText,
         blockReason: extractBlockReason(body),
-        responseSnippet: responseText.slice(0, 4000)
+        responseSnippet: responseText.slice(0, 4000),
+        responseHeaders
       };
     }
 
     const imagePart = findImagePart(body);
     if (!imagePart?.inlineData?.data) {
+      decayAdaptiveRateLimitCooldown();
       return {
         ok: false,
         errorType: 'no_image',
         blockReason: extractBlockReason(body),
-        responseSnippet: responseText.slice(0, 4000)
+        responseSnippet: responseText.slice(0, 4000),
+        responseHeaders
       };
     }
 
+    decayAdaptiveRateLimitCooldown();
     return {
       ok: true,
-      imagePart
+      imagePart,
+      responseHeaders
     };
   }
 
@@ -2466,10 +3512,19 @@ async function main() {
     location: LOCATION,
     endpoint: ENDPOINT,
     scorerEndpoint: SCORER_ENDPOINT,
+    endpointOverride: Boolean(process.env.IMAGE_ENDPOINT),
+    scorerEndpointOverride: Boolean(process.env.SCORER_ENDPOINT),
+    authMode: STATIC_ACCESS_TOKEN ? 'static_token' : 'google_auth',
     waitBeforeAttemptSeconds: WAIT_BEFORE_ATTEMPT_S,
     imageHttpRetries: IMAGE_HTTP_RETRIES,
     imageHttpBackoffBaseMs: IMAGE_HTTP_BACKOFF_BASE_MS,
     imageHttpBackoffMaxMs: IMAGE_HTTP_BACKOFF_MAX_MS,
+    rateLimitAdaptiveCooldown: RATE_LIMIT_ADAPTIVE_COOLDOWN,
+    rateLimitCooldownBaseSeconds: RATE_LIMIT_COOLDOWN_BASE_S,
+    rateLimitCooldownMaxSeconds: RATE_LIMIT_COOLDOWN_MAX_S,
+    rateLimitCooldownGrowth: RATE_LIMIT_COOLDOWN_GROWTH,
+    rateLimitCooldownDecaySeconds: RATE_LIMIT_COOLDOWN_DECAY_S,
+    attemptWaitJitterSeconds: ATTEMPT_WAIT_JITTER_S,
     outputImageSize: OUTPUT_IMAGE_SIZE,
     outputAspectRatio: OUTPUT_ASPECT_RATIO,
     httpCacheBypass: HTTP_CACHE_BYPASS,
@@ -2492,16 +3547,35 @@ async function main() {
     daringEditorialFeatureCountMin: DARING_EDITORIAL_FEATURE_COUNT_MIN,
     sceneDirectorBlueprintMode: SCENE_DIRECTOR_BLUEPRINT_MODE,
     editorialEdgeRebuildMode: EDITORIAL_EDGE_REBUILD_MODE,
+    promptFirstPriorityMode: PROMPT_FIRST_PRIORITY_MODE,
+    promptDirectionSupremacyMode: PROMPT_DIRECTION_SUPREMACY_MODE,
     skipSafeFallbackOnPrimaryReject: SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT,
     sensualEditorialBoost: SENSUAL_EDITORIAL_BOOST,
     sensualEditorialLevel: SENSUAL_EDITORIAL_LEVEL,
+    sensualVarianceGuard: SENSUAL_VARIANCE_GUARD,
+    sensualVarianceLevel: SENSUAL_VARIANCE_LEVEL,
+    enableResearchMicrodetailExpansion: ENABLE_RESEARCH_MICRODETAIL_EXPANSION,
+    promptTargetWords: PROMPT_TARGET_WORDS,
+    safePolicyHardening: SAFE_POLICY_HARDENING,
+    safeFallbackSource: SAFE_FALLBACK_SOURCE_NORMALIZED,
+    safeTransferPrimaryAnchors: SAFE_TRANSFER_PRIMARY_ANCHORS,
+    scorerIntentDigestMaxChars: SCORER_INTENT_DIGEST_MAX_CHARS,
+    scorerUnavailablePolicy: SCORER_UNAVAILABLE_POLICY,
+    scorerForceSchema: SCORER_FORCE_SCHEMA,
+    scorerCompactPrompt: SCORER_COMPACT_PROMPT,
+    scorerParseRequeryOnFail: SCORER_PARSE_REQUERY_ON_FAIL,
+    scorerParseRequeryMaxOutputTokens: SCORER_PARSE_REQUERY_MAX_OUTPUT_TOKENS,
+    physicsChecklistEnforce: PHYSICS_CHECKLIST_ENFORCE,
+    physicsChecklistMin: PHYSICS_CHECKLIST_MIN,
     edgePriorityMultiplier: EDGE_PRIORITY_MULTIPLIER,
     edgeFirstAcceptanceMode: EDGE_FIRST_ACCEPTANCE_MODE,
     edgeFirstAcceptanceThresholds: {
       edge: EDGE_FIRST_ACCEPTANCE_EDGE_MIN,
       identity: EDGE_FIRST_ACCEPTANCE_IDENTITY_MIN,
       gaze: EDGE_FIRST_ACCEPTANCE_GAZE_MIN,
-      attireReplacement: EDGE_FIRST_ACCEPTANCE_ATTIRE_MIN
+      attireReplacement: EDGE_FIRST_ACCEPTANCE_ATTIRE_MIN,
+      sceneAdherence: EDGE_FIRST_ACCEPTANCE_SCENE_MIN,
+      poseAdherence: EDGE_FIRST_ACCEPTANCE_POSE_MIN
     },
     directCameraGazeOverride: DIRECT_CAMERA_GAZE_OVERRIDE,
     physicsRealismOverrideLevel: PHYSICS_REALISM_OVERRIDE_LEVEL,
@@ -2522,6 +3596,7 @@ async function main() {
     enablePrimaryRescue: ENABLE_PRIMARY_RESCUE,
     primaryRescueMaxAttempts: PRIMARY_RESCUE_MAX_ATTEMPTS,
     enablePrimaryUpliftRescue: ENABLE_PRIMARY_UPLIFT_RESCUE,
+    scorerSelfHealRetries: SCORER_SELF_HEAL_RETRIES,
     scorerParseRepairRetries: SCORER_PARSE_REPAIR_RETRIES,
     scorerHeuristicMinFields: SCORER_HEURISTIC_MIN_FIELDS,
     scorerRepairMaxOutputTokens: SCORER_REPAIR_MAX_OUTPUT_TOKENS,
@@ -2559,6 +3634,12 @@ async function main() {
   log(
     `Image HTTP retries: retries=${IMAGE_HTTP_RETRIES}, backoffBaseMs=${IMAGE_HTTP_BACKOFF_BASE_MS}, backoffMaxMs=${IMAGE_HTTP_BACKOFF_MAX_MS}`
   );
+  log(
+    `Adaptive 429 cooldown: ${RATE_LIMIT_ADAPTIVE_COOLDOWN
+      ? `enabled (base=${RATE_LIMIT_COOLDOWN_BASE_S}s, max=${RATE_LIMIT_COOLDOWN_MAX_S}s, growth=${RATE_LIMIT_COOLDOWN_GROWTH}x, decay=${RATE_LIMIT_COOLDOWN_DECAY_S}s)`
+      : 'disabled'}`
+  );
+  log(`Attempt wait jitter: ${ATTEMPT_WAIT_JITTER_S > 0 ? `enabled (0-${ATTEMPT_WAIT_JITTER_S}s)` : 'disabled'}`);
   log(`Output config: imageSize=${OUTPUT_IMAGE_SIZE} aspectRatio=${OUTPUT_ASPECT_RATIO}`);
   log(`HTTP cache bypass: ${HTTP_CACHE_BYPASS ? 'enabled' : 'disabled'}`);
   log(`Prompt nonce: ${PROMPT_NONCE_ENABLED ? `enabled (${runNonce})` : 'disabled'}`);
@@ -2587,12 +3668,23 @@ async function main() {
   );
   log(`Scene director blueprints: ${SCENE_DIRECTOR_BLUEPRINT_MODE ? 'enabled' : 'disabled'}`);
   log(`Editorial edge rebuild mode: ${EDITORIAL_EDGE_REBUILD_MODE ? 'enabled' : 'disabled'}`);
+  log(`Prompt-first priority mode: ${PROMPT_FIRST_PRIORITY_MODE ? 'enabled' : 'disabled'}`);
+  log(`Prompt direction supremacy mode: ${PROMPT_DIRECTION_SUPREMACY_MODE ? 'enabled' : 'disabled'}`);
   log(`Skip safe fallback on primary reject: ${SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT ? 'enabled' : 'disabled'}`);
   log(`Sensual editorial boost: ${SENSUAL_EDITORIAL_BOOST ? `enabled (level ${SENSUAL_EDITORIAL_LEVEL})` : 'disabled'}`);
+  log(`Sensual variance guard: ${SENSUAL_VARIANCE_GUARD ? `enabled (level ${SENSUAL_VARIANCE_LEVEL})` : 'disabled'}`);
+  log(
+    `Research microdetail expansion: ${ENABLE_RESEARCH_MICRODETAIL_EXPANSION
+      ? `enabled (targetWords=${PROMPT_TARGET_WORDS})`
+      : 'disabled'}`
+  );
+  log(`Safe policy hardening: ${SAFE_POLICY_HARDENING ? 'enabled' : 'disabled'}`);
+  log(`Safe fallback source: ${SAFE_FALLBACK_SOURCE_NORMALIZED}`);
+  log(`Safe transfer primary anchors: ${SAFE_TRANSFER_PRIMARY_ANCHORS ? 'enabled' : 'disabled'}`);
   log(`Edge priority multiplier: ${EDGE_PRIORITY_MULTIPLIER}x`);
   log(
     `Edge-first acceptance: ${EDGE_FIRST_ACCEPTANCE_MODE
-      ? `enabled (edge>=${EDGE_FIRST_ACCEPTANCE_EDGE_MIN}, id>=${EDGE_FIRST_ACCEPTANCE_IDENTITY_MIN}, gaze>=${EDGE_FIRST_ACCEPTANCE_GAZE_MIN}, attire>=${EDGE_FIRST_ACCEPTANCE_ATTIRE_MIN})`
+      ? `enabled (edge>=${EDGE_FIRST_ACCEPTANCE_EDGE_MIN}, id>=${EDGE_FIRST_ACCEPTANCE_IDENTITY_MIN}, gaze>=${EDGE_FIRST_ACCEPTANCE_GAZE_MIN}, attire>=${EDGE_FIRST_ACCEPTANCE_ATTIRE_MIN}, scene>=${EDGE_FIRST_ACCEPTANCE_SCENE_MIN}, pose>=${EDGE_FIRST_ACCEPTANCE_POSE_MIN})`
       : 'disabled'}`
   );
   log(
@@ -2606,9 +3698,23 @@ async function main() {
   );
   log(`Anti-AI realism boost: ${ANTI_AI_REALISM_BOOST ? `enabled (level ${ANTI_AI_REALISM_LEVEL})` : 'disabled'}`);
   log(`Quality gate: ${ENABLE_QUALITY_GATE ? `enabled (scorer=${SCORER_MODEL})` : 'disabled'}`);
+  log(`Scorer unavailable policy: ${SCORER_UNAVAILABLE_POLICY}`);
+  log(`Scorer schema enforcement: ${SCORER_FORCE_SCHEMA ? 'enabled' : 'disabled'}`);
+  log(`Scorer compact prompt: ${SCORER_COMPACT_PROMPT ? 'enabled' : 'disabled'}`);
+  log(
+    `Physics checklist gate: ${PHYSICS_CHECKLIST_ENFORCE
+      ? `enabled (min ${PHYSICS_CHECKLIST_MIN})`
+      : 'disabled'}`
+  );
   log(
     `Scorer parse repair: retries=${SCORER_PARSE_REPAIR_RETRIES}, heuristicMinFields=${SCORER_HEURISTIC_MIN_FIELDS}, repairMaxTokens=${SCORER_REPAIR_MAX_OUTPUT_TOKENS}`
   );
+  log(
+    `Scorer parse requery: ${SCORER_PARSE_REQUERY_ON_FAIL
+      ? `enabled (maxTokens=${SCORER_PARSE_REQUERY_MAX_OUTPUT_TOKENS})`
+      : 'disabled'}`
+  );
+  log(`Scorer self-heal retries: ${SCORER_SELF_HEAL_RETRIES}`);
   log(`Primary rescue: ${ENABLE_PRIMARY_RESCUE ? `enabled (maxAttempts=${PRIMARY_RESCUE_MAX_ATTEMPTS})` : 'disabled'}`);
   log(
     `Primary uplift rescue: ${ENABLE_PRIMARY_UPLIFT_RESCUE
@@ -2620,11 +3726,26 @@ async function main() {
     const prompt = parsedPrompts[i];
     const promptLabel = `${prompt.id} ${prompt.title}`;
     const promptSlug = `${prompt.id}-${slugify(prompt.title)}`;
+    const primaryIntentDigest = extractPromptIntentDigest(prompt.primaryPrompt);
+    const safePromptBaseSource = SAFE_FALLBACK_SOURCE_NORMALIZED === 'primary_prompt'
+      ? prompt.primaryPrompt
+      : prompt.safePrompt;
+    const primaryAnchorTransferBlock = (
+      SAFE_FALLBACK_SOURCE_NORMALIZED === 'safe_prompt'
+      && SAFE_TRANSFER_PRIMARY_ANCHORS
+    )
+      ? buildPrimaryAnchorTransferBlock(prompt.primaryPrompt)
+      : '';
+    const safeIntentSourceText = primaryAnchorTransferBlock
+      ? `${safePromptBaseSource}\n\n${primaryAnchorTransferBlock}`
+      : safePromptBaseSource;
+    const safeIntentDigest = extractPromptIntentDigest(safeIntentSourceText);
     const primaryPromptTextBase = applyPromptOverrides(prompt.primaryPrompt, 'primary', {
       promptId: prompt.id,
       title: prompt.title
     });
-    const safePromptTextBase = applyPromptOverrides(prompt.safePrompt, 'safe', {
+    const safePromptSourceText = safeIntentSourceText;
+    const safePromptTextBase = applyPromptOverrides(safePromptSourceText, 'safe', {
       promptId: prompt.id,
       title: prompt.title
     });
@@ -2673,12 +3794,14 @@ async function main() {
 
     if (primaryResult.ok) {
       const primarySaved = await saveImagePart(primaryResult.imagePart, path.join(runDir, `${promptSlug}-primary-a1`));
-      const primaryQuality = await evaluateImageQuality({
+      const primaryQuality = await evaluateImageQualityWithSelfHealing({
         promptId: prompt.id,
         title: prompt.title,
         variant: 'primary',
+        promptIntentDigest: primaryIntentDigest,
         referenceInlineData,
-        imagePart: primaryResult.imagePart
+        imagePart: primaryResult.imagePart,
+        logLabel: `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: primary quality`
       });
       recordQualityTotals(summary, primaryQuality);
 
@@ -2690,6 +3813,7 @@ async function main() {
         outputFile: primarySaved.outputPath,
         mimeType: primarySaved.mimeType,
         bytes: primarySaved.bytes,
+        responseHeaders: primaryResult.responseHeaders || null,
         quality: primaryQuality
       });
 
@@ -2752,12 +3876,14 @@ async function main() {
               primaryRescueResult.imagePart,
               path.join(runDir, `${promptSlug}-primary-a${rescueAttemptIndex}`)
             );
-            const rescueQuality = await evaluateImageQuality({
+            const rescueQuality = await evaluateImageQualityWithSelfHealing({
               promptId: prompt.id,
               title: prompt.title,
               variant: 'primary',
+              promptIntentDigest: primaryIntentDigest,
               referenceInlineData,
-              imagePart: primaryRescueResult.imagePart
+              imagePart: primaryRescueResult.imagePart,
+              logLabel: `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: ${rescueVariant} quality`
             });
             recordQualityTotals(summary, rescueQuality);
 
@@ -2769,6 +3895,7 @@ async function main() {
               outputFile: rescueSaved.outputPath,
               mimeType: rescueSaved.mimeType,
               bytes: rescueSaved.bytes,
+              responseHeaders: primaryRescueResult.responseHeaders || null,
               quality: rescueQuality
             });
 
@@ -2802,7 +3929,8 @@ async function main() {
               statusText: primaryRescueResult.statusText || null,
               blockReason: primaryRescueResult.blockReason || null,
               message: primaryRescueResult.message || null,
-              responseSnippet: primaryRescueResult.responseSnippet || null
+              responseSnippet: primaryRescueResult.responseSnippet || null,
+              responseHeaders: primaryRescueResult.responseHeaders || null
             });
             log(
               `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: ${rescueVariant} failed (${primaryRescueResult.errorType})`
@@ -2868,12 +3996,14 @@ async function main() {
 
         if (safeResult.ok) {
           const safeSaved = await saveImagePart(safeResult.imagePart, path.join(runDir, `${promptSlug}-safe-a1`));
-          const safeQuality = await evaluateImageQuality({
+          const safeQuality = await evaluateImageQualityWithSelfHealing({
             promptId: prompt.id,
             title: prompt.title,
             variant: 'safe',
+            promptIntentDigest: safeIntentDigest,
             referenceInlineData,
-            imagePart: safeResult.imagePart
+            imagePart: safeResult.imagePart,
+            logLabel: `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe quality`
           });
           recordQualityTotals(summary, safeQuality);
 
@@ -2885,6 +4015,7 @@ async function main() {
             outputFile: safeSaved.outputPath,
             mimeType: safeSaved.mimeType,
             bytes: safeSaved.bytes,
+            responseHeaders: safeResult.responseHeaders || null,
             quality: safeQuality
           });
 
@@ -2911,7 +4042,8 @@ async function main() {
             statusText: safeResult.statusText || null,
             blockReason: safeResult.blockReason || null,
             message: safeResult.message || null,
-            responseSnippet: safeResult.responseSnippet || null
+            responseSnippet: safeResult.responseSnippet || null,
+            responseHeaders: safeResult.responseHeaders || null
           });
           summary.totals.failed += 1;
           log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback failed (${safeResult.errorType})`);
@@ -2928,7 +4060,8 @@ async function main() {
         statusText: primaryResult.statusText || null,
         blockReason: primaryResult.blockReason || null,
         message: primaryResult.message || null,
-        responseSnippet: primaryResult.responseSnippet || null
+        responseSnippet: primaryResult.responseSnippet || null,
+        responseHeaders: primaryResult.responseHeaders || null
       });
 
       if (SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT) {
@@ -2948,12 +4081,14 @@ async function main() {
 
         if (safeResult.ok) {
           const safeSaved = await saveImagePart(safeResult.imagePart, path.join(runDir, `${promptSlug}-safe-a1`));
-          const safeQuality = await evaluateImageQuality({
+          const safeQuality = await evaluateImageQualityWithSelfHealing({
             promptId: prompt.id,
             title: prompt.title,
             variant: 'safe',
+            promptIntentDigest: safeIntentDigest,
             referenceInlineData,
-            imagePart: safeResult.imagePart
+            imagePart: safeResult.imagePart,
+            logLabel: `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe quality`
           });
           recordQualityTotals(summary, safeQuality);
 
@@ -2965,6 +4100,7 @@ async function main() {
             outputFile: safeSaved.outputPath,
             mimeType: safeSaved.mimeType,
             bytes: safeSaved.bytes,
+            responseHeaders: safeResult.responseHeaders || null,
             quality: safeQuality
           });
           const safeQualityAccepted = isQualityAcceptableForFinal(safeQuality, 'safe');
@@ -2990,7 +4126,8 @@ async function main() {
             statusText: safeResult.statusText || null,
             blockReason: safeResult.blockReason || null,
             message: safeResult.message || null,
-            responseSnippet: safeResult.responseSnippet || null
+            responseSnippet: safeResult.responseSnippet || null,
+            responseHeaders: safeResult.responseHeaders || null
           });
           summary.totals.failed += 1;
           log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback failed (${safeResult.errorType})`);
@@ -3006,6 +4143,8 @@ async function main() {
         primaryPromptHash,
         safePromptHash,
         primaryRescuePromptHash,
+        primaryIntentDigest,
+        safeIntentDigest,
         primaryPromptPreview: primaryPromptText.slice(0, 2000),
         safePromptPreview: safePromptText.slice(0, 2000),
         primaryRescuePromptPreview: primaryRescuePromptText ? primaryRescuePromptText.slice(0, 2000) : null
