@@ -20,7 +20,7 @@ npm run test:e2e:all
 
 ## Device-Specific Validation
 - Required target: iPad mini 6 on iPadOS 26.2 Safari 26.2.
-- Keep physical-device run records in dated files under `docs/` using the `IPAD_REGRESSION_RUN_<date>.md` naming pattern.
+- Template: `docs/IPAD_REGRESSION_TEMPLATE.md` — copy as `IPAD_REGRESSION_RUN_<date>.md` for each run.
 
 ## High-Risk Areas to Recheck
 - Reflection flow timing and dismissal behavior.

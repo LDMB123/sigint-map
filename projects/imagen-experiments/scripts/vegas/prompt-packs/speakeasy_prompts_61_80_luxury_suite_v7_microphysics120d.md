@@ -22,10 +22,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): deep-plum lace balconette crop with micro-boned side panels + asymmetric pencil skirt with satin underlayer and angled slit.
+- Black sheer thigh-high hosiery with visible denier gradient and pressure-consistent top band.
+- High-gloss pointed stilettos in dark cherry lacquer.
+- Waist separation must remain unmistakable, camera-legible, and non-explicit.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -67,7 +67,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the deep-plum lace balconette two-piece (structured crop + asymmetric slit pencil skirt) with black sheer thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -105,10 +105,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): black satin halter crop with contour seams + high-waist wrap skirt with side-cut vent and clean fold memory.
+- Smoke-tint thigh-high hosiery with coherent sheen rolloff and top-band compression transition.
+- Patent black stilettos with narrow toe box and stable heel contact.
+- Maintain explicit top/skirt separation with no bodysuit merge.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -152,7 +152,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the black satin halter two-piece (contour crop + wrap-vent skirt) with smoke-tint thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -190,10 +190,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): emerald velvet corset-style crop with vertical channel structure + bias-cut skirt with diagonal slit and matte-satin panel.
+- Jet-black thigh-high hosiery with realistic denier and pressure gradient at the band.
+- Mirror-finish stilettos with physically coherent reflections.
+- Keep top and skirt as separate garments with visible waist gap.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -235,7 +235,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the emerald velvet corset two-piece (channel-structured crop + bias-cut diagonal-slit skirt) with jet-black thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -273,10 +273,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): gunmetal sequin square-neck crop with rigid hem tape + structured tulip skirt with asymmetric high slit.
+- Graphite sheer thigh-high hosiery with angle-dependent sheen and denier consistency.
+- Metallic charcoal stilettos matched to reflective highlights.
+- Enforce clear garment split at the waist; no one-piece fallback behavior.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -318,7 +318,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the gunmetal sequin two-piece (square-neck crop + asymmetric tulip skirt) with graphite sheer thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -356,10 +356,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): oxblood jacquard bustier crop with seam-defined cups + draped midi skirt with high side slit and weighted hem.
+- Black semi-sheer thigh-high hosiery with realistic tension at upper band.
+- Deep-burgundy stilettos with crisp specular edge lines.
+- Preserve a pronounced but non-explicit waist break between pieces.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -401,7 +401,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the oxblood jacquard bustier two-piece (seam-defined crop + draped high-slit midi skirt) with black semi-sheer thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -439,10 +439,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): midnight mesh long-sleeve crop with opaque lining zones + ruched high-slit skirt with directional gather tension.
+- Onyx thigh-high hosiery with coherent denier fade and band compression.
+- Gloss-black stilettos with stable heel-floor load transfer.
+- Keep crop and skirt independent with visible waist separation.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -484,7 +484,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the midnight mesh two-piece (long-sleeve lined crop + ruched high-slit skirt) with onyx thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -522,10 +522,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): champagne silk one-shoulder crop with wrapped bust geometry + layered slit skirt with soft bias drape.
+- Espresso-tint thigh-high hosiery with natural transmittance gradient.
+- Warm-metal pointed stilettos with realistic highlight falloff.
+- Maintain unmistakable top/skirt segmentation at waistline.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -569,7 +569,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the champagne silk two-piece (one-shoulder wrapped crop + layered slit skirt) with espresso-tint thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -607,10 +607,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): cobalt bead-trim scoop crop with firm underband + asymmetric panel skirt with precise slit edge.
+- Black sheer thigh-high hosiery with physically plausible sheen and denier.
+- Piano-black stilettos with coherent reflection parallax.
+- Ensure visible waist gap and independent garment behavior.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -653,7 +653,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the cobalt bead-trim two-piece (scoop crop + asymmetric panel slit skirt) with black sheer thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -691,10 +691,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): onyx leather-look zip-front crop with matte side inserts + stretch-crepe slit skirt with contour seams.
+- Carbon thigh-high hosiery with accurate band pressure transition.
+- Black chrome stilettos with crisp toe highlights.
+- Keep distinct two-piece topology; no merged bodice/skirt silhouette.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -736,7 +736,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the onyx leather-look two-piece (zip-front crop + contour-seam slit skirt) with carbon thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -774,10 +774,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): silver lame cross-wrap crop with controlled specular breakup + angular foldover skirt with high slit and clean edge tension.
+- Smoke-black thigh-high hosiery with believable denier and sheen shift.
+- Mirror-silver stilettos with stable contact mechanics.
+- Preserve obvious top/skirt split with non-explicit styling.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -819,7 +819,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the silver lame two-piece (cross-wrap crop + angular foldover slit skirt) with smoke-black thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -857,10 +857,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): garnet satin cowl-neck crop with anchored drape points + pleated slit skirt with directional fold memory.
+- Black sheer thigh-high hosiery showing realistic transmittance gradient.
+- Garnet-lacquer stilettos matched to warm practical lights.
+- Maintain clear garment separation across the waist.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -904,7 +904,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the garnet satin two-piece (cowl-neck crop + pleated slit skirt) with black sheer thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -942,10 +942,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): teal lace high-neck crop with opaque underlayer mapping + fitted skirt with diagonal slit and subtle satin inset.
+- Midnight thigh-high hosiery with coherent top-band compression.
+- High-gloss black stilettos with physically consistent reflections.
+- Keep two-piece silhouette explicit via visible waist break.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -988,7 +988,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the teal lace two-piece (high-neck crop + fitted diagonal-slit skirt) with midnight thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -1026,10 +1026,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): ivory embellished corset crop with structured seam channels + contrast dark wrap skirt with high slit and weighted hem.
+- Black sheer thigh-high hosiery with realistic denier rolloff.
+- Black patent stilettos with tight specular control.
+- Enforce distinct top/skirt separation and non-explicit framing.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -1071,7 +1071,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the ivory embellished two-piece (corset crop + contrast dark wrap slit skirt) with black sheer thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -1109,10 +1109,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): charcoal shimmer mock-neck crop with side shaping seams + wrap skirt with front vent and asym hemline.
+- Graphite thigh-high hosiery with believable pressure transition at band.
+- Charcoal metallic stilettos with coherent wet-light reflections.
+- Preserve visible waist separation and independent cloth motion.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -1156,7 +1156,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the charcoal shimmer two-piece (mock-neck crop + front-vent wrap skirt) with graphite thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -1194,10 +1194,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): ruby fringe crop with controlled tassel inertia + fitted slit skirt with fringe side drop and stable waistband.
+- Black sheer thigh-high hosiery with angle-dependent sheen.
+- Dark ruby stilettos with crisp contact shadows.
+- Keep top and skirt clearly separated with no bodysuit blending.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -1239,7 +1239,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the ruby fringe two-piece (fringe crop + fitted slit skirt with fringe drop) with black sheer thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -1277,10 +1277,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): bronze metallic bandeau-style structured crop with contour boning + draped high-slit skirt with asymmetric overlap.
+- Onyx thigh-high hosiery with realistic denier and compression band.
+- Bronze-mirror stilettos with accurate reflection geometry.
+- Maintain a defined waist gap and separate garment topology.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -1322,7 +1322,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the bronze metallic two-piece (structured bandeau-style crop + draped asymmetric slit skirt) with onyx thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -1360,10 +1360,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): sapphire velvet off-shoulder crop with anchored neckline tension + split-leg skirt with satin binding at slit edge.
+- Black sheer thigh-high hosiery with pressure-consistent top band.
+- Black high-shine stilettos with stable heel-floor contact.
+- Keep explicit two-piece separation and non-explicit presentation.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -1405,7 +1405,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the sapphire velvet two-piece (off-shoulder crop + split-leg satin-bound skirt) with black sheer thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -1443,10 +1443,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): black crystal-trim strappy crop with geometric linework + asymmetrical midi skirt with high slit and clean panel transitions.
+- Smoke-black thigh-high hosiery with realistic transmittance gradient.
+- Crystal-accent stilettos with coherent highlight response.
+- Enforce visible waist segmentation between crop and skirt.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -1490,7 +1490,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the black crystal-trim two-piece (geometric strappy crop + asymmetrical high-slit midi skirt) with smoke-black thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -1528,10 +1528,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): mocha satin bustier crop with seam-defined structure + sheer-overlay slit skirt with opaque underpanel alignment.
+- Black thigh-high hosiery with believable denier and sheen rolloff.
+- Mocha-metal pointed stilettos with realistic contact shading.
+- Maintain an unmistakable waist break and independent layer behavior.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -1574,7 +1574,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the mocha satin two-piece (structured bustier crop + sheer-overlay slit skirt with underpanel) with black thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:
@@ -1612,10 +1612,10 @@ Scene:
 - Intimate luxury-suite mood only; no public venue cues.
 
 Wardrobe:
-- Two-piece lace "evening-gown" sexy attire only (not evening wear; no one-piece fallback): lace structured crop bodice + lace-overlay high-slit evening skirt.
-- Black thigh-high hosiery with visible denier gradient and pressure-consistent top band.
-- High-gloss pointed stilettos matched to scene palette.
-- Waist separation must remain unmistakable and dramatic but non-explicit.
+- Daring two-piece editorial attire only (not evening wear; no one-piece fallback): pearl-white structured crop with sculpted seams + black high-slit skirt with beaded trim and controlled drape weight.
+- Black sheer thigh-high hosiery with coherent top-band pressure transition.
+- High-gloss black stilettos with physically consistent reflections.
+- Preserve strong top/skirt separation and non-explicit styling.
 
 Pose and framing:
 - One active support contact (hand on prop/surface) with visible pressure compression.
@@ -1657,7 +1657,7 @@ Reject:
 SAFE REALISM LOCK (MANDATORY):
 - Preserve exact identity and direct gaze.
 - Preserve the same intimate luxury-suite nighttime scene anchors.
-- Preserve elevated two-piece lace "evening-gown" sexy attire (not evening wear) and black thigh-high hosiery.
+- Preserve the pearl-white/black two-piece (structured crop + beaded-trim high-slit skirt) with black sheer thigh-high hosiery.
 - Preserve non-explicit cinematic intent with clear support mechanics and material realism.
 - Preserve first-principles physics closure (support, non-penetration, gravity drape, light-shadow geometry, material response).
 SAFE DIRECTION SUPREMACY:

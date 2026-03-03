@@ -1,7 +1,14 @@
 use crate::browser_apis;
 use std::cell::{Cell, RefCell};
 use web_sys::OscillatorType;
-thread_local! { static AUDIO_CTX: RefCell<Option<web_sys::AudioContext>> = const { RefCell::new(None) }; static ENABLED: Cell<bool> = const { Cell::new(true) }; static MASTER_VOL: Cell<f32> = const { Cell::new(0.5) }; static VOICE_POOL: RefCell<VoicePool> = const { RefCell::new(VoicePool::new()) }; static REVERB_NODE: RefCell<Option<web_sys::ConvolverNode>> = const { RefCell::new(None) }; static MUSIC_NODES: RefCell<Vec<web_sys::OscillatorNode>> = const { RefCell::new(Vec::new()) }; }
+thread_local! {
+    static AUDIO_CTX: RefCell<Option<web_sys::AudioContext>> = const { RefCell::new(None) };
+    static ENABLED: Cell<bool> = const { Cell::new(true) };
+    static MASTER_VOL: Cell<f32> = const { Cell::new(0.5) };
+    static VOICE_POOL: RefCell<VoicePool> = const { RefCell::new(VoicePool::new()) };
+    static REVERB_NODE: RefCell<Option<web_sys::ConvolverNode>> = const { RefCell::new(None) };
+    static MUSIC_NODES: RefCell<Vec<web_sys::OscillatorNode>> = const { RefCell::new(Vec::new()) };
+}
 #[derive(Debug, Clone, Copy)]
 struct EnvelopeParams {
     attack_ms: f64,
@@ -45,7 +52,7 @@ impl VoicePool {
     fn acquire_voice(&mut self, ctx: &web_sys::AudioContext) -> Option<usize> {
         if let Some(idx) = self.voices.iter().position(|v| !v.in_use) {
             self.voices[idx].in_use = true;
-            self.voices[idx].last_used_ms = now_ms();
+            self.voices[idx].last_used_ms = browser_apis::now_ms();
             return Some(idx);
         }
         if self.voices.len() < self.max_voices {
@@ -54,7 +61,7 @@ impl VoicePool {
                 self.voices.push(Voice {
                     gain_node: gain,
                     in_use: true,
-                    last_used_ms: now_ms(),
+                    last_used_ms: browser_apis::now_ms(),
                 });
                 return Some(idx);
             }
@@ -66,17 +73,17 @@ impl VoicePool {
             .min_by_key(|(_, v)| v.last_used_ms as u64)
             .map(|(idx, _)| idx)?;
         self.voices[oldest_idx].in_use = true;
-        self.voices[oldest_idx].last_used_ms = now_ms();
+        self.voices[oldest_idx].last_used_ms = browser_apis::now_ms();
         Some(oldest_idx)
     }
     fn release_voice(&mut self, idx: usize) {
         if idx < self.voices.len() {
             self.voices[idx].in_use = false;
-            self.voices[idx].last_used_ms = now_ms();
+            self.voices[idx].last_used_ms = browser_apis::now_ms();
         }
     }
     fn shrink_if_idle(&mut self) {
-        let now = now_ms();
+        let now = browser_apis::now_ms();
         let idle_threshold = 30_000.0; // 30 seconds
         if self.voices.is_empty() {
             return;
@@ -92,10 +99,6 @@ impl VoicePool {
     fn get_gain_node(&self, idx: usize) -> Option<&web_sys::GainNode> {
         self.voices.get(idx).map(|v| &v.gain_node)
     }
-}
-#[inline]
-fn now_ms() -> f64 {
-    browser_apis::now_ms()
 }
 fn get_sound_preset(sound: &str) -> SoundPreset {
     match sound {

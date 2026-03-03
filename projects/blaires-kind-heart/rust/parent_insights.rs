@@ -41,12 +41,48 @@ async fn generate_weekly_insights(week_key: &str) -> Option<WeeklyInsight> {
         skill_breakdown: skill_breakdown.clone(),
     };
     let now = utils::now_epoch_ms();
-    let skill_breakdown_json = match serde_json::to_string(&skill_breakdown.iter() .map(|s| serde_json::json!({ "skill_type": s.skill_type, "count": s.count, "percentage": s.percentage })) .collect::<Vec<_>>()) { Ok(json) => json, Err(e) => { dom::warn(&format!("[parent_insights] Failed to serialize skill_breakdown: {e:?}")); return Some(insight); }};
-    let _ = db_client::exec( "INSERT OR REPLACE INTO weekly_insights (week_key, top_skill, focus_skill, pattern_text, reflection_rate, skill_breakdown, generated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)", vec![week_key_str, top_skill, focus_skill, pattern_text, reflection_rate.to_string(), skill_breakdown_json, now.to_string(),],).await;
+    let skill_breakdown_json = match serde_json::to_string(
+        &skill_breakdown
+            .iter()
+            .map(|s| {
+                serde_json::json!({
+                    "skill_type": s.skill_type,
+                    "count": s.count,
+                    "percentage": s.percentage,
+                })
+            })
+            .collect::<Vec<_>>(),
+    ) {
+        Ok(json) => json,
+        Err(e) => {
+            dom::warn(&format!("[parent_insights] Failed to serialize skill_breakdown: {e:?}"));
+            return Some(insight);
+        }
+    };
+    let _ = db_client::exec(
+        "INSERT OR REPLACE INTO weekly_insights \
+        (week_key, top_skill, focus_skill, pattern_text, reflection_rate, skill_breakdown, generated_at) \
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        vec![
+            week_key_str,
+            top_skill,
+            focus_skill,
+            pattern_text,
+            reflection_rate.to_string(),
+            skill_breakdown_json,
+            now.to_string(),
+        ],
+    )
+    .await;
     Some(insight)
 }
 async fn get_cached_insights(week_key: &str) -> Option<WeeklyInsight> {
-    let rows = db_client::query( "SELECT week_key, focus_skill, pattern_text, reflection_rate, skill_breakdown FROM weekly_insights WHERE week_key = ?1", vec![week_key.to_string()],).await;
+    let rows = db_client::query(
+        "SELECT week_key, focus_skill, pattern_text, reflection_rate, skill_breakdown \
+        FROM weekly_insights WHERE week_key = ?1",
+        vec![week_key.to_string()],
+    )
+    .await;
     let Ok(data) = rows else { return None };
     let arr = data.as_array()?;
     if arr.is_empty() {

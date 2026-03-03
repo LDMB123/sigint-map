@@ -1,3 +1,4 @@
+use std::fmt::Write;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::{intern, JsCast, JsValue, UnwrapThrowExt};
 use web_sys::{
@@ -109,8 +110,15 @@ pub fn toast(message: &str) {
     }
 }
 use std::cell::RefCell;
-thread_local! { static TT_POLICY: RefCell<Option<crate::bindings::TrustedTypePolicy>> = const { RefCell::new(None) }; }
+thread_local! {
+    static TT_POLICY: RefCell<Option<crate::bindings::TrustedTypePolicy>> = const { RefCell::new(None) };
+}
 pub fn init_trusted_types() {
+    // Safety: Both "kindheart" and "default" policies are passthrough identity
+    // callbacks. This is intentional — all HTML written through safe_set_inner_html
+    // is app-controlled (never user-supplied), so no sanitisation step is needed.
+    // The policy existence satisfies the CSP `require-trusted-types-for 'script'`
+    // directive, which blocks third-party scripts that lack a TT policy.
     let window = window();
     let nav_win: &crate::bindings::NavigationWindow = window.unchecked_ref();
     let tt_factory: crate::bindings::TrustedTypePolicyFactory =
@@ -187,7 +195,7 @@ pub fn event_target_element(event: &Event) -> Option<Element> {
     })
 }
 pub fn pin_closure_to_arena(key: &str, cb: &JsValue) {
-    if let Some(arena) = query("#game-arena") {
+    if let Some(arena) = query(crate::constants::SELECTOR_GAME_ARENA) {
         let k = JsValue::from_str(key);
         let _ = js_sys::Reflect::set(&arena, &k, cb);
     }
@@ -262,12 +270,15 @@ pub fn with_buf<R>(f: impl FnOnce(&mut String) -> R) -> R {
     })
 }
 pub fn set_active_class(active_class: &str, new_active: &Element) {
-    with_buf(|buf| {
+    // Build selector and release with_buf borrow before calling for_each_match,
+    // which may invoke callbacks that also call with_buf.
+    let selector = with_buf(|buf| {
         buf.push('.');
         buf.push_str(active_class);
-        for_each_match(buf, |old| {
-            let _ = old.class_list().remove_1(active_class);
-        });
+        buf.clone()
+    });
+    for_each_match(&selector, |old| {
+        let _ = old.class_list().remove_1(active_class);
     });
     let _ = new_active.class_list().add_1(active_class);
 }
@@ -310,13 +321,13 @@ pub fn has_attr(el: &Element, key: &str) -> bool {
 }
 pub fn query_data(attr: &str, value: &str) -> Option<Element> {
     with_buf(|buf| {
-        let _ = std::fmt::Write::write_fmt(buf, format_args!("[data-{attr}=\"{value}\"]"));
+        let _ = write!(buf, "[data-{attr}=\"{value}\"]");
         document().query_selector(buf).ok().flatten()
     })
 }
 pub fn query_child_data(parent: &Element, attr: &str, value: &str) -> Option<Element> {
     with_buf(|buf| {
-        let _ = std::fmt::Write::write_fmt(buf, format_args!("[data-{attr}=\"{value}\"]"));
+        let _ = write!(buf, "[data-{attr}=\"{value}\"]");
         parent.query_selector(buf).ok().flatten()
     })
 }

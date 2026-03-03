@@ -53,6 +53,7 @@ const SAVE_PROMPT_PREVIEW = process.env.SAVE_PROMPT_PREVIEW === '1';
 const REFERENCE_IDENTITY_ONLY_LOCK = process.env.REFERENCE_IDENTITY_ONLY_LOCK !== '0';
 const ATTIRE_REPLACEMENT_LOCK = process.env.ATTIRE_REPLACEMENT_LOCK !== '0';
 const ENABLE_QUALITY_GATE = process.env.ENABLE_QUALITY_GATE !== '0';
+const ENABLE_QUALITY_AUDIT_WHEN_GATE_OFF = process.env.ENABLE_QUALITY_AUDIT_WHEN_GATE_OFF !== '0';
 const ENABLE_PRIMARY_RESCUE = process.env.ENABLE_PRIMARY_RESCUE !== '0';
 const ENABLE_PRIMARY_UPLIFT_RESCUE = process.env.ENABLE_PRIMARY_UPLIFT_RESCUE !== '0';
 const PRIMARY_RESCUE_MAX_ATTEMPTS = Math.max(
@@ -157,16 +158,57 @@ const SENSUAL_EDITORIAL_LEVEL = Math.max(1, Math.min(3, parseInt(process.env.SEN
 const SENSUAL_VARIANCE_GUARD = process.env.SENSUAL_VARIANCE_GUARD === '1';
 const SENSUAL_VARIANCE_LEVEL = Math.max(1, Math.min(3, parseInt(process.env.SENSUAL_VARIANCE_LEVEL || '2', 10)));
 const ENABLE_RESEARCH_MICRODETAIL_EXPANSION = process.env.ENABLE_RESEARCH_MICRODETAIL_EXPANSION !== '0';
-const PROMPT_TARGET_WORDS = Math.max(800, Math.min(2600, parseInt(process.env.PROMPT_TARGET_WORDS || '1500', 10)));
+const PROMPT_TARGET_WORDS = Math.max(800, Math.min(2600, parseInt(process.env.PROMPT_TARGET_WORDS || '1700', 10)));
+const PROMPT_REINFORCEMENT_MAX_PASSES = Math.max(
+  1,
+  Math.min(4, parseInt(process.env.PROMPT_REINFORCEMENT_MAX_PASSES || '2', 10))
+);
+const TARGETED_MICRODETAIL_MODE = process.env.TARGETED_MICRODETAIL_MODE !== '0';
+const MICRODETAIL_MODULE_CAP = Math.max(2, Math.min(6, parseInt(process.env.MICRODETAIL_MODULE_CAP || '4', 10)));
+const ENABLE_PROMPT_HARD_CAP = process.env.ENABLE_PROMPT_HARD_CAP !== '0';
+const PROMPT_HARD_CAP_WORDS = Math.max(
+  900,
+  Math.min(3200, parseInt(process.env.PROMPT_HARD_CAP_WORDS || '1900', 10))
+);
 const SAFE_POLICY_HARDENING = process.env.SAFE_POLICY_HARDENING !== '0';
+const IMAGE_SAFETY_COMPLIANCE_MODE = process.env.IMAGE_SAFETY_COMPLIANCE_MODE !== '0';
+const IMAGE_SAFETY_COMPLIANCE_LEVEL = Math.max(
+  1,
+  Math.min(3, parseInt(process.env.IMAGE_SAFETY_COMPLIANCE_LEVEL || '2', 10))
+);
+const IMAGE_SAFETY_COMPLIANCE_DROP_LINES = process.env.IMAGE_SAFETY_COMPLIANCE_DROP_LINES !== '0';
 const SAFE_FALLBACK_SOURCE = (process.env.SAFE_FALLBACK_SOURCE || 'safe_prompt').trim().toLowerCase();
 const SAFE_FALLBACK_SOURCE_NORMALIZED = SAFE_FALLBACK_SOURCE === 'primary_prompt' ? 'primary_prompt' : 'safe_prompt';
 const SAFE_TRANSFER_PRIMARY_ANCHORS = process.env.SAFE_TRANSFER_PRIMARY_ANCHORS !== '0';
+const SAFE_ANCHOR_SANITIZE = process.env.SAFE_ANCHOR_SANITIZE !== '0';
+const SAFE_IMAGE_SAFETY_RETRY_ENABLED = process.env.SAFE_IMAGE_SAFETY_RETRY_ENABLED !== '0';
+const SAFE_IMAGE_SAFETY_RETRY_MAX_ATTEMPTS = Math.max(
+  0,
+  Math.min(2, parseInt(process.env.SAFE_IMAGE_SAFETY_RETRY_MAX_ATTEMPTS || '2', 10))
+);
+const SAFE_IMAGE_SAFETY_RETRY_PROMPT_WORD_CAP = Math.max(
+  400,
+  Math.min(2000, parseInt(process.env.SAFE_IMAGE_SAFETY_RETRY_PROMPT_WORD_CAP || '1700', 10))
+);
+const SAFE_IMAGE_SAFETY_RETRY_COMPACT_FINAL = process.env.SAFE_IMAGE_SAFETY_RETRY_COMPACT_FINAL !== '0';
+const SAFE_IMAGE_SAFETY_RETRY_ULTRA_WORD_CAP = Math.max(
+  500,
+  Math.min(1800, parseInt(process.env.SAFE_IMAGE_SAFETY_RETRY_ULTRA_WORD_CAP || '1200', 10))
+);
 const SCORER_INTENT_DIGEST_MAX_CHARS = Math.max(
   500,
   Math.min(2400, parseInt(process.env.SCORER_INTENT_DIGEST_MAX_CHARS || '900', 10))
 );
 const SCORER_UNAVAILABLE_POLICY = (process.env.SCORER_UNAVAILABLE_POLICY || 'soft_accept').trim().toLowerCase();
+const IDENTITY_FALLBACK_AUDIT_ENABLED = process.env.IDENTITY_FALLBACK_AUDIT_ENABLED !== '0';
+const IDENTITY_FALLBACK_AUDIT_MIN_SCORE = Math.max(
+  0,
+  Math.min(10, parseFloat(process.env.IDENTITY_FALLBACK_AUDIT_MIN_SCORE || '9.0'))
+);
+const IDENTITY_FALLBACK_AUDIT_MAX_OUTPUT_TOKENS = Math.max(
+  120,
+  Math.min(1200, parseInt(process.env.IDENTITY_FALLBACK_AUDIT_MAX_OUTPUT_TOKENS || '600', 10))
+);
 const PHYSICS_CHECKLIST_ENFORCE = process.env.PHYSICS_CHECKLIST_ENFORCE !== '0';
 const PHYSICS_CHECKLIST_MIN = Math.max(
   0,
@@ -213,6 +255,7 @@ const SCORER_PARSE_REQUERY_MAX_OUTPUT_TOKENS = Math.max(
 );
 const SCORER_FORCE_SCHEMA = process.env.SCORER_FORCE_SCHEMA !== '0';
 const SCORER_COMPACT_PROMPT = process.env.SCORER_COMPACT_PROMPT !== '0';
+const HEURISTIC_SCORER_AUDIT_ONLY = process.env.HEURISTIC_SCORER_AUDIT_ONLY !== '0';
 const IMAGE_HTTP_RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 const RATE_LIMIT_ADAPTIVE_COOLDOWN = process.env.RATE_LIMIT_ADAPTIVE_COOLDOWN === '1';
 const RATE_LIMIT_COOLDOWN_BASE_S = Math.max(0, parseNumberEnv('RATE_LIMIT_COOLDOWN_BASE_S', 18));
@@ -222,6 +265,11 @@ const RATE_LIMIT_COOLDOWN_MAX_S = Math.max(
 );
 const RATE_LIMIT_COOLDOWN_GROWTH = Math.max(1, parseNumberEnv('RATE_LIMIT_COOLDOWN_GROWTH', 1.7));
 const RATE_LIMIT_COOLDOWN_DECAY_S = Math.max(0, parseNumberEnv('RATE_LIMIT_COOLDOWN_DECAY_S', 4));
+const RATE_LIMIT_RETRY_FLOOR_S = Math.max(0, parseNumberEnv('RATE_LIMIT_RETRY_FLOOR_S', 8));
+const RATE_LIMIT_RETRY_MAX_S = Math.max(
+  RATE_LIMIT_RETRY_FLOOR_S,
+  parseNumberEnv('RATE_LIMIT_RETRY_MAX_S', Math.max(120, RATE_LIMIT_COOLDOWN_MAX_S))
+);
 const ATTEMPT_WAIT_JITTER_S = Math.max(0, parseNumberEnv('ATTEMPT_WAIT_JITTER_S', 0));
 
 let adaptiveRateLimitCooldownS = 0;
@@ -263,6 +311,17 @@ const SCORER_RESPONSE_SCHEMA = {
     confidence: { type: 'NUMBER' }
   },
   required: ['scores', 'diagnostics', 'rescueDirectives', 'confidence']
+};
+
+const IDENTITY_FALLBACK_AUDIT_RESPONSE_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    identityScore: { type: 'NUMBER' },
+    directGazeScore: { type: 'NUMBER' },
+    identityPass: { type: 'BOOLEAN' },
+    diagnostics: { type: 'STRING' }
+  },
+  required: ['identityScore', 'directGazeScore', 'identityPass', 'diagnostics']
 };
 
 const SCORE_FIELD_ALIASES = {
@@ -420,6 +479,11 @@ function decayAdaptiveRateLimitCooldown() {
     : 0;
 }
 
+function getAdaptiveCooldownRemainingMs() {
+  if (!RATE_LIMIT_ADAPTIVE_COOLDOWN) return 0;
+  return Math.max(0, adaptiveRateLimitCooldownUntilMs - Date.now());
+}
+
 function extToMime(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
@@ -468,10 +532,65 @@ function extractBlockReason(body) {
   return reasons.length ? reasons.join(', ') : null;
 }
 
+function isImageSafetyBlockReason(blockReason) {
+  return /IMAGE_SAFETY/i.test(String(blockReason || ''));
+}
+
 function countWords(text) {
   const trimmed = String(text || '').trim();
   if (!trimmed) return 0;
   return trimmed.split(/\s+/).length;
+}
+
+function trimTextToWordLimit(text, maxWords) {
+  const limit = Number.isFinite(maxWords) ? Math.max(1, Math.floor(maxWords)) : 0;
+  const normalized = String(text || '').trim();
+  if (!limit || !normalized) {
+    return normalized;
+  }
+
+  const lines = normalized.split(/\r?\n/);
+  const output = [];
+  let remaining = limit;
+
+  for (const rawLine of lines) {
+    if (remaining <= 0) {
+      break;
+    }
+    const line = rawLine.trim();
+    if (!line) {
+      if (output.length && output[output.length - 1] !== '') {
+        output.push('');
+      }
+      continue;
+    }
+    const words = line.split(/\s+/);
+    if (words.length <= remaining) {
+      output.push(line);
+      remaining -= words.length;
+      continue;
+    }
+    output.push(words.slice(0, remaining).join(' '));
+    remaining = 0;
+  }
+
+  return output.join('\n').trim();
+}
+
+function enforcePromptHardCap(promptText, variant = 'primary', promptMeta = {}) {
+  const normalized = String(promptText || '').trim();
+  if (!ENABLE_PROMPT_HARD_CAP || !normalized) {
+    return normalized;
+  }
+  if (countWords(normalized) <= PROMPT_HARD_CAP_WORDS) {
+    return normalized;
+  }
+  const capped = trimTextToWordLimit(normalized, PROMPT_HARD_CAP_WORDS);
+  const label = promptMeta?.promptId && promptMeta?.title
+    ? `${promptMeta.promptId} ${promptMeta.title}`
+    : (promptMeta?.title || promptMeta?.promptId || 'n/a');
+  log(`Prompt hard-cap applied (${variant}, ${label}): ${countWords(normalized)} -> ${countWords(capped)} words`);
+  return capped;
 }
 
 function shortHash(text, len = 16) {
@@ -1467,23 +1586,48 @@ function collectPromptAnchorBullets(promptText) {
   };
 }
 
-function buildPrimaryAnchorTransferBlock(primaryPromptText) {
+function sanitizeSafeAnchorLine(line) {
+  let sanitized = String(line || '').trim();
+  if (!sanitized) {
+    return '';
+  }
+  for (const { pattern, replacement } of SAFE_LEXICON_REPLACEMENTS) {
+    sanitized = sanitized.replace(pattern, replacement);
+  }
+  const extraReplacements = [
+    { pattern: /\bhigh-slit\b/gi, replacement: 'contoured-slit' },
+    { pattern: /\bintimate\b/gi, replacement: 'private' },
+    { pattern: /\bdramatic\b/gi, replacement: 'clear' },
+    { pattern: /\bafterdark\b/gi, replacement: 'nighttime' },
+    { pattern: /waist separation must remain unmistakable and clear but non-explicit\./gi, replacement: 'Waist separation remains clearly visible while non-explicit.' }
+  ];
+  for (const { pattern, replacement } of extraReplacements) {
+    sanitized = sanitized.replace(pattern, replacement);
+  }
+  return sanitized.replace(/\s+/g, ' ').trim();
+}
+
+function buildPrimaryAnchorTransferBlock(primaryPromptText, variant = 'safe') {
   const anchors = collectPromptAnchorBullets(primaryPromptText);
+  const shouldSanitize = variant === 'safe' && SAFE_POLICY_HARDENING && SAFE_ANCHOR_SANITIZE;
+  const sceneAnchors = shouldSanitize ? anchors.scene.map(sanitizeSafeAnchorLine) : anchors.scene;
+  const wardrobeAnchors = shouldSanitize ? anchors.wardrobe.map(sanitizeSafeAnchorLine) : anchors.wardrobe;
+  const poseAnchors = shouldSanitize ? anchors.pose.map(sanitizeSafeAnchorLine) : anchors.pose;
   const lines = [
     'PRIMARY ANCHOR TRANSFER (SAFE FIDELITY BRIDGE):',
     '- Use these anchors to preserve scene and pose fidelity while keeping policy-safe wording.'
   ];
-  if (anchors.scene.length) {
+  if (sceneAnchors.length) {
     lines.push('Scene anchors to preserve:');
-    lines.push(...anchors.scene.map(item => `- ${item}`));
+    lines.push(...sceneAnchors.map(item => `- ${item}`));
   }
-  if (anchors.wardrobe.length) {
+  if (wardrobeAnchors.length) {
     lines.push('Wardrobe topology anchors to preserve:');
-    lines.push(...anchors.wardrobe.map(item => `- ${item}`));
+    lines.push(...wardrobeAnchors.map(item => `- ${item}`));
   }
-  if (anchors.pose.length) {
+  if (poseAnchors.length) {
     lines.push('Pose choreography anchors to preserve:');
-    lines.push(...anchors.pose.map(item => `- ${item}`));
+    lines.push(...poseAnchors.map(item => `- ${item}`));
   }
   lines.push('- Keep final styling high-fashion, non-explicit, and physically coherent.');
   return lines.join('\n');
@@ -1508,7 +1652,7 @@ function buildPromptDirectionSupremacyBlock(promptText, promptMeta = {}, variant
     'Setting invariant: private intimate luxury suite only; never generic public venue substitution.',
     variant === 'safe'
       ? 'Wardrobe invariant: high-fashion two-piece lace cocktail-set topology (not conservative evening wear), with clear top/skirt separation.'
-      : 'Wardrobe invariant: sexy two-piece lace "evening-gown" attire (not conservative evening wear), with clear top/skirt separation.',
+      : 'Wardrobe invariant: high-fashion two-piece lace evening-set attire (not conservative evening wear), with clear top/skirt separation.',
     'Anti-template invariant: do not reuse a generic pose or styling template from other prompts.'
   ];
   if (anchors.scene.length) {
@@ -1542,10 +1686,39 @@ function buildIdentityFinalOverrideBlock() {
     'IDENTITY FINAL OVERRIDE (ABSOLUTE LAST PRIORITY CHECK):',
     '- Match the exact adult person from the reference image, not a look-alike.',
     '- Preserve core face geometry: eye spacing, jawline, cheekbone shape, smile structure, and brow shape.',
+    '- Preserve biometric cues: inter-pupil distance, brow thickness/arch, nose bridge-to-tip proportion, and lip fullness ratio.',
     '- Preserve hair identity cues: blonde color family, part direction, and natural wave pattern.',
     '- Preserve ethnicity and apparent age from the reference.',
     '- Keep direct lens gaze with natural vergence and coherent catchlights.',
+    '- If identity cues drift, regenerate before accepting wardrobe or pose fidelity.',
     '- If any identity cue conflicts with styling changes, identity wins.'
+  ].join('\n');
+}
+
+function buildIdentityDriftSentinelBlock(variant = 'general') {
+  const variantLine = variant === 'safe-retry'
+    ? '- Safe-retry mode: preserve exact identity first, then satisfy conservative styling constraints.'
+    : '- Preserve exact identity before style changes.';
+  return [
+    'IDENTITY DRIFT SENTINEL (MANDATORY):',
+    variantLine,
+    '- Keep the same adult person from reference with no age-shift or ethnicity-shift.',
+    '- Preserve eye shape/spacing, brow arc, nose tip width, lip contour, jaw taper, and smile asymmetry.',
+    '- Preserve eye color family and hairline/part direction from reference.',
+    '- Reject beautification drift, face-shape drift, and look-alike substitution.'
+  ].join('\n');
+}
+
+function buildAttireTopologyInvariantBlock(variant) {
+  const hosieryLine = variant === 'safe'
+    ? 'Render sheer black stockings with a coherent denier gradient and a visible, physically plausible top band.'
+    : 'Render black thigh-high hosiery with a coherent denier gradient and a visible, physically plausible top band.';
+  return [
+    'ATTIRE TOPOLOGY INVARIANT (MANDATORY):',
+    '- Keep a clear two-piece wardrobe topology: structured lace crop bodice + separate slit skirt.',
+    '- Preserve explicit waist separation between top and skirt; do not merge into a one-piece garment.',
+    hosieryLine,
+    '- Keep footwear as pointed high heels with believable contact mechanics and perspective.'
   ].join('\n');
 }
 
@@ -1554,12 +1727,206 @@ const SAFE_LEXICON_REPLACEMENTS = [
   { pattern: /\bseductive\b/gi, replacement: 'confident' },
   { pattern: /\bprovocative\b/gi, replacement: 'assertive' },
   { pattern: /\brevealing\b/gi, replacement: 'bold' },
+  { pattern: /\bintimate\b/gi, replacement: 'private' },
+  { pattern: /\bafterdark\b/gi, replacement: 'nighttime' },
   { pattern: /\bskin-forward\b/gi, replacement: 'contour-forward' },
   { pattern: /thigh-high hosiery/gi, replacement: 'sheer black stockings' },
+  { pattern: /\bhigh-cut leg lines\b/gi, replacement: 'defined leg-line tailoring' },
   { pattern: /intimate luxury-suite/gi, replacement: 'private luxury-suite' },
+  { pattern: /\bbedroom\b/gi, replacement: 'suite-lounge' },
+  { pattern: /\bbedside\b/gi, replacement: 'table-side' },
+  { pattern: /\bheadboard\b/gi, replacement: 'paneled backdrop' },
+  { pattern: /\bchaise\b/gi, replacement: 'lounge chair' },
+  { pattern: /\bcouch\b/gi, replacement: 'lounge sofa' },
+  { pattern: /\bdrapery\b/gi, replacement: 'curtain detail' },
   { pattern: /sexy editorial mood/gi, replacement: 'high-fashion editorial mood' },
-  { pattern: /sexy attire/gi, replacement: 'fashion-forward attire' }
+  { pattern: /sexy attire/gi, replacement: 'fashion-forward attire' },
+  { pattern: /waist separation must remain unmistakable and dramatic but non-explicit\./gi, replacement: 'Waist separation remains clearly visible and non-explicit.' }
 ];
+
+const IMAGE_SAFETY_COMPLIANCE_REPLACEMENTS = [
+  { pattern: /\bsexy\b/gi, replacement: 'elegant' },
+  { pattern: /\bseductive\b/gi, replacement: 'confident' },
+  { pattern: /\bprovocative\b/gi, replacement: 'assertive' },
+  { pattern: /\berotic\b/gi, replacement: 'editorial' },
+  { pattern: /\bintimate\b/gi, replacement: 'private' },
+  { pattern: /\bthigh[-\s]?high\b/gi, replacement: 'knee-high' },
+  { pattern: /\bupper[-\s]?thigh\b/gi, replacement: 'upper leg' },
+  { pattern: /\bupper[-\s]?leg\b/gi, replacement: 'leg line' },
+  { pattern: /\bdisplay leg\b/gi, replacement: 'leading leg line' },
+  { pattern: /\bhigh[-\s]?slit\b/gi, replacement: 'tailored vent' },
+  { pattern: /\bslit\b/gi, replacement: 'tailored vent' },
+  { pattern: /\bside[-\s]?waist\b/gi, replacement: 'side panel' },
+  { pattern: /\bwaist separation\b/gi, replacement: 'top-and-skirt separation' },
+  { pattern: /\bskin-forward\b/gi, replacement: 'shape-forward' },
+  { pattern: /\bpush to the edge of non-explicit\b/gi, replacement: 'remain strictly non-explicit' }
+];
+
+const IMAGE_SAFETY_COMPLIANCE_DROP_LINE_PATTERNS = [
+  /\bnon-explicit seductive silhouette\b/i,
+  /\bone leg-line emphasis through\b/i,
+  /\bdisplay leg\b/i,
+  /\bupper[-\s]?thigh\b/i,
+  /\bupper[-\s]?leg\b/i,
+  /\bside[-\s]?waist\b/i,
+  /\bmaximize non-explicit daring\b/i,
+  /\bpush to the edge of non-explicit\b/i,
+  /\berotic intent\b/i,
+  /\bfetish\b/i
+];
+
+function buildImageSafetyComplianceLockBlock(variant = 'primary') {
+  const variantLine = variant === 'safe'
+    ? '- Safe variant: prioritize compliance-stable fashion portrait language over intensity cues.'
+    : '- Primary variant: prioritize compliance-stable fashion portrait language and identity fidelity.';
+  return [
+    'IMAGE SAFETY COMPLIANCE LOCK (MANDATORY):',
+    variantLine,
+    '- Keep an adult, non-explicit, fashion portrait framing with no sexual or fetish intent.',
+    '- Avoid body-part emphasis cues; describe pose through balance, support contact, and garment mechanics.',
+    '- Keep wardrobe language coverage-forward and event-ready while preserving two-piece topology.'
+  ].join('\n');
+}
+
+function applyImageSafetyComplianceFilter(promptText, variant = 'primary') {
+  let normalized = String(promptText || '').trim();
+  if (!IMAGE_SAFETY_COMPLIANCE_MODE || !normalized) {
+    return normalized;
+  }
+
+  for (const { pattern, replacement } of IMAGE_SAFETY_COMPLIANCE_REPLACEMENTS) {
+    normalized = normalized.replace(pattern, replacement);
+  }
+
+  if (IMAGE_SAFETY_COMPLIANCE_LEVEL >= 2 && IMAGE_SAFETY_COMPLIANCE_DROP_LINES) {
+    normalized = normalized
+      .split(/\r?\n/)
+      .map(line => line.trimEnd())
+      .filter(line => !IMAGE_SAFETY_COMPLIANCE_DROP_LINE_PATTERNS.some(pattern => pattern.test(line)))
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  if (IMAGE_SAFETY_COMPLIANCE_LEVEL >= 3) {
+    normalized = normalized
+      .replace(/\bshape-forward\b/gi, 'well-tailored')
+      .replace(/\bassertive\b/gi, 'refined')
+      .replace(/\bconfident silhouette\b/gi, 'refined silhouette');
+  }
+
+  return `${normalized}\n\n${buildImageSafetyComplianceLockBlock(variant)}`.trim();
+}
+
+const SAFE_IMAGE_SAFETY_RETRY_REPLACEMENTS = [
+  { pattern: /\bthigh-high\b/gi, replacement: 'knee-high' },
+  { pattern: /\bupper-thigh\b/gi, replacement: 'upper-leg' },
+  { pattern: /\bhigh-cut\b/gi, replacement: 'tailored' },
+  { pattern: /\bslit\b/gi, replacement: 'tailored seam' },
+  { pattern: /\brevealing\b/gi, replacement: 'tailored' },
+  { pattern: /\bseductive\b/gi, replacement: 'confident' },
+  { pattern: /\bprovocative\b/gi, replacement: 'elegant' },
+  { pattern: /\bskin-forward\b/gi, replacement: 'shape-forward' },
+  { pattern: /\bside-waist\b/gi, replacement: 'side-panel' },
+  { pattern: /\bhosiery\b/gi, replacement: 'stockings' }
+];
+
+const SAFE_IMAGE_SAFETY_RETRY_DROP_LINE_PATTERNS = [
+  /\bpush to the edge of non-explicit\b/i,
+  /\baggressive\b/i,
+  /\brevealing editorial cues\b/i,
+  /\bhigh-cut leg line\b/i,
+  /\bupper-thigh\b/i,
+  /\bthigh-high\b/i,
+  /\bdeep side-waist\b/i,
+  /\bmaximize non-explicit daring\b/i
+];
+
+const SAFE_IMAGE_SAFETY_RETRY_ANCHOR_DROP_PATTERNS = [
+  /\bsexy\b/i,
+  /\bseductive\b/i,
+  /\bprovocative\b/i,
+  /\brevealing\b/i,
+  /\bupper-thigh\b/i,
+  /\bthigh\b/i,
+  /\bleg-line\b/i,
+  /\bside-waist\b/i,
+  /\bhigh-cut\b/i,
+  /\bslit\b/i,
+  /\bcorset\b/i,
+  /\bskin-forward\b/i,
+  /\bexposed skin\b/i
+];
+
+function sanitizeSafeRetryAnchorLine(line) {
+  let sanitized = String(line || '').trim();
+  if (!sanitized) return '';
+  for (const { pattern, replacement } of SAFE_LEXICON_REPLACEMENTS) {
+    sanitized = sanitized.replace(pattern, replacement);
+  }
+  for (const { pattern, replacement } of SAFE_IMAGE_SAFETY_RETRY_REPLACEMENTS) {
+    sanitized = sanitized.replace(pattern, replacement);
+  }
+  if (SAFE_IMAGE_SAFETY_RETRY_ANCHOR_DROP_PATTERNS.some(pattern => pattern.test(sanitized))) {
+    return '';
+  }
+  return sanitized.replace(/\s+/g, ' ').trim();
+}
+
+function buildCompactSafeImageSafetyRetryPrompt(sourcePromptText, promptMeta = {}, retryOrdinal = 2) {
+  const anchors = collectPromptAnchorBullets(sourcePromptText);
+  const sceneAnchors = anchors.scene
+    .map(sanitizeSafeRetryAnchorLine)
+    .filter(Boolean)
+    .slice(0, 3);
+  const poseAnchors = anchors.pose
+    .map(sanitizeSafeRetryAnchorLine)
+    .filter(Boolean)
+    .slice(0, 3);
+  const titleLine = promptMeta?.title
+    ? `Prompt anchor: ${promptMeta.title}`
+    : 'Prompt anchor: preserve scene framing from source prompt.';
+  const lines = [
+    'ULTRA-SAFE IMAGE RECOVERY TEMPLATE (MANDATORY):',
+    '- Generate a policy-safe editorial frame of the exact same adult woman from the reference image.',
+    '- Keep full-body composition and direct camera gaze while remaining fully non-explicit.',
+    titleLine,
+    buildIdentityDriftSentinelBlock('safe-retry')
+  ];
+
+  if (sceneAnchors.length) {
+    lines.push('Scene anchors (policy-safe):');
+    lines.push(...sceneAnchors.map(item => `- ${item}`));
+  } else {
+    lines.push('Scene anchors (policy-safe):');
+    lines.push('- Preserve the same private luxury-suite environment and camera framing intent.');
+  }
+
+  if (poseAnchors.length) {
+    lines.push('Pose anchors (policy-safe):');
+    lines.push(...poseAnchors.map(item => `- ${item}`));
+  } else {
+    lines.push('Pose anchors (policy-safe):');
+    lines.push('- Preserve the same support contact and stance balance from the source prompt.');
+  }
+
+  lines.push(
+    'Wardrobe safety lock:',
+    '- Keep elegant lace cocktail styling with coverage-forward boundaries and no exposure-focused emphasis.',
+    '- Keep black stockings and pointed heels only when compliant; otherwise keep a conservative equivalent without changing identity.',
+    'Physics and realism lock:',
+    '- Maintain support-contact compression, non-penetration, gravity-consistent drape, and coherent light-shadow geometry.',
+    '- Preserve camera-authentic skin and fabric texture; avoid CGI smoothing or composited edges.',
+    'Hard safety boundary:',
+    '- No nudity, fetish framing, erotic intent, or body-part emphasis language.',
+    '- Identity fidelity is mandatory and takes precedence over outfit complexity.',
+    ...(retryOrdinal >= 3
+      ? ['- Ultra-safe escalation: simplify styling details before risking identity drift or policy violations.']
+      : [])
+  );
+
+  return lines.join('\n');
+}
 
 function applySafePolicyHardening(promptText, variant) {
   if (!SAFE_POLICY_HARDENING || variant !== 'safe') {
@@ -1570,6 +1937,90 @@ function applySafePolicyHardening(promptText, variant) {
     hardened = hardened.replace(pattern, replacement);
   }
   return `${hardened.trim()}\n\n${buildSafePolicyGuardrailBlock()}`;
+}
+
+function buildSafeImageSafetyRetryPrompt(promptText, promptMeta = {}, retryOrdinal = 1) {
+  if (SAFE_IMAGE_SAFETY_RETRY_COMPACT_FINAL && retryOrdinal >= 2) {
+    const compact = buildCompactSafeImageSafetyRetryPrompt(promptText, promptMeta, retryOrdinal);
+    const compactCapped = countWords(compact) > SAFE_IMAGE_SAFETY_RETRY_ULTRA_WORD_CAP
+      ? trimTextToWordLimit(compact, SAFE_IMAGE_SAFETY_RETRY_ULTRA_WORD_CAP)
+      : compact;
+    return applyImageSafetyComplianceFilter(compactCapped.trim(), 'safe');
+  }
+
+  let rewritten = String(promptText || '').trim();
+  if (!rewritten) {
+    return rewritten;
+  }
+
+  for (const { pattern, replacement } of SAFE_IMAGE_SAFETY_RETRY_REPLACEMENTS) {
+    rewritten = rewritten.replace(pattern, replacement);
+  }
+
+  rewritten = rewritten
+    .split(/\r?\n/)
+    .map(line => line.trimEnd())
+    .filter(line => !SAFE_IMAGE_SAFETY_RETRY_DROP_LINE_PATTERNS.some(pattern => pattern.test(line)))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  if (retryOrdinal >= 2) {
+    const ultraSafeReplacements = [
+      { pattern: /\bhigh-fashion\b/gi, replacement: 'elegant' },
+      { pattern: /\bcontour-forward\b/gi, replacement: 'well-tailored' },
+      { pattern: /\bshape-forward\b/gi, replacement: 'well-tailored' },
+      { pattern: /\bsheer\b/gi, replacement: 'refined' }
+    ];
+    for (const { pattern, replacement } of ultraSafeReplacements) {
+      rewritten = rewritten.replace(pattern, replacement);
+    }
+    const ultraSafeDropPatterns = [
+      /\bleg-line\b/i,
+      /\bwaist\b/i,
+      /\bside-panel\b/i,
+      /\btailored seam\b/i,
+      /\bupper-leg\b/i
+    ];
+    rewritten = rewritten
+      .split(/\r?\n/)
+      .map(line => line.trimEnd())
+      .filter(line => !ultraSafeDropPatterns.some(pattern => pattern.test(line)))
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  rewritten = `${rewritten}\n\n${[
+    'IMAGE SAFETY RETRY OVERRIDE (MANDATORY):',
+    '- Rephrase with conservative cocktail-portrait wording while preserving identity, scene geometry, and lighting realism.',
+    '- Avoid suggestive framing language; keep styling elegant, coverage-forward, and fully non-explicit.',
+    '- Keep wardrobe replacement complete and policy-safe.',
+    '- Preserve camera-facing confidence and physically coherent garment behavior.',
+    buildIdentityDriftSentinelBlock('safe-retry'),
+    ...(retryOrdinal >= 2
+      ? [
+          '- Ultra-safe mode: prioritize conservative cocktail silhouette and portrait-forward framing over edge intensity.',
+          '- Keep skirt/hem behavior coverage-forward and avoid emphasis language for upper-leg or side-panel reveal.'
+        ]
+      : [])
+  ].join('\n')}`;
+
+  const retryWordCap = retryOrdinal >= 2
+    ? Math.min(SAFE_IMAGE_SAFETY_RETRY_PROMPT_WORD_CAP, SAFE_IMAGE_SAFETY_RETRY_ULTRA_WORD_CAP)
+    : SAFE_IMAGE_SAFETY_RETRY_PROMPT_WORD_CAP;
+  if (countWords(rewritten) > retryWordCap) {
+    const trimmed = trimTextToWordLimit(rewritten, retryWordCap);
+    const label = promptMeta?.promptId && promptMeta?.title
+      ? `${promptMeta.promptId} ${promptMeta.title}`
+      : (promptMeta?.title || promptMeta?.promptId || 'n/a');
+    log(
+      `Safe IMAGE_SAFETY retry cap applied (${label}, retry=${retryOrdinal}): ${countWords(rewritten)} -> ${countWords(trimmed)} words`
+    );
+    rewritten = trimmed;
+  }
+
+  return applyImageSafetyComplianceFilter(rewritten.trim(), 'safe');
 }
 
 function buildResearchMicrodetailFoundationBlock(variant, promptMeta = {}) {
@@ -1675,9 +2126,45 @@ function buildResearchMicrodetailModules(variant, promptMeta = {}) {
   ];
 }
 
+function selectTargetedMicrodetailModules(modules, promptMeta = {}) {
+  if (!TARGETED_MICRODETAIL_MODE || modules.length <= MICRODETAIL_MODULE_CAP) {
+    return modules;
+  }
+
+  const title = String(promptMeta?.title || '').toLowerCase();
+  const priorityIndexes = [0, 1, 2];
+
+  const waterScene = /(pool|jacuzzi|hot tub|spa|water|fountain|steam|wet)/i.test(title);
+  const exteriorScene = /(street|alley|rooftop|balcony|outside|exterior|doorway|night walk)/i.test(title);
+  if (waterScene || exteriorScene) {
+    priorityIndexes.push(3);
+  } else {
+    priorityIndexes.push(4);
+  }
+  priorityIndexes.push(5);
+
+  const ordered = [];
+  for (const index of priorityIndexes) {
+    if (index >= modules.length || ordered.includes(index)) {
+      continue;
+    }
+    ordered.push(index);
+    if (ordered.length >= MICRODETAIL_MODULE_CAP) {
+      break;
+    }
+  }
+  for (let i = 0; i < modules.length && ordered.length < MICRODETAIL_MODULE_CAP; i += 1) {
+    if (!ordered.includes(i)) {
+      ordered.push(i);
+    }
+  }
+
+  return ordered.map(index => modules[index]);
+}
+
 function enforcePromptWordTarget(promptText, variant, promptMeta = {}) {
   if (!ENABLE_RESEARCH_MICRODETAIL_EXPANSION) {
-    return promptText;
+    return enforcePromptHardCap(promptText, variant, promptMeta);
   }
   let expanded = String(promptText || '').trim();
   if (!expanded) {
@@ -1686,16 +2173,16 @@ function enforcePromptWordTarget(promptText, variant, promptMeta = {}) {
 
   expanded = `${expanded}\n\n${buildResearchMicrodetailFoundationBlock(variant, promptMeta)}`;
   if (countWords(expanded) >= PROMPT_TARGET_WORDS) {
-    return expanded;
+    return enforcePromptHardCap(expanded, variant, promptMeta);
   }
 
-  const modules = buildResearchMicrodetailModules(variant, promptMeta);
+  const modules = selectTargetedMicrodetailModules(buildResearchMicrodetailModules(variant, promptMeta), promptMeta);
   if (!modules.length) {
-    return expanded;
+    return enforcePromptHardCap(expanded, variant, promptMeta);
   }
 
   let pass = 0;
-  while (countWords(expanded) < PROMPT_TARGET_WORDS && pass < 4) {
+  while (countWords(expanded) < PROMPT_TARGET_WORDS && pass < PROMPT_REINFORCEMENT_MAX_PASSES) {
     pass += 1;
     for (const moduleText of modules) {
       const passHeader = pass === 1 ? '' : `\nMICRO-DETAIL REINFORCEMENT PASS ${pass}:\n`;
@@ -1706,7 +2193,7 @@ function enforcePromptWordTarget(promptText, variant, promptMeta = {}) {
     }
   }
 
-  return expanded;
+  return enforcePromptHardCap(expanded, variant, promptMeta);
 }
 
 function applyPromptOverrides(promptText, variant, promptMeta = {}) {
@@ -1759,9 +2246,13 @@ function applyPromptOverrides(promptText, variant, promptMeta = {}) {
       rebuilt.push(directionSupremacy);
     }
     let rebuiltPrompt = rebuilt.join('\n\n');
+    rebuiltPrompt = `${rebuiltPrompt.trim()}\n\n${buildAttireTopologyInvariantBlock(variant)}`;
     rebuiltPrompt = `${rebuiltPrompt.trim()}\n\n${buildIdentityFinalOverrideBlock()}`;
+    rebuiltPrompt = `${rebuiltPrompt.trim()}\n\n${buildIdentityDriftSentinelBlock()}`;
     rebuiltPrompt = applySafePolicyHardening(rebuiltPrompt, variant);
     rebuiltPrompt = enforcePromptWordTarget(rebuiltPrompt, variant, promptMeta);
+    rebuiltPrompt = applyImageSafetyComplianceFilter(rebuiltPrompt, variant);
+    rebuiltPrompt = enforcePromptHardCap(rebuiltPrompt, variant, promptMeta);
     return rebuiltPrompt;
   }
 
@@ -1849,22 +2340,32 @@ function applyPromptOverrides(promptText, variant, promptMeta = {}) {
   if (directionSupremacy) {
     updated = `${updated.trim()}\n\n${directionSupremacy}`;
   }
+  updated = `${updated.trim()}\n\n${buildAttireTopologyInvariantBlock(variant)}`;
   updated = `${updated.trim()}\n\n${buildIdentityFinalOverrideBlock()}`;
+  updated = `${updated.trim()}\n\n${buildIdentityDriftSentinelBlock()}`;
   updated = applySafePolicyHardening(updated, variant);
   updated = enforcePromptWordTarget(updated, variant, promptMeta);
+  updated = applyImageSafetyComplianceFilter(updated, variant);
+  updated = enforcePromptHardCap(updated, variant, promptMeta);
   return updated;
 }
 
 function applyPromptNonce(promptText, meta) {
   if (!PROMPT_NONCE_ENABLED) {
-    return promptText;
+    return enforcePromptHardCap(promptText, meta?.variant || 'primary', meta);
   }
   const nonceBlock = [
     'RUN UNIQUENESS TOKEN (DO NOT RENDER AS TEXT IN SCENE):',
     `token=${meta.runNonce}-${meta.promptId}-${meta.variant}-${meta.attemptIndex}`,
     'Use this token only as generation-uniqueness metadata. Never place token characters on signage, clothing, props, or background surfaces.'
   ].join('\n');
-  return `${promptText.trim()}\n\n${nonceBlock}`;
+  let basePrompt = String(promptText || '').trim();
+  if (ENABLE_PROMPT_HARD_CAP) {
+    const nonceWords = countWords(nonceBlock);
+    const baseBudget = Math.max(120, PROMPT_HARD_CAP_WORDS - nonceWords);
+    basePrompt = trimTextToWordLimit(basePrompt, baseBudget);
+  }
+  return `${basePrompt}\n\n${nonceBlock}`;
 }
 
 function collectTextParts(body) {
@@ -1997,6 +2498,11 @@ function countParsedScoreFields(payload) {
   return count;
 }
 
+function isHeuristicParserName(parserName) {
+  const normalized = String(parserName || '').trim().toLowerCase();
+  return /(^|-)heuristic$/.test(normalized);
+}
+
 function tryParseQualityPayload(text) {
   const parsed = parseLooseJson(text);
   if (parsed) {
@@ -2017,6 +2523,85 @@ function tryParseQualityPayload(text) {
   }
 
   return null;
+}
+
+function pickFirstBoolean(source, keys) {
+  for (const key of keys) {
+    const value = source?.[key];
+    if (typeof value === 'boolean') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true') return true;
+      if (normalized === 'false') return false;
+    }
+  }
+  return null;
+}
+
+function parseIdentityFallbackAuditPayload(text) {
+  const raw = String(text || '').trim();
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = parseLooseJson(raw);
+  if (parsed && typeof parsed === 'object') {
+    const identityScore = pickFirstScore(parsed, ['identityScore', 'identity', 'identity_match']);
+    const directGazeScore = pickFirstScore(parsed, ['directGazeScore', 'gaze', 'direct_camera_gaze']);
+    const identityPass = pickFirstBoolean(parsed, ['identityPass', 'pass', 'identity_pass']);
+    const diagnostics = typeof parsed.diagnostics === 'string' ? parsed.diagnostics.trim() : null;
+    if (
+      identityScore !== null
+      || directGazeScore !== null
+      || identityPass !== null
+      || diagnostics
+    ) {
+      return {
+        identityScore,
+        directGazeScore,
+        identityPass,
+        diagnostics,
+        parser: 'json',
+        rawText: raw
+      };
+    }
+  }
+
+  const identityScore = extractRegexNumber(raw, [
+    /"identityScore"\s*:\s*([0-9]+(?:\.[0-9]+)?)/i,
+    /identity[_\s-]*score\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)/i
+  ]);
+  const directGazeScore = extractRegexNumber(raw, [
+    /"directGazeScore"\s*:\s*([0-9]+(?:\.[0-9]+)?)/i,
+    /direct[_\s-]*gaze[_\s-]*score\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)/i,
+    /gaze[_\s-]*score\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)/i
+  ]);
+  const passMatch = raw.match(/"identityPass"\s*:\s*(true|false)/i) || raw.match(/identity[_\s-]*pass\s*[:=]\s*(true|false)/i);
+  const diagnosticsMatch = raw.match(/"diagnostics"\s*:\s*"([\s\S]*?)"/i);
+  const identityPass = passMatch?.[1]
+    ? passMatch[1].trim().toLowerCase() === 'true'
+    : null;
+  const diagnostics = diagnosticsMatch?.[1]?.trim() || null;
+
+  if (
+    identityScore === null
+    && directGazeScore === null
+    && identityPass === null
+    && !diagnostics
+  ) {
+    return null;
+  }
+
+  return {
+    identityScore,
+    directGazeScore,
+    identityPass,
+    diagnostics,
+    parser: 'heuristic',
+    rawText: raw
+  };
 }
 
 function buildScorerRepairPrompt({ scorerPrompt, invalidResponseText, attempt }) {
@@ -2367,6 +2952,130 @@ function buildQualityScorerPrompt({ promptId, title, variant, promptIntentDigest
   ].join('\n');
 }
 
+function buildIdentityFallbackAuditPrompt({ promptId, title, variant }) {
+  const gazeFloor = Math.min(IDENTITY_FALLBACK_AUDIT_MIN_SCORE, QUALITY_THRESHOLD_GAZE);
+  return [
+    'Strict identity fallback audit. Return ONE compact JSON object only.',
+    'Compare GENERATED image against REFERENCE image.',
+    'Evaluate only identity fidelity and direct camera gaze.',
+    `Set identityPass true only if identityScore >= ${IDENTITY_FALLBACK_AUDIT_MIN_SCORE} and directGazeScore >= ${gazeFloor}.`,
+    `Prompt metadata: id=${promptId}, title=${title}, variant=${variant}.`,
+    'Output schema exactly:',
+    '{"identityScore":0,"directGazeScore":0,"identityPass":false,"diagnostics":"max 16 words"}',
+    'No markdown. No code fences. JSON only.'
+  ].join('\n');
+}
+
+async function runIdentityFallbackAudit({
+  promptId,
+  title,
+  variant,
+  referenceInlineData,
+  generatedImagePart
+}) {
+  if (!IDENTITY_FALLBACK_AUDIT_ENABLED) {
+    return null;
+  }
+  if (!generatedImagePart?.inlineData) {
+    return {
+      enabled: true,
+      available: false,
+      errorType: 'input',
+      message: 'Missing generated image inlineData for identity fallback audit'
+    };
+  }
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    return {
+      enabled: true,
+      available: false,
+      errorType: 'auth',
+      message: 'Failed to obtain Google access token for identity fallback audit'
+    };
+  }
+
+  const scorerPrompt = buildIdentityFallbackAuditPrompt({ promptId, title, variant });
+  const request = await requestScorerApi({
+    accessToken,
+    parts: [
+      { text: scorerPrompt },
+      { inlineData: referenceInlineData },
+      { inlineData: generatedImagePart.inlineData }
+    ],
+    maxOutputTokens: IDENTITY_FALLBACK_AUDIT_MAX_OUTPUT_TOKENS,
+    temperature: 0,
+    responseSchema: SCORER_FORCE_SCHEMA ? IDENTITY_FALLBACK_AUDIT_RESPONSE_SCHEMA : null
+  });
+
+  if (!request.ok) {
+    return {
+      enabled: true,
+      available: false,
+      errorType: request.errorType || 'unknown',
+      status: request.status || null,
+      statusText: request.statusText || null,
+      message: request.message || null,
+      responseSnippet: request.responseSnippet || null,
+      responseHeaders: request.responseHeaders || null
+    };
+  }
+
+  const texts = collectTextParts(request.body);
+  let parsedAudit = null;
+  for (const text of texts) {
+    const candidate = parseIdentityFallbackAuditPayload(text);
+    if (candidate) {
+      parsedAudit = candidate;
+      break;
+    }
+  }
+
+  if (!parsedAudit) {
+    const joinedText = texts.join('\n').trim() || request.responseText || '';
+    parsedAudit = parseIdentityFallbackAuditPayload(joinedText);
+  }
+
+  if (!parsedAudit) {
+    return {
+      enabled: true,
+      available: false,
+      errorType: 'parse',
+      message: 'Unable to parse identity fallback audit response',
+      responseSnippet: String(request.responseText || '').slice(0, 2000),
+      responseHeaders: request.responseHeaders || null
+    };
+  }
+
+  const gazeFloor = Math.min(IDENTITY_FALLBACK_AUDIT_MIN_SCORE, QUALITY_THRESHOLD_GAZE);
+  const identityScore = toScore(parsedAudit.identityScore);
+  const directGazeScore = toScore(parsedAudit.directGazeScore);
+  const derivedPass = Boolean(
+    identityScore !== null
+    && identityScore >= IDENTITY_FALLBACK_AUDIT_MIN_SCORE
+    && (directGazeScore === null || directGazeScore >= gazeFloor)
+  );
+  const pass = parsedAudit.identityPass === null
+    ? derivedPass
+    : Boolean(parsedAudit.identityPass && derivedPass);
+
+  return {
+    enabled: true,
+    available: true,
+    pass,
+    identityScore,
+    directGazeScore,
+    modelPass: parsedAudit.identityPass,
+    thresholds: {
+      identityScoreMin: IDENTITY_FALLBACK_AUDIT_MIN_SCORE,
+      directGazeScoreMin: gazeFloor
+    },
+    diagnostics: parsedAudit.diagnostics || null,
+    parser: parsedAudit.parser || 'unknown',
+    responseHeaders: request.responseHeaders || null,
+    rawText: String(parsedAudit.rawText || '').slice(0, 2000)
+  };
+}
+
 async function requestScorerApi({
   accessToken,
   parts,
@@ -2704,7 +3413,31 @@ async function evaluateImageQuality({
   referenceInlineData,
   imagePart
 }) {
-  if (!ENABLE_QUALITY_GATE) {
+  const auditOnlyMode = !ENABLE_QUALITY_GATE && ENABLE_QUALITY_AUDIT_WHEN_GATE_OFF;
+  const finalizeQualityResult = async (qualityResult) => {
+    if (!qualityResult || qualityResult.scorerAvailable) {
+      return qualityResult;
+    }
+    if (qualityResult?.scorerError?.errorType !== 'parse') {
+      return qualityResult;
+    }
+    if (!IDENTITY_FALLBACK_AUDIT_ENABLED) {
+      return qualityResult;
+    }
+    const identityFallbackAudit = await runIdentityFallbackAudit({
+      promptId,
+      title,
+      variant,
+      referenceInlineData,
+      generatedImagePart: imagePart
+    });
+    return {
+      ...qualityResult,
+      identityFallbackAudit: identityFallbackAudit || null
+    };
+  };
+
+  if (!ENABLE_QUALITY_GATE && !ENABLE_QUALITY_AUDIT_WHEN_GATE_OFF) {
     return {
       enabled: false,
       pass: true,
@@ -2727,8 +3460,9 @@ async function evaluateImageQuality({
   });
 
   if (!scoreResult.ok) {
-    return {
+    return finalizeQualityResult({
       enabled: true,
+      auditOnly: auditOnlyMode,
       pass: false,
       scorerAvailable: false,
       scorerError: {
@@ -2746,10 +3480,12 @@ async function evaluateImageQuality({
       rescueDirectives: [],
       physicsChecklist: null,
       physicsChecklistFailures: []
-    };
+    });
   }
 
   const parsed = scoreResult.parsed || {};
+  const scorerParser = String(scoreResult.parser || 'unknown');
+  const parserIsHeuristic = HEURISTIC_SCORER_AUDIT_ONLY && isHeuristicParserName(scorerParser);
   const scoresRoot = parsed.scores || parsed;
   const scores = {
     identity: pickFirstScore(scoresRoot, SCORE_FIELD_ALIASES.identity),
@@ -2766,11 +3502,12 @@ async function evaluateImageQuality({
     .filter(([, value]) => value === null)
     .map(([key]) => key);
   if (missingScoreKeys.length > 0) {
-    return {
+    return finalizeQualityResult({
       enabled: true,
+      auditOnly: auditOnlyMode,
       pass: false,
       scorerAvailable: false,
-      scorerParser: scoreResult.parser || 'unknown',
+      scorerParser,
       scorerError: {
         errorType: 'parse',
         message: `Incomplete scorer payload (missing score fields): ${missingScoreKeys.join(', ')}`,
@@ -2786,17 +3523,18 @@ async function evaluateImageQuality({
       physicsChecklistFailures: [],
       confidence: clamp(Number(parsed.confidence) || 0, 0, 1),
       raw: parsed
-    };
+    });
   }
 
   const scoreValues = Object.values(scores).map(value => Number(value));
   const allZeroScores = scoreValues.length > 0 && scoreValues.every(value => Number.isFinite(value) && value <= 0.01);
   if (allZeroScores) {
-    return {
+    return finalizeQualityResult({
       enabled: true,
+      auditOnly: auditOnlyMode,
       pass: false,
       scorerAvailable: false,
-      scorerParser: scoreResult.parser || 'unknown',
+      scorerParser,
       scorerError: {
         errorType: 'parse',
         message: 'Rejected scorer payload with all-zero scores (likely repair artifact)',
@@ -2812,19 +3550,20 @@ async function evaluateImageQuality({
       physicsChecklistFailures: [],
       confidence: clamp(Number(parsed.confidence) || 0, 0, 1),
       raw: parsed
-    };
+    });
   }
 
   const minScore = Math.min(...scoreValues);
   const maxScore = Math.max(...scoreValues);
   const nearUniformScores = Number.isFinite(minScore) && Number.isFinite(maxScore) && (maxScore - minScore) <= 0.15;
-  const looksLikeRepairArtifact = String(scoreResult.parser || '').startsWith('repair');
+  const looksLikeRepairArtifact = scorerParser.startsWith('repair');
   if (nearUniformScores && looksLikeRepairArtifact) {
-    return {
+    return finalizeQualityResult({
       enabled: true,
+      auditOnly: auditOnlyMode,
       pass: false,
       scorerAvailable: false,
-      scorerParser: scoreResult.parser || 'unknown',
+      scorerParser,
       scorerError: {
         errorType: 'parse',
         message: 'Rejected near-uniform repaired scores (likely repair artifact)',
@@ -2840,7 +3579,58 @@ async function evaluateImageQuality({
       physicsChecklistFailures: [],
       confidence: clamp(Number(parsed.confidence) || 0, 0, 1),
       raw: parsed
-    };
+    });
+  }
+
+  // Some repair responses include placeholder mid-scores (e.g., many 5.0 values)
+  // with "incomplete" diagnostics. Treat these as parser-unavailable artifacts.
+  const roundedScoreValues = scoreValues
+    .filter(value => Number.isFinite(value))
+    .map(value => Math.round(value * 10) / 10);
+  const scoreBuckets = new Map();
+  for (const value of roundedScoreValues) {
+    scoreBuckets.set(value, (scoreBuckets.get(value) || 0) + 1);
+  }
+  let largestBucketValue = null;
+  let largestBucketCount = 0;
+  for (const [value, count] of scoreBuckets.entries()) {
+    if (count > largestBucketCount) {
+      largestBucketValue = value;
+      largestBucketCount = count;
+    }
+  }
+  const rawDiagnosticsHint = `${String(parsed.diagnostics || '')}\n${String(scoreResult.rawText || '')}`;
+  const hasIncompleteHint = /\bincomplete\b|\bmissing\b/i.test(rawDiagnosticsHint);
+  const majorityMidFillArtifact = (
+    looksLikeRepairArtifact
+    && hasIncompleteHint
+    && largestBucketCount >= Math.max(6, roundedScoreValues.length - 1)
+    && largestBucketValue !== null
+    && Math.abs(Number(largestBucketValue) - 5) <= 0.15
+  );
+  if (majorityMidFillArtifact) {
+    return finalizeQualityResult({
+      enabled: true,
+      auditOnly: auditOnlyMode,
+      pass: false,
+      scorerAvailable: false,
+      scorerParser,
+      scorerError: {
+        errorType: 'parse',
+        message: 'Rejected repaired scorer payload with placeholder mid-score fill (likely artifact)',
+        responseSnippet: scoreResult.rawText ? String(scoreResult.rawText).slice(0, 2000) : null,
+        responseHeaders: scoreResult.responseHeaders || null
+      },
+      scores,
+      failedDimensions: [],
+      overallScore: null,
+      diagnostics: 'scorer invalid',
+      rescueDirectives: [],
+      physicsChecklist: null,
+      physicsChecklistFailures: [],
+      confidence: clamp(Number(parsed.confidence) || 0, 0, 1),
+      raw: parsed
+    });
   }
 
   const physicsChecklist = parsePhysicsChecklist(parsed.physicsChecklist || parsed.physics_checklist);
@@ -2859,21 +3649,49 @@ async function evaluateImageQuality({
     });
   }
   const rescueDirectives = normalizeRescueDirectives(parsed.rescueDirectives || parsed.rescue_directives);
-  return {
+  const diagnostics = typeof parsed.diagnostics === 'string' ? parsed.diagnostics.trim() : null;
+  if (parserIsHeuristic) {
+    return finalizeQualityResult({
+      enabled: true,
+      auditOnly: true,
+      pass: true,
+      scorerAvailable: false,
+      scorerParser,
+      scorerParserTrust: 'heuristic_audit_only',
+      scorerError: {
+        errorType: 'heuristic_audit_only',
+        message: 'Heuristic scorer parser output is audit-only and does not gate final acceptance.',
+        responseSnippet: scoreResult.rawText ? String(scoreResult.rawText).slice(0, 2000) : null,
+        responseHeaders: scoreResult.responseHeaders || null
+      },
+      scores,
+      failedDimensions: quality.failedDimensions,
+      overallScore: quality.overallScore,
+      diagnostics,
+      rescueDirectives,
+      physicsChecklist,
+      physicsChecklistFailures,
+      confidence: clamp(Number(parsed.confidence) || 0, 0, 1),
+      raw: parsed
+    });
+  }
+  return finalizeQualityResult({
     enabled: true,
+    auditOnly: auditOnlyMode,
     pass: quality.pass,
     scorerAvailable: true,
-    scorerParser: scoreResult.parser || 'unknown',
+    scorerParser,
+    scorerParserTrust: 'trusted',
     scores,
     failedDimensions: quality.failedDimensions,
     overallScore: quality.overallScore,
-    diagnostics: typeof parsed.diagnostics === 'string' ? parsed.diagnostics.trim() : null,
+    diagnostics,
     rescueDirectives,
     physicsChecklist,
     physicsChecklistFailures,
     confidence: clamp(Number(parsed.confidence) || 0, 0, 1),
     raw: parsed
-  };
+  });
 }
 
 async function evaluateImageQualityWithSelfHealing({
@@ -2894,7 +3712,8 @@ async function evaluateImageQualityWithSelfHealing({
     imagePart
   });
 
-  if (!ENABLE_QUALITY_GATE || quality.scorerAvailable || SCORER_SELF_HEAL_RETRIES <= 0) {
+  const scoringDisabled = !ENABLE_QUALITY_GATE && !ENABLE_QUALITY_AUDIT_WHEN_GATE_OFF;
+  if (scoringDisabled || quality.scorerAvailable || SCORER_SELF_HEAL_RETRIES <= 0) {
     return quality;
   }
 
@@ -3176,13 +3995,144 @@ function isQualityAcceptableForFinal(quality, variant = 'primary') {
   if (!quality?.enabled) {
     return true;
   }
+  if (quality?.auditOnly) {
+    return true;
+  }
   if (!quality.scorerAvailable) {
+    const parseFailure = quality?.scorerError?.errorType === 'parse';
+    const identityFallbackAudit = quality?.identityFallbackAudit;
+    if (parseFailure && IDENTITY_FALLBACK_AUDIT_ENABLED) {
+      if (
+        identityFallbackAudit?.enabled
+        && identityFallbackAudit?.available
+        && typeof identityFallbackAudit?.pass === 'boolean'
+      ) {
+        return identityFallbackAudit.pass;
+      }
+      return false;
+    }
     return SCORER_UNAVAILABLE_POLICY === 'soft_accept';
   }
   if (variant === 'primary' && isEdgeFirstAcceptable(quality)) {
     return true;
   }
   return Boolean(quality.pass);
+}
+
+async function executeSafeFallbackSequence({
+  indexLabel,
+  prompt,
+  promptSlug,
+  runDir,
+  runNonce,
+  safePromptText,
+  safePromptHash,
+  safeIntentDigest,
+  referenceInlineData,
+  promptRecord,
+  summary
+}) {
+  let attemptIndex = 1;
+  let attemptVariant = 'safe';
+  let attemptPromptText = safePromptText;
+  let attemptPromptHash = safePromptHash;
+  let retriesLeft = SAFE_IMAGE_SAFETY_RETRY_ENABLED ? SAFE_IMAGE_SAFETY_RETRY_MAX_ATTEMPTS : 0;
+
+  while (true) {
+    const safeResult = await callImageModel({
+      promptText: attemptPromptText,
+      referenceInlineData,
+      label: `Prompt ${prompt.id} ${attemptVariant}`
+    });
+
+    if (safeResult.ok) {
+      const safeSaved = await saveImagePart(
+        safeResult.imagePart,
+        path.join(runDir, `${promptSlug}-safe-a${attemptIndex}`)
+      );
+      const safeQuality = await evaluateImageQualityWithSelfHealing({
+        promptId: prompt.id,
+        title: prompt.title,
+        variant: 'safe',
+        promptIntentDigest: safeIntentDigest,
+        referenceInlineData,
+        imagePart: safeResult.imagePart,
+        logLabel: `${indexLabel}: ${attemptVariant} quality`
+      });
+      recordQualityTotals(summary, safeQuality);
+
+      promptRecord.attempts.push({
+        variant: attemptVariant,
+        attemptIndex,
+        success: true,
+        promptHash: attemptPromptHash,
+        outputFile: safeSaved.outputPath,
+        mimeType: safeSaved.mimeType,
+        bytes: safeSaved.bytes,
+        responseHeaders: safeResult.responseHeaders || null,
+        quality: safeQuality
+      });
+
+      if (isQualityAcceptableForFinal(safeQuality, 'safe')) {
+        return {
+          status: 'accepted',
+          outputFile: safeSaved.outputPath,
+          quality: safeQuality
+        };
+      }
+
+      return {
+        status: 'quality_rejected'
+      };
+    }
+
+    promptRecord.attempts.push({
+      variant: attemptVariant,
+      attemptIndex,
+      success: false,
+      promptHash: attemptPromptHash,
+      errorType: safeResult.errorType,
+      status: safeResult.status || null,
+      statusText: safeResult.statusText || null,
+      blockReason: safeResult.blockReason || null,
+      message: safeResult.message || null,
+      responseSnippet: safeResult.responseSnippet || null,
+      responseHeaders: safeResult.responseHeaders || null
+    });
+
+    if (retriesLeft <= 0 || !isImageSafetyBlockReason(safeResult.blockReason)) {
+      return {
+        status: 'failed',
+        errorType: safeResult.errorType || 'unknown'
+      };
+    }
+
+    retriesLeft -= 1;
+    attemptIndex += 1;
+    attemptVariant = `safe-retry-${SAFE_IMAGE_SAFETY_RETRY_MAX_ATTEMPTS - retriesLeft}`;
+
+    const retryOrdinal = SAFE_IMAGE_SAFETY_RETRY_MAX_ATTEMPTS - retriesLeft;
+    const retryPromptBase = buildSafeImageSafetyRetryPrompt(
+      safePromptText,
+      {
+        promptId: prompt.id,
+        title: prompt.title
+      },
+      retryOrdinal
+    );
+    attemptPromptText = applyPromptNonce(retryPromptBase, {
+      runNonce,
+      promptId: prompt.id,
+      variant: attemptVariant,
+      attemptIndex
+    });
+    attemptPromptHash = shortHash(attemptPromptText, 24);
+
+    log(
+      `${indexLabel}: safe blocked by IMAGE_SAFETY, retrying with policy-safe rewrite`
+      + ` (${attemptVariant}, promptHash=${attemptPromptHash})`
+    );
+  }
 }
 
 function parsePromptSections(markdown) {
@@ -3426,19 +4376,30 @@ async function callImageModel({ promptText, referenceInlineData, label }) {
     }
 
     if (!response.ok) {
+      const retryAfterHeader = response.headers.get('retry-after');
       const shouldRetry = requestAttempt < maxHttpAttempts && IMAGE_HTTP_RETRYABLE_STATUSES.has(response.status);
       armAdaptiveRateLimitCooldown({
         label,
         status: response.status,
-        retryAfterHeader: response.headers.get('retry-after')
+        retryAfterHeader
       });
       if (shouldRetry) {
-        const retryDelayMs = computeImageRetryDelayMs({
+        let retryDelayMs = computeImageRetryDelayMs({
           attempt: requestAttempt,
-          retryAfterHeader: response.headers.get('retry-after')
+          retryAfterHeader
         });
+        if (response.status === 429) {
+          const adaptiveRemainingMs = getAdaptiveCooldownRemainingMs();
+          const retryFloorMs = Math.round(RATE_LIMIT_RETRY_FLOOR_S * 1000);
+          const retryCapMs = Math.round(RATE_LIMIT_RETRY_MAX_S * 1000);
+          const adaptiveClampedMs = Math.min(retryCapMs, adaptiveRemainingMs);
+          retryDelayMs = Math.max(retryDelayMs, retryFloorMs, adaptiveClampedMs);
+        }
         log(
           `${label}: HTTP ${response.status} on request attempt ${requestAttempt}/${maxHttpAttempts}; retrying in ${Math.ceil(retryDelayMs / 1000)}s`
+          + (response.status === 429
+            ? ` (floor=${RATE_LIMIT_RETRY_FLOOR_S}s, adaptiveRemaining=${Math.ceil(getAdaptiveCooldownRemainingMs() / 1000)}s)`
+            : '')
         );
         await wait(retryDelayMs);
         continue;
@@ -3498,6 +4459,63 @@ async function writeJson(filePath, value) {
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
+let activeRunContext = null;
+let shutdownInProgress = false;
+
+async function persistActiveRunState(status, extra = {}) {
+  if (!activeRunContext?.summary || !activeRunContext?.summaryPath) {
+    return;
+  }
+
+  const summary = activeRunContext.summary;
+  const runState = summary.runState || {};
+  const terminalStatuses = new Set(['completed', 'failed', 'aborted']);
+  if (terminalStatuses.has(runState.status)) {
+    return;
+  }
+
+  const nowIso = new Date().toISOString();
+  summary.runState = {
+    ...runState,
+    ...extra,
+    status,
+    updatedAt: nowIso
+  };
+  if (status === 'completed') {
+    summary.runState.completedAt = nowIso;
+  } else if (status === 'failed') {
+    summary.runState.failedAt = nowIso;
+  } else if (status === 'aborted') {
+    summary.runState.abortedAt = nowIso;
+  }
+
+  await writeJson(activeRunContext.summaryPath, summary);
+}
+
+function installSignalHandlers() {
+  const handleSignal = async (signalName, exitCode) => {
+    if (shutdownInProgress) {
+      return;
+    }
+    shutdownInProgress = true;
+    try {
+      await persistActiveRunState('aborted', { abortSignal: signalName });
+    } catch {
+      // Best-effort run-state persistence on termination.
+    }
+    process.exit(exitCode);
+  };
+
+  process.on('SIGINT', () => {
+    void handleSignal('SIGINT', 130);
+  });
+  process.on('SIGTERM', () => {
+    void handleSignal('SIGTERM', 143);
+  });
+}
+
+installSignalHandlers();
+
 async function main() {
   const promptMarkdown = await fs.readFile(PROMPT_FILE, 'utf8');
   const parsedPrompts = parsePromptSections(promptMarkdown).slice(0, MAX_PROMPTS);
@@ -3538,6 +4556,8 @@ async function main() {
     rateLimitCooldownMaxSeconds: RATE_LIMIT_COOLDOWN_MAX_S,
     rateLimitCooldownGrowth: RATE_LIMIT_COOLDOWN_GROWTH,
     rateLimitCooldownDecaySeconds: RATE_LIMIT_COOLDOWN_DECAY_S,
+    rateLimitRetryFloorSeconds: RATE_LIMIT_RETRY_FLOOR_S,
+    rateLimitRetryMaxSeconds: RATE_LIMIT_RETRY_MAX_S,
     attemptWaitJitterSeconds: ATTEMPT_WAIT_JITTER_S,
     outputImageSize: OUTPUT_IMAGE_SIZE,
     outputAspectRatio: OUTPUT_ASPECT_RATIO,
@@ -3570,13 +4590,31 @@ async function main() {
     sensualVarianceLevel: SENSUAL_VARIANCE_LEVEL,
     enableResearchMicrodetailExpansion: ENABLE_RESEARCH_MICRODETAIL_EXPANSION,
     promptTargetWords: PROMPT_TARGET_WORDS,
+    promptReinforcementMaxPasses: PROMPT_REINFORCEMENT_MAX_PASSES,
+    targetedMicrodetailMode: TARGETED_MICRODETAIL_MODE,
+    microdetailModuleCap: MICRODETAIL_MODULE_CAP,
+    enablePromptHardCap: ENABLE_PROMPT_HARD_CAP,
+    promptHardCapWords: PROMPT_HARD_CAP_WORDS,
     safePolicyHardening: SAFE_POLICY_HARDENING,
+    imageSafetyComplianceMode: IMAGE_SAFETY_COMPLIANCE_MODE,
+    imageSafetyComplianceLevel: IMAGE_SAFETY_COMPLIANCE_LEVEL,
+    imageSafetyComplianceDropLines: IMAGE_SAFETY_COMPLIANCE_DROP_LINES,
     safeFallbackSource: SAFE_FALLBACK_SOURCE_NORMALIZED,
     safeTransferPrimaryAnchors: SAFE_TRANSFER_PRIMARY_ANCHORS,
+    safeAnchorSanitize: SAFE_ANCHOR_SANITIZE,
+    safeImageSafetyRetryEnabled: SAFE_IMAGE_SAFETY_RETRY_ENABLED,
+    safeImageSafetyRetryMaxAttempts: SAFE_IMAGE_SAFETY_RETRY_MAX_ATTEMPTS,
+    safeImageSafetyRetryPromptWordCap: SAFE_IMAGE_SAFETY_RETRY_PROMPT_WORD_CAP,
+    safeImageSafetyRetryCompactFinal: SAFE_IMAGE_SAFETY_RETRY_COMPACT_FINAL,
+    safeImageSafetyRetryUltraWordCap: SAFE_IMAGE_SAFETY_RETRY_ULTRA_WORD_CAP,
     scorerIntentDigestMaxChars: SCORER_INTENT_DIGEST_MAX_CHARS,
     scorerUnavailablePolicy: SCORER_UNAVAILABLE_POLICY,
+    identityFallbackAuditEnabled: IDENTITY_FALLBACK_AUDIT_ENABLED,
+    identityFallbackAuditMinScore: IDENTITY_FALLBACK_AUDIT_MIN_SCORE,
+    identityFallbackAuditMaxOutputTokens: IDENTITY_FALLBACK_AUDIT_MAX_OUTPUT_TOKENS,
     scorerForceSchema: SCORER_FORCE_SCHEMA,
     scorerCompactPrompt: SCORER_COMPACT_PROMPT,
+    heuristicScorerAuditOnly: HEURISTIC_SCORER_AUDIT_ONLY,
     scorerParseRequeryOnFail: SCORER_PARSE_REQUERY_ON_FAIL,
     scorerParseRequeryMaxOutputTokens: SCORER_PARSE_REQUERY_MAX_OUTPUT_TOKENS,
     physicsChecklistEnforce: PHYSICS_CHECKLIST_ENFORCE,
@@ -3607,6 +4645,7 @@ async function main() {
     enableHyperMicroDetail: ENABLE_HYPER_MICRO_DETAIL,
     hyperMicroDetailLevel: HYPER_MICRO_DETAIL_LEVEL,
     enableQualityGate: ENABLE_QUALITY_GATE,
+    enableQualityAuditWhenGateOff: ENABLE_QUALITY_AUDIT_WHEN_GATE_OFF,
     enablePrimaryRescue: ENABLE_PRIMARY_RESCUE,
     primaryRescueMaxAttempts: PRIMARY_RESCUE_MAX_ATTEMPTS,
     enablePrimaryUpliftRescue: ENABLE_PRIMARY_UPLIFT_RESCUE,
@@ -3624,6 +4663,13 @@ async function main() {
 
   const summary = {
     runInfo,
+    runState: {
+      status: 'running',
+      startedAt: runInfo.createdAt,
+      updatedAt: runInfo.createdAt,
+      promptsExpected: parsedPrompts.length,
+      promptsCompleted: 0
+    },
     totals: {
       prompts: parsedPrompts.length,
       primarySuccess: 0,
@@ -3639,6 +4685,10 @@ async function main() {
     },
     prompts: []
   };
+  activeRunContext = {
+    summaryPath,
+    summary
+  };
   await writeJson(summaryPath, summary);
 
   log(`Run directory: ${runDir}`);
@@ -3650,7 +4700,7 @@ async function main() {
   );
   log(
     `Adaptive 429 cooldown: ${RATE_LIMIT_ADAPTIVE_COOLDOWN
-      ? `enabled (base=${RATE_LIMIT_COOLDOWN_BASE_S}s, max=${RATE_LIMIT_COOLDOWN_MAX_S}s, growth=${RATE_LIMIT_COOLDOWN_GROWTH}x, decay=${RATE_LIMIT_COOLDOWN_DECAY_S}s)`
+      ? `enabled (base=${RATE_LIMIT_COOLDOWN_BASE_S}s, max=${RATE_LIMIT_COOLDOWN_MAX_S}s, growth=${RATE_LIMIT_COOLDOWN_GROWTH}x, decay=${RATE_LIMIT_COOLDOWN_DECAY_S}s, retryFloor=${RATE_LIMIT_RETRY_FLOOR_S}s, retryCap=${RATE_LIMIT_RETRY_MAX_S}s)`
       : 'disabled'}`
   );
   log(`Attempt wait jitter: ${ATTEMPT_WAIT_JITTER_S > 0 ? `enabled (0-${ATTEMPT_WAIT_JITTER_S}s)` : 'disabled'}`);
@@ -3689,12 +4739,24 @@ async function main() {
   log(`Sensual variance guard: ${SENSUAL_VARIANCE_GUARD ? `enabled (level ${SENSUAL_VARIANCE_LEVEL})` : 'disabled'}`);
   log(
     `Research microdetail expansion: ${ENABLE_RESEARCH_MICRODETAIL_EXPANSION
-      ? `enabled (targetWords=${PROMPT_TARGET_WORDS})`
+      ? `enabled (targetWords=${PROMPT_TARGET_WORDS}, maxPasses=${PROMPT_REINFORCEMENT_MAX_PASSES}, targeted=${TARGETED_MICRODETAIL_MODE ? `yes cap=${MICRODETAIL_MODULE_CAP}` : 'no'})`
       : 'disabled'}`
   );
+  log(`Prompt hard-cap: ${ENABLE_PROMPT_HARD_CAP ? `enabled (maxWords=${PROMPT_HARD_CAP_WORDS})` : 'disabled'}`);
   log(`Safe policy hardening: ${SAFE_POLICY_HARDENING ? 'enabled' : 'disabled'}`);
+  log(
+    `Image safety compliance filter: ${IMAGE_SAFETY_COMPLIANCE_MODE
+      ? `enabled (level=${IMAGE_SAFETY_COMPLIANCE_LEVEL}, dropLines=${IMAGE_SAFETY_COMPLIANCE_DROP_LINES ? 'yes' : 'no'})`
+      : 'disabled'}`
+  );
   log(`Safe fallback source: ${SAFE_FALLBACK_SOURCE_NORMALIZED}`);
   log(`Safe transfer primary anchors: ${SAFE_TRANSFER_PRIMARY_ANCHORS ? 'enabled' : 'disabled'}`);
+  log(`Safe anchor sanitize: ${SAFE_ANCHOR_SANITIZE ? 'enabled' : 'disabled'}`);
+  log(
+    `Safe IMAGE_SAFETY retry: ${SAFE_IMAGE_SAFETY_RETRY_ENABLED
+      ? `enabled (maxAttempts=${SAFE_IMAGE_SAFETY_RETRY_MAX_ATTEMPTS}, wordCap=${SAFE_IMAGE_SAFETY_RETRY_PROMPT_WORD_CAP}, compactFinal=${SAFE_IMAGE_SAFETY_RETRY_COMPACT_FINAL ? 'yes' : 'no'}, ultraWordCap=${SAFE_IMAGE_SAFETY_RETRY_ULTRA_WORD_CAP})`
+      : 'disabled'}`
+  );
   log(`Edge priority multiplier: ${EDGE_PRIORITY_MULTIPLIER}x`);
   log(
     `Edge-first acceptance: ${EDGE_FIRST_ACCEPTANCE_MODE
@@ -3712,9 +4774,28 @@ async function main() {
   );
   log(`Anti-AI realism boost: ${ANTI_AI_REALISM_BOOST ? `enabled (level ${ANTI_AI_REALISM_LEVEL})` : 'disabled'}`);
   log(`Quality gate: ${ENABLE_QUALITY_GATE ? `enabled (scorer=${SCORER_MODEL})` : 'disabled'}`);
+  if (!ENABLE_QUALITY_GATE) {
+    log(
+      `Quality audit when gate off: ${ENABLE_QUALITY_AUDIT_WHEN_GATE_OFF
+        ? `enabled (scorer=${SCORER_MODEL}, audit-only)`
+        : 'disabled'}`
+    );
+    if (!ENABLE_QUALITY_AUDIT_WHEN_GATE_OFF) {
+      log('WARNING: quality scoring is fully disabled; attire/identity drift cannot be measured in this run.');
+    }
+  }
   log(`Scorer unavailable policy: ${SCORER_UNAVAILABLE_POLICY}`);
+  log(
+    `Identity fallback audit: ${IDENTITY_FALLBACK_AUDIT_ENABLED
+      ? `enabled (minScore=${IDENTITY_FALLBACK_AUDIT_MIN_SCORE}, maxTokens=${IDENTITY_FALLBACK_AUDIT_MAX_OUTPUT_TOKENS})`
+      : 'disabled'}`
+  );
+  if (IDENTITY_FALLBACK_AUDIT_ENABLED) {
+    log('Identity fallback audit gating: scorer parse failures fail closed unless fallback audit explicitly passes.');
+  }
   log(`Scorer schema enforcement: ${SCORER_FORCE_SCHEMA ? 'enabled' : 'disabled'}`);
   log(`Scorer compact prompt: ${SCORER_COMPACT_PROMPT ? 'enabled' : 'disabled'}`);
+  log(`Heuristic scorer parser: ${HEURISTIC_SCORER_AUDIT_ONLY ? 'audit-only (non-blocking)' : 'gating-eligible'}`);
   log(
     `Physics checklist gate: ${PHYSICS_CHECKLIST_ENFORCE
       ? `enabled (min ${PHYSICS_CHECKLIST_MIN})`
@@ -3748,7 +4829,7 @@ async function main() {
       SAFE_FALLBACK_SOURCE_NORMALIZED === 'safe_prompt'
       && SAFE_TRANSFER_PRIMARY_ANCHORS
     )
-      ? buildPrimaryAnchorTransferBlock(prompt.primaryPrompt)
+      ? buildPrimaryAnchorTransferBlock(prompt.primaryPrompt, 'safe')
       : '';
     const safeIntentSourceText = primaryAnchorTransferBlock
       ? `${safePromptBaseSource}\n\n${primaryAnchorTransferBlock}`
@@ -3842,10 +4923,15 @@ async function main() {
       const upliftDeficiencies = ENABLE_QUALITY_GATE && ENABLE_PRIMARY_UPLIFT_RESCUE
         ? collectUpliftDeficiencies(primaryQuality)
         : [];
+      const primaryParseNeedsRescue = (
+        !primaryQuality.scorerAvailable
+        && primaryQuality.scorerError?.errorType === 'parse'
+        && primaryQuality?.identityFallbackAudit?.pass !== true
+      );
       const shouldRunPrimaryRescue = ENABLE_QUALITY_GATE && ENABLE_PRIMARY_RESCUE && (
         (primaryQuality.scorerAvailable && !primaryQuality.pass)
         || upliftDeficiencies.length > 0
-        || (!primaryQuality.scorerAvailable && primaryQuality.scorerError?.errorType === 'parse')
+        || primaryParseNeedsRescue
       );
 
       if (shouldRunPrimaryRescue) {
@@ -3965,12 +5051,14 @@ async function main() {
           const continueDueToParse = ENABLE_QUALITY_GATE
             && !currentQuality?.scorerAvailable
             && currentQuality?.scorerError?.errorType === 'parse';
-          if (continueDueToFail || continueDueToUplift || continueDueToParse) {
+          const continueDueToIdentityAuditFail = continueDueToParse
+            && currentQuality?.identityFallbackAudit?.pass !== true;
+          if (continueDueToFail || continueDueToUplift || continueDueToIdentityAuditFail) {
             const continuationReason = continueDueToFail
               ? 'still below quality thresholds'
               : continueDueToUplift
                 ? `still below uplift targets (${rescueUpliftDeficiencies.join(', ')})`
-                : 'scorer parse issue persisted';
+                : 'identity fallback audit still failing on scorer parse';
             log(
               `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: running another rescue because ${continuationReason}`
             );
@@ -4002,65 +5090,34 @@ async function main() {
         );
         log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe promptHash=${safePromptHash}`);
 
-        const safeResult = await callImageModel({
-          promptText: safePromptText,
+        const safeOutcome = await executeSafeFallbackSequence({
+          indexLabel: `[${i + 1}/${parsedPrompts.length}] ${promptLabel}`,
+          prompt,
+          promptSlug,
+          runDir,
+          runNonce,
+          safePromptText,
+          safePromptHash,
+          safeIntentDigest,
           referenceInlineData,
-          label: `Prompt ${prompt.id} safe`
+          promptRecord,
+          summary
         });
 
-        if (safeResult.ok) {
-          const safeSaved = await saveImagePart(safeResult.imagePart, path.join(runDir, `${promptSlug}-safe-a1`));
-          const safeQuality = await evaluateImageQualityWithSelfHealing({
-            promptId: prompt.id,
-            title: prompt.title,
-            variant: 'safe',
-            promptIntentDigest: safeIntentDigest,
-            referenceInlineData,
-            imagePart: safeResult.imagePart,
-            logLabel: `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe quality`
-          });
-          recordQualityTotals(summary, safeQuality);
-
-          promptRecord.attempts.push({
-            variant: 'safe',
-            attemptIndex: 1,
-            success: true,
-            promptHash: safePromptHash,
-            outputFile: safeSaved.outputPath,
-            mimeType: safeSaved.mimeType,
-            bytes: safeSaved.bytes,
-            responseHeaders: safeResult.responseHeaders || null,
-            quality: safeQuality
-          });
-
-          const safeQualityAccepted = isQualityAcceptableForFinal(safeQuality, 'safe');
-          if (safeQualityAccepted) {
-            promptRecord.finalStatus = 'success';
-            promptRecord.chosenVariant = 'safe';
-            promptRecord.outputFile = safeSaved.outputPath;
-            promptRecord.qualityFinal = safeQuality || null;
-            summary.totals.safeSuccess += 1;
-            log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback success`);
-          } else {
-            summary.totals.failed += 1;
-            log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback rejected by quality gate`);
-          }
+        if (safeOutcome.status === 'accepted') {
+          promptRecord.finalStatus = 'success';
+          promptRecord.chosenVariant = 'safe';
+          promptRecord.outputFile = safeOutcome.outputFile;
+          promptRecord.qualityFinal = safeOutcome.quality || null;
+          summary.totals.safeSuccess += 1;
+          log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback success`);
         } else {
-          promptRecord.attempts.push({
-            variant: 'safe',
-            attemptIndex: 1,
-            success: false,
-            promptHash: safePromptHash,
-            errorType: safeResult.errorType,
-            status: safeResult.status || null,
-            statusText: safeResult.statusText || null,
-            blockReason: safeResult.blockReason || null,
-            message: safeResult.message || null,
-            responseSnippet: safeResult.responseSnippet || null,
-            responseHeaders: safeResult.responseHeaders || null
-          });
           summary.totals.failed += 1;
-          log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback failed (${safeResult.errorType})`);
+          if (safeOutcome.status === 'quality_rejected') {
+            log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback rejected by quality gate`);
+          } else {
+            log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback failed (${safeOutcome.errorType})`);
+          }
         }
       }
     } else {
@@ -4087,69 +5144,41 @@ async function main() {
         log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: primary failed (${primaryResult.errorType}), trying safe fallback`);
         log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe promptHash=${safePromptHash}`);
 
-        const safeResult = await callImageModel({
-          promptText: safePromptText,
+        const safeOutcome = await executeSafeFallbackSequence({
+          indexLabel: `[${i + 1}/${parsedPrompts.length}] ${promptLabel}`,
+          prompt,
+          promptSlug,
+          runDir,
+          runNonce,
+          safePromptText,
+          safePromptHash,
+          safeIntentDigest,
           referenceInlineData,
-          label: `Prompt ${prompt.id} safe`
+          promptRecord,
+          summary
         });
 
-        if (safeResult.ok) {
-          const safeSaved = await saveImagePart(safeResult.imagePart, path.join(runDir, `${promptSlug}-safe-a1`));
-          const safeQuality = await evaluateImageQualityWithSelfHealing({
-            promptId: prompt.id,
-            title: prompt.title,
-            variant: 'safe',
-            promptIntentDigest: safeIntentDigest,
-            referenceInlineData,
-            imagePart: safeResult.imagePart,
-            logLabel: `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe quality`
-          });
-          recordQualityTotals(summary, safeQuality);
-
-          promptRecord.attempts.push({
-            variant: 'safe',
-            attemptIndex: 1,
-            success: true,
-            promptHash: safePromptHash,
-            outputFile: safeSaved.outputPath,
-            mimeType: safeSaved.mimeType,
-            bytes: safeSaved.bytes,
-            responseHeaders: safeResult.responseHeaders || null,
-            quality: safeQuality
-          });
-          const safeQualityAccepted = isQualityAcceptableForFinal(safeQuality, 'safe');
-          if (safeQualityAccepted) {
-            promptRecord.finalStatus = 'success';
-            promptRecord.chosenVariant = 'safe';
-            promptRecord.outputFile = safeSaved.outputPath;
-            promptRecord.qualityFinal = safeQuality || null;
-            summary.totals.safeSuccess += 1;
-            log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback success`);
-          } else {
-            summary.totals.failed += 1;
-            log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback rejected by quality gate`);
-          }
+        if (safeOutcome.status === 'accepted') {
+          promptRecord.finalStatus = 'success';
+          promptRecord.chosenVariant = 'safe';
+          promptRecord.outputFile = safeOutcome.outputFile;
+          promptRecord.qualityFinal = safeOutcome.quality || null;
+          summary.totals.safeSuccess += 1;
+          log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback success`);
         } else {
-          promptRecord.attempts.push({
-            variant: 'safe',
-            attemptIndex: 1,
-            success: false,
-            promptHash: safePromptHash,
-            errorType: safeResult.errorType,
-            status: safeResult.status || null,
-            statusText: safeResult.statusText || null,
-            blockReason: safeResult.blockReason || null,
-            message: safeResult.message || null,
-            responseSnippet: safeResult.responseSnippet || null,
-            responseHeaders: safeResult.responseHeaders || null
-          });
           summary.totals.failed += 1;
-          log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback failed (${safeResult.errorType})`);
+          if (safeOutcome.status === 'quality_rejected') {
+            log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback rejected by quality gate`);
+          } else {
+            log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: safe fallback failed (${safeOutcome.errorType})`);
+          }
         }
       }
     }
 
     summary.prompts.push(promptRecord);
+    summary.runState.promptsCompleted = summary.prompts.length;
+    summary.runState.updatedAt = new Date().toISOString();
     if (SAVE_PROMPT_PREVIEW) {
       const preview = {
         id: prompt.id,
@@ -4169,6 +5198,11 @@ async function main() {
     await writeJson(summaryPath, summary);
   }
 
+  summary.runState.status = 'completed';
+  summary.runState.completedAt = new Date().toISOString();
+  summary.runState.updatedAt = summary.runState.completedAt;
+  await writeJson(summaryPath, summary);
+
   log(
     `Finished. primarySuccess=${summary.totals.primarySuccess}, safeSuccess=${summary.totals.safeSuccess}, failed=${summary.totals.failed}`
   );
@@ -4181,8 +5215,14 @@ async function main() {
   log(`Summary: ${summaryPath}`);
 }
 
-main().catch(error => {
-  const message = error instanceof Error ? `${error.message}\n${error.stack || ''}` : String(error);
-  console.error(message);
+main().catch(async error => {
+  const failureMessage = error instanceof Error ? error.message : String(error);
+  try {
+    await persistActiveRunState('failed', { failureReason: failureMessage });
+  } catch {
+    // Best-effort run-state persistence on failure.
+  }
+  const detailed = error instanceof Error ? `${error.message}\n${error.stack || ''}` : String(error);
+  console.error(detailed);
   process.exit(1);
 });

@@ -49,7 +49,6 @@ const CRITICAL_ASSETS = [
   '/icons/icon-512.png',
   '/icons/icon-192-maskable.png',
   '/icons/icon-512-maskable.png',
-  '/icons/sparkle-unicorn.svg',
 
   // Home screen background (first paint, WebP optimized):
   '/illustrations/backgrounds/home-bg.webp',
@@ -60,7 +59,7 @@ const CRITICAL_ASSETS = [
   // Companion assets (default skin, visible on boot) - from manifest:
   ...MANIFEST_COMPANIONS.filter(path => path.includes('default_')),
 
-  // Home screen buttons (18 WebP files):
+  // Home screen buttons (19 WebP files):
   '/illustrations/buttons/btn-act-helping.webp',
   '/illustrations/buttons/btn-act-hug.webp',
   '/illustrations/buttons/btn-act-love.webp',
@@ -72,6 +71,7 @@ const CRITICAL_ASSETS = [
   '/illustrations/buttons/btn-game-memory.webp',
   '/illustrations/buttons/btn-game-paint.webp',
   '/illustrations/buttons/btn-game-unicorn.webp',
+  '/illustrations/buttons/btn-gardens.webp',
   '/illustrations/buttons/btn-games.webp',
   '/illustrations/buttons/btn-kind-acts.webp',
   '/illustrations/buttons/btn-my-week.webp',
@@ -173,6 +173,12 @@ const DEFERRED_ASSETS = [
   '/illustrations/stickers/mastery-gold-helping.webp',
   '/illustrations/stickers/mastery-gold-hug.webp',
   '/illustrations/stickers/mastery-gold-love.webp',
+
+  // Mom mode inline icons (4 stickers used in mom_mode.rs):
+  '/illustrations/stickers/lock-gold.webp',
+  '/illustrations/stickers/calendar-magic.webp',
+  '/illustrations/stickers/chart-sparkle.webp',
+  '/illustrations/stickers/pencil-star.webp',
 
   // Story illustrations (stories panel only):
   '/illustrations/stories/lost-bunny-cover.webp',

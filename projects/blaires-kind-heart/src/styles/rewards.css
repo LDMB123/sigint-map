@@ -41,9 +41,8 @@
   font-weight: var(--font-weight-heavy);
   padding: var(--space-lg);
   background: linear-gradient(120deg, var(--color-purple-vivid) 0%, var(--color-pink-vivid) 55%, var(--color-yellow-vivid) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: transparent;
   filter: drop-shadow(0 2px 8px rgba(139, 31, 255, 0.28));
 }
 
@@ -136,7 +135,12 @@
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-light);
-  transition: all var(--duration-fast) var(--ease-bounce);
+  transition:
+    transform var(--duration-fast) var(--ease-bounce),
+    background var(--duration-fast) var(--ease-bounce),
+    border-color var(--duration-fast) var(--ease-bounce),
+    box-shadow var(--duration-fast) var(--ease-bounce),
+    color var(--duration-fast) var(--ease-bounce);
 
   &:active {
     transform: scale(0.95);
@@ -313,7 +317,11 @@
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
-  transition: all var(--duration-fast) var(--ease-smooth);
+  transition:
+    background var(--duration-fast) var(--ease-smooth),
+    color var(--duration-fast) var(--ease-smooth),
+    box-shadow var(--duration-fast) var(--ease-smooth),
+    border-color var(--duration-fast) var(--ease-smooth);
 }
 
 .streak-day--active {

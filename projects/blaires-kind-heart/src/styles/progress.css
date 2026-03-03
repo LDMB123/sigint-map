@@ -39,16 +39,6 @@
   }
 }
 
-@keyframes progress-shimmer {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  100% {
-    background-position: 200% 50%;
-  }
-}
-
 @keyframes trophy-glow {
   from {
     filter: drop-shadow(0 4px 16px rgba(255, 159, 67, 0.3)) drop-shadow(0 0 20px rgba(255, 211, 45, 0.2));
@@ -122,9 +112,8 @@
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-heavy);
   background: linear-gradient(120deg, var(--color-green-vivid) 0%, var(--color-blue-vivid) 60%, var(--color-purple-vivid) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: transparent;
   filter: drop-shadow(0 2px 8px rgba(0, 194, 96, 0.28));
   margin: 0;
   letter-spacing: 0.02em;
@@ -259,7 +248,6 @@
   & .progress-label {
     background: linear-gradient(90deg, var(--color-green-vivid), var(--color-yellow-vivid));
     background-clip: text;
-    -webkit-background-clip: text;
     color: transparent;
   }
 
@@ -276,7 +264,7 @@
           rgba(255, 255, 255, 0.5) 55%,
           transparent 100%);
       background-size: 200% 100%;
-      animation: progress-shimmer 1.5s ease-in-out infinite;
+      animation: rainbow-bar-scroll 1.5s ease-in-out infinite;
     }
   }
 
@@ -346,7 +334,7 @@
         rgba(255, 255, 255, 0.4) 60%,
         transparent 100%);
     background-size: 200% 100%;
-    animation: progress-shimmer 2s ease-in-out infinite;
+    animation: rainbow-bar-scroll 2s ease-in-out infinite;
   }
 }
 
@@ -519,101 +507,8 @@
         rgba(255, 255, 255, 0.3) 55%,
         transparent 100%);
     background-size: 200% 100%;
-    animation: progress-shimmer 3s ease-in-out infinite;
+    animation: rainbow-bar-scroll 3s ease-in-out infinite;
   }
-}
-
-/* === Garden Timeline === */
-.garden-timeline {
-  margin: 1rem 0;
-}
-
-.garden-timeline__title {
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-.garden-timeline__empty {
-  text-align: center;
-  padding: 1rem;
-  font-size: 1rem;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-purple-dark);
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: var(--radius-md);
-}
-
-.garden-timeline__strip {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 0.5rem 0.25rem;
-}
-
-.timeline-day {
-  scroll-snap-align: center;
-  min-width: 3.25rem;
-  min-height: 3rem;
-  text-align: center;
-  padding: 0.4rem 0.25rem;
-  border-radius: 0.75rem;
-  background: var(--color-surface);
-  border: 2px solid transparent;
-  cursor: pointer;
-  position: relative;
-}
-
-.timeline-day--today {
-  border-color: var(--color-pink-vivid);
-  background: var(--color-pink-light);
-}
-
-.timeline-day--seed {
-  opacity: 0.5;
-}
-
-.timeline-day--sprout {
-  opacity: 0.7;
-}
-
-.timeline-day--flower {
-  opacity: 0.9;
-}
-
-.timeline-day--bloom {
-  opacity: 1;
-  animation: idle-glow-pulse 2s ease-in-out infinite;
-}
-
-.timeline-day__emoji {
-  font-size: 1.5rem;
-}
-
-.timeline-day__label {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  margin-top: 0.15rem;
-}
-
-.timeline-day:active {
-  transform: scale(0.92);
-}
-
-.timeline-tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--color-purple-dark);
-  color: var(--color-white);
-  padding: 0.3rem 0.5rem;
-  border-radius: 0.5rem;
-  font-size: 0.75rem;
-  white-space: nowrap;
-  z-index: 10;
-  animation: jelly-wobble 0.3s ease;
 }
 
 /* ====== Reduced Motion — respect user preference ====== */
@@ -625,8 +520,7 @@
   .trophy-glow,
   .progress-breathe,
   .today-pulse,
-  .today-glow,
-  .timeline-day--bloom {
+  .today-glow {
     animation: none !important;
   }
 }

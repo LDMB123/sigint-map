@@ -1,6 +1,6 @@
 # Handoff Runbook
 
-Last updated: 2026-02-28 (session 5)
+Last updated: 2026-03-03 (session 15)
 
 ## Fast Takeover Checklist
 
@@ -33,7 +33,7 @@ npm run qa:docs-links
 ## Architecture Notes
 
 - All logic in Rust → WASM. No JS frameworks.
-- 3 JS files only: `wasm-init.js`, `public/sw.js`, `public/db-worker.js`
+- 5 JS files only: `wasm-init.js`, `public/sw.js`, `public/db-worker.js`, `public/offline.js`, `public/runtime-diagnostics.js`
 - SQLite stored in OPFS, access serialized via Web Locks
 - State: `thread_local! { static STATE: RefCell<AppState> }`
 - DOM: event delegation via data-* attributes, Trusted Types enforced
@@ -42,7 +42,7 @@ npm run qa:docs-links
 
 - `dom::with_buf()` is NOT reentrant — never call `dom::query_data()` from inside a `with_buf()` closure
 - DB writes use fire-and-forget or `exec_fire_and_forget()` — check `browser_apis::with_web_lock` for serialized writes
-- Service worker v74+ required for runtime diagnostics contract
+- Service worker v80 current; v74+ required for runtime diagnostics contract
 
 ## Files to Know
 
@@ -52,21 +52,21 @@ npm run qa:docs-links
 - `rust/db_client.rs` — SQLite async client
 - `rust/navigation.rs` — panel navigation and view transitions
 
-## Current State (2026-02-28)
+## Current State (2026-03-03)
 
-**Safari 26.2 debug & optimization pass complete (session 4).** 11 static-analysis issues fixed:
-- `scheduler_yield()` now calls real `scheduler.yield()` via JS reflection (queueMicrotask fallback)
-- Catcher game loop: `setInterval(16ms)` → RAF with delta-time physics; gravity frame-rate-independent
-- Companion typewriter: 30–60 DOM queries per phrase reduced to 1 (cache element before loop)
-- SW `clients.claim()` fires immediately on activate (not after 60 deferred WebP downloads)
-- `db-worker.js` `request_id = 0` default on all message types; `wasm-init.js` `arrayBuffer()` fallback
-- iPad mini 6 splash PNGs added (`assets/icons/splash-1488x2266.png`, `splash-2266x1488.png`)
-- Trusted Types audit: `default` policy confirmed registered; sqlite-wasm confirmed safe
+**All code quality, polish, and QA passes complete (sessions 6-15).**
 
-**All gates green:** 46 E2E PASS, visual 16/16 PASS, QA runtime/pwa/db PASS. Merge: `71ee341`.
+- **Session 15**: Debug & code review — deep source audit with 3 parallel agents found 7 potential issues, 4 dismissed as false positives (ISO week math, SQL interpolation, image handler, GPU races). Applied 3 defensive fixes: storage quota `.max(1.0)` guard, stale year defaults `2025→2026`, visual snapshot refresh. All gates PASS.
+- **Session 14**: Comprehensive audit — 4 parallel deep audits (audio/speech, animation/RAF, edge-case logic, SW/offline). All clean, no new bugs. Fixed DB contract QA gate regression from session 12's helper deduplication. All 8 QA gates PASS.
+- **Session 13**: Deep audit — 6 parallel audits across all layers found 15 issues. Fixed: 4 CSS (mom scroll, badge font, header z-index, touch-action), 4 JS (deserialize flags, seed rollback, stmt cache), 6 Rust (streak hearts, limit 365, db_client hangup, timer inflation, nav debounce). SW v80. 64 E2E PASS.
+- **Session 12**: Pre-deploy verify — SW cache audit found 5 uncached assets + 1 stale ref (fixed, SW v79). Bundle audit (15 MB total, acceptable). Rust safety clean (2 justified unsafe, zero panics). E2E quality: fixed 1 silent-pass assertion, deduplicated 4 helper functions across 6 spec files (-87 lines).
+- **Session 11**: Deep pass — 8 commits: removed redundant INP/LCP observers, fixed missing asset refs + CSS token, hardened db-worker (deserialize check, init race, error formatting), fixed SW undefined respondWith fallback + deferred asset blocking activation, eliminated all `.expect()`/`.unwrap()` from Rust (zero remaining), consolidated selectors to constants.rs, gated web_vitals console.log, SW v78
+- **Session 10**: 10x deep pass — 7 analysis areas (borrow safety, closure leaks, async correctness, game state reset, overflow, silent .ok(), DB layer). All clean except one real bug: timer leak in `game_memory.rs` `start_timer()`/`reset_hint_timer()` when called after cleanup via peek timeout. Fixed with `is_some_and(|g| g.active)` guards. Clippy + deep code quality commits also landed.
+- **Session 9**: Pre-deploy polish — expanded companion speech variety, wired Show Mom celebration button, added heart counter pop animation, SW v76, iPad regression template
+- **Session 8**: CSS optimization — 6 commits, 13 files, -736 lines (dead CSS, tokenization, webkit cleanup)
+- **Session 7**: Rust refactoring — 15 commits, 47 files, eliminated ~20 forwarding/duplicate wrappers
+- **Session 6**: Code review — 11 correctness fixes, 8 security fixes, 19 new E2E tests (64 total)
 
-**Also complete (session 3):** Dead code + feature audit — Rust 80 files clean, CSS dead class refs removed, orphaned `public/wasm-init.js` deleted.
+**All gates green:** 64 E2E PASS (1 expected skip), visual 16/16 PASS, QA runtime/pwa/db PASS.
 
-**Also complete (session 2):** Extreme UI/UX polish — all 16 CSS files (gloss layers, 3D press, gradient text, richer shadows).
-
-**Outstanding**: Physical iPad mini 6 (iPadOS 26.2 / Safari 26.2) regression testing before final deployment. No other blockers.
+**Outstanding**: Physical iPad mini 6 (iPadOS 26.2 / Safari 26.2) regression testing before final deployment. See `docs/IPAD_REGRESSION_TEMPLATE.md` for checklist. No other blockers.

@@ -6,7 +6,9 @@ use crate::{
 use std::cell::Cell;
 use wasm_bindgen::JsCast;
 use web_sys::Event;
-thread_local! { static SESSION_ACTS: Cell<u32> = const { Cell::new(0) }; }
+thread_local! {
+    static SESSION_ACTS: Cell<u32> = const { Cell::new(0) };
+}
 const CATEGORIES: &[(&str, &str, &str, &str)] = &[
     (
         "\u{1F917}",
@@ -205,11 +207,11 @@ fn log_kind_act(category: &str) {
     ui::update_heart_counter(hearts);
     crate::badges::check_ultimate_heart_spawn(hearts);
     if let Some(el) = state::get_cached_tracker_hearts_counter()
-        .or_else(|| dom::query("[data-tracker-hearts-count]"))
+        .or_else(|| dom::query(crate::constants::SELECTOR_TRACKER_HEARTS))
     {
         el.set_text_content(Some(&hearts.to_string()));
     }
-    if let Some(c) = state::get_cached_hearts_counter().or_else(|| dom::query("[data-hearts]")) {
+    if let Some(c) = state::get_cached_hearts_counter().or_else(|| dom::query(crate::constants::SELECTOR_HEARTS)) {
         animations::float_up_heart(&c);
     }
     if let Some(c) = dom::query("[data-tracker-hearts]") {
@@ -218,7 +220,11 @@ fn log_kind_act(category: &str) {
     let id_for_reflect = id.clone();
     let cat_for_reflect = cat.clone();
     wasm_bindgen_futures::spawn_local(async move {
-        let _ = crate::offline_queue::queued_exec( "INSERT INTO kind_acts (id, category, hearts_earned, created_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5)", vec![id, cat.clone(), theme::HEARTS_PER_KIND_ACT.to_string(), now.to_string(), day_key],).await;
+        let _ = crate::offline_queue::queued_exec(
+            "INSERT INTO kind_acts (id, category, hearts_earned, created_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5)",
+            vec![id, cat.clone(), theme::HEARTS_PER_KIND_ACT.to_string(), now.to_string(), day_key],
+        )
+        .await;
         skill_progression::track_skill_practice(&cat).await;
     });
     let session_count = SESSION_ACTS.with(|c| {
@@ -360,7 +366,7 @@ fn check_achievements(category: &str) {
             let already_earned = db_client::get_setting(&settings_key).await.is_some();
             if !already_earned {
                 // Award via settings table since these are hidden achievements not in badges table
-                db_client::set_setting(&format!("achievement_{}", achievement_id), "1").await;
+                db_client::set_setting(&settings_key, "1").await;
                 if let Some((_, title, desc)) =
                     ACHIEVEMENTS.iter().find(|(id, _, _)| *id == achievement_id)
                 {

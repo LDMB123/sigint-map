@@ -1,6 +1,6 @@
 # Documentation Index
 
-Last updated: 2026-02-28 (session 5)
+Last updated: 2026-03-02 (session 9)
 Scope: active docs map for this repository.
 
 ## Active Docs
@@ -15,7 +15,8 @@ Scope: active docs map for this repository.
 - `docs/TROUBLESHOOTING.md` - Common issues and fixes
 - `docs/PERSISTENCE_CONTRACT.md` - DB worker protocol, schema, export/restore invariants
 
-### Deployment
+### Testing & Deployment
+- `docs/IPAD_REGRESSION_TEMPLATE.md` - Physical iPad testing checklist
 - `docs/deployment/PWA_HEADERS.md` - Required HTTP headers for PWA
 
 ### Reports

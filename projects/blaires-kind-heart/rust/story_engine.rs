@@ -2,6 +2,7 @@ use crate::{
     animations, companion, confetti, constants::SELECTOR_STORIES_BODY, db_client, dom, navigation,
     render, rewards, speech, story_data, synth_audio, utils, weekly_goals,
 };
+use std::fmt::Write;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, Event, SpeechSynthesisEvent, SpeechSynthesisUtterance};
@@ -169,7 +170,7 @@ fn wrap_words_in_spans(text: &str, container: &Element) {
             continue;
         };
         dom::with_buf(|buf| {
-            let _ = std::fmt::Write::write_fmt(buf, format_args!("{i}"));
+            let _ = write!(buf, "{i}");
             dom::set_attr(&span, "data-word-index", buf);
         });
         dom::with_buf(|buf| {

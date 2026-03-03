@@ -145,7 +145,40 @@ pub fn hydrate_hub_stats() {
                 COALESCE(SUM(CASE WHEN game_id = 'paint' AND day_key = ?1 THEN 1 ELSE 0 END), 0) as paint_today, \
                 COALESCE(MAX(CASE WHEN game_id = 'unicorn' THEN score END), 0) as unicorn_best \
              FROM game_scores", vec![today.clone()],).await {
-            if let Some(row) = rows.get(0) { let catcher_best = row.get("catcher_best").and_then(|v| v.as_u64()).unwrap_or(0); if catcher_best > 0 { let lvl = row.get("catcher_lvl").and_then(|v| v.as_u64()).unwrap_or(1); dom::fmt_text("[data-game-stats=\"catcher\"]", |buf| { let _ = write!(buf, "\u{1F3C6} {catcher_best} pts \u{00B7} Lvl {lvl}"); }); } let memory_best = row.get("memory_best").and_then(|v| v.as_u64()).unwrap_or(0); if memory_best > 0 { dom::fmt_text("[data-game-stats=\"memory\"]", |buf| { let _ = write!(buf, "\u{2B50} Best: {memory_best}s"); }); } let hug_cnt = row.get("hug_cnt").and_then(|v| v.as_u64()).unwrap_or(0); if hug_cnt > 0 { dom::fmt_text("[data-game-stats=\"hug\"]", |buf| { let _ = write!(buf, "\u{1F49C} {hug_cnt} hugs given"); }); } let paint_today = row.get("paint_today").and_then(|v| v.as_u64()).unwrap_or(0); if paint_today > 0 { dom::fmt_text("[data-game-stats=\"paint\"]", |buf| { let _ = write!(buf, "\u{1F3A8} {paint_today} paintings today"); }); } let unicorn_best = row.get("unicorn_best").and_then(|v| v.as_u64()).unwrap_or(0); if unicorn_best > 0 { dom::fmt_text("[data-game-stats=\"unicorn\"]", |buf| { let _ = write!(buf, "\u{1F496} {unicorn_best} friends"); }); } } }
+            if let Some(row) = rows.get(0) {
+                let catcher_best = row.get("catcher_best").and_then(|v| v.as_u64()).unwrap_or(0);
+                if catcher_best > 0 {
+                    let lvl = row.get("catcher_lvl").and_then(|v| v.as_u64()).unwrap_or(1);
+                    dom::fmt_text("[data-game-stats=\"catcher\"]", |buf| {
+                        let _ = write!(buf, "\u{1F3C6} {catcher_best} pts \u{00B7} Lvl {lvl}");
+                    });
+                }
+                let memory_best = row.get("memory_best").and_then(|v| v.as_u64()).unwrap_or(0);
+                if memory_best > 0 {
+                    dom::fmt_text("[data-game-stats=\"memory\"]", |buf| {
+                        let _ = write!(buf, "\u{2B50} Best: {memory_best}s");
+                    });
+                }
+                let hug_cnt = row.get("hug_cnt").and_then(|v| v.as_u64()).unwrap_or(0);
+                if hug_cnt > 0 {
+                    dom::fmt_text("[data-game-stats=\"hug\"]", |buf| {
+                        let _ = write!(buf, "\u{1F49C} {hug_cnt} hugs given");
+                    });
+                }
+                let paint_today = row.get("paint_today").and_then(|v| v.as_u64()).unwrap_or(0);
+                if paint_today > 0 {
+                    dom::fmt_text("[data-game-stats=\"paint\"]", |buf| {
+                        let _ = write!(buf, "\u{1F3A8} {paint_today} paintings today");
+                    });
+                }
+                let unicorn_best = row.get("unicorn_best").and_then(|v| v.as_u64()).unwrap_or(0);
+                if unicorn_best > 0 {
+                    dom::fmt_text("[data-game-stats=\"unicorn\"]", |buf| {
+                        let _ = write!(buf, "\u{1F496} {unicorn_best} friends");
+                    });
+                }
+            }
+        }
         if let Ok(rows) = db_client::query(
             "SELECT \
                 CASE \
@@ -201,7 +234,7 @@ fn bind_game_clicks() {
     }
 }
 fn bind_exit_btn() {
-    if let Some(btn) = dom::query("#game-exit-btn") {
+    if let Some(btn) = dom::query(SELECTOR_GAME_EXIT) {
         if dom::has_attr(&btn, "data-bound-exit") {
             return;
         }
@@ -213,30 +246,26 @@ fn bind_exit_btn() {
             crate::game_hug::cleanup();
             crate::game_paint::cleanup();
             crate::game_unicorn::cleanup();
-            cleanup_all_timers();
             return_to_menu();
         });
     }
 }
 
-fn cleanup_all_timers() {
-    // Failsafe unbind of rogue timeouts
-}
 fn set_game_view(show_arena: bool) {
     if show_arena {
         dom::hide(SELECTOR_GAMES_BODY);
-        dom::show("#game-arena");
-        if let Some(btn) = dom::query("#game-exit-btn") {
+        dom::show(SELECTOR_GAME_ARENA);
+        if let Some(btn) = dom::query(SELECTOR_GAME_EXIT) {
             dom::remove_attr(&btn, "hidden");
         }
     } else {
         dom::show(SELECTOR_GAMES_BODY);
-        dom::hide("#game-arena");
-        if let Some(btn) = dom::query("#game-exit-btn") {
+        dom::hide(SELECTOR_GAME_ARENA);
+        if let Some(btn) = dom::query(SELECTOR_GAME_EXIT) {
             dom::set_attr(&btn, "hidden", "");
         }
     }
-    if let Some(arena) = dom::query("#game-arena") {
+    if let Some(arena) = dom::query(SELECTOR_GAME_ARENA) {
         dom::safe_set_inner_html(&arena, "");
     }
 }
@@ -260,7 +289,7 @@ pub fn return_to_menu() {
     hydrate_hub_stats();
 }
 pub fn clear_game_arena() -> Option<(Element, web_sys::Document)> {
-    let arena = dom::query("#game-arena")?;
+    let arena = dom::query(SELECTOR_GAME_ARENA)?;
     let doc = dom::document();
     dom::safe_set_inner_html(&arena, "");
     Some((arena, doc))
@@ -326,7 +355,7 @@ pub fn append_stat_line(stats: &Element, extra_class: &str, text: &str) {
     }
 }
 pub fn get_arena() -> Option<Element> {
-    state::get_cached_game_arena().or_else(|| dom::query("#game-arena"))
+    state::get_cached_game_arena().or_else(|| dom::query(SELECTOR_GAME_ARENA))
 }
 pub fn finish_end_screen(screen: &Element, stats: &Element, arena: &Element, game_id: &str) {
     let doc = dom::document();
@@ -366,14 +395,28 @@ pub fn save_game_score(
     let id = utils::create_id();
     let day_key = utils::today_key();
     let now = utils::now_epoch_ms();
-    db_client::exec_fire_and_forget( op_name, "INSERT INTO game_scores (id, game_id, score, level, combo, duration_ms, played_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)", vec![id, game_id.to_string(), score.to_string(), level.to_string(), combo.to_string(), duration_ms.to_string(), now.to_string(), day_key],);
+    db_client::exec_fire_and_forget(
+        op_name,
+        "INSERT INTO game_scores (id, game_id, score, level, combo, duration_ms, played_at, day_key) \
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        vec![
+            id,
+            game_id.to_string(),
+            score.to_string(),
+            level.to_string(),
+            combo.to_string(),
+            duration_ms.to_string(),
+            now.to_string(),
+            day_key,
+        ],
+    );
 }
 pub fn bind_end_buttons(
     signal: Option<&web_sys::AbortSignal>,
     on_again: impl Fn() + 'static,
     on_back: impl Fn() + 'static,
 ) {
-    let Some(arena) = dom::query("#game-arena") else {
+    let Some(arena) = dom::query(SELECTOR_GAME_ARENA) else {
         return;
     };
     let handler = move |event: Event| {

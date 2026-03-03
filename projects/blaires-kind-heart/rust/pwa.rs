@@ -29,7 +29,7 @@ fn register_service_worker() {
 fn detect_sw_update(reg: &web_sys::ServiceWorkerRegistration) {
     use wasm_bindgen::closure::Closure;
     if reg.waiting().is_some() {
-        show_update_prompt(reg);
+        show_update_prompt(reg, false);
         return;
     }
     let reg_clone = reg.clone();
@@ -38,7 +38,7 @@ fn detect_sw_update(reg: &web_sys::ServiceWorkerRegistration) {
             let reg_inner = reg_clone.clone();
             let on_state = Closure::<dyn FnMut()>::new(move || {
                 if reg_inner.waiting().is_some() {
-                    show_update_prompt(&reg_inner);
+                    show_update_prompt(&reg_inner, false);
                 }
             });
             installing.set_onstatechange(Some(on_state.as_ref().unchecked_ref()));
@@ -57,38 +57,30 @@ fn post_skip_waiting(waiting: &web_sys::ServiceWorker) {
     );
     let _ = waiting.post_message(&msg);
 }
-fn show_update_prompt(reg: &web_sys::ServiceWorkerRegistration) {
+fn show_update_prompt(reg: &web_sys::ServiceWorkerRegistration, force: bool) {
     use wasm_bindgen::closure::Closure;
-    dom::toast("\u{1F31F} Update available! Tap to refresh");
-    if let Some(toast_el) = dom::query("[data-toast]") {
+    let msg = if force {
+        "\u{1F31F} Update ready! Tap to refresh now"
+    } else {
+        "\u{1F31F} Update available! Tap to refresh"
+    };
+    dom::toast(msg);
+    if let Some(toast_el) = dom::query(crate::constants::SELECTOR_TOAST) {
         let reg_clone = reg.clone();
         let cb = Closure::<dyn FnMut(web_sys::Event)>::once(move |_: web_sys::Event| {
-            let game_active =
-                dom::query("#game-arena").is_some_and(|el| !dom::has_attr(&el, "hidden"));
-            let story_active = dom::query(".story-reader").is_some();
-            if game_active || story_active {
-                dom::toast("Update will install after you finish playing!");
-                let reg_deferred = reg_clone.clone();
-                dom::set_timeout_once(30_000, move || {
-                    show_update_prompt_force(&reg_deferred);
-                });
-                return;
+            if !force {
+                let game_active =
+                    dom::query(crate::constants::SELECTOR_GAME_ARENA).is_some_and(|el| !dom::has_attr(&el, "hidden"));
+                let story_active = dom::query(".story-reader").is_some();
+                if game_active || story_active {
+                    dom::toast("Update will install after you finish playing!");
+                    let reg_deferred = reg_clone.clone();
+                    dom::set_timeout_once(30_000, move || {
+                        show_update_prompt(&reg_deferred, true);
+                    });
+                    return;
+                }
             }
-            if let Some(waiting) = reg_clone.waiting() {
-                post_skip_waiting(&waiting);
-            }
-            let _ = dom::window().location().reload();
-        });
-        let _ = toast_el.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
-        cb.forget();
-    }
-}
-fn show_update_prompt_force(reg: &web_sys::ServiceWorkerRegistration) {
-    use wasm_bindgen::closure::Closure;
-    dom::toast("\u{1F31F} Update ready! Tap to refresh now");
-    if let Some(toast_el) = dom::query("[data-toast]") {
-        let reg_clone = reg.clone();
-        let cb = Closure::<dyn FnMut(web_sys::Event)>::once(move |_: web_sys::Event| {
             if let Some(waiting) = reg_clone.waiting() {
                 post_skip_waiting(&waiting);
             }

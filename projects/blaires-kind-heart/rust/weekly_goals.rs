@@ -1,6 +1,8 @@
 use crate::{db_client, utils};
 use std::cell::RefCell;
-thread_local! { static GOALS: RefCell<Vec<WeeklyGoal>> = const { RefCell::new(Vec::new()) }; }
+thread_local! {
+    static GOALS: RefCell<Vec<WeeklyGoal>> = const { RefCell::new(Vec::new()) };
+}
 #[derive(Clone, Debug)]
 pub struct WeeklyGoal {
     pub id: String,
@@ -48,15 +50,33 @@ impl WeeklyGoal {
         ((f64::from(self.progress) / f64::from(self.target)) * 100.0).min(100.0) as u32
     }
 }
-pub fn init() {
-    refresh_goals();
-}
 pub fn refresh_goals() {
     wasm_bindgen_futures::spawn_local(load_goals());
 }
 async fn load_goals() {
     let week = utils::week_key();
-    if let Ok(rows) = db_client::query( "SELECT id, goal_type, target, progress, completed_at FROM weekly_goals WHERE week_key = ?1", vec![week],).await { let mut goals = Vec::new(); if let Some(arr) = rows.as_array() { for row in arr { let id = row.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string(); let goal_type = row.get("goal_type").and_then(|v| v.as_str()).unwrap_or("").to_string(); let target = row.get("target").and_then(|v| v.as_u64()).unwrap_or(10) as u32; let progress = row.get("progress").and_then(|v| v.as_u64()).unwrap_or(0) as u32; let completed = row.get("completed_at").and_then(|v| v.as_i64()).unwrap_or(0) > 0; goals.push(WeeklyGoal { id, goal_type, target, progress, completed }); } } GOALS.with(|g| { *g.borrow_mut() = goals; }); }
+    let Ok(rows) = db_client::query(
+        "SELECT id, goal_type, target, progress, completed_at FROM weekly_goals WHERE week_key = ?1",
+        vec![week],
+    )
+    .await
+    else {
+        return;
+    };
+    let mut goals = Vec::new();
+    if let Some(arr) = rows.as_array() {
+        for row in arr {
+            let id = row.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let goal_type = row.get("goal_type").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let target = row.get("target").and_then(|v| v.as_u64()).unwrap_or(10) as u32;
+            let progress = row.get("progress").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let completed = row.get("completed_at").and_then(|v| v.as_i64()).unwrap_or(0) > 0;
+            goals.push(WeeklyGoal { id, goal_type, target, progress, completed });
+        }
+    }
+    GOALS.with(|g| {
+        *g.borrow_mut() = goals;
+    });
 }
 pub fn current_goals() -> Vec<WeeklyGoal> {
     GOALS.with(|g| g.borrow().clone())

@@ -2,7 +2,6 @@
 filehash = false
 public_url = "/"
 inject_scripts = false
-no_sri = true
 minify = "on_release"
 
 # Phase 4.1: Generate asset manifest before WASM compilation

@@ -33,14 +33,18 @@ npm run test:e2e -- e2e/visual.spec.ts
 CARGO_TARGET_DIR=/path/to/main/project/target trunk build --release
 # Also needed for E2E in worktree: npm install first, then:
 CARGO_TARGET_DIR=/path/to/main/project/target npm run test:e2e
+
+# Quick E2E gate (most common check)
+npm run test:e2e
 ```
 
 ## Architecture
 
-All app logic in Rust. Only 3 JS files (spec-required):
-1. `wasm-init.js` - Streaming WASM loader
-2. `public/sw.js` - Service Worker
-3. `public/db-worker.js` - SQLite OPFS Web Worker
+All app logic in Rust. Only 4 JS files (hand-authored):
+1. `wasm-init.js` — Streaming WASM loader
+2. `public/sw.js` — Service Worker
+3. `public/db-worker.js` — SQLite OPFS Web Worker
+4. `public/offline.js` — Offline fallback page script
 
 ## Key Patterns
 
@@ -57,21 +61,9 @@ All app logic in Rust. Only 3 JS files (spec-required):
 Navigation API, View Transitions, Popover API, Scheduler.yield(), Web Locks, OPFS,
 SharedArrayBuffer (resizable), AbortSignal.timeout(), SpeechSynthesis, Web Audio
 
-## Asset Pipeline (Weeks 2-3)
+## Assets
 
-### Week 2: Asset Generation (Complete ✅)
-- **Companion skins**: 18 WebP files (6 skins × 3 expressions)
-- **Garden stages**: 60 WebP files (12 gardens × 5 growth stages)
-- **Generator**: Google Imagen 3 API via `google-mcp-server`
-- **Total**: 78 WebP files, 3.8MB, all precached offline
-
-### Week 3: Code Integration (Complete ✅)
-- **Rendering**: Rust queries DB → selects asset → renders via `render::create_img()`
-- **Companion**: `companion.rs` renders skin WebP based on active skin + expression
-- **Gardens**: `gardens.rs` populates grid with stage-based WebP images
-- **Fallbacks**: Emoji if WebP fails to load
-- **Animations**: Safari 26.2 View Transitions API for smooth skin changes
-- **Service Worker**: Cache-first strategy for offline asset serving
+78 WebP files (companion skins + garden stages) in `assets/`, generated via Imagen 3. Rendered by `companion.rs` and `gardens.rs` with emoji fallback. All precached offline via service worker.
 
 ## Documentation
 

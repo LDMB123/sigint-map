@@ -2,7 +2,12 @@ use crate::dom;
 use std::cell::{Cell, RefCell};
 use wasm_bindgen::{closure::Closure, JsCast};
 use web_sys::{SpeechSynthesisUtterance, SpeechSynthesisVoice};
-thread_local! { static VOICES_READY: Cell<bool> = const { Cell::new(false) }; static PREFERRED_VOICE: RefCell<Option<SpeechSynthesisVoice>> = const { RefCell::new(None) }; static LISTENER_REGISTERED: Cell<bool> = const { Cell::new(false) }; static SPEECH_ERROR_COUNT: Cell<u32> = const { Cell::new(0) }; }
+thread_local! {
+    static VOICES_READY: Cell<bool> = const { Cell::new(false) };
+    static PREFERRED_VOICE: RefCell<Option<SpeechSynthesisVoice>> = const { RefCell::new(None) };
+    static LISTENER_REGISTERED: Cell<bool> = const { Cell::new(false) };
+    static SPEECH_ERROR_COUNT: Cell<u32> = const { Cell::new(0) };
+}
 fn init_voices() {
     if VOICES_READY.with(Cell::get) {
         return;

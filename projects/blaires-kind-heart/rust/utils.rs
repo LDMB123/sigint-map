@@ -120,7 +120,7 @@ pub fn prev_day_key(day: &str) -> String {
     let (Some(ys), Some(ms), Some(ds)) = (parts.next(), parts.next(), parts.next()) else {
         return String::new();
     };
-    let y: i32 = ys.parse().unwrap_or(2025);
+    let y: i32 = ys.parse().unwrap_or(2026);
     let m: u32 = ms.parse().unwrap_or(1);
     let d: u32 = ds.parse().unwrap_or(1);
     if d > 1 {
@@ -143,7 +143,7 @@ pub fn week_key_from_day(day_key: &str) -> String {
     let (Some(ys), Some(ms), Some(ds)) = (parts.next(), parts.next(), parts.next()) else {
         return week_key();
     };
-    let y: u32 = ys.parse().unwrap_or(2025);
+    let y: u32 = ys.parse().unwrap_or(2026);
     let m: i32 = ms.parse().unwrap_or(1);
     let d: i32 = ds.parse().unwrap_or(1);
     let date = js_sys::Date::new_with_year_month_day(y, m - 1, d);
@@ -157,7 +157,7 @@ pub fn week_key_end(week_start: &str) -> String {
     let (Some(ys), Some(ws)) = (parts.next(), parts.next()) else {
         return today_key();
     };
-    let y: i32 = ys.parse().unwrap_or(2025);
+    let y: i32 = ys.parse().unwrap_or(2026);
     let week_str = ws.trim_start_matches('W');
     let w: u32 = week_str.parse().unwrap_or(1);
     let jan1_weekday = jan1_iso_weekday(y);
@@ -185,8 +185,8 @@ fn add_days_to_jan1(y: i32, days: i32) -> String {
     let days_in_months: [u32; 13] = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     let mut month = 1;
     let mut day_in_month = remaining as u32 + 1; // +1 because we start from day 0
-    for (m, &md) in days_in_months[1..].iter().enumerate() {
-        let m = m + 1;
+    for (idx, &md) in days_in_months[1..].iter().enumerate() {
+        let m = idx + 1;
         let mut month_days = md;
         if m == 2 && is_leap(year) {
             month_days += 1;

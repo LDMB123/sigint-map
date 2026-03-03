@@ -107,9 +107,8 @@
   font-weight: var(--font-weight-heavy);
   text-align: center;
   background: linear-gradient(120deg, var(--color-green-vivid) 0%, var(--color-blue-vivid) 80%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: transparent;
   filter: drop-shadow(0 1px 4px rgba(0, 194, 96, 0.22));
   padding-bottom: var(--space-sm);
   border-bottom: 2px solid rgba(77, 200, 130, 0.3);

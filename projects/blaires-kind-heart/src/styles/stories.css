@@ -2,7 +2,7 @@
 
 .story-word {
   display: inline;
-  transition: color 0.15s ease, transform 0.15s ease, filter 0.15s ease;
+  transition: color 0.15s var(--ease-smooth), transform 0.15s var(--ease-smooth), filter 0.15s var(--ease-smooth);
 }
 
 .story-word--active {
@@ -445,11 +445,15 @@
   display: inline-block;
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: var(--radius-round);
   background: var(--color-purple-light);
   border: 2px solid var(--color-purple);
   opacity: 0.4;
-  transition: all var(--duration-fast) var(--ease-smooth);
+  transition:
+    opacity var(--duration-fast) var(--ease-smooth),
+    background-color var(--duration-fast) var(--ease-smooth),
+    transform var(--duration-fast) var(--ease-smooth),
+    box-shadow var(--duration-fast) var(--ease-smooth);
 }
 
 .story-progress-dot--active {
@@ -602,7 +606,11 @@
     0 0 22px rgba(0, 194, 96, 0.50),
     0 0 48px rgba(0, 194, 96, 0.25);
   pointer-events: none;
-  transition: all var(--duration-normal) var(--ease-bounce);
+  transition:
+    transform var(--duration-normal) var(--ease-bounce),
+    border-color var(--duration-normal) var(--ease-bounce),
+    background var(--duration-normal) var(--ease-bounce),
+    box-shadow var(--duration-normal) var(--ease-bounce);
 }
 
 

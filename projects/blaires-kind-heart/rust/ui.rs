@@ -16,11 +16,10 @@ pub fn big_emoji_button(
     let btn = if color_variant.is_empty() {
         render::create_el_with_class(&doc, "button", "kind-btn")?
     } else {
-        let el = dom::with_buf(|buf| {
+        dom::with_buf(|buf| {
             let _ = write!(buf, "kind-btn kind-btn--{color_variant}");
             render::create_el_with_class(&doc, "button", buf)
-        })?;
-        el
+        })?
     };
     dom::set_attr(&btn, "type", "button");
     dom::set_attr(&btn, "data-action", action);
@@ -40,15 +39,25 @@ pub fn big_emoji_button(
 }
 pub fn update_heart_counter(count: u32) {
     dom::with_buf(|buf| {
-        let _ = std::fmt::Write::write_fmt(buf, format_args!("{count}"));
-        if let Some(el) = state::get_cached_hearts_counter().or_else(|| dom::query("[data-hearts]"))
+        let _ = write!(buf, "{count}");
+        if let Some(el) = state::get_cached_hearts_counter().or_else(|| dom::query(crate::constants::SELECTOR_HEARTS))
         {
             el.set_text_content(Some(buf));
+            let _ = el.class_list().add_1("heart-count-pop");
         }
         if let Some(el) = state::get_cached_tracker_hearts_counter()
-            .or_else(|| dom::query("[data-tracker-hearts-count]"))
+            .or_else(|| dom::query(crate::constants::SELECTOR_TRACKER_HEARTS))
         {
             el.set_text_content(Some(buf));
+            let _ = el.class_list().add_1("heart-count-pop");
+        }
+    });
+    dom::set_timeout_once(300, || {
+        if let Some(el) = dom::query(crate::constants::SELECTOR_HEARTS) {
+            let _ = el.class_list().remove_1("heart-count-pop");
+        }
+        if let Some(el) = dom::query(crate::constants::SELECTOR_TRACKER_HEARTS) {
+            let _ = el.class_list().remove_1("heart-count-pop");
         }
     });
 }

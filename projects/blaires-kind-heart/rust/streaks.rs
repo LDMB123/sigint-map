@@ -59,9 +59,12 @@ fn render_streak_panel() {
 pub fn record_today(state: Rc<RefCell<AppState>>) {
     let day_key = utils::today_key();
     let hearts = state.borrow().hearts_today;
-    db_client::exec_fire_and_forget( "streak-upsert", "INSERT INTO streaks (day_key, acts_count, hearts_total) VALUES (?1, 1, ?2) \
-         ON CONFLICT(day_key) DO UPDATE SET acts_count = acts_count + 1, hearts_total = hearts_total + 1",
-        vec![day_key, hearts.to_string()],);
+    db_client::exec_fire_and_forget(
+        "streak-upsert",
+        "INSERT INTO streaks (day_key, acts_count, hearts_total) VALUES (?1, 1, ?2) \
+        ON CONFLICT(day_key) DO UPDATE SET acts_count = acts_count + 1, hearts_total = excluded.hearts_total",
+        vec![day_key, hearts.to_string()],
+    );
     let streak = state.borrow().streak_days;
     ui::update_streak(streak);
     if let Some(dot) = dom::query("[data-day-offset=\"0\"]") {

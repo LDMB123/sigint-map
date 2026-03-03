@@ -368,7 +368,7 @@ async function main() {
       description: "runtime restore verifies post-export mutation was removed",
     },
     {
-      regex: /await openMomDashboard\(\);/,
+      regex: /await openMomDashboard\(page\);/,
       description: "runtime restore flow re-opens Mom dashboard after restore",
     },
   ];

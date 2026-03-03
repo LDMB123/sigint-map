@@ -3,7 +3,9 @@ use std::cell::RefCell;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use web_sys::PointerEvent;
-thread_local! { static TAP_TIMES: RefCell<Vec<f64>> = const { RefCell::new(Vec::new()) }; }
+thread_local! {
+    static TAP_TIMES: RefCell<Vec<f64>> = const { RefCell::new(Vec::new()) };
+}
 pub fn setup_debug_gesture() {
     let closure = Closure::wrap(Box::new(move |event: PointerEvent| {
         if event.pointer_type() != "touch" && event.pointer_type() != "pen" {
@@ -15,11 +17,13 @@ pub fn setup_debug_gesture() {
             tap_times.push(now);
             tap_times.retain(|&t| now - t < 1000.0);
             if tap_times.len() >= 3 {
-                web_sys::console::log_1(
-                    &"[gestures] Triple-tap detected - toggling debug panel".into(),
-                );
                 #[cfg(debug_assertions)]
-                crate::debug::toggle();
+                {
+                    web_sys::console::log_1(
+                        &"[gestures] Triple-tap detected - toggling debug panel".into(),
+                    );
+                    crate::debug::toggle();
+                }
                 tap_times.clear();
             }
         });

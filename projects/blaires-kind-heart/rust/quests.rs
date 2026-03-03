@@ -697,7 +697,11 @@ async fn render_daily_quests(state: Rc<RefCell<AppState>>) {
             let desc = q.desc.to_string();
             let emoji = q.emoji.to_string();
             wasm_bindgen_futures::spawn_local(async move {
-                let _ = crate::offline_queue::queued_exec( "INSERT INTO quests (id, title, description, emoji, day_key, completed, completed_at) VALUES (?1, ?2, ?3, ?4, ?5, 1, ?6)", vec![id, title, desc, emoji, day_key, now.to_string()],).await;
+                let _ = crate::offline_queue::queued_exec(
+                    "INSERT INTO quests (id, title, description, emoji, day_key, completed, completed_at) VALUES (?1, ?2, ?3, ?4, ?5, 1, ?6)",
+                    vec![id, title, desc, emoji, day_key, now.to_string()],
+                )
+                .await;
             });
         }
         let hearts_total = {

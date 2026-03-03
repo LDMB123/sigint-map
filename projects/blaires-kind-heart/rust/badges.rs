@@ -480,7 +480,13 @@ fn celebrate_badge_unlock(badge_id: &str) {
     }
 }
 async fn check_platinum_achievements() {
-    let aggregate_sql = " SELECT (SELECT COUNT(*) FROM badges WHERE badge_type = 'skill_mastery' AND tier = 'platinum' AND earned = 1) as skill_platinum_count, (SELECT COUNT(*) FROM badges WHERE badge_type = 'story' AND earned = 1) as story_count, (SELECT COUNT(*) FROM badges WHERE badge_type = 'quest_chain' AND earned = 1) as chain_count, (SELECT COUNT(*) FROM gardens WHERE growth_stage >= 5) as garden_count ";
+    let aggregate_sql = "\
+        SELECT \
+            (SELECT COUNT(*) FROM badges WHERE badge_type = 'skill_mastery' AND tier = 'platinum' AND earned = 1) as skill_platinum_count, \
+            (SELECT COUNT(*) FROM badges WHERE badge_type = 'story' AND earned = 1) as story_count, \
+            (SELECT COUNT(*) FROM badges WHERE badge_type = 'quest_chain' AND earned = 1) as chain_count, \
+            (SELECT COUNT(*) FROM gardens WHERE growth_stage >= 5) as garden_count \
+        ";
     let (skill_platinum_count, story_count, chain_count, garden_count) =
         match db_client::query(aggregate_sql, vec![]).await {
             Ok(rows) => (

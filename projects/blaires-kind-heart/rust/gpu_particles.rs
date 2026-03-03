@@ -86,7 +86,11 @@ pub const BURST_UNICORN: BurstConfig = BurstConfig {
     size_min: 5.0,
     size_max: 14.0,
 };
-thread_local! { static PIPELINE: RefCell<Option<ParticlePipeline>> = const { RefCell::new(None) }; static ACTIVE_BURST: RefCell<Option<ActiveBurst>> = const { RefCell::new(None) }; static RENDERING_PAUSED: RefCell<bool> = const { RefCell::new(false) }; }
+thread_local! {
+    static PIPELINE: RefCell<Option<ParticlePipeline>> = const { RefCell::new(None) };
+    static ACTIVE_BURST: RefCell<Option<ActiveBurst>> = const { RefCell::new(None) };
+    static RENDERING_PAUSED: RefCell<bool> = const { RefCell::new(false) };
+}
 pub fn set_paused(paused: bool) {
     RENDERING_PAUSED.with(|cell| {
         *cell.borrow_mut() = paused;
@@ -145,8 +149,8 @@ fn create_pipeline(state: &gpu::GpuState) -> Option<ParticlePipeline> {
     uniform_desc.set_label("uniforms");
     let uniform_buffer = device.create_buffer(&uniform_desc);
 
-    let compute_shader = create_compute_shader(device)?;
-    let render_shader = create_render_shader(device)?;
+    let compute_shader = create_shader(device, include_str!("../shaders/particles_compute.wgsl"), "particle-compute");
+    let render_shader = create_shader(device, include_str!("../shaders/particles_render.wgsl"), "particle-render");
 
     let compute_bgl = device.create_bind_group_layout(&create_bind_group_layout_desc(true));
     let render_bgl = device.create_bind_group_layout(&create_bind_group_layout_desc(false));
@@ -174,7 +178,7 @@ fn create_pipeline(state: &gpu::GpuState) -> Option<ParticlePipeline> {
         &render_shader,
         &render_pipeline_layout,
         &state.format,
-    )?;
+    );
 
     Some(ParticlePipeline {
         compute_pipeline,
@@ -185,17 +189,10 @@ fn create_pipeline(state: &gpu::GpuState) -> Option<ParticlePipeline> {
         render_bgl,
     })
 }
-fn create_compute_shader(device: &bindings::GpuDevice) -> Option<bindings::GpuShaderModule> {
-    let code = include_str!("../shaders/particles_compute.wgsl");
+fn create_shader(device: &bindings::GpuDevice, code: &str, label: &str) -> bindings::GpuShaderModule {
     let desc = bindings::GpuShaderModuleDescriptor::new(code);
-    desc.set_label("particle-compute");
-    Some(device.create_shader_module(&desc))
-}
-fn create_render_shader(device: &bindings::GpuDevice) -> Option<bindings::GpuShaderModule> {
-    let code = include_str!("../shaders/particles_render.wgsl");
-    let desc = bindings::GpuShaderModuleDescriptor::new(code);
-    desc.set_label("particle-render");
-    Some(device.create_shader_module(&desc))
+    desc.set_label(label);
+    device.create_shader_module(&desc)
 }
 fn create_bind_group_layout_desc(is_compute: bool) -> bindings::GpuBindGroupLayoutDescriptor {
     let entries = js_sys::Array::new();
@@ -237,7 +234,7 @@ fn create_render_pipeline(
     shader: &bindings::GpuShaderModule,
     layout: &bindings::GpuPipelineLayout,
     format: &JsValue,
-) -> Option<bindings::GpuRenderPipeline> {
+) -> bindings::GpuRenderPipeline {
     let vertex_state = bindings::GpuVertexState::new(shader);
     vertex_state.set_entry_point("vs_main");
     let blend_component_color = bindings::GpuBlendComponent::new();
@@ -261,7 +258,7 @@ fn create_render_pipeline(
     desc.set_fragment(&fragment_state);
     desc.set_primitive(&primitive);
     desc.set_label("particle-render");
-    Some(device.create_render_pipeline(&desc))
+    device.create_render_pipeline(&desc)
 }
 fn spawn_burst(config: &BurstConfig) {
     stop_active_burst();

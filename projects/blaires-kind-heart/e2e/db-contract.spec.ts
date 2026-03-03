@@ -1,7 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
-
-import { waitForAppReady } from "./helpers";
+import { openMomDashboard, waitForAppReady } from "./helpers";
 
 test.use({ video: "off" });
 
@@ -12,21 +10,6 @@ type WorkerRequest = {
   statements?: [string, string[]][];
   snapshot_json?: string;
 };
-
-async function openMomDashboard(page: Page): Promise<void> {
-  await page.locator(".home-title").dispatchEvent("pointerdown");
-  await page.waitForTimeout(3200);
-  await page.locator(".home-title").dispatchEvent("pointerup");
-  await page.waitForSelector("[data-mom-overlay]", { state: "visible", timeout: 15_000 });
-
-  const pinDigits = ["1", "2", "3", "4"];
-  for (const digit of pinDigits) {
-    const button = page.locator(`[data-pin-digit="${digit}"]`).first();
-    await button.click();
-  }
-
-  await page.waitForSelector("[data-mom-dashboard]", { state: "visible", timeout: 15_000 });
-}
 
 test.describe("db contract", () => {
   test("db worker initializes schema, migrations, and integrity", async ({ page }) => {
@@ -341,6 +324,5 @@ test.describe("db contract", () => {
     );
     expect(restoredKindActsRows).toEqual(kindActsRows);
     expect(JSON.stringify(restoredKindActsRows)).not.toContain(mutationNote);
-    // await openMomDashboard();
   });
 });

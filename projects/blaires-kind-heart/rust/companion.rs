@@ -6,7 +6,15 @@ use std::cell::{Cell, RefCell};
 use std::thread::LocalKey;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, Event};
-thread_local! { static PENDING_RENDER_ABORT: RefCell<Option<web_sys::AbortController>> = const { RefCell::new(None) }; static EXPRESSION_RENDER_ABORT: RefCell<Option<web_sys::AbortController>> = const { RefCell::new(None) }; static TYPEWRITER_ABORT: RefCell<Option<web_sys::AbortController>> = const { RefCell::new(None) }; static COMPANION_TAP_BOUND: Cell<bool> = const { Cell::new(false) }; static TICKLE_TAP_COUNT: Cell<u32> = const { Cell::new(0) }; static TICKLE_LAST_TAP_MS: Cell<f64> = const { Cell::new(0.0) }; static LAST_PLAY_ANIM: Cell<u32> = const { Cell::new(99) }; }
+thread_local! {
+    static PENDING_RENDER_ABORT: RefCell<Option<web_sys::AbortController>> = const { RefCell::new(None) };
+    static EXPRESSION_RENDER_ABORT: RefCell<Option<web_sys::AbortController>> = const { RefCell::new(None) };
+    static TYPEWRITER_ABORT: RefCell<Option<web_sys::AbortController>> = const { RefCell::new(None) };
+    static COMPANION_TAP_BOUND: Cell<bool> = const { Cell::new(false) };
+    static TICKLE_TAP_COUNT: Cell<u32> = const { Cell::new(0) };
+    static TICKLE_LAST_TAP_MS: Cell<f64> = const { Cell::new(0.0) };
+    static LAST_PLAY_ANIM: Cell<u32> = const { Cell::new(99) };
+}
 fn spawn_skin_render(
     abort_key: &'static LocalKey<RefCell<Option<web_sys::AbortController>>>,
     expression: &'static str,
@@ -50,26 +58,41 @@ const QUEST_PHRASES: &[&str] = &[
     "You did it, Blaire! Quest complete!",
     "Amazing Blaire! Another quest done!",
     "Sparkle knew you could do it!",
+    "Quest champion! You're unstoppable!",
+    "Blaire finished a quest! Hooray!",
+    "That quest was no match for you!",
 ];
 const STICKER_PHRASES: &[&str] = &[
     "Ooh Blaire! A new sticker! So pretty!",
     "Look at that beautiful sticker, Blaire!",
     "Your collection is growing!",
+    "Sparkle loves that sticker!",
+    "What a sparkly sticker! Add it!",
+    "Blaire, your stickers are amazing!",
 ];
 const STORY_PHRASES: &[&str] = &[
     "What a great story, Blaire!",
     "Blaire, I love that story!",
     "Stories are magical!",
+    "Tell me another one, Blaire!",
+    "Sparkle loves story time!",
+    "That story made me smile!",
 ];
 const GAME_PHRASES: &[&str] = &[
     "Great job, Blaire!",
     "Blaire, you did it!",
     "That was so fun!",
+    "Play again! Play again!",
+    "Blaire is a game champion!",
+    "Sparkle loves watching you play!",
 ];
 const FIRST_ACT_PHRASES: &[&str] = &[
     "WOW Blaire! First kind act today! AMAZING!",
     "YES Blaire! The kindness streak begins!",
     "First kindness of the day! You're incredible!",
+    "Blaire is starting the day with kindness!",
+    "The very first act! What a great start!",
+    "Sparkle is SO excited! Here we go!",
 ];
 const IDLE_BEHAVIORS: &[(&str, &str)] = &[
     ("companion--excited", "Ooh!"),
@@ -121,7 +144,7 @@ fn pick_index(n: usize, salt: u32) -> usize {
     ((browser_apis::now_ms() as u64).wrapping_add(u64::from(salt)) as usize) % n
 }
 pub fn get_companion() -> Option<Element> {
-    state::get_cached_companion().or_else(|| dom::query("[data-companion]"))
+    state::get_cached_companion().or_else(|| dom::query(crate::constants::SELECTOR_COMPANION))
 }
 pub fn init() {
     let companion = get_companion();
@@ -346,7 +369,7 @@ fn on_care_feed() {
 fn on_care_pet() {
     dismiss_care_menu();
     synth_audio::purr();
-    confetti::float_emoji("[data-companion]", "\u{2728}");
+    confetti::float_emoji(crate::constants::SELECTOR_COMPANION, "\u{2728}");
     if let Some(el) = get_companion() {
         animations::bounce(&el);
     }
@@ -445,7 +468,7 @@ fn fire_reaction(r: &Reaction) {
     let phrase = pick_phrase(r.phrases);
     set_expression(r.expression);
     react(phrase);
-    confetti::float_emoji("[data-companion]", r.confetti);
+    confetti::float_emoji(crate::constants::SELECTOR_COMPANION, r.confetti);
     (r.extra_sound)();
 }
 const R_KIND_ACT: Reaction = Reaction {

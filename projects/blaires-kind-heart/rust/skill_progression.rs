@@ -7,7 +7,11 @@ pub struct SkillStat {
 pub async fn track_skill_practice(skill: &str) {
     let skill_str = skill.to_string();
     let today = utils::today_key();
-    let _ = db_client::exec( "UPDATE skill_mastery SET total_count = total_count + 1, last_practiced = ?1 WHERE skill_type = ?2", vec![today, skill_str.clone()],).await;
+    let _ = db_client::exec(
+        "UPDATE skill_mastery SET total_count = total_count + 1, last_practiced = ?1 WHERE skill_type = ?2",
+        vec![today, skill_str.clone()],
+    )
+    .await;
     wasm_bindgen_futures::spawn_local(async move {
         check_and_award_mastery(&skill_str).await;
     });

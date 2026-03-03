@@ -1,11 +1,13 @@
 use std::cell::RefCell;
-use web_sys::{AudioContext, GainNode, OscillatorType};
-thread_local! { static AMBIENT_GAIN: RefCell<Option<GainNode>> = const { RefCell::new(None) }; static MUTED: RefCell<bool> = const { RefCell::new(false) }; static LAST_COLLECT_TIME: RefCell<f64> = const { RefCell::new(0.0) }; static COMBO_COUNT: RefCell<u32> = const { RefCell::new(0) }; }
-fn get_audio_ctx() -> Option<AudioContext> {
-    crate::synth_audio::get_context()
+use web_sys::{GainNode, OscillatorType};
+thread_local! {
+    static AMBIENT_GAIN: RefCell<Option<GainNode>> = const { RefCell::new(None) };
+    static MUTED: RefCell<bool> = const { RefCell::new(false) };
+    static LAST_COLLECT_TIME: RefCell<f64> = const { RefCell::new(0.0) };
+    static COMBO_COUNT: RefCell<u32> = const { RefCell::new(0) };
 }
 pub fn start_ambient(freq: f32) {
-    let Some(ctx) = get_audio_ctx() else { return };
+    let Some(ctx) = crate::synth_audio::get_context() else { return };
     let Ok(gain) = ctx.create_gain() else { return };
     let _ = gain.connect_with_audio_node(&ctx.destination());
     let is_muted = MUTED.with(|m| *m.borrow());
@@ -28,7 +30,7 @@ pub fn stop_ambient() {
     });
 }
 pub fn step() {
-    let Some(ctx) = get_audio_ctx() else { return };
+    let Some(ctx) = crate::synth_audio::get_context() else { return };
     if is_muted_state() {
         return;
     }
@@ -47,7 +49,7 @@ pub fn step() {
     }
 }
 pub fn collect_friend(type_id: &str) {
-    let Some(ctx) = get_audio_ctx() else { return };
+    let Some(ctx) = crate::synth_audio::get_context() else { return };
     if is_muted_state() {
         return;
     }

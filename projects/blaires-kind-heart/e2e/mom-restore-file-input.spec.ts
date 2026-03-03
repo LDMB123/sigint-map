@@ -1,34 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
-import { waitForAppReady } from "./helpers";
+import { expect, test } from "@playwright/test";
+import { openMomDashboard, waitForAppReady } from "./helpers";
 
 test.use({ video: "off" });
-
-async function openMomDashboard(page: Page): Promise<void> {
-  const title = page.locator(".home-title");
-  await expect(title).toBeVisible();
-
-  await title.dispatchEvent("pointerdown", {
-    pointerType: "mouse",
-    isPrimary: true,
-    button: 0,
-  });
-  await page.waitForTimeout(3200);
-  await title.dispatchEvent("pointerup", {
-    pointerType: "mouse",
-    isPrimary: true,
-    button: 0,
-  });
-
-  const pinOverlay = page.locator("[data-mom-overlay]");
-  await expect(pinOverlay).toBeVisible();
-  for (const digit of ["1", "2", "3", "4"]) {
-    const digitButton = pinOverlay.locator(`[data-pin-digit="${digit}"]`);
-    await expect(digitButton).toBeVisible();
-    await digitButton.click({ force: true });
-  }
-
-  await expect(page.locator("[data-mom-dashboard]")).toBeVisible();
-}
 
 test.describe("mom dashboard persistence", () => {
   test.setTimeout(120_000);

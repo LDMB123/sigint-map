@@ -2,8 +2,11 @@
 
 use std::cell::RefCell;
 use wasm_bindgen::JsCast;
+use wasm_bindgen::UnwrapThrowExt;
 
-thread_local! { static SNAPSHOTS: RefCell<Vec<MemorySnapshot>> = const { RefCell::new(Vec::new()) }; }
+thread_local! {
+    static SNAPSHOTS: RefCell<Vec<MemorySnapshot>> = const { RefCell::new(Vec::new()) };
+}
 
 #[derive(Debug, Clone)]
 pub struct MemorySnapshot {
@@ -17,11 +20,11 @@ pub struct MemorySnapshot {
 pub fn capture_snapshot(label: &str) -> MemorySnapshot {
     let mem = wasm_bindgen::memory()
         .dyn_into::<js_sys::WebAssembly::Memory>()
-        .expect("wasm memory");
+        .unwrap_throw();
     let buffer = mem
         .buffer()
         .dyn_into::<js_sys::ArrayBuffer>()
-        .expect("wasm buffer");
+        .unwrap_throw();
     let byte_length = buffer.byte_length() as usize;
 
     let snapshot = MemorySnapshot {
@@ -54,10 +57,10 @@ pub fn get_snapshots() -> Vec<MemorySnapshot> {
 pub fn current_heap_bytes() -> usize {
     let mem = wasm_bindgen::memory()
         .dyn_into::<js_sys::WebAssembly::Memory>()
-        .expect("wasm memory");
+        .unwrap_throw();
     mem.buffer()
         .dyn_into::<js_sys::ArrayBuffer>()
-        .expect("wasm buffer")
+        .unwrap_throw()
         .byte_length() as usize
 }
 

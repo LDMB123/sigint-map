@@ -68,7 +68,7 @@ fn remove_overlay() {
     }
 }
 
-fn show_dialog(text: &str, btn_text: &str) {
+fn show_dialog(text: &str, btn_text: &str, with_sparkle: bool) {
     remove_dialog();
     let doc = dom::document();
     let Some(dialog) = render::create_el_with_class(&doc, "div", "onboarding-dialog") else {
@@ -77,38 +77,15 @@ fn show_dialog(text: &str, btn_text: &str) {
     dom::set_attr(&dialog, "data-onboarding-dialog", "");
     dom::set_attr(&dialog, "aria-live", "polite");
 
-    if let Some(msg) = render::text_el(&doc, "div", "onboarding-dialog-text", text) {
-        let _ = dialog.append_child(&msg);
-    }
-
-    if let Some(btn) = render::create_button(&doc, "onboarding-dialog-btn", "") {
-        if !btn_text.is_empty() {
-            dom::safe_set_inner_html(&btn, btn_text);
+    if with_sparkle {
+        if let Some(img) = render::create_img(
+            &doc,
+            "companions/default_happy.webp",
+            "Sparkle the Unicorn",
+            "onboarding-dialog-sparkle",
+        ) {
+            let _ = dialog.append_child(&img);
         }
-        dom::set_attr(&btn, "data-onboarding-btn", "");
-        let _ = dialog.append_child(&btn);
-    }
-
-    let _ = dom::body().append_child(&dialog);
-    dom::focus_first(&dialog);
-}
-
-fn show_dialog_with_sparkle(text: &str, btn_text: &str) {
-    remove_dialog();
-    let doc = dom::document();
-    let Some(dialog) = render::create_el_with_class(&doc, "div", "onboarding-dialog") else {
-        return;
-    };
-    dom::set_attr(&dialog, "data-onboarding-dialog", "");
-    dom::set_attr(&dialog, "aria-live", "polite");
-
-    if let Some(img) = render::create_img(
-        &doc,
-        "companions/default_happy.webp",
-        "Sparkle the Unicorn",
-        "onboarding-dialog-sparkle",
-    ) {
-        let _ = dialog.append_child(&img);
     }
 
     if let Some(msg) = render::text_el(&doc, "div", "onboarding-dialog-text", text) {
@@ -270,9 +247,10 @@ async fn step_welcome() {
     browser_apis::sleep_ms(450).await;
 
     show_overlay();
-    show_dialog_with_sparkle(
+    show_dialog(
         "Hi Blaire! I'm Sparkle! I'll show you how to be kind!",
         r#"Hi Sparkle! <img src="illustrations/stickers/glowing-star.webp" class="inline-emoji"/>"#,
+        true,
     );
     speech::speak("Hi Blaire! I'm Sparkle the unicorn! Let me show you around!");
     confetti::burst_unicorn();
@@ -289,7 +267,7 @@ async fn step_first_act() {
 
     show_overlay();
     elevate_element("[data-panel-open='panel-tracker']");
-    show_dialog("Tap 'Be Kind!' to do your first kind act!", "");
+    show_dialog("Tap 'Be Kind!' to do your first kind act!", "", false);
     // Remove the button from dialog — user taps the real Be Kind button
     if let Some(btn) = dom::query("[data-onboarding-btn]") {
         btn.remove();
@@ -303,7 +281,7 @@ async fn step_first_act() {
     remove_dialog();
 
     // Now wait for a kind act to be logged
-    show_dialog("Now tap one of the hearts to be kind!", "");
+    show_dialog("Now tap one of the hearts to be kind!", "", false);
     if let Some(btn) = dom::query("[data-onboarding-btn]") {
         btn.remove();
     }
@@ -325,7 +303,7 @@ async fn step_see_stuff() {
 
     show_overlay();
     elevate_element("[data-panel-open='panel-mystuff']");
-    show_dialog("Tap 'My Stuff' to see your stickers and more!", "");
+    show_dialog("Tap 'My Stuff' to see your stickers and more!", "", false);
     if let Some(btn) = dom::query("[data-onboarding-btn]") {
         btn.remove();
     }
@@ -345,9 +323,10 @@ async fn step_done() {
     navigation::close_panel_to_home();
     browser_apis::sleep_ms(600).await;
 
-    show_dialog_with_sparkle(
+    show_dialog(
         "Now you know what to do, Blaire! Let's be kind every day!",
         r#"Let's Go! <img src="illustrations/stickers/party-popper.webp" class="inline-emoji"/>"#,
+        true,
     );
     synth_audio::fanfare();
     confetti::burst_party();

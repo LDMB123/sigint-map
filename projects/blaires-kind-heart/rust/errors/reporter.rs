@@ -8,7 +8,9 @@ use std::cell::RefCell;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::console;
 
-thread_local! { static ERROR_BUFFER: RefCell<Vec<ErrorRecord>> = const { RefCell::new(Vec::new()) }; }
+thread_local! {
+    static ERROR_BUFFER: RefCell<Vec<ErrorRecord>> = const { RefCell::new(Vec::new()) };
+}
 
 #[derive(Debug, Clone)]
 struct ErrorRecord {

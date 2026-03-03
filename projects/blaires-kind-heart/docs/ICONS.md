@@ -8,7 +8,7 @@ Icon assets live in `assets/icons/` and are referenced by `manifest.webmanifest`
 
 ## Generate Icons
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/assets
+cd assets
 python3 generate_icons.py
 ```
 

@@ -3,13 +3,6 @@
 use crate::errors::{self, ErrorSeverity};
 use std::fmt::Write;
 
-fn html_escape(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-}
-
 pub fn render() -> String {
     let mut output = String::from(
         r#"
@@ -46,8 +39,8 @@ pub fn render() -> String {
             };
 
             let time_str = super::super::format_timestamp(*timestamp);
-            let title = html_escape(&error.title());
-            let description = html_escape(&error.description());
+            let title = super::html_escape(&error.title());
+            let description = super::html_escape(&error.description());
 
             let _ = write!(
                 output,

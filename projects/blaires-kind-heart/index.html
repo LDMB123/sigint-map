@@ -218,15 +218,15 @@
   <a href="#app" class="skip-link">Skip to main content</a>
 
   <div class="app-shell">
-    <div class="toast" data-toast popover="manual" aria-live="polite"></div>
+    <div class="toast" data-toast popover="manual" role="status" aria-live="polite"></div>
 
     <!-- ====== HOME HUB ====== -->
-    <main id="app" class="home-scene" data-scene="home">
+    <main id="app" class="home-scene">
       <header class="home-header">
         <h1 class="home-title">Blaire's Kind Heart</h1>
-        <div class="heart-counter" data-hearts-total aria-label="Total hearts earned">
+        <div class="heart-counter" aria-label="Total hearts earned">
           <span class="heart-icon" aria-hidden="true">&#x1F49C;</span>
-          <span data-hearts data-hearts-count aria-live="polite">0</span>
+          <span data-hearts aria-live="polite">0</span>
         </div>
       </header>
 
@@ -234,7 +234,7 @@
         <button class="home-btn home-btn--tracker" data-panel-open="panel-tracker" data-home-btn aria-label="Be Kind!">
           <img class="home-btn-img" src="illustrations/buttons/btn-kind-acts.webp" alt="Be Kind!" aria-hidden="true" />
           <span class="home-btn-label">Be Kind!</span>
-          <span class="home-btn-badge" data-badge-hearts aria-label="Hearts today">0</span>
+          <span class="home-btn-badge" aria-label="Hearts today">0</span>
         </button>
 
         <button class="home-btn home-btn--adventures" data-panel-open="panel-adventures" data-home-btn
@@ -254,6 +254,11 @@
           alt="Streak Fire" />
         <span data-streak aria-live="polite">0</span>
       </section>
+
+      <button class="home-show-mom-btn" data-show-mom aria-label="Show Mom your kindness">
+        <img class="home-show-mom-img" src="illustrations/buttons/btn-show-mom.webp" alt="" aria-hidden="true" width="64" height="64" />
+        <span class="home-show-mom-label">Show Mom!</span>
+      </button>
     </main>
 
     <!-- Sparkle the Unicorn — fixed-position companion -->
@@ -273,7 +278,7 @@
           <span data-tracker-hearts-count aria-live="polite">0</span>
         </div>
       </header>
-      <div id="tracker-body" class="panel-body" data-tracker-body>
+      <div id="tracker-body" class="panel-body">
         <!-- Populated by tracker.rs -->
       </div>
     </section>
@@ -290,7 +295,7 @@
         </nav>
         <h2 class="panel-title">Today's Quests</h2>
       </header>
-      <div id="quests-body" class="panel-body" data-quests-body>
+      <div id="quests-body" class="panel-body">
         <!-- Populated by quests.rs -->
       </div>
     </section>
@@ -307,7 +312,7 @@
         </nav>
         <h2 class="panel-title">Stories</h2>
       </header>
-      <div id="stories-body" class="panel-body" data-stories-body>
+      <div id="stories-body" class="panel-body">
         <!-- Populated by stories.rs -->
       </div>
     </section>
@@ -324,7 +329,7 @@
         </nav>
         <h2 class="panel-title">My Stickers</h2>
       </header>
-      <div id="rewards-body" class="panel-body" data-rewards-body>
+      <div id="rewards-body" class="panel-body">
         <!-- Populated by rewards.rs -->
       </div>
     </section>
@@ -341,10 +346,10 @@
         </nav>
         <h2 class="panel-title">Games</h2>
       </header>
-      <div id="games-body" class="panel-body" data-games-body>
+      <div id="games-body" class="panel-body">
         <!-- Games hub populated by games.rs -->
       </div>
-      <div id="game-arena" class="game-arena" hidden data-game-arena role="region" aria-label="Game play area">
+      <div id="game-arena" class="game-arena" hidden role="region" aria-label="Game play area">
         <!-- Individual game renders here (catcher, memory, hug, paint, unicorn) -->
       </div>
       <button id="game-exit-btn" class="floating-back-btn" hidden aria-label="Exit Game">⬅️</button>
@@ -362,7 +367,7 @@
         </nav>
         <h2 class="panel-title">My Week</h2>
       </header>
-      <div id="progress-body" class="panel-body" data-progress-body>
+      <div id="progress-body" class="panel-body">
         <!-- Populated by progress.rs -->
       </div>
     </section>
@@ -379,7 +384,7 @@
         </nav>
         <h2 class="panel-title">🌱 My Gardens</h2>
       </header>
-      <div id="gardens-body" class="panel-body" data-gardens-body>
+      <div id="gardens-body" class="panel-body">
         <!-- Populated by gardens.rs -->
       </div>
     </section>

@@ -5,7 +5,10 @@ use wasm_bindgen::intern;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use web_sys::{Event, MouseEvent};
-thread_local! { static CACHED_KEYFRAMES: RefCell<Option<JsValue>> = const { RefCell::new(None) }; static CACHED_OPTS: RefCell<Option<js_sys::Object>> = const { RefCell::new(None) }; }
+thread_local! {
+    static CACHED_KEYFRAMES: RefCell<Option<JsValue>> = const { RefCell::new(None) };
+    static CACHED_OPTS: RefCell<Option<js_sys::Object>> = const { RefCell::new(None) };
+}
 fn get_or_init_keyframes() -> JsValue {
     CACHED_KEYFRAMES.with(|c| {
         let mut cell = c.borrow_mut();

@@ -1,7 +1,7 @@
 use crate::dom;
 use js_sys::{Function, Promise};
 use wasm_bindgen::closure::Closure;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{JsCast, UnwrapThrowExt};
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::AbortController;
@@ -65,7 +65,7 @@ where
     let callback = Closure::<dyn FnMut(JsValue) -> Promise>::once(move |_lock: JsValue| {
         let (resolve_fn, promise) = new_promise_with_resolver();
         let lock_start = now_ms();
-        let lock_name_inner = lock_name.clone();
+        let lock_name_inner = lock_name;
         let mode_str_inner = mode_str;
         wasm_bindgen_futures::spawn_local(async move {
             let result = operation().await;
@@ -110,7 +110,7 @@ fn new_promise_with_resolver() -> (Function, Promise) {
     let resolve = resolve_holder
         .borrow_mut()
         .take()
-        .expect("Promise constructor must call callback synchronously");
+        .unwrap_throw();
     (resolve, promise)
 }
 pub struct AbortHandle {

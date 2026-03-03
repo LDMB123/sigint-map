@@ -105,19 +105,12 @@ pub async fn get_active_skin() -> Option<String> {
     let sql = "SELECT id, is_active FROM companion_skins WHERE is_active = 1 LIMIT 1";
     match db_client::query(sql, vec![]).await {
         Ok(rows) => {
-            let row = rows.as_array().and_then(|arr| arr.first());
-            let active = row
-                .and_then(|r| r.get("is_active"))
-                .and_then(|v| v.as_f64())
-                .is_some_and(|n| n == 1.0);
-            if active {
-                row.and_then(|r| r.get("id"))
-                    .and_then(|v| v.as_str())
-                    .map(|s| s.to_string())
-                    .or_else(|| Some("default".to_string()))
-            } else {
-                Some("default".to_string())
-            }
+            rows.as_array()
+                .and_then(|arr| arr.first())
+                .and_then(|r| r.get("id"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string())
+                .or_else(|| Some("default".to_string()))
         }
         Err(_) => Some("default".to_string()),
     }

@@ -99,7 +99,10 @@ struct PaintState {
     active_template: String,
     abort: browser_apis::AbortHandle,
 }
-thread_local! { static GAME: RefCell<Option<PaintState>> = const { RefCell::new(None) }; static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) }; }
+thread_local! {
+    static GAME: RefCell<Option<PaintState>> = const { RefCell::new(None) };
+    static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) };
+}
 pub fn start(state: Rc<RefCell<AppState>>) {
     show_category_picker(state);
 }
@@ -617,6 +620,8 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                 GAME.with(|g| {
                     if let Some(game) = g.borrow_mut().as_mut() {
                         game.drawing = false;
+                        game.gradient_start_x = None;
+                        game.gradient_start_y = None;
                         if let Some(ref ctx) = game.ctx {
                             ctx.set_shadow_blur(0.0);
                         }
@@ -632,6 +637,8 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                 GAME.with(|g| {
                     if let Some(game) = g.borrow_mut().as_mut() {
                         game.drawing = false;
+                        game.gradient_start_x = None;
+                        game.gradient_start_y = None;
                         if let Some(ref ctx) = game.ctx {
                             ctx.set_shadow_blur(0.0);
                             ctx.set_shadow_color("transparent");
@@ -641,7 +648,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
             },
         );
     }
-    if let Some(arena) = dom::query("#game-arena") {
+    if let Some(arena) = dom::query(crate::constants::SELECTOR_GAME_ARENA) {
         let s = state;
         dom::on_with_signal(
             arena.unchecked_ref(),
@@ -837,10 +844,7 @@ fn draw_stamp(game: &mut PaintState, x: f64, y: f64, emoji: String) {
 }
 fn spawn_animated_stamp(x: f64, y: f64, emoji: &str, size: f64) {
     let doc = dom::document();
-    let container = match dom::query(".paint-container") {
-        Some(el) => el,
-        None => return,
-    };
+    let Some(container) = dom::query(".paint-container") else { return };
     if let Ok(particle) = doc.create_element("div") {
         dom::set_attr(&particle, "class", "paint-animated-stamp");
         particle.set_text_content(Some(emoji));
@@ -851,7 +855,16 @@ fn spawn_animated_stamp(x: f64, y: f64, emoji: &str, size: f64) {
         let rot = (js_sys::Math::random() - 0.5) * 90.0;
 
         dom::with_buf(|b| {
-            let _ = write!(b, "position: absolute; left: {}px; top: {}px; font-size: {}px; pointer-events: none; transition: transform 2.0s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 2.0s ease-in; z-index: 50; text-shadow: 0 0 10px rgba(255,255,255,0.8); user-select: none;", x - size/2.0, y - size/2.0, size);
+            let _ = write!(
+                b,
+                "position: absolute; left: {}px; top: {}px; font-size: {}px; \
+                 pointer-events: none; z-index: 50; user-select: none; \
+                 transition: transform 2.0s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 2.0s ease-in; \
+                 text-shadow: 0 0 10px rgba(255,255,255,0.8);",
+                x - size / 2.0,
+                y - size / 2.0,
+                size
+            );
             dom::set_attr(&particle, "style", b);
         });
 
@@ -860,7 +873,20 @@ fn spawn_animated_stamp(x: f64, y: f64, emoji: &str, size: f64) {
         let p_clone = particle.clone();
         dom::set_timeout_once(50, move || {
             dom::with_buf(|b| {
-                let _ = write!(b, "position: absolute; left: {}px; top: {}px; font-size: {}px; pointer-events: none; transition: transform 2.0s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 2.0s ease-in; z-index: 50; text-shadow: 0 0 10px rgba(255,255,255,0.8); user-select: none; transform: translate({}px, {}px) rotate({}deg) scale(2.0); opacity: 0;", x - size/2.0, y - size/2.0, size, dx, dy, rot);
+                let _ = write!(
+                    b,
+                    "position: absolute; left: {}px; top: {}px; font-size: {}px; \
+                     pointer-events: none; z-index: 50; user-select: none; \
+                     transition: transform 2.0s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 2.0s ease-in; \
+                     text-shadow: 0 0 10px rgba(255,255,255,0.8); \
+                     transform: translate({}px, {}px) rotate({}deg) scale(2.0); opacity: 0;",
+                    x - size / 2.0,
+                    y - size / 2.0,
+                    size,
+                    dx,
+                    dy,
+                    rot
+                );
                 dom::set_attr(&p_clone, "style", b);
             });
         });

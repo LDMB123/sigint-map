@@ -304,13 +304,12 @@ fn render_sticker_grid() {
             continue;
         };
         dom::with_buf(|buf| {
-            let _ = std::fmt::Write::write_fmt(buf, format_args!("{i}"));
+            let _ = write!(buf, "{i}");
             dom::set_attr(&cell, "data-sticker-idx", buf);
         });
         dom::set_attr(&cell, "title", design.name);
         dom::with_buf(|buf| {
-            let _ =
-                std::fmt::Write::write_fmt(buf, format_args!("{} sticker, locked", design.name));
+            let _ = write!(buf, "{} sticker, locked", design.name);
             dom::set_attr(&cell, "aria-label", buf);
         });
         dom::set_attr(&cell, "role", "img");
@@ -333,12 +332,16 @@ fn persist_sticker_spawn(sticker_type: &str, source: &str) {
     let st = sticker_type.to_string();
     let src = source.to_string();
     crate::browser_apis::spawn_local_logged("sticker-persist", async move {
-        db_client::exec( "INSERT OR IGNORE INTO stickers (id, sticker_type, earned_at, source) VALUES (?1, ?2, ?3, ?4)", vec![id, st, now.to_string(), src],).await
+        db_client::exec(
+            "INSERT OR IGNORE INTO stickers (id, sticker_type, earned_at, source) VALUES (?1, ?2, ?3, ?4)",
+            vec![id, st, now.to_string(), src],
+        )
+        .await
     });
 }
 fn reveal_sticker_at(idx: usize, emoji: &str, image: Option<&str>) {
     let selector = dom::with_buf(|buf| {
-        let _ = Write::write_fmt(buf, format_args!("{idx}"));
+        let _ = write!(buf, "{idx}");
         buf.clone()
     });
     let cell = dom::query_data("sticker-idx", &selector);
@@ -448,7 +451,7 @@ fn sticker_type_to_name(sticker_type: &str) -> String {
 fn next_unlocked_sticker_index() -> Option<usize> {
     for i in (0..25).chain(std::iter::once(29)) {
         let selector = dom::with_buf(|buf| {
-            let _ = Write::write_fmt(buf, format_args!("{i}"));
+            let _ = write!(buf, "{i}");
             buf.clone()
         });
         let cell = dom::query_data("sticker-idx", &selector);
@@ -571,7 +574,7 @@ fn setup_drag_and_drop() {
                     let _ = area.append_child(&clone);
 
                     synth_audio::tap();
-                    crate::confetti::float_emoji("#game-arena", "✨");
+                    crate::confetti::float_emoji(crate::constants::SELECTOR_GAME_ARENA, "✨");
                 }
             } else {
                 clone.remove();

@@ -8,7 +8,9 @@ struct QueuedMutation {
     params: Vec<String>,
     timestamp: f64,
 }
-thread_local! { static FLUSH_IN_PROGRESS: Cell<bool> = const { Cell::new(false) }; }
+thread_local! {
+    static FLUSH_IN_PROGRESS: Cell<bool> = const { Cell::new(false) };
+}
 pub async fn queued_exec(sql: &str, params: Vec<String>) -> Result<(), JsValue> {
     match db_client::exec(sql, params.clone()).await {
         Ok(()) => Ok(()),
@@ -27,7 +29,14 @@ async fn queue_mutation(sql: &str, params: Vec<String>) -> Result<(), JsValue> {
         .unwrap_or(0) as usize;
     if count >= MAX_QUEUE_SIZE {
         let drop_count = MAX_QUEUE_SIZE / 10;
-        let _ = db_client::exec(&format!("DELETE FROM offline_queue WHERE id IN (SELECT id FROM offline_queue ORDER BY timestamp ASC LIMIT {drop_count})"), vec![],).await;
+        let _ = db_client::exec(
+            &format!(
+                "DELETE FROM offline_queue WHERE id IN \
+                (SELECT id FROM offline_queue ORDER BY timestamp ASC LIMIT {drop_count})"
+            ),
+            vec![],
+        )
+        .await;
         crate::dom::warn(&format!(
             "[offline_queue] Queue full ({count}), dropped oldest {drop_count} entries"
         ));

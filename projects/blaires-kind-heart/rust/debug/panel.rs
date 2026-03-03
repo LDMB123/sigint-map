@@ -3,6 +3,7 @@
 use crate::dom;
 use std::cell::Cell;
 use wasm_bindgen::JsCast;
+use wasm_bindgen::UnwrapThrowExt;
 use web_sys::Element;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -53,7 +54,7 @@ impl DebugPanel {
     }
 
     fn create_panel_element(&self) -> Element {
-        let panel = dom::document().create_element("div").expect("create div");
+        let panel = dom::document().create_element("div").unwrap_throw();
         panel.set_id("debug-panel");
         panel.set_class_name("debug-panel");
 
@@ -76,18 +77,18 @@ impl DebugPanel {
     }
 
     fn create_header(&self) -> Element {
-        let header = dom::document().create_element("div").expect("create div");
+        let header = dom::document().create_element("div").unwrap_throw();
         header.set_class_name("debug-header");
 
         // Title
-        let title = dom::document().create_element("h3").expect("create h3");
+        let title = dom::document().create_element("h3").unwrap_throw();
         title.set_text_content(Some("🔧 Debug Panel"));
         header.append_child(&title).ok();
 
         // Close button
         let close_btn = dom::document()
             .create_element("button")
-            .expect("create button");
+            .unwrap_throw();
         close_btn.set_text_content(Some("✕"));
         close_btn.set_class_name("debug-close-btn");
 
@@ -106,7 +107,7 @@ impl DebugPanel {
     }
 
     fn create_tab_bar(&self) -> Element {
-        let tabs = dom::document().create_element("div").expect("create div");
+        let tabs = dom::document().create_element("div").unwrap_throw();
         tabs.set_class_name("debug-tabs");
 
         let tab_names = [
@@ -128,7 +129,7 @@ impl DebugPanel {
     fn create_tab_button(&self, tab_type: DebugTab, name: &str, emoji: &str) -> Element {
         let btn = dom::document()
             .create_element("button")
-            .expect("create button");
+            .unwrap_throw();
         btn.set_text_content(Some(&format!("{emoji} {name}")));
         btn.set_class_name("debug-tab-btn");
 
@@ -170,7 +171,7 @@ impl DebugPanel {
     }
 
     fn create_content_area(&self) -> Element {
-        let content = dom::document().create_element("div").expect("create div");
+        let content = dom::document().create_element("div").unwrap_throw();
         content.set_id("debug-content");
         content.set_class_name("debug-content");
 
@@ -195,7 +196,7 @@ impl DebugPanel {
 
         let style = dom::document()
             .create_element("style")
-            .expect("create style");
+            .unwrap_throw();
         style.set_id("debug-panel-styles");
         style.set_text_content(Some(r".debug-panel {
                 position: fixed; bottom: 0; left: 0; right: 0;

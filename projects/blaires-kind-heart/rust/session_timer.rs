@@ -5,10 +5,6 @@ thread_local! {
     static SESSION_START_MS: Cell<f64> = const { Cell::new(0.0) };
 }
 
-pub fn init() {
-    SESSION_START_MS.with(|s| s.set(browser_apis::now_ms()));
-}
-
 pub fn reset() {
     SESSION_START_MS.with(|s| s.set(browser_apis::now_ms()));
 }

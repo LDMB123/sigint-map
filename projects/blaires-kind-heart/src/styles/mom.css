@@ -157,10 +157,6 @@
   }
 }
 
-.mom-numpad-spacer {
-  /* empty cell */
-}
-
 .mom-pin-error {
   color: var(--color-red);
   font-weight: var(--font-weight-medium);
@@ -210,7 +206,7 @@
   animation: mom-slide-up 0.45s var(--ease-overshoot);
   border: 1.5px solid rgba(181, 126, 255, 0.18);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
 
   /* Gloss highlight */
   &::before {
@@ -386,7 +382,10 @@
   font-weight: var(--font-weight-bold);
   cursor: pointer;
   transition:
-    all var(--duration-fast) var(--ease-smooth);
+    background var(--duration-fast) var(--ease-smooth),
+    border-color var(--duration-fast) var(--ease-smooth),
+    color var(--duration-fast) var(--ease-smooth),
+    box-shadow var(--duration-fast) var(--ease-smooth);
   font-size: var(--font-size-md);
   min-height: var(--touch-min);
 

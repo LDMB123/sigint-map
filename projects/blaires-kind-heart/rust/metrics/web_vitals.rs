@@ -6,7 +6,9 @@ use wasm_bindgen::closure::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::PerformanceObserver;
 
-thread_local! { static WEB_VITALS: RefCell<WebVitals> = const { RefCell::new(WebVitals::new()) }; }
+thread_local! {
+    static WEB_VITALS: RefCell<WebVitals> = const { RefCell::new(WebVitals::new()) };
+}
 
 #[derive(Debug, Clone)]
 pub struct WebVitals {
@@ -60,6 +62,7 @@ fn observe_lcp() {
                         WEB_VITALS.with(|v| {
                             v.borrow_mut().lcp = Some(start_time);
                         });
+                        #[cfg(debug_assertions)]
                         web_sys::console::log_1(
                             &format!("[web_vitals] LCP: {start_time:.2}ms").into(),
                         );
@@ -102,6 +105,7 @@ fn observe_fid() {
                         WEB_VITALS.with(|v| {
                             v.borrow_mut().fid = Some(fid);
                         });
+                        #[cfg(debug_assertions)]
                         web_sys::console::log_1(&format!("[web_vitals] FID: {fid:.2}ms").into());
                     }
                 }
@@ -160,6 +164,7 @@ fn observe_cls() {
         WEB_VITALS.with(|v| {
             v.borrow_mut().cls = Some(cls_score);
         });
+        #[cfg(debug_assertions)]
         web_sys::console::log_1(&format!("[web_vitals] CLS: {cls_score:.4}").into());
     }) as Box<dyn FnMut(JsValue, JsValue)>);
 
@@ -203,6 +208,7 @@ fn observe_inp() {
         WEB_VITALS.with(|v| {
             v.borrow_mut().inp = Some(max_inp);
         });
+        #[cfg(debug_assertions)]
         web_sys::console::log_1(&format!("[web_vitals] INP: {max_inp:.2}ms").into());
     }) as Box<dyn FnMut(JsValue, JsValue)>);
 

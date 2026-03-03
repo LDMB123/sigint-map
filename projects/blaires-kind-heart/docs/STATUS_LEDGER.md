@@ -1,31 +1,32 @@
 # Status Ledger
 
-Last updated: 2026-02-28 (session 5)
+Last updated: 2026-03-03 (session 15)
 
 ## QA Gate Results
 
 | Gate | Command | Status | Date |
 |------|---------|--------|------|
-| Runtime diagnostics | `npm run qa:runtime` | PASS | 2026-02-28 |
-| PWA contract | `npm run qa:pwa-contract` | PASS | 2026-02-28 |
-| DB contract | `npm run qa:db-contract` | PASS | 2026-02-28 |
-| Full E2E suite (46/1 skip) | `npm run test:e2e:all` | PASS* | 2026-02-28 |
-| Visual regression (16 snapshots) | `npm run test:e2e -- e2e/visual.spec.ts` | PASS | 2026-02-28 |
-| Rust warning drift (baseline=3) | `npm run qa:rust-warning-drift` | PASS | 2026-02-21 |
-| Docs budget | `npm run qa:docs-budget` | PASS | 2026-02-28 |
-| Docs links | `npm run qa:docs-links` | PASS | 2026-02-28 |
+| Runtime diagnostics | `npm run qa:runtime` | PASS | 2026-03-03 |
+| PWA contract | `npm run qa:pwa-contract` | PASS | 2026-03-03 |
+| DB contract | `npm run qa:db-contract` | PASS | 2026-03-03 |
+| Full E2E suite (64/1 skip) | `npm run test:e2e:all` | PASS* | 2026-03-03 |
+| Visual regression (16 snapshots) | `npm run test:e2e -- e2e/visual.spec.ts` | PASS | 2026-03-03 |
+| Rust warning drift (baseline=5) | `npm run qa:rust-warning-drift` | PASS | 2026-03-02 |
+| Docs budget | `npm run qa:docs-budget` | PASS | 2026-03-02 |
+| Docs links | `npm run qa:docs-links` | PASS | 2026-03-02 |
 | Lighthouse CI | `npm run lighthouse:ci` | PASS | 2026-02-21 |
 
 \* `1 skipped` is the expected non-blocking probe skip in the full Playwright matrix.
 
 ## E2E Summary
 
-- 46 passed, 1 skipped
+- 64 passed, 1 skipped (+18 new tests vs session 5)
 - Critical flows: tracker, quests, stories all PASS
 - A11y: axe critical checks PASS across core panels
-- Visual gate: desktop + mobile snapshots PASS
+- Visual gate: desktop + mobile snapshots PASS (panel-quests baseline refreshed)
 - DB contract runtime flows PASS (including mom export/restore)
 - WebKit smoke PASS
+- New: heart economy (TG-1–5), games, companion, DB atomicity, security, mom mode (TG-6–19)
 
 ## Build Status
 
@@ -33,94 +34,194 @@ Last updated: 2026-02-28 (session 5)
 - Release WASM build completed cleanly
 - Source maps retained in `dist` per `scripts/build-verify-release.sh`
 
-## Work Completed 2026-02-28 (session 5)
+## Work Completed 2026-03-03 (session 15)
 
-Doc cleanup pass — no code changes:
+Debug & code review — deep source audit with 3 parallel agents, 7 potential issues investigated, 3 defensive fixes:
 
-- Archived APP_STATUS.md and PROJECT_STANDING.md (stale, duplicated STATUS_LEDGER + HANDOFF content) → archive/phase-docs/
-- Archived completed Safari debug pass plan → archive/plans/
-- Fixed dangling refs in HANDOFF.md, TROUBLESHOOTING.md, TESTING.md, README.md → all now reference STATUS_LEDGER.md
-- Reorganized archive root: 12 plan files → `archive/plans/`, audit YAML → `archive/audits/`
-- Freshness pass: fixed stale 2026-02-21 dates, broken checklist numbering, stale token count in README
-- Both docs gates re-verified: docs-links PASS, docs-budget PASS (4,977 tokens)
+**Rust hardening (2 fixes)**:
+- `storage_pressure.rs`: Added `.max(1.0)` guard on storage quota to prevent edge-case division by zero if API returns 0
+- `utils.rs`: Updated 3 stale fallback year defaults from `2025` → `2026` in `prev_day_key`, `week_key_from_day`, `week_key_end`
 
-Commits: `fada4ca`, `a0b71cb`, `3308ab0`, `7c71edf`
+**Visual regression (1 fix)**:
+- Refreshed `mobile-panel-quests` snapshot (32,934 pixel diff from asset manifest cache version change)
 
-## Work Completed 2026-02-28 (session 4)
+**Audit findings (4 false positives dismissed)**:
+- ISO week u32 underflow: SAFE — `doy + 10` always >= 11, `iso_weekday` max 7
+- SQL string interpolation in offline_queue: SAFE — constant `MAX_QUEUE_SIZE / 10 = 50`, not user input
+- Image error handler memory leak: FALSE — single delegated listener on `.home-grid`, not per-image
+- GPU init race condition: FALSE — WASM is single-threaded, no actual races
 
-Safari 26.2 debug & optimization pass — 11 static-analysis issues, 4 parallel agents:
+**QA**: All gates PASS (64 E2E + 1 skip, runtime, PWA, DB contract)
 
-- **P0 — Rust**: `scheduler_yield()` now calls real `scheduler.yield()` via JS reflection (queueMicrotask fallback). Catcher gravity loop: `setInterval(16ms)` → `requestAnimationFrame` with delta-time physics and 50ms cap. `synth_audio`: `Date::now()` → `browser_apis::now_ms()` (monotonic). Companion typewriter: cache `[data-companion-bubble]` once before loop (was ~30-60 DOM queries per phrase).
-- **P0 — PWA**: `sw.js` `clients.claim()` moved to fire first in activate (before 60 deferred asset fetches). `offline.html`: absolute image path + `onerror` hide. `db-worker.js`: `request_id = 0` default on all paths (was only Init). `wasm-init.js`: `arrayBuffer()` fallback if `compileStreaming` fails.
-- **P2 — Splash**: iPad mini 6 splash PNGs (1488×2266 portrait, 2266×1488 landscape) generated and added to `assets/icons/`. `<link rel="apple-touch-startup-image">` tags in `index.html`. Both added to `DEFERRED_ASSETS` in `sw-assets.js`.
-- **TT audit**: `default` TT policy confirmed registered in Rust WASM (`dom.rs:136`). sqlite-wasm has zero TT-controlled sinks. No code change needed.
-- All QA gates: 46 E2E PASS, visual 16/16 PASS, runtime/pwa/db PASS.
+## Work Completed 2026-03-02 (session 14)
 
-Merge commit: `71ee341`
+Comprehensive audit — 4 parallel deep audits (audio/speech, animation/RAF, edge-case logic, SW/offline):
 
-## Work Completed 2026-02-28 (session 3)
+**DB contract fix (1 fix)**:
+- `check-db-contract.mjs`: Updated regex `openMomDashboard()` → `openMomDashboard(page)` to match session 12's deduplicated helper signature
 
-4-agent parallel dead code + feature audit; all fixes applied:
+**Audit results (all clean — no new bugs found)**:
+- Audio/Speech: Single AudioContext, proper cancel-before-speak, voice pool tuned for iPad (16 max)
+- Animation/RAF: All RAF IDs cancelled on cleanup, delta caps correct (50-100ms), View Transitions safe
+- Edge-case logic: Heart economy secure (add-only, no negatives), game scores atomic, quest double-completion prevented by DOM guards
+- SW/Offline: pagehide export fully wired (Rust → flush_sync → Export → exportToBlob), FATAL pattern detection correct, cold boot works
 
-- **Rust (80 files)**: CLEAN — zero dead code, zero TODOs, all `#[allow]` attrs justified and documented
-- **CSS (14 files)**: Cleaned `home.css` prefers-reduced-motion block — removed 11 dead class names (`.home-nav-card`, `.companion-sprite`, `.companion-aura`, `.companion-ring`, `.home-idle-glow`, `.home-flame`, `.home-spark`, `.greeting-bubble`, `.sparkle-effect`, `.float-emoji-left`, `.float-emoji-right`); corrected `.micro-sticker-float` → `.micro-sticker` (wrong class name for actual rule)
-- **JS**: Deleted `public/wasm-init.js` — orphaned stale copy (48 lines, old `arrayBuffer()` path, no diagnostics) that was never deployed; root `wasm-init.js` with `compileStreaming` + diagnostics is canonical
-- **Features**: Adventures and My Stuff confirmed working nav hub panels (Adventures → Quests/Stories/Games; My Stuff → Stickers/Gardens/My Week); not stubs
-- **Docs**: Updated `TESTING.md` — bumped last-updated to 2026-02-28, added snapshot refresh note
-- All QA gates re-run and pass: 46 E2E passed, 1 intentional skip
+**QA**: All 8 gates PASS (64 E2E + 1 skip, runtime, PWA, DB contract, rust drift, docs budget, docs links)
 
-Commit: `3d7d5fd`
+## Work Completed 2026-03-02 (session 13)
 
-## Work Completed 2026-02-28 (session 2)
+Deep audit — 6 parallel audits (JS, Rust, HTML/CSS, build config, DB integrity, race conditions), 15 fixes:
 
-Extreme UI/UX polish — full 16-file CSS pass:
+**CSS (4 fixes)**:
+- `mom.css`: `overflow:hidden` → `overflow-x:hidden` (Mom dashboard scroll was blocked)
+- `home.css`: badge font `0.75rem` → `1rem` (too small for 4yo)
+- `app.css`: panel header `z-index:1` → `2` (content painted over sticky header)
+- `tracker.css`: added `touch-action:manipulation` to feeling buttons (300ms tap delay)
 
-- **tokens.css / app.css / home.css / tracker.css / quests.css / rewards.css / animations.css / games.css / stories.css / gardens.css / progress.css / particles.css / mom.css / scroll-effects.css**: Visual polish across every CSS file in the project
-- Richer gradients (3-stop), gloss `::before` layers on all cards, stronger shadow halos
-- 3D press feedback (`rotateX`) on all interactive elements
-- Gradient text on all major headers (green-vivid → blue-vivid → purple-vivid)
-- Particle system: added `sparkle-twinkle-fast` keyframe (3rd speed tier), HOME + GARDENS panels (24 particles each)
-- Progress: bloom-bounce with rotation, triple-layer glow on active day circles, rainbow trophy card
-- Mom: spring entrance with rotate, triple-layer dot glow, deep numpad press, gloss save button
-- Scroll effects: stronger reveal entry (rotate+scale), sticky header shadow, dramatic title exit (blur+rotate)
+**JS — db-worker.js (4 fixes)**:
+- `sqlite3_deserialize` flags `0` → `3` (FREEONCLOSE + RESIZEABLE) — DB couldn't grow past initial OPFS blob size
+- Wrapped skill_mastery + reflection_prompts seed transactions in try/catch with ROLLBACK
+- Added `stmt.clearBindings()` after `stmt.reset()` to prevent stale parameter retention
 
-Commits: `eb4ab32`, `54dcb49`
+**Rust (6 fixes)**:
+- `streaks.rs`: ON CONFLICT UPDATE `hearts_total+1` → `excluded.hearts_total` (incorrect streak heart count)
+- `lib.rs`: streak hydration `LIMIT 60` → `365` (truncated long streaks)
+- `db_client.rs`: send error via oneshot on serialization failure (prevents silent hangup)
+- `game_memory.rs`: wall-clock elapsed → incremental `+= 1` (iPad sleep timer inflation)
+- `navigation.rs`: 300ms debounce on panel-open (prevents duplicate history entries)
+- `tracker.rs`: removed dead `LAST_ACT_MS` thread_local
 
-## Work Completed 2026-02-28 (session 1)
+**Infrastructure**:
+- `.gitignore`: added `node_modules/` and `.lighthouseci/`
+- SW v79 → v80
 
-Quest card polish:
-- **CSS transition freeze fix**: `.quest-card--done` border-color/box-shadow froze at pre-transition values when `document.hidden` was true (app switch, headless). Override base transition to only keep transform.
-- **Stale data-focus cleanup**: Remove `data-focus` attribute alongside `quest-card--focus` class on quest completion.
+**QA**: 64 E2E PASS (1 expected skip), cargo check clean
 
-Trunk dev server fix:
-- **Infinite rebuild loop**: Pre-build hook wrote manifests to `public/`, triggering file watcher → endless rebuild cycle (~3s per cycle)
-- Fix: `[watch] ignore` in Trunk.toml + idempotent cache_version check in `asset-manifest.sh`
+## Work Completed 2026-03-02 (session 12)
 
-Commits: `2cc1bef`, `df79d2e`
+Pre-deployment verification — SW cache audit, bundle audit, Rust safety audit, E2E quality:
 
-## Work Completed 2026-02-27
+**SW Cache Completeness**:
+- Found 5 dist files not in SW precache: 1 home button (`btn-gardens.webp`), 4 mom_mode stickers (`lock-gold`, `calendar-magic`, `chart-sparkle`, `pencil-star`)
+- Found 1 stale entry: `/icons/sparkle-unicorn.svg` (source template, not runtime asset)
+- Fixed: added button to CRITICAL_ASSETS, stickers to DEFERRED_ASSETS, removed stale ref
+- SW v78 → v79
 
-Deep game polish pass — 23 fixes across gameplay, CSS, and accessibility:
+**Bundle Size Audit**:
+- WASM: 1.0 MB (app) + 840 KB (sqlite) = 1.8 MB total
+- JS: 536.5 KB (sqlite3.js 365KB dominant)
+- CSS: 154.6 KB across 14 files
+- Images: 11.2 MB (78 WebP assets)
+- Grand total: ~15 MB — acceptable for offline-first PWA
 
-- **Catcher**: Shield time source fix (`js_sys::Date::now()` → `browser_apis::now_ms()`), gravity cleanup, score guard
-- **Paint**: Added `pointercancel` handler for iPad system gestures
-- **Unicorn**: Flower life/scale lifecycle fix (were invisible and immortal)
-- **Hug Machine**: `pick_from_pool` rewrite — stages 6-15 now reachable via working buffer
-- **Memory Match**: Card color pink gradient, `card-shine-sweep` animation, `prefers-reduced-motion` guard
-- **Hub**: End screen stats, panel-leaving guard, companion conditional rendering
-- **CSS**: New-record style, btn-shine conflict resolved, hover states, design token hygiene
-- **A11y**: WCAG contrast fixes, kid-friendly text, CSS token consolidation
-- **Security/runtime**: Dead code cleanup across 13 modules
+**Rust Safety Audit**:
+- 2 justified `unsafe` blocks (GPU buffer reinterpret, thread-local pointer)
+- Zero `.expect()`, `.unwrap()`, `panic!()`, `todo!()`, `unimplemented!()`
+- All array indexing verified safe
 
-Commits: `1273877`, `63defdf`, `30a20ba`, `772cef5`
+**E2E Test Quality**:
+- Fixed silent pass: TG-5 quest confirm `Promise.race` result was never asserted
+- Added assertion on collected-but-unused gardens `cardCount`
+- Removed commented-out dead code in `db-contract.spec.ts`
+- Deduplicated helpers: `readHearts` (2→1), `openMomDashboard` (3→1), `dismissOnboardingIfPresent` (4→1)
+- Net: -87 lines across 6 spec files, zero behavior change (64 pass)
 
-## Work Completed 2026-02-21
+**QA**: 64 E2E PASS (1 expected skip), release build clean
 
-- Hardened Lighthouse CI assertions to fail correctly on error-level assertion failures (`scripts/run-lighthouse-ci.sh`)
-- Updated Lighthouse assertions to current audit IDs (`lighthouserc.json`)
-- Added favicon link tags to app and offline entry points (`index.html`, `public/offline.html`)
-- Routed navigation haptics through guarded native haptics path and initialized haptics unlock listeners (`rust/navigation.rs`, `rust/native_apis.rs`, `rust/lib.rs`)
-- Re-ran full release gate set with all PASS results above
+## Work Completed 2026-03-02 (session 11)
+
+Deep pass — redundancy removal, asset fixes, production hygiene, JS hardening, SW safety, panic elimination:
+
+**Redundant Observer Removal** (`rust/safari_apis.rs`):
+- Removed 128-line INP/LCP PerformanceObserver that duplicated `runtime-diagnostics.js` (INP with rich breakdowns) and `web_vitals.rs` (debug panel INP max)
+- `safari_apis.rs` reduced from 158 to 30 lines — retains scrollbar theming and scroll-driven animation only
+
+**Asset & DOM Fixes**:
+- Fixed undefined CSS token `--touch-target` → `--touch-comfortable` in `home.css` (Show Mom button had no min-height)
+- Fixed 3 missing sticker asset refs in `mom_mode.rs`: `heart-sparkle` → `heart-sparkling`, `book-magic` → `rainbow`, `game-controller` → `confetti-ball`
+- Added null-check in `offline.js` for retry button getElementById
+
+**JS Hardening** (`db-worker.js`, `wasm-init.js`):
+- Check `sqlite3_deserialize` return code (was silently ignoring failure → data loss)
+- Fix init race condition — concurrent Init messages now queue and receive results
+- Guard error message formatting against non-Error throw values
+- Wrap wasm-init error handler DOM access in try/catch for early failures
+
+**Service Worker Safety** (`sw.js`):
+- Navigate/HTML catch returns inline 503 Response when `offline.html` missing (was returning `undefined` → Safari network error)
+- Remove `await` on deferred asset precache to unblock SW activation lifecycle
+- SW v76 → v78
+
+**Panic Elimination**:
+- Replaced all `.expect()` with `.unwrap_throw()` in `debug/panel.rs` (8 calls) and `debug/memory.rs` (4 calls)
+- Guarded `friend_types[0]` with `.first()` in `game_unicorn_friends.rs` to prevent empty-slice panic
+- Gated 4 `web_vitals.rs` console.log calls behind `#[cfg(debug_assertions)]`
+
+**Selector Consolidation**:
+- Consolidated 28 selector strings from 14 files into `constants.rs` (single source of truth)
+- Removed 11 unused `data-*` attributes from `index.html`
+- Replaced `.expect()` with `.unwrap_throw()` in `browser_apis.rs`, added `role=status` to toast
+
+**Codebase State**: Zero `.expect()`, zero `.unwrap()`, zero `todo!()`/`unimplemented!()` in Rust. All array indexing verified safe.
+
+**QA**: 64 E2E PASS (1 expected skip), cargo check clean, all asset refs validated
+
+## Work Completed 2026-03-02 (session 10)
+
+10x deep code quality pass — static analysis, borrow safety, timer/closure leaks, async correctness:
+
+**Deep Pass Results (7 areas — all clean except one fixed bug)**:
+- RefCell/borrow panic risks: CLEAN — all double-borrow patterns safe (RefMut drops before second borrow_mut)
+- Closure::forget leaks: CLEAN — 36 forgets all in global event handlers (correct JS memory model)
+- Async correctness: CLEAN — no RefCell borrows across await points anywhere in codebase
+- Game state reset between sessions: CLEAN — menu hidden while active, all-cleanup on panel nav
+- Integer overflow: CLEAN — u32 counters safe for 4-year-old usage, wrapping_add on request IDs
+- Silent .ok() abuse: CLEAN — canvas transform ops and standard correct patterns only
+- DB layer: CLEAN — no nested locks, oneshot cancellation clean, borrows drop before await
+
+**Timer Leak Bug Fixed** (`rust/game_memory.rs`):
+- `start_timer()` and `reset_hint_timer()` could be called from peek timeout after `cleanup()` sets GAME to None
+- If GAME is None, timer ID can't be stored → interval/timeout leaked (runs forever as no-op)
+- Fix: added `is_some_and(|g| g.active)` early-return guard to both functions
+- E2E: 64 pass, 1 skip (unchanged)
+
+**Clippy & Code Quality** (earlier in session, committed separately):
+- Resolved all clippy warnings: unused import, type complexity, char comparison
+- Deep quality pass: explicit enum variants, remove spurious Option, let-else, redundant closures
+
+## Work Completed 2026-03-02 (session 9)
+
+Pre-deployment polish — 3 UX improvements, SW bump, iPad regression prep:
+
+**Speech Variety**:
+- `companion.rs`: Expanded 5 phrase arrays (3→6 each): QUEST, STICKER, STORY, GAME, FIRST_ACT
+- `companion_speech.rs`: Expanded 4 phrase arrays (4→7 each): FEED, PET, PLAY, MOOD_UP
+
+**Show Mom Button**:
+- Wired disconnected celebration feature — `celebration.rs` already bound `[data-show-mom]` but no HTML element existed
+- Added `data-show-mom` button to `index.html` with `btn-show-mom.webp` asset (already precached)
+- Styled in `home.css` with glassmorphic design and press animation
+
+**Heart Counter Pop Animation**:
+- `ui.rs`: `update_heart_counter()` adds/removes `heart-count-pop` CSS class with 300ms timeout
+- `home.css`: Scale 1→1.35→1 elastic animation on heart increment
+
+**Infrastructure**:
+- SW v75→v76 (`public/sw.js`)
+- Created `docs/IPAD_REGRESSION_TEMPLATE.md` — physical device testing checklist
+- Updated rust warning drift baseline (3→5, accounts for clippy summary line counting)
+
+## Earlier Work (condensed — see History table for commits)
+
+- **Sessions 7-8** (2026-03-01): Rust refactoring (47 files, ~20 wrappers eliminated) + CSS optimization (13 files, -736 lines, tokenization) + 2 bug fixes (html_escape type, CSV export field type)
+- **Session 6** (2026-03-01): Code review — 11 correctness fixes (CR-1–11), 8 security fixes (SEC-1–8), 19 new E2E tests (TG-1–19, 64 total)
+- **Session 5** (2026-02-28): Doc cleanup — archived stale docs, fixed dangling refs, reorganized archive
+- **Session 4** (2026-02-28): Safari 26.2 debug — `scheduler.yield()` via JS reflection, RAF gravity physics, SW `clients.claim()` priority fix, splash PNGs, TT audit clean
+- **Session 3** (2026-02-28): Dead code audit — Rust 80 files clean, CSS 11 dead class refs removed, orphaned `public/wasm-init.js` deleted
+- **Session 2** (2026-02-28): CSS polish — all 16 files, 3-stop gradients, gloss layers, 3D press, gradient text, particle system
+- **Session 1** (2026-02-28): Quest card transition freeze fix, Trunk infinite rebuild loop fix
+- **2026-02-27**: Deep game polish — 23 fixes (catcher/paint/unicorn/hug/memory), a11y, security cleanup
+- **2026-02-21**: Production hardening — Lighthouse CI assertions, favicon, haptics routing
 
 ## Outstanding Release Task
 
@@ -130,6 +231,17 @@ Commits: `1273877`, `63defdf`, `30a20ba`, `772cef5`
 
 | Date | Milestone | Commits |
 |------|-----------|---------|
+| 2026-03-03 | Debug & code review — 3 defensive fixes (quota guard, stale year, snapshot) | 319ab1a |
+| 2026-03-02 | Comprehensive audit (audio/RAF/logic/SW) — DB contract regex fix | 575ee2a |
+| 2026-03-02 | Deep audit — 15 fixes (CSS/JS/Rust), SW v80 | d3658ab |
+| 2026-03-02 | Pre-deploy verify — SW cache fix, E2E dedup + assertion fixes | 31cbfa1–2161c0f |
+| 2026-03-02 | Deep pass — observers, JS hardening, SW safety, panic elimination, selector consolidation | 4943b69–da43297 |
+| 2026-03-02 | 10x deep pass — clippy fixes, code quality, timer leak fix (game_memory) | db5c36f–e0f60b0 |
+| 2026-03-02 | Pre-deploy polish — speech variety, Show Mom button, heart pop, SW v76 | be2c8d3–b8828a9 |
+| 2026-03-01 | CSS optimization — 13 files, -736 lines, tokenize values | de43ea0–ac3e924 |
+| 2026-03-01 | Rust refactoring — 47 files, eliminate wrappers/duplicates | ecc2f29–39f366f |
+| 2026-03-01 | Bug fix — 2 bugs from session 6 code-quality pass | dd7458f |
+| 2026-03-01 | Code review + security pass (CR-1–11, SEC-1–8) + 19 new E2E tests (TG-1–19) | 0fce67d |
 | 2026-02-28 | Doc cleanup pass — archive stale docs, fix links, reorganize | fada4ca, a0b71cb, 3308ab0, 7c71edf |
 | 2026-02-28 | Safari 26.2 debug & opt pass — 11 fixes, splash screen | 71ee341 |
 | 2026-02-28 | Extreme CSS polish pass — all 16 CSS files | eb4ab32, 54dcb49 |

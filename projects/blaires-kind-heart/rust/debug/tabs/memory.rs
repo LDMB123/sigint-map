@@ -33,11 +33,8 @@ pub fn render() -> String {
 
     // Memory growth since start
     if let Some(growth) = memory::memory_growth() {
-        let growth_formatted = if growth >= 0 {
-            format!("+{}", memory::format_bytes(growth as usize))
-        } else {
-            format!("-{}", memory::format_bytes(growth.unsigned_abs() as usize))
-        };
+        let sign = if growth >= 0 { "+" } else { "-" };
+        let growth_formatted = format!("{}{}", sign, memory::format_bytes(growth.unsigned_abs() as usize));
 
         let growth_color = if growth > 10_000_000 {
             "#f80" // Orange warning if >10MB growth
@@ -104,7 +101,7 @@ pub fn render() -> String {
                     <td style="padding: 4px; text-align: right;">{}</td>
                 </tr>
                 "#,
-                time_str, snapshot.label, heap_str, snapshot.wasm_pages
+                time_str, super::html_escape(&snapshot.label), heap_str, snapshot.wasm_pages
             );
         }
 

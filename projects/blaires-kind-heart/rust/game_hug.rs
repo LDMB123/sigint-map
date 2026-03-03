@@ -38,18 +38,9 @@ struct StageData {
     complete_sound: fn(),
     is_hold: bool,
 }
-fn complete_gentle_pat() {
-    synth_audio::sparkle();
-}
-fn complete_big_hug() {
-    synth_audio::dreamy();
-}
 fn complete_tickle() {
     synth_audio::giggle();
     confetti::burst_hearts();
-}
-fn complete_sleepy() {
-    synth_audio::gentle();
 }
 fn complete_kiss() {
     synth_audio::magic_wand();
@@ -75,10 +66,6 @@ fn complete_rock() {
     synth_audio::lullaby();
     confetti::burst_hearts();
 }
-fn complete_star() {
-    synth_audio::magic_wand();
-    confetti::burst_stars();
-}
 fn complete_peekaboo() {
     synth_audio::giggle();
     confetti::burst_party();
@@ -86,10 +73,6 @@ fn complete_peekaboo() {
 fn complete_pattykake() {
     synth_audio::tap();
     confetti::burst_stars();
-}
-fn complete_blowkisses() {
-    synth_audio::dreamy();
-    confetti::burst_hearts();
 }
 fn complete_magicspell() {
     synth_audio::magic_wand();
@@ -106,7 +89,7 @@ const STAGE_DATA: [StageData; 15] = [
         bubble: "so gentle...",
         bg: "linear-gradient(180deg, #FFE0E6 0%, #FFB7C5 100%)",
         pulse_sound: synth_audio::gentle,
-        complete_sound: complete_gentle_pat,
+        complete_sound: synth_audio::sparkle,
         is_hold: false,
     },
     StageData {
@@ -116,7 +99,7 @@ const STAGE_DATA: [StageData; 15] = [
         bubble: "so warm!",
         bg: "linear-gradient(180deg, #FFF5D0 0%, #FFD700 100%)",
         pulse_sound: synth_audio::dreamy,
-        complete_sound: complete_big_hug,
+        complete_sound: synth_audio::dreamy,
         is_hold: true,
     },
     StageData {
@@ -136,7 +119,7 @@ const STAGE_DATA: [StageData; 15] = [
         bubble: "zzz...",
         bg: "linear-gradient(180deg, #D6EFFF 0%, #7B9FD4 100%)",
         pulse_sound: synth_audio::lullaby,
-        complete_sound: complete_sleepy,
+        complete_sound: synth_audio::gentle,
         is_hold: true,
     },
     StageData {
@@ -206,7 +189,7 @@ const STAGE_DATA: [StageData; 15] = [
         bubble: "got one!",
         bg: "linear-gradient(180deg, #1a0033 0%, #5533FF 50%, #FFB700 100%)",
         pulse_sound: synth_audio::sparkle,
-        complete_sound: complete_star,
+        complete_sound: complete_kiss,
         is_hold: false,
     },
     StageData {
@@ -236,7 +219,7 @@ const STAGE_DATA: [StageData; 15] = [
         bubble: "mwah!",
         bg: "linear-gradient(180deg, #FFE0EC 0%, #FF80AB 100%)",
         pulse_sound: synth_audio::chime,
-        complete_sound: complete_blowkisses,
+        complete_sound: complete_belly,
         is_hold: false,
     },
     StageData {
@@ -339,7 +322,10 @@ impl HugState {
         self.stages[self.stage_index]
     }
 }
-thread_local! { static GAME: RefCell<Option<HugState>> = const { RefCell::new(None) }; static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) }; }
+thread_local! {
+    static GAME: RefCell<Option<HugState>> = const { RefCell::new(None) };
+    static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) };
+}
 pub fn start(state: Rc<RefCell<AppState>>) {
     show_mood_picker(state);
 }
@@ -440,7 +426,7 @@ fn start_with_stages(state: Rc<RefCell<AppState>>, stages: [HugStage; 5]) {
             star_targets: Vec::new(),
         });
     });
-    let arena = dom::query("#game-arena");
+    let arena = dom::query(crate::constants::SELECTOR_GAME_ARENA);
     if arena.is_none() {
         dom::warn("⚠ #game-arena not found during hug game start");
     }

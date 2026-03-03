@@ -55,7 +55,11 @@ const FLOWER_EMOJIS: &[&str] = &[
     "\u{2728}",
 ];
 type RafClosure = Closure<dyn FnMut(f64)>;
-thread_local! { static GAME: RefCell<Option<UnicornGameState>> = const { RefCell::new(None) }; static RAF_CLOSURE: RefCell<Option<RafClosure>> = const { RefCell::new(None) }; static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) }; }
+thread_local! {
+    static GAME: RefCell<Option<UnicornGameState>> = const { RefCell::new(None) };
+    static RAF_CLOSURE: RefCell<Option<RafClosure>> = const { RefCell::new(None) };
+    static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) };
+}
 pub fn start(state: Rc<RefCell<AppState>>) {
     show_biome_picker(state);
 }
@@ -209,7 +213,7 @@ fn start_with_biome(state: Rc<RefCell<AppState>>, biome: &'static game_unicorn_f
     bind_mute_button(&signal);
     bind_back_button(&signal);
     game_unicorn_audio::start_ambient(biome.ambient_freq);
-    if let Some(arena_el) = dom::query("#game-arena") {
+    if let Some(arena_el) = dom::query(crate::constants::SELECTOR_GAME_ARENA) {
         if let Some(announce) = render::create_el_with_class(&doc, "div", "sr-only") {
             for (k, v) in [
                 ("data-unicorn-announce", ""),

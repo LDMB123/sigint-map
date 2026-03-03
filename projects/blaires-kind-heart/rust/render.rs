@@ -62,7 +62,7 @@ pub fn create_button_with_data(
     Some(btn)
 }
 pub fn build_game_picker(title: &str) -> Option<(web_sys::Element, web_sys::Element)> {
-    let arena = crate::dom::query("#game-arena")?;
+    let arena = crate::dom::query(crate::constants::SELECTOR_GAME_ARENA)?;
     let doc = crate::dom::document();
     crate::dom::safe_set_inner_html(&arena, "");
     let container = create_el_with_class(&doc, "div", "memory-select")?;

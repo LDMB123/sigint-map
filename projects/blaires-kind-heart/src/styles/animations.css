@@ -30,21 +30,21 @@
 /* ── Directional View Transitions ── */
 :root[data-transition="forward"] {
   &::view-transition-old(root) {
-    animation: slide-out-left var(--duration-normal) var(--ease-standard) both;
+    animation: slide-out-left var(--duration-normal) var(--ease-smooth) both;
   }
 
   &::view-transition-new(root) {
-    animation: slide-in-right var(--duration-normal) var(--ease-standard) both;
+    animation: slide-in-right var(--duration-normal) var(--ease-smooth) both;
   }
 }
 
 :root[data-transition="back"] {
   &::view-transition-old(root) {
-    animation: slide-out-right var(--duration-normal) var(--ease-standard) both;
+    animation: slide-out-right var(--duration-normal) var(--ease-smooth) both;
   }
 
   &::view-transition-new(root) {
-    animation: slide-in-left var(--duration-normal) var(--ease-standard) both;
+    animation: slide-in-left var(--duration-normal) var(--ease-smooth) both;
   }
 }
 
@@ -387,26 +387,6 @@
   }
 }
 
-/* Legacy keyframe animation for browsers without @starting-style */
-@supports not at-rule(@starting-style) {
-  .magic-entrance {
-    animation: magic-entrance var(--duration-slow) var(--ease-smooth) both;
-  }
-
-  @keyframes magic-entrance {
-    from {
-      opacity: 0;
-      transform: scale(0.7) translateY(20px);
-      filter: blur(8px);
-    }
-
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-      filter: blur(0);
-    }
-  }
-}
 
 /* ====== GLOW BREATHE (ambient glow pulse) ====== */
 .glow-breathe {
@@ -715,18 +695,6 @@
 }
 
 
-@keyframes pulse-glow {
-
-  0%,
-  100% {
-    filter: none;
-  }
-
-  50% {
-    filter: drop-shadow(0 0 24px rgba(255, 183, 197, 0.6)) drop-shadow(0 0 48px rgba(197, 163, 255, 0.3));
-  }
-}
-
 /* ====== SCALE POP IN — generic entrance with overshoot ====== */
 .scale-pop-in {
   transform: scale(1);
@@ -741,29 +709,6 @@
   }
 }
 
-/* Legacy keyframe animation for browsers without @starting-style */
-@supports not at-rule(@starting-style) {
-  .scale-pop-in {
-    animation: scale-pop-in var(--duration-normal) var(--ease-overshoot) both;
-  }
-
-  @keyframes scale-pop-in {
-    0% {
-      transform: scale(0);
-      opacity: 0;
-    }
-
-    70% {
-      transform: scale(1.1);
-      opacity: 1;
-    }
-
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-}
 
 /* ====== SHAKE — horizontal error shake (stronger variant) ====== */
 .shake {
@@ -803,24 +748,6 @@
   }
 }
 
-/* Legacy keyframe animation for browsers without @starting-style */
-@supports not at-rule(@starting-style) {
-  .fade-in-up {
-    animation: fade-in-up var(--duration-normal) var(--ease-smooth) both;
-  }
-
-  @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-}
 
 /* ====== SPIN — continuous rotation (loading, etc.) ====== */
 .spin {
@@ -859,7 +786,7 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    Animation Duration Guide:
    Brief reactions  (< 1s)  — heart-bounce, jelly-wobble, sparkle-pop, wiggle, shake
-   Sustained states (≥ 1.5s) — companion-float, glow-breathe, gentle-pulse, pulse-glow
+   Sustained states (≥ 1.5s) — companion-float, glow-breathe, gentle-pulse
    ───────────────────────────────────────────────────────────────────────────── */
 
 /* ====== FADE OUT REMOVE — for empty-state element dismissal ====== */
@@ -906,19 +833,6 @@
 }
 
 
-@keyframes scale-pop-out {
-  from {
-    transform: scale(1);
-    opacity: 1;
-  }
-
-  to {
-    transform: scale(0);
-    opacity: 0;
-  }
-}
-
-
 /* ====== REDUCED MOTION ====== */
 @media (prefers-reduced-motion: reduce) {
 
@@ -947,7 +861,7 @@
 ::view-transition-old(companion-transform),
 ::view-transition-new(companion-transform) {
   animation-duration: var(--duration-leisurely);
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-timing-function: var(--ease-smooth);
 }
 
 ::view-transition-old(companion-transform) {
@@ -1153,116 +1067,3 @@
   }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   Level 3: Magical Kindness Visual Effects
-   ══════════════════════════════════════════════════════════════ */
-
-/* The full screen aura that appears when a quest is completed with a kind heart */
-.kindness-aura-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: var(--z-effect);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.kindness-aura-bg {
-  position: absolute;
-  inset: -100px;
-  background: radial-gradient(circle at center, rgba(255, 143, 171, 0.4) 0%, rgba(181, 126, 255, 0.1) 50%, transparent 80%);
-  opacity: 0;
-  animation: aura-bg-fade 2.5s var(--ease-smooth) forwards;
-  /* Glassmorphism blur on the background */
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-@keyframes aura-bg-fade {
-  0% {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-
-  20% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  80% {
-    opacity: 1;
-    transform: scale(1.1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: scale(1.2);
-  }
-}
-
-/* Individual swirling particles */
-.kindness-aura-particle {
-  position: absolute;
-  width: var(--size, 20px);
-  height: var(--size, 20px);
-  background: var(--color, rgba(255, 255, 255, 0.8));
-  border-radius: var(--radius-round);
-  filter: drop-shadow(0 0 12px var(--color, rgba(255, 255, 255, 0.8))) blur(1px);
-  opacity: 0;
-  animation: aura-swirl var(--duration, 2s) cubic-bezier(0.25, 1, 0.5, 1) forwards;
-}
-
-@keyframes aura-swirl {
-  0% {
-    transform: translate(0, 0) scale(0) rotate(0deg);
-    opacity: 0;
-  }
-
-  20% {
-    opacity: 1;
-    transform: translate(calc(var(--tx) * 0.2), calc(var(--ty) * 0.2)) scale(1.5) rotate(90deg);
-  }
-
-  100% {
-    transform: translate(var(--tx), var(--ty)) scale(0) rotate(360deg);
-    opacity: 0;
-  }
-}
-
-/* Liquid fill effect for the main Heart Container (applied via JS during update) */
-.heart-counter-fill {
-  position: relative;
-  overflow: hidden;
-}
-
-.heart-counter-fill::before {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 0%;
-  background: linear-gradient(180deg, rgba(255, 143, 171, 0.4) 0%, rgba(255, 143, 171, 0.1) 100%);
-  z-index: -1;
-  animation: liquid-fill 1.5s var(--ease-elastic) forwards;
-}
-
-@keyframes liquid-fill {
-  0% {
-    height: 0%;
-    border-radius: 0 0 100% 100%;
-  }
-
-  50% {
-    height: 120%;
-    border-radius: 0 0 50% 50%;
-  }
-
-  100% {
-    height: 100%;
-    border-radius: 0;
-    opacity: 0;
-  }
-}

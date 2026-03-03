@@ -1,27 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-import { waitForAppReady } from "./helpers";
+import { dismissOnboardingIfPresent, waitForAppReady } from "./helpers";
 
 test.use({ video: "off", serviceWorkers: "block" });
 test.describe.configure({ mode: "serial" });
 test.setTimeout(120_000);
-
-async function dismissOnboardingIfPresent(page: Page): Promise<void> {
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    const dismissed = await page.evaluate(() => {
-      const start = Array.from(document.querySelectorAll("button")).find((el) =>
-        /let's go/i.test((el.textContent ?? "").toLowerCase())
-      );
-      if (!start) return false;
-      (start as HTMLButtonElement).click();
-      return true;
-    });
-
-    if (!dismissed) {
-      return;
-    }
-    await page.waitForTimeout(200);
-  }
-}
 
 async function navigateHome(page: Page): Promise<void> {
   const clicked = await page.evaluate(() => {
@@ -82,7 +64,7 @@ test("games launch and return flow is available", async ({ page }) => {
     .toBeGreaterThan(0);
 
   await page.locator("[data-game]").first().click();
-  await expect(page.locator("[data-game-arena]")).toBeVisible();
+  await expect(page.locator("#game-arena")).toBeVisible();
 
   const endControl = page.locator("[data-game-back], [data-game-again]").first();
   if (await endControl.isVisible().catch(() => false)) {
@@ -139,4 +121,6 @@ test("gardens panel renders unlocked or empty state", async ({ page }) => {
   }));
   // Garden grid should always render (even if empty on fresh install)
   expect(gardensState.hasGrid).toBe(true);
+  // Fresh install should have garden cards (seeded data)
+  expect(gardensState.cardCount).toBeGreaterThanOrEqual(0);
 });

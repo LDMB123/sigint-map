@@ -5,7 +5,10 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::HtmlCanvasElement;
-thread_local! { static GPU: RefCell<Option<GpuState>> = const { RefCell::new(None) }; static GPU_INIT_TIMEOUT: RefCell<bool> = const { RefCell::new(false) }; }
+thread_local! {
+    static GPU: RefCell<Option<GpuState>> = const { RefCell::new(None) };
+    static GPU_INIT_TIMEOUT: RefCell<bool> = const { RefCell::new(false) };
+}
 pub struct GpuState {
     pub device: bindings::GpuDevice,
     pub queue: bindings::GpuQueue,
@@ -98,15 +101,7 @@ async fn try_init() -> Result<(), JsValue> {
     });
     Ok(())
 }
-fn get_or_create_canvas() -> Result<HtmlCanvasElement, JsValue> {
-    if let Some(el) = dom::query("#gpu-canvas") {
-        return el.dyn_into().map_err(JsValue::from);
-    }
-    let doc = dom::document();
-    let canvas: HtmlCanvasElement = doc.create_element("canvas")?.dyn_into()?;
-    canvas.set_id("gpu-canvas");
-    dom::set_attr(&canvas, "class", "gpu-canvas-overlay");
-    dom::set_attr(&canvas, "aria-hidden", "true");
+fn size_canvas_to_window(canvas: &HtmlCanvasElement) {
     let window = dom::window();
     let w = window
         .inner_width()
@@ -121,6 +116,17 @@ fn get_or_create_canvas() -> Result<HtmlCanvasElement, JsValue> {
     let dpr = window.device_pixel_ratio();
     canvas.set_width((f64::from(w) * dpr) as u32);
     canvas.set_height((f64::from(h) * dpr) as u32);
+}
+fn get_or_create_canvas() -> Result<HtmlCanvasElement, JsValue> {
+    if let Some(el) = dom::query("#gpu-canvas") {
+        return el.dyn_into().map_err(JsValue::from);
+    }
+    let doc = dom::document();
+    let canvas: HtmlCanvasElement = doc.create_element("canvas")?.dyn_into()?;
+    canvas.set_id("gpu-canvas");
+    dom::set_attr(&canvas, "class", "gpu-canvas-overlay");
+    dom::set_attr(&canvas, "aria-hidden", "true");
+    size_canvas_to_window(&canvas);
     if let Some(body) = doc.body() {
         let _ = body.append_child(&canvas);
     }
@@ -130,20 +136,7 @@ pub fn resize_canvas() {
     GPU.with(|cell| {
         let guard = cell.borrow();
         let Some(state) = guard.as_ref() else { return };
-        let window = dom::window();
-        let w = window
-            .inner_width()
-            .ok()
-            .and_then(|v| v.as_f64())
-            .unwrap_or(800.0) as u32;
-        let h = window
-            .inner_height()
-            .ok()
-            .and_then(|v| v.as_f64())
-            .unwrap_or(600.0) as u32;
-        let dpr = window.device_pixel_ratio();
-        state.canvas.set_width((f64::from(w) * dpr) as u32);
-        state.canvas.set_height((f64::from(h) * dpr) as u32);
+        size_canvas_to_window(&state.canvas);
     });
 }
 pub fn clear_frame() {

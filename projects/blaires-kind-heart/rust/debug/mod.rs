@@ -7,7 +7,9 @@ mod tabs;
 
 pub use panel::DebugPanel;
 
-thread_local! { static PANEL: DebugPanel = const { DebugPanel::new() }; }
+thread_local! {
+    static PANEL: DebugPanel = const { DebugPanel::new() };
+}
 
 /// Get the global debug panel instance.
 ///

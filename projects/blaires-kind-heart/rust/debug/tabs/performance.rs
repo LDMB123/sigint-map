@@ -30,12 +30,8 @@ pub fn render() -> String {
         let start = format!("{}:start", measure_name.trim_end_matches(":total"));
         let end = format!("{}:end", measure_name.trim_end_matches(":total"));
 
-        let duration_str = if measure_name == "boot:total" {
-            metrics::duration("boot:start", "boot:end")
-                .map_or_else(|| "—".to_string(), |d| format!("{d:.2}"))
-        } else {
-            metrics::duration(&start, &end).map_or_else(|| "—".to_string(), |d| format!("{d:.2}"))
-        };
+        let duration_str = metrics::duration(&start, &end)
+            .map_or_else(|| "—".to_string(), |d| format!("{d:.2}"));
 
         let color = if measure_name == "boot:total" {
             "#0f0"
@@ -62,7 +58,8 @@ pub fn render() -> String {
     for (name, timestamp) in marks {
         let _ = write!(
             output,
-            r#"<div style="color: #888;">{timestamp:.2}ms - {name}</div>"#
+            r#"<div style="color: #888;">{timestamp:.2}ms - {}</div>"#,
+            super::html_escape(&name)
         );
     }
 

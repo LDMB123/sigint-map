@@ -8,7 +8,11 @@ pub fn set_app_badge(count: u32) {
     let _ = badge_nav.set_app_badge(count);
 }
 use std::cell::{Cell, RefCell};
-thread_local! { static WAKE_LOCK: RefCell<Option<JsValue>> = const { RefCell::new(None) }; static HAPTIC_UNLOCKED: Cell<bool> = const { Cell::new(false) }; static HAPTIC_LISTENERS_BOUND: Cell<bool> = const { Cell::new(false) }; }
+thread_local! {
+    static WAKE_LOCK: RefCell<Option<JsValue>> = const { RefCell::new(None) };
+    static HAPTIC_UNLOCKED: Cell<bool> = const { Cell::new(false) };
+    static HAPTIC_LISTENERS_BOUND: Cell<bool> = const { Cell::new(false) };
+}
 pub async fn request_wake_lock() -> bool {
     use js_sys::Reflect;
     let nav = dom::window().navigator();

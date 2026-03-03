@@ -34,7 +34,9 @@ pub struct AppState {
     pub hug_sparkle_container: Option<web_sys::Element>,
 }
 use std::cell::RefCell;
-thread_local! { static APP_STATE: RefCell<AppState> = RefCell::new(AppState::default()); }
+thread_local! {
+    static APP_STATE: RefCell<AppState> = RefCell::new(AppState::default());
+}
 #[inline]
 pub fn with_state<F, R>(f: F) -> R
 where

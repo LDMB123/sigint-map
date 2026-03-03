@@ -5,12 +5,15 @@ use crate::dom;
 use crate::native_apis;
 use crate::speech;
 use crate::synth_audio;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::fmt::Write;
 use std::rc::Rc;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{Element, Event};
+thread_local! {
+    static LAST_NAV_MS: Cell<f64> = const { Cell::new(0.0) };
+}
 fn panel_state_js(panel_id: &str) -> JsValue {
     let obj = js_sys::Object::new();
     let _ = js_sys::Reflect::set(&obj, &"panel".into(), &panel_id.into());
@@ -24,7 +27,9 @@ fn panel_from_js(state: &JsValue) -> Option<String> {
         .ok()
         .and_then(|v| v.as_string())
 }
-thread_local! { static FOCUS_BEFORE_PANEL: RefCell<Option<Element>> = const { RefCell::new(None) }; }
+thread_local! {
+    static FOCUS_BEFORE_PANEL: RefCell<Option<Element>> = const { RefCell::new(None) };
+}
 pub fn init() {
     listen_navigate_event();
     listen_navigate_error();
@@ -193,7 +198,13 @@ fn bind_panel_buttons() {
             }
             if let Some(open_btn) = dom::closest(&el, "[data-panel-open]") {
                 if let Some(panel_id) = dom::get_attr(&open_btn, ATTR_PANEL_OPEN) {
-                    open_panel(&panel_id);
+                    // Debounce: ignore double-tap within 300ms to prevent duplicate history entries
+                    let now = js_sys::Date::now();
+                    let last = LAST_NAV_MS.with(|c| c.get());
+                    if now - last >= 300.0 {
+                        LAST_NAV_MS.with(|c| c.set(now));
+                        open_panel(&panel_id);
+                    }
                 }
                 return;
             }
@@ -243,9 +254,6 @@ fn switch_tab(clicked_btn: &Element, tab_id: &str) {
         }
     }
 }
-fn haptic(_ms: u32) {
-    native_apis::vibrate_tap();
-}
 fn play_panel_sound(panel_id: &str) {
     match panel_id {
         "panel-tracker" => synth_audio::gentle(),
@@ -283,7 +291,7 @@ pub fn open_panel(panel_id: &str) {
     push_panel_state(panel_id);
     apply_panel_transition(panel_id);
     play_panel_sound(panel_id);
-    haptic(15);
+    native_apis::vibrate_tap();
     narrate_panel(panel_id);
     companion::check_first_visit(panel_id);
     dom::with_buf(|buf| {
@@ -295,7 +303,7 @@ pub fn open_panel(panel_id: &str) {
 }
 pub fn close_panel_to_home() {
     set_transition_direction("back");
-    haptic(8);
+    native_apis::vibrate_tap();
     with_view_transition(|| {
         dom::for_each_match(SELECTOR_PANEL, |panel| {
             dom::set_attr(&panel, ATTR_HIDDEN, "");

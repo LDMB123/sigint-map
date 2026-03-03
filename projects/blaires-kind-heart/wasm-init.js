@@ -51,19 +51,23 @@ try {
   performance.mark('wasm-instantiate-end');
   performance.measure('wasm-instantiate', 'wasm-instantiate-start', 'wasm-instantiate-end');
 
-  window.wasmBindings = bindings;
+  // Only expose WASM bindings globally on localhost (dev/debugging only)
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    window.wasmBindings = bindings;
+  }
   performance.mark('wasm-init-end');
   performance.measure('wasm-init-total', 'wasm-init-start', 'wasm-init-end');
   dispatchEvent(new CustomEvent('TrunkApplicationStarted', { detail: { wasm } }));
 } catch (err) {
   console.error('[wasm-init] Fatal:', err);
   // Show user-friendly error on the loading screen
-  const loading = document.getElementById('loading-screen');
-  if (loading) {
-    const msg = loading.querySelector('.loading-text') || loading;
-    msg.textContent = 'Oops! Something went wrong. Please refresh the page.';
-    // Hide the spinner/progress if present
-    const bar = loading.querySelector('.loading-bar-fill');
-    if (bar) bar.style.display = 'none';
-  }
+  try {
+    const loading = document.getElementById('loading-screen');
+    if (loading) {
+      const msg = loading.querySelector('.loading-text') || loading;
+      msg.textContent = 'Oops! Something went wrong. Please refresh the page.';
+      const bar = loading.querySelector('.loading-bar-fill');
+      if (bar) bar.style.display = 'none';
+    }
+  } catch (_) { /* DOM may be unavailable during very early errors */ }
 }

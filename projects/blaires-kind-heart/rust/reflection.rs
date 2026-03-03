@@ -166,11 +166,10 @@ fn handle_feeling_choice(act_id: &str, feeling: &str) {
     companion::celebrate_reflection();
 
     // Save to DB + award bonus heart
-    let id_clone = id;
     wasm_bindgen_futures::spawn_local(async move {
         if let Err(e) = crate::offline_queue::queued_exec(
             "UPDATE kind_acts SET reflection_type = ?1, hearts_earned = hearts_earned + 1 WHERE id = ?2",
-            vec![feeling_str, id_clone],
+            vec![feeling_str, id],
         ).await {
             dom::warn(&format!("[reflection] Failed to save: {e:?}"));
         }

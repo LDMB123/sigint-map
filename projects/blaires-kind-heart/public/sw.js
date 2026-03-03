@@ -1,13 +1,13 @@
 // Service Worker — cache-first, offline-capable.
 // Safari 26.2 on iPadOS 26.2. No backward compat needed.
-// This is one of only 3 JS files in the entire project.
+// This is one of only 5 JS files in the entire project.
 //
 // WEEK 1 OPTIMIZATION: Tiered loading strategy
 // - Install phase: CRITICAL_ASSETS only (fast first paint)
 // - Background: DEFERRED_ASSETS loaded after activation
 // - Runtime: Cache-first for all assets
 
-const CACHE_NAME = 'kindheart-v75'; // runtime-diagnostics wired in SW
+const CACHE_NAME = 'kindheart-v80'; // runtime-diagnostics wired in SW
 
 // Import asset manifest (includes CRITICAL_ASSETS and DEFERRED_ASSETS)
 importScripts('./sw-assets.js');
@@ -26,9 +26,7 @@ self.addEventListener('install', (event) => {
       // Use Promise.allSettled for resilient caching — but FATAL assets must succeed
       const FATAL_PATTERNS = ['.wasm', '.js', '/index.html', '/offline.html'];
       return Promise.allSettled(
-        CRITICAL_ASSETS.map(url =>
-          cache.add(url).catch(err => { throw err; })
-        )
+        CRITICAL_ASSETS.map(url => cache.add(url))
       ).then(results => {
         const fatalFailed = [];
         results.forEach((r, i) => {
@@ -72,14 +70,13 @@ self.addEventListener('activate', (event) => {
         .map((key) => caches.delete(key))
     );
 
-    // Background prefetch deferred assets (non-blocking)
+    // Background prefetch deferred assets (fire-and-forget)
     // Phase 3.1: Promise.allSettled for resilient partial caching
     // Cache each asset independently - if 1 of 71 fails, others still cache
+    // Do NOT await — activation must complete quickly; large asset sets can timeout
     const cache = await caches.open(CACHE_NAME);
-    await Promise.allSettled(
-      DEFERRED_ASSETS.map(url =>
-        cache.add(url).catch(err => { throw err; })
-      )
+    Promise.allSettled(
+      DEFERRED_ASSETS.map(url => cache.add(url))
     );
   })());
 });
@@ -96,7 +93,12 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.match('/index.html').then((cached) => {
         return cached || fetch(event.request);
-      }).catch(() => caches.match('/offline.html'))
+      }).catch(async () => {
+        const offlinePage = await caches.match('/offline.html');
+        return offlinePage ?? new Response('<h1>Offline</h1><p>Please check your connection and refresh.</p>', {
+          status: 503, headers: { 'Content-Type': 'text/html' }
+        });
+      })
     );
     return;
   }
@@ -139,10 +141,13 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       });
-    }).catch(() => {
+    }).catch(async () => {
       // Offline fallback for HTML
       if (event.request.headers.get('Accept')?.includes('text/html')) {
-        return caches.match('/offline.html');
+        const offlinePage = await caches.match('/offline.html');
+        return offlinePage ?? new Response('<h1>Offline</h1><p>Please check your connection and refresh.</p>', {
+          status: 503, headers: { 'Content-Type': 'text/html' }
+        });
       }
       // Offline fallback for images (return transparent 1x1 WebP to avoid broken icons)
       if (event.request.headers.get('Accept')?.includes('image/')) {

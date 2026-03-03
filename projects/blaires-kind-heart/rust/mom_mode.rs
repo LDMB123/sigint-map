@@ -1,13 +1,15 @@
 use crate::{
-    constants, db_client, dom, parent_insights, render, speech, state::AppState, synth_audio,
-    utils, weekly_goals,
+    browser_apis, constants, db_client, dom, parent_insights, render, speech, state::AppState,
+    synth_audio, utils, weekly_goals,
 };
 use futures::join;
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, Event};
-thread_local! { static MOM_STATE: RefCell<Option<MomModeState>> = const { RefCell::new(None) }; }
+thread_local! {
+    static MOM_STATE: RefCell<Option<MomModeState>> = const { RefCell::new(None) };
+}
 struct MomModeState {
     state: Rc<RefCell<AppState>>,
     pin_set: bool,
@@ -242,18 +244,54 @@ async fn save_pin(pin: &str) {
     show_dashboard();
 }
 async fn verify_pin(entered: &str) -> bool {
+    // Rate limiting: check lockout before anything else
+    let now_ms = utils::now_epoch_ms();
+    if let Some(locked_until_str) = db_client::get_setting("pin_locked_until").await {
+        if let Ok(locked_until) = locked_until_str.parse::<f64>() {
+            if now_ms < locked_until {
+                let remaining_secs = ((locked_until - now_ms) / 1000.0).ceil() as u32;
+                dom::warn(&format!("[mom_mode] PIN locked for {}s", remaining_secs));
+                dom::show("[data-pin-error]");
+                update_pin_dots(0);
+                return false;
+            }
+        }
+    }
+
     let Some(stored) = get_parent_pin().await else {
         dom::warn("[mom_mode] No PIN stored — cannot verify");
         dom::show("[data-pin-error]");
         update_pin_dots(0);
         return false;
     };
+
     if entered == stored {
+        // Clear rate-limit counters on success
+        db_client::set_setting("pin_failed_attempts", "0").await;
+        db_client::set_setting("pin_locked_until", "0").await;
         close_pin_overlay();
         synth_audio::chime();
         show_dashboard();
         true
     } else {
+        // Increment failure counter
+        let attempts_str = db_client::get_setting("pin_failed_attempts")
+            .await
+            .unwrap_or_default();
+        let attempts = attempts_str.parse::<u32>().unwrap_or(0) + 1;
+        db_client::set_setting("pin_failed_attempts", &attempts.to_string()).await;
+
+        // Progressive delay: 1s after attempt 3, 2s after attempt 4; lockout after 5
+        if attempts >= 5 {
+            let lockout_until = now_ms + 300_000.0; // 5-minute lockout
+            db_client::set_setting("pin_locked_until", &(lockout_until as u64).to_string()).await;
+            dom::warn("[mom_mode] PIN locked for 5 minutes after 5 failed attempts");
+        } else if attempts >= 4 {
+            browser_apis::sleep_ms(2000).await;
+        } else if attempts >= 3 {
+            browser_apis::sleep_ms(1000).await;
+        }
+
         dom::show("[data-pin-error]");
         update_pin_dots(0);
         false
@@ -337,7 +375,7 @@ fn show_dashboard() {
     let goal_types = [
         (
             "acts",
-            r#"<img src="illustrations/stickers/heart-sparkle.webp" class="inline-emoji"/>"#,
+            r#"<img src="illustrations/stickers/heart-sparkling.webp" class="inline-emoji"/>"#,
             "Kind Acts",
             "How many kind acts this week?",
             5,
@@ -355,7 +393,7 @@ fn show_dashboard() {
         ),
         (
             "stories",
-            r#"<img src="illustrations/stickers/book-magic.webp" class="inline-emoji"/>"#,
+            r#"<img src="illustrations/stickers/rainbow.webp" class="inline-emoji"/>"#,
             "Stories",
             "Read how many stories?",
             1,
@@ -364,7 +402,7 @@ fn show_dashboard() {
         ),
         (
             "games",
-            r#"<img src="illustrations/stickers/game-controller.webp" class="inline-emoji"/>"#,
+            r#"<img src="illustrations/stickers/confetti-ball.webp" class="inline-emoji"/>"#,
             "Games",
             "Play how many games?",
             1,
@@ -582,10 +620,7 @@ fn bind_dashboard_interactions() {
                     .ok()
                     .and_then(|f| f.dyn_into::<js_sys::Function>().ok());
                 let Some(text_fn) = text_fn else { return };
-                let promise = match text_fn.call0(&file) {
-                    Ok(p) => p,
-                    Err(_) => return,
-                };
+                let Ok(promise) = text_fn.call0(&file) else { return };
                 let promise = js_sys::Promise::from(promise);
                 wasm_bindgen_futures::spawn_local(async move {
                     match wasm_bindgen_futures::JsFuture::from(promise).await {
@@ -677,7 +712,12 @@ async fn save_goals() {
             .and_then(|s| s.parse().ok())
             .unwrap_or(10);
         let id = utils::create_id();
-        let _ = db_client::exec( "INSERT INTO weekly_goals (id, week_key, goal_type, target, progress, created_at) VALUES (?1, ?2, ?3, ?4, 0, ?5)", vec![id, week.clone(), goal_type.to_string(), target.to_string(), now.to_string()],).await;
+        let _ = db_client::exec(
+            "INSERT INTO weekly_goals (id, week_key, goal_type, target, progress, created_at) \
+            VALUES (?1, ?2, ?3, ?4, 0, ?5)",
+            vec![id, week.clone(), goal_type.to_string(), target.to_string(), now.to_string()],
+        )
+        .await;
     }
     if let Some(note_el) = dom::query("[data-mom-note]") {
         let note_text = js_sys::Reflect::get(note_el.as_ref(), &"value".into())
@@ -686,7 +726,11 @@ async fn save_goals() {
             .unwrap_or_default();
         if !note_text.trim().is_empty() {
             let note_id = utils::create_id();
-            let _ = db_client::exec( "INSERT OR REPLACE INTO mom_notes (id, week_key, note_text, created_at) VALUES (?1, ?2, ?3, ?4)", vec![note_id, week.clone(), note_text.trim().to_string(), now.to_string()],).await;
+            let _ = db_client::exec(
+                "INSERT OR REPLACE INTO mom_notes (id, week_key, note_text, created_at) VALUES (?1, ?2, ?3, ?4)",
+                vec![note_id, week.clone(), note_text.trim().to_string(), now.to_string()],
+            )
+            .await;
         }
     }
     close_dashboard();
@@ -885,7 +929,19 @@ async fn export_json_backup() {
         .to_iso_string()
         .as_string()
         .unwrap_or_default();
-    let (kind_acts_result, settings_result, quests_result) = join!( db_client::query( "SELECT id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day FROM kind_acts ORDER BY created_at ASC", vec![],), db_client::query("SELECT key, value FROM settings WHERE key != 'parent_pin'", vec![],), db_client::query("SELECT * FROM quests ORDER BY day_key ASC", vec![],));
+    let (kind_acts_result, settings_result, quests_result) = join!(
+        db_client::query(
+            "SELECT id, category, description, hearts_earned, created_at, day_key, \
+            reflection_type, emotion_selected, bonus_context, combo_day \
+            FROM kind_acts ORDER BY created_at ASC",
+            vec![],
+        ),
+        db_client::query(
+            "SELECT key, value FROM settings WHERE key != 'parent_pin'",
+            vec![],
+        ),
+        db_client::query("SELECT * FROM quests ORDER BY day_key ASC", vec![]),
+    );
     let (Ok(kind_acts), Ok(settings), Ok(quests)) = (kind_acts_result, settings_result, quests_result) else {
         dom::toast("Export failed \u{2014} please try again.");
         return;
@@ -895,58 +951,48 @@ async fn export_json_backup() {
         trigger_text_download(&file_name, &json, "application/json");
     }
 }
+/// RFC 4180 CSV field quoting: wraps field in double quotes, escapes embedded
+/// quotes as `""`. Also strips leading formula-injection chars (=, +, -, @).
+fn csv_field(s: &str) -> String {
+    let s = s.trim_start_matches(['=', '+', '-', '@']);
+    format!("\"{}\"", s.replace('"', "\"\""))
+}
 async fn export_kind_acts_csv() {
     let day = today_iso_day();
     let file_name = format!("blaires-kind-heart-kind-acts-{day}.csv");
     let header = "id,category,description,hearts_earned,created_at,day_key,reflection_type,emotion_selected,bonus_context,combo_day";
-    let rows = db_client::query( "SELECT id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day FROM kind_acts ORDER BY created_at ASC", vec![],).await.unwrap_or(serde_json::json!([]));
+    let rows = db_client::query(
+        "SELECT id, category, description, hearts_earned, created_at, day_key, \
+        reflection_type, emotion_selected, bonus_context, combo_day \
+        FROM kind_acts ORDER BY created_at ASC",
+        vec![],
+    )
+    .await
+    .unwrap_or(serde_json::json!([]));
     let mut csv = String::from(header);
     if let Some(array) = rows.as_array() {
         for row in array {
-            let fields = [
-                row.get("id")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string(),
-                row.get("category")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string(),
-                row.get("description")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .replace(',', " "),
-                row.get("hearts_earned")
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or(0)
-                    .to_string(),
-                row.get("created_at")
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or(0)
-                    .to_string(),
-                row.get("day_key")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string(),
-                row.get("reflection_type")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string(),
-                row.get("emotion_selected")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .to_string(),
-                row.get("bonus_context")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .replace(',', " "),
-                row.get("combo_day")
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or(0)
-                    .to_string(),
-            ];
+            let id = csv_field(row.get("id").and_then(|v| v.as_str()).unwrap_or(""));
+            let category = csv_field(row.get("category").and_then(|v| v.as_str()).unwrap_or(""));
+            let description = csv_field(row.get("description").and_then(|v| v.as_str()).unwrap_or(""));
+            let hearts_earned = row.get("hearts_earned")
+                .and_then(|v| v.as_i64())
+                .unwrap_or(0)
+                .to_string();
+            let created_at = row.get("created_at")
+                .and_then(|v| v.as_i64())
+                .unwrap_or(0)
+                .to_string();
+            let day_key = csv_field(row.get("day_key").and_then(|v| v.as_str()).unwrap_or(""));
+            let reflection_type = csv_field(row.get("reflection_type").and_then(|v| v.as_str()).unwrap_or(""));
+            let emotion_selected = csv_field(row.get("emotion_selected").and_then(|v| v.as_str()).unwrap_or(""));
+            let bonus_context = csv_field(row.get("bonus_context").and_then(|v| v.as_str()).unwrap_or(""));
+            let combo_day = row.get("combo_day")
+                .and_then(|v| v.as_i64())
+                .unwrap_or(0)
+                .to_string();
             csv.push('\n');
-            csv.push_str(&fields.join(","));
+            csv.push_str(&format!("{id},{category},{description},{hearts_earned},{created_at},{day_key},{reflection_type},{emotion_selected},{bonus_context},{combo_day}"));
         }
     }
     trigger_text_download(&file_name, &csv, "text/csv");

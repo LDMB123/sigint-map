@@ -10,7 +10,11 @@ use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use web_sys::MessageEvent;
-thread_local! { static DB_CLIENT: RefCell<Option<DbClientInner>> = const { RefCell::new(None) }; static NEXT_ID: RefCell<u32> = const { RefCell::new(1) }; static INIT_RX: RefCell<Option<oneshot::Receiver<DbResponse>>> = const { RefCell::new(None) }; }
+thread_local! {
+    static DB_CLIENT: RefCell<Option<DbClientInner>> = const { RefCell::new(None) };
+    static NEXT_ID: RefCell<u32> = const { RefCell::new(1) };
+    static INIT_RX: RefCell<Option<oneshot::Receiver<DbResponse>>> = const { RefCell::new(None) };
+}
 struct DbClientInner {
     worker: bindings::TrustedWorker,
     pending: RefCell<HashMap<u32, oneshot::Sender<DbResponse>>>,
@@ -91,7 +95,7 @@ pub async fn query(sql: &str, params: Vec<String>) -> Result<serde_json::Value, 
             match resp {
                 DbResponse::Rows { data, .. } => Ok(data),
                 DbResponse::Error { message, .. } => Err(JsValue::from_str(&message)),
-                _ => Ok(serde_json::Value::Null),
+                DbResponse::Ok { .. } => Ok(serde_json::Value::Null),
             }
         },
     )
@@ -104,7 +108,7 @@ pub async fn restore_snapshot(snapshot_json: String) -> Result<(), JsValue> {
         match resp {
             DbResponse::Ok { .. } => Ok(()),
             DbResponse::Error { message, .. } => Err(JsValue::from_str(&message)),
-            _ => Err(JsValue::from_str("Unexpected restore response")),
+            DbResponse::Rows { .. } => Err(JsValue::from_str("Unexpected restore response")),
         }
     })
     .await
@@ -117,14 +121,23 @@ async fn send_request(request: DbRequest) -> Result<DbResponse, JsValue> {
         let client = borrow
             .as_ref()
             .ok_or_else(|| JsValue::from_str("DB not initialized"))?;
-        client.pending.borrow_mut().insert(id, tx);
         let envelope = WorkerMessage {
             api_version: DB_WORKER_API_VERSION,
             request,
             request_id: id,
         };
-        if let Ok(msg) = serde_wasm_bindgen::to_value(&envelope) {
-            let _ = client.worker.post_message(&msg);
+        match serde_wasm_bindgen::to_value(&envelope) {
+            Ok(msg) => {
+                client.pending.borrow_mut().insert(id, tx);
+                let _ = client.worker.post_message(&msg);
+            }
+            Err(_) => {
+                // Serialization failed — send error via oneshot so caller doesn't hang forever
+                let _ = tx.send(DbResponse::Error {
+                    message: "Failed to serialize DB request".to_string(),
+                    request_id: id,
+                });
+            }
         }
         Ok::<(), JsValue>(())
     })?;
@@ -190,24 +203,24 @@ pub async fn wait_for_ready() {
                             reason: message,
                         });
                     }
-                    _ => {
+                    DbResponse::Rows { .. } => {
                         dom::warn("[db] Worker init returned unexpected response");
                     }
                 }
             }
         });
-        for _ in 0..100 {
+        for _ in 0..200 {
             if got_init.get() {
                 dom::warn("[db] Worker ready (Init response received)");
                 return;
             }
             browser_apis::sleep_ms(50).await;
         }
-        dom::warn("[db] Worker init timed out after 5s — proceeding anyway");
+        dom::warn("[db] Worker init timed out after 10s — proceeding anyway");
         dom::toast("Oops! Your progress might not save right now.");
         crate::errors::report(crate::errors::AppError::DatabaseInit {
             backend: "sqlite-opfs".to_string(),
-            reason: "Worker init timed out after 5s".to_string(),
+            reason: "Worker init timed out after 10s".to_string(),
         });
     }
 }

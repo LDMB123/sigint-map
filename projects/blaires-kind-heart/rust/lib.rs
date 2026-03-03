@@ -90,7 +90,7 @@ async fn boot_async(state: Rc<RefCell<AppState>>) {
     update_loading_progress(0);
     metrics::mark("boot:batch1:start");
     time_awareness::apply();
-    session_timer::init();
+    session_timer::reset();
     navigation::init();
     native_apis::init_haptics();
     db_worker::init();
@@ -111,7 +111,7 @@ async fn boot_async(state: Rc<RefCell<AppState>>) {
     streaks::init();
     games::init();
     mom_mode::init(state.clone());
-    weekly_goals::init();
+    weekly_goals::refresh_goals();
     progress::init();
     reflection::init();
     gardens::init();
@@ -186,7 +186,7 @@ async fn boot_async(state: Rc<RefCell<AppState>>) {
     for sel in [
         "[data-home-title]",
         "[data-heart-counter]",
-        "[data-companion]",
+        constants::SELECTOR_COMPANION,
     ] {
         if let Some(el) = dom::query(sel) {
             let _ = el.class_list().add_1("entrance-visible");
@@ -238,7 +238,7 @@ async fn boot_async(state: Rc<RefCell<AppState>>) {
     }
 }
 async fn check_reunion() {
-    let now = browser_apis::now_ms();
+    let now = utils::now_epoch_ms();
     let now_str = (now as u64).to_string();
     let prev = db_client::get_setting("last_session_ms").await;
     db_client::set_setting("last_session_ms", &now_str).await;
@@ -257,7 +257,20 @@ async fn hydrate_state() {
     let today = utils::today_key();
     companion_skins::seed_companion_skins().await;
     gardens::seed_gardens().await;
-    let (counters_result, streak_result) = join!( db_client::query( "SELECT COALESCE(SUM(hearts_earned), 0) as hearts_total, COALESCE(SUM(CASE WHEN day_key = ?1 THEN hearts_earned ELSE 0 END), 0) as hearts_today, (SELECT COUNT(*) FROM quests WHERE day_key = ?1 AND completed = 1) as quests_today FROM kind_acts", vec![today.clone()],), db_client::query( "SELECT day_key FROM streaks ORDER BY day_key DESC LIMIT 60", vec![]));
+    let (counters_result, streak_result) = join!(
+        db_client::query(
+            "SELECT \
+                COALESCE(SUM(hearts_earned), 0) as hearts_total, \
+                COALESCE(SUM(CASE WHEN day_key = ?1 THEN hearts_earned ELSE 0 END), 0) as hearts_today, \
+                (SELECT COUNT(*) FROM quests WHERE day_key = ?1 AND completed = 1) as quests_today \
+            FROM kind_acts",
+            vec![today.clone()],
+        ),
+        db_client::query(
+            "SELECT day_key FROM streaks ORDER BY day_key DESC LIMIT 365",
+            vec![],
+        )
+    );
     if let Ok(rows) = counters_result {
         if let Some(row) = rows.get(0) {
             let u = |k: &str| row.get(k).and_then(|v| v.as_u64()).map(|v| v as u32);
@@ -302,12 +315,10 @@ async fn hydrate_state() {
     };
     if let Ok(rows) = sticker_result {
         if let Some(arr) = rows.as_array() {
-            let mut sticker_types: Vec<String> = Vec::new();
-            for row in arr {
-                if let Some(stype) = row.get("sticker_type").and_then(|v| v.as_str()) {
-                    sticker_types.push(stype.to_string());
-                }
-            }
+            let sticker_types: Vec<String> = arr
+                .iter()
+                .filter_map(|r| r.get("sticker_type")?.as_str().map(String::from))
+                .collect();
             let earned_count = sticker_types.len();
             rewards::hydrate_stickers_batch(&sticker_types);
             rewards::update_sticker_count(earned_count);
@@ -361,7 +372,41 @@ async fn hydrate_state() {
             }
         }
     }
-    if let Ok(rows) = db_client::query( "SELECT COALESCE(MAX(CASE WHEN game_id = 'catcher' THEN score END), 0) as catcher_score, COALESCE(MAX(CASE WHEN game_id = 'catcher' THEN level END), 0) as catcher_level, COALESCE(MAX(CASE WHEN game_id = 'catcher' THEN combo END), 0) as catcher_combo, COUNT(CASE WHEN game_id = 'memory_medium' THEN 1 END) as memory_medium_wins, COALESCE(MIN(CASE WHEN game_id = 'memory_easy' AND duration_ms > 0 THEN duration_ms END), 0) as memory_easy_time, COALESCE(MIN(CASE WHEN game_id = 'memory_medium' AND duration_ms > 0 THEN duration_ms END), 0) as memory_medium_time, COALESCE(MIN(CASE WHEN game_id = 'memory_hard' AND duration_ms > 0 THEN duration_ms END), 0) as memory_hard_time, COALESCE(MAX(CASE WHEN game_id = 'unicorn' THEN score END), 0) as unicorn_score, COUNT(CASE WHEN game_id = 'hug' THEN 1 END) as hug_total, COUNT(CASE WHEN game_id = 'paint' AND day_key = ?1 THEN 1 END) as paint_today, COUNT(CASE WHEN day_key = ?1 THEN 1 END) as games_today FROM game_scores", vec![today],).await { if let Some(row) = rows.get(0) { let u = |k: &str| row.get(k).and_then(|v| v.as_u64()).map(|v| v as u32); state::with_state_mut(|s| { if let Some(v) = u("catcher_score") { s.catcher_high_score = v; } if let Some(v) = u("catcher_level") { s.catcher_best_level = v; } if let Some(v) = u("catcher_combo") { s.catcher_best_combo = v; } if let Some(v) = u("memory_medium_wins") { s.memory_wins_medium = v; } if let Some(v) = u("memory_easy_time") { s.memory_best_time_easy = v; } if let Some(v) = u("memory_medium_time") { s.memory_best_time_medium = v; } if let Some(v) = u("memory_hard_time") { s.memory_best_time_hard = v; } if let Some(v) = u("unicorn_score") { s.unicorn_high_score = v; } if let Some(v) = u("hug_total") { s.hug_completions = v; } if let Some(v) = u("paint_today") { s.paintings_today = v; } if let Some(v) = u("games_today") { s.games_played_today = v; }}); } }
+    if let Ok(rows) = db_client::query(
+        "SELECT \
+            COALESCE(MAX(CASE WHEN game_id = 'catcher' THEN score END), 0) as catcher_score, \
+            COALESCE(MAX(CASE WHEN game_id = 'catcher' THEN level END), 0) as catcher_level, \
+            COALESCE(MAX(CASE WHEN game_id = 'catcher' THEN combo END), 0) as catcher_combo, \
+            COUNT(CASE WHEN game_id = 'memory_medium' THEN 1 END) as memory_medium_wins, \
+            COALESCE(MIN(CASE WHEN game_id = 'memory_easy' AND duration_ms > 0 THEN duration_ms END), 0) as memory_easy_time, \
+            COALESCE(MIN(CASE WHEN game_id = 'memory_medium' AND duration_ms > 0 THEN duration_ms END), 0) as memory_medium_time, \
+            COALESCE(MIN(CASE WHEN game_id = 'memory_hard' AND duration_ms > 0 THEN duration_ms END), 0) as memory_hard_time, \
+            COALESCE(MAX(CASE WHEN game_id = 'unicorn' THEN score END), 0) as unicorn_score, \
+            COUNT(CASE WHEN game_id = 'hug' THEN 1 END) as hug_total, \
+            COUNT(CASE WHEN game_id = 'paint' AND day_key = ?1 THEN 1 END) as paint_today, \
+            COUNT(CASE WHEN day_key = ?1 THEN 1 END) as games_today \
+        FROM game_scores",
+        vec![today],
+    )
+    .await
+    {
+        if let Some(row) = rows.get(0) {
+            let u = |k: &str| row.get(k).and_then(|v| v.as_u64()).map(|v| v as u32);
+            state::with_state_mut(|s| {
+                if let Some(v) = u("catcher_score") { s.catcher_high_score = v; }
+                if let Some(v) = u("catcher_level") { s.catcher_best_level = v; }
+                if let Some(v) = u("catcher_combo") { s.catcher_best_combo = v; }
+                if let Some(v) = u("memory_medium_wins") { s.memory_wins_medium = v; }
+                if let Some(v) = u("memory_easy_time") { s.memory_best_time_easy = v; }
+                if let Some(v) = u("memory_medium_time") { s.memory_best_time_medium = v; }
+                if let Some(v) = u("memory_hard_time") { s.memory_best_time_hard = v; }
+                if let Some(v) = u("unicorn_score") { s.unicorn_high_score = v; }
+                if let Some(v) = u("hug_total") { s.hug_completions = v; }
+                if let Some(v) = u("paint_today") { s.paintings_today = v; }
+                if let Some(v) = u("games_today") { s.games_played_today = v; }
+            });
+        }
+    }
     let (badges_result, skin_result, gardens_result) = join!(
         db_client::query(
             "SELECT COUNT(*) as earned_count FROM badges WHERE earned = 1",
@@ -435,15 +480,15 @@ fn count_streak_from_rows(rows: &serde_json::Value, today: &str) -> u32 {
 }
 fn cache_boot_elements() {
     use crate::dom;
-    let companion = dom::query("[data-companion]");
-    let hearts = dom::query("[data-hearts]");
-    let tracker_hearts = dom::query("[data-tracker-hearts-count]");
-    let toast = dom::query("[data-toast]");
+    let companion = dom::query(constants::SELECTOR_COMPANION);
+    let hearts = dom::query(constants::SELECTOR_HEARTS);
+    let tracker_hearts = dom::query(constants::SELECTOR_TRACKER_HEARTS);
+    let toast = dom::query(constants::SELECTOR_TOAST);
     for (el, sel) in [
-        (&companion, "[data-companion]"),
-        (&hearts, "[data-hearts]"),
-        (&tracker_hearts, "[data-tracker-hearts-count]"),
-        (&toast, "[data-toast]"),
+        (&companion, constants::SELECTOR_COMPANION),
+        (&hearts, constants::SELECTOR_HEARTS),
+        (&tracker_hearts, constants::SELECTOR_TRACKER_HEARTS),
+        (&toast, constants::SELECTOR_TOAST),
     ] {
         if el.is_none() {
             dom::warn(&format!("⚠ {sel} not found during boot"));

@@ -62,9 +62,8 @@
   /* Rainbow gradient text with layered glow */
   background: linear-gradient(135deg, #FF6B9D 0%, #C97EFF 25%, #4AB0E0 50%, #4DC882 75%, #FFD32D 100%);
   background-size: 200% auto;
-  -webkit-background-clip: text;
   background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: transparent;
   animation: title-entrance 0.8s var(--ease-overshoot) both, title-rainbow 6s linear infinite;
   /* Multi-layer drop shadow for depth */
   filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.9)) drop-shadow(0 4px 12px rgba(181, 126, 255, 0.55)) drop-shadow(0 8px 24px rgba(255, 143, 171, 0.35));
@@ -83,8 +82,8 @@
 .home-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-md, 16px);
-  padding: var(--space-md, 16px);
+  gap: var(--space-md);
+  padding: var(--space-md);
   max-width: 720px;
   margin: auto;
   align-items: center;
@@ -205,18 +204,18 @@
 
 /* Button color variants — 3 main buttons */
 .home-btn--tracker {
-  --btn-gradient: var(--gradient-magic, linear-gradient(135deg, #FF8FAB, #FFB4C8));
+  --btn-gradient: var(--gradient-magic);
   background: var(--btn-gradient);
   animation: glow-breathe 3s ease-in-out infinite;
 }
 
 .home-btn--adventures {
-  --btn-gradient: var(--gradient-dreamy, linear-gradient(135deg, #B57EFF, #D4A5FF));
+  --btn-gradient: var(--gradient-dreamy);
   background: var(--btn-gradient);
 }
 
 .home-btn--mystuff {
-  --btn-gradient: var(--gradient-golden, linear-gradient(135deg, #FFD32D, #FFE680));
+  --btn-gradient: var(--gradient-golden);
   background: var(--btn-gradient);
 }
 
@@ -278,8 +277,8 @@
   border-radius: 24px;
   background: var(--color-pink-dark);
   color: var(--color-white);
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -329,7 +328,7 @@
   font-size: 1.8rem;
   animation: flame-flicker 1s ease-in-out infinite alternate;
   filter: drop-shadow(0 2px 8px rgba(255, 146, 51, 0.6));
-  transition: font-size 0.3s var(--ease-bounce, ease);
+  transition: font-size var(--duration-medium) var(--ease-bounce);
 }
 
 /* ── Growing Streak Fire ── */
@@ -384,7 +383,7 @@
   right: var(--space-xl);
   left: auto;
   transform: none;
-  z-index: 50;
+  z-index: var(--z-game);
   width: 220px;
   height: 220px;
   filter: drop-shadow(0 16px 48px rgba(181, 126, 255, 0.7));
@@ -432,7 +431,6 @@
         rgba(181, 126, 255, 0.75),
         rgba(255, 45, 114, 0.75));
     background-clip: padding-box, border-box;
-    -webkit-background-clip: padding-box, border-box;
     animation: companion-ring-spin 7s cubic-bezier(.33, .66, .66, 1) infinite;
     pointer-events: none;
     z-index: -2;
@@ -643,17 +641,52 @@
    cascade duplication. app.css defines per-element stagger timing and
    the sparkle-entrance animation. */
 
-/* ── Responsive: narrow phones ── */
-@media (max-width: 375px) {
-  .home-grid {
-    grid-template-columns: 1fr;
-  }
+/* ── Show Mom celebration button ── */
+.home-show-mom-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  background: linear-gradient(135deg, rgba(255, 240, 245, 0.92), rgba(237, 224, 255, 0.88));
+  backdrop-filter: var(--backdrop-medium-sat);
+  border: 2px solid rgba(181, 126, 255, 0.4);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm), 0 0 12px rgba(181, 126, 255, 0.2);
+  cursor: pointer;
+  font-family: inherit;
+  min-height: var(--touch-comfortable);
+  touch-action: manipulation;
+  transition: transform var(--duration-fast) var(--ease-spring-intense);
+  animation: card-entrance 0.5s var(--ease-overshoot) 0.5s both;
 
-  .companion {
-    width: 100px;
-    height: 100px;
-    font-size: 5rem;
+  &:active {
+    transform: scale(0.92);
+    transition-duration: var(--duration-instant);
   }
+}
+
+.home-show-mom-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.home-show-mom-label {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-purple);
+}
+
+/* ── Heart counter pop animation ── */
+.heart-count-pop {
+  animation: heart-pop var(--duration-medium) var(--ease-elastic);
+}
+
+@keyframes heart-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35); }
+  100% { transform: scale(1); }
 }
 
 /* ── Responsive: iPad landscape / wider viewports ── */
@@ -667,291 +700,9 @@
   }
 }
 
-/* ── Care menu ── */
-.care-menu {
-  position: fixed;
-  bottom: calc(var(--space-md) + 260px);
-  right: var(--space-md);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: var(--backdrop-medium);
-  border-radius: 1.5rem;
-  padding: 0.75rem;
-  display: flex;
-  gap: 0.5rem;
-  border: 2px solid var(--color-purple-light);
-  box-shadow: 0 4px 20px rgba(147, 51, 234, 0.2);
-  z-index: var(--z-modal);
-}
-
-.care-menu[popover] {
-  margin: 0;
-  inset: unset;
-  bottom: calc(var(--space-md) + 260px);
-  right: var(--space-md);
-}
-
-.care-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.75rem 1rem;
-  border: none;
-  background: var(--color-purple-light);
-  border-radius: 1rem;
-  font-size: 2rem;
-  min-width: 4.5rem;
-  min-height: 4.5rem;
-  touch-action: manipulation;
-  cursor: pointer;
-}
-
-.care-btn-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-purple-dark);
-}
-
-.care-btn:active {
-  transform: scale(0.9);
-}
-
-.care-btn[disabled] {
-  opacity: 0.4;
-}
-
-/* ── Food sub-menu ── */
-.food-menu {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.5rem;
-}
-
-.food-btn {
-  font-size: 2.5rem;
-  padding: 0.75rem;
-  border: 2px solid var(--color-purple-light);
-  border-radius: 1rem;
-  background: var(--color-white);
-  min-width: 4rem;
-  min-height: 4rem;
-  touch-action: manipulation;
-}
-
-.food-btn:active {
-  transform: scale(0.9);
-  background: var(--color-surface-raised);
-}
-
-.food-btn[data-locked] {
-  opacity: 0.3;
-  pointer-events: none;
-}
-
-/* ── Play animations ── */
-@keyframes sparkle-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes sparkle-jump {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  40% {
-    transform: translateY(-80px);
-  }
-}
-
-@keyframes sparkle-rainbow {
-  0% {
-    filter: hue-rotate(0deg);
-  }
-
-  100% {
-    filter: hue-rotate(360deg);
-  }
-}
-
-@keyframes sparkle-burst {
-  0% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.3);
-  }
-
-  100% {
-    transform: scale(1);
-  }
-}
-
-.companion--anim-spin {
-  animation: sparkle-spin 1.2s ease-in-out;
-}
-
-.companion--anim-jump {
-  animation: sparkle-jump 1.2s ease-in-out;
-}
-
-.companion--anim-rainbow {
-  animation: sparkle-rainbow 1.2s linear;
-}
-
-.companion--anim-burst {
-  animation: sparkle-burst 1.2s ease-in-out;
-}
-
-/* ── Micro-sticker float ── */
-@keyframes micro-sticker-float {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(-120px) scale(1.5);
-  }
-}
-
-.micro-sticker {
-  position: absolute;
-  bottom: 100%;
-  right: 50%;
-  font-size: 2rem;
-  pointer-events: none;
-  animation: micro-sticker-float 1.5s ease-out forwards;
-}
-
-/* ── Daily kindness suggestion card ── */
-.daily-kindness {
-  background: linear-gradient(135deg, rgba(255, 143, 171, 0.2), var(--color-surface));
-  border-radius: 1.25rem;
-  padding: 1rem 1.25rem;
-  margin: 0.75rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  animation: idle-breathe 3s ease-in-out infinite;
-  border: 2px solid var(--color-pink);
-  box-shadow: var(--shadow-sm);
-  touch-action: manipulation;
-  max-width: 720px;
-  width: 100%;
-  min-height: 48px;
-}
-
-.daily-kindness:active {
-  transform: scale(0.96);
-}
-
-.daily-kindness__emoji {
-  font-size: 2.5rem;
-  flex-shrink: 0;
-}
-
-.daily-kindness__text {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-/* Broken image fallback — hide broken img, show emoji sibling */
-.home-btn-img[data-failed] {
-  display: none;
-}
-
-.home-btn-img[data-failed]+.home-btn-emoji {
-  display: block !important;
-}
-
-/* ── Mom Mode Insights Integration ── */
-.mom-insights-section {
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 1rem;
-  padding: var(--space-md);
-  margin-bottom: var(--space-lg);
-  border: 2px dashed var(--color-purple-light);
-}
-
-.mom-insight-summary {
-  margin-bottom: var(--space-md);
-}
-
-.mom-insight-pattern {
-  font-size: var(--font-size-md);
-  color: var(--color-purple-dark);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--space-xs);
-}
-
-.mom-insight-reflection {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-light);
-}
-
-.mom-insight-empty {
-  font-style: italic;
-  color: var(--color-text-light);
-  text-align: center;
-  padding: var(--space-md) 0;
-}
-
-.mom-skill-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-xs);
-}
-
-.mom-skill-label {
-  flex: 0 0 140px;
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.mom-skill-track {
-  flex: 1;
-  height: 16px;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.mom-skill-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--color-blue-light), var(--color-purple-light));
-  border-radius: 8px;
-  transition: width var(--duration-normal) var(--ease-bounce);
-}
-
-.mom-skill-pct {
-  flex: 0 0 40px;
-  text-align: right;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-light);
-  font-weight: var(--font-weight-bold);
-}
-
 /* ── Accessibility: reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  .home-title,
-  .micro-sticker {
+  .home-title {
     animation: none !important;
     transition: none !important;
   }

@@ -12,6 +12,9 @@ const FEED_PHRASES: &[&str] = &[
     "That was delicious! 😋",
     "My tummy is happy! 💜",
     "You take such good care of me! 🦄",
+    "Nom nom nom! So tasty! 🍎",
+    "Best snack ever! Thank you! 🌟",
+    "Sparkle fuel! Now I can sparkle more! ✨",
 ];
 
 const PET_PHRASES: &[&str] = &[
@@ -19,6 +22,9 @@ const PET_PHRASES: &[&str] = &[
     "I love cuddles! 🤗",
     "You're the best friend! ⭐",
     "Purrrr! 😊",
+    "Ooh, right there! So cozy! 🥰",
+    "Sparkle loves your hugs! 💖",
+    "More pets please! Hee hee! 🌈",
 ];
 
 const PLAY_PHRASES: &[&str] = &[
@@ -26,6 +32,9 @@ const PLAY_PHRASES: &[&str] = &[
     "Again! Again! 🌟",
     "That was amazing! ✨",
     "I love playing with you! 💜",
+    "Best playtime ever! 🎉",
+    "You're so silly! I love it! 😂",
+    "Sparkle is having the best day! 🦄",
 ];
 
 const MOOD_UP_PHRASES: &[&str] = &[
@@ -33,6 +42,9 @@ const MOOD_UP_PHRASES: &[&str] = &[
     "Kindness makes me sparkle! ✨",
     "What a wonderful day! 🌈",
     "You make everything better! ⭐",
+    "My heart is so full right now! 💖",
+    "This is the best feeling! 🌟",
+    "Blaire, you light up the world! 🦄",
 ];
 
 fn try_show_bubble(phrases: &[&str]) -> bool {
@@ -65,10 +77,7 @@ pub fn on_play() {
 }
 
 pub fn on_mood_change(mood: &str) {
-    match mood {
-        "happy" | "excited" => {
-            try_show_bubble(MOOD_UP_PHRASES);
-        }
-        _ => {}
+    if matches!(mood, "happy" | "excited") {
+        try_show_bubble(MOOD_UP_PHRASES);
     }
 }

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { dismissOnboardingIfPresent, readHearts } from "./helpers";
 
 test.use({ video: "off", serviceWorkers: "block" });
 
@@ -9,49 +10,6 @@ test.afterEach(async ({ page }) => {
     // Best-effort cleanup to avoid long context shutdown when worker tasks are active.
   }
 });
-
-async function readHearts(page: Page): Promise<number> {
-  try {
-    const value = await Promise.race([
-      page.evaluate(() => {
-        const text = (document.querySelector("[data-tracker-hearts-count]")?.textContent ?? "").trim();
-        const parsed = Number.parseInt(text, 10);
-        return Number.isFinite(parsed) ? parsed : 0;
-      }),
-      new Promise<number>((resolve) => {
-        setTimeout(() => resolve(-1), 4_000);
-      })
-    ]);
-    return value;
-  } catch {
-    return -1;
-  }
-}
-
-async function dismissOnboardingIfPresent(page: Page): Promise<void> {
-  let quietCycles = 0;
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    const sawOnboarding = await Promise.race([
-      page.evaluate(() => {
-        const start = Array.from(document.querySelectorAll("button")).find((el) =>
-          /let's go/i.test((el.textContent ?? "").toLowerCase())
-        );
-        if (!start) return false;
-        (start as HTMLButtonElement).click();
-        return true;
-      }),
-      new Promise<boolean>((resolve) => {
-        setTimeout(() => resolve(false), 1_000);
-      })
-    ]);
-
-    quietCycles = sawOnboarding ? 0 : quietCycles + 1;
-    if (attempt >= 6 && quietCycles >= 6) {
-      break;
-    }
-    await page.waitForTimeout(250);
-  }
-}
 
 test.describe("critical user flows", () => {
   test.describe.configure({ mode: "serial" });

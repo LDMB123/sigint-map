@@ -4,7 +4,9 @@ use crate::dom;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-thread_local! { static PERF_MONITOR: RefCell<PerfMonitor> = RefCell::new(PerfMonitor::new()); }
+thread_local! {
+    static PERF_MONITOR: RefCell<PerfMonitor> = RefCell::new(PerfMonitor::new());
+}
 
 pub struct PerfMonitor {
     marks: HashMap<String, f64>,

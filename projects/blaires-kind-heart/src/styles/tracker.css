@@ -352,10 +352,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: var(--space-lg);
   background: rgba(255, 228, 237, 0.95);
   backdrop-filter: var(--backdrop-medium);
-  padding: 24px;
+  padding: var(--space-lg);
 }
 
 /* ====== Emotion Check-In Modal (Scoped) ====== */
@@ -375,7 +375,7 @@
 
   .feeling-question {
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     color: var(--color-text);
   }
 
@@ -391,13 +391,14 @@
     border: none;
     border-radius: 24px;
     font-size: 1.3rem;
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
+    touch-action: manipulation;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    transition: transform 0.15s var(--ease-bounce, cubic-bezier(0.34, 1.56, 0.64, 1));
+    transition: transform 0.15s var(--ease-bounce);
     animation: jelly-wobble 0.6s ease-out;
   }
 
@@ -406,17 +407,17 @@
   }
 
   .feel-happy {
-    background: var(--gradient-magic, linear-gradient(135deg, #FF8FAB, #FFB4C8));
+    background: var(--gradient-magic);
     color: var(--color-white);
   }
 
   .feel-proud {
-    background: var(--gradient-dreamy, linear-gradient(135deg, #B57EFF, #D4A5FF));
+    background: var(--gradient-dreamy);
     color: var(--color-white);
   }
 
   .feel-loving {
-    background: var(--gradient-golden, linear-gradient(135deg, #FFD32D, #FFE680));
+    background: var(--gradient-golden);
     color: var(--color-text);
   }
 
@@ -430,93 +431,6 @@
     cursor: pointer;
     min-height: var(--touch-min);
   }
-}
-
-/* === Family Kindness Board === */
-.family-board-toggle {
-  width: 100%;
-  padding: 0.75rem;
-  margin-top: 0.75rem;
-  border-radius: var(--radius-lg);
-  border: 2px dashed var(--color-purple-dark);
-  background: var(--color-surface);
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  animation: idle-breathe 3s ease-in-out infinite;
-}
-
-.family-board-toggle:active {
-  transform: scale(0.96);
-}
-
-.family-board {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: 1rem;
-  margin-top: 0.75rem;
-  border: 2px solid var(--color-purple-dark);
-  animation: jelly-wobble 0.4s ease;
-}
-
-.family-board__title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 0.75rem;
-}
-
-.family-board__members {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-}
-
-.family-board__member {
-  font-size: 2rem;
-  min-width: 3.5rem;
-  min-height: 3.5rem;
-  border-radius: 50%;
-  border: 2px solid var(--color-pink-vivid);
-  background: var(--color-surface);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-}
-
-.family-board__member:active {
-  transform: scale(0.9);
-}
-
-.family-board__categories {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-  padding: 0.5rem;
-}
-
-.family-board__category {
-  font-size: 2rem;
-  min-width: 3.5rem;
-  min-height: 3.5rem;
-  border-radius: 50%;
-  border: 3px solid var(--color-pink-vivid);
-  background: var(--color-surface);
-  cursor: pointer;
-  animation: jelly-wobble 0.5s ease;
-}
-
-.family-board__category:active {
-  transform: scale(0.9);
-}
-
-.family-board__cat-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 0.5rem;
 }
 
 /* ====== Reduced Motion — respect user preference ====== */

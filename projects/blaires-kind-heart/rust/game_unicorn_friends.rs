@@ -171,9 +171,10 @@ impl FriendManager {
         let (type_id, emoji, points) = if js_sys::Math::random() < 0.15 {
             ("star", "", 50)
         } else {
+            let Some(&default) = self.friend_types.first() else { return };
             let total_weight: u32 = self.friend_types.iter().map(|(_, _, _, w)| w).sum();
             let mut roll = (js_sys::Math::random() * f64::from(total_weight)) as u32;
-            let mut selected = self.friend_types[0];
+            let mut selected = default;
             for &entry in self.friend_types {
                 if roll < entry.3 {
                     selected = entry;

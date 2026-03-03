@@ -7,6 +7,7 @@ use std::fmt::Write;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use web_sys::{Element, Event};
+type RafClosure = Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>>;
 #[derive(Clone, Copy, PartialEq)]
 enum CatcherTheme {
     Classic,
@@ -191,7 +192,10 @@ struct CatcherState {
     start_time_ms: f64,
     theme: CatcherTheme,
 }
-thread_local! { static GAME: RefCell<Option<CatcherState>> = const { RefCell::new(None) }; static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) }; }
+thread_local! {
+    static GAME: RefCell<Option<CatcherState>> = const { RefCell::new(None) };
+    static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) };
+}
 fn show_theme_picker(state: Rc<RefCell<AppState>>) {
     let Some((arena, buttons)) = render::build_game_picker("\u{1F496} Choose a Theme!") else {
         return;
@@ -532,14 +536,12 @@ fn catch_item(item: &Element) {
             game.level = new_level;
             trigger_level_up(new_level, game);
         }
-        {
-            dom::fmt_text("[data-catcher-score]", |buf| {
-                let _ = write!(buf, "\u{2B50} {}", game.score);
-            });
-            dom::fmt_text("[data-catcher-level]", |buf| {
-                let _ = write!(buf, "Level {}", game.level);
-            });
-        }
+        dom::fmt_text("[data-catcher-score]", |buf| {
+            let _ = write!(buf, "\u{2B50} {}", game.score);
+        });
+        dom::fmt_text("[data-catcher-level]", |buf| {
+            let _ = write!(buf, "Level {}", game.level);
+        });
         update_combo_display(game.combo_chain);
         spawn_score_float(float_x, float_y, points, multiplier > 1);
         if kind == ItemKind::Unicorn {
@@ -772,8 +774,7 @@ fn start_gravity_loop() {
 
     let last_ts: Rc<Cell<f64>> = Rc::new(Cell::new(0.0));
 
-    let closure_rc: Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>> =
-        Rc::new(RefCell::new(None));
+    let closure_rc: RafClosure = Rc::new(RefCell::new(None));
     let closure_for_raf = closure_rc.clone();
     let last_ts_inner = last_ts.clone();
 

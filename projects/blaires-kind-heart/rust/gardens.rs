@@ -128,9 +128,16 @@ async fn get_unlocked_gardens() -> Vec<(String, String, i32)> {
     }
 }
 fn render_gardens_panel() {
-    if let Some(body) = dom::query("[data-gardens-body]") {
+    if let Some(body) = dom::query(crate::constants::SELECTOR_GARDENS_BODY) {
         let doc = dom::document();
-        if let Some(intro) = render::text_el(&doc, "p", "gardens-intro", "Complete quest chains to unlock beautiful gardens! Watch them grow as you practice kindness.") { let _ = body.append_child(&intro); }
+        if let Some(intro) = render::text_el(
+            &doc,
+            "p",
+            "gardens-intro",
+            "Complete quest chains to unlock beautiful gardens! Watch them grow as you practice kindness.",
+        ) {
+            let _ = body.append_child(&intro);
+        }
         if let Some(grid) =
             render::create_el_with_data(&doc, "div", "gardens-grid", "data-gardens-grid")
         {

@@ -8,7 +8,7 @@ async fn check_quota() -> Option<(f64, f64, u32)> {
     let estimate_val = JsFuture::from(promise).await.ok()?;
     let estimate: web_sys::StorageEstimate = estimate_val.dyn_into().ok()?;
     let usage = estimate.get_usage().unwrap_or(0.0);
-    let quota = estimate.get_quota().unwrap_or(1.0);
+    let quota = estimate.get_quota().unwrap_or(1.0).max(1.0);
     let used_mb = usage / 1_048_576.0;
     let quota_mb = quota / 1_048_576.0;
     let pct = (usage / quota * 100.0) as u32;

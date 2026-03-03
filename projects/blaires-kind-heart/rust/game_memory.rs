@@ -89,10 +89,7 @@ impl Difficulty {
 }
 fn for_card_pair(a: usize, b: usize, mut f: impl FnMut(&Element)) {
     for idx in [a, b] {
-        let selector = dom::with_buf(|buf| {
-            let _ = write!(buf, "{idx}");
-            buf.clone()
-        });
+        let selector = idx.to_string();
         if let Some(el) = dom::query_data("card-idx", &selector) {
             f(&el);
         }
@@ -290,7 +287,9 @@ struct MemoryCard {
     matched: bool,
     flipped: bool,
 }
-thread_local! { static GAME: RefCell<Option<MemoryState>> = const { RefCell::new(None) }; }
+thread_local! {
+    static GAME: RefCell<Option<MemoryState>> = const { RefCell::new(None) };
+}
 pub fn start(state: Rc<RefCell<AppState>>) {
     let Some(abort) = browser_apis::new_abort_handle() else {
         return;
@@ -327,7 +326,7 @@ pub fn start(state: Rc<RefCell<AppState>>) {
     bind_unified_click_handler(state, &signal);
 }
 fn bind_unified_click_handler(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal) {
-    let Some(arena) = dom::query("#game-arena") else {
+    let Some(arena) = dom::query(crate::constants::SELECTOR_GAME_ARENA) else {
         return;
     };
     let s = state;
@@ -697,6 +696,9 @@ fn peek_cards(difficulty: Difficulty) {
     });
 }
 fn start_timer() {
+    if !GAME.with(|g| g.borrow().as_ref().is_some_and(|g| g.active)) {
+        return;
+    }
     let cb = Closure::<dyn FnMut()>::new(move || {
         GAME.with(|g| {
             let mut borrow = g.borrow_mut();
@@ -704,8 +706,10 @@ fn start_timer() {
             if !game.active {
                 return;
             }
-            let now = js_sys::Date::now();
-            game.elapsed_s = ((now - game.start_time_ms) / 1000.0) as u32;
+            // Increment by 1 each tick instead of computing from wall clock.
+            // Prevents timer inflation when iPad sleeps — Date::now() advances
+            // during sleep but intervals fire less often, keeping elapsed accurate.
+            game.elapsed_s += 1;
             dom::fmt_text("[data-memory-timer]", |buf| {
                 let _ = write!(buf, "\u{23F1} {}s", game.elapsed_s);
             });
@@ -760,6 +764,9 @@ fn reset_hint_timer() {
             }
         }
     });
+    if !GAME.with(|g| g.borrow().as_ref().is_some_and(|g| g.active)) {
+        return;
+    }
     let id = dom::set_timeout_cancelable(10_000, || {
         let should_hint = GAME.with(|g| {
             let borrow = g.borrow();
@@ -807,7 +814,152 @@ fn glow_random_unmatched(cards: &[MemoryCard], ms: i32) {
     }
 }
 fn on_card_tap(idx: usize, card_el: &Element) {
-    GAME.with(|g| { let mut borrow = g.borrow_mut(); let Some(game) = borrow.as_mut() else { return }; if !game.active || game.locked { return; } if idx >= game.cards.len() { return; } if game.cards[idx].matched || game.cards[idx].flipped { return; } game.cards[idx].flipped = true; game.flipped.push(idx); let _ = card_el.class_list().add_1("memory-card--flipped"); match game.theme { CardTheme::MagicalForest => synth_audio::chime(), CardTheme::OceanFriends => synth_audio::dreamy(), CardTheme::SpaceAdventure => synth_audio::whoosh(), CardTheme::GardenBugs => synth_audio::sparkle(), CardTheme::YummyFood => synth_audio::tap(), CardTheme::MusicParty => synth_audio::magic_wand(), } spawn_flip_particles(card_el); native_apis::vibrate_tap(); if game.flipped.len() == 2 { game.moves += 1; dom::fmt_text("[data-memory-moves]", |buf| { let _ = write!(buf, "Moves: {}", game.moves); }); let idx_a = game.flipped[0]; let idx_b = game.flipped[1]; if game.cards[idx_a].face_idx == game.cards[idx_b].face_idx { game.cards[idx_a].matched = true; game.cards[idx_b].matched = true; game.matched += 1; game.flipped.clear(); game.consecutive_matches += 1; if game.consecutive_matches > game.best_streak { game.best_streak = game.consecutive_matches; } let streak = game.consecutive_matches; let matched = game.matched; let total = game.total_pairs; dom::fmt_text("[data-memory-pairs]", |buf| { let _ = write!(buf, "Pairs: {matched}/{total}"); }); let streak_bonus = match streak { 3 => 1, 4 => 2, s if s >= 5 => 3, _ => 0, }; game.streak_bonus_hearts += streak_bonus; match streak { 1 => synth_audio::chime(), 2 => synth_audio::sparkle(), 3 => { synth_audio::sparkle(); synth_audio::chime(); } 4 => synth_audio::magic_wand(), _ => synth_audio::rainbow_burst(), } update_streak_display(streak); for_card_pair(idx_a, idx_b, |el| { let _ = el.class_list().add_1("memory-card--matched"); /* Magical exploding merge animation! */ let _ = el.class_list().add_1("memory-card--explode"); spawn_flip_particles(el); if streak >= 3 { dom::with_buf(|buf| { let _ = write!(buf, "memory-card--streak-{}", streak.min(5)); let _ = el.class_list().add_1(buf); }); } }); spawn_combo_explosion(idx_b, streak, streak_bonus); if streak == 3 { confetti::burst_stars(); crate::gpu_particles::burst(&crate::gpu_particles::BURST_STARS); } else if streak >= 5 { confetti::burst_party(); crate::gpu_particles::burst(&crate::gpu_particles::BURST_PARTY); } let was_easy = game.difficulty == Difficulty::Easy; let win_data = if game.matched == game.total_pairs { game.active = false; Some((game.difficulty, game.moves, game.elapsed_s, game.best_streak, game.streak_bonus_hearts, game.state.clone())) } else { None }; drop(borrow); if was_easy { reset_hint_timer(); } if let Some((d, m, e, bs, sb, st)) = win_data { stop_timer(); trigger_win_sequence(d, m, e, bs, sb, st); } } else { game.locked = true; let flip_a = game.flipped[0]; let flip_b = game.flipped[1]; game.flipped.clear(); let had_streak = game.consecutive_matches >= 2; game.consecutive_matches = 0; if had_streak { update_streak_display(0); } synth_audio::gentle(); for_card_pair(flip_a, flip_b, |el| { let _ = el.class_list().add_1("memory-card--miss"); }); let diff = game.difficulty; drop(borrow); dom::set_timeout_once(1000, move || { GAME.with(|g| { let mut borrow = g.borrow_mut(); let Some(game) = borrow.as_mut() else { return }; if flip_a < game.cards.len() { game.cards[flip_a].flipped = false; } if flip_b < game.cards.len() { game.cards[flip_b].flipped = false; } game.locked = false;}); for_card_pair(flip_a, flip_b, |el| { let _ = el.class_list().remove_1("memory-card--flipped"); let _ = el.class_list().remove_1("memory-card--miss");});}); if diff == Difficulty::Easy { reset_hint_timer(); } } }});
+    GAME.with(|g| {
+        let mut borrow = g.borrow_mut();
+        let Some(game) = borrow.as_mut() else { return };
+        if !game.active || game.locked {
+            return;
+        }
+        if idx >= game.cards.len() {
+            return;
+        }
+        if game.cards[idx].matched || game.cards[idx].flipped {
+            return;
+        }
+        game.cards[idx].flipped = true;
+        game.flipped.push(idx);
+        let _ = card_el.class_list().add_1("memory-card--flipped");
+        match game.theme {
+            CardTheme::MagicalForest => synth_audio::chime(),
+            CardTheme::OceanFriends => synth_audio::dreamy(),
+            CardTheme::SpaceAdventure => synth_audio::whoosh(),
+            CardTheme::GardenBugs => synth_audio::sparkle(),
+            CardTheme::YummyFood => synth_audio::tap(),
+            CardTheme::MusicParty => synth_audio::magic_wand(),
+        }
+        spawn_flip_particles(card_el);
+        native_apis::vibrate_tap();
+        if game.flipped.len() == 2 {
+            game.moves += 1;
+            dom::fmt_text("[data-memory-moves]", |buf| {
+                let _ = write!(buf, "Moves: {}", game.moves);
+            });
+            let idx_a = game.flipped[0];
+            let idx_b = game.flipped[1];
+            if game.cards[idx_a].face_idx == game.cards[idx_b].face_idx {
+                game.cards[idx_a].matched = true;
+                game.cards[idx_b].matched = true;
+                game.matched += 1;
+                game.flipped.clear();
+                game.consecutive_matches += 1;
+                if game.consecutive_matches > game.best_streak {
+                    game.best_streak = game.consecutive_matches;
+                }
+                let streak = game.consecutive_matches;
+                let matched = game.matched;
+                let total = game.total_pairs;
+                dom::fmt_text("[data-memory-pairs]", |buf| {
+                    let _ = write!(buf, "Pairs: {matched}/{total}");
+                });
+                let streak_bonus = match streak {
+                    3 => 1,
+                    4 => 2,
+                    s if s >= 5 => 3,
+                    _ => 0,
+                };
+                game.streak_bonus_hearts += streak_bonus;
+                match streak {
+                    1 => synth_audio::chime(),
+                    2 => synth_audio::sparkle(),
+                    3 => {
+                        synth_audio::sparkle();
+                        synth_audio::chime();
+                    }
+                    4 => synth_audio::magic_wand(),
+                    _ => synth_audio::rainbow_burst(),
+                }
+                update_streak_display(streak);
+                for_card_pair(idx_a, idx_b, |el| {
+                    let _ = el.class_list().add_1("memory-card--matched");
+                    /* Magical exploding merge animation! */
+                    let _ = el.class_list().add_1("memory-card--explode");
+                    spawn_flip_particles(el);
+                    if streak >= 3 {
+                        dom::with_buf(|buf| {
+                            let _ = write!(buf, "memory-card--streak-{}", streak.min(5));
+                            let _ = el.class_list().add_1(buf);
+                        });
+                    }
+                });
+                spawn_combo_explosion(idx_b, streak, streak_bonus);
+                if streak == 3 {
+                    confetti::burst_stars();
+                    crate::gpu_particles::burst(&crate::gpu_particles::BURST_STARS);
+                } else if streak >= 5 {
+                    confetti::burst_party();
+                    crate::gpu_particles::burst(&crate::gpu_particles::BURST_PARTY);
+                }
+                let was_easy = game.difficulty == Difficulty::Easy;
+                let win_data = if game.matched == game.total_pairs {
+                    game.active = false;
+                    Some((
+                        game.difficulty,
+                        game.moves,
+                        game.elapsed_s,
+                        game.best_streak,
+                        game.streak_bonus_hearts,
+                        game.state.clone(),
+                    ))
+                } else {
+                    None
+                };
+                drop(borrow);
+                if was_easy {
+                    reset_hint_timer();
+                }
+                if let Some((d, m, e, bs, sb, st)) = win_data {
+                    stop_timer();
+                    trigger_win_sequence(d, m, e, bs, sb, st);
+                }
+            } else {
+                game.locked = true;
+                let flip_a = game.flipped[0];
+                let flip_b = game.flipped[1];
+                game.flipped.clear();
+                let had_streak = game.consecutive_matches >= 2;
+                game.consecutive_matches = 0;
+                if had_streak {
+                    update_streak_display(0);
+                }
+                synth_audio::gentle();
+                for_card_pair(flip_a, flip_b, |el| {
+                    let _ = el.class_list().add_1("memory-card--miss");
+                });
+                let diff = game.difficulty;
+                drop(borrow);
+                dom::set_timeout_once(1000, move || {
+                    GAME.with(|g| {
+                        let mut borrow = g.borrow_mut();
+                        let Some(game) = borrow.as_mut() else { return };
+                        if flip_a < game.cards.len() {
+                            game.cards[flip_a].flipped = false;
+                        }
+                        if flip_b < game.cards.len() {
+                            game.cards[flip_b].flipped = false;
+                        }
+                        game.locked = false;
+                    });
+                    for_card_pair(flip_a, flip_b, |el| {
+                        let _ = el.class_list().remove_1("memory-card--flipped");
+                        let _ = el.class_list().remove_1("memory-card--miss");
+                    });
+                });
+                if diff == Difficulty::Easy {
+                    reset_hint_timer();
+                }
+            }
+        }
+    });
 }
 fn update_streak_display(streak: u32) {
     if let Some(el) = dom::query("[data-memory-streak]") {

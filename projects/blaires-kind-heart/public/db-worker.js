@@ -15,18 +15,34 @@ self.__BKH_RUNTIME_DIAGNOSTICS__?.install({
 
 let db = null;
 let backend = 'none';
+let cachedSqlite3 = null;
+let initInProgress = false;
+let initWaiters = [];  // request_ids waiting for concurrent Init to finish
 self.DB_WORKER_API_VERSION = 1;
 self.DB_WORKER_MIN_CLIENT_API_VERSION = 1;
 const DB_SCHEMA_VERSION = 1;
 
-// Phase 2.3: Prepared statement cache for hot-path queries
-// Key: SQL string, Value: compiled statement
-// Reduces query latency by 5-10ms per request
+// Prepared statement cache — reduces query latency by 5-10ms per request
 const STMT_CACHE = new Map();
 const STMT_CACHE_MAX = 128;
 
 // Pre-computed at module level — avoids regex on every initDb() call
 const IS_SAFARI = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+// Get or create cached prepared statement (FIFO eviction at capacity).
+function getOrPrepare(db, sql) {
+  if (!STMT_CACHE.has(sql)) {
+    if (STMT_CACHE.size >= STMT_CACHE_MAX) {
+      const [evictKey] = STMT_CACHE.keys();
+      if (evictKey) {
+        try { STMT_CACHE.get(evictKey)?.finalize(); } catch (_) {}
+        STMT_CACHE.delete(evictKey);
+      }
+    }
+    STMT_CACHE.set(sql, db.prepare(sql));
+  }
+  return STMT_CACHE.get(sql);
+}
 
 // ── Tier 1: OPFS (synchronous access handle VFS) ──
 async function tryOpfs(sqlite3) {
@@ -70,12 +86,16 @@ async function tryMemoryWithBlob(sqlite3) {
     const buffer = await file.arrayBuffer();
     if (buffer.byteLength > 0) {
       const bytes = new Uint8Array(buffer);
+      // SQLITE_DESERIALIZE_FREEONCLOSE (1) + SQLITE_DESERIALIZE_RESIZEABLE (2) = 3
+      // The WASM binding copies bytes to the WASM heap via sqlite3_malloc, so
+      // FREEONCLOSE safely frees it on close, and RESIZEABLE allows the DB to
+      // grow beyond the initial blob size (without this, INSERTs fail with
+      // SQLITE_FULL once the DB exceeds the original OPFS blob size).
       const rc = sqlite3.capi.sqlite3_deserialize(
-        memDb.pointer, 'main', bytes, bytes.length, bytes.length,
-        0 // SQLITE_DESERIALIZE_FREEONCLOSE is 0 for copy mode
+        memDb.pointer, 'main', bytes, bytes.length, bytes.length, 3
       );
-      if (rc === 0) {
-        // Restored from OPFS blob
+      if (rc !== 0) {
+        console.warn('[db-worker] sqlite3_deserialize failed (rc=' + rc + '), starting fresh');
       }
     }
   } catch (_) {
@@ -89,8 +109,7 @@ async function tryMemoryWithBlob(sqlite3) {
     } catch (_) { /* no OPFS at all */ }
   }
 
-  // Phase 3: Removed periodic export — rely on pagehide-triggered Export request only
-  // This reduces OPFS write churn while maintaining data safety (exports on navigation)
+  // Exports triggered only on pagehide (no periodic write churn)
   return memDb;
 }
 
@@ -426,6 +445,7 @@ async function initDb() {
   try {
     const { default: initSqlite } = await import('./sqlite/sqlite3.js');
     const sqlite3 = await initSqlite();
+    cachedSqlite3 = sqlite3;
 
     // Try backends in order of preference
     db = await tryOpfs(sqlite3);
@@ -474,16 +494,20 @@ async function initDb() {
     if (skillCheck[0] && skillCheck[0][0] === 0) {
       const skills = ['hug', 'nice-words', 'sharing', 'helping', 'love', 'unicorn'];
       const today = new Date().toISOString().split('T')[0];
-      db.exec('BEGIN');
-      for (const skill of skills) {
-        db.exec(
-          `INSERT INTO skill_mastery (skill_type, total_count, week_count, mastery_level, last_practiced, focus_priority)
-           VALUES (?, 0, 0, 0, ?, 50)`,
-          { bind: [skill, today] }
-        );
+      try {
+        db.exec('BEGIN');
+        for (const skill of skills) {
+          db.exec(
+            `INSERT INTO skill_mastery (skill_type, total_count, week_count, mastery_level, last_practiced, focus_priority)
+             VALUES (?, 0, 0, 0, ?, 50)`,
+            { bind: [skill, today] }
+          );
+        }
+        db.exec('COMMIT');
+      } catch (seedErr) {
+        try { db.exec('ROLLBACK'); } catch (_) {}
+        console.warn('[db-worker] skill_mastery seed failed:', seedErr);
       }
-      db.exec('COMMIT');
-      // Seeded skill_mastery
     }
 
     // Seed reflection_prompts if empty
@@ -520,16 +544,20 @@ async function initDb() {
         ['unicorn-2', 'unicorn', 'Was this a surprise kindness?', '🦄', JSON.stringify(['Yes, surprise! 🎉', 'Planned it 📝', 'Just happened 💫'])],
         ['unicorn-3', 'unicorn', 'How creative was your kindness?', '🦄', JSON.stringify(['Very creative! 🌈', 'Pretty creative ✨', 'Simple but special 💖'])]
       ];
-      db.exec('BEGIN');
-      for (const [id, cat, text, emoji, opts] of prompts) {
-        db.exec(
-          `INSERT INTO reflection_prompts (id, category, prompt_text, emoji, response_options)
-           VALUES (?, ?, ?, ?, ?)`,
-          { bind: [id, cat, text, emoji, opts] }
-        );
+      try {
+        db.exec('BEGIN');
+        for (const [id, cat, text, emoji, opts] of prompts) {
+          db.exec(
+            `INSERT INTO reflection_prompts (id, category, prompt_text, emoji, response_options)
+             VALUES (?, ?, ?, ?, ?)`,
+            { bind: [id, cat, text, emoji, opts] }
+          );
+        }
+        db.exec('COMMIT');
+      } catch (seedErr) {
+        try { db.exec('ROLLBACK'); } catch (_) {}
+        console.warn('[db-worker] reflection_prompts seed failed:', seedErr);
       }
-      db.exec('COMMIT');
-      // Seeded reflection_prompts
     }
 
     writeSchemaVersion(db, DB_SCHEMA_VERSION);
@@ -537,7 +565,7 @@ async function initDb() {
     // DB ready
     return true;
   } catch (err) {
-    console.error('[db-worker] Init failed:', err);
+    console.warn('[db-worker] Init failed:', err);
     return false;
   }
 }
@@ -558,33 +586,49 @@ self.onmessage = async function(event) {
   // Handle Init — serde(tag = "type") sends { type: "Init" } or wrapped { request: { type: "Init" } }
   const reqType = request?.type || (typeof request === 'string' ? request : null);
   if (reqType === 'Init') {
-    const ok = await initDb();
-    if (ok) {
-      self.postMessage({
-        type: 'Ok', request_id: request_id || 0
-      });
-    } else {
-      self.postMessage({
-        type: 'Error',
-        request_id: request_id || 0,
-        message: 'Database initialization failed - all storage backends unavailable'
-      });
+    // Guard against concurrent Init — wait for first to finish, then reply
+    if (initInProgress) {
+      initWaiters.push(request_id || 0);
+      return;
     }
+    initInProgress = true;
+    let ok;
+    try {
+      ok = await initDb();
+    } finally {
+      initInProgress = false;
+    }
+    const resultMsg = ok
+      ? { type: 'Ok', request_id: request_id || 0 }
+      : { type: 'Error', request_id: request_id || 0,
+          message: 'Database initialization failed - all storage backends unavailable' };
+    self.postMessage(resultMsg);
+    // Flush any Init requests that arrived while we were initializing
+    for (const waiterId of initWaiters) {
+      self.postMessage({ ...resultMsg, request_id: waiterId });
+    }
+    initWaiters = [];
     return;
   }
 
   // Export request (for manual flush before tab close)
   if (reqType === 'Export') {
-    if (backend === 'memory+blob' && db) {
-      const { default: initSqlite } = await import('./sqlite/sqlite3.js');
-      const sqlite3 = await initSqlite();
-      await exportToBlob(sqlite3, db);
+    if (backend === 'memory+blob' && db && cachedSqlite3) {
+      await exportToBlob(cachedSqlite3, db);
     }
     self.postMessage({ type: 'Ok', request_id: request_id || 0 });
     return;
   }
 
   if (reqType === "Restore") {
+    if (!db) {
+      self.postMessage({
+        type: "Error",
+        request_id: request_id || 0,
+        message: "Restore requires initialized database"
+      });
+      return;
+    }
     const snapshotJson = request?.snapshot_json;
     if (typeof snapshotJson !== "string" || snapshotJson.trim().length === 0) {
       self.postMessage({
@@ -615,24 +659,6 @@ self.onmessage = async function(event) {
     return;
   }
 
-  // Phase 2.3: Get or create cached prepared statement
-  function getOrPrepare(db, sql) {
-    if (!STMT_CACHE.has(sql)) {
-      if (STMT_CACHE.size >= STMT_CACHE_MAX) {
-        const [evictKey] = STMT_CACHE.keys();
-        if (evictKey) {
-          const evictStmt = STMT_CACHE.get(evictKey);
-          try {
-            evictStmt?.finalize();
-          } catch (_) {}
-          STMT_CACHE.delete(evictKey);
-        }
-      }
-      STMT_CACHE.set(sql, db.prepare(sql));
-    }
-    return STMT_CACHE.get(sql);
-  }
-
   // serde(tag = "type") sends: { type: "Exec", sql: "...", params: [...] }
   // The wrapper send_request puts it in: { request: { type: "Exec", ... }, request_id: N }
   // We already extracted reqType above. Now get sql/params from request directly.
@@ -649,7 +675,7 @@ self.onmessage = async function(event) {
       try {
         stmt.step();
       } finally {
-        try { stmt.reset(); } catch (_) {}
+        try { stmt.reset(); stmt.clearBindings(); } catch (_) {}
       }
       self.postMessage({ type: 'Ok', request_id });
       return;
@@ -676,7 +702,7 @@ self.onmessage = async function(event) {
           rows.push(row);
         }
       } finally {
-        try { stmt.reset(); } catch (_) {}
+        try { stmt.reset(); stmt.clearBindings(); } catch (_) {}
       }
       self.postMessage({ type: 'Rows', request_id, data: rows });
       return;
@@ -695,12 +721,12 @@ self.onmessage = async function(event) {
       }
 
       // Execute all statements in a transaction
-      db.run('BEGIN TRANSACTION');
+      db.exec('BEGIN TRANSACTION');
       try {
-        for (const [sql, params] of statements) {
+        for (const [sql, batchParams] of statements) {
           const stmt = getOrPrepare(db, sql);
-          if (params && params.length > 0) {
-            stmt.bind(params);
+          if (batchParams && batchParams.length > 0) {
+            stmt.bind(batchParams);
           }
           try {
             stmt.step();
@@ -708,14 +734,14 @@ self.onmessage = async function(event) {
             try { stmt.reset(); } catch (_) {}
           }
         }
-        db.run('COMMIT');
+        db.exec('COMMIT');
         self.postMessage({ type: 'Ok', request_id });
       } catch (err) {
-        db.run('ROLLBACK');
+        db.exec('ROLLBACK');
         self.postMessage({
           type: 'Error',
           request_id,
-          message: `Batch failed: ${err.message}`
+          message: `Batch failed: ${err instanceof Error ? err.message : String(err)}`
         });
       }
       return;

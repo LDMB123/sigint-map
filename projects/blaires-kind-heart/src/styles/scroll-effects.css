@@ -3,30 +3,6 @@
    Scroll-driven animations API with view() and scroll() timelines
    ═══════════════════════════════════════════════════════════════ */
 
-/* ====== SCROLL REVEAL — cards fade in as they enter viewport ====== */
-/* NOTE: .home-btn excluded — card-entrance handles its entrance; scroll-reveal
-   would start at opacity:0 and might not trigger if all buttons are in viewport
-   at load (iPad mini 6 with short home grid fits entirely on screen). */
-/* NOTE: .kind-btn and .quest-card excluded — their panel-entry animations
-   (kind-card-in, quest-entrance) already handle entrance choreography.
-   scroll-reveal's animation shorthand would overwrite those animations,
-   and elements already in-viewport at load would stick at opacity:0. */
-
-@keyframes scroll-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(40px) scale(0.88) rotate(-1.5deg);
-  }
-  70% {
-    opacity: 1;
-    transform: translateY(-4px) scale(1.01) rotate(0.3deg);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1) rotate(0deg);
-  }
-}
-
 /* ====== SCROLL PARALLAX — background moves slower than content ====== */
 .home-scene::before,
 .home-scene::after {
@@ -141,18 +117,6 @@
     to {
       transform: scaleX(1);
     }
-  }
-}
-
-/* ====== FALLBACK — browsers without scroll-driven animations (Chrome preview) ====== */
-/* Only reset visibility; preserve non-scroll animations
-   (quest-entrance, kind-card-in) that handle their own entrance choreography.
-   DO NOT set animation:none — it kills panel-entry animations. */
-@supports not (animation-timeline: view()) {
-  .kind-btn,
-  .quest-card {
-    opacity: 1;
-    transform: none;
   }
 }
 
