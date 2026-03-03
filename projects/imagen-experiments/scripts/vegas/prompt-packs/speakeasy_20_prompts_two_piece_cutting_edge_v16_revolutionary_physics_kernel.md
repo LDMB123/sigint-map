@@ -10,6 +10,8 @@ Rework all prompts for a major realism upgrade: stronger identity lock, denser m
 4. Two-piece outfit topology is mandatory (visible top/skirt separation).
 5. Use full-body framing with believable anatomy and contact physics.
 6. Reject AI artifacts: wax skin, texture tiling, detached shadows, broken reflections.
+7. Hosiery length lock: only true thigh-high stockings (upper band high on upper thigh, never under-knee); top band must sit high on upper thigh, never at/near knee.
+8. Hard reject any under-knee or just-over-knee stocking result.
 
 ## Prompt 01 - Emerald Booth Torque
 
@@ -27,7 +29,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Replace outfit with an emerald liquid-satin asymmetric crop top (architectural cutouts) and matching high-slit bias skirt.
-- Add black sheer thigh-high stockings and sharp patent stilettos.
+- Add black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and sharp patent stilettos.
 - Top and skirt must stay clearly separated at the waistline.
 
 REALISM MICRODETAIL:
@@ -58,7 +60,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Emerald structured crop top with controlled cutouts + matching high-slit skirt.
-- Black sheer thigh-high stockings and patent stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and patent stilettos.
 - Maintain obvious top/skirt separation and stable garment edges.
 
 REALISM MICRODETAIL:
@@ -87,7 +89,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Black velvet angular crop top with corseted side structure + deep burgundy satin slit skirt.
-- Black sheer thigh-high stockings, glossy pointed stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee), glossy pointed stilettos.
 
 REALISM MICRODETAIL:
 - Finger pressure at piano edge, nail-bed specularity, pore-level skin texture.
@@ -116,7 +118,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Black structured crop top + burgundy slit skirt with moderated openings.
-- Black sheer thigh-high stockings and pointed stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and pointed stilettos.
 
 REALISM MICRODETAIL:
 - Maintain pores, finger contact deformation, seam continuity, realistic satin roughness transitions.
@@ -144,7 +146,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Jet-black sequin cutout crop top + crimson satin slit skirt.
-- Black sheer thigh-high stockings and black stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and black stilettos.
 
 REALISM MICRODETAIL:
 - Pores and fine facial texture, chip-edge occlusion shadows, stocking denier transitions.
@@ -173,7 +175,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Black sequin crop top + controlled crimson slit skirt.
-- Black sheer thigh-high stockings and stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and stilettos.
 
 REALISM MICRODETAIL:
 - Maintain pore detail, chip contact realism, seam continuity, and believable stocking translucency.
@@ -201,7 +203,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Graphite metallic asym crop top + smoke-silver high-slit skirt.
-- Black sheer thigh-high stockings and pointed patent heels.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and pointed patent heels.
 
 REALISM MICRODETAIL:
 - Pore detail, natural skin sheen, fiber directionality in metallic fabric.
@@ -230,7 +232,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Graphite crop top and moderated slit skirt with reinforced edge stability.
-- Black sheer thigh-high stockings, pointed heels.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee), pointed heels.
 
 REALISM MICRODETAIL:
 - Keep pore texture, seam continuity, realistic hosiery gradients, and coherent floor-contact shadowing.
@@ -258,7 +260,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Gunmetal latex-look crop top with structured panel seams + black satin slit skirt.
-- Sheer black thigh-high stockings and mirrored metallic stilettos.
+- sheer black true thigh-high stockings (upper band high on upper thigh, never under-knee) and mirrored metallic stilettos.
 
 REALISM MICRODETAIL:
 - Skin pores and subtle sweat sheen, accurate seam tension, realistic specular width changes on mixed materials.
@@ -287,7 +289,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Gunmetal structured crop top + black controlled-slit skirt.
-- Sheer thigh-high stockings and metallic pointed heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and metallic pointed heels.
 
 REALISM MICRODETAIL:
 - Preserve pores, grip-contact compression, seam fidelity, and realistic material reflectance.
@@ -315,7 +317,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Black mesh-panel crop top with satin binding + silver charcoal slit skirt.
-- Black sheer thigh-high stockings and chrome stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and chrome stilettos.
 
 REALISM MICRODETAIL:
 - Accurate skin microtexture, subtle makeup texture, seam-thread continuity.
@@ -344,7 +346,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Mesh-accent crop top + silver charcoal slit skirt with stabilized cutlines.
-- Sheer thigh-high stockings and chrome heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and chrome heels.
 
 REALISM MICRODETAIL:
 - Maintain pores, bar-contact pressure marks, seam continuity, and coherent glass reflections.
@@ -372,7 +374,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Black coated-leather halter crop top + matching slit pencil skirt.
-- Black sheer thigh-high stockings and sharp black pumps.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and sharp black pumps.
 
 REALISM MICRODETAIL:
 - Wet-surface micro-reflections, realistic skin moisture highlights, strand-level damp hair clumping.
@@ -401,7 +403,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Black coated crop top + controlled-slit pencil skirt.
-- Sheer thigh-high stockings and black pumps.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and black pumps.
 
 REALISM MICRODETAIL:
 - Preserve wet-ground reflections, hair dampness detail, seam continuity, and realistic stocking specularity.
@@ -429,7 +431,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Deep burgundy structured crop top with lace paneling + matching satin slit skirt.
-- Black sheer thigh-high stockings and burgundy pointed stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and burgundy pointed stilettos.
 
 REALISM MICRODETAIL:
 - Pore texture, natural lip microtexture, lace thread detail, stitch continuity.
@@ -458,7 +460,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Burgundy crop top + matching slit skirt with moderated cut depth.
-- Sheer thigh-high stockings and pointed heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and pointed heels.
 
 REALISM MICRODETAIL:
 - Preserve pores, lace/thread continuity, and believable cabinet reflections.
@@ -486,7 +488,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Midnight plum velvet corset-style crop top + black satin slit skirt.
-- Sheer black thigh-high stockings and plum stilettos.
+- sheer black true thigh-high stockings (upper band high on upper thigh, never under-knee) and plum stilettos.
 
 REALISM MICRODETAIL:
 - Pore texture and subtle facial specularity, velvet pile directionality, seam-thread detail.
@@ -515,7 +517,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Plum structured crop top + black slit skirt with reinforced edge control.
-- Sheer thigh-high stockings and pointed heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and pointed heels.
 
 REALISM MICRODETAIL:
 - Maintain pores, velvet texture, seam continuity, and physically plausible smoke layering.
@@ -543,7 +545,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Champagne metallic sleeveless crop top + matching high-slit skirt.
-- Black sheer thigh-high stockings and metallic pointed heels.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and metallic pointed heels.
 
 REALISM MICRODETAIL:
 - Wind-affected hair strand trajectories, pore detail, micro-folds from crosswind tension.
@@ -572,7 +574,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Metallic crop top + controlled high-slit skirt.
-- Sheer thigh-high stockings and metallic heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and metallic heels.
 
 REALISM MICRODETAIL:
 - Preserve hair-flyaway realism, seam fidelity, and coherent skyline reflections.
@@ -600,7 +602,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Black satin lapel crop top + matching asym slit skirt.
-- Black sheer thigh-high stockings and black pointed stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and black pointed stilettos.
 
 REALISM MICRODETAIL:
 - Pore texture, subtle makeup texture, seam and lapel edge micro-relief.
@@ -629,7 +631,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Black lapel crop top + controlled-slit skirt.
-- Sheer thigh-high stockings and pointed heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and pointed heels.
 
 REALISM MICRODETAIL:
 - Preserve pores, lapel seam continuity, and instrument reflection coherence.
@@ -657,7 +659,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Silver metallic wrap crop top + matching slit skirt.
-- Black sheer thigh-high stockings and silver stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and silver stilettos.
 
 REALISM MICRODETAIL:
 - Skin pores, realistic metallic roughness, seam relief, stocking denier transitions.
@@ -686,7 +688,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Silver wrap crop top + moderated slit skirt.
-- Sheer thigh-high stockings and silver heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and silver heels.
 
 REALISM MICRODETAIL:
 - Preserve pores, seam continuity, and coherent mirror multipath reflections.
@@ -714,7 +716,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Emerald structured one-shoulder crop top + matching slit skirt.
-- Black sheer thigh-high stockings and black patent stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and black patent stilettos.
 
 REALISM MICRODETAIL:
 - Pore detail, hair strand irregularity, seam tension near waist rotation.
@@ -743,7 +745,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Emerald one-shoulder crop top + controlled slit skirt.
-- Sheer thigh-high stockings and patent heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and patent heels.
 
 REALISM MICRODETAIL:
 - Preserve pores, seam continuity, and realistic step-contact deformation.
@@ -771,7 +773,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Black liquid-leather crop top with high-neck structure + black slit skirt.
-- Sheer black thigh-high stockings and black stilettos.
+- sheer black true thigh-high stockings (upper band high on upper thigh, never under-knee) and black stilettos.
 
 REALISM MICRODETAIL:
 - Skin pore detail, realistic metal roughness gradients, seam relief at waist, accurate contact shadows.
@@ -800,7 +802,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Structured black crop top + controlled slit skirt.
-- Sheer thigh-high stockings and black heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and black heels.
 
 REALISM MICRODETAIL:
 - Preserve pores, seam continuity, realistic metal reflections, and clean contact shadows.
@@ -828,7 +830,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Black crystal-studded bustier crop top + black asym slit skirt.
-- Black sheer thigh-high stockings and crystal heels.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and crystal heels.
 
 REALISM MICRODETAIL:
 - Pore detail, crystal highlight sparkle consistency, seam-thread continuity, realistic window raindrop bokeh.
@@ -857,7 +859,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Crystal-accent crop top + controlled asym slit skirt.
-- Sheer thigh-high stockings and crystal-toned heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and crystal-toned heels.
 
 REALISM MICRODETAIL:
 - Preserve pores, crystal highlight coherence, seam continuity, and realistic rain-window depth.
@@ -885,7 +887,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Deep violet velvet lace-up crop top + matching slit skirt.
-- Black sheer thigh-high stockings and violet heels.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and violet heels.
 
 REALISM MICRODETAIL:
 - Skin pore detail, velvet fiber directionality, lace eyelet detail, natural hair flyaways.
@@ -914,7 +916,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Violet velvet crop top + controlled slit skirt.
-- Sheer thigh-high stockings and pointed heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and pointed heels.
 
 REALISM MICRODETAIL:
 - Preserve pores, fiber detail, lace continuity, and believable haze depth separation.
@@ -942,7 +944,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Black satin structured crop top + silver-seam slit skirt.
-- Black sheer thigh-high stockings and black stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and black stilettos.
 
 REALISM MICRODETAIL:
 - Pore texture, hand-on-rail compression, seam stress detail, realistic felt microtexture.
@@ -971,7 +973,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Black structured crop top + silver-accent controlled-slit skirt.
-- Sheer thigh-high stockings and pointed heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and pointed heels.
 
 REALISM MICRODETAIL:
 - Preserve pores, rail-contact deformation, seam continuity, and coherent felt detail.
@@ -999,7 +1001,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Charcoal structured crop top with sharp lapel lines + black satin slit skirt.
-- Black sheer thigh-high stockings and black stilettos.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and black stilettos.
 
 REALISM MICRODETAIL:
 - Pores, subtle skin roughness variation, stitch lines, realistic satin roughness gradients.
@@ -1028,7 +1030,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Charcoal structured crop top + controlled black slit skirt.
-- Sheer thigh-high stockings and pointed heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and pointed heels.
 
 REALISM MICRODETAIL:
 - Preserve pores, seam continuity, hand-contact deformation, and coherent wood-light interaction.
@@ -1056,7 +1058,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Silver-black sequined corset crop top + matching slit skirt.
-- Black sheer thigh-high stockings and silver pointed heels.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and silver pointed heels.
 
 REALISM MICRODETAIL:
 - Pores, sequined micro-specular behavior, seam continuity, realistic skin-fabric contact transitions.
@@ -1085,7 +1087,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Silver-black crop top + controlled slit skirt.
-- Sheer thigh-high stockings and silver heels.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and silver heels.
 
 REALISM MICRODETAIL:
 - Preserve pores, sequin texture, seam integrity, and coherent glass reflections.
@@ -1113,7 +1115,7 @@ SCENE ANCHORS:
 
 ATTIRE UPGRADE (EDGY TWO-PIECE):
 - Black liquid-satin high-neck crop top + matching slit pencil skirt.
-- Black sheer thigh-high stockings and black pointed pumps.
+- black sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and black pointed pumps.
 
 REALISM MICRODETAIL:
 - Pore texture, natural facial asymmetry, hair strand motion, seam pressure lines, stocking denier rolloff.
@@ -1142,7 +1144,7 @@ SCENE ANCHORS:
 
 SAFE ATTIRE (EDGY/STABLE TWO-PIECE):
 - Black structured crop top + controlled-slit pencil skirt.
-- Sheer thigh-high stockings and pointed pumps.
+- sheer true thigh-high stockings (upper band high on upper thigh, never under-knee) and pointed pumps.
 
 REALISM MICRODETAIL:
 - Preserve pores, seam continuity, realistic wet-ground reflections, and clear contact-shadow logic.

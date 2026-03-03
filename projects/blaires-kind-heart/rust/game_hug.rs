@@ -943,33 +943,46 @@ fn on_star_catch(star: Element, state: Rc<RefCell<AppState>>) {
     });
 }
 fn on_hold_start() {
-    GAME.with(|g| {
-        let mut borrow = g.borrow_mut();
-        let Some(game) = borrow.as_mut() else { return };
+    let hold_stage = GAME.with(|g| {
+        let Ok(mut borrow) = g.try_borrow_mut() else {
+            return None;
+        };
+        let game = borrow.as_mut()?;
         if !game.active {
-            return;
+            return None;
         }
         let stage = game.current_stage();
-        if stage.is_hold() {
-            game.hold_start = Some(utils::now_epoch_ms());
-            start_hold_meter(stage);
+        if !stage.is_hold() {
+            return None;
         }
+        game.hold_start = Some(utils::now_epoch_ms());
+        Some(stage)
     });
+    if let Some(stage) = hold_stage {
+        start_hold_meter(stage);
+    }
 }
 fn on_hold_end() {
-    GAME.with(|g| {
-        let mut borrow = g.borrow_mut();
-        let Some(game) = borrow.as_mut() else { return };
+    let was_active = GAME.with(|g| {
+        let Ok(mut borrow) = g.try_borrow_mut() else {
+            return false;
+        };
+        let Some(game) = borrow.as_mut() else {
+            return false;
+        };
         if !game.active {
-            return;
+            return false;
         }
         game.hold_start = None;
+        game.motion_points.clear();
+        true
+    });
+    if was_active {
         if let Some(meter) = dom::query("[data-hug-meter]") {
             dom::set_attr(&meter, "style", "--hug-meter-scale: 0");
             let _ = meter.class_list().remove_1("hug-meter-fill--almost");
         }
-        game.motion_points.clear();
-    });
+    }
 }
 fn on_pointer_move(pe: PointerEvent, state: Rc<RefCell<AppState>>) {
     if pe.buttons() == 0 {
@@ -1161,7 +1174,8 @@ fn start_hold_meter(stage: HugStage) {
         let (should_stop, completed) = result;
         if should_stop {
             GAME.with(|g| {
-                if let Some(game) = g.borrow_mut().as_mut() {
+                if let Ok(mut borrow) = g.try_borrow_mut() {
+                    let Some(game) = borrow.as_mut() else { return };
                     if let Some(id) = game.hold_interval_id.take() {
                         dom::window().clear_interval_with_handle(id);
                     }
@@ -1171,7 +1185,9 @@ fn start_hold_meter(stage: HugStage) {
         }
         if completed {
             GAME.with(|g| {
-                let mut borrow = g.borrow_mut();
+                let Ok(mut borrow) = g.try_borrow_mut() else {
+                    return;
+                };
                 let Some(game) = borrow.as_mut() else { return };
                 game.hold_start = None;
                 let state = game.state.clone();
@@ -1185,7 +1201,8 @@ fn start_hold_meter(stage: HugStage) {
     dom::pin_closure_to_arena("__hug_hold_closure", cb.as_ref().unchecked_ref());
     cb.forget();
     GAME.with(|g| {
-        if let Some(game) = g.borrow_mut().as_mut() {
+        if let Ok(mut borrow) = g.try_borrow_mut() {
+            let Some(game) = borrow.as_mut() else { return };
             game.hold_interval_id = Some(interval_id);
         }
     });
