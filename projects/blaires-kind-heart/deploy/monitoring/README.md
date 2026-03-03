@@ -1,6 +1,6 @@
 # Monitoring Manifests
 
-Last updated: 2026-02-14
+Last updated: 2026-03-03
 
 These manifests provide baseline monitoring scaffolds for environments running Prometheus Operator.
 
@@ -16,3 +16,6 @@ kubectl apply -k deploy/monitoring
 
 ## Environment Notes
 Adjust namespaces and selector labels if your Prometheus installation uses different conventions.
+
+## Navigation
+- Deploy docs hub: `deploy/README.md`

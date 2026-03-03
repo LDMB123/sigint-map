@@ -185,7 +185,7 @@ struct CatcherState {
     last_catch_ms: f64,
     active: bool,
     raf_id: Option<i32>,
-    spawn_interval_id: Option<i32>,
+    spawn_accumulator_ms: f64,
     state: Rc<RefCell<AppState>>,
     abort: browser_apis::AbortHandle,
     power_ups: PowerUpState,
@@ -356,7 +356,7 @@ fn start_with_theme(state: Rc<RefCell<AppState>>, theme: CatcherTheme) {
             last_catch_ms: 0.0,
             active: false,
             raf_id: None,
-            spawn_interval_id: None,
+            spawn_accumulator_ms: 0.0,
             state: state.clone(),
             abort,
             power_ups: PowerUpState::default(),
@@ -374,6 +374,7 @@ fn begin_round(signal: &web_sys::AbortSignal) {
         if let Some(game) = g.borrow_mut().as_mut() {
             game.active = true;
             game.start_time_ms = now;
+            game.spawn_accumulator_ms = 0.0;
         }
     });
     bind_catch_clicks(signal);
@@ -583,33 +584,7 @@ const fn combo_multiplier(chain: u32) -> u32 {
     }
 }
 fn run_game_loop() {
-    let spawn_interval = Closure::<dyn FnMut()>::new(move || {
-        GAME.with(|g| {
-            let borrow = g.borrow();
-            let Some(game) = borrow.as_ref() else { return };
-            if !game.active {
-                return;
-            }
-            spawn_falling_item(game.level);
-        });
-    });
-    let spawn_id = dom::window()
-        .set_interval_with_callback_and_timeout_and_arguments_0(
-            spawn_interval.as_ref().unchecked_ref(),
-            theme::CATCHER_SPAWN_INTERVAL_MS,
-        )
-        .unwrap_or(0);
-    dom::pin_closure_to_arena(
-        "__catcher_spawn_closure",
-        spawn_interval.as_ref().unchecked_ref(),
-    );
-    spawn_interval.forget();
     start_gravity_loop();
-    GAME.with(|g| {
-        if let Some(game) = g.borrow_mut().as_mut() {
-            game.spawn_interval_id = Some(spawn_id);
-        }
-    });
 }
 fn build_catcher_item(
     area: &Element,
@@ -782,6 +757,21 @@ fn start_gravity_loop() {
         if !GAME.with(|g| g.borrow().as_ref().is_some_and(|game| game.active)) {
             return; // loop stopped; cleanup() cancelled the RAF
         }
+        if !browser_apis::is_document_visible() {
+            // Prevent hidden-tab delta spikes and keep physics/spawn suspended.
+            last_ts_inner.set(0.0);
+            let win = dom::window();
+            if let Some(cb) = closure_for_raf.borrow().as_ref() {
+                if let Ok(id) = win.request_animation_frame(cb.as_ref().unchecked_ref()) {
+                    GAME.with(|g| {
+                        if let Some(game) = g.borrow_mut().as_mut() {
+                            game.raf_id = Some(id);
+                        }
+                    });
+                }
+            }
+            return;
+        }
 
         let prev_ts = last_ts_inner.get();
         let delta_ms = if prev_ts == 0.0 {
@@ -791,6 +781,23 @@ fn start_gravity_loop() {
         };
         last_ts_inner.set(timestamp);
 
+        let (spawn_count, spawn_level) = GAME.with(|g| {
+            let mut borrow = g.borrow_mut();
+            let Some(game) = borrow.as_mut() else {
+                return (0usize, 1u32);
+            };
+            let mut spawn_count = 0usize;
+            let spawn_interval_ms = f64::from(theme::CATCHER_SPAWN_INTERVAL_MS);
+            game.spawn_accumulator_ms += delta_ms;
+            while game.spawn_accumulator_ms >= spawn_interval_ms {
+                game.spawn_accumulator_ms -= spawn_interval_ms;
+                spawn_count += 1;
+            }
+            (spawn_count, game.level)
+        });
+        for _ in 0..spawn_count {
+            spawn_falling_item(spawn_level);
+        }
         apply_gravity(delta_ms);
 
         // Schedule next frame
@@ -938,13 +945,6 @@ fn end_round() {
     }) else {
         return;
     };
-    GAME.with(|g| {
-        if let Some(game) = g.borrow_mut().as_mut() {
-            if let Some(id) = game.spawn_interval_id.take() {
-                dom::window().clear_interval_with_handle(id);
-            }
-        }
-    });
     if let Some(area) = dom::query("[data-catcher-area]") {
         dom::safe_set_inner_html(&area, "");
     }
@@ -1174,9 +1174,6 @@ pub fn cleanup() {
         if let Some(game) = g.borrow_mut().as_mut() {
             game.active = false;
             let window = dom::window();
-            if let Some(id) = game.spawn_interval_id.take() {
-                window.clear_interval_with_handle(id);
-            }
             if let Some(id) = game.raf_id.take() {
                 window.cancel_animation_frame(id).ok();
             }

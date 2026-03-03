@@ -15,7 +15,11 @@ npx playwright install chromium webkit
 npm run qa:pwa-contract
 npm run qa:runtime
 npm run qa:db-contract
+npm run test:e2e:webkit
 npm run test:e2e:all
+
+# Fast compile safety check for wasm target
+cargo check --target wasm32-unknown-unknown
 
 # WASM unit tests (runs in wasm-bindgen test runner)
 cargo test --target wasm32-unknown-unknown
@@ -35,6 +39,8 @@ npm run build:verify:release
 - Service worker behavior and offline navigation.
 - Visual regressions on key panels (re-run after CSS changes; snapshots updated 2026-02-28).
 - WASM loader and init path (`wasm-init.js`) after bindgen target or CSP/Trusted Types changes.
+- iPad mini 6 particle path behavior (sparkle/rotation-disabled low-power mode still renders confetti bursts correctly).
+- Hidden-tab power behavior (Memory/Hug/Catcher state should not advance while document is hidden).
 
 ## Minimum Release Evidence
 1. Latest PASS outputs in `docs/STATUS_LEDGER.md`.

@@ -54,3 +54,11 @@ If issue persists after gate checks:
 - `This document requires 'TrustedScriptURL' assignment`
   - Cause: dynamic `script.src` assignment under Trusted Types CSP.
   - Current fix: static script include in `index.html` for bindgen JS.
+
+## Known Apple-Silicon/iPad Runtime Signatures
+- Hidden-tab timer drift in games (scores/time jumps after returning to tab)
+  - Cause: timer/RAF callbacks continue to accumulate when document hidden.
+  - Current fix: use `browser_apis::is_document_visible()` guard in Memory/Hug interval callbacks and Catcher RAF loop.
+- Confetti/GPU path jank on iPad mini profile
+  - Cause: high per-particle trig/sparkle cost and full-resolution render load.
+  - Current fix: iPad profile sets lower GPU canvas scale and low-power particle uniforms (`sparkle_strength=0.0`, `rotation_enabled=0.0`).

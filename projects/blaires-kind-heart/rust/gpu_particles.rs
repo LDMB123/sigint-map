@@ -7,6 +7,8 @@ const FLOATS_PER_PARTICLE: usize = 8;
 const MAX_PARTICLES: usize = 512;
 const PARTICLE_WORKGROUP_SIZE: u32 = 256;
 const PARTICLE_BUFFER_SIZE: usize = MAX_PARTICLES * FLOATS_PER_PARTICLE * 4;
+const PARTICLE_UNIFORM_FLOATS: usize = 12;
+const PARTICLE_UNIFORM_BUFFER_SIZE: f64 = (PARTICLE_UNIFORM_FLOATS * 4) as f64;
 const IPAD_MINI_PARTICLE_SCALE: f32 = 0.75;
 const IPAD_MINI_PARTICLE_FRAME_MS: f64 = 33.0;
 pub struct BurstConfig {
@@ -147,7 +149,7 @@ fn create_pipeline(state: &gpu::GpuState) -> Option<ParticlePipeline> {
     let particle_buffer = device.create_buffer(&particle_desc);
 
     let uniform_desc = bindings::GpuBufferDescriptor::new(
-        32.0,
+        PARTICLE_UNIFORM_BUFFER_SIZE,
         bindings::gpu_buffer_usage::UNIFORM | bindings::gpu_buffer_usage::COPY_DST,
     );
     uniform_desc.set_label("uniforms");
@@ -412,6 +414,11 @@ fn render_frame(dt: f32, gravity: f32, particle_count: u32, elapsed: f32) {
             return;
         };
         gpu::with_gpu(|state| {
+            let (sparkle_strength, rotation_enabled) = if gpu::is_ipad_mini_6_profile() {
+                (0.0f32, 0.0f32)
+            } else {
+                (1.0f32, 1.0f32)
+            };
             let canvas_w = state.canvas.width() as f32;
             let canvas_h = state.canvas.height() as f32;
             let uniforms = [
@@ -421,8 +428,12 @@ fn render_frame(dt: f32, gravity: f32, particle_count: u32, elapsed: f32) {
                 particle_count as f32,
                 canvas_w,
                 canvas_h,
+                sparkle_strength,
+                rotation_enabled,
                 0.0f32,
-                0.0,
+                0.0f32,
+                0.0f32,
+                0.0f32,
             ];
             write_buffer_from_f32(&state.queue, &pipeline.uniform_buffer, &uniforms);
 

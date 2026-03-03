@@ -1,6 +1,6 @@
 # PWA Deployment Headers
 
-Last updated: 2026-02-14
+Last updated: 2026-03-03
 
 This app requires cross-origin isolation and update-safe caching behavior in production.
 
@@ -28,3 +28,7 @@ For versioned/static assets (`.wasm`, hashed JS/CSS/images):
 - `.js` -> `application/javascript`
 - `.webmanifest` -> `application/manifest+json`
 - `.wasm` -> `application/wasm`
+
+## Navigation
+- Deployment docs index: `docs/deployment/README.md`
+- Infrastructure deploy hub: `deploy/README.md`

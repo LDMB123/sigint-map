@@ -8,9 +8,16 @@ Target platform: iPad mini 6 (A15, 4GB RAM), iPadOS 26.2, Safari 26.2.
 - Fast takeover runbook: `docs/HANDOFF.md`
 - QA gate results and work history: `docs/STATUS_LEDGER.md`
 - Full documentation map: `docs/INDEX.md`
+- Workspace markdown map: `docs/WORKSPACE_DOCS_MAP.md`
 
 ## Current Standing (verified on 2026-03-03)
+- Final deep Apple-Silicon pass applied:
+  - iPad mini 6 low-power GPU particle path (shader sparkle/rotation guards + iPad profile defaults)
+  - Catcher spawn scheduling moved fully to RAF accumulator (interval removed)
+  - Visibility-aware timer guards in Memory/Hug/Catcher loops
 - PWA contract check: PASS (`npm run qa:pwa-contract`)
+- WebKit smoke: PASS (`npm run test:e2e:webkit`)
+- Rust wasm32 compile gate: PASS (`cargo check --target wasm32-unknown-unknown`)
 - Runtime diagnostics check: PASS (`npm run qa:runtime`)
 - DB contract check: PASS (`npm run qa:db-contract`)
 - WASM tests (browser runner): PASS (`cargo test --target wasm32-unknown-unknown`, `2 passed`)
@@ -20,7 +27,7 @@ Target platform: iPad mini 6 (A15, 4GB RAM), iPadOS 26.2, Safari 26.2.
 - Lighthouse CI: PASS (`npm run lighthouse:ci`)
 - Docs link gate: PASS (`npm run qa:docs-links`)
 - Rust warning drift gate: PASS (`npm run qa:rust-warning-drift`, baseline=`5`)
-- Docs token budget check: PASS (`npm run qa:docs-budget`, `active_est_tokens=8730`)
+- Docs token budget check: PASS (`npm run qa:docs-budget`, `active_est_tokens=10923`)
 - Physical iPad mini 6 (iPadOS 26.2 / Safari 26.2) regression still pending before final deploy
 
 ## Quick Commands
@@ -42,7 +49,9 @@ npm run qa:pwa-contract
 npm run qa:runtime
 npm run qa:db-contract
 cargo test --target wasm32-unknown-unknown
+cargo check --target wasm32-unknown-unknown
 npm run build:verify:release
+npm run test:e2e:webkit
 
 # Full E2E gate
 npm run test:e2e:all

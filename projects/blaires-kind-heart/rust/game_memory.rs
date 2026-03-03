@@ -700,6 +700,9 @@ fn start_timer() {
         return;
     }
     let cb = Closure::<dyn FnMut()>::new(move || {
+        if !browser_apis::is_document_visible() {
+            return;
+        }
         GAME.with(|g| {
             let mut borrow = g.borrow_mut();
             let Some(game) = borrow.as_mut() else { return };

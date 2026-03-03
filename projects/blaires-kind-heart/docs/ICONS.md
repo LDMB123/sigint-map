@@ -1,6 +1,6 @@
 # Icons (Operational Summary)
 
-Last updated: 2026-02-28
+Last updated: 2026-03-03
 Full reference: `docs/archive/reference-full/ICONS.full.md`
 
 ## Source of Truth
@@ -32,3 +32,8 @@ trunk serve
 ## Notes
 - Keep icon generation reproducible via script-based flow.
 - Avoid manual one-off icon edits without updating source script or full archive doc.
+
+## Navigation
+- Icon asset folder guide: `assets/icons/README.md`
+- Active docs index: `docs/INDEX.md`
+- Workspace docs map: `docs/WORKSPACE_DOCS_MAP.md`

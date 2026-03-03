@@ -8,8 +8,12 @@ struct Uniforms {
     count: f32,
     canvas_w: f32,
     canvas_h: f32,
+    sparkle_strength: f32,
+    rotation_enabled: f32,
     _pad0: f32,
     _pad1: f32,
+    _pad2: f32,
+    _pad3: f32,
 };
 
 struct Particle {

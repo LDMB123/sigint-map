@@ -145,6 +145,9 @@ pub fn now_ms() -> f64 {
         .performance()
         .map_or_else(js_sys::Date::now, |p| p.now())
 }
+pub fn is_document_visible() -> bool {
+    dom::document().visibility_state() == web_sys::VisibilityState::Visible
+}
 pub fn on_visibility_change(callback: impl Fn(bool) + 'static) {
     let cb = Closure::<dyn FnMut(web_sys::Event)>::new(move |_event: web_sys::Event| {
         callback(dom::document().visibility_state() == web_sys::VisibilityState::Visible);

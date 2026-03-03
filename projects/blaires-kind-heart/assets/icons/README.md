@@ -1,5 +1,7 @@
 # Icon Assets
 
+Last updated: 2026-03-03
+
 **Quick generate:** `python3 generate_icons.py`
 
 ---
@@ -65,3 +67,7 @@ See **`../../docs/ICONS.md`** for:
 - Customization instructions
 
 Archive: `../../docs/archive/ICON_*.md` (verbose guides with ASCII art)
+
+## Navigation
+- Active icon docs: `../../docs/ICONS.md`
+- Active docs index: `../../docs/INDEX.md`

@@ -1119,6 +1119,9 @@ fn start_hold_meter(stage: HugStage) {
     };
     let bubble_shown = std::cell::Cell::new(false);
     let cb = Closure::<dyn FnMut()>::new(move || {
+        if !browser_apis::is_document_visible() {
+            return;
+        }
         let result = GAME.with(|g| {
             let Ok(borrow) = g.try_borrow() else {
                 return (true, false);

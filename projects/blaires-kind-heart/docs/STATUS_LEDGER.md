@@ -1,6 +1,6 @@
 # Status Ledger
 
-Last updated: 2026-03-03 (session 16)
+Last updated: 2026-03-03 (session 18)
 
 ## QA Gate Results
 
@@ -9,8 +9,10 @@ Last updated: 2026-03-03 (session 16)
 | Runtime diagnostics | `npm run qa:runtime` | PASS | 2026-03-03 |
 | PWA contract | `npm run qa:pwa-contract` | PASS | 2026-03-03 |
 | DB contract | `npm run qa:db-contract` | PASS | 2026-03-03 |
+| Rust wasm32 compile gate | `cargo check --target wasm32-unknown-unknown` | PASS | 2026-03-03 |
 | WASM tests (wasm-bindgen runner) | `cargo test --target wasm32-unknown-unknown` | PASS | 2026-03-03 |
 | Symbolized release verification | `npm run build:verify:release` | PASS | 2026-03-03 |
+| WebKit smoke | `npm run test:e2e:webkit` | PASS | 2026-03-03 |
 | Full E2E suite (64/1 skip) | `npm run test:e2e:all` | PASS* | 2026-03-03 |
 | Visual regression (16 snapshots) | `npm run test:e2e -- e2e/visual.spec.ts` | PASS | 2026-03-03 |
 | Rust warning drift (baseline=5) | `npm run qa:rust-warning-drift` | PASS | 2026-03-02 |
@@ -35,6 +37,69 @@ Last updated: 2026-03-03 (session 16)
 - `npm run build:release` PASS on 2026-02-21
 - Release WASM build completed cleanly
 - Source maps retained in `dist` per `scripts/build-verify-release.sh`
+
+## Work Completed 2026-03-03 (session 18)
+
+Workspace markdown cleanup and organization pass.
+
+**Documentation structure updates**:
+- Added workspace docs hub: `docs/WORKSPACE_DOCS_MAP.md`
+- Added archive hub: `docs/archive/INDEX.md`
+- Added archive folder indexes:
+  - `docs/archive/audits/INDEX.md`
+  - `docs/archive/plans/INDEX.md`
+  - `docs/archive/phase-docs/INDEX.md`
+  - `docs/archive/reference-full/INDEX.md`
+  - `docs/archive/reports/INDEX.md`
+  - `docs/archive/root-docs/INDEX.md`
+  - `docs/archive/sessions/INDEX.md`
+  - `docs/archive/snapshots/INDEX.md`
+  - `docs/archive/testing/INDEX.md`
+- Added deployment docs entrypoints:
+  - `docs/deployment/README.md`
+  - `deploy/README.md`
+
+**Consistency cleanup**:
+- Updated active doc cross-links and entry points in:
+  - `README.md`
+  - `docs/INDEX.md`
+  - `docs/HANDOFF.md`
+  - `docs/reports/README.md`
+  - `docs/testing/README.md`
+  - `docs/ICONS.md`
+- Refreshed deployment/assets README metadata and navigation links.
+
+**Validation**:
+- `npm run qa:docs-links` PASS
+- `npm run qa:docs-budget` PASS (`active_est_tokens=10923`)
+- repo-wide markdown link audit: PASS (`BROKEN_LINKS=0`)
+- directory entrypoint audit: PASS (`MISSING_ENTRYPOINT_COUNT=0`)
+
+## Work Completed 2026-03-03 (session 17)
+
+Final deep Apple-Silicon browser optimization pass focused on iPad mini 6 Safari/WebKit balance (GPU cost, loop timers, and hidden-tab behavior).
+
+**GPU particle and shader tuning (6 fixes)**:
+- `shaders/particles_render.wgsl`: expanded `Uniforms` (`sparkle_strength`, `rotation_enabled` + padding), rotation trig bypass when disabled, and sparkle pulse bypass when disabled
+- `shaders/particles_compute.wgsl`: mirrored uniform layout to keep compute/render bind compatibility
+- `rust/gpu_particles.rs`: increased uniform payload, writes low-power controls each frame, iPad profile defaults set to `sparkle_strength=0.0` and `rotation_enabled=0.0`
+- `rust/gpu_particles.rs`: moved bind-group creation out of per-frame path, reused bind groups, and switched particle upload path to borrowed `Uint8Array::view` writeBuffer strategy
+- `rust/gpu.rs`: added iPad mini 6 profile detection and profile-specific GPU canvas resolution scaling (`0.75`) with body `data-device-profile` attrs
+- `rust/confetti.rs`: GPU burst routing for named emoji sets and reduced aura particle count on iPad profile
+
+**Timer and power guard updates (4 fixes)**:
+- `rust/game_catcher.rs`: removed interval-based spawner (`spawn_interval_id`) and replaced with RAF-driven `spawn_accumulator_ms` loop at `theme::CATCHER_SPAWN_INTERVAL_MS`
+- `rust/game_catcher.rs`: hidden-tab guard resets RAF timestamp baseline and skips physics/spawn for that tick
+- `rust/game_memory.rs`: timer callback early-return when document hidden
+- `rust/game_hug.rs`: hold-meter callback early-return when document hidden
+
+**Shared visibility helper (1 addition)**:
+- `rust/browser_apis.rs`: added `is_document_visible() -> bool`
+
+**Validation**:
+- `cargo check --target wasm32-unknown-unknown` PASS
+- `npm run qa:pwa-contract` PASS
+- `npm run test:e2e:webkit` PASS (`1 passed`)
 
 ## Work Completed 2026-03-03 (session 16)
 
@@ -254,7 +319,9 @@ Pre-deployment polish — 3 UX improvements, SW bump, iPad regression prep:
 
 | Date | Milestone | Commits |
 |------|-----------|---------|
-| 2026-03-03 | WASM debug hardening — test runner, wasm smoke tests, bindgen target/loader minify fix | (this commit) |
+| 2026-03-03 | Documentation cleanup + archive indexing + docs hub reorganization | (this commit) |
+| 2026-03-03 | Final deep Apple-Silicon pass — GPU quality path + visibility/timer guards | (this commit) |
+| 2026-03-03 | WASM debug hardening — test runner, wasm smoke tests, bindgen target/loader minify fix | (recorded in prior session) |
 | 2026-03-03 | Debug & code review — 3 defensive fixes (quota guard, stale year, snapshot) | 319ab1a |
 | 2026-03-02 | Comprehensive audit (audio/RAF/logic/SW) — DB contract regex fix | 575ee2a |
 | 2026-03-02 | Deep audit — 15 fixes (CSS/JS/Rust), SW v80 | d3658ab |

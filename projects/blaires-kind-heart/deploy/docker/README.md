@@ -1,6 +1,6 @@
 # Docker Deployment
 
-Last updated: 2026-02-14
+Last updated: 2026-03-03
 
 This directory contains the static container build for serving `dist/` with NGINX.
 
@@ -19,3 +19,6 @@ docker run --rm -p 8080:8080 blaires-kind-heart:latest
 1. Open `http://localhost:8080/`.
 2. Open `http://localhost:8080/offline.html`.
 3. Confirm service worker and static assets load correctly.
+
+## Navigation
+- Deploy docs hub: `deploy/README.md`

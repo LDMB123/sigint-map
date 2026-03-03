@@ -8,8 +8,12 @@ struct Uniforms {
     count: f32,
     canvas_w: f32,
     canvas_h: f32,
+    sparkle_strength: f32,
+    rotation_enabled: f32,
     _pad0: f32,
     _pad1: f32,
+    _pad2: f32,
+    _pad3: f32,
 };
 
 struct Particle {
@@ -76,13 +80,17 @@ fn vs_main(
     // Size in normalized device coords (relative to canvas)
     let pixel_size = p.size / max(uniforms.canvas_w, 1.0);
 
-    // Apply rotation
-    let c = cos(p.rotation);
-    let s = sin(p.rotation);
-    let rotated = vec2<f32>(
-        corner.x * c - corner.y * s,
-        corner.x * s + corner.y * c,
-    );
+    // iPad mini low-power mode can disable per-particle trig rotation.
+    let use_rotation = uniforms.rotation_enabled > 0.5;
+    var rotated = corner;
+    if (use_rotation) {
+        let c = cos(p.rotation);
+        let s = sin(p.rotation);
+        rotated = vec2<f32>(
+            corner.x * c - corner.y * s,
+            corner.x * s + corner.y * c,
+        );
+    }
 
     // Convert particle position (0..1) to NDC (-1..1)
     let ndc_x = p.x * 2.0 - 1.0 + rotated.x * pixel_size;
@@ -113,8 +121,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     var color = in.color;
     color.a *= softness;
 
-    // Sparkle effect — pulsing brightness based on time
-    let sparkle = 0.8 + 0.2 * sin(uniforms.time * 8.0 + in.uv.x * 20.0);
+    // Sparkle effect — disabled on low-power profile.
+    var sparkle = 1.0;
+    if (uniforms.sparkle_strength > 0.0) {
+        sparkle = 0.8 + 0.2 * sin(uniforms.time * 8.0 + in.uv.x * 20.0);
+    }
     color = vec4<f32>(color.rgb * sparkle, color.a);
 
     return color;

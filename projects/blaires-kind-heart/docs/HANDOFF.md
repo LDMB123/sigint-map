@@ -1,12 +1,12 @@
 # Handoff Runbook
 
-Last updated: 2026-03-03 (session 16)
+Last updated: 2026-03-03 (session 18)
 
 ## Fast Takeover Checklist
 
 1. Read `CLAUDE.md` — project scope, tech stack, commands
 2. Read `docs/STATUS_LEDGER.md` — latest QA gate results
-3. Run `npm run test:e2e` to verify build is green
+3. Run `npm run test:e2e:webkit` for a quick Safari/WebKit sanity gate
 
 ## Key Commands
 
@@ -25,7 +25,9 @@ npm run qa:runtime
 npm run qa:pwa-contract
 npm run qa:db-contract
 npm run test:e2e
+npm run test:e2e:webkit
 npm run build:verify:release
+cargo check --target wasm32-unknown-unknown
 cargo test --target wasm32-unknown-unknown
 npm run qa:rust-warning-drift
 npm run qa:docs-budget
@@ -57,7 +59,11 @@ npm run qa:docs-links
 
 ## Current State (2026-03-03)
 
-**All code quality, polish, and QA passes complete (sessions 6-16).**
+**All code quality, polish, and QA passes complete (sessions 6-18).**
+
+- **Session 18**: Documentation cleanup and organization — added workspace-wide markdown map, archive root index, per-folder archive indexes (audits/plans/phase-docs/reference-full/reports/root-docs/sessions/snapshots/testing), and deployment doc hubs (`docs/deployment/README.md`, `deploy/README.md`). Refreshed active doc cross-links and metadata consistency. Validation: `npm run qa:docs-links` PASS, `npm run qa:docs-budget` PASS.
+
+- **Session 17**: Final deep Apple-Silicon pass — implemented iPad mini 6 low-power GPU particle controls (shader uniforms + conditional trig/sparkle), moved Catcher spawn cadence from interval to RAF accumulator, and added visibility guards for Memory/Hug/Catcher loops to prevent hidden-tab progression and reduce CPU wakeups. Also added iPad profile styling/perf tuning hooks and revalidated `cargo check --target wasm32-unknown-unknown`, `npm run qa:pwa-contract`, and `npm run test:e2e:webkit` (all PASS).
 
 - **Session 16**: WASM/Rust debug hardening — fixed wasm test execution by wiring `wasm-bindgen-test-runner`, added 2 wasm smoke tests in `rust/lib.rs`, and resolved release minifier warning (`RequiredTokenNotFound(Identifier)` on `default`) by switching bindgen target to `no-modules`. Updated loader path for Trusted Types CSP compatibility and confirmed runtime/db contracts + wasmBindings probe pass.
 

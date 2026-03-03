@@ -1,11 +1,13 @@
 # Testing Notes Index
 
-Last updated: 2026-02-15
+Last updated: 2026-03-03
 
 This folder now contains only the active index for testing documentation.
 Detailed session notes and historical QA writeups were archived to keep active docs smaller.
+Use `docs/archive/testing/INDEX.md` for the full historical testing map.
 
 ## Historical Test Reports
+- `docs/archive/reports/2026-03-03-final-apple-silicon-deep-pass.md`
 - `docs/archive/testing/comprehensive-ui-ux-audit.md`
 - `docs/archive/testing/performance-fixes-applied.md`
 - `docs/archive/testing/session-2-fixes-applied.md`
