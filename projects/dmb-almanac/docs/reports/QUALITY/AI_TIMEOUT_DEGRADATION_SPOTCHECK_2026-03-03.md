@@ -1,6 +1,6 @@
-# AI Timeout/Degradation Spot-Check (2026-02-21)
+# AI Timeout/Degradation Spot-Check (2026-03-03)
 
-Generated: 2026-02-21  
+Generated: 2026-03-03  
 Operator: codex  
 Base URL: `http://127.0.0.1:3000`
 
@@ -12,15 +12,16 @@ Base URL: `http://127.0.0.1:3000`
 ## Command
 
 ```bash
-cd e2e
-RUST_E2E=1 BASE_URL=http://127.0.0.1:3000 \
-  npm run test:e2e -- tests/e2e/rust-ai-degradation.spec.js --project=chromium --workers=1
+bash scripts/cutover-rehearsal.sh
+# includes:
+# tests/e2e/rust-ai-degradation.spec.js
 ```
 
 ## Result
 
-- `2 passed (2.9s)`
-- Spec: `e2e/tests/e2e/rust-ai-degradation.spec.js`
+- `18 passed (3.0m)` for the full Rust cutover E2E subset.
+- `2/2` AI degradation assertions passed inside
+  `e2e/tests/e2e/rust-ai-degradation.spec.js`.
 
 ## Assertions Covered
 

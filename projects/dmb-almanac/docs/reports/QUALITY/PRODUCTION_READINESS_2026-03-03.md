@@ -1,6 +1,6 @@
 # Production Readiness Report
 
-Date: 2026-02-21  
+Date: 2026-03-03  
 Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 
 ## Summary
@@ -8,6 +8,11 @@ Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 Current status: `NEEDS_REVIEW`
 
 Production gates are green (build, tests, cutover rehearsal, CI policy, security audit gate, disk budget), with only human release sign-offs remaining.
+
+Validation refresh on 2026-03-03:
+- `bash scripts/security-audit.sh`: pass.
+- `bash scripts/cutover-rehearsal.sh`: pass (`18 passed` E2E subset).
+- `bash scripts/pristine-check.sh --with-disk-budget`: pass.
 
 ## Wave Results
 
@@ -66,7 +71,7 @@ Production gates are green (build, tests, cutover rehearsal, CI policy, security
 - `docs/ops/README.md`
 - `docs/ops/AI_TIMEOUT_DEGRADATION_RUNBOOK.md`
 - `docs/ops/SECURITY_ADVISORY_DISPOSITIONS.md`
-- `docs/reports/QUALITY/AI_TIMEOUT_DEGRADATION_SPOTCHECK_2026-02-21.md`
+- `docs/reports/QUALITY/AI_TIMEOUT_DEGRADATION_SPOTCHECK_2026-03-03.md`
 - `e2e/tests/e2e/rust-ai-degradation.spec.js`
 
 ## Remaining Go/No-Go Blockers

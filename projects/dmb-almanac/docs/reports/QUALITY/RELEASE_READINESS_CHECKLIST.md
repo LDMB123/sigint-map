@@ -1,6 +1,6 @@
 # Release Readiness Checklist (Rust App)
 
-Date: 2026-02-21  
+Date: 2026-03-03  
 Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 
 This checklist is the Phase 5 quality gate for release decisions.
@@ -30,9 +30,9 @@ This checklist is the Phase 5 quality gate for release decisions.
   `rust/crates/dmb_app/src/components/pwa_status.rs`
   (snooze window, clock skew, parser reliability).
 - [x] Offline no-network behavior validated by Rust E2E (`tests/e2e/rust-offline.spec.js`)
-  via `bash scripts/cutover-rehearsal.sh` on 2026-02-21.
+  via `bash scripts/cutover-rehearsal.sh` on 2026-03-03.
 - [x] AI timeout/degradation release-window check completed via Rust E2E
-  (`e2e/tests/e2e/rust-ai-degradation.spec.js`) on 2026-02-21.
+  (`e2e/tests/e2e/rust-ai-degradation.spec.js`) on 2026-03-03.
 
 ## UX and Content
 
