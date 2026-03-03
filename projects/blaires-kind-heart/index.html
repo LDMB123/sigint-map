@@ -58,9 +58,9 @@
 
   <!-- Garden images loaded on-demand when Gardens panel opens -->
 
-  <link rel="modulepreload" href="./blaires-kind-heart.js" crossorigin />
+  <script src="./blaires-kind-heart.js"></script>
   <script type="module" src="./wasm-init.js?js=blaires-kind-heart.js&wasm=blaires-kind-heart_bg.wasm"></script>
-  <link data-trunk rel="rust" href="Cargo.toml" data-target-name="blaires_kind_heart" data-wasm-opt="0" />
+  <link data-trunk rel="rust" href="Cargo.toml" data-target-name="blaires_kind_heart" data-wasm-opt="0" data-bindgen-target="no-modules" />
 
   <!-- Native system fonts — SF Pro Rounded on iPadOS, system-ui elsewhere -->
 

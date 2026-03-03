@@ -11,26 +11,17 @@ try {
   });
 
   const params = new URL(import.meta.url).searchParams;
-  const rawJs = params.get('js') || 'blaires-kind-heart.js';
   const rawWasm = params.get('wasm') || 'blaires-kind-heart_bg.wasm';
-  // Resolve relative to document base — bare specifiers fail in strict CSP
-  const jsPath = new URL(rawJs, document.baseURI).href;
+  // Resolve relative to document base — bare specifiers fail in strict CSP.
   const wasmPath = new URL(rawWasm, document.baseURI).href;
 
-  // Parallel boot: fetch WASM bytes + import bindings simultaneously
-  {
-    const link = document.createElement('link');
-    link.rel = 'modulepreload';
-    link.href = jsPath;
-    document.head.appendChild(link);
+  // Parallel boot: load no-modules bindgen script + compile WASM simultaneously.
+  const bindings = typeof wasm_bindgen === 'function' ? wasm_bindgen : null;
+  if (!bindings) {
+    throw new Error('wasm_bindgen binding is unavailable. Ensure blaires-kind-heart.js loads before wasm-init.js.');
   }
 
-  performance.mark('wasm-parallel-start');
-  // Safari 26.2: Use compileStreaming for 200-400ms faster WASM init.
-  // Compilation starts during download (no arrayBuffer() round-trip).
-  // Fallback: if compileStreaming fails (e.g. wrong MIME type from dev server),
-  // fetch as ArrayBuffer. New fetch() call required — the streaming response
-  // body is already consumed and cannot be re-read.
+  // Safari 26.2: Use compileStreaming for faster WASM init with fallback.
   async function compileWasm() {
     try {
       return await WebAssembly.compileStreaming(fetch(wasmPath));
@@ -39,28 +30,32 @@ try {
       return await WebAssembly.compile(buf);
     }
   }
-  const [bindings, wasmModule] = await Promise.all([
-    import(jsPath),
-    compileWasm()
-  ]);
+
+  performance.mark('wasm-parallel-start');
+  const wasmModule = await compileWasm();
   performance.mark('wasm-parallel-end');
   performance.measure('wasm-parallel-load', 'wasm-parallel-start', 'wasm-parallel-end');
 
   performance.mark('wasm-instantiate-start');
-  const wasm = await bindings.default({ module: wasmModule });
+  const wasm = await bindings({ module: wasmModule });
   performance.mark('wasm-instantiate-end');
   performance.measure('wasm-instantiate', 'wasm-instantiate-start', 'wasm-instantiate-end');
 
-  // Only expose WASM bindings globally on localhost (dev/debugging only)
+  // Only expose WASM bindings globally on localhost (dev/debugging only).
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-    window.wasmBindings = bindings;
+    const debugBindings = { default: bindings };
+    for (const key of Object.keys(bindings)) {
+      debugBindings[key] = bindings[key];
+    }
+    window.wasmBindings = debugBindings;
   }
+
   performance.mark('wasm-init-end');
   performance.measure('wasm-init-total', 'wasm-init-start', 'wasm-init-end');
   dispatchEvent(new CustomEvent('TrunkApplicationStarted', { detail: { wasm } }));
 } catch (err) {
   console.error('[wasm-init] Fatal:', err);
-  // Show user-friendly error on the loading screen
+  // Show user-friendly error on the loading screen.
   try {
     const loading = document.getElementById('loading-screen');
     if (loading) {
@@ -69,5 +64,5 @@ try {
       const bar = loading.querySelector('.loading-bar-fill');
       if (bar) bar.style.display = 'none';
     }
-  } catch (_) { /* DOM may be unavailable during very early errors */ }
+  } catch (_) { /* DOM may be unavailable during very early errors. */ }
 }

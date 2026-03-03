@@ -1,6 +1,6 @@
 # Status Ledger
 
-Last updated: 2026-03-03 (session 15)
+Last updated: 2026-03-03 (session 16)
 
 ## QA Gate Results
 
@@ -9,11 +9,13 @@ Last updated: 2026-03-03 (session 15)
 | Runtime diagnostics | `npm run qa:runtime` | PASS | 2026-03-03 |
 | PWA contract | `npm run qa:pwa-contract` | PASS | 2026-03-03 |
 | DB contract | `npm run qa:db-contract` | PASS | 2026-03-03 |
+| WASM tests (wasm-bindgen runner) | `cargo test --target wasm32-unknown-unknown` | PASS | 2026-03-03 |
+| Symbolized release verification | `npm run build:verify:release` | PASS | 2026-03-03 |
 | Full E2E suite (64/1 skip) | `npm run test:e2e:all` | PASS* | 2026-03-03 |
 | Visual regression (16 snapshots) | `npm run test:e2e -- e2e/visual.spec.ts` | PASS | 2026-03-03 |
 | Rust warning drift (baseline=5) | `npm run qa:rust-warning-drift` | PASS | 2026-03-02 |
-| Docs budget | `npm run qa:docs-budget` | PASS | 2026-03-02 |
-| Docs links | `npm run qa:docs-links` | PASS | 2026-03-02 |
+| Docs budget | `npm run qa:docs-budget` | PASS | 2026-03-03 |
+| Docs links | `npm run qa:docs-links` | PASS | 2026-03-03 |
 | Lighthouse CI | `npm run lighthouse:ci` | PASS | 2026-02-21 |
 
 \* `1 skipped` is the expected non-blocking probe skip in the full Playwright matrix.
@@ -33,6 +35,27 @@ Last updated: 2026-03-03 (session 15)
 - `npm run build:release` PASS on 2026-02-21
 - Release WASM build completed cleanly
 - Source maps retained in `dist` per `scripts/build-verify-release.sh`
+
+## Work Completed 2026-03-03 (session 16)
+
+WASM/Rust + loader debug hardening with targeted verification and release warning elimination.
+
+**WASM test runner + smoke coverage (2 fixes)**:
+- Added wasm target runner in `.cargo/config.toml`: `runner = "wasm-bindgen-test-runner"`
+- Added 2 `wasm_bindgen_test` cases in `rust/lib.rs` for contiguous/gap streak behavior and guarded `#[wasm_bindgen(start)]` with `#[cfg_attr(not(test), ...)]`
+
+**Release minifier warning root-cause fix (3 fixes)**:
+- Switched Trunk rust asset to `data-bindgen-target="no-modules"` in `index.html` to avoid `export ... default` parser failure during minification
+- Updated `wasm-init.js` to initialize from no-modules `wasm_bindgen` binding while preserving perf instrumentation and compile fallback
+- Replaced dynamic script injection (blocked by Trusted Types CSP) with static bindgen script include in `index.html`
+
+**Validation**:
+- `cargo test --target wasm32-unknown-unknown` PASS (`2 passed`)
+- `cargo test` PASS
+- `npm run build:verify:release` PASS with no JS minify warning
+- `npm run qa:runtime` PASS
+- `npm run qa:db-contract` PASS
+- `node scripts/run-e2e.mjs --grep "window.wasmBindings"` PASS
 
 ## Work Completed 2026-03-03 (session 15)
 
@@ -231,6 +254,7 @@ Pre-deployment polish — 3 UX improvements, SW bump, iPad regression prep:
 
 | Date | Milestone | Commits |
 |------|-----------|---------|
+| 2026-03-03 | WASM debug hardening — test runner, wasm smoke tests, bindgen target/loader minify fix | (this commit) |
 | 2026-03-03 | Debug & code review — 3 defensive fixes (quota guard, stale year, snapshot) | 319ab1a |
 | 2026-03-02 | Comprehensive audit (audio/RAF/logic/SW) — DB contract regex fix | 575ee2a |
 | 2026-03-02 | Deep audit — 15 fixes (CSS/JS/Rust), SW v80 | d3658ab |

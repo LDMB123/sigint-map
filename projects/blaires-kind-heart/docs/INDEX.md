@@ -1,6 +1,6 @@
 # Documentation Index
 
-Last updated: 2026-03-02 (session 9)
+Last updated: 2026-03-03 (session 16)
 Scope: active docs map for this repository.
 
 ## Active Docs
@@ -8,6 +8,7 @@ Scope: active docs map for this repository.
 ### Status & Tracking
 - `docs/STATUS_LEDGER.md` - QA gate results and work history
 - `docs/HANDOFF.md` - Fast takeover runbook for new sessions
+- Session 16 focus: WASM test runner wiring + no-modules bindgen loader path (minifier warning resolved)
 
 ### References
 - `docs/ICONS.md` - Icon generation guide

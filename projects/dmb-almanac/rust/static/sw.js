@@ -15,6 +15,7 @@ const SHELL_ASSETS = [
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
+const SHELL_ASSET_SET = new Set(SHELL_ASSETS);
 
 const DATA_ASSETS = [
   '/data/manifest.json',
@@ -52,23 +53,16 @@ function isCacheable(response) {
   return !!response && response.ok;
 }
 
-async function putCache(cacheName, cacheKey, response) {
-  if (!response) {
-    return false;
-  }
-  const cache = await caches.open(cacheName);
-  await cache.put(cacheKey, response);
-  return true;
-}
-
-function putCacheWithLifetime(cacheName, cacheKey, response) {
+function cacheResponse(cacheName, cacheKey, response) {
   if (!isCacheable(response)) {
     return;
   }
-  const responseCopy = response.clone();
-  void putCache(cacheName, cacheKey, responseCopy).catch((err) => {
-    console.warn('cache write failed:', cacheName, cacheKey, err);
-  });
+  void caches
+    .open(cacheName)
+    .then((cache) => cache.put(cacheKey, response.clone()))
+    .catch((err) => {
+      console.warn('cache write failed:', cacheName, cacheKey, err);
+    });
 }
 
 self.addEventListener('install', (event) => {
@@ -136,13 +130,13 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   // Cache-first for known shell assets so offline navigations don't hang on missing CSS/manifest.
-  if (url.origin === location.origin && SHELL_ASSETS.includes(url.pathname)) {
+  if (url.origin === location.origin && SHELL_ASSET_SET.has(url.pathname)) {
     event.respondWith(
       caches.match(url.pathname).then((cached) => {
         if (cached) return cached;
         return fetch(request)
           .then((response) => {
-            putCacheWithLifetime(SHELL_CACHE, url.pathname, response);
+            cacheResponse(SHELL_CACHE, url.pathname, response);
             return response;
           })
           .catch(() => cached || Response.error());
@@ -158,7 +152,7 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           // Store by path (not the full Request) so later navigations match reliably even if
           // headers differ (Playwright offline mode, different Accept headers, etc).
-          putCacheWithLifetime(SHELL_CACHE, cacheKey, response);
+          cacheResponse(SHELL_CACHE, cacheKey, response);
           return response;
         })
         .catch(() => caches.match(cacheKey).then((res) => res || caches.match(OFFLINE_FALLBACK)))
@@ -172,7 +166,7 @@ self.addEventListener('fetch', (event) => {
       caches.match(cacheKey).then((cached) => {
         const fetchPromise = fetch(new Request(request, { cache: 'no-store' }))
           .then((response) => {
-            putCacheWithLifetime(DATA_CACHE, cacheKey, response);
+            cacheResponse(DATA_CACHE, cacheKey, response);
             return response;
           })
           .catch(() => cached);
@@ -189,7 +183,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(new Request(request, { cache: 'no-store' }))
         .then((response) => {
-          putCacheWithLifetime(ASSET_CACHE, cacheKey, response);
+          cacheResponse(ASSET_CACHE, cacheKey, response);
           return response;
         })
         .catch(() => caches.match(cacheKey))
@@ -203,7 +197,7 @@ self.addEventListener('fetch', (event) => {
       caches.match(cacheKey).then((cached) =>
         cached ||
         fetch(request).then((response) => {
-          putCacheWithLifetime(ASSET_CACHE, cacheKey, response);
+          cacheResponse(ASSET_CACHE, cacheKey, response);
           return response;
         })
       )

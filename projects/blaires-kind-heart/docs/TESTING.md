@@ -1,6 +1,6 @@
 # Testing Guide (Operational Summary)
 
-Last updated: 2026-02-28
+Last updated: 2026-03-03
 Full reference: `docs/archive/reference-full/TESTING.full.md`
 Historical test reports index: `docs/testing/README.md`
 
@@ -16,6 +16,12 @@ npm run qa:pwa-contract
 npm run qa:runtime
 npm run qa:db-contract
 npm run test:e2e:all
+
+# WASM unit tests (runs in wasm-bindgen test runner)
+cargo test --target wasm32-unknown-unknown
+
+# Release verification (symbolized build + source maps)
+npm run build:verify:release
 ```
 
 ## Device-Specific Validation
@@ -28,6 +34,7 @@ npm run test:e2e:all
 - Offline queue correctness and DB integrity.
 - Service worker behavior and offline navigation.
 - Visual regressions on key panels (re-run after CSS changes; snapshots updated 2026-02-28).
+- WASM loader and init path (`wasm-init.js`) after bindgen target or CSP/Trusted Types changes.
 
 ## Minimum Release Evidence
 1. Latest PASS outputs in `docs/STATUS_LEDGER.md`.

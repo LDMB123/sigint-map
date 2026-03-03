@@ -502,7 +502,7 @@ fn cache_boot_elements() {
     });
 }
 
-#[wasm_bindgen(start)]
+#[cfg_attr(not(test), wasm_bindgen(start))]
 pub fn start() {
     console_error_panic_hook::set_once();
     dom::init_trusted_types();
@@ -516,5 +516,31 @@ pub fn start() {
         let _ = document.add_event_listener_with_callback("DOMContentLoaded", cb.unchecked_ref());
     } else {
         boot(state);
+    }
+}
+
+#[cfg(all(test, target_arch = "wasm32"))]
+mod wasm_tests {
+    use super::count_streak_from_rows;
+    use wasm_bindgen_test::wasm_bindgen_test;
+
+    #[wasm_bindgen_test]
+    fn streak_counts_contiguous_days() {
+        let rows = serde_json::json!([
+            { "day_key": "2026-03-03" },
+            { "day_key": "2026-03-02" },
+            { "day_key": "2026-03-01" }
+        ]);
+        assert_eq!(count_streak_from_rows(&rows, "2026-03-03"), 3);
+    }
+
+    #[wasm_bindgen_test]
+    fn streak_stops_on_first_gap() {
+        let rows = serde_json::json!([
+            { "day_key": "2026-03-03" },
+            { "day_key": "2026-03-01" },
+            { "day_key": "2026-02-28" }
+        ]);
+        assert_eq!(count_streak_from_rows(&rows, "2026-03-03"), 1);
     }
 }

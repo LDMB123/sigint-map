@@ -9,16 +9,18 @@ Target platform: iPad mini 6 (A15, 4GB RAM), iPadOS 26.2, Safari 26.2.
 - QA gate results and work history: `docs/STATUS_LEDGER.md`
 - Full documentation map: `docs/INDEX.md`
 
-## Current Standing (verified on 2026-02-28)
+## Current Standing (verified on 2026-03-03)
 - PWA contract check: PASS (`npm run qa:pwa-contract`)
 - Runtime diagnostics check: PASS (`npm run qa:runtime`)
 - DB contract check: PASS (`npm run qa:db-contract`)
-- Full E2E suite: PASS (`npm run test:e2e:all` -> `46 passed`, `1 skipped`)
+- WASM tests (browser runner): PASS (`cargo test --target wasm32-unknown-unknown`, `2 passed`)
+- Symbolized release verification build: PASS (`npm run build:verify:release`)
+- Full E2E suite: PASS (`npm run test:e2e:all` -> `64 passed`, `1 skipped`)
 - Visual regression: PASS (16/16 snapshots)
 - Lighthouse CI: PASS (`npm run lighthouse:ci`)
 - Docs link gate: PASS (`npm run qa:docs-links`)
-- Rust warning drift gate: PASS (`npm run qa:rust-warning-drift`, baseline=`3`)
-- Docs token budget check: PASS (`npm run qa:docs-budget`, `active_est_tokens=4977`)
+- Rust warning drift gate: PASS (`npm run qa:rust-warning-drift`, baseline=`5`)
+- Docs token budget check: PASS (`npm run qa:docs-budget`, `active_est_tokens=8730`)
 - Physical iPad mini 6 (iPadOS 26.2 / Safari 26.2) regression still pending before final deploy
 
 ## Quick Commands
@@ -39,6 +41,8 @@ trunk build --release
 npm run qa:pwa-contract
 npm run qa:runtime
 npm run qa:db-contract
+cargo test --target wasm32-unknown-unknown
+npm run build:verify:release
 
 # Full E2E gate
 npm run test:e2e:all
@@ -57,4 +61,4 @@ npm run qa:docs-budget
 - `docs/` active documentation
 - `docs/archive/` historical/low-frequency documentation and artifacts
 
-Last updated: 2026-02-28
+Last updated: 2026-03-03

@@ -4,16 +4,42 @@ let matrix = null;
 let dim = 0;
 const MAX_MATRIX_BYTES = 256 * 1024 * 1024;
 
+function postError(id, message) {
+  self.postMessage({ id, error: message });
+}
+
+function hasInitializedMatrix(id) {
+  if (matrix && dim) {
+    return true;
+  }
+  postError(id, 'Worker not initialized');
+  return false;
+}
+
+async function postScores({ id, queryBuffer, scorer, unavailableError }) {
+  if (!queryBuffer) {
+    postError(id, 'Missing query buffer');
+    return;
+  }
+  const queryVec = new Float32Array(queryBuffer);
+  const scores = await scorer(queryVec);
+  if (!scores) {
+    postError(id, unavailableError);
+    return;
+  }
+  self.postMessage({ id, scores: scores.buffer }, [scores.buffer]);
+}
+
 self.onmessage = async (event) => {
-  const { id, type, query, matrix: matrixBuffer, dim: nextDim } = event.data || {};
+  const { id, type, query, matrix: matrixBuffer, dim: nextDim, indices } = event.data || {};
   try {
     if (type === 'init') {
       if (!matrixBuffer || !nextDim) {
-        self.postMessage({ id, error: 'Missing matrix or dim' });
+        postError(id, 'Missing matrix or dim');
         return;
       }
       if (matrixBuffer.byteLength > MAX_MATRIX_BYTES) {
-        self.postMessage({ id, error: 'Matrix exceeds worker memory cap' });
+        postError(id, 'Matrix exceeds worker memory cap');
         return;
       }
       matrix = new Float32Array(matrixBuffer);
@@ -23,51 +49,43 @@ self.onmessage = async (event) => {
     }
 
     if (type === 'scores') {
-      if (!matrix || !dim) {
-        self.postMessage({ id, error: 'Worker not initialized' });
+      if (!hasInitializedMatrix(id)) {
         return;
       }
-      if (!query) {
-        self.postMessage({ id, error: 'Missing query buffer' });
-        return;
-      }
-      const queryVec = new Float32Array(query);
-      const scores = await self.dmbWebgpuScores(queryVec, matrix, dim);
-      if (!scores) {
-        self.postMessage({ id, error: 'WebGPU scoring unavailable' });
-        return;
-      }
-      self.postMessage({ id, scores: scores.buffer }, [scores.buffer]);
+      await postScores({
+        id,
+        queryBuffer: query,
+        scorer: (queryVec) => self.dmbWebgpuScores(queryVec, matrix, dim),
+        unavailableError: 'WebGPU scoring unavailable',
+      });
       return;
     }
 
     if (type === 'scores_subset') {
-      if (!matrix || !dim) {
-        self.postMessage({ id, error: 'Worker not initialized' });
+      if (!hasInitializedMatrix(id)) {
         return;
       }
-      if (!query || !event.data?.indices) {
-        self.postMessage({ id, error: 'Missing query or indices' });
+      if (!query || !indices) {
+        postError(id, 'Missing query or indices');
         return;
       }
-      const queryVec = new Float32Array(query);
-      const indices = new Uint32Array(event.data.indices);
       if (!self.dmbWebgpuScoresSubset) {
-        self.postMessage({ id, error: 'Subset scoring unavailable' });
+        postError(id, 'Subset scoring unavailable');
         return;
       }
-      const scores = await self.dmbWebgpuScoresSubset(queryVec, matrix, dim, indices);
-      if (!scores) {
-        self.postMessage({ id, error: 'WebGPU subset scoring unavailable' });
-        return;
-      }
-      self.postMessage({ id, scores: scores.buffer }, [scores.buffer]);
+      const subsetIndices = new Uint32Array(indices);
+      await postScores({
+        id,
+        queryBuffer: query,
+        scorer: (queryVec) => self.dmbWebgpuScoresSubset(queryVec, matrix, dim, subsetIndices),
+        unavailableError: 'WebGPU subset scoring unavailable',
+      });
       return;
     }
 
-    self.postMessage({ id, error: 'Unknown worker message' });
+    postError(id, 'Unknown worker message');
   } catch (err) {
-    self.postMessage({ id, error: err?.message || String(err) });
+    postError(id, err?.message || String(err));
   }
 };
 //# sourceMappingURL=webgpu-worker.js.map

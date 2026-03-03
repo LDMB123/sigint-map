@@ -1,4 +1,5 @@
 [target.wasm32-unknown-unknown]
+runner = "wasm-bindgen-test-runner"
 rustflags = [
   "--cfg=web_sys_unstable_apis",
   "-C", "target-feature=+simd128,+relaxed-simd,+bulk-memory,+mutable-globals,+tail-call,+reference-types",

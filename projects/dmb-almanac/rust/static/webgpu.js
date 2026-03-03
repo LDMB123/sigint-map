@@ -694,103 +694,113 @@ async function initWorkerMatrix(state, matrix, dim) {
   state.signature = signature;
 }
 
-async function webgpuScoresWorker(query, matrix, dim) {
+function clearExpiredWorkerFailure() {
   if (workerFailureUntil && Date.now() >= workerFailureUntil) {
     clearWorkerFailure();
   }
+}
+
+function preflightWorkerRequest(matrixLength, metrics, fallback) {
+  clearExpiredWorkerFailure();
   if (Date.now() < workerFailureUntil) {
-    bumpMetricCounter('worker_fallback_cooldown');
-    return webgpuScores(query, matrix, dim);
+    bumpMetricCounter(metrics.cooldown);
+    return { done: true, result: fallback() };
   }
-  if (matrix.length > workerMaxFloats) {
-    bumpMetricCounter('worker_fallback_maxfloats');
-    return webgpuScores(query, matrix, dim);
+  if (matrixLength > workerMaxFloats) {
+    bumpMetricCounter(metrics.maxFloats);
+    return { done: true, result: fallback() };
   }
-  if (matrix.length < workerThresholdFloats) {
-    bumpMetricCounter('worker_fallback_below_threshold');
-    return webgpuScores(query, matrix, dim);
+  if (matrixLength < workerThresholdFloats) {
+    bumpMetricCounter(metrics.belowThreshold);
+    return { done: true, result: fallback() };
   }
   const state = ensureWorker();
   if (!state) {
-    bumpMetricCounter('worker_fallback_worker_unavailable');
-    return null;
+    bumpMetricCounter(metrics.unavailable);
+    return { done: true, result: null };
   }
+  return { done: false, state };
+}
+
+async function runWorkerScoresRequest({ matrix, dim, metrics, fallback, buildPayload, transferList }) {
+  const preflight = preflightWorkerRequest(matrix.length, metrics, fallback);
+  if (preflight.done) {
+    return preflight.result;
+  }
+  const { state } = preflight;
+
   try {
     await initWorkerMatrix(state, matrix, dim);
   } catch (err) {
-    bumpMetricCounter('worker_fallback_init_failed');
+    bumpMetricCounter(metrics.initFailed);
     markWorkerFailure(err);
-    return webgpuScores(query, matrix, dim);
+    return fallback();
   }
+
   const id = state.nextId++;
-  const payload = {
-    type: 'scores',
-    id,
-    query: query.slice().buffer,
-  };
+  const payload = buildPayload(id);
   const promise = createWorkerPromise(state, id);
-  state.worker.postMessage(payload, [payload.query]);
+  state.worker.postMessage(payload, transferList(payload));
+
   try {
     const scores = await promise;
     clearWorkerFailure();
-    bumpMetricCounter('worker_success');
+    bumpMetricCounter(metrics.success);
     return scores ? new Float32Array(scores) : null;
   } catch (err) {
-    bumpMetricCounter('worker_fallback_runtime_failed');
+    bumpMetricCounter(metrics.runtimeFailed);
     markWorkerFailure(err);
-    return webgpuScores(query, matrix, dim);
+    return fallback();
   }
+}
+
+async function webgpuScoresWorker(query, matrix, dim) {
+  return runWorkerScoresRequest({
+    matrix,
+    dim,
+    metrics: {
+      cooldown: 'worker_fallback_cooldown',
+      maxFloats: 'worker_fallback_maxfloats',
+      belowThreshold: 'worker_fallback_below_threshold',
+      unavailable: 'worker_fallback_worker_unavailable',
+      initFailed: 'worker_fallback_init_failed',
+      runtimeFailed: 'worker_fallback_runtime_failed',
+      success: 'worker_success',
+    },
+    fallback: () => webgpuScores(query, matrix, dim),
+    buildPayload: (id) => ({
+      type: 'scores',
+      id,
+      query: query.slice().buffer,
+    }),
+    transferList: (payload) => [payload.query],
+  });
 }
 
 root.dmbWebgpuScoresWorker = webgpuScoresWorker;
 
 async function webgpuScoresSubsetWorker(query, matrix, dim, indices) {
-  if (workerFailureUntil && Date.now() >= workerFailureUntil) {
-    clearWorkerFailure();
-  }
-  if (Date.now() < workerFailureUntil) {
-    bumpMetricCounter('subset_worker_fallback_cooldown');
-    return webgpuScoresSubset(query, matrix, dim, indices);
-  }
-  if (matrix.length > workerMaxFloats) {
-    bumpMetricCounter('subset_worker_fallback_maxfloats');
-    return webgpuScoresSubset(query, matrix, dim, indices);
-  }
-  if (matrix.length < workerThresholdFloats) {
-    bumpMetricCounter('subset_worker_fallback_below_threshold');
-    return webgpuScoresSubset(query, matrix, dim, indices);
-  }
-  const state = ensureWorker();
-  if (!state) {
-    bumpMetricCounter('subset_worker_fallback_worker_unavailable');
-    return null;
-  }
-  try {
-    await initWorkerMatrix(state, matrix, dim);
-  } catch (err) {
-    bumpMetricCounter('subset_worker_fallback_init_failed');
-    markWorkerFailure(err);
-    return webgpuScoresSubset(query, matrix, dim, indices);
-  }
-  const id = state.nextId++;
-  const payload = {
-    type: 'scores_subset',
-    id,
-    query: query.slice().buffer,
-    indices: indices.slice().buffer,
-  };
-  const promise = createWorkerPromise(state, id);
-  state.worker.postMessage(payload, [payload.query, payload.indices]);
-  try {
-    const scores = await promise;
-    clearWorkerFailure();
-    bumpMetricCounter('subset_worker_success');
-    return scores ? new Float32Array(scores) : null;
-  } catch (err) {
-    bumpMetricCounter('subset_worker_fallback_runtime_failed');
-    markWorkerFailure(err);
-    return webgpuScoresSubset(query, matrix, dim, indices);
-  }
+  return runWorkerScoresRequest({
+    matrix,
+    dim,
+    metrics: {
+      cooldown: 'subset_worker_fallback_cooldown',
+      maxFloats: 'subset_worker_fallback_maxfloats',
+      belowThreshold: 'subset_worker_fallback_below_threshold',
+      unavailable: 'subset_worker_fallback_worker_unavailable',
+      initFailed: 'subset_worker_fallback_init_failed',
+      runtimeFailed: 'subset_worker_fallback_runtime_failed',
+      success: 'subset_worker_success',
+    },
+    fallback: () => webgpuScoresSubset(query, matrix, dim, indices),
+    buildPayload: (id) => ({
+      type: 'scores_subset',
+      id,
+      query: query.slice().buffer,
+      indices: indices.slice().buffer,
+    }),
+    transferList: (payload) => [payload.query, payload.indices],
+  });
 }
 
 root.dmbWebgpuScoresSubsetWorker = webgpuScoresSubsetWorker;

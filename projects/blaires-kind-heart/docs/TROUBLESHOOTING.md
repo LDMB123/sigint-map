@@ -1,6 +1,6 @@
 # Troubleshooting (Operational Summary)
 
-Last updated: 2026-02-28
+Last updated: 2026-03-03
 Full reference: `docs/archive/reference-full/TROUBLESHOOTING.full.md`
 
 ## First Response Checklist
@@ -23,6 +23,14 @@ npm run qa:db-contract
 ## Useful Diagnostics
 - Runtime diagnostics script and E2E contract.
 - DB contract checks and related Playwright tests.
+- WASM target tests:
+```bash
+cargo test --target wasm32-unknown-unknown
+```
+- Release minifier verification (use after `wasm-init.js` / bindgen target edits):
+```bash
+npm run build:verify:release
+```
 - WebKit smoke run:
 ```bash
 npm run test:e2e:webkit
@@ -38,3 +46,11 @@ If issue persists after gate checks:
 2. Record browser/device context.
 3. Add dated entry to `docs/STATUS_LEDGER.md`.
 4. Link deep details in archive docs, not active operational docs.
+
+## Known WASM/Loader Failure Signature
+- `Failed to minify JS: RequiredTokenNotFound(Identifier) [token=Some(KeywordDefault)]`
+  - Cause: Trunk minifier parser hitting `wasm-bindgen` web-target default export shape.
+  - Current fix: keep rust link on `data-bindgen-target="no-modules"` and ensure `blaires-kind-heart.js` loads before `wasm-init.js`.
+- `This document requires 'TrustedScriptURL' assignment`
+  - Cause: dynamic `script.src` assignment under Trusted Types CSP.
+  - Current fix: static script include in `index.html` for bindgen JS.

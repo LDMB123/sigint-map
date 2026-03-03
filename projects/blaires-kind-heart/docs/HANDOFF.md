@@ -1,6 +1,6 @@
 # Handoff Runbook
 
-Last updated: 2026-03-03 (session 15)
+Last updated: 2026-03-03 (session 16)
 
 ## Fast Takeover Checklist
 
@@ -25,6 +25,8 @@ npm run qa:runtime
 npm run qa:pwa-contract
 npm run qa:db-contract
 npm run test:e2e
+npm run build:verify:release
+cargo test --target wasm32-unknown-unknown
 npm run qa:rust-warning-drift
 npm run qa:docs-budget
 npm run qa:docs-links
@@ -37,6 +39,7 @@ npm run qa:docs-links
 - SQLite stored in OPFS, access serialized via Web Locks
 - State: `thread_local! { static STATE: RefCell<AppState> }`
 - DOM: event delegation via data-* attributes, Trusted Types enforced
+- Trunk Rust asset uses `data-bindgen-target="no-modules"`; `blaires-kind-heart.js` is loaded before `wasm-init.js`
 
 ## Critical Patterns
 
@@ -54,7 +57,9 @@ npm run qa:docs-links
 
 ## Current State (2026-03-03)
 
-**All code quality, polish, and QA passes complete (sessions 6-15).**
+**All code quality, polish, and QA passes complete (sessions 6-16).**
+
+- **Session 16**: WASM/Rust debug hardening — fixed wasm test execution by wiring `wasm-bindgen-test-runner`, added 2 wasm smoke tests in `rust/lib.rs`, and resolved release minifier warning (`RequiredTokenNotFound(Identifier)` on `default`) by switching bindgen target to `no-modules`. Updated loader path for Trusted Types CSP compatibility and confirmed runtime/db contracts + wasmBindings probe pass.
 
 - **Session 15**: Debug & code review — deep source audit with 3 parallel agents found 7 potential issues, 4 dismissed as false positives (ISO week math, SQL interpolation, image handler, GPU races). Applied 3 defensive fixes: storage quota `.max(1.0)` guard, stale year defaults `2025→2026`, visual snapshot refresh. All gates PASS.
 - **Session 14**: Comprehensive audit — 4 parallel deep audits (audio/speech, animation/RAF, edge-case logic, SW/offline). All clean, no new bugs. Fixed DB contract QA gate regression from session 12's helper deduplication. All 8 QA gates PASS.
