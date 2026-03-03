@@ -965,7 +965,8 @@ fn on_hold_end() {
         }
         game.hold_start = None;
         if let Some(meter) = dom::query("[data-hug-meter]") {
-            dom::set_attr(&meter, "style", "width: 0%");
+            dom::set_attr(&meter, "style", "--hug-meter-scale: 0");
+            let _ = meter.class_list().remove_1("hug-meter-fill--almost");
         }
         game.motion_points.clear();
     });
@@ -1138,18 +1139,16 @@ fn start_hold_meter(stage: HugStage) {
             let elapsed = utils::now_epoch_ms() - start;
             let pct = (elapsed / target_ms * 100.0).min(100.0);
             if let Some(meter) = dom::query("[data-hug-meter]") {
+                let scale = (pct / 100.0).clamp(0.0, 1.0);
                 dom::with_buf(|buf| {
-                    if pct > 75.0 {
-                        let _ = write!(
-                            buf,
-                            "width: {}%; background: var(--gradient-rainbow)",
-                            pct as u32
-                        );
-                    } else {
-                        let _ = write!(buf, "width: {}%", pct as u32);
-                    }
+                    let _ = write!(buf, "--hug-meter-scale: {scale:.4}");
                     dom::set_attr(&meter, "style", buf);
                 });
+                if pct > 75.0 {
+                    let _ = meter.class_list().add_1("hug-meter-fill--almost");
+                } else {
+                    let _ = meter.class_list().remove_1("hug-meter-fill--almost");
+                }
             }
             if pct > 50.0 && !bubble_shown.get() {
                 bubble_shown.set(true);

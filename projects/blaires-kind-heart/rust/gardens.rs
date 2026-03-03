@@ -204,7 +204,9 @@ fn render_garden_card(garden: &Garden, growth_stage: i32) -> Option<web_sys::Ele
         let img_container_clone = img_container.clone();
         let error_closure = Closure::once(move || {
             let doc = dom::document();
-            if let Some(fallback) = render::create_el_with_class(&doc, "div", "garden-emoji-fallback") {
+            if let Some(fallback) =
+                render::create_el_with_class(&doc, "div", "garden-emoji-fallback")
+            {
                 fallback.set_text_content(Some(&emoji));
                 img_container_clone.set_text_content(None); // clear broken img
                 let _ = img_container_clone.append_child(&fallback);
@@ -223,9 +225,9 @@ fn render_garden_card(garden: &Garden, growth_stage: i32) -> Option<web_sys::Ele
     let _ = card.append_child(&stage_text);
     let progress_bar = render::create_el_with_class(&doc, "div", "garden-progress-bar")?;
     let progress_fill = render::create_el_with_class(&doc, "div", "garden-progress-fill")?;
-    let progress_percent = (growth_stage as f32 / 5.0 * 100.0) as i32;
+    let progress_scale = (growth_stage as f64 / 5.0).clamp(0.0, 1.0);
     dom::with_buf(|buf| {
-        let _ = write!(buf, "width: {progress_percent}%");
+        let _ = write!(buf, "--garden-progress-scale: {progress_scale:.4}");
         dom::set_attr(&progress_fill, "style", buf);
     });
     let _ = progress_bar.append_child(&progress_fill);

@@ -1883,12 +1883,13 @@
   border-radius: var(--radius-lg);
   border: 3px solid rgba(45, 27, 48, 0.08);
   overflow: hidden;
+  contain: paint;
   box-shadow: inset 0 2px 4px rgba(45, 27, 48, 0.06);
 }
 
 .hug-meter-fill {
+  width: 100%;
   height: 100%;
-  width: 0%;
   background: linear-gradient(90deg,
       var(--color-pink),
       var(--color-yellow),
@@ -1896,7 +1897,10 @@
       var(--color-blue),
       var(--color-purple));
   border-radius: var(--radius-lg);
-  transition: width 0.15s linear;
+  transform-origin: left center;
+  transform: scaleX(var(--hug-meter-scale, 0));
+  transition: transform 0.15s linear;
+  will-change: transform;
   box-shadow: 0 0 12px rgba(181, 126, 255, 0.3);
 }
 

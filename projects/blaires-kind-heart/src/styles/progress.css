@@ -311,13 +311,17 @@
   margin-bottom: var(--space-xs);
   box-shadow: inset 0 1px 3px rgba(45, 27, 48, 0.08);
   position: relative;
+  contain: paint;
 }
 
 .progress-bar-fill {
+  width: 100%;
   height: 100%;
   border-radius: var(--radius-xs);
   background: linear-gradient(90deg, var(--color-green) 0%, var(--color-green-vivid) 100%);
-  transition: width 0.8s var(--ease-smooth);
+  transform-origin: left center;
+  transform: scaleX(var(--progress-scale, 0));
+  transition: transform 0.8s var(--ease-smooth);
   min-width: 0;
   position: relative;
   overflow: hidden;

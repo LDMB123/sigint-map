@@ -589,10 +589,16 @@ async fn render_daily_quests(state: Rc<RefCell<AppState>>) {
         else {
             return;
         };
+        let progress_scale = f64::from(completed_pct) / 100.0;
         dom::with_buf(|buf| {
-            let _ = write!(buf, "width: {completed_pct}%");
+            let _ = write!(buf, "--quests-progress-scale: {progress_scale:.4}");
             dom::set_attr(&progress_fill, "style", buf);
         });
+        if completed_pct == 0 {
+            dom::set_attr(&progress_fill, "data-progress-zero", "true");
+        } else {
+            dom::remove_attr(&progress_fill, "data-progress-zero");
+        }
         if let Some(sparkle_marker) = render::text_el(&doc, "div", "quests-sparkle-marker", "🦄")
         {
             let _ = progress_fill.append_child(&sparkle_marker);
@@ -673,7 +679,9 @@ async fn render_daily_quests(state: Rc<RefCell<AppState>>) {
         let mut spoken_msg = "Quest completed! ".to_string();
         if let Some(idx_str) = dom::get_attr(&card, "data-quest-idx") {
             let idx: usize = idx_str.parse().unwrap_or(0);
-            if idx >= QUEST_POOL.len() { return; }
+            if idx >= QUEST_POOL.len() {
+                return;
+            }
             let q = &QUEST_POOL[idx];
             let did_you_know = get_did_you_know(q.emoji);
             if let Ok(Some(content)) = card.query_selector(".quest-content") {
@@ -716,10 +724,16 @@ async fn render_daily_quests(state: Rc<RefCell<AppState>>) {
         let completed = s.borrow().quests_completed_today;
         if let Some(progress_fill) = dom::query(".quests-progress-fill") {
             let pct = (completed as f64 / 3.0 * 100.0).min(100.0) as u32;
+            let progress_scale = f64::from(pct) / 100.0;
             dom::with_buf(|buf| {
-                let _ = write!(buf, "width: {pct}%");
+                let _ = write!(buf, "--quests-progress-scale: {progress_scale:.4}");
                 dom::set_attr(&progress_fill, "style", buf);
             });
+            if pct == 0 {
+                dom::set_attr(&progress_fill, "data-progress-zero", "true");
+            } else {
+                dom::remove_attr(&progress_fill, "data-progress-zero");
+            }
         }
         if let Some(progress_text) = dom::query(".quests-progress-text") {
             dom::with_buf(|buf| {

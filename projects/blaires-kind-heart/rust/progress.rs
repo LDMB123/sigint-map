@@ -238,7 +238,8 @@ fn render_garden_row(doc: &web_sys::Document, goal: &weekly_goals::WeeklyGoal) -
     dom::set_attr(&bar, "aria-valuenow", &pct.to_string());
     dom::set_attr(&bar, "aria-label", &format!("{goal_label} progress"));
     let fill = render::create_el_with_class(doc, "div", "progress-bar-fill")?;
-    dom::set_attr(&fill, "style", &format!("width: {pct}%"));
+    let scale = f64::from(pct) / 100.0;
+    dom::set_attr(&fill, "style", &format!("--progress-scale: {scale:.4}"));
     let _ = bar.append_child(&fill);
     let _ = info.append_child(&bar);
     render::append_text(

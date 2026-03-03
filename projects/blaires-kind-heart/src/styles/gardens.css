@@ -161,17 +161,21 @@
   border-radius: var(--radius-full);
   overflow: hidden;
   position: relative;
+  contain: paint;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .garden-progress-fill {
+  width: 100%;
   height: 100%;
   background: linear-gradient(90deg,
     var(--color-green-vivid) 0%,
     #4ade80 50%,
     var(--color-green) 100%);
   border-radius: var(--radius-full);
-  transition: width var(--duration-slow) var(--ease-bounce);
+  transform-origin: left center;
+  transform: scaleX(var(--garden-progress-scale, 0));
+  transition: transform var(--duration-slow) var(--ease-bounce);
   position: relative;
   overflow: hidden;
   box-shadow: 0 0 12px rgba(0, 194, 96, 0.45), 0 0 24px rgba(0, 194, 96, 0.25);

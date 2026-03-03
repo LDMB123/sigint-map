@@ -29,17 +29,20 @@
 }
 
 .quests-progress-fill {
+  width: 100%;
   height: 100%;
   background: linear-gradient(90deg, var(--color-pink-vivid), var(--color-purple), var(--color-purple-vivid));
   border-radius: var(--radius-full);
-  transition: width 0.8s var(--ease-elastic);
+  transform-origin: left center;
+  transform: scaleX(var(--quests-progress-scale, 0));
+  transition: transform 0.8s var(--ease-elastic);
   position: relative;
   min-width: 0;
   box-shadow: 0 0 12px rgba(139, 31, 255, 0.45);
 }
 
 /* Hide sparkle when no progress — animation: none required because float-emoji sets opacity */
-.quests-progress-fill[style="width: 0%"] .quests-sparkle-marker {
+.quests-progress-fill[data-progress-zero="true"] .quests-sparkle-marker {
   opacity: 0;
   animation: none;
   pointer-events: none;

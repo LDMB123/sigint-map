@@ -53,16 +53,21 @@ function isCacheable(response) {
   return !!response && response.ok;
 }
 
-function cacheResponse(cacheName, cacheKey, response) {
+function cacheResponse(event, cacheName, cacheKey, response) {
   if (!isCacheable(response)) {
     return;
   }
-  void caches
+
+  const writePromise = caches
     .open(cacheName)
     .then((cache) => cache.put(cacheKey, response.clone()))
     .catch((err) => {
       console.warn('cache write failed:', cacheName, cacheKey, err);
     });
+
+  if (event && typeof event.waitUntil === 'function') {
+    event.waitUntil(writePromise);
+  }
 }
 
 self.addEventListener('install', (event) => {
@@ -136,7 +141,7 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
         return fetch(request)
           .then((response) => {
-            cacheResponse(SHELL_CACHE, url.pathname, response);
+            cacheResponse(event, SHELL_CACHE, url.pathname, response);
             return response;
           })
           .catch(() => cached || Response.error());
@@ -145,14 +150,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.origin === location.origin && request.headers.get('accept')?.includes('text/html')) {
+  const isHtmlNavigation =
+    request.mode === 'navigate' ||
+    request.destination === 'document' ||
+    request.headers.get('accept')?.includes('text/html');
+
+  if (url.origin === location.origin && isHtmlNavigation) {
     const cacheKey = url.pathname || '/';
     event.respondWith(
       fetch(new Request(request, { cache: 'no-store' }))
-        .then((response) => {
+        .then(async (response) => {
           // Store by path (not the full Request) so later navigations match reliably even if
           // headers differ (Playwright offline mode, different Accept headers, etc).
-          cacheResponse(SHELL_CACHE, cacheKey, response);
+          if (isCacheable(response)) {
+            try {
+              const cache = await caches.open(SHELL_CACHE);
+              await cache.put(cacheKey, response.clone());
+            } catch (err) {
+              console.warn('cache write failed:', SHELL_CACHE, cacheKey, err);
+            }
+          }
           return response;
         })
         .catch(() => caches.match(cacheKey).then((res) => res || caches.match(OFFLINE_FALLBACK)))
@@ -166,7 +183,7 @@ self.addEventListener('fetch', (event) => {
       caches.match(cacheKey).then((cached) => {
         const fetchPromise = fetch(new Request(request, { cache: 'no-store' }))
           .then((response) => {
-            cacheResponse(DATA_CACHE, cacheKey, response);
+            cacheResponse(event, DATA_CACHE, cacheKey, response);
             return response;
           })
           .catch(() => cached);
@@ -183,7 +200,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(new Request(request, { cache: 'no-store' }))
         .then((response) => {
-          cacheResponse(ASSET_CACHE, cacheKey, response);
+          cacheResponse(event, ASSET_CACHE, cacheKey, response);
           return response;
         })
         .catch(() => caches.match(cacheKey))
@@ -197,7 +214,7 @@ self.addEventListener('fetch', (event) => {
       caches.match(cacheKey).then((cached) =>
         cached ||
         fetch(request).then((response) => {
-          cacheResponse(ASSET_CACHE, cacheKey, response);
+          cacheResponse(event, ASSET_CACHE, cacheKey, response);
           return response;
         })
       )
