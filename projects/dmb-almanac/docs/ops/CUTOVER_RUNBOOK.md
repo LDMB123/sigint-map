@@ -27,6 +27,7 @@ Fast path (recommended):
    - `cd rust && cargo test -p dmb_app --test route_parity`
    - Note: parity compares against `rust/crates/dmb_app/tests/fixtures/routes_fixture.json` (a checked-in snapshot from a prior router).
 4. Rust E2E suite (against a running Rust server):
+   - Build hydrate package: `cd rust && cargo run -p xtask -- build-hydrate-pkg`
    - Start server: `cd rust && cargo run -p dmb_server`
    - Run E2E: `cd e2e && BASE_URL=http://127.0.0.1:3000 npm run test:e2e -- tests/e2e/rust-runtime.spec.js tests/e2e/rust-offline.spec.js tests/e2e/rust-import-completes.spec.js tests/e2e/rust-search.spec.js tests/e2e/rust-previous-idb-migration.spec.js tests/e2e/rust-previous-cache-cleanup.spec.js tests/e2e/rust-sw-update.spec.js --project=chromium --workers=1`
 

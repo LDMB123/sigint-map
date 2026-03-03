@@ -71,6 +71,8 @@ const SQLITE_POOL_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(5);
 const SQLITE_POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(600);
 const SQLITE_POOL_MAX_LIFETIME: Duration = Duration::from_secs(1800);
 const SQLITE_BUSY_TIMEOUT: Duration = Duration::from_secs(5);
+const MISSING_STATIC_ASSETS_HELP: &str =
+    "required static assets missing; run `cargo run -p xtask -- build-hydrate-pkg` from rust/ and start dmb_server from rust/ so static/pkg resolves";
 const DEFAULT_SQLITE_CANDIDATES: &[&str] = &[
     "data/dmb-almanac.db",
     "../data/dmb-almanac.db",
@@ -253,7 +255,7 @@ async fn main() {
     if !missing_assets.is_empty() {
         tracing::error!(
             missing_assets = ?missing_assets,
-            "required static assets missing; start dmb_server from the rust/ directory so static/pkg is resolvable"
+            "{MISSING_STATIC_ASSETS_HELP}"
         );
         std::process::exit(1);
     }
@@ -678,6 +680,14 @@ mod tests {
             "expected no missing assets: {missing:?}"
         );
         let _ = fs::remove_dir_all(cwd);
+    }
+
+    #[test]
+    fn static_asset_guard_help_mentions_hydrate_pkg_build() {
+        assert!(
+            MISSING_STATIC_ASSETS_HELP.contains("build-hydrate-pkg"),
+            "startup remediation should mention build-hydrate-pkg command"
+        );
     }
 
     #[tokio::test]

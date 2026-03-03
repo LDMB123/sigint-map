@@ -13,10 +13,11 @@ This workspace contains the Rust-first rebuild of the DMB Almanac PWA, including
 7. Build data manifest: `cargo run -p dmb_pipeline -- build-data-manifest`
 8. Run Rust tests: `cargo test -p dmb_app -p dmb_server -p dmb_pipeline -p dmb_core`
 9. Run clippy: `cargo clippy -p dmb_core -p dmb_pipeline -p dmb_server --all-targets -D warnings` and `cargo clippy -p dmb_app --features ssr --all-targets -D warnings`
-10. Run E2E (Playwright): `cd ../e2e && npm ci && BASE_URL=http://127.0.0.1:3000 npm run test:e2e -- --project=chromium --workers=1`
-11. Verify PWA installability and offline flows in Chrome 143 (macOS 26.2): install, offline navigation, share-target
-12. Verify AI diagnostics: WebGPU enabled status, ANN cap diagnostics, storage pressure handling
-13. Deploy and smoke test `/`, `/search`, `/shows/:id`, `/offline`
+10. Build hydrate package for `static/pkg`: `cargo run -p xtask -- build-hydrate-pkg`
+11. Run E2E (Playwright): `cd ../e2e && npm ci && BASE_URL=http://127.0.0.1:3000 npm run test:e2e -- --project=chromium --workers=1`
+12. Verify PWA installability and offline flows in Chrome 143 (macOS 26.2): install, offline navigation, share-target
+13. Verify AI diagnostics: WebGPU enabled status, ANN cap diagnostics, storage pressure handling
+14. Deploy and smoke test `/`, `/search`, `/shows/:id`, `/offline`
 
 ## Cutover Readiness Checklist
 1. Rust pipeline artifacts present in `static/data/`:

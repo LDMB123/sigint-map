@@ -8,6 +8,7 @@ bash scripts/cutover-rehearsal.sh
 
 # Run the Rust server (dev)
 cd rust
+cargo run -p xtask -- build-hydrate-pkg
 cargo run -p dmb_server
 ```
 

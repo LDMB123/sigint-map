@@ -21,6 +21,7 @@ Run the Rust server:
 
 ```bash
 cd rust
+cargo run -p xtask -- build-hydrate-pkg
 cargo run -p dmb_server
 ```
 

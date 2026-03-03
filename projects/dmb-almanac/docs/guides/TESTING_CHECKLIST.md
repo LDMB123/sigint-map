@@ -37,7 +37,7 @@ BASE_URL=http://127.0.0.1:3000 npm run test:e2e -- --project=chromium --workers=
 ```
 
 ## Manual Smoke (Local)
-1. Start server: `cd rust && cargo run -p dmb_server`
+1. Build hydrate package and start server: `cd rust && cargo run -p xtask -- build-hydrate-pkg && cargo run -p dmb_server`
 2. Visit `http://127.0.0.1:3000`
 3. Confirm:
    - PWA Status panel reports Online
