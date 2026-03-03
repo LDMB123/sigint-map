@@ -72,6 +72,23 @@ fn do_burst(
         spawn_burst(emojis, count, duration_ms);
     }
 }
+
+fn gpu_config_for_emojis(
+    emojis: &'static [&'static str],
+) -> Option<&'static gpu_particles::BurstConfig> {
+    if std::ptr::eq(emojis, HEARTS) {
+        Some(&gpu_particles::BURST_HEARTS)
+    } else if std::ptr::eq(emojis, STARS) {
+        Some(&gpu_particles::BURST_STARS)
+    } else if std::ptr::eq(emojis, PARTY) {
+        Some(&gpu_particles::BURST_PARTY)
+    } else if std::ptr::eq(emojis, UNICORN) {
+        Some(&gpu_particles::BURST_UNICORN)
+    } else {
+        None
+    }
+}
+
 fn spawn_burst(emojis: &'static [&'static str], count: usize, duration_ms: u32) {
     let doc = dom::document();
     let Some(container) = render::create_el_with_class(&doc, "div", "confetti-container") else {
@@ -151,6 +168,12 @@ fn delayed_burst(emojis: &'static [&'static str], count: usize, duration_ms: u32
         if dom::prefers_reduced_motion() {
             return;
         }
+        if gpu::is_available() {
+            if let Some(cfg) = gpu_config_for_emojis(emojis) {
+                gpu_particles::burst(cfg);
+                return;
+            }
+        }
         native_apis::vibrate_tap();
         spawn_burst(emojis, count, duration_ms);
     });
@@ -171,7 +194,11 @@ pub fn sparkle_kindness_aura() {
     let _ = container.append_child(&bg);
 
     let frag = doc.create_document_fragment();
-    let num_particles = 15;
+    let num_particles = if gpu::is_ipad_mini_6_profile() {
+        10
+    } else {
+        15
+    };
     let colors = [
         "rgba(255, 143, 171, 0.9)", // Pink
         "rgba(181, 126, 255, 0.9)", // Purple

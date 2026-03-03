@@ -272,7 +272,7 @@
     box-shadow: var(--shadow);
     content-visibility: auto;
     contain: layout paint style;
-    animation: page-enter 280ms ease-out;
+    animation: page-enter 220ms ease-out;
 
     h1 {
       font-size: clamp(2rem, 4vw, 3.2rem);
@@ -297,11 +297,9 @@
   @keyframes page-enter {
     from {
       opacity: 0;
-      transform: translateY(8px);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 
@@ -793,6 +791,10 @@
     gap: 0.35rem;
     box-shadow: var(--shadow);
     min-width: 220px;
+    height: clamp(260px, 36vh, 420px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    contain: layout paint;
   }
 
   .pwa-status__row {
@@ -818,26 +820,10 @@
   .pwa-status__row--update {
     display: grid;
     gap: 0.35rem;
-    animation: update-pulse 2.4s ease-in-out infinite;
   }
 
   .pwa-update-message {
     font-weight: 600;
-  }
-
-  @keyframes update-pulse {
-    0% {
-      transform: translateY(0);
-      opacity: 1;
-    }
-    50% {
-      transform: translateY(-2px);
-      opacity: 0.9;
-    }
-    100% {
-      transform: translateY(0);
-      opacity: 1;
-    }
   }
 
   :is(.pwa-update-actions, .pill-row) {
@@ -1248,6 +1234,7 @@
       right: 0.75rem;
       bottom: calc(0.75rem + env(safe-area-inset-bottom));
       min-width: 0;
+      height: min(52vh, 300px);
     }
   }
 }

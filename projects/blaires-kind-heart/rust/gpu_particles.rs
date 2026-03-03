@@ -7,6 +7,8 @@ const FLOATS_PER_PARTICLE: usize = 8;
 const MAX_PARTICLES: usize = 512;
 const PARTICLE_WORKGROUP_SIZE: u32 = 256;
 const PARTICLE_BUFFER_SIZE: usize = MAX_PARTICLES * FLOATS_PER_PARTICLE * 4;
+const IPAD_MINI_PARTICLE_SCALE: f32 = 0.75;
+const IPAD_MINI_PARTICLE_FRAME_MS: f64 = 33.0;
 pub struct BurstConfig {
     pub count: u32,
     pub lifetime: f32,
@@ -90,6 +92,8 @@ thread_local! {
     static PIPELINE: RefCell<Option<ParticlePipeline>> = const { RefCell::new(None) };
     static ACTIVE_BURST: RefCell<Option<ActiveBurst>> = const { RefCell::new(None) };
     static RENDERING_PAUSED: RefCell<bool> = const { RefCell::new(false) };
+    static PARTICLE_SCRATCH: RefCell<[f32; MAX_PARTICLES * FLOATS_PER_PARTICLE]> =
+        const { RefCell::new([0.0; MAX_PARTICLES * FLOATS_PER_PARTICLE]) };
 }
 pub fn set_paused(paused: bool) {
     RENDERING_PAUSED.with(|cell| {
@@ -101,8 +105,8 @@ struct ParticlePipeline {
     render_pipeline: bindings::GpuRenderPipeline,
     particle_buffer: bindings::GpuBuffer,
     uniform_buffer: bindings::GpuBuffer,
-    compute_bgl: bindings::GpuBindGroupLayout,
-    render_bgl: bindings::GpuBindGroupLayout,
+    compute_bind_group: bindings::GpuBindGroup,
+    render_bind_group: bindings::GpuBindGroup,
 }
 struct ActiveBurst {
     _start_time: f64,
@@ -149,8 +153,16 @@ fn create_pipeline(state: &gpu::GpuState) -> Option<ParticlePipeline> {
     uniform_desc.set_label("uniforms");
     let uniform_buffer = device.create_buffer(&uniform_desc);
 
-    let compute_shader = create_shader(device, include_str!("../shaders/particles_compute.wgsl"), "particle-compute");
-    let render_shader = create_shader(device, include_str!("../shaders/particles_render.wgsl"), "particle-render");
+    let compute_shader = create_shader(
+        device,
+        include_str!("../shaders/particles_compute.wgsl"),
+        "particle-compute",
+    );
+    let render_shader = create_shader(
+        device,
+        include_str!("../shaders/particles_render.wgsl"),
+        "particle-render",
+    );
 
     let compute_bgl = device.create_bind_group_layout(&create_bind_group_layout_desc(true));
     let render_bgl = device.create_bind_group_layout(&create_bind_group_layout_desc(false));
@@ -180,16 +192,25 @@ fn create_pipeline(state: &gpu::GpuState) -> Option<ParticlePipeline> {
         &state.format,
     );
 
+    let compute_bind_group =
+        create_bind_group(device, &compute_bgl, &particle_buffer, &uniform_buffer);
+    let render_bind_group =
+        create_bind_group(device, &render_bgl, &particle_buffer, &uniform_buffer);
+
     Some(ParticlePipeline {
         compute_pipeline,
         render_pipeline,
         particle_buffer,
         uniform_buffer,
-        compute_bgl,
-        render_bgl,
+        compute_bind_group,
+        render_bind_group,
     })
 }
-fn create_shader(device: &bindings::GpuDevice, code: &str, label: &str) -> bindings::GpuShaderModule {
+fn create_shader(
+    device: &bindings::GpuDevice,
+    code: &str,
+    label: &str,
+) -> bindings::GpuShaderModule {
     let desc = bindings::GpuShaderModuleDescriptor::new(code);
     desc.set_label(label);
     device.create_shader_module(&desc)
@@ -229,6 +250,25 @@ fn create_bind_group_layout_desc(is_compute: bool) -> bindings::GpuBindGroupLayo
 
     bindings::GpuBindGroupLayoutDescriptor::new(&entries)
 }
+fn create_bind_group(
+    device: &bindings::GpuDevice,
+    layout: &bindings::GpuBindGroupLayout,
+    particle_buffer: &bindings::GpuBuffer,
+    uniform_buffer: &bindings::GpuBuffer,
+) -> bindings::GpuBindGroup {
+    let particle_binding = bindings::GpuBufferBinding::new(particle_buffer);
+    let uniform_binding = bindings::GpuBufferBinding::new(uniform_buffer);
+    let entries = js_sys::Array::new();
+    entries.push(&bindings::GpuBindGroupEntry::new(
+        0,
+        particle_binding.as_ref(),
+    ));
+    entries.push(&bindings::GpuBindGroupEntry::new(
+        1,
+        uniform_binding.as_ref(),
+    ));
+    device.create_bind_group(&bindings::GpuBindGroupDescriptor::new(&entries, layout))
+}
 fn create_render_pipeline(
     device: &bindings::GpuDevice,
     shader: &bindings::GpuShaderModule,
@@ -262,45 +302,59 @@ fn create_render_pipeline(
 }
 fn spawn_burst(config: &BurstConfig) {
     stop_active_burst();
-    let count = config.count.min(MAX_PARTICLES as u32);
+    let requested_count = config.count.min(MAX_PARTICLES as u32);
+    // iPad mini 6 profile keeps burst effects smooth while reducing compute load.
+    let count = if gpu::is_ipad_mini_6_profile() {
+        ((requested_count as f32) * IPAD_MINI_PARTICLE_SCALE)
+            .round()
+            .clamp(24.0, MAX_PARTICLES as f32) as u32
+    } else {
+        requested_count
+    };
     let duration = f64::from(config.lifetime) * 1000.0;
-    let mut particle_data = vec![0.0f32; MAX_PARTICLES * FLOATS_PER_PARTICLE];
     let now = crate::browser_apis::now_ms();
-    for i in 0..count as usize {
-        let base = i * FLOATS_PER_PARTICLE;
-        let seed = ((now as u64).wrapping_add(i as u64 * 7919)) % 10000;
-        let angle = (seed as f32 / 10000.0) * std::f32::consts::TAU;
-        let speed = config.speed_min
-            + (((seed * 3) % 10000) as f32 / 10000.0) * (config.speed_max - config.speed_min);
-        particle_data[base] = 0.4 + (((seed * 7) % 1000) as f32 / 1000.0) * 0.2;
-        particle_data[base + 1] = 0.5 + (((seed * 13) % 1000) as f32 / 1000.0) * 0.1;
-        particle_data[base + 2] = angle.cos() * speed;
-        particle_data[base + 3] = angle.sin() * speed - 0.3;
-        particle_data[base + 4] = 1.0;
-        particle_data[base + 5] = (i % config.colors.len()) as f32;
-        particle_data[base + 6] = config.size_min
-            + (((seed * 17) % 1000) as f32 / 1000.0) * (config.size_max - config.size_min);
-        particle_data[base + 7] = angle;
-    }
-    PIPELINE.with(|cell| {
-        let guard = cell.borrow();
-        let Some(pipeline) = guard.as_ref() else {
-            return;
-        };
-        gpu::with_gpu(|state| {
-            let bytes: &[u8] = bytemuck_cast_slice(&particle_data);
-            let u8_arr = js_sys::Uint8Array::from(bytes);
-            state
-                .queue
-                .write_buffer_with_u32_and_u8_array(&pipeline.particle_buffer, 0, &u8_arr);
+    PARTICLE_SCRATCH.with(|scratch| {
+        let mut particle_data = scratch.borrow_mut();
+        particle_data.fill(0.0);
+        for i in 0..count as usize {
+            let base = i * FLOATS_PER_PARTICLE;
+            let seed = ((now as u64).wrapping_add(i as u64 * 7919)) % 10000;
+            let angle = (seed as f32 / 10000.0) * std::f32::consts::TAU;
+            let speed = config.speed_min
+                + (((seed * 3) % 10000) as f32 / 10000.0) * (config.speed_max - config.speed_min);
+            particle_data[base] = 0.4 + (((seed * 7) % 1000) as f32 / 1000.0) * 0.2;
+            particle_data[base + 1] = 0.5 + (((seed * 13) % 1000) as f32 / 1000.0) * 0.1;
+            particle_data[base + 2] = angle.cos() * speed;
+            particle_data[base + 3] = angle.sin() * speed - 0.3;
+            particle_data[base + 4] = 1.0;
+            particle_data[base + 5] = (i % config.colors.len()) as f32;
+            particle_data[base + 6] = config.size_min
+                + (((seed * 17) % 1000) as f32 / 1000.0) * (config.size_max - config.size_min);
+            particle_data[base + 7] = angle;
+        }
+        PIPELINE.with(|cell| {
+            let guard = cell.borrow();
+            let Some(pipeline) = guard.as_ref() else {
+                return;
+            };
+            gpu::with_gpu(|state| {
+                write_buffer_from_f32(&state.queue, &pipeline.particle_buffer, &particle_data[..]);
+            });
         });
     });
     let start_time = now;
     let gravity = config.gravity;
     let particle_count = count;
+    let target_frame_ms = if gpu::is_ipad_mini_6_profile() {
+        IPAD_MINI_PARTICLE_FRAME_MS
+    } else {
+        16.0
+    };
+    let last_frame_ts = Rc::new(RefCell::new(0.0f64));
     type RafClosure = Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>>;
     let closure: RafClosure = Rc::new(RefCell::new(None));
     let closure_clone = closure.clone();
+    let last_frame_ts_clone = last_frame_ts.clone();
     let frame_fn = Closure::<dyn FnMut(f64)>::new(move |timestamp: f64| {
         let is_paused = RENDERING_PAUSED.with(|cell| *cell.borrow());
         if is_paused {
@@ -314,8 +368,23 @@ fn spawn_burst(config: &BurstConfig) {
             gpu::clear_frame();
             return;
         }
-        let dt = 1.0 / 60.0;
-        render_frame(dt as f32, gravity, particle_count, elapsed as f32 / 1000.0);
+        let should_render = {
+            let mut last = last_frame_ts_clone.borrow_mut();
+            if *last > 0.0 && (timestamp - *last) < target_frame_ms {
+                false
+            } else {
+                *last = timestamp;
+                true
+            }
+        };
+        if should_render {
+            let dt = if target_frame_ms >= 30.0 {
+                1.0 / 30.0
+            } else {
+                1.0 / 60.0
+            };
+            render_frame(dt as f32, gravity, particle_count, elapsed as f32 / 1000.0);
+        }
         if let Some(ref cb) = *closure_clone.borrow() {
             let id = native_apis::request_animation_frame(cb);
             ACTIVE_BURST.with(|cell| {
@@ -355,45 +424,12 @@ fn render_frame(dt: f32, gravity: f32, particle_count: u32, elapsed: f32) {
                 0.0f32,
                 0.0,
             ];
-            let bytes: &[u8] = bytemuck_cast_slice(&uniforms);
-            let u8_arr = js_sys::Uint8Array::from(bytes);
-            state
-                .queue
-                .write_buffer_with_u32_and_u8_array(&pipeline.uniform_buffer, 0, &u8_arr);
-
-            let particle_binding = bindings::GpuBufferBinding::new(&pipeline.particle_buffer);
-            let uniform_binding = bindings::GpuBufferBinding::new(&pipeline.uniform_buffer);
-
-            let entries = js_sys::Array::new();
-            entries.push(&bindings::GpuBindGroupEntry::new(
-                0,
-                particle_binding.as_ref(),
-            ));
-            entries.push(&bindings::GpuBindGroupEntry::new(
-                1,
-                uniform_binding.as_ref(),
-            ));
-
-            let bind_group_compute =
-                state
-                    .device
-                    .create_bind_group(&bindings::GpuBindGroupDescriptor::new(
-                        &entries,
-                        &pipeline.compute_bgl,
-                    ));
-
-            let bind_group_render =
-                state
-                    .device
-                    .create_bind_group(&bindings::GpuBindGroupDescriptor::new(
-                        &entries,
-                        &pipeline.render_bgl,
-                    ));
+            write_buffer_from_f32(&state.queue, &pipeline.uniform_buffer, &uniforms);
 
             let encoder = state.device.create_command_encoder();
             let compute_pass = encoder.begin_compute_pass();
             compute_pass.set_pipeline(&pipeline.compute_pipeline);
-            compute_pass.set_bind_group(0, Some(&bind_group_compute));
+            compute_pass.set_bind_group(0, Some(&pipeline.compute_bind_group));
 
             let workgroups = particle_count.div_ceil(PARTICLE_WORKGROUP_SIZE);
             compute_pass.dispatch_workgroups(workgroups);
@@ -412,7 +448,7 @@ fn render_frame(dt: f32, gravity: f32, particle_count: u32, elapsed: f32) {
             let render_pass = encoder
                 .begin_render_pass(&bindings::GpuRenderPassDescriptor::new(&color_attachments));
             render_pass.set_pipeline_render(&pipeline.render_pipeline);
-            render_pass.set_bind_group_render(0, Some(&bind_group_render));
+            render_pass.set_bind_group_render(0, Some(&pipeline.render_bind_group));
             render_pass.draw_with_instance_count(4, particle_count);
             render_pass.end();
 
@@ -428,6 +464,14 @@ fn stop_active_burst() {
             native_apis::cancel_animation_frame(burst.frame_id);
         }
     });
+}
+fn write_buffer_from_f32(queue: &bindings::GpuQueue, buffer: &bindings::GpuBuffer, data: &[f32]) {
+    // SAFETY: view() borrows current WASM linear memory. We immediately call
+    // writeBuffer and do not allocate between creating the view and using it.
+    // That avoids memory growth invalidating the view during this call.
+    let bytes = bytemuck_cast_slice(data);
+    let view = unsafe { js_sys::Uint8Array::view(bytes) };
+    queue.write_buffer_with_u32_and_u8_array(buffer, 0, &view);
 }
 const fn bytemuck_cast_slice(data: &[f32]) -> &[u8] {
     unsafe { std::slice::from_raw_parts(data.as_ptr() as *const u8, std::mem::size_of_val(data)) }

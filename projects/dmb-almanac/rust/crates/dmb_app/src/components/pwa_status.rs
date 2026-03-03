@@ -21,6 +21,8 @@ const UPDATE_SNOOZE_MS: f64 = 6.0 * 60.0 * 60.0 * 1000.0;
 #[cfg(feature = "hydrate")]
 const AUTO_UPDATE_CHECK_INTERVAL_MS: f64 = 30.0 * 60.0 * 1000.0;
 #[cfg(feature = "hydrate")]
+const DEFERRED_STATUS_TASKS_DELAY_MS: i32 = 8000;
+#[cfg(feature = "hydrate")]
 const UPDATE_CHECKED_AT_KEY: &str = "pwa_update_checked_at";
 #[cfg(feature = "hydrate")]
 const UPDATE_DISMISSED_AT_KEY: &str = "pwa_update_dismissed_at";
@@ -851,11 +853,9 @@ fn hydrate_local_snapshot(state: &PwaStatusState) {
 
 #[cfg(feature = "hydrate")]
 fn spawn_seed_and_diagnostics_refresh(state: &PwaStatusState) {
-    let state = *state;
-
+    let status = state.status;
     spawn_local(async move {
-        crate::data::ensure_seed_data(state.status).await;
-        refresh_data_diagnostics(state).await;
+        crate::data::ensure_seed_data(status).await;
     });
 }
 
@@ -1228,11 +1228,15 @@ fn initialize_pwa_status_state(state: PwaStatusState) {
             hydrate_local_snapshot(&state);
             state.ann_cap_override.set(crate::ai::ann_cap_override_mb());
 
-            spawn_seed_and_diagnostics_refresh(&state);
-            spawn_storage_health_tasks(&state);
-            spawn_ai_config_sync_task(&state);
-            spawn_sw_runtime_task(&state);
-            register_online_offline_listeners(&state);
+            // Defer non-critical PWA diagnostics/import work so first paint and hydration
+            // complete before large IndexedDB and metadata tasks run.
+            schedule_window_timeout(DEFERRED_STATUS_TASKS_DELAY_MS, move || {
+                spawn_seed_and_diagnostics_refresh(&state);
+                spawn_storage_health_tasks(&state);
+                spawn_ai_config_sync_task(&state);
+                spawn_sw_runtime_task(&state);
+                register_online_offline_listeners(&state);
+            });
         });
     }
 }

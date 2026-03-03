@@ -5,6 +5,12 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::HtmlCanvasElement;
+
+const IPAD_MINI_6_SCREEN_W: i32 = 744;
+const IPAD_MINI_6_SCREEN_H: i32 = 1133;
+const IPAD_MINI_6_DPR: f64 = 2.0;
+const IPAD_MINI_6_GPU_SCALE: f64 = 0.75;
+
 thread_local! {
     static GPU: RefCell<Option<GpuState>> = const { RefCell::new(None) };
     static GPU_INIT_TIMEOUT: RefCell<bool> = const { RefCell::new(false) };
@@ -28,6 +34,51 @@ where
         guard.as_ref().map(f)
     })
 }
+
+pub fn is_ipad_mini_6_profile() -> bool {
+    let window = dom::window();
+    let Ok(screen) = window.screen() else {
+        return false;
+    };
+    let w = screen.width().unwrap_or_default();
+    let h = screen.height().unwrap_or_default();
+    let dpr = window.device_pixel_ratio();
+    let nav = window.navigator();
+    let touch_points = nav.max_touch_points();
+
+    let dims_match = (w == IPAD_MINI_6_SCREEN_W && h == IPAD_MINI_6_SCREEN_H)
+        || (w == IPAD_MINI_6_SCREEN_H && h == IPAD_MINI_6_SCREEN_W);
+    let dpr_match = (dpr - IPAD_MINI_6_DPR).abs() < 0.05;
+    dims_match && dpr_match && touch_points > 1
+}
+
+fn gpu_resolution_scale() -> f64 {
+    if is_ipad_mini_6_profile() {
+        IPAD_MINI_6_GPU_SCALE
+    } else {
+        1.0
+    }
+}
+
+fn apply_profile_attrs() {
+    let document = dom::document();
+    let Some(body) = document.body() else {
+        return;
+    };
+    let body_el: &web_sys::Element = body.as_ref();
+    if is_ipad_mini_6_profile() {
+        dom::set_attr(body_el, "data-device-profile", "ipad-mini-6");
+        dom::set_attr(
+            body_el,
+            "data-gpu-scale",
+            &format!("{IPAD_MINI_6_GPU_SCALE:.2}"),
+        );
+    } else {
+        dom::remove_attr(body_el, "data-device-profile");
+        dom::remove_attr(body_el, "data-gpu-scale");
+    }
+}
+
 pub async fn init() {
     let gpu_promise = wasm_bindgen_futures::future_to_promise(async {
         match try_init().await {
@@ -103,6 +154,7 @@ async fn try_init() -> Result<(), JsValue> {
 }
 fn size_canvas_to_window(canvas: &HtmlCanvasElement) {
     let window = dom::window();
+    apply_profile_attrs();
     let w = window
         .inner_width()
         .ok()
@@ -113,9 +165,9 @@ fn size_canvas_to_window(canvas: &HtmlCanvasElement) {
         .ok()
         .and_then(|v| v.as_f64())
         .unwrap_or(600.0) as u32;
-    let dpr = window.device_pixel_ratio();
-    canvas.set_width((f64::from(w) * dpr) as u32);
-    canvas.set_height((f64::from(h) * dpr) as u32);
+    let dpr = window.device_pixel_ratio() * gpu_resolution_scale();
+    canvas.set_width((f64::from(w) * dpr).round() as u32);
+    canvas.set_height((f64::from(h) * dpr).round() as u32);
 }
 fn get_or_create_canvas() -> Result<HtmlCanvasElement, JsValue> {
     if let Some(el) = dom::query("#gpu-canvas") {

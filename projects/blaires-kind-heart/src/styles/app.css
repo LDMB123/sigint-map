@@ -76,6 +76,12 @@ body::before {
   z-index: 0;
 }
 
+/* iPad mini 6: lower-cost grain compositing for smoother scroll/input on A15. */
+body[data-device-profile="ipad-mini-6"]::before {
+  opacity: 0.38;
+  mix-blend-mode: normal;
+}
+
 /* Page Visibility API: Pause all animations when tab hidden (GPU savings) */
 body[data-animations-paused] * {
   animation-play-state: paused !important;
@@ -271,6 +277,11 @@ body[data-animations-paused] .fade-in-up {
   z-index: 2;
   /* Shimmer animation — 3s linear for smooth, continuous sweep */
   animation: panel-header-shimmer 3s linear infinite;
+}
+
+/* iPad mini 6: slower shimmer sweep lowers continuous repaint pressure. */
+body[data-device-profile="ipad-mini-6"] .panel-header {
+  animation-duration: 6s;
 }
 
 @keyframes panel-header-shimmer {

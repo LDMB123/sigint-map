@@ -145,6 +145,18 @@
   --z-effect: 9999;
 }
 
+/* iPad mini 6 profile tuning:
+   Reduce blur/shadow intensity to lower GPU tile cost on A15 while preserving style. */
+[data-device-profile="ipad-mini-6"] {
+  --backdrop-light: blur(10px) saturate(1.08);
+  --backdrop-medium: blur(14px) saturate(1.2);
+  --backdrop-heavy: blur(20px) saturate(1.8);
+  --backdrop-medium-sat: blur(14px) saturate(1.35);
+  --shadow-md: 0 6px 14px rgba(37, 19, 32, 0.11), 0 10px 22px rgba(37, 19, 32, 0.15);
+  --shadow-lg: 0 10px 20px rgba(37, 19, 32, 0.14), 0 20px 36px rgba(37, 19, 32, 0.18);
+  --shadow-glow-rainbow: 0 10px 24px rgba(139, 31, 255, 0.38), 0 0 40px rgba(255, 45, 114, 0.26);
+}
+
 /* ══════ Time-of-Day Color Overrides ══════ */
 
 /* Morning: bright, warm peach tones */
