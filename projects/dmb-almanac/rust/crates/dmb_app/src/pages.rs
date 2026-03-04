@@ -43,16 +43,6 @@ use crate::server::{
 
 type SharedEmbeddingIndex = std::sync::Arc<crate::ai::EmbeddingIndex>;
 
-#[cfg(feature = "hydrate")]
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = scheduler, js_name = postTask, catch)]
-    fn scheduler_post_task(
-        callback: &js_sys::Function,
-        options: &JsValue,
-    ) -> Result<js_sys::Promise, JsValue>;
-}
-
 // Leptos `Resource` requires `Send` futures even in WASM builds. IndexedDB (`dmb_idb`) futures are
 // `!Send`, so we bridge them by running the `!Send` future on the local executor and awaiting the
 // result through a `Send` oneshot receiver.
@@ -70,17 +60,7 @@ fn spawn_local_to_send<T: Send + 'static>(
 
 #[cfg(feature = "hydrate")]
 async fn wait_ms(ms: i32) {
-    let options = js_sys::Object::new();
-    let _ = js_sys::Reflect::set(
-        options.as_ref(),
-        &JsValue::from_str("delay"),
-        &JsValue::from_f64(f64::from(ms.max(0))),
-    );
-    let callback = js_sys::Function::new_no_args("");
-    let Ok(promise) = scheduler_post_task(&callback, options.as_ref()) else {
-        return;
-    };
-    let _ = JsFuture::from(promise).await;
+    crate::browser::scheduler::delay_ms(ms).await;
 }
 
 #[cfg(feature = "hydrate")]
@@ -1311,7 +1291,12 @@ fn action_refresh_runtime_metrics(state: AiDiagnosticsState) {
 fn action_reset_runtime_metrics(state: AiDiagnosticsState) {
     hydrate_action!(state, {
         let _ = js_reset_webgpu_runtime_telemetry();
+        crate::ai::reset_webgpu_policy_telemetry();
         state.webgpu_runtime.set(load_webgpu_runtime_telemetry());
+        state
+            .telemetry_snapshot
+            .set(crate::ai::load_ai_telemetry_snapshot());
+        state.worker_failure.set(crate::ai::worker_failure_status());
     });
 }
 

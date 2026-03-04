@@ -1,52 +1,14 @@
-const VERSION = '2026-03-04';
+const VERSION = '__DMB_SW_VERSION__';
 const CACHE_PREFIX = 'dmb-almanac-rs';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const DATA_CACHE = `${CACHE_PREFIX}-data-${VERSION}`;
 const ASSET_CACHE = `${CACHE_PREFIX}-asset-${VERSION}`;
 const OFFLINE_FALLBACK = '/offline.html';
 
-const SHELL_ASSETS = [
-  '/',
-  '/about',
-  '/ai-benchmark',
-  '/ai-diagnostics',
-  '/ai-smoke',
-  '/ai-warmup',
-  '/app.css',
-  '/assistant',
-  '/contact',
-  '/discography',
-  '/faq',
-  '/guests',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/liberation',
-  '/lists',
-  '/manifest.json',
-  '/my-shows',
-  '/offline',
-  '/offline.html',
-  '/open-file',
-  '/protocol',
-  '/releases',
-  '/search',
-  '/shows',
-  '/songs',
-  '/stats',
-  '/test-wasm',
-  '/tours',
-  '/venues',
-  '/visualizations',
-  '/webgpu-worker.js',
-  '/webgpu.js',
-];
+const SHELL_ASSETS = __DMB_SW_SHELL_ASSETS__;
 const SHELL_ASSET_SET = new Set(SHELL_ASSETS);
 
-const DATA_ASSETS = [
-  '/data/ai-config.json',
-  '/data/idb-migration-dry-run.json',
-  '/data/manifest.json',
-];
+const DATA_ASSETS = __DMB_SW_DATA_ASSETS__;
 
 async function notifyClients(type, payload = {}) {
   const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });

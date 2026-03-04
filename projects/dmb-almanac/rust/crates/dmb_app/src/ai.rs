@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 #[cfg(feature = "hydrate")]
@@ -11,6 +12,13 @@ use dmb_core::{hashed_embedding, AnnIvfIndex, EmbeddingRecord, SearchResult};
 #[cfg(feature = "hydrate")]
 use leptos::task::spawn_local;
 
+#[cfg(feature = "hydrate")]
+use crate::browser::storage::{
+    local_storage, local_storage_flag_enabled, local_storage_item, local_storage_json,
+    local_storage_parse, remove_local_storage_item, remove_storage_item, set_local_storage_flag,
+    set_local_storage_item, set_local_storage_json, set_storage_item, set_storage_json,
+    storage_flag_enabled, storage_item, with_local_storage,
+};
 #[cfg(feature = "hydrate")]
 use dmb_core::{EmbeddingChunk, EmbeddingManifest, CORE_SCHEMA_VERSION};
 #[cfg(feature = "hydrate")]
@@ -57,90 +65,6 @@ fn window_property(window: &web_sys::Window, name: &str) -> JsValue {
 }
 
 #[cfg(feature = "hydrate")]
-fn local_storage() -> Option<web_sys::Storage> {
-    web_sys::window().and_then(|window| window.local_storage().ok().flatten())
-}
-
-#[cfg(feature = "hydrate")]
-fn with_local_storage<T>(callback: impl FnOnce(&web_sys::Storage) -> T) -> Option<T> {
-    local_storage().map(|storage| callback(&storage))
-}
-
-#[cfg(feature = "hydrate")]
-fn storage_item(storage: &web_sys::Storage, key: &str) -> Option<String> {
-    storage.get_item(key).ok().flatten()
-}
-
-#[cfg(feature = "hydrate")]
-fn set_storage_item(storage: &web_sys::Storage, key: &str, value: &str) {
-    let _ = storage.set_item(key, value);
-}
-
-#[cfg(feature = "hydrate")]
-fn set_storage_json<T>(storage: &web_sys::Storage, key: &str, value: &T)
-where
-    T: Serialize + ?Sized,
-{
-    if let Ok(payload) = serde_json::to_string(value) {
-        set_storage_item(storage, key, &payload);
-    }
-}
-
-#[cfg(feature = "hydrate")]
-fn remove_storage_item(storage: &web_sys::Storage, key: &str) {
-    let _ = storage.remove_item(key);
-}
-
-#[cfg(feature = "hydrate")]
-fn local_storage_item(key: &str) -> Option<String> {
-    with_local_storage(|storage| storage_item(storage, key)).flatten()
-}
-
-#[cfg(feature = "hydrate")]
-fn local_storage_json<T>(key: &str) -> Option<T>
-where
-    T: serde::de::DeserializeOwned,
-{
-    local_storage_item(key).and_then(|payload| serde_json::from_str(&payload).ok())
-}
-
-#[cfg(feature = "hydrate")]
-fn local_storage_parse<T>(key: &str) -> Option<T>
-where
-    T: std::str::FromStr,
-{
-    local_storage_item(key)?.parse::<T>().ok()
-}
-
-#[cfg(feature = "hydrate")]
-fn set_local_storage_item(key: &str, value: &str) {
-    let _ = with_local_storage(|storage| set_storage_item(storage, key, value));
-}
-
-#[cfg(feature = "hydrate")]
-fn set_local_storage_json<T>(key: &str, value: &T)
-where
-    T: Serialize + ?Sized,
-{
-    let _ = with_local_storage(|storage| set_storage_json(storage, key, value));
-}
-
-#[cfg(feature = "hydrate")]
-fn remove_local_storage_item(key: &str) {
-    let _ = with_local_storage(|storage| remove_storage_item(storage, key));
-}
-
-#[cfg(feature = "hydrate")]
-fn local_storage_flag_enabled(key: &str) -> bool {
-    matches!(local_storage_item(key).as_deref(), Some("1"))
-}
-
-#[cfg(feature = "hydrate")]
-fn set_local_storage_flag(key: &str, enabled: bool) {
-    set_local_storage_item(key, if enabled { "1" } else { "0" });
-}
-
-#[cfg(feature = "hydrate")]
 thread_local! {
     static WEBGPU_DISABLED_CACHE: RefCell<Option<bool>> = const { RefCell::new(None) };
     static WORKER_THRESHOLD_READY: RefCell<bool> = const { RefCell::new(false) };
@@ -163,11 +87,6 @@ fn webgpu_disabled_value() -> bool {
         *cache.borrow_mut() = Some(loaded);
         loaded
     })
-}
-
-#[cfg(feature = "hydrate")]
-fn storage_flag_enabled(storage: &web_sys::Storage, key: &str) -> bool {
-    matches!(storage_item(storage, key).as_deref(), Some("1"))
 }
 
 #[cfg(feature = "hydrate")]
@@ -287,6 +206,34 @@ pub struct WorkerFailureStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct WebgpuPolicyTelemetry {
+    #[serde(default)]
+    pub counters: HashMap<String, u64>,
+    #[serde(default)]
+    pub last_event: Option<String>,
+    #[serde(default)]
+    pub last_event_ts: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct WebgpuPolicySnapshot {
+    #[serde(default)]
+    pub worker_threshold: Option<usize>,
+    #[serde(default)]
+    pub worker_max_floats: Option<usize>,
+    #[serde(default)]
+    pub worker_failure_until_ms: Option<f64>,
+    #[serde(default)]
+    pub worker_failure_remaining_ms: Option<f64>,
+    #[serde(default)]
+    pub worker_failure_reason: Option<String>,
+    #[serde(default)]
+    pub telemetry: WebgpuPolicyTelemetry,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ProbeCandidateMetric {
     pub probe_count: u32,
     pub candidate_count: usize,
@@ -385,6 +332,8 @@ pub struct AiTelemetrySnapshot {
     #[serde(default)]
     pub worker_failure_reason: Option<String>,
     #[serde(default)]
+    pub webgpu_policy: Option<WebgpuPolicySnapshot>,
+    #[serde(default)]
     pub webgpu_available: Option<bool>,
     #[serde(default)]
     pub webgpu_enabled: Option<bool>,
@@ -415,6 +364,8 @@ const MAX_BENCH_SAMPLE_VECTORS: usize = 12_000;
 #[cfg(feature = "hydrate")]
 pub(crate) const AI_TELEMETRY_KEY: &str = "dmb-ai-telemetry";
 #[cfg(feature = "hydrate")]
+pub(crate) const WEBGPU_POLICY_KEY: &str = "dmb-webgpu-policy";
+#[cfg(feature = "hydrate")]
 pub(crate) const WORKER_THRESHOLD_KEY: &str = "dmb-webgpu-worker-threshold";
 #[cfg(feature = "hydrate")]
 pub(crate) const WEBGPU_DISABLE_KEY: &str = "dmb-webgpu-disabled";
@@ -444,6 +395,10 @@ pub(crate) const EMBEDDING_SAMPLE_KEY: &str = "dmb-embedding-sample";
 const MIN_WORKER_THRESHOLD: usize = 5_000;
 #[cfg(feature = "hydrate")]
 const MAX_WORKER_THRESHOLD: usize = 1_000_000;
+#[cfg(feature = "hydrate")]
+const WORKER_FAIL_COOLDOWN_MS: f64 = 10.0 * 60.0 * 1000.0;
+#[cfg(feature = "hydrate")]
+const WORKER_MAX_FLOATS_FALLBACK: usize = 2_000_000;
 #[cfg(feature = "hydrate")]
 const WORKER_BENCH_MAX_FLOATS: usize = 400_000;
 #[cfg(feature = "hydrate")]
@@ -721,11 +676,53 @@ fn parse_worker_threshold(raw: Option<String>) -> Option<usize> {
 
 #[cfg(feature = "hydrate")]
 fn read_worker_max_floats() -> Option<usize> {
-    dmb_wasm::worker_max_floats()
+    let Some(window) = web_sys::window() else {
+        return Some(WORKER_MAX_FLOATS_FALLBACK);
+    };
+    let navigator = window.navigator();
+    let device_memory = navigator_property(&navigator, "deviceMemory").as_f64();
+    let cores = navigator.hardware_concurrency().max(1.0) as usize;
+    let max_floats = if device_memory.unwrap_or(0.0) >= 16.0 || cores >= 12 {
+        4_000_000
+    } else if device_memory.unwrap_or(0.0) >= 8.0 || cores >= 8 {
+        2_500_000
+    } else if device_memory.unwrap_or(0.0) >= 4.0 {
+        1_500_000
+    } else {
+        900_000
+    };
+    Some(max_floats)
+}
+
+#[cfg(feature = "hydrate")]
+fn load_webgpu_policy_telemetry(storage: &web_sys::Storage) -> WebgpuPolicyTelemetry {
+    storage_item(storage, WEBGPU_POLICY_KEY)
+        .and_then(|payload| serde_json::from_str::<WebgpuPolicyTelemetry>(&payload).ok())
+        .unwrap_or_default()
+}
+
+#[cfg(feature = "hydrate")]
+fn store_webgpu_policy_telemetry(storage: &web_sys::Storage, telemetry: &WebgpuPolicyTelemetry) {
+    set_storage_json(storage, WEBGPU_POLICY_KEY, telemetry);
+}
+
+#[cfg(feature = "hydrate")]
+fn bump_webgpu_policy_metric(storage: &web_sys::Storage, event: &str) {
+    let mut telemetry = load_webgpu_policy_telemetry(storage);
+    *telemetry.counters.entry(event.to_string()).or_insert(0) += 1;
+    telemetry.last_event = Some(event.to_string());
+    telemetry.last_event_ts = Some(js_sys::Date::now());
+    store_webgpu_policy_telemetry(storage, &telemetry);
+}
+
+#[cfg(feature = "hydrate")]
+fn reset_webgpu_policy_telemetry_storage(storage: &web_sys::Storage) {
+    remove_storage_item(storage, WEBGPU_POLICY_KEY);
 }
 
 #[cfg(feature = "hydrate")]
 pub fn worker_threshold_value() -> Option<usize> {
+    ensure_default_worker_threshold();
     read_worker_threshold()
 }
 
@@ -749,15 +746,10 @@ pub fn worker_failure_status() -> WorkerFailureStatus {
 #[cfg(feature = "hydrate")]
 pub fn clear_worker_failure_status() {
     let _ = with_local_storage(|storage| {
-        for key in [
-            WORKER_FAILURE_UNTIL_KEY,
-            WORKER_FAILURE_REASON_KEY,
-            WORKER_COOLDOWN_WARN_KEY,
-        ] {
-            remove_storage_item(storage, key);
-        }
+        clear_worker_failure_storage(storage);
+        bump_webgpu_policy_metric(storage, "worker_failure_cleared");
     });
-    dmb_wasm::clear_worker_failure_status();
+    store_ai_telemetry_snapshot(ann_cap_diagnostics().as_ref());
 }
 
 #[cfg(feature = "hydrate")]
@@ -773,6 +765,7 @@ pub fn set_worker_threshold_override(value: Option<usize>) {
             ensure_default_worker_threshold();
         }
     }
+    store_ai_telemetry_snapshot(ann_cap_diagnostics().as_ref());
 }
 
 #[cfg(feature = "hydrate")]
@@ -811,7 +804,9 @@ pub fn set_webgpu_disabled(disabled: bool) {
 #[cfg(feature = "hydrate")]
 fn store_worker_threshold(value: usize) {
     set_local_storage_item(WORKER_THRESHOLD_KEY, &value.to_string());
-    dmb_wasm::set_worker_threshold(value);
+    let _ = with_local_storage(|storage| {
+        bump_webgpu_policy_metric(storage, "worker_threshold_updated");
+    });
     mark_worker_threshold_ready();
 }
 
@@ -901,11 +896,86 @@ fn worker_failure_status_from_storage(storage: &web_sys::Storage) -> WorkerFailu
 }
 
 #[cfg(feature = "hydrate")]
+fn set_worker_failure_cooldown(storage: &web_sys::Storage, reason: &str) {
+    let until = js_sys::Date::now() + WORKER_FAIL_COOLDOWN_MS;
+    set_storage_item(storage, WORKER_FAILURE_UNTIL_KEY, &until.to_string());
+    set_storage_item(storage, WORKER_FAILURE_REASON_KEY, reason);
+    remove_storage_item(storage, WORKER_COOLDOWN_WARN_KEY);
+    bump_webgpu_policy_metric(storage, "worker_failure_marked");
+}
+
+#[cfg(feature = "hydrate")]
+fn clear_worker_failure_storage(storage: &web_sys::Storage) {
+    for key in [
+        WORKER_FAILURE_UNTIL_KEY,
+        WORKER_FAILURE_REASON_KEY,
+        WORKER_COOLDOWN_WARN_KEY,
+    ] {
+        remove_storage_item(storage, key);
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn worker_preflight_allows(
+    storage: &web_sys::Storage,
+    matrix_floats: usize,
+    metric_prefix: &str,
+) -> bool {
+    let failure = worker_failure_status_from_storage(storage);
+    if failure.cooldown_remaining_ms.is_some() {
+        bump_webgpu_policy_metric(storage, &format!("{metric_prefix}_fallback_cooldown"));
+        return false;
+    }
+
+    let worker_max_floats = read_worker_max_floats().unwrap_or(WORKER_MAX_FLOATS_FALLBACK);
+    if matrix_floats > worker_max_floats {
+        bump_webgpu_policy_metric(storage, &format!("{metric_prefix}_fallback_maxfloats"));
+        return false;
+    }
+
+    let threshold = parse_worker_threshold(storage_item(storage, WORKER_THRESHOLD_KEY))
+        .unwrap_or(MIN_WORKER_THRESHOLD);
+    if matrix_floats < threshold {
+        bump_webgpu_policy_metric(
+            storage,
+            &format!("{metric_prefix}_fallback_below_threshold"),
+        );
+        return false;
+    }
+
+    true
+}
+
+#[cfg(feature = "hydrate")]
+fn webgpu_policy_snapshot_from_storage(storage: &web_sys::Storage) -> WebgpuPolicySnapshot {
+    let failure = worker_failure_status_from_storage(storage);
+    WebgpuPolicySnapshot {
+        worker_threshold: parse_worker_threshold(storage_item(storage, WORKER_THRESHOLD_KEY)),
+        worker_max_floats: read_worker_max_floats(),
+        worker_failure_until_ms: failure.cooldown_until_ms,
+        worker_failure_remaining_ms: failure.cooldown_remaining_ms,
+        worker_failure_reason: failure.last_error,
+        telemetry: load_webgpu_policy_telemetry(storage),
+    }
+}
+
+#[cfg(feature = "hydrate")]
+pub fn load_webgpu_policy_snapshot() -> Option<WebgpuPolicySnapshot> {
+    with_local_storage(webgpu_policy_snapshot_from_storage)
+}
+
+#[cfg(feature = "hydrate")]
+pub fn reset_webgpu_policy_telemetry() {
+    let _ = with_local_storage(reset_webgpu_policy_telemetry_storage);
+}
+
+#[cfg(feature = "hydrate")]
 #[derive(Debug, Clone, Default)]
 struct TelemetryStorageSnapshot {
     ann_cap_override_mb: Option<u64>,
     worker_threshold: Option<usize>,
     worker_failure: WorkerFailureStatus,
+    webgpu_policy: WebgpuPolicySnapshot,
     ai_config_version: Option<String>,
     ai_config_generated_at: Option<String>,
     ai_config_seeded: bool,
@@ -921,6 +991,7 @@ fn telemetry_storage_snapshot(storage: &web_sys::Storage) -> TelemetryStorageSna
             .map(|mb| mb.clamp(MIN_ANN_CAP_MB, MAX_ANN_CAP_MB)),
         worker_threshold: parse_worker_threshold(storage_item(storage, WORKER_THRESHOLD_KEY)),
         worker_failure: worker_failure_status_from_storage(storage),
+        webgpu_policy: webgpu_policy_snapshot_from_storage(storage),
         ai_config_version: storage_item(storage, AI_CONFIG_VERSION_KEY),
         ai_config_generated_at: storage_item(storage, AI_CONFIG_GENERATED_AT_KEY),
         ai_config_seeded: storage_flag_enabled(storage, AI_CONFIG_SEEDED_KEY),
@@ -947,6 +1018,7 @@ fn store_ai_telemetry_snapshot(ann_cap: Option<&AnnCapDiagnostics>) {
         "workerFailureUntilMs": local_state.worker_failure.cooldown_until_ms,
         "workerFailureRemainingMs": local_state.worker_failure.cooldown_remaining_ms,
         "workerFailureReason": local_state.worker_failure.last_error,
+        "webgpuPolicy": local_state.webgpu_policy,
         "webgpuAvailable": caps.webgpu_available,
         "webgpuEnabled": caps.webgpu_enabled,
         "webgpuWorker": caps.webgpu_worker,
@@ -1787,6 +1859,134 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     None
 }
 
+#[cfg(feature = "hydrate")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum WebgpuPolicyBackend {
+    Worker,
+    Direct,
+}
+
+#[cfg(feature = "hydrate")]
+fn float32_array_to_vec(array: js_sys::Float32Array) -> Vec<f32> {
+    let mut out = vec![0.0; array.length() as usize];
+    array.copy_to(&mut out);
+    out
+}
+
+#[cfg(feature = "hydrate")]
+fn webgpu_policy_event(event: &str) {
+    let _ = with_local_storage(|storage| {
+        bump_webgpu_policy_metric(storage, event);
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn mark_worker_runtime_failure(reason: &str, fallback_event: &str) {
+    let _ = with_local_storage(|storage| {
+        set_worker_failure_cooldown(storage, reason);
+        bump_webgpu_policy_metric(storage, fallback_event);
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn clear_worker_runtime_failure() {
+    let _ = with_local_storage(clear_worker_failure_storage);
+}
+
+#[cfg(feature = "hydrate")]
+async fn webgpu_scores_with_policy(
+    query_vec: &[f32],
+    matrix: &[f32],
+    dim: usize,
+    caps: AiCapabilities,
+) -> Option<(Vec<f32>, WebgpuPolicyBackend)> {
+    if !caps.webgpu_enabled || dim == 0 {
+        return None;
+    }
+
+    ensure_default_worker_threshold();
+    let query_array = js_sys::Float32Array::from(query_vec);
+    let matrix_array = js_sys::Float32Array::from(matrix);
+
+    if caps.webgpu_worker {
+        let can_use_worker =
+            with_local_storage(|storage| worker_preflight_allows(storage, matrix.len(), "worker"))
+                .unwrap_or(false);
+        if can_use_worker {
+            webgpu_policy_event("worker_attempts");
+            if let Some(scores) =
+                dmb_wasm::webgpu_scores_worker(&query_array, &matrix_array, dim).await
+            {
+                clear_worker_runtime_failure();
+                webgpu_policy_event("worker_success");
+                return Some((float32_array_to_vec(scores), WebgpuPolicyBackend::Worker));
+            }
+            mark_worker_runtime_failure(
+                "WebGPU worker scoring failed",
+                "worker_fallback_runtime_failed",
+            );
+        }
+    } else {
+        webgpu_policy_event("worker_fallback_worker_unavailable");
+    }
+
+    webgpu_policy_event("direct_scores_calls");
+    let direct = dmb_wasm::webgpu_scores_direct(&query_array, &matrix_array, dim).await?;
+    Some((float32_array_to_vec(direct), WebgpuPolicyBackend::Direct))
+}
+
+#[cfg(feature = "hydrate")]
+async fn webgpu_scores_subset_with_policy(
+    query_vec: &[f32],
+    matrix: &[f32],
+    dim: usize,
+    indices: &[u32],
+    caps: AiCapabilities,
+) -> Option<(Vec<f32>, WebgpuPolicyBackend)> {
+    if !caps.webgpu_enabled || dim == 0 || indices.is_empty() {
+        return None;
+    }
+
+    ensure_default_worker_threshold();
+    let query_array = js_sys::Float32Array::from(query_vec);
+    let matrix_array = js_sys::Float32Array::from(matrix);
+    let index_array = js_sys::Uint32Array::from(indices);
+
+    if caps.webgpu_worker {
+        let can_use_worker = with_local_storage(|storage| {
+            worker_preflight_allows(storage, matrix.len(), "subset_worker")
+        })
+        .unwrap_or(false);
+        if can_use_worker {
+            webgpu_policy_event("subset_worker_attempts");
+            if let Some(scores) = dmb_wasm::webgpu_scores_subset_worker(
+                &query_array,
+                &matrix_array,
+                dim,
+                &index_array,
+            )
+            .await
+            {
+                clear_worker_runtime_failure();
+                webgpu_policy_event("subset_worker_success");
+                return Some((float32_array_to_vec(scores), WebgpuPolicyBackend::Worker));
+            }
+            mark_worker_runtime_failure(
+                "WebGPU subset worker scoring failed",
+                "subset_worker_fallback_runtime_failed",
+            );
+        }
+    } else {
+        webgpu_policy_event("subset_worker_fallback_worker_unavailable");
+    }
+
+    webgpu_policy_event("subset_direct_scores_calls");
+    let direct =
+        dmb_wasm::webgpu_scores_subset_direct(&query_array, &matrix_array, dim, &index_array)
+            .await?;
+    Some((float32_array_to_vec(direct), WebgpuPolicyBackend::Direct))
+}
+
 pub async fn semantic_search(
     query: &str,
     index: &EmbeddingIndex,
@@ -1846,9 +2046,9 @@ pub async fn semantic_search(
     } else if caps.webgpu_enabled && webgpu_matrix_allowed && webgpu_probe_ok().await {
         #[cfg(feature = "hydrate")]
         {
-            match dmb_wasm::webgpu_scores(query_vec.clone(), index.matrix.clone(), dim).await {
-                Ok(scores) => top_k_from_scores(scores, limit),
-                Err(_) => top_k_cosine_native(&query_vec, &index.matrix, dim, limit),
+            match webgpu_scores_with_policy(&query_vec, &index.matrix, dim, caps).await {
+                Some((scores, _backend)) => top_k_from_scores(scores, limit),
+                None => top_k_cosine_native(&query_vec, &index.matrix, dim, limit),
             }
         }
         #[cfg(not(feature = "hydrate"))]
@@ -1914,20 +2114,15 @@ pub async fn benchmark_subset_scoring(limit: usize) -> Option<AiSubsetBenchmark>
     if caps.webgpu_enabled {
         let indices: Vec<u32> = candidates.iter().map(|&idx| idx as u32).collect();
         let gpu_start = perf.now();
-        if let Ok(scores) = dmb_wasm::webgpu_scores_subset(
-            query_vec.clone(),
-            index.matrix.clone(),
-            index.dim,
-            indices,
-        )
-        .await
+        if let Some((scores, path)) =
+            webgpu_scores_subset_with_policy(&query_vec, &index.matrix, index.dim, &indices, caps)
+                .await
         {
             let _ = top_k_from_subset(scores, &candidates, limit);
             gpu_ms = Some(perf.now() - gpu_start);
-            backend = if caps.webgpu_worker {
-                "webgpu-worker-subset".to_string()
-            } else {
-                "webgpu-subset".to_string()
+            backend = match path {
+                WebgpuPolicyBackend::Worker => "webgpu-worker-subset".to_string(),
+                WebgpuPolicyBackend::Direct => "webgpu-subset".to_string(),
             };
         }
     }
@@ -1993,16 +2188,14 @@ pub async fn benchmark_gpu(sample: &BenchmarkSample) -> (Option<f64>, String) {
         let perf = web_sys::window().and_then(|w| w.performance());
         if let Some(perf) = perf {
             let gpu_start = perf.now();
-            if let Ok(scores) =
-                dmb_wasm::webgpu_scores(sample.query_vec.clone(), sample.matrix.clone(), sample.dim)
-                    .await
+            if let Some((scores, path)) =
+                webgpu_scores_with_policy(&sample.query_vec, &sample.matrix, sample.dim, caps).await
             {
                 let _ = top_k_from_scores(scores, 5);
                 gpu_ms = Some(perf.now() - gpu_start);
-                backend = if caps.webgpu_worker {
-                    "webgpu-worker".to_string()
-                } else {
-                    "webgpu".to_string()
+                backend = match path {
+                    WebgpuPolicyBackend::Worker => "webgpu-worker".to_string(),
+                    WebgpuPolicyBackend::Direct => "webgpu".to_string(),
                 };
             }
         }
@@ -2420,16 +2613,11 @@ async fn score_candidates(
                 );
             }
             let indices: Vec<u32> = candidates.iter().map(|&idx| idx as u32).collect();
-            match dmb_wasm::webgpu_scores_subset(
-                query_vec.to_vec(),
-                index.matrix.clone(),
-                dim,
-                indices,
-            )
-            .await
+            match webgpu_scores_subset_with_policy(query_vec, &index.matrix, dim, &indices, caps)
+                .await
             {
-                Ok(scores) => top_k_from_subset(scores, candidates, limit),
-                Err(_) => {
+                Some((scores, _backend)) => top_k_from_subset(scores, candidates, limit),
+                None => {
                     top_k_cosine_candidates_cpu(query_vec, &index.matrix, dim, candidates, limit)
                 }
             }

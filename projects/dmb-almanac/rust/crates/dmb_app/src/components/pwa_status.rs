@@ -1,5 +1,7 @@
 #![allow(clippy::large_types_passed_by_value)]
 
+#[cfg(feature = "hydrate")]
+use crate::browser::storage;
 use leptos::prelude::*;
 #[cfg(feature = "hydrate")]
 use leptos::task::spawn_local;
@@ -287,44 +289,28 @@ fn resolve_effective_sw_version(script_url: Option<String>, version: &str) -> St
 }
 
 #[cfg(feature = "hydrate")]
-fn local_storage() -> Option<web_sys::Storage> {
-    web_sys::window().and_then(|window| window.local_storage().ok().flatten())
-}
-
-#[cfg(feature = "hydrate")]
-fn with_local_storage(callback: impl FnOnce(&web_sys::Storage)) {
-    if let Some(storage) = local_storage() {
-        callback(&storage);
-    }
-}
-
-#[cfg(feature = "hydrate")]
 fn set_local_storage_item(key: &str, value: &str) {
-    with_local_storage(|storage| {
-        let _ = storage.set_item(key, value);
-    });
+    storage::set_local_storage_item(key, value);
 }
 
 #[cfg(feature = "hydrate")]
 fn remove_local_storage_item(key: &str) {
-    with_local_storage(|storage| {
-        let _ = storage.remove_item(key);
-    });
+    storage::remove_local_storage_item(key);
 }
 
 #[cfg(feature = "hydrate")]
 fn local_storage_item_by_key(key: &str) -> Option<String> {
-    local_storage().and_then(|storage| storage.get_item(key).ok().flatten())
+    storage::local_storage_item(key)
 }
 
 #[cfg(feature = "hydrate")]
 fn local_storage_f64_by_key(key: &str) -> Option<f64> {
-    local_storage_item_by_key(key).and_then(|value| value.parse::<f64>().ok())
+    storage::local_storage_f64(key)
 }
 
 #[cfg(feature = "hydrate")]
 fn set_local_storage_f64_item(key: &str, value: f64) {
-    set_local_storage_item(key, &value.to_string());
+    storage::set_local_storage_f64(key, value);
 }
 
 #[cfg(feature = "hydrate")]

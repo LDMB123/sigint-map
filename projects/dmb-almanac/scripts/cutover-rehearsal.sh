@@ -15,6 +15,7 @@ DATA_SOURCE_DIR="${PROJECT_DIR}/data/static-data"
 
 BASE_URL="${BASE_URL:-http://127.0.0.1:3000}"
 RUST_E2E="${RUST_E2E:-1}"
+CROSS_BROWSER_SMOKE="${CROSS_BROWSER_SMOKE:-0}"
 
 TMP_DIR="${PROJECT_DIR}/.tmp/cutover-rehearsal"
 SERVER_LOG="${TMP_DIR}/server.log"
@@ -193,5 +194,25 @@ echo "[cutover] ensure Playwright Chromium (install if needed)"
 		  tests/e2e/rust-sw-update-multi.spec.js \
 		  --project=chromium \
 		  --workers=1)
+
+if [[ "${CROSS_BROWSER_SMOKE}" == "1" ]]; then
+	echo "[cutover] install Playwright Firefox/WebKit for cross-browser smoke"
+	(cd "${E2E_DIR}" && npx playwright install --with-deps firefox webkit >/dev/null)
+
+	echo "[cutover] run non-blocking cross-browser smoke subset"
+	set +e
+	(
+	  cd "${E2E_DIR}" && RUST_E2E="${RUST_E2E}" BASE_URL="${BASE_URL}" npm run test:e2e -- \
+	    tests/e2e/rust-cross-browser-smoke.spec.js \
+	    --project=firefox-smoke \
+	    --project=webkit-smoke \
+	    --workers=1
+	)
+	cross_browser_status=$?
+	set -e
+	if [[ "${cross_browser_status}" -ne 0 ]]; then
+	  echo "[cutover] warning: cross-browser smoke failed (non-blocking) with status ${cross_browser_status}"
+	fi
+fi
 
 echo "[cutover] ok"

@@ -31,15 +31,6 @@ extern "C" {
     #[wasm_bindgen(js_namespace = window, js_name = dmbWarmWebgpuWorker, catch)]
     fn dmb_warm_webgpu_worker_js() -> Result<js_sys::Promise, JsValue>;
 
-    #[wasm_bindgen(js_namespace = window, js_name = dmbGetWorkerLimits, catch)]
-    fn dmb_get_worker_limits_js() -> Result<JsValue, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbClearWorkerFailureStatus, catch)]
-    fn dmb_clear_worker_failure_status_js() -> Result<(), JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbSetWorkerThreshold, catch)]
-    fn dmb_set_worker_threshold_js(value: f64) -> Result<(), JsValue>;
-
     #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScoresWorker, catch)]
     fn dmb_webgpu_scores_worker_js(
         query: &Float32Array,
@@ -87,13 +78,6 @@ struct WebgpuWarmResult {
     reason: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-struct WorkerLimitsResult {
-    #[serde(default)]
-    max_floats: Option<f64>,
-}
-
 #[derive(Debug, Clone, Default)]
 pub struct WarmWebgpuStatus {
     pub warmed: bool,
@@ -129,20 +113,12 @@ pub async fn warm_webgpu_worker() -> Option<WarmWebgpuStatus> {
         })
 }
 
-pub fn worker_max_floats() -> Option<usize> {
-    let value = dmb_get_worker_limits_js().ok()?;
-    serde_wasm_bindgen::from_value::<WorkerLimitsResult>(value)
-        .ok()
-        .and_then(|limits| limits.max_floats)
-        .map(|max_floats| max_floats as usize)
-}
-
-pub fn clear_worker_failure_status() {
-    let _ = dmb_clear_worker_failure_status_js();
-}
-
-pub fn set_worker_threshold(value: usize) {
-    let _ = dmb_set_worker_threshold_js(value as f64);
+async fn resolve_scores_promise(promise: js_sys::Promise) -> Option<Float32Array> {
+    let result = JsFuture::from(promise).await.ok()?;
+    if result.is_null() || result.is_undefined() {
+        return None;
+    }
+    result.dyn_into().ok()
 }
 
 pub async fn webgpu_scores_direct(
@@ -152,11 +128,7 @@ pub async fn webgpu_scores_direct(
 ) -> Option<Float32Array> {
     let _ = ensure_webgpu_helpers_loaded().await;
     let promise = dmb_webgpu_scores_js(query, matrix, dim as f64).ok()?;
-    let result = JsFuture::from(promise).await.ok()?;
-    if result.is_null() || result.is_undefined() {
-        return None;
-    }
-    result.dyn_into().ok()
+    resolve_scores_promise(promise).await
 }
 
 pub async fn webgpu_scores_worker(
@@ -166,11 +138,29 @@ pub async fn webgpu_scores_worker(
 ) -> Option<Float32Array> {
     let _ = ensure_webgpu_helpers_loaded().await;
     let promise = dmb_webgpu_scores_worker_js(query, matrix, dim as f64).ok()?;
-    let result = JsFuture::from(promise).await.ok()?;
-    if result.is_null() || result.is_undefined() {
-        return None;
-    }
-    result.dyn_into().ok()
+    resolve_scores_promise(promise).await
+}
+
+pub async fn webgpu_scores_subset_direct(
+    query: &Float32Array,
+    matrix: &Float32Array,
+    dim: usize,
+    indices: &js_sys::Uint32Array,
+) -> Option<Float32Array> {
+    let _ = ensure_webgpu_helpers_loaded().await;
+    let promise = dmb_webgpu_scores_subset_js(query, matrix, dim as f64, indices).ok()?;
+    resolve_scores_promise(promise).await
+}
+
+pub async fn webgpu_scores_subset_worker(
+    query: &Float32Array,
+    matrix: &Float32Array,
+    dim: usize,
+    indices: &js_sys::Uint32Array,
+) -> Option<Float32Array> {
+    let _ = ensure_webgpu_helpers_loaded().await;
+    let promise = dmb_webgpu_scores_subset_worker_js(query, matrix, dim as f64, indices).ok()?;
+    resolve_scores_promise(promise).await
 }
 
 fn cpu_dot(a: &[f32], b: &[f32]) -> f32 {

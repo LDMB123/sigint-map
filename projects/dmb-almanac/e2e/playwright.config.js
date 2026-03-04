@@ -37,6 +37,20 @@ export default defineConfig({
           ]
         }
       }
+    },
+    {
+      name: 'firefox-smoke',
+      testMatch: ['**/rust-cross-browser-smoke.spec.js'],
+      use: {
+        ...devices['Desktop Firefox']
+      }
+    },
+    {
+      name: 'webkit-smoke',
+      testMatch: ['**/rust-cross-browser-smoke.spec.js'],
+      use: {
+        ...devices['Desktop Safari']
+      }
     }
   ]
 });

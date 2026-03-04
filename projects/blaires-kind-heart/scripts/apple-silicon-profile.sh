@@ -14,6 +14,8 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 OUT_DIR="${OUT_DIR:-${ROOT_DIR}/artifacts/apple-silicon-profile/${STAMP}}"
 HEALTH_BASE_URL="${BASE_URL%%\#*}"
 HEALTH_BASE_URL="${HEALTH_BASE_URL%%\?*}"
+# shellcheck source=/dev/null
+source "${ROOT_DIR}/scripts/lib/apple-silicon-profile-common.sh"
 
 log() {
   printf '[apple-silicon-profile] %s\n' "$*"
@@ -45,27 +47,10 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 
-case "${GPU_MODE}" in
-  auto|on|off) ;;
-  *)
-    log "Invalid GPU_MODE='${GPU_MODE}', defaulting to auto"
-    GPU_MODE="auto"
-    ;;
-esac
+mode_resolution="$(resolve_modes_or_default "${GPU_MODE}" "${PERF_MODE}")"
+IFS='|' read -r GPU_MODE PERF_MODE <<< "${mode_resolution}"
 
-case "${PERF_MODE}" in
-  auto|throughput|balanced|quality) ;;
-  *)
-    log "Invalid PERF_MODE='${PERF_MODE}', defaulting to auto"
-    PERF_MODE="auto"
-    ;;
-esac
-
-if [[ "${BASE_URL}" == *\?* ]]; then
-  PROFILE_URL="${BASE_URL}&gpu=${GPU_MODE}&perf=${PERF_MODE}"
-else
-  PROFILE_URL="${BASE_URL}?gpu=${GPU_MODE}&perf=${PERF_MODE}"
-fi
+PROFILE_URL="$(profile_url_with_modes "${BASE_URL}" "${GPU_MODE}" "${PERF_MODE}")"
 
 mkdir -p "${OUT_DIR}"
 

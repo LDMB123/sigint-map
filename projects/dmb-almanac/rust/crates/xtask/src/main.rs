@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use serde_json::Value;
-use std::{fs, path::PathBuf};
+use std::{collections::BTreeSet, fs, path::PathBuf};
 
 #[derive(Parser)]
 #[command(name = "xtask")]
@@ -33,6 +33,10 @@ enum Command {
         #[arg(long, default_value_t = false)]
         skip_sw_bump: bool,
     },
+    GenerateSw {
+        #[arg(long)]
+        version: Option<String>,
+    },
     ScrapeQa {
         #[arg(long, default_value = "data/warnings-fixtures.json")]
         warnings_output: PathBuf,
@@ -62,6 +66,7 @@ fn main() -> Result<()> {
             skip_parity,
             skip_sw_bump,
         } => data_release(&sqlite, skip_parity, skip_sw_bump),
+        Command::GenerateSw { version } => generate_sw(version),
         Command::ScrapeQa {
             warnings_output,
             baseline,
@@ -169,9 +174,12 @@ fn build_hydrate_pkg(release: bool, ai_diagnostics_full: bool) -> Result<()> {
 fn data_release(sqlite: &PathBuf, skip_parity: bool, skip_sw_bump: bool) -> Result<()> {
     let rust_dir = rust_workspace_dir()?;
 
-    if !skip_sw_bump {
-        bump_sw_version(None)?;
-    }
+    let sw_version = if skip_sw_bump {
+        read_current_sw_version()?
+    } else {
+        None
+    };
+    generate_sw(sw_version)?;
 
     run_command(
         "cargo",
@@ -257,35 +265,138 @@ fn data_release(sqlite: &PathBuf, skip_parity: bool, skip_sw_bump: bool) -> Resu
     Ok(())
 }
 
-fn bump_sw_version(version: Option<String>) -> Result<()> {
+fn generate_sw(version: Option<String>) -> Result<()> {
     let repo_root = repo_root_dir()?;
+    let static_dir = repo_root.join("rust/static");
+    let template_path = static_dir.join("sw.template.js");
     let sw_path = repo_root.join("rust/static/sw.js");
-    let contents = fs::read_to_string(&sw_path).context("read sw.js")?;
+    let template = fs::read_to_string(&template_path).context("read sw.template.js")?;
 
     let new_version = version.unwrap_or_else(|| chrono::Utc::now().format("%Y-%m-%d").to_string());
-    let prefix = "const VERSION = '";
-    let start = contents
-        .find(prefix)
-        .context("sw.js missing VERSION declaration")?
-        + prefix.len();
-    let end = contents[start..]
-        .find("';")
-        .context("sw.js missing VERSION terminator")?
-        + start;
+    let shell_assets = collect_shell_assets(&repo_root)?;
+    let data_assets = collect_data_assets(&repo_root);
 
-    if contents[start..end] == new_version {
-        println!("SW version already {new_version}");
-        return Ok(());
+    let rendered = template
+        .replace("__DMB_SW_VERSION__", &new_version)
+        .replace("__DMB_SW_SHELL_ASSETS__", &render_js_array(&shell_assets))
+        .replace("__DMB_SW_DATA_ASSETS__", &render_js_array(&data_assets));
+    fs::write(&sw_path, rendered).context("write sw.js")?;
+    println!(
+        "Generated sw.js version={new_version} shell_assets={} data_assets={}",
+        shell_assets.len(),
+        data_assets.len()
+    );
+    Ok(())
+}
+
+fn read_current_sw_version() -> Result<Option<String>> {
+    let repo_root = repo_root_dir()?;
+    let sw_path = repo_root.join("rust/static/sw.js");
+    if !sw_path.exists() {
+        return Ok(None);
+    }
+    let source = fs::read_to_string(&sw_path).context("read sw.js")?;
+    let marker = "const VERSION = '";
+    let Some(start) = source.find(marker).map(|idx| idx + marker.len()) else {
+        return Ok(None);
+    };
+    let Some(end_rel) = source[start..].find("';") else {
+        return Ok(None);
+    };
+    let end = start + end_rel;
+    let value = source[start..end].trim();
+    if value.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(value.to_string()))
+    }
+}
+
+fn collect_shell_assets(repo_root: &std::path::Path) -> Result<Vec<String>> {
+    let routes = parse_rust_routes(repo_root)?;
+    let mut assets = BTreeSet::new();
+
+    for route in routes {
+        if !route.starts_with('/') || route.contains(':') || route.contains('*') {
+            continue;
+        }
+        assets.insert(route);
     }
 
-    let mut updated = String::with_capacity(contents.len() + new_version.len());
-    updated.push_str(&contents[..start]);
-    updated.push_str(&new_version);
-    updated.push_str(&contents[end..]);
+    for asset in [
+        "/app.css",
+        "/manifest.json",
+        "/webgpu.js",
+        "/webgpu-worker.js",
+        "/offline.html",
+        "/icons/icon-192.png",
+        "/icons/icon-512.png",
+    ] {
+        assets.insert(asset.to_string());
+    }
 
-    fs::write(&sw_path, updated).context("write sw.js")?;
-    println!("Bumped SW version to {new_version}");
-    Ok(())
+    Ok(assets.into_iter().collect())
+}
+
+fn collect_data_assets(repo_root: &std::path::Path) -> Vec<String> {
+    let mut assets = BTreeSet::new();
+    let static_dir = repo_root.join("rust/static");
+    let required = [
+        "/data/manifest.json",
+        "/data/ai-config.json",
+        "/data/idb-migration-dry-run.json",
+    ];
+    for asset in required {
+        let rel = asset.trim_start_matches('/');
+        if static_dir.join(rel).exists() {
+            assets.insert(asset.to_string());
+        }
+    }
+    if !assets.contains("/data/manifest.json") {
+        assets.insert("/data/manifest.json".to_string());
+    }
+    assets.into_iter().collect()
+}
+
+fn parse_rust_routes(repo_root: &std::path::Path) -> Result<Vec<String>> {
+    let lib_path = repo_root.join("rust/crates/dmb_app/src/lib.rs");
+    let source = fs::read_to_string(&lib_path).context("read dmb_app/src/lib.rs")?;
+    let start_marker = "pub const RUST_ROUTES: &[&str] = &[";
+    let start = source
+        .find(start_marker)
+        .context("RUST_ROUTES declaration missing in dmb_app/src/lib.rs")?
+        + start_marker.len();
+    let tail = &source[start..];
+    let end = tail
+        .find("];")
+        .context("RUST_ROUTES array terminator missing in dmb_app/src/lib.rs")?;
+    let block = &tail[..end];
+    let mut routes = Vec::new();
+    for line in block.lines() {
+        let trimmed = line.trim().trim_end_matches(',');
+        if let Some(value) = trimmed
+            .strip_prefix('"')
+            .and_then(|v| v.strip_suffix('"'))
+            .filter(|value| !value.is_empty())
+        {
+            routes.push(value.to_string());
+        }
+    }
+    if routes.is_empty() {
+        anyhow::bail!("no routes parsed from RUST_ROUTES in dmb_app/src/lib.rs");
+    }
+    Ok(routes)
+}
+
+fn render_js_array(values: &[String]) -> String {
+    let mut out = String::from("[\n");
+    for value in values {
+        out.push_str("  '");
+        out.push_str(value);
+        out.push_str("',\n");
+    }
+    out.push(']');
+    out
 }
 
 fn run_scrape_qa(

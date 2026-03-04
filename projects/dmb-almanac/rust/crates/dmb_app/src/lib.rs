@@ -1,6 +1,7 @@
 #![allow(clippy::clone_on_copy)]
 
 pub mod ai;
+pub mod browser;
 pub mod components;
 pub mod data;
 pub mod pages;
@@ -50,8 +51,6 @@ use leptos::prelude::*;
 use leptos_config::LeptosOptions;
 use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
-#[cfg(feature = "hydrate")]
-use wasm_bindgen::JsCast;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen::JsValue;
 
@@ -140,40 +139,6 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 }
 
 #[cfg(feature = "hydrate")]
-fn register_service_worker() {
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let navigator = window.navigator();
-    let Ok(service_worker) =
-        js_sys::Reflect::get(navigator.as_ref(), &JsValue::from_str("serviceWorker"))
-    else {
-        return;
-    };
-    if service_worker.is_null() || service_worker.is_undefined() {
-        return;
-    }
-    let Ok(register_value) = js_sys::Reflect::get(&service_worker, &JsValue::from_str("register"))
-    else {
-        return;
-    };
-    let Ok(register_fn) = register_value.dyn_into::<js_sys::Function>() else {
-        return;
-    };
-    let options = js_sys::Object::new();
-    let _ = js_sys::Reflect::set(
-        options.as_ref(),
-        &JsValue::from_str("updateViaCache"),
-        &JsValue::from_str("none"),
-    );
-    let _ = register_fn.call2(
-        &service_worker,
-        &JsValue::from_str("/sw.js"),
-        options.as_ref(),
-    );
-}
-
-#[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn hydrate() {
     console_error_panic_hook::set_once();
@@ -181,7 +146,7 @@ pub fn hydrate() {
 
     // Hydrate the SSR markup instead of mounting a second copy of the app.
     hydrate_body(App);
-    register_service_worker();
+    let _ = browser::service_worker::register_default_sw();
     ai::preload_webgpu_runtime();
 
     // Lightweight signal for E2E and diagnostics tooling that hydration ran.

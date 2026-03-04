@@ -13,6 +13,18 @@ const GPU_STATUSES = new Set([
   "recovering",
 ]);
 
+const GPU_MODE_CASES = [
+  { mode: "off", title: "applies gpu=off mode and reports off status" },
+  {
+    mode: "auto",
+    title: "applies gpu=auto mode and exposes runtime gpu status",
+  },
+  {
+    mode: "on",
+    title: "applies gpu=on mode and exposes runtime gpu status",
+  },
+] as const;
+
 test.describe("runtime diagnostics", () => {
   test("initializes diagnostics API and observer status without boot-time runtime errors", async ({
     page,
@@ -68,32 +80,18 @@ test.describe("runtime diagnostics", () => {
     expect(runtimeConsoleErrors).toEqual([]);
   });
 
-  test("applies gpu=off mode and reports off status", async ({ page }) => {
-    await page.goto("/?e2e=1&lite=1&gpu=off", { waitUntil: "domcontentloaded" });
-    await waitForAppReady(page, "panel-tracker");
-
-    const gpu = await page.evaluate(() => {
-      const body = document.body;
-      return {
-        mode: body.getAttribute("data-gpu-mode"),
-        status: body.getAttribute("data-gpu-status"),
-      };
-    });
-
-    expect(gpu.mode).toBe("off");
-    expect(gpu.status).toBe("off");
-  });
-
-  for (const mode of ["auto", "on"] as const) {
-    test(`applies gpu=${mode} mode and exposes runtime gpu status`, async ({ page }) => {
-      await page.goto(`/?e2e=1&lite=1&gpu=${mode}`, { waitUntil: "domcontentloaded" });
+  for (const gpuCase of GPU_MODE_CASES) {
+    test(gpuCase.title, async ({ page }) => {
+      await page.goto(`/?e2e=1&lite=1&gpu=${gpuCase.mode}`, { waitUntil: "domcontentloaded" });
       await waitForAppReady(page, "panel-tracker");
 
-      await expect
-        .poll(async () => {
-          return page.evaluate(() => document.body.getAttribute("data-gpu-status"));
-        })
-        .not.toBeNull();
+      if (gpuCase.mode !== "off") {
+        await expect
+          .poll(async () => {
+            return page.evaluate(() => document.body.getAttribute("data-gpu-status"));
+          })
+          .not.toBeNull();
+      }
 
       const gpu = await page.evaluate(() => {
         const body = document.body;
@@ -103,10 +101,15 @@ test.describe("runtime diagnostics", () => {
         };
       });
 
-      expect(gpu.mode).toBe(mode);
+      expect(gpu.mode).toBe(gpuCase.mode);
       expect(gpu.status).not.toBeNull();
       expect(GPU_STATUSES.has(gpu.status as string)).toBe(true);
-      expect(gpu.status).not.toBe("off");
+
+      if (gpuCase.mode === "off") {
+        expect(gpu.status).toBe("off");
+      } else {
+        expect(gpu.status).not.toBe("off");
+      }
     });
   }
 

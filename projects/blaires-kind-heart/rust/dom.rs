@@ -52,13 +52,6 @@ pub fn query_all(selector: &str) -> Vec<Element> {
     with_query_matches(selector, |el| out.push(el));
     out
 }
-/// Count matching elements without allocating a Vec (just returns NodeList.length)
-pub fn query_count(selector: &str) -> u32 {
-    document()
-        .query_selector_all(wasm_bindgen::intern(selector))
-        .map(|list| list.length())
-        .unwrap_or(0)
-}
 /// Iterate matching elements without allocating a Vec (iterates NodeList in-place)
 pub fn for_each_match(selector: &str, f: impl FnMut(Element)) {
     with_query_matches(selector, f);

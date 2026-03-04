@@ -20,6 +20,7 @@ env:
   NODE_VERSION: '20'
   RUST_VERSION: 'stable'
   RUST_E2E: '1'
+  CROSS_BROWSER_SMOKE: '1'
 
 jobs:
   cutover-rehearsal:

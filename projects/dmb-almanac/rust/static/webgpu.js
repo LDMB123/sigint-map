@@ -3,44 +3,33 @@
 // Exposes window.dmbWebgpuScoresWorker(Float32Array query, Float32Array matrix, number dim) -> Promise<Float32Array|null>
 
 const root = typeof window !== 'undefined' ? window : self;
-const DEFAULT_WORKER_MIN_FLOATS = 20000;
 const WORKER_TIMEOUT_MS = 8000;
-const WORKER_FAIL_COOLDOWN_MS = 10 * 60 * 1000;
-const WORKER_THRESHOLD_MIN = 5000;
-const WORKER_THRESHOLD_MAX = 1000000;
-const WORKER_MAX_FLOATS_FALLBACK = 2000000;
 const DEFAULT_WORKGROUP_SIZE = 64;
-let workerThresholdFloats = DEFAULT_WORKER_MIN_FLOATS;
-let workerMaxFloats = WORKER_MAX_FLOATS_FALLBACK;
-let workerFailureUntil = 0;
-const WORKER_FAILURE_REASON_KEY = 'dmb-webgpu-worker-failure-reason';
-const WORKER_FAILURE_UNTIL_KEY = 'dmb-webgpu-worker-failure-until';
+const WORKER_MAX_FLOATS_FALLBACK = 2000000;
 
 let devicePromise = null;
 let cachedDevice = null;
 let dotPipelineCache = null;
 let scorePipelineCache = null;
-const WEBGPU_METRIC_PREFIX = 'dmb-webgpu-metric-';
-const WEBGPU_METRIC_LAST_KEY = `${WEBGPU_METRIC_PREFIX}last`;
-const WEBGPU_METRIC_LAST_TS_KEY = `${WEBGPU_METRIC_PREFIX}last-ts`;
 const WEBGPU_METRIC_KEYS = [
   'direct_scores_calls',
+  'worker_attempts',
   'worker_success',
-  'worker_failure_marked',
-  'worker_fallback_cooldown',
-  'worker_fallback_maxfloats',
-  'worker_fallback_below_threshold',
   'worker_fallback_worker_unavailable',
   'worker_fallback_init_failed',
   'worker_fallback_runtime_failed',
+  'subset_direct_scores_calls',
+  'subset_worker_attempts',
   'subset_worker_success',
-  'subset_worker_fallback_cooldown',
-  'subset_worker_fallback_maxfloats',
-  'subset_worker_fallback_below_threshold',
   'subset_worker_fallback_worker_unavailable',
   'subset_worker_fallback_init_failed',
   'subset_worker_fallback_runtime_failed'
 ];
+const runtimeTelemetry = {
+  counters: Object.fromEntries(WEBGPU_METRIC_KEYS.map((name) => [name, 0])),
+  lastEvent: null,
+  lastEventTs: null,
+};
 
 function getHardwareProfile() {
   try {
@@ -76,23 +65,6 @@ function resetGpuState() {
   scorePipelineCache = null;
 }
 
-function computeDefaultWorkerThreshold() {
-  try {
-    const { cores, memoryGb: memory } = getHardwareProfile();
-    if (IS_APPLE_SILICON) {
-      if (memory >= 16 || cores >= 10) return 12000;
-      if (memory >= 8 || cores >= 8) return 18000;
-      return 26000;
-    }
-    if (memory >= 16 || cores >= 12) return 15000;
-    if (memory <= 4 || cores <= 4) return 60000;
-    if (memory >= 8 || cores >= 8) return 25000;
-    return 35000;
-  } catch {
-    return DEFAULT_WORKER_MIN_FLOATS;
-  }
-}
-
 function computeWorkerMaxFloats() {
   try {
     const { memoryGb: memory } = getHardwareProfile();
@@ -111,171 +83,35 @@ function computeWorkerMaxFloats() {
   }
 }
 
-function clampWorkerThreshold(value) {
-  if (!Number.isFinite(value)) return DEFAULT_WORKER_MIN_FLOATS;
-  return Math.min(Math.max(Math.floor(value), WORKER_THRESHOLD_MIN), WORKER_THRESHOLD_MAX);
-}
-
-function metricKey(name) {
-  return `${WEBGPU_METRIC_PREFIX}${name}`;
-}
-
-function readMetricCounter(name) {
-  try {
-    if (!root.localStorage) return 0;
-    const value = Number(root.localStorage.getItem(metricKey(name)) || '0');
-    return Number.isFinite(value) ? value : 0;
-  } catch {
-    return 0;
-  }
-}
-
 function bumpMetricCounter(name) {
-  try {
-    if (!root.localStorage) return;
-    const key = metricKey(name);
-    const current = Number(root.localStorage.getItem(key) || '0');
-    const next = (Number.isFinite(current) ? current : 0) + 1;
-    root.localStorage.setItem(key, String(next));
-    root.localStorage.setItem(WEBGPU_METRIC_LAST_KEY, name);
-    root.localStorage.setItem(WEBGPU_METRIC_LAST_TS_KEY, String(Date.now()));
-  } catch {
-    // ignore
+  if (!Object.prototype.hasOwnProperty.call(runtimeTelemetry.counters, name)) {
+    runtimeTelemetry.counters[name] = 0;
   }
+  runtimeTelemetry.counters[name] += 1;
+  runtimeTelemetry.lastEvent = name;
+  runtimeTelemetry.lastEventTs = Date.now();
 }
 
 function getWebgpuTelemetry() {
-  const counters = {};
-  for (const name of WEBGPU_METRIC_KEYS) {
-    counters[name] = readMetricCounter(name);
-  }
-  let lastEvent = null;
-  let lastEventTs = null;
-  try {
-    if (root.localStorage) {
-      lastEvent = root.localStorage.getItem(WEBGPU_METRIC_LAST_KEY);
-      const rawTs = Number(root.localStorage.getItem(WEBGPU_METRIC_LAST_TS_KEY) || '0');
-      lastEventTs = Number.isFinite(rawTs) && rawTs > 0 ? rawTs : null;
-    }
-  } catch {
-    // ignore
-  }
-  return { counters, lastEvent, lastEventTs };
+  return {
+    counters: { ...runtimeTelemetry.counters },
+    lastEvent: runtimeTelemetry.lastEvent,
+    lastEventTs: runtimeTelemetry.lastEventTs,
+  };
 }
 
 function resetWebgpuTelemetry() {
-  try {
-    if (!root.localStorage) return;
-    for (const name of WEBGPU_METRIC_KEYS) {
-      root.localStorage.removeItem(metricKey(name));
-    }
-    root.localStorage.removeItem(WEBGPU_METRIC_LAST_KEY);
-    root.localStorage.removeItem(WEBGPU_METRIC_LAST_TS_KEY);
-  } catch {
-    // ignore
+  for (const name of WEBGPU_METRIC_KEYS) {
+    runtimeTelemetry.counters[name] = 0;
   }
-}
-
-function loadWorkerThreshold() {
-  try {
-    if (!root.localStorage) return DEFAULT_WORKER_MIN_FLOATS;
-    const raw = root.localStorage.getItem('dmb-webgpu-worker-threshold');
-    const value = raw ? Number(raw) : computeDefaultWorkerThreshold();
-    return clampWorkerThreshold(value);
-  } catch {
-    return clampWorkerThreshold(computeDefaultWorkerThreshold());
-  }
-}
-
-function loadWorkerFailureUntil() {
-  try {
-    if (!root.localStorage) return 0;
-    const raw = root.localStorage.getItem(WORKER_FAILURE_UNTIL_KEY);
-    const value = raw ? Number(raw) : 0;
-    return Number.isFinite(value) ? value : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function markWorkerFailure(reason) {
-  bumpMetricCounter('worker_failure_marked');
-  const next = Date.now() + WORKER_FAIL_COOLDOWN_MS;
-  workerFailureUntil = next;
-  try {
-    if (root.localStorage) {
-      root.localStorage.setItem(WORKER_FAILURE_UNTIL_KEY, String(next));
-      if (reason && reason.message) {
-        root.localStorage.setItem(WORKER_FAILURE_REASON_KEY, String(reason.message));
-      } else if (reason) {
-        root.localStorage.setItem(WORKER_FAILURE_REASON_KEY, String(reason));
-      }
-    }
-  } catch {
-    // ignore
-  }
-  if (reason) {
-    console.warn('WebGPU worker disabled temporarily:', reason);
-  }
-}
-
-function clearWorkerFailure() {
-  workerFailureUntil = 0;
-  try {
-    if (root.localStorage) {
-      root.localStorage.removeItem(WORKER_FAILURE_UNTIL_KEY);
-      root.localStorage.removeItem(WORKER_FAILURE_REASON_KEY);
-    }
-  } catch {
-    // ignore
-  }
-}
-
-function getWorkerFailureStatus() {
-  let lastError = null;
-  try {
-    if (root.localStorage) {
-      lastError = root.localStorage.getItem(WORKER_FAILURE_REASON_KEY);
-    }
-  } catch {
-    lastError = null;
-  }
-  const remaining = workerFailureUntil > 0 ? Math.max(workerFailureUntil - Date.now(), 0) : 0;
-  return {
-    cooldownUntil: workerFailureUntil || null,
-    cooldownRemainingMs: remaining || null,
-    lastError: lastError || null,
-  };
-}
-
-function setWorkerThreshold(value) {
-  if (!Number.isFinite(value) || value <= 0) return;
-  workerThresholdFloats = clampWorkerThreshold(value);
-  try {
-    if (root.localStorage) {
-      root.localStorage.setItem('dmb-webgpu-worker-threshold', String(workerThresholdFloats));
-    }
-  } catch {
-    // ignore storage failures
-  }
-}
-
-workerThresholdFloats = loadWorkerThreshold();
-workerMaxFloats = computeWorkerMaxFloats();
-workerFailureUntil = loadWorkerFailureUntil();
-root.dmbSetWorkerThreshold = setWorkerThreshold;
-root.dmbGetWorkerFailureStatus = getWorkerFailureStatus;
-root.dmbClearWorkerFailureStatus = clearWorkerFailure;
-root.dmbGetWorkerLimits = function dmbGetWorkerLimits() {
-  return {
-    threshold: workerThresholdFloats,
-    maxFloats: workerMaxFloats
-  };
+  runtimeTelemetry.lastEvent = null;
+  runtimeTelemetry.lastEventTs = null;
 };
 root.dmbGetWebgpuTelemetry = getWebgpuTelemetry;
 root.dmbResetWebgpuTelemetry = resetWebgpuTelemetry;
 root.dmbGetAppleSiliconProfile = function dmbGetAppleSiliconProfile() {
   const profile = getHardwareProfile();
+  const workerMaxFloats = computeWorkerMaxFloats();
   return {
     isAppleSilicon: IS_APPLE_SILICON,
     cpuCores: profile.cores,
@@ -285,7 +121,7 @@ root.dmbGetAppleSiliconProfile = function dmbGetAppleSiliconProfile() {
       score: SCORE_WORKGROUP_SIZE,
     },
     worker: {
-      thresholdFloats: workerThresholdFloats,
+      thresholdFloats: null,
       maxFloats: workerMaxFloats,
     },
   };
@@ -312,7 +148,6 @@ root.dmbWarmWebgpuWorker = async function dmbWarmWebgpuWorker() {
     await promise;
     return { warmed: true };
   } catch (err) {
-    markWorkerFailure(err);
     return { warmed: false, reason: err?.message || String(err) };
   }
 };
@@ -622,7 +457,6 @@ function resetWorkerState(reason) {
   }
   failWorkerPending(workerState, reason || new Error('WebGPU worker reset'));
   workerState = null;
-  markWorkerFailure(reason);
 }
 
 function ensureWorker() {
@@ -661,7 +495,6 @@ function createWorkerPromise(state, id) {
     timeoutId = setTimeout(() => {
       state.pending.delete(id);
       const err = new Error('WebGPU worker timed out');
-      markWorkerFailure(err);
       reject(err);
     }, WORKER_TIMEOUT_MS);
     state.pending.set(id, {
@@ -694,46 +527,18 @@ async function initWorkerMatrix(state, matrix, dim) {
   state.signature = signature;
 }
 
-function clearExpiredWorkerFailure() {
-  if (workerFailureUntil && Date.now() >= workerFailureUntil) {
-    clearWorkerFailure();
-  }
-}
-
-function preflightWorkerRequest(matrixLength, metrics, fallback) {
-  clearExpiredWorkerFailure();
-  if (Date.now() < workerFailureUntil) {
-    bumpMetricCounter(metrics.cooldown);
-    return { done: true, result: fallback() };
-  }
-  if (matrixLength > workerMaxFloats) {
-    bumpMetricCounter(metrics.maxFloats);
-    return { done: true, result: fallback() };
-  }
-  if (matrixLength < workerThresholdFloats) {
-    bumpMetricCounter(metrics.belowThreshold);
-    return { done: true, result: fallback() };
-  }
+async function runWorkerScoresRequest({ matrix, dim, metrics, fallback, buildPayload, transferList }) {
   const state = ensureWorker();
   if (!state) {
     bumpMetricCounter(metrics.unavailable);
-    return { done: true, result: null };
+    return null;
   }
-  return { done: false, state };
-}
-
-async function runWorkerScoresRequest({ matrix, dim, metrics, fallback, buildPayload, transferList }) {
-  const preflight = preflightWorkerRequest(matrix.length, metrics, fallback);
-  if (preflight.done) {
-    return preflight.result;
-  }
-  const { state } = preflight;
+  bumpMetricCounter(metrics.attempts);
 
   try {
     await initWorkerMatrix(state, matrix, dim);
   } catch (err) {
     bumpMetricCounter(metrics.initFailed);
-    markWorkerFailure(err);
     return fallback();
   }
 
@@ -744,12 +549,10 @@ async function runWorkerScoresRequest({ matrix, dim, metrics, fallback, buildPay
 
   try {
     const scores = await promise;
-    clearWorkerFailure();
     bumpMetricCounter(metrics.success);
     return scores ? new Float32Array(scores) : null;
   } catch (err) {
     bumpMetricCounter(metrics.runtimeFailed);
-    markWorkerFailure(err);
     return fallback();
   }
 }
@@ -759,9 +562,7 @@ async function webgpuScoresWorker(query, matrix, dim) {
     matrix,
     dim,
     metrics: {
-      cooldown: 'worker_fallback_cooldown',
-      maxFloats: 'worker_fallback_maxfloats',
-      belowThreshold: 'worker_fallback_below_threshold',
+      attempts: 'worker_attempts',
       unavailable: 'worker_fallback_worker_unavailable',
       initFailed: 'worker_fallback_init_failed',
       runtimeFailed: 'worker_fallback_runtime_failed',
@@ -784,9 +585,7 @@ async function webgpuScoresSubsetWorker(query, matrix, dim, indices) {
     matrix,
     dim,
     metrics: {
-      cooldown: 'subset_worker_fallback_cooldown',
-      maxFloats: 'subset_worker_fallback_maxfloats',
-      belowThreshold: 'subset_worker_fallback_below_threshold',
+      attempts: 'subset_worker_attempts',
       unavailable: 'subset_worker_fallback_worker_unavailable',
       initFailed: 'subset_worker_fallback_init_failed',
       runtimeFailed: 'subset_worker_fallback_runtime_failed',

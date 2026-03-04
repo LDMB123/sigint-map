@@ -13,8 +13,6 @@ use leptos::prelude::Set;
 #[cfg(feature = "hydrate")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "hydrate")]
-use wasm_bindgen::prelude::wasm_bindgen;
-#[cfg(feature = "hydrate")]
 use wasm_bindgen::JsCast;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen_futures::JsFuture;
@@ -33,19 +31,6 @@ use js_sys::Array;
 use wasm_bindgen::JsValue;
 #[cfg(feature = "hydrate")]
 use web_sys::Response;
-
-#[cfg(feature = "hydrate")]
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = scheduler, js_name = "yield", catch)]
-    fn scheduler_yield() -> Result<js_sys::Promise, JsValue>;
-
-    #[wasm_bindgen(js_namespace = scheduler, js_name = postTask, catch)]
-    fn scheduler_post_task(
-        callback: &js_sys::Function,
-        options: &JsValue,
-    ) -> Result<js_sys::Promise, JsValue>;
-}
 
 #[derive(Clone, Debug, Default)]
 pub struct ImportStatus {
@@ -1158,21 +1143,7 @@ async fn persist_import_checkpoint(
 
 #[cfg(feature = "hydrate")]
 async fn yield_to_browser_scheduler() {
-    if let Ok(promise) = scheduler_yield() {
-        let _ = JsFuture::from(promise).await;
-        return;
-    }
-
-    let options = js_sys::Object::new();
-    let _ = js_sys::Reflect::set(
-        options.as_ref(),
-        &JsValue::from_str("delay"),
-        &JsValue::from_f64(0.0),
-    );
-    let callback = js_sys::Function::new_no_args("");
-    if let Ok(promise) = scheduler_post_task(&callback, options.as_ref()) {
-        let _ = JsFuture::from(promise).await;
-    }
+    crate::browser::scheduler::yield_now().await;
 }
 
 #[cfg(feature = "hydrate")]
