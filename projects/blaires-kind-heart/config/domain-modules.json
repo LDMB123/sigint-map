@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "core_domains": {
+    "tracker": [
+      "tracker",
+      "companion",
+      "companion_care",
+      "companion_skins"
+    ],
+    "progression": [
+      "skill_progression",
+      "badges",
+      "streaks",
+      "progress",
+      "weekly_goals"
+    ],
+    "quests": [
+      "quests",
+      "adaptive_quests",
+      "stories",
+      "story_engine",
+      "story_data"
+    ],
+    "reflection": [
+      "reflection"
+    ],
+    "insights": [
+      "parent_insights",
+      "mom_mode"
+    ],
+    "rewards": [
+      "rewards",
+      "gardens",
+      "garden_timeline",
+      "sparkle_mail"
+    ]
+  }
+}

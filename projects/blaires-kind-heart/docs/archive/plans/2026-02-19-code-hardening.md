@@ -1,5 +1,50 @@
 # Wave 4: Code Hardening — Implementation Plan
 
+- Archive Path: `docs/archive/plans/2026-02-19-code-hardening.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Wave 4: Code Hardening — Implementation Plan`
+
+## Summary
+| Category | Before | After |
+|----------|--------|-------|
+| `expect()` / `unwrap()` crash vectors | 5 critical | 1 (documented-safe Promise constructor) |
+| Render function panics | Every render call | None — all return `Option` |
+| Bare `spawn_local` (error-swallowing) | ~8 | Replaced with `spawn_local_logged` |
+| Offline queue bounds | Unbounded | 500 max + 24h TTL |
+| Storage pressure response | Warn only | Auto-cleanup at 80%+ |
+| SW update during gameplay | Immediate reload | Deferred until game/story ends |
+| Speech error recovery | None | `onerror` handler on utterances |
+| DB init timeout reporting | Console only | Structured `AppError::DatabaseInit` |
+| Build warnings | 21 | <5 |
+
+### Critical Files
+
+| File | Changes |
+|------|---------|
+| `rust/render.rs` | `create_el` → `Option<Element>`, all functions return `Option` |
+| ALL `rust/*.rs` calling render | Propagate `Option` with `?` or `let Some(x) = ... else { return }` |
+| `rust/dom.rs:35` | Fix `announce_live()` unwrap |
+| `rust/browser_apis.rs` | Harden `yield_microtask`, `new_abort_handle` → `Option` |
+| `rust/safari_apis.rs:5` | NaN-safe sort comparison |
+| `rust/offline_queue.rs` | 500 max size, 24h TTL cleanup |
+| `rust/db_client.rs:9` | Structured error on init timeout |
+| `rust/speech.rs:6` | `onerror` handler on utterances |
+| `rust/pwa.rs:4` | Guard reload against active game/story |
+| `rust/storage_pressure.rs` | Proactive cleanup at 80%+ |
+| `rust/lib.rs` | No changes needed (already correct) |
+
+### Existing utilities to reuse:
+- `browser_apis::spawn_local_logged()` — error-logging async wrapper
+- `browser_apis::now_ms()` — timestamp
+- `errors::report()` — structured error reporting
+- `errors::clear_old_errors()` — DB cleanup
+- `dom::warn()` — console warning
+- `dom::toast()` — user-visible notification
+- `dom::query()` — selector query
+- `offline_queue::flush_queue()` — replay failed mutations
+- `db_client::exec()` / `query()` — DB operations
+
+## Context
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
 
 **Goal:** Eliminate all WASM crash vectors, harden error recovery, and add defensive patterns so the app never crashes during use by a 4-year-old.
@@ -12,7 +57,7 @@
 
 ---
 
-## Tier 1: Eliminate WASM Crash Vectors (Critical)
+### Tier 1: Eliminate WASM Crash Vectors (Critical)
 
 ### Task 1: Make `render::create_el()` Return `Option<Element>` Instead of Panicking
 
@@ -142,7 +187,6 @@ pub fn announce_live(message: &str) {
     if let Some(region) = live_region {
         region.set_text_content(Some(message));
     }
-}
 ```
 
 **Step 4:** Run `trunk build --release` — verify 0 errors.
@@ -249,7 +293,7 @@ fn store_inp_baseline(duration_ms: f64) {
 
 ---
 
-## Tier 2: Database Resilience
+### Tier 2: Database Resilience
 
 ### Task 6: Add Retry Logic to `offline_queue::flush_queue_locked()`
 
@@ -349,7 +393,7 @@ crate::errors::report(crate::errors::AppError::DatabaseInit {
 
 ---
 
-## Tier 3: Speech & Audio Error Recovery
+### Tier 3: Speech & Audio Error Recovery
 
 ### Task 8: Add `onend`/`onerror` Handlers to Speech Utterances
 
@@ -406,7 +450,7 @@ fn say(text: &str, rate: f32, pitch: f32) {
 
 ---
 
-## Tier 4: PWA Update Safety
+### Tier 4: PWA Update Safety
 
 ### Task 9: Guard SW Update Reload Against Active Games/Stories
 
@@ -449,7 +493,6 @@ fn show_update_prompt(reg: &web_sys::ServiceWorkerRegistration) {
         let _ = toast_el.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
         cb.forget();
     }
-}
 
 fn show_update_prompt_force(reg: &web_sys::ServiceWorkerRegistration) {
     dom::toast("\u{1F31F} Update ready! Tap to refresh now");
@@ -466,7 +509,6 @@ fn show_update_prompt_force(reg: &web_sys::ServiceWorkerRegistration) {
         let _ = toast_el.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
         cb.forget();
     }
-}
 ```
 
 **Step 2:** Need `use wasm_bindgen::closure::Closure;` import — check if it's already at the top of `pwa.rs`.
@@ -477,7 +519,7 @@ fn show_update_prompt_force(reg: &web_sys::ServiceWorkerRegistration) {
 
 ---
 
-## Tier 5: Storage Pressure
+### Tier 5: Storage Pressure
 
 ### Task 10: Proactive Storage Cleanup When Pressure Is High
 
@@ -502,8 +544,6 @@ pub async fn warn_if_low() {
             ));
             run_cleanup().await;
         }
-    }
-}
 
 async fn run_cleanup() {
     // 1. Clear old errors (older than 7 days)
@@ -546,7 +586,7 @@ pub fn days_ago_key(n: u32) -> String {
 
 ---
 
-## Tier 6: Defensive Patterns
+### Tier 6: Defensive Patterns
 
 ### Task 11: Replace Bare `spawn_local` with `spawn_local_logged` Across Codebase
 
@@ -621,8 +661,10 @@ This is actually correct as-is — `flush_sync()` handles the mutation queue syn
 
 ---
 
-### Task 14: Final Build Verification + Smoke Test
+## Actions
+_No actions recorded._
 
+## Validation
 **Files:**
 - No files modified — verification only
 
@@ -644,43 +686,6 @@ This is actually correct as-is — `flush_sync()` handles the mutation queue syn
 
 ---
 
-## Verification Summary
+## References
+_No references recorded._
 
-| Category | Before | After |
-|----------|--------|-------|
-| `expect()` / `unwrap()` crash vectors | 5 critical | 1 (documented-safe Promise constructor) |
-| Render function panics | Every render call | None — all return `Option` |
-| Bare `spawn_local` (error-swallowing) | ~8 | Replaced with `spawn_local_logged` |
-| Offline queue bounds | Unbounded | 500 max + 24h TTL |
-| Storage pressure response | Warn only | Auto-cleanup at 80%+ |
-| SW update during gameplay | Immediate reload | Deferred until game/story ends |
-| Speech error recovery | None | `onerror` handler on utterances |
-| DB init timeout reporting | Console only | Structured `AppError::DatabaseInit` |
-| Build warnings | 21 | <5 |
-
-## Critical Files
-
-| File | Changes |
-|------|---------|
-| `rust/render.rs` | `create_el` → `Option<Element>`, all functions return `Option` |
-| ALL `rust/*.rs` calling render | Propagate `Option` with `?` or `let Some(x) = ... else { return }` |
-| `rust/dom.rs:35` | Fix `announce_live()` unwrap |
-| `rust/browser_apis.rs` | Harden `yield_microtask`, `new_abort_handle` → `Option` |
-| `rust/safari_apis.rs:5` | NaN-safe sort comparison |
-| `rust/offline_queue.rs` | 500 max size, 24h TTL cleanup |
-| `rust/db_client.rs:9` | Structured error on init timeout |
-| `rust/speech.rs:6` | `onerror` handler on utterances |
-| `rust/pwa.rs:4` | Guard reload against active game/story |
-| `rust/storage_pressure.rs` | Proactive cleanup at 80%+ |
-| `rust/lib.rs` | No changes needed (already correct) |
-
-### Existing utilities to reuse:
-- `browser_apis::spawn_local_logged()` — error-logging async wrapper
-- `browser_apis::now_ms()` — timestamp
-- `errors::report()` — structured error reporting
-- `errors::clear_old_errors()` — DB cleanup
-- `dom::warn()` — console warning
-- `dom::toast()` — user-visible notification
-- `dom::query()` — selector query
-- `offline_queue::flush_queue()` — replay failed mutations
-- `db_client::exec()` / `query()` — DB operations

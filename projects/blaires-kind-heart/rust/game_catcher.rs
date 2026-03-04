@@ -191,23 +191,30 @@ struct CatcherState {
     power_ups: PowerUpState,
     start_time_ms: f64,
     theme: CatcherTheme,
+    play_area: Element,
+    falling_items: Vec<FallingItemState>,
+}
+
+struct FallingItemState {
+    element: Element,
+    kind: ItemKind,
+    y: f64,
+    left: f64,
+    speed_mult: f64,
+    wobble_start: f64,
 }
 thread_local! {
     static GAME: RefCell<Option<CatcherState>> = const { RefCell::new(None) };
     static PICKER_ABORT: RefCell<Option<browser_apis::AbortHandle>> = const { RefCell::new(None) };
 }
 fn show_theme_picker(state: Rc<RefCell<AppState>>) {
-    let Some((arena, buttons)) = render::build_game_picker("\u{1F496} Choose a Theme!") else {
+    let Some(picker) = games::setup_picker_with_abort(&PICKER_ABORT, "\u{1F496} Choose a Theme!")
+    else {
         return;
     };
-    PICKER_ABORT.with(|p| {
-        p.borrow_mut().take();
-    });
-    let Some(abort) = browser_apis::new_abort_handle() else {
-        return;
-    };
-    let signal = abort.signal();
-    let doc = dom::document();
+    let arena = picker.arena;
+    let buttons = picker.buttons;
+    let doc = picker.doc;
     for theme in [
         CatcherTheme::Classic,
         CatcherTheme::GardenParty,
@@ -224,39 +231,26 @@ fn show_theme_picker(state: Rc<RefCell<AppState>>) {
         let _ = buttons.append_child(&btn);
     }
     let state_click = state;
-    dom::on_with_signal(
-        arena.unchecked_ref(),
-        "click",
-        &signal,
-        move |event: Event| {
-            let Some(el) = dom::event_target_element(&event) else {
-                return;
-            };
-            if let Some(btn) = dom::closest(&el, "[data-catcher-theme]") {
-                let theme = match dom::get_attr(&btn, "data-catcher-theme")
-                    .unwrap_or_default()
-                    .as_str()
-                {
-                    "garden" => CatcherTheme::GardenParty,
-                    "sweets" => CatcherTheme::SweetTreats,
-                    "starry" => CatcherTheme::StarryNight,
-                    _ => CatcherTheme::Classic,
-                };
-                start_with_theme(state_click.clone(), theme);
-            }
-        },
-    );
-    PICKER_ABORT.with(|p| {
-        *p.borrow_mut() = Some(abort);
+    games::bind_picker_selection(&arena, &picker.signal, "[data-catcher-theme]", move |btn| {
+        games::clear_picker_abort(&PICKER_ABORT);
+        let theme = match dom::get_attr(&btn, "data-catcher-theme")
+            .unwrap_or_default()
+            .as_str()
+        {
+            "garden" => CatcherTheme::GardenParty,
+            "sweets" => CatcherTheme::SweetTreats,
+            "starry" => CatcherTheme::StarryNight,
+            _ => CatcherTheme::Classic,
+        };
+        start_with_theme(state_click.clone(), theme);
     });
+    games::store_picker_abort(&PICKER_ABORT, picker.abort);
 }
 pub fn start(state: Rc<RefCell<AppState>>) {
     show_theme_picker(state);
 }
 fn start_with_theme(state: Rc<RefCell<AppState>>, theme: CatcherTheme) {
-    PICKER_ABORT.with(|p| {
-        p.borrow_mut().take();
-    });
+    games::clear_picker_abort(&PICKER_ABORT);
     let Some((arena, doc)) = games::clear_game_arena() else {
         return;
     };
@@ -362,6 +356,8 @@ fn start_with_theme(state: Rc<RefCell<AppState>>, theme: CatcherTheme) {
             power_ups: PowerUpState::default(),
             start_time_ms: 0.0,
             theme,
+            play_area: play_area.clone(),
+            falling_items: Vec::new(),
         });
     });
 }
@@ -399,22 +395,17 @@ fn bind_catch_clicks(signal: &web_sys::AbortSignal) {
     }
 }
 fn catch_item(item: &Element) {
-    let kind = match dom::get_attr(item, "data-item-kind")
-        .unwrap_or_default()
-        .as_str()
-    {
-        "heart" => ItemKind::Heart,
-        "star" => ItemKind::Star,
-        "unicorn" => ItemKind::Unicorn,
-        "cloud" => ItemKind::RainCloud,
-        "golden" => ItemKind::GoldenHeart,
-        "shield" => ItemKind::ShieldBubble,
-        "magnet" => ItemKind::Magnet,
-        "rainbow" => ItemKind::RainbowStar,
-        "freeze" => ItemKind::TimeFreeze,
-        "shower" => ItemKind::StarShower,
-        "size" => ItemKind::SizeBoost,
-        _ => return,
+    let kind = GAME.with(|g| {
+        let mut borrow = g.borrow_mut();
+        let game = borrow.as_mut()?;
+        let idx = game
+            .falling_items
+            .iter()
+            .position(|entry| js_sys::Object::is(entry.element.as_ref(), item.as_ref()))?;
+        Some(game.falling_items.swap_remove(idx).kind)
+    });
+    let Some(kind) = kind else {
+        return;
     };
     let now = browser_apis::now_ms();
     let item_rect = item.get_bounding_client_rect();
@@ -590,7 +581,7 @@ fn build_catcher_item(
     area: &Element,
     kind: ItemKind,
     catcher_theme: CatcherTheme,
-) -> Option<Element> {
+) -> Option<FallingItemState> {
     let doc = dom::document();
     let class = match kind {
         ItemKind::Heart => "catcher-item catcher-item--heart",
@@ -616,54 +607,52 @@ fn build_catcher_item(
         }
         _ => 0.9 + js_sys::Math::random() * 0.4,
     };
-    dom::set_attr(&item, "data-y", "0");
-    dom::with_buf(|buf| {
-        let _ = write!(buf, "{x:.1}");
-        dom::set_attr(&item, "data-left", buf);
-    });
-    dom::with_buf(|buf| {
-        let _ = write!(buf, "{rot}");
-        dom::set_attr(&item, "data-wobble", buf);
-    });
-    dom::with_buf(|buf| {
-        let _ = write!(buf, "{speed_mult:.2}");
-        dom::set_attr(&item, "data-speed-mult", buf);
-    });
     dom::with_buf(|buf| {
         let _ = write!(buf, "left:{x:.0}%;top:-10%;--wobble-start:{rot}deg");
         dom::set_attr(&item, "style", buf);
     });
-    let _ = area.append_child(&item);
-    Some(item)
-}
-fn spawn_falling_item(level: u32) {
-    let Some(area) = dom::query("[data-catcher-area]") else {
-        return;
-    };
-    if dom::query_count("[data-catcher-area] [data-item-kind]") as usize >= theme::CATCHER_MAX_ITEMS
-    {
-        return;
-    }
-    let kind = pick_item_kind(level, js_sys::Math::random());
-    let Some(item) = build_catcher_item(&area, kind, current_theme()) else {
-        return;
-    };
     if kind.is_power_up() {
         let _ = item.class_list().add_1("catcher-item--powerup");
     }
+    let _ = area.append_child(&item);
+    Some(FallingItemState {
+        element: item,
+        kind,
+        y: 0.0,
+        left: x,
+        speed_mult,
+        wobble_start: f64::from(rot),
+    })
+}
+fn spawn_falling_item(level: u32) {
+    GAME.with(|g| {
+        let mut borrow = g.borrow_mut();
+        let Some(game) = borrow.as_mut() else {
+            return;
+        };
+        if game.falling_items.len() >= theme::CATCHER_MAX_ITEMS {
+            return;
+        }
+        let kind = pick_item_kind(level, js_sys::Math::random());
+        let Some(item_state) = build_catcher_item(&game.play_area, kind, game.theme) else {
+            return;
+        };
+        game.falling_items.push(item_state);
+    });
 }
 fn spawn_item_immediate(kind: ItemKind) {
-    let Some(area) = dom::query("[data-catcher-area]") else {
-        return;
-    };
-    let _ = build_catcher_item(&area, kind, current_theme());
-}
-fn current_theme() -> CatcherTheme {
     GAME.with(|g| {
-        g.borrow()
-            .as_ref()
-            .map_or(CatcherTheme::Classic, |game| game.theme)
-    })
+        let mut borrow = g.borrow_mut();
+        let Some(game) = borrow.as_mut() else {
+            return;
+        };
+        if game.falling_items.len() >= theme::CATCHER_MAX_ITEMS {
+            return;
+        }
+        if let Some(item_state) = build_catcher_item(&game.play_area, kind, game.theme) {
+            game.falling_items.push(item_state);
+        }
+    });
 }
 fn pick_item_kind(level: u32, rand: f64) -> ItemKind {
     match level {
@@ -760,16 +749,7 @@ fn start_gravity_loop() {
         if !browser_apis::is_document_visible() {
             // Prevent hidden-tab delta spikes and keep physics/spawn suspended.
             last_ts_inner.set(0.0);
-            let win = dom::window();
-            if let Some(cb) = closure_for_raf.borrow().as_ref() {
-                if let Ok(id) = win.request_animation_frame(cb.as_ref().unchecked_ref()) {
-                    GAME.with(|g| {
-                        if let Some(game) = g.borrow_mut().as_mut() {
-                            game.raf_id = Some(id);
-                        }
-                    });
-                }
-            }
+            schedule_next_gravity_frame(&closure_for_raf);
             return;
         }
 
@@ -801,113 +781,99 @@ fn start_gravity_loop() {
         apply_gravity(delta_ms);
 
         // Schedule next frame
-        let win = dom::window();
-        if let Some(cb) = closure_for_raf.borrow().as_ref() {
-            if let Ok(id) = win.request_animation_frame(cb.as_ref().unchecked_ref()) {
-                GAME.with(|g| {
-                    if let Some(game) = g.borrow_mut().as_mut() {
-                        game.raf_id = Some(id);
-                    }
-                });
-            }
-        }
+        schedule_next_gravity_frame(&closure_for_raf);
     }));
 
     // Kick off the first frame
-    let win = dom::window();
     if let Some(cb) = closure_rc.borrow().as_ref() {
         let func: &js_sys::Function = cb.as_ref().unchecked_ref();
         dom::pin_closure_to_arena("__catcher_gravity_closure", func);
-        if let Ok(id) = win.request_animation_frame(func) {
-            GAME.with(|g| {
-                if let Some(game) = g.borrow_mut().as_mut() {
-                    game.raf_id = Some(id);
-                }
-            });
-        }
+        schedule_gravity_frame(cb);
     }
 
     std::mem::forget(closure_rc);
 }
-fn apply_gravity(dt_ms: f64) {
-    let (level, is_magnet, is_freeze) = GAME.with(|g| {
-        let borrow = g.borrow();
-        let Some(game) = borrow.as_ref() else {
-            return (1u32, false, false);
-        };
-        if !game.active {
-            return (1, false, false);
-        }
-        let now = browser_apis::now_ms();
-        (
-            game.level,
-            game.power_ups.is_magnet(now),
-            game.power_ups.is_freeze(now),
-        )
-    });
-    let speed_per_sec =
-        theme::CATCHER_BASE_SPEED * 1.0 + (f64::from(level) - 1.0) * theme::CATCHER_SPEED_INCREASE;
-    let freeze_mult = if is_freeze { 0.5 } else { 1.0 };
-    let speed = speed_per_sec * dt_ms / 50.0 * freeze_mult;
-    let now_ms = browser_apis::now_ms();
-    thread_local! { static TO_REMOVE: RefCell<Vec<Element>> = const { RefCell::new(Vec::new()) }; }
-    TO_REMOVE.with(|tr| {
-        let mut to_remove = tr.borrow_mut();
-        to_remove.clear();
-        dom::for_each_match("[data-catcher-area] [data-item-kind]", |item| {
-            let current_y: f64 = dom::get_attr(&item, "data-y")
-                .and_then(|s: String| s.parse::<f64>().ok())
-                .unwrap_or(0.0);
-            let speed_mult: f64 = dom::get_attr(&item, "data-speed-mult")
-                .and_then(|s| s.parse::<f64>().ok())
-                .unwrap_or(1.0);
-            let new_y = current_y + speed * speed_mult;
-            if new_y > 110.0 {
-                to_remove.push(item);
-            } else {
-                dom::with_buf(|buf| {
-                    let _ = write!(buf, "{new_y:.1}");
-                    dom::set_attr(&item, "data-y", buf);
-                });
-                let left_pct: f64 = dom::get_attr(&item, "data-left")
-                    .and_then(|s| s.parse::<f64>().ok())
-                    .unwrap_or(50.0);
-                let wobble_start: f64 = dom::get_attr(&item, "data-wobble")
-                    .and_then(|s| s.parse::<f64>().ok())
-                    .unwrap_or(0.0);
-                let sway_amount = (new_y * 0.1 + wobble_start).sin() * 0.5;
-                let left_final = if is_magnet {
-                    let drift = (50.0 - left_pct) * 0.02 * (dt_ms / 16.0);
-                    let new_left = left_pct + drift;
-                    dom::with_buf(|buf| {
-                        let _ = write!(buf, "{new_left:.1}");
-                        dom::set_attr(&item, "data-left", buf);
-                    });
-                    new_left
-                } else {
-                    left_pct + sway_amount
-                };
-                let jiggle_amp = 15.0 * (speed_mult - 0.7).max(0.0);
-                let jiggle_rot = (now_ms / 150.0 + new_y).sin() * jiggle_amp;
-                if let Some(html) = item.dyn_ref::<web_sys::HtmlElement>() {
-                    let style = html.style();
-                    dom::with_buf(|buf| {
-                        let _ = write!(buf, "{left_final:.1}%");
-                        let _ = style.set_property(wasm_bindgen::intern("left"), buf);
-                    });
-                    dom::with_buf(|buf| {
-                        let _ = write!(buf, "{new_y:.1}%");
-                        let _ = style.set_property(wasm_bindgen::intern("top"), buf);
-                    });
-                    dom::with_buf(|buf| {
-                        let _ = write!(buf, "rotate({jiggle_rot:.1}deg)");
-                        let _ = style.set_property(wasm_bindgen::intern("transform"), buf);
-                    });
-                }
+
+fn schedule_next_gravity_frame(closure: &RafClosure) {
+    if let Some(cb) = closure.borrow().as_ref() {
+        schedule_gravity_frame(cb);
+    }
+}
+
+fn schedule_gravity_frame(cb: &Closure<dyn FnMut(f64)>) {
+    let win = dom::window();
+    if let Ok(id) = win.request_animation_frame(cb.as_ref().unchecked_ref()) {
+        GAME.with(|g| {
+            if let Some(game) = g.borrow_mut().as_mut() {
+                game.raf_id = Some(id);
             }
         });
-        for item in to_remove.iter() {
-            item.remove();
+    }
+}
+
+fn apply_gravity(dt_ms: f64) {
+    let now_ms = browser_apis::now_ms();
+    GAME.with(|g| {
+        let mut borrow = g.borrow_mut();
+        let Some(game) = borrow.as_mut() else {
+            return;
+        };
+        if !game.active {
+            return;
+        }
+
+        let is_magnet = game.power_ups.is_magnet(now_ms);
+        let is_freeze = game.power_ups.is_freeze(now_ms);
+        let speed_per_sec = theme::CATCHER_BASE_SPEED * 1.0
+            + (f64::from(game.level) - 1.0) * theme::CATCHER_SPEED_INCREASE;
+        let freeze_mult = if is_freeze { 0.5 } else { 1.0 };
+        let speed = speed_per_sec * dt_ms / 50.0 * freeze_mult;
+
+        let mut idx = 0usize;
+        while idx < game.falling_items.len() {
+            let mut remove_item = false;
+            {
+                let item = &mut game.falling_items[idx];
+                item.y += speed * item.speed_mult;
+                if item.y > 110.0 {
+                    remove_item = true;
+                } else {
+                    let sway_amount = (item.y * 0.1 + item.wobble_start).sin() * 0.5;
+                    let left_final = if is_magnet {
+                        let drift = (50.0 - item.left) * 0.02 * (dt_ms / 16.0);
+                        item.left += drift;
+                        item.left
+                    } else {
+                        item.left + sway_amount
+                    };
+                    let jiggle_amp = 15.0 * (item.speed_mult - 0.7).max(0.0);
+                    let jiggle_rot = (now_ms / 150.0 + item.y).sin() * jiggle_amp;
+
+                    if let Some(html) = item.element.dyn_ref::<web_sys::HtmlElement>() {
+                        let style = html.style();
+                        dom::with_buf(|buf| {
+                            let _ = write!(buf, "{left_final:.1}%");
+                            let _ = style.set_property(wasm_bindgen::intern("left"), buf);
+                        });
+                        dom::with_buf(|buf| {
+                            let _ = write!(buf, "{:.1}%", item.y);
+                            let _ = style.set_property(wasm_bindgen::intern("top"), buf);
+                        });
+                        dom::with_buf(|buf| {
+                            let _ = write!(buf, "rotate({jiggle_rot:.1}deg)");
+                            let _ = style.set_property(wasm_bindgen::intern("transform"), buf);
+                        });
+                    }
+                }
+            }
+
+            if remove_item {
+                let removed = game.falling_items.swap_remove(idx);
+                removed.element.remove();
+                continue;
+            }
+
+            idx += 1;
         }
     });
 }
@@ -945,6 +911,11 @@ fn end_round() {
     }) else {
         return;
     };
+    GAME.with(|g| {
+        if let Some(game) = g.borrow_mut().as_mut() {
+            game.falling_items.clear();
+        }
+    });
     if let Some(area) = dom::query("[data-catcher-area]") {
         dom::safe_set_inner_html(&area, "");
     }
@@ -1170,6 +1141,7 @@ fn spawn_catcher_overlay(class: &str, text: &str, ms: i32) {
     }
 }
 pub fn cleanup() {
+    games::clear_picker_abort(&PICKER_ABORT);
     GAME.with(|g| {
         if let Some(game) = g.borrow_mut().as_mut() {
             game.active = false;

@@ -1,8 +1,19 @@
 # Status Ledger History (2026-02-13 to 2026-02-14)
 
+- Archive Path: `docs/archive/reports/status-ledger-history-2026-02-13-to-2026-02-14.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Status Ledger History (2026-02-13 to 2026-02-14)`
+
+## Summary
 Archived from active `docs/STATUS_LEDGER.md` on 2026-02-15 to keep active docs focused on current-cycle status.
 
-## Validation Entries
+## Context
+Archived from active `docs/STATUS_LEDGER.md` on 2026-02-15 to keep active docs focused on current-cycle status.
+
+## Actions
+_No actions recorded._
+
+## Validation
 | Date | Command | Result | Key Output |
 |---|---|---|---|
 | 2026-02-14 | `node --check public/runtime-diagnostics.js` | PASS | No syntax/runtime parse errors |
@@ -20,9 +31,13 @@ Archived from active `docs/STATUS_LEDGER.md` on 2026-02-15 to keep active docs f
 | 2026-02-13 | `npm run test:e2e:webkit` | PASS | `4 passed` |
 | 2026-02-13 | `npm run token:baseline` | PASS | active docs `19`, active est tokens `22446` |
 
-## Historical Change Entries
+### Historical Change Entries
 | Date | Change | Status |
 |---|---|---|
 | 2026-02-13 | Refactored `scripts/pwa-health-check.mjs` to managed-server + fallback offline modes | Implemented and validated |
 | 2026-02-13 | Added `scripts/token-doc-baseline.mjs` + `npm run token:baseline` | Implemented and validated |
 | 2026-02-13 | Archived non-core docs to reduce active context | Completed |
+
+## References
+_No references recorded._
+

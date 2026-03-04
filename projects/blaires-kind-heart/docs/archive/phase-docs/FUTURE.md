@@ -1,34 +1,42 @@
 # Future Features (Scaffolded, Not Yet Integrated)
 
-## Skill Progression System
+- Archive Path: `docs/archive/phase-docs/FUTURE.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Future Features (Scaffolded, Not Yet Integrated)`
+
+## Summary
+**Status**: 40% complete, no UI
+
+## Context
+### Skill Progression System
 **Status**: 40% complete, no UI
 **Files**: `rust/skill_progression.rs` (150 lines)
 **Purpose**: Track mastery levels per kindness category (bronze/silver/gold badges)
 **Why Not Removed**: Thoughtful design for growing 4-year-old, worth completing
 **Next Steps**: Integrate with tracker.rs, add badge UI in rewards panel
 
-## Adaptive Quests
+### Adaptive Quests
 **Status**: 30% complete, no UI
 **Files**: `rust/adaptive_quests.rs` (80 lines)
 **Purpose**: Daily focus quest targets least-practiced skill
 **Why Not Removed**: Enhances learning, extends existing quest system
 **Next Steps**: Wire into quests.rs, test focus priority algorithm
 
-## Reflection Prompts
+### Reflection Prompts
 **Status**: 20% complete, no UI
 **Files**: `rust/reflection.rs` (60 lines)
 **Purpose**: "Why was that kind?" prompts after logging acts
 **Why Not Removed**: Core pedagogy feature for teaching empathy
 **Next Steps**: Implement 3-emoji popover, test 3s delay timing
 
-## Parent Insights Dashboard
+### Parent Insights Dashboard
 **Status**: 10% complete, no UI
 **Files**: `rust/parent_insights.rs` (40 lines)
 **Purpose**: Weekly summary of child's kindness patterns and growth
 **Why Not Removed**: Valuable for parent engagement and understanding progress
 **Next Steps**: Complete WeeklyInsight implementation, add visualization panel
 
-## Decision Rationale
+### Decision Rationale
 
 These features represent **incomplete implementation**, not dead code:
 - All have clear pedagogical value for a 4-year-old learning kindness
@@ -39,7 +47,7 @@ These features represent **incomplete implementation**, not dead code:
 
 **When to Complete**: After parent testing confirms core features are solid (tracker, quests, stories, rewards, games).
 
-## Build Warnings Explained
+### Build Warnings Explained
 
 The 10 build warnings are expected and intentional:
 
@@ -62,3 +70,13 @@ The 10 build warnings are expected and intentional:
 - Emoji selection system pending design finalization
 
 These warnings will resolve automatically when features are integrated with UI and called from main app flow.
+
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

@@ -14,6 +14,7 @@ pub const SELECTOR_GAME_ARENA: &str = "#game-arena";
 pub const SELECTOR_GAME_EXIT: &str = "#game-exit-btn";
 pub const SELECTOR_COMPANION: &str = "[data-companion]";
 pub const SELECTOR_HEARTS: &str = "[data-hearts]";
+pub const SELECTOR_HOME_TRACKER_HEARTS: &str = "[data-home-tracker-hearts]";
 pub const SELECTOR_TRACKER_HEARTS: &str = "[data-tracker-hearts-count]";
 pub const SELECTOR_TOAST: &str = "[data-toast]";
 pub const ATTR_PANEL_OPEN: &str = "data-panel-open";

@@ -1,11 +1,26 @@
 # Memory Diagnostic Checklist - iPad Testing Guide
 
+- Archive Path: `docs/archive/DETAILED_MEMORY_CHECKLIST.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Memory Diagnostic Checklist - iPad Testing Guide`
+
+## Summary
+- **Before Fixes**: Expect 30-50KB growth per 8-hour session
+- **After Fixes**: Expect < 5KB growth per 8-hour session
+- **Verification**: Run all 7 tests before and after fixes
+- **Regression**: Add automated tests to prevent reintroduction
+
+**Target for Production**: All tests PASS with no LEAK indicators.
+
+## Context
 Use this checklist to verify memory leaks on actual iPad hardware (iPad mini 6, A15, 4GB RAM).
 
 ---
 
-## Pre-Test Setup
+## Actions
+_No actions recorded._
 
+## Validation
 - [ ] Close all other apps
 - [ ] Safari 26.2 (verify in Settings > Safari > About)
 - [ ] iPadOS 26.2 or later
@@ -15,8 +30,6 @@ Use this checklist to verify memory leaks on actual iPad hardware (iPad mini 6, 
 - [ ] Enable memory profiling output with timestamp
 
 ---
-
-## Test 1: Panel Navigation Memory Growth
 
 **Objective**: Detect if Navigation API listener leaks during repeated panel changes.
 
@@ -55,8 +68,6 @@ performance.mark('nav-test-end');
 performance.measure('nav-test', 'nav-test-start', 'nav-test-end');
 ```
 
-### Expected Result
-
 - **PASS**: < 2MB growth
 - **WARN**: 2-5MB growth (investigate)
 - **LEAK**: > 5MB growth (navigate listener not cleaned up)
@@ -81,8 +92,6 @@ EventTarget.prototype.addEventListener = function(...args) {
 
 ---
 
-## Test 2: Gesture Detector (Triple-Tap) TAP_TIMES Growth
-
 **Objective**: Detect if TAP_TIMES vector grows unbounded.
 
 ### Procedure
@@ -97,7 +106,6 @@ const tapCounter = {
         if (this.count % 100 === 0) {
             console.log(`[TEST] Taps: ${this.count}`);
         }
-    }
 };
 window.tapCounter = tapCounter;
 ```
@@ -123,8 +131,6 @@ console.log(`[TEST] Heap after tapping: ${(heap / 1024 / 1024).toFixed(2)}MB`);
    - Search for "TAP" or "Vec" objects
    - Should see small number of vectors (typically 1, within Rust thread_local)
 
-### Expected Result
-
 - **PASS**: No memory spike (< 500KB growth)
 - **WARN**: Spike of 1-5MB (investigate TAP_TIMES bounds)
 - **LEAK**: Spike > 5MB (vector growing without limit)
@@ -138,8 +144,6 @@ tap_times.retain(|&t| t >= cutoff);  // Not: now - t < 1000.0
 ```
 
 ---
-
-## Test 3: Game Launch/Exit Cycle Memory
 
 **Objective**: Verify RAF loops are properly cleaned up.
 
@@ -167,8 +171,6 @@ console.log(`[TEST] After 5 games: ${(afterGames / 1024 / 1024).toFixed(2)}MB`);
    - Search for "Closure" + "game_catcher"
    - Count should be 0-1 (not 5)
 
-### Expected Result
-
 - **PASS**: Each game exit → ~5KB cleanup, heap returns to baseline
 - **WARN**: 2-10MB per game (some state not cleaned)
 - **LEAK**: Each game stays in memory (cleanup not called)
@@ -185,14 +187,11 @@ pub fn cleanup() {
                 let window = dom::window();
                 let _ = window.cancel_animation_frame(id);  // MUST HAPPEN
             }
-        }
     });
 }
 ```
 
 ---
-
-## Test 4: Long-Running Session (Soak Test)
 
 **Objective**: Detect growth leaks over extended play.
 
@@ -224,8 +223,6 @@ console.log(`[TEST] Rate: ~${(soak_growth / 30).toFixed(1)}KB/min`);
    - Logarithmic curve = event listener or cache growth (normal)
    - Flat = no leak
 
-### Expected Result
-
 - **PASS**: < 5MB growth over 30 minutes
 - **WARN**: 5-20MB growth (accumulation, investigate source)
 - **LEAK**: > 20MB growth (likely permanent event listener leak)
@@ -243,8 +240,6 @@ Use heap snapshot diff to identify:
 - Compare for growth in Closure objects
 
 ---
-
-## Test 5: SpeechSynthesis Listener Verification
 
 **Objective**: Verify voiceschanged listener doesn't duplicate.
 
@@ -275,8 +270,6 @@ synth.addEventListener = function(event, handler, options) {
    - Should see "voiceschanged listener #1" (only once)
    - Not #2, #3, etc.
 
-### Expected Result
-
 - **PASS**: "listener #1" appears once
 - **LEAK**: "listener #1", "listener #2", "listener #3"... (duplicates)
 
@@ -294,8 +287,6 @@ pub fn init_voices() {
 
 ---
 
-## Test 6: Gardens Module Listener Check
-
 **Objective**: Verify gardens navigate listener doesn't leak on module reload.
 
 ### Procedure
@@ -308,8 +299,6 @@ pub fn init_voices() {
 6. Diff snapshots:
    - Should show no growth in navigate listeners
    - Count should be stable
-
-### Expected Result
 
 - **PASS**: No new Closure objects in diff
 - **LEAK**: 1+ new Closure objects (old listener not removed)
@@ -332,8 +321,6 @@ pub fn cleanup() {
 ```
 
 ---
-
-## Test 7: Confetti/GPU Particles Cleanup
 
 **Objective**: Verify GPU particle burst doesn't leave dangling closures.
 
@@ -366,14 +353,10 @@ window.cancelAnimationFrame = function(id) {
    - RAF requests should equal RAF cancellations
    - If requests > cancellations, frames are leaking
 
-### Expected Result
-
 - **PASS**: Each celebration: ~5 RAF requests, ~5 cancellations
 - **LEAK**: RAF count grows without corresponding cancellations
 
 ---
-
-## Automated Memory Regression Test (Future)
 
 Once fixes are applied, add this test to CI:
 
@@ -416,14 +399,13 @@ fn get_heap_used() -> u32 {
                         .ok()
                         .and_then(|size| size.as_f64().map(|s| s as u32))
                 })
-        })
         .unwrap_or(0)
 }
 ```
 
 ---
 
-## Troubleshooting
+### Troubleshooting
 
 ### "DevTools shows memory growth but unclear source"
 
@@ -455,12 +437,9 @@ This is normal and indicates:
 
 ---
 
-## Reporting Results
-
 When creating an issue or PR, include:
 
 ```markdown
-## Memory Test Results
 
 ### Environment
 - Device: iPad mini 6, A15, 4GB RAM
@@ -468,7 +447,6 @@ When creating an issue or PR, include:
 - Safari: 26.2
 - Test Date: 2026-02-11
 
-### Test Results
 - [ ] Panel Navigation: PASS / WARN / LEAK
   - Growth: XMB after 50 navigations
 - [ ] Gesture TAP_TIMES: PASS / WARN / LEAK
@@ -490,11 +468,6 @@ When creating an issue or PR, include:
 
 ---
 
-## Summary
+## References
+_No references recorded._
 
-- **Before Fixes**: Expect 30-50KB growth per 8-hour session
-- **After Fixes**: Expect < 5KB growth per 8-hour session
-- **Verification**: Run all 7 tests before and after fixes
-- **Regression**: Add automated tests to prevent reintroduction
-
-**Target for Production**: All tests PASS with no LEAK indicators.

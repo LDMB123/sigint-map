@@ -116,7 +116,7 @@
    float-up — emoji hearts that grow as they rise (heart floats up and expands)
    float-up-fade — text/score popups that appear small, grow, then fade (score pop) */
 .float-up {
-  animation: float-up 1s var(--ease-smooth) forwards;
+  animation: float-up var(--timing-float-heart-removal) var(--ease-smooth) forwards;
   pointer-events: none;
 }
 
@@ -246,7 +246,7 @@
 
 /* ====== SPARKLE POP ====== */
 .sparkle-reveal {
-  animation: sparkle-pop 0.6s var(--ease-elastic);
+  animation: sparkle-pop var(--timing-sparkle-reveal) var(--ease-elastic);
 }
 
 @keyframes sparkle-pop {
@@ -309,7 +309,7 @@
   transform: translateX(-50%);
   font-size: var(--font-size-xl);
   pointer-events: none;
-  animation: float-up 0.8s var(--ease-smooth) forwards;
+  animation: float-up var(--timing-float-heart-removal) var(--ease-smooth) forwards;
   z-index: var(--z-toast);
 }
 
@@ -320,7 +320,7 @@
 
 /* ====== JELLY WOBBLE (playful squish) ====== */
 .jelly-wobble {
-  animation: jelly-wobble 0.58s var(--ease-elastic);
+  animation: jelly-wobble var(--timing-jelly-wobble) var(--ease-elastic);
 }
 
 @keyframes jelly-wobble {
@@ -1066,4 +1066,3 @@
     opacity: 0;
   }
 }
-

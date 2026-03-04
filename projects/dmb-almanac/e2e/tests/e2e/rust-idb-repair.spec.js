@@ -33,6 +33,8 @@ test.describe('Rust IDB auto-repair', () => {
       const manifest = await manifestResp.json();
       if (!manifest || !manifest.version) throw new Error('manifest missing version');
 
+      localStorage.setItem('pwa_import_tuning_v2', 'true');
+
       // Ensure no prior DB exists in this context.
       await deleteDb();
 
@@ -72,6 +74,9 @@ test.describe('Rust IDB auto-repair', () => {
     // The key behavior we want: don't claim "Offline data ready" while missing stores.
     // We should see the explicit repair message (or at least an import) for this scenario.
     await expect(statusRow).toHaveText(/repairing|Importing/i, { timeout: 10000 });
+    await expect(page.locator('.pwa-status__row', { hasText: /Import tuning:/i }).first()).toBeVisible({
+      timeout: 45000,
+    });
 
     // Importing the full dataset can take longer than the default E2E timeout, especially on CI.
     // Instead of hard-coding specific filenames, assert that progress advances beyond early files.

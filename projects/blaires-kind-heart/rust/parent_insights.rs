@@ -1,4 +1,6 @@
-use crate::{db_client, dom, skill_progression, utils};
+use crate::{
+    db_client, dom, domain_services, feature_flags, reliability, skill_taxonomy, utils,
+};
 use std::fmt::Write;
 #[derive(Debug, Clone)]
 pub struct WeeklyInsight {
@@ -14,10 +16,16 @@ pub struct SkillBreakdown {
     pub percentage: u32,
 }
 pub async fn get_weekly_insights(week_key: &str) -> Option<WeeklyInsight> {
+    if !feature_flags::is_parent_insights_enabled().await {
+        return None;
+    }
     if let Some(cached) = get_cached_insights(week_key).await {
+        reliability::record_success(reliability::DOMAIN_INSIGHTS).await;
         return Some(cached);
     }
-    generate_weekly_insights(week_key).await
+    let generated = generate_weekly_insights(week_key).await;
+    reliability::record_success(reliability::DOMAIN_INSIGHTS).await;
+    generated
 }
 async fn generate_weekly_insights(week_key: &str) -> Option<WeeklyInsight> {
     let week_key_str = week_key.to_string();
@@ -29,7 +37,7 @@ async fn generate_weekly_insights(week_key: &str) -> Option<WeeklyInsight> {
         .iter()
         .max_by_key(|s| s.count)
         .map_or_else(|| "sharing".to_string(), |s| s.skill_type.clone());
-    let focus_skill = skill_progression::get_focus_skill()
+    let focus_skill = domain_services::get_focus_skill()
         .await
         .unwrap_or_else(|| "helping".to_string());
     let pattern_text = generate_pattern_text_from_data(&skill_breakdown, &timestamps);
@@ -56,6 +64,7 @@ async fn generate_weekly_insights(week_key: &str) -> Option<WeeklyInsight> {
         Ok(json) => json,
         Err(e) => {
             dom::warn(&format!("[parent_insights] Failed to serialize skill_breakdown: {e:?}"));
+            reliability::record_failure(reliability::DOMAIN_INSIGHTS).await;
             return Some(insight);
         }
     };
@@ -83,7 +92,10 @@ async fn get_cached_insights(week_key: &str) -> Option<WeeklyInsight> {
         vec![week_key.to_string()],
     )
     .await;
-    let Ok(data) = rows else { return None };
+    let Ok(data) = rows else {
+        reliability::record_failure(reliability::DOMAIN_INSIGHTS).await;
+        return None;
+    };
     let arr = data.as_array()?;
     if arr.is_empty() {
         return None;
@@ -126,11 +138,12 @@ async fn calculate_skill_breakdown_and_times(week_key: &str) -> (Vec<SkillBreakd
     let week_start = week_key.to_string();
     let week_end = utils::week_key_end(&week_start);
     let rows = db_client::query(
-        "SELECT category, created_at FROM kind_acts WHERE day_key >= ?1 AND day_key <= ?2",
+        "SELECT COALESCE(canonical_category, category) as category, created_at FROM kind_acts WHERE day_key >= ?1 AND day_key <= ?2",
         vec![week_start, week_end],
     )
     .await;
     let Ok(data) = rows else {
+        reliability::record_failure(reliability::DOMAIN_INSIGHTS).await;
         return (vec![], vec![]);
     };
     let Some(arr) = data.as_array() else {
@@ -143,7 +156,8 @@ async fn calculate_skill_breakdown_and_times(week_key: &str) -> (Vec<SkillBreakd
             timestamps.push(ts);
         }
         if let Some(cat) = row.get("category").and_then(|v| v.as_str()) {
-            *category_counts.entry(cat.to_string()).or_insert(0) += 1;
+            let canonical = skill_taxonomy::canonicalize_skill(cat).to_string();
+            *category_counts.entry(canonical).or_insert(0) += 1;
         }
     }
     let total: u32 = category_counts.values().sum();
@@ -171,9 +185,9 @@ fn generate_pattern_text_from_data(breakdown: &[SkillBreakdown], timestamps: &[f
     let top_skill = breakdown
         .iter()
         .max_by_key(|s| s.count)
-        .map_or(("Kindness", 0), |s| {
+        .map_or_else(|| ("Kindness".to_string(), 0), |s| {
             (
-                skill_progression::skill_to_friendly_name(&s.skill_type),
+                domain_services::skill_to_friendly_name(&s.skill_type),
                 s.count,
             )
         });
@@ -218,7 +232,10 @@ async fn calculate_reflection_rate(week_key: &str) -> u32 {
     let week_start = week_key.to_string();
     let week_end = utils::week_key_end(&week_start);
     let Ok(rows) = db_client::query( "SELECT COUNT(*) as total, SUM(CASE WHEN reflection_type IS NOT NULL THEN 1 ELSE 0 END) as reflected \
-         FROM kind_acts WHERE day_key >= ?1 AND day_key <= ?2", vec![week_start, week_end],).await else { return 0 };
+         FROM kind_acts WHERE day_key >= ?1 AND day_key <= ?2", vec![week_start, week_end],).await else {
+        reliability::record_failure(reliability::DOMAIN_INSIGHTS).await;
+        return 0;
+    };
     let row = rows.get(0);
     let total = row
         .and_then(|r| r.get("total"))

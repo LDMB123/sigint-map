@@ -1,0 +1,154 @@
+{
+  "panels": [
+    {
+      "id": "home-scene",
+      "parent": null,
+      "breadcrumb": {
+        "icon": "🏠",
+        "label": "Home",
+        "aria": "Home"
+      },
+      "panel_title": "Home",
+      "panel_aria": "Home",
+      "narration_phrase": null,
+      "first_visit_tip": null,
+      "theme_token": "home",
+      "sound_key": null
+    },
+    {
+      "id": "panel-tracker",
+      "parent": null,
+      "breadcrumb": {
+        "icon": "💖",
+        "label": "Be Kind",
+        "aria": "Be Kind"
+      },
+      "panel_title": "Kind Acts",
+      "panel_aria": "Kind Acts Tracker",
+      "narration_phrase": "Be Kind!",
+      "first_visit_tip": "Tap a heart to be kind!",
+      "theme_token": "kindness",
+      "sound_key": "gentle"
+    },
+    {
+      "id": "panel-adventures",
+      "parent": null,
+      "breadcrumb": {
+        "icon": "🗺️",
+        "label": "Adventures",
+        "aria": "Adventures"
+      },
+      "panel_title": "Adventures!",
+      "panel_aria": "Adventures",
+      "narration_phrase": "Adventures!",
+      "first_visit_tip": null,
+      "theme_token": "adventures",
+      "sound_key": "magic_wand"
+    },
+    {
+      "id": "panel-mystuff",
+      "parent": null,
+      "breadcrumb": {
+        "icon": "✨",
+        "label": "My Stuff",
+        "aria": "My Stuff"
+      },
+      "panel_title": "My Stuff!",
+      "panel_aria": "My Stuff",
+      "narration_phrase": "My Stuff!",
+      "first_visit_tip": null,
+      "theme_token": "collection",
+      "sound_key": "sparkle"
+    },
+    {
+      "id": "panel-quests",
+      "parent": "panel-adventures",
+      "breadcrumb": {
+        "icon": "🧭",
+        "label": "Quests",
+        "aria": "Quests"
+      },
+      "panel_title": "Today's Quests",
+      "panel_aria": "Daily Quests",
+      "narration_phrase": "Let's do a quest!",
+      "first_visit_tip": "These are your adventures for today!",
+      "theme_token": "adventures",
+      "sound_key": "fanfare"
+    },
+    {
+      "id": "panel-stories",
+      "parent": "panel-adventures",
+      "breadcrumb": {
+        "icon": "📖",
+        "label": "Stories",
+        "aria": "Stories"
+      },
+      "panel_title": "Stories",
+      "panel_aria": "Stories",
+      "narration_phrase": "Story time!",
+      "first_visit_tip": "Pick a story and I'll read it to you!",
+      "theme_token": "adventures",
+      "sound_key": "dreamy"
+    },
+    {
+      "id": "panel-games",
+      "parent": "panel-adventures",
+      "breadcrumb": {
+        "icon": "🎮",
+        "label": "Games",
+        "aria": "Games"
+      },
+      "panel_title": "Games",
+      "panel_aria": "Fun Games",
+      "narration_phrase": "Let's play!",
+      "first_visit_tip": "Let's play a game together!",
+      "theme_token": "games",
+      "sound_key": "chime"
+    },
+    {
+      "id": "panel-rewards",
+      "parent": "panel-mystuff",
+      "breadcrumb": {
+        "icon": "⭐",
+        "label": "Stickers",
+        "aria": "Stickers"
+      },
+      "panel_title": "My Stickers",
+      "panel_aria": "Sticker Collection",
+      "narration_phrase": "Your stickers!",
+      "first_visit_tip": "Your stickers live here!",
+      "theme_token": "collection",
+      "sound_key": "sparkle"
+    },
+    {
+      "id": "panel-gardens",
+      "parent": "panel-mystuff",
+      "breadcrumb": {
+        "icon": "🌱",
+        "label": "Gardens",
+        "aria": "Gardens"
+      },
+      "panel_title": "🌱 My Gardens",
+      "panel_aria": "My Gardens",
+      "narration_phrase": "Your gardens!",
+      "first_visit_tip": "Watch your gardens grow with kindness!",
+      "theme_token": "gardens",
+      "sound_key": "gentle"
+    },
+    {
+      "id": "panel-progress",
+      "parent": "panel-mystuff",
+      "breadcrumb": {
+        "icon": "📊",
+        "label": "My Week",
+        "aria": "My Week"
+      },
+      "panel_title": "My Week",
+      "panel_aria": "Weekly Progress",
+      "narration_phrase": "My week!",
+      "first_visit_tip": null,
+      "theme_token": "progress",
+      "sound_key": null
+    }
+  ]
+}

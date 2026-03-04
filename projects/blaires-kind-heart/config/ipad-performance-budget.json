@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "device_profile": "iPad Mini",
+  "source_template": "docs/IPAD_REGRESSION_TEMPLATE.md",
+  "budgets": {
+    "boot_ms_max": 3000,
+    "panel_transition_ms_max": 180,
+    "panel_transition_p95_ms_max": 180,
+    "session_stability_probe_ms": 45000,
+    "runtime_error_events_max": 0
+  },
+  "scenarios": {
+    "panel_open_sequence": [
+      "panel-tracker",
+      "panel-adventures",
+      "panel-mystuff"
+    ],
+    "transition_cycles": 2
+  }
+}

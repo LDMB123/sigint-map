@@ -1,15 +1,10 @@
 # Token Optimization Analysis: Blaire's Kind Heart PWA
 
-**Date:** 2026-02-11
-**Project:** Blaire's Kind Heart (Rust + WASM, Safari 26.2)
-**Total Project Size:** 3.7GB (primarily build artifacts)
-**Documentation:** 768KB (64 markdown files + 6 archived)
-**Current Session Budget:** 200K tokens
+- Archive Path: `docs/archive/snapshots/TOKEN_OPTIMIZATION_ANALYSIS.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Token Optimization Analysis: Blaire's Kind Heart PWA`
 
----
-
-## Executive Summary
-
+## Summary
 **Status:** YELLOW (50-70% utilization projection)
 
 Analyzed the Blaire's Kind Heart project for token optimization opportunities. Project spans 79 Rust source files (21.7K LOC), 70 documentation files, 54MB assets, and substantial build artifacts (3.5GB target/, 111MB dist/).
@@ -26,7 +21,7 @@ Analyzed the Blaire's Kind Heart project for token optimization opportunities. P
 
 ---
 
-## 1. Documentation Bloat Analysis
+### 1. Documentation Bloat Analysis
 
 ### 1.1 Redundant/Overlapping Documentation
 
@@ -73,7 +68,7 @@ DEPLOYMENT_CHECKLIST.md (8.2K) ............................... ~2,200 tokens
 
 ---
 
-## 2. Source Code Efficiency Issues
+### 2. Source Code Efficiency Issues
 
 ### 2.1 Backup Files (.bak) in Production Repository
 
@@ -103,7 +98,7 @@ DEPLOYMENT_CHECKLIST.md (8.2K) ............................... ~2,200 tokens
 
 ---
 
-## 3. Build Artifact Tracking Issues
+### 3. Build Artifact Tracking Issues
 
 ### 3.1 Git-Tracked Build Artifacts
 
@@ -149,7 +144,7 @@ stickers-* (multiple large PNGs, ~1.5 MB total)
 
 ---
 
-## 4. Asset Pipeline Optimization
+### 4. Asset Pipeline Optimization
 
 ### 4.1 WebP Asset Status (Week 2-3 ✓ Complete)
 
@@ -175,7 +170,7 @@ stickers-* (multiple large PNGs, ~1.5 MB total)
 
 ---
 
-## 5. Code Comment Density Analysis
+### 5. Code Comment Density Analysis
 
 ### 5.1 Bindings & Complex Files
 
@@ -195,7 +190,7 @@ stickers-* (multiple large PNGs, ~1.5 MB total)
 
 ---
 
-## 6. Configuration File Redundancy
+### 6. Configuration File Redundancy
 
 ### 6.1 Multiple Config Formats
 
@@ -212,7 +207,7 @@ stickers-* (multiple large PNGs, ~1.5 MB total)
 
 ---
 
-## 7. Documentation Structure Recommendations
+### 7. Documentation Structure Recommendations
 
 ### 7.1 Consolidation Targets (High ROI)
 
@@ -229,43 +224,13 @@ docs/README_MEMORY_ANALYSIS.md (8KB)
 
 **Compression Strategy:** Create single **MEMORY_REFERENCE.md**
 ```
-## Summary
 - 5 permanent leaks in navigation.rs, dom.rs
 - 3 growth leaks in event delegation
 - Fix pattern: AbortSignal-based cleanup
 
-## Critical Issues (Linked)
-[Brief issue matrix with file:line references]
-
-## Diagnostic Checklist
-[Reduced version, link to detailed test plan]
-
-Estimated savings: 10,000+ tokens (85% compression)
-Keep originals in: docs/archive/MEMORY_DETAILED_*.md
-```
-
-**Priority 2: PWA Audit Documentation**
-
-Current structure:
-```
-PWA_AUDIT_REPORT.md (913 lines, 32KB)
-PWA_DEBUG_REPORT.md (462 lines)
-PWA_AUDIT_INDEX.md (4.5KB)
-docs/PWA_DEBUG_INDEX.md (6.4KB)
-```
-
-**Compression Strategy:** Create **PWA_STATUS.md**
-```
-## Current Status
-- 21/22 criteria passing (95%)
-- Critical fixes: Offline CSP, SW message validation
-- Recent: Proper cache invalidation
-- Cache: 196 assets, 56.7MB
-
-## Issue Summary
 [Severity matrix with brief descriptions]
 
-## Full Reports
+### Full Reports
 [Link to archive for detailed analysis]
 
 Estimated savings: 8,000+ tokens (75% compression)
@@ -284,13 +249,12 @@ docs/testing/phase6-*.md (6 files)
 
 **Compression Strategy:** Single **DEVELOPMENT_PHASES.md**
 ```
-## Phase Summary Timeline
 [Table: Phase | Status | Key Milestones | Bugs Fixed]
 
-## Current: Phase 6
+### Current: Phase 6
 [Brief status update]
 
-## Historical Details
+### Historical Details
 [Archive directory references]
 
 Estimated savings: 5,000+ tokens (80% compression)
@@ -309,10 +273,10 @@ KNOWN_BUGS.md
 
 **Compression Strategy:** Single **BUG_TRACKING.md**
 ```
-## Active Bugs (If Any)
+### Active Bugs (If Any)
 [KNOWN_BUGS.md content, trimmed]
 
-## Fixed Issues Archive
+### Fixed Issues Archive
 [Link to git commit history]
 [Reference to: docs/archive/BUG_FIX_HISTORY.md]
 
@@ -321,7 +285,7 @@ Estimated savings: 3,000+ tokens (70% compression)
 
 ---
 
-## 8. Caching Strategy Optimization
+### 8. Caching Strategy Optimization
 
 ### 8.1 Session Cache Warming Opportunities
 
@@ -361,7 +325,7 @@ Estimated savings: 3,000+ tokens (70% compression)
 
 ---
 
-## 9. Specific File Recommendations
+### 9. Specific File Recommendations
 
 ### 9.1 Delete (Cleanup)
 
@@ -405,7 +369,6 @@ Priority: **HIGH** — Immediate action
 
 **Compression Method:**
 ```markdown
-## [Topic] Summary
 
 **Current Status**: [One-liner]
 **Key Metrics**: [2-3 metrics]
@@ -433,7 +396,7 @@ Priority: **NONE**
 
 ---
 
-## 10. Compression Ratios & Token Savings
+### 10. Compression Ratios & Token Savings
 
 ### 10.1 Achievable Savings by Category
 
@@ -468,8 +431,27 @@ Priority: **NONE**
 
 ---
 
-## 11. Priority Action Plan
+[One paragraph, key metrics]
 
+### Current Situation
+[Current status, what works, what doesn't]
+
+### Critical Issues
+[Matrix format: Issue | Severity | Location | Status]
+
+### Solutions & Resources
+[Link to detailed analysis in archive if needed]
+
+## Context
+**Date:** 2026-02-11
+**Project:** Blaire's Kind Heart (Rust + WASM, Safari 26.2)
+**Total Project Size:** 3.7GB (primarily build artifacts)
+**Documentation:** 768KB (64 markdown files + 6 archived)
+**Current Session Budget:** 200K tokens
+
+---
+
+## Actions
 ### Phase 1: Quick Wins (1-2 hours, 8,000 tokens saved)
 
 1. **Delete backup files** (5 files)
@@ -510,7 +492,90 @@ Priority: **NONE**
 2. **Configure cache warming** for 6 critical files
 3. **Document cache strategy** in README
 
-### Phase 4: Validation (1 hour)
+### 12.1 Consolidation Template
+
+When creating consolidated docs, follow this pattern:
+
+```markdown
+
+**Last Updated:** 2026-02-11
+**Status:** [Active/Archived]
+**Related Files:** [List]
+
+| Phase | Task | Time | ROI |
+|-------|------|------|-----|
+| 1 | Delete backups | 5 min | 2,000 tokens |
+| 1 | Verify .gitignore | 5 min | Prevents future bloat |
+| 1 | Move screenshots | 10 min | Not applicable |
+| 2 | Create MEMORY_REFERENCE.md | 45 min | 17,500 tokens |
+| 2 | Create PWA_STATUS.md | 45 min | 11,000 tokens |
+| 2 | Create DEVELOPMENT_PHASES.md | 30 min | 11,500 tokens |
+| 2 | Create BUG_TRACKING.md | 20 min | 8,000 tokens |
+| 2 | Archive originals | 15 min | (cleanup) |
+| 3 | Cache metadata setup | 30 min | 4,000 tokens ongoing |
+| 4 | Validation & testing | 60 min | (confidence) |
+| **Total** | | **~4 hours** | **~52,500 tokens** |
+
+**ROI: 13,000 tokens/hour**
+
+---
+
+### 15. Maintenance Going Forward
+
+### Quarterly Cleanup
+
+1. Run: `find docs -name "*.md" | wc -l` — alert if > 30 active docs
+2. Check for new .bak files in /rust
+3. Review archived docs for consolidation opportunities
+4. Update cache-metadata.json hash values
+
+1. Update consolidated summary doc
+2. Only archive detail if it exceeds 300 lines
+3. Cross-link actively
+4. Keep "last updated" metadata fresh
+
+---
+
+### Conclusion
+
+**Blaire's Kind Heart has excellent token optimization potential** through documentation consolidation rather than code changes. The Rust codebase is lean and well-structured (79 files, ~22K LOC, good comment density). The PWA/Service Worker implementation is solid.
+
+**Primary Opportunity:** Reduce documentation clutter from 70 files to ~35 active + 30 archived through intelligent consolidation. Achieves **52,500-token savings (79% reduction in docs)** with ~4 hours of work.
+
+**Secondary Opportunity:** Clean up git-tracked build artifacts (target/, dist/) and backup files (*.bak). Reduces clone size ~3.6GB.
+
+**Recommended Next Steps:**
+1. Implement Phase 1 (quick wins) immediately — 5 minutes, 2,000+ tokens
+2. Create 4 consolidated docs (Phase 2) — 4 hours, 35,000+ tokens saved
+3. Enable cache warming (Phase 3) — 1 hour, 4,000 tokens ongoing
+4. Validate and measure (Phase 4) — 1 hour, confidence/documentation
+
+**Expected Session Token Reduction: 23,000-27,000 tokens per typical work session (66-77% improvement)**
+
+## Validation
+[Reduced version, link to detailed test plan]
+
+Estimated savings: 10,000+ tokens (85% compression)
+Keep originals in: docs/archive/MEMORY_DETAILED_*.md
+```
+
+**Priority 2: PWA Audit Documentation**
+
+Current structure:
+```
+PWA_AUDIT_REPORT.md (913 lines, 32KB)
+PWA_DEBUG_REPORT.md (462 lines)
+PWA_AUDIT_INDEX.md (4.5KB)
+docs/PWA_DEBUG_INDEX.md (6.4KB)
+```
+
+**Compression Strategy:** Create **PWA_STATUS.md**
+```
+### Current Status
+- 21/22 criteria passing (95%)
+- Critical fixes: Offline CSP, SW message validation
+- Recent: Proper cache invalidation
+- Cache: 196 assets, 56.7MB
 
 1. **Verify all links** in consolidated docs point to correct files/sections
 2. **Test session cache** warming with duplicate file reads
@@ -518,38 +583,15 @@ Priority: **NONE**
 
 ---
 
-## 12. Implementation Notes
+## References
+[Brief issue matrix with file:line references]
 
-### 12.1 Consolidation Template
-
-When creating consolidated docs, follow this pattern:
-
-```markdown
-# [Topic] Status & Reference
-
-**Last Updated:** 2026-02-11
-**Status:** [Active/Archived]
-**Related Files:** [List]
-
-## Executive Summary
-[One paragraph, key metrics]
-
-## Current Situation
-[Current status, what works, what doesn't]
-
-## Critical Issues
-[Matrix format: Issue | Severity | Location | Status]
-
-## Solutions & Resources
-[Link to detailed analysis in archive if needed]
-
-## Quick Reference
 [For daily use]
 
 ---
 
-## Detailed Analysis
-👉 See `docs/archive/[ORIGINAL_FILENAME].md` for complete analysis
+### Detailed Analysis
+👉 See `../[ORIGINAL_FILENAME].md` for complete analysis
 ```
 
 ### 12.2 Archive Naming Convention
@@ -568,26 +610,22 @@ This preserves git history while indicating these are historical detail docs.
 
 Add to `.gitignore`:
 ```
-# Backups
 *.bak
 *-backup.css
 
-# Build artifacts (ensure coverage)
 target/
 dist/
 .trunk/
 .playwright-mcp/
 
-# Screenshots (move to docs/screenshots/)
 #*.png (don't add; move files instead)
 
-# IDE
 .DS_Store
 ```
 
 ---
 
-## 13. Expected Outcomes
+### 13. Expected Outcomes
 
 ### Token Efficiency
 
@@ -614,56 +652,3 @@ dist/
 
 ---
 
-## 14. Estimated Implementation Timeline
-
-| Phase | Task | Time | ROI |
-|-------|------|------|-----|
-| 1 | Delete backups | 5 min | 2,000 tokens |
-| 1 | Verify .gitignore | 5 min | Prevents future bloat |
-| 1 | Move screenshots | 10 min | Not applicable |
-| 2 | Create MEMORY_REFERENCE.md | 45 min | 17,500 tokens |
-| 2 | Create PWA_STATUS.md | 45 min | 11,000 tokens |
-| 2 | Create DEVELOPMENT_PHASES.md | 30 min | 11,500 tokens |
-| 2 | Create BUG_TRACKING.md | 20 min | 8,000 tokens |
-| 2 | Archive originals | 15 min | (cleanup) |
-| 3 | Cache metadata setup | 30 min | 4,000 tokens ongoing |
-| 4 | Validation & testing | 60 min | (confidence) |
-| **Total** | | **~4 hours** | **~52,500 tokens** |
-
-**ROI: 13,000 tokens/hour**
-
----
-
-## 15. Maintenance Going Forward
-
-### Quarterly Cleanup
-
-1. Run: `find docs -name "*.md" | wc -l` — alert if > 30 active docs
-2. Check for new .bak files in /rust
-3. Review archived docs for consolidation opportunities
-4. Update cache-metadata.json hash values
-
-### On Documentation Changes
-
-1. Update consolidated summary doc
-2. Only archive detail if it exceeds 300 lines
-3. Cross-link actively
-4. Keep "last updated" metadata fresh
-
----
-
-## Conclusion
-
-**Blaire's Kind Heart has excellent token optimization potential** through documentation consolidation rather than code changes. The Rust codebase is lean and well-structured (79 files, ~22K LOC, good comment density). The PWA/Service Worker implementation is solid.
-
-**Primary Opportunity:** Reduce documentation clutter from 70 files to ~35 active + 30 archived through intelligent consolidation. Achieves **52,500-token savings (79% reduction in docs)** with ~4 hours of work.
-
-**Secondary Opportunity:** Clean up git-tracked build artifacts (target/, dist/) and backup files (*.bak). Reduces clone size ~3.6GB.
-
-**Recommended Next Steps:**
-1. Implement Phase 1 (quick wins) immediately — 5 minutes, 2,000+ tokens
-2. Create 4 consolidated docs (Phase 2) — 4 hours, 35,000+ tokens saved
-3. Enable cache warming (Phase 3) — 1 hour, 4,000 tokens ongoing
-4. Validate and measure (Phase 4) — 1 hour, confidence/documentation
-
-**Expected Session Token Reduction: 23,000-27,000 tokens per typical work session (66-77% improvement)**

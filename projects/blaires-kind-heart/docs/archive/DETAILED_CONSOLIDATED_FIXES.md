@@ -1,6 +1,14 @@
 # Phase 3 Bug Fixes - Consolidated Implementation Plan
 
-## Status: 32 bugs found, fixing in priority order
+- Archive Path: `docs/archive/DETAILED_CONSOLIDATED_FIXES.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Phase 3 Bug Fixes - Consolidated Implementation Plan`
+
+## Summary
+**Bug #1: Assets not copied to build** - FIXED
+
+## Context
+### Status: 32 bugs found, fixing in priority order
 
 ### ✅ COMPLETED (1/32)
 
@@ -10,7 +18,7 @@
 
 ---
 
-## 🔴 CRITICAL PRIORITY (6 remaining)
+### 🔴 CRITICAL PRIORITY (6 remaining)
 
 ### Bug #2: Service Worker precache missing CSS files
 
@@ -67,7 +75,6 @@ pub async fn seed_gardens() {
     if let Err(e) = db_client::exec(sql, params).await {
         console::error_1(&format!("[gardens] Failed to seed: {:?}", e).into());
     }
-}
 ```
 
 ---
@@ -116,7 +123,6 @@ async function tryOpfs(sqlite3) {
     console.warn('[db-worker] OPFS backend unavailable');
     return null;
   }
-}
 ```
 
 ---
@@ -148,7 +154,7 @@ setInterval(() => persist.exportToStorage(db, 'blaires-kind-heart-backup'), 5000
 
 ---
 
-## 🟠 HIGH PRIORITY (8 bugs)
+### 🟠 HIGH PRIORITY (8 bugs)
 
 ### Bug #8: Companion memory leak - ERROR_CLOSURES Vec
 
@@ -229,7 +235,6 @@ fn set_expression(class: &'static str) {
             PENDING_RENDER.with(|cell| *cell.borrow_mut() = None);
         });
     }
-}
 ```
 
 ---
@@ -261,7 +266,7 @@ let error_closure = Closure::once(move || {
 
 ---
 
-## Additional Fixes Pending
+### Additional Fixes Pending
 
 See agent reports for detailed fixes for remaining 22 bugs:
 - Safari View Transitions memory leak
@@ -275,11 +280,17 @@ See agent reports for detailed fixes for remaining 22 bugs:
 
 ---
 
-## Testing After Fixes
+## Actions
+_No actions recorded._
 
+## Validation
 1. Rebuild: `trunk build --release`
 2. Verify 78 assets in dist/
 3. Check Service Worker cache has all assets
 4. Test gardens panel shows test garden
 5. Rapid-tap companion - no flicker/leak
 6. Force quit browser - data persists (5s export)
+
+## References
+_No references recorded._
+

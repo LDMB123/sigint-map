@@ -1,12 +1,45 @@
 # Phase 4: CSS & Animation Optimizations - Completion Report
 
+- Archive Path: `docs/archive/DETAILED_phase4-completion-report.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Phase 4: CSS & Animation Optimizations - Completion Report`
+
+## Summary
+**Created**:
+- `rust/visibility.rs` - Page Visibility API implementation
+- `rust/lazy_loading.rs` - IntersectionObserver for gardens
+- `docs/phase4-box-shadow-audit.md` - Box-shadow audit report
+- `docs/phase4-completion-report.md` - This report
+
+**Modified**:
+- `rust/lib.rs` - Added visibility + lazy_loading modules, called init functions
+- `rust/gardens.rs` - Added data-garden-card attribute, lazy loading integration
+- `src/styles/app.css` - Animation pause rule, loading screen gradient optimization
+- `/tmp/compress_webp.sh` - WebP compression script (temporary)
+
+**Compressed**:
+- 15 WebP files (garden stages + story illustrations) - Total ~450KB reduction
+
+---
+
+### ✨ Key Achievements
+
+1. **60% gradient reduction** on loading screen (10→4 layers)
+2. **50% lazy loading** reduction for gardens images
+3. **Page Visibility API** pauses 60+ animations when tab hidden
+4. **176 box-shadows audited** with conversion strategy documented
+5. **Zero compilation errors** - all optimizations build cleanly
+
+**Phase 4 Status**: 4 of 5 sub-phases complete (verification pending)
+
+## Context
 **Date**: 2026-02-11
 **Target**: iPad mini 6 (A15, 4GB RAM), Safari 26.2
 **Goal**: Reduce GPU load, improve paint performance, optimize first-paint
 
 ---
 
-## ✅ Completed Phases
+### ✅ Completed Phases
 
 ### Phase 4.3: WebP Compression
 **Status**: COMPLETE
@@ -104,7 +137,7 @@ body[data-animations-paused] * {
 
 ---
 
-## 📊 Overall Phase 4 Impact
+### 📊 Overall Phase 4 Impact
 
 ### GPU Optimizations
 1. **Animation pausing**: 60+ animations pause when tab hidden (30-40% power savings)
@@ -123,7 +156,7 @@ body[data-animations-paused] * {
 
 ---
 
-## 🚫 Deferred Optimizations
+### 🚫 Deferred Optimizations
 
 ### Phase 4.5: Box-Shadow → Drop-Shadow Conversions
 **Status**: SKIPPED (token constraints)
@@ -132,9 +165,10 @@ body[data-animations-paused] * {
 
 ---
 
-## 🔍 Next Steps
+## Actions
+_No actions recorded._
 
-### Phase 4 Verification (Final Step)
+## Validation
 **Remaining**: Run Lighthouse audit to verify improvements
 **Target metrics**:
 - LCP < 2.5s (previously ~3-4s)
@@ -146,31 +180,6 @@ body[data-animations-paused] * {
 
 ---
 
-## 📁 Files Modified Summary
+## References
+_No references recorded._
 
-**Created**:
-- `rust/visibility.rs` - Page Visibility API implementation
-- `rust/lazy_loading.rs` - IntersectionObserver for gardens
-- `docs/phase4-box-shadow-audit.md` - Box-shadow audit report
-- `docs/phase4-completion-report.md` - This report
-
-**Modified**:
-- `rust/lib.rs` - Added visibility + lazy_loading modules, called init functions
-- `rust/gardens.rs` - Added data-garden-card attribute, lazy loading integration
-- `src/styles/app.css` - Animation pause rule, loading screen gradient optimization
-- `/tmp/compress_webp.sh` - WebP compression script (temporary)
-
-**Compressed**:
-- 15 WebP files (garden stages + story illustrations) - Total ~450KB reduction
-
----
-
-## ✨ Key Achievements
-
-1. **60% gradient reduction** on loading screen (10→4 layers)
-2. **50% lazy loading** reduction for gardens images
-3. **Page Visibility API** pauses 60+ animations when tab hidden
-4. **176 box-shadows audited** with conversion strategy documented
-5. **Zero compilation errors** - all optimizations build cleanly
-
-**Phase 4 Status**: 4 of 5 sub-phases complete (verification pending)

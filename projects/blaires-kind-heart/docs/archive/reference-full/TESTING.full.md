@@ -1,11 +1,19 @@
 # Testing Guide: Reflection & Emotion System
 
-**Target Device:** iPad mini 6 (A15, 4GB RAM)  
-**OS:** iPadOS 26.2  
-**Browser:** Safari 26.2 only  
+- Archive Path: `docs/archive/reference-full/TESTING.full.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Testing Guide: Reflection & Emotion System`
+
+## Summary
+**Target Device:** iPad mini 6 (A15, 4GB RAM)
+
+## Context
+**Target Device:** iPad mini 6 (A15, 4GB RAM)
+**OS:** iPadOS 26.2
+**Browser:** Safari 26.2 only
 **Network:** Offline-first (disable WiFi after initial load)
 
-## Setup
+### Setup
 
 ```bash
 cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart
@@ -16,10 +24,10 @@ Access from iPad: `http://<LAPTOP_IP>:8080`
 
 ---
 
-## Test Suite
+## Actions
+_No actions recorded._
 
-### Test 1: Category Story Correctness ✅ P0 Fix
-
+## Validation
 **Validates:** Each category shows correct stories, not fallback "hug" stories
 
 **Steps:**
@@ -42,8 +50,6 @@ Access from iPad: `http://<LAPTOP_IP>:8080`
 
 ---
 
-### Test 2: Early Dismissal Race Condition ✅ P1 Fix
-
 **Validates:** Dismissing reflection early cancels pending timeouts
 
 **Steps:**
@@ -59,8 +65,6 @@ Access from iPad: `http://<LAPTOP_IP>:8080`
 **Pass:** 3/3 attempts show clean dismissal with no follow-up prompts
 
 ---
-
-### Test 3: Memory Leak Prevention ✅ P1 Fix
 
 **Validates:** Event listeners cleaned up, no memory growth
 
@@ -80,8 +84,6 @@ Access from iPad: `http://<LAPTOP_IP>:8080`
 
 ---
 
-### Test 4: Database Error Handling ✅ P0/P1 Fix
-
 **Validates:** Error toasts shown when DB writes fail
 
 **Approach A: OPFS Quota Exceeded**
@@ -100,8 +102,6 @@ Access from iPad: `http://<LAPTOP_IP>:8080`
 
 ---
 
-### Test 5: Prompt Stacking Prevention ✅ P1 Fix
-
 **Validates:** Only one prompt shows at a time
 
 **Steps:**
@@ -117,8 +117,6 @@ Access from iPad: `http://<LAPTOP_IP>:8080`
 **Pass:** Single prompt discipline maintained in both scenarios
 
 ---
-
-### Test 6: Timing Constants ✅ P1 Fix
 
 **Validates:** All timeouts use correct constant values
 
@@ -139,8 +137,6 @@ Access from iPad: `http://<LAPTOP_IP>:8080`
 
 ---
 
-### Test 7: Category Fallback Warning ✅ P1 Fix
-
 **Validates:** Console warnings appear when category fallback occurs
 
 **Steps:**
@@ -155,8 +151,6 @@ Access from iPad: `http://<LAPTOP_IP>:8080`
 **Pass:** Zero console warnings during normal flow
 
 ---
-
-### Test 8: Emotion Tap Debouncing ✅ P1 Fix
 
 **Validates:** Rapid emotion tapping only registers once per 300ms
 
@@ -177,8 +171,6 @@ SELECT emotion_selected FROM kind_acts WHERE id = <act_id>;
 
 ---
 
-### Test 9: Offline Queue Integration ✅ P0 Fix
-
 **Validates:** Reflection and emotion data queued when offline
 
 **Steps:**
@@ -197,8 +189,6 @@ SELECT emotion_selected FROM kind_acts WHERE id = <act_id>;
 
 ---
 
-### Test 10: Random Index Bounds Safety ✅ P0 QA Fix
-
 **Validates:** Random selection never causes out-of-bounds panic
 
 **Steps:**
@@ -210,8 +200,6 @@ SELECT emotion_selected FROM kind_acts WHERE id = <act_id>;
 **Pass:** Zero panics, all prompts render, app stable
 
 ---
-
-### Test 11: JSON Cache Corruption Recovery ✅ P2 QA Fix
 
 **Validates:** Cache corruption triggers recalculation instead of showing empty data
 
@@ -228,8 +216,6 @@ SELECT emotion_selected FROM kind_acts WHERE id = <act_id>;
 **Pass:** Console shows warning, parent sees correct data (not empty)
 
 ---
-
-## Complete Flow Integration Test
 
 **Purpose:** Validate end-to-end experience with all features working
 
@@ -257,8 +243,6 @@ SELECT emotion_selected FROM kind_acts WHERE id = <act_id>;
 **Pass:** 100% data integrity, reflection prompt variety, story category accuracy, smooth timing
 
 ---
-
-## Parent Insights Verification
 
 **Purpose:** Verify emotion analytics display correctly
 
@@ -290,8 +274,6 @@ Tier Progress:
 
 ---
 
-## Performance Validation
-
 **Metrics:**
 
 1. **Frame Rate:** Maintain 60fps during transitions
@@ -317,8 +299,6 @@ Tier Progress:
 
 ---
 
-## Regression Testing Checklist
-
 Ensure existing features still work:
 
 - [ ] Kind act logging (all 6 categories)
@@ -338,7 +318,7 @@ Ensure existing features still work:
 
 ---
 
-## Known Limitations
+### Known Limitations
 
 **Not Tested (Out of Scope):**
 - Cross-browser compatibility (Safari 26.2 only)
@@ -352,3 +332,7 @@ Ensure existing features still work:
 - Emotion vocabulary learning outcomes (longitudinal data)
 - Story moment engagement metrics
 - Reflection prompt effectiveness by age group
+
+## References
+_No references recorded._
+

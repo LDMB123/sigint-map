@@ -1,11 +1,16 @@
-# Archive Phase Docs Index
+# Archive phase-docs Index
 
-Last updated: 2026-03-03
+- Archive Path: `docs/archive/phase-docs/INDEX.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Archive phase-docs Index`
 
-Legacy phase-by-phase status and project context documents.
+## Summary
+Historical archive index for `phase-docs` (27 entries).
 
-## Files
+## Context
+Generated from current archive markdown inventory.
 
+## Actions
 - [2026-02-28-APP_STATUS.md](2026-02-28-APP_STATUS.md) - App Status
 - [2026-02-28-PROJECT_STANDING.md](2026-02-28-PROJECT_STANDING.md) - Project Standing
 - [APP_STATUS.md](APP_STATUS.md) - App Status - Blaire's Kind Heart
@@ -34,6 +39,10 @@ Legacy phase-by-phase status and project context documents.
 - [TOKEN_ECONOMY_REPORT.md](TOKEN_ECONOMY_REPORT.md) - Token Economy Report
 - [TOKEN_OPTIMIZATION.md](TOKEN_OPTIMIZATION.md) - Token Optimization Plan
 
-## Navigation
+## Validation
+- Rebuilt by `scripts/rewrite-archive-docs.mjs`.
 
-- Parent archive index: [docs/archive/INDEX.md](../INDEX.md)
+## References
+- Parent archive index: [../INDEX.md](../INDEX.md)
+- Root archive index: [../INDEX.md](../INDEX.md)
+

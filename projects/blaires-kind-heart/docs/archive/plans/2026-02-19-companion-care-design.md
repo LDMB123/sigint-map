@@ -1,16 +1,19 @@
 # Wave 7: Companion Care & Personality
 
-## Summary
+- Archive Path: `docs/archive/plans/2026-02-19-companion-care-design.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Wave 7: Companion Care & Personality`
 
+## Summary
 Transform Sparkle from a passive mascot into a living companion Blaire cares for. Mood, feeding, petting, play animations, and contextual speech bubbles — all driven by kindness activity. Zero negative states. Daily engagement loop in <10 seconds.
 
-## Target
+### Target
 
 - iPad mini 6 (A15, 4GB RAM), iPadOS 26.2, Safari 26.2
 - 100% offline after install
 - Rust/WASM — no JS app logic
 
-## Core Mechanics
+### Core Mechanics
 
 ### 1. Mood System
 
@@ -123,7 +126,7 @@ Behavior:
 - Uses existing `speech.rs` for TTS readout
 - CSS anchor positioning (Safari 26.2)
 
-## Data Model
+### Data Model
 
 New table `companion_state`:
 
@@ -145,7 +148,7 @@ Keys:
 - `total_pets` — lifetime count
 - `total_plays` — lifetime count
 
-## Files Modified
+### Files Modified
 
 | File | Scope |
 |------|-------|
@@ -159,14 +162,14 @@ Keys:
 | `style.css` | Care menu, speech bubble, play animation styles |
 | `public/sw.js` | Bump cache version to v10 |
 
-## New Files
+### New Files
 
 | File | Purpose |
 |------|---------|
 | `rust/companion_care.rs` | Core care logic (feed, pet, play, mood calc) |
 | `rust/companion_speech.rs` | Speech bubble messages and trigger logic |
 
-## Explicitly Out of Scope
+### Explicitly Out of Scope
 
 - No hunger/starvation (no negative consequences ever)
 - No outfit/accessory system (skins already handle customization)
@@ -175,7 +178,7 @@ Keys:
 - No dialogue trees (too complex for age 4)
 - No new illustration assets (reuse existing 18 companion WebPs)
 
-## Success Criteria
+### Success Criteria
 
 - Blaire taps Sparkle voluntarily at least once per session
 - Feed/pet/play cycle completes in <10 seconds
@@ -183,3 +186,16 @@ Keys:
 - All interactions work offline
 - No new image assets needed (reuse existing companion WebPs)
 - Mood transitions smooth via View Transitions API
+
+## Context
+_Context not recorded in source archive document._
+
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

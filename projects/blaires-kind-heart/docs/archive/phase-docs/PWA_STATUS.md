@@ -1,10 +1,18 @@
 # PWA & Service Worker Status
 
+- Archive Path: `docs/archive/phase-docs/PWA_STATUS.md`
+- Normalized On: `2026-03-04`
+- Source Title: `PWA & Service Worker Status`
+
+## Summary
+Quick reference for PWA offline functionality, Service Worker bugs, and caching system.
+
+## Context
 Quick reference for PWA offline functionality, Service Worker bugs, and caching system.
 
 ---
 
-## Current Status
+### Current Status
 
 **Offline Mode**: BROKEN (Critical bugs prevent caching)
 **Service Worker**: Registered but cache install fails
@@ -12,18 +20,16 @@ Quick reference for PWA offline functionality, Service Worker bugs, and caching 
 
 ---
 
-## Critical Issues
+### Critical Issues
 
 ### Issue #1: Missing 78 WebP Assets in Build Output
 
 **Problem**: Companion/garden WebP files NOT copied to `dist/` by Trunk
 
 ```bash
-# Assets exist in source:
 ls assets/companions/ | wc -l  # → 18 files ✓
 ls assets/gardens/ | wc -l     # → 60 files ✓
 
-# But missing in build:
 ls dist/assets/companions/     # → directory doesn't exist ✗
 ls dist/assets/gardens/        # → directory doesn't exist ✗
 ```
@@ -35,11 +41,9 @@ ls dist/assets/gardens/        # → directory doesn't exist ✗
 
 **Fix**:
 ```bash
-# Option A: Move to public/ (Trunk auto-copies)
 mv assets/companions public/assets/
 mv assets/gardens public/assets/
 
-# Option B: Add to Trunk.toml
 [[hooks]]
 stage = "pre_build"
 command = "sh"
@@ -84,7 +88,7 @@ if (failed.length > 0) console.warn('Failed to cache:', failed);
 
 ---
 
-## High Priority Issues
+### High Priority Issues
 
 ### Issue #3: No Image Fallback in Service Worker
 
@@ -142,10 +146,69 @@ Missing from precache:
 
 ---
 
-## Medium Priority Issues
+### Medium Priority Issues
 
-### Issue #5: No Cache Version Invalidation Strategy
+## Actions
+### Phase 1: Critical Fixes (20 minutes)
+1. Copy WebP assets to dist/ - 5 min
+2. Update sw-assets.js with missing CSS - 2 min
+3. Test cache installation - 3 min
+4. Rebuild and verify - 10 min
 
+### Phase 2: High Priority (25 minutes)
+5. Add image fallback to SW fetch handler - 15 min
+6. Create offline.html fallback page - 5 min
+7. Test offline loading - 5 min
+
+### Phase 3: Polish (20 minutes)
+8. Implement cache versioning - 5 min
+9. Fix update toast logic - 10 min
+10. Add graceful cache.addAll fallback - 5 min
+
+**Total**: 65 minutes end-to-end
+
+---
+
+### Expected Outcomes
+
+**Before Fixes**:
+- Offline mode: Completely broken
+- Cached assets: 90/168 (53%)
+- User experience: Broken images, non-functional offline
+
+**After Fixes**:
+- Offline mode: Fully functional
+- Cached assets: 168/168 (100%)
+- User experience: Smooth offline, graceful fallbacks
+
+---
+
+### Files Modified
+
+```
+public/sw.js             - Add image fallback, graceful caching
+public/sw-assets.js      - Add missing CSS files
+public/offline.html      - Create fallback page (new)
+Trunk.toml               - Add asset copy rules OR
+public/assets/           - Move WebP files here
+rust/pwa.rs             - Fix update toast logic
+```
+
+---
+
+### Detailed Documentation
+
+For in-depth analysis, see archived docs:
+- `../DETAILED_PWA_DEBUG_REPORT.md` - Full technical analysis
+- `../DETAILED_PWA_DEBUG_INDEX.md` - Quick reference index
+- `../DETAILED_SW_BUGS_SUMMARY.md` - Executive summary
+
+---
+
+**Last Updated**: 2026-02-11
+**Status**: Active reference document
+
+## Validation
 **Problem**: `CACHE_NAME = 'blaires-kind-heart-v1'` never changes, old assets linger
 
 **Fix**: Version based on build timestamp or content hash
@@ -193,10 +256,6 @@ if old_version != new_version {
 
 ---
 
-## Testing Checklist
-
-### Manual iPad Tests
-
 **Test 1: Offline Installation** (2 min)
 1. Clear Safari cache
 2. Load app while online
@@ -228,7 +287,6 @@ caches.open('blaires-kind-heart-v1').then(cache => {
     console.log(`Cached: ${keys.length} assets`);
     console.log('Missing:', keys.filter(k => k.url.includes('companions')));
   });
-});
 
 // Verify SW registration
 navigator.serviceWorker.getRegistration().then(reg => {
@@ -244,63 +302,6 @@ self.addEventListener('fetch', e => {
 
 ---
 
-## Implementation Priority
+## References
+_No references recorded._
 
-### Phase 1: Critical Fixes (20 minutes)
-1. Copy WebP assets to dist/ - 5 min
-2. Update sw-assets.js with missing CSS - 2 min
-3. Test cache installation - 3 min
-4. Rebuild and verify - 10 min
-
-### Phase 2: High Priority (25 minutes)
-5. Add image fallback to SW fetch handler - 15 min
-6. Create offline.html fallback page - 5 min
-7. Test offline loading - 5 min
-
-### Phase 3: Polish (20 minutes)
-8. Implement cache versioning - 5 min
-9. Fix update toast logic - 10 min
-10. Add graceful cache.addAll fallback - 5 min
-
-**Total**: 65 minutes end-to-end
-
----
-
-## Expected Outcomes
-
-**Before Fixes**:
-- Offline mode: Completely broken
-- Cached assets: 90/168 (53%)
-- User experience: Broken images, non-functional offline
-
-**After Fixes**:
-- Offline mode: Fully functional
-- Cached assets: 168/168 (100%)
-- User experience: Smooth offline, graceful fallbacks
-
----
-
-## Files Modified
-
-```
-public/sw.js             - Add image fallback, graceful caching
-public/sw-assets.js      - Add missing CSS files
-public/offline.html      - Create fallback page (new)
-Trunk.toml               - Add asset copy rules OR
-public/assets/           - Move WebP files here
-rust/pwa.rs             - Fix update toast logic
-```
-
----
-
-## Detailed Documentation
-
-For in-depth analysis, see archived docs:
-- `docs/archive/DETAILED_PWA_DEBUG_REPORT.md` - Full technical analysis
-- `docs/archive/DETAILED_PWA_DEBUG_INDEX.md` - Quick reference index
-- `docs/archive/DETAILED_SW_BUGS_SUMMARY.md` - Executive summary
-
----
-
-**Last Updated**: 2026-02-11
-**Status**: Active reference document

@@ -1,25 +1,33 @@
 # Deep Debug + Simplification Log
 
+- Archive Path: `docs/archive/reports/deep-debug-simplification-log-2026-02-14.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Deep Debug + Simplification Log`
+
+## Summary
+Last updated: 2026-02-14
+
+## Context
 Last updated: 2026-02-14
 Owner: Codex autonomous execution
 
-## Objective
+### Objective
 Resolve active blockers, perform deeper debugging/simplification across the app, and keep a resumable execution trail.
 
-## Baseline Snapshot
+### Baseline Snapshot
 1. Existing simplification waves (0-7) are marked complete.
 2. Known blockers from latest run:
    - `pwa:health` managed mode can fail when `4173` is occupied.
    - `pwa:health` explicit URL mode can fail in offline phase (`offline-enable-context` timeout).
 3. Physical iPad regression remains device-dependent.
 
-## Execution Plan
+### Execution Plan
 1. Stabilize `pwa:health` (port fallback + reliable offline simulation).
 2. Re-run health checks and capture hard evidence.
 3. Run deeper simplification/debug sweep on high-impact runtime paths.
 4. Re-run full validation matrix and log outcomes.
 
-## Progress Entries
+### Progress Entries
 ### 2026-02-13T00:00:00Z (session-local)
 - Initialized persistent deep-debug/simplification log.
 - Loaded `app-slim` and `debug` skill instructions.
@@ -231,7 +239,7 @@ Resolve active blockers, perform deeper debugging/simplification across the app,
   - `npm run test:e2e` -> FAIL (`11` failures in high-parallel run; mostly panel-ready timeouts/a11y runner failures)
   - `npm run test:e2e -- --grep "panel panel-tracker" --workers=1` -> PASS (`3 passed`)
 
-## Current State
+### Current State
 1. `pwa:health` managed mode is stable with port fallback and validated offline navigation.
 2. `pwa:health` explicit URL mode is stable via CDP offline simulation.
 3. SW-localhost override path (`force_sw=1`) is simplified and type-safe.
@@ -503,3 +511,13 @@ Resolve active blockers, perform deeper debugging/simplification across the app,
   - `cargo check --release` -> PASS
   - `cargo test --release` -> PASS (`14 passed`)
   - `npm run qa:pwa-contract` -> PASS (`ok: true`; warning-only SW registration telemetry fallback `no-log-signal`)
+
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

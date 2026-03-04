@@ -1,0 +1,78 @@
+{
+  "captured_at": "2026-03-04T06:59:21.112Z",
+  "source": "scripts/checks/phase5-kpi-report.mjs",
+  "decoupling": {
+    "cross_domain_db_callsites": 46,
+    "cross_domain_direct_imports": 20,
+    "cross_domain_edges": [
+      {
+        "from": "insights",
+        "to": "progression"
+      },
+      {
+        "from": "progression",
+        "to": "insights"
+      },
+      {
+        "from": "progression",
+        "to": "rewards"
+      },
+      {
+        "from": "quests",
+        "to": "progression"
+      },
+      {
+        "from": "quests",
+        "to": "rewards"
+      },
+      {
+        "from": "quests",
+        "to": "tracker"
+      },
+      {
+        "from": "reflection",
+        "to": "tracker"
+      },
+      {
+        "from": "rewards",
+        "to": "tracker"
+      },
+      {
+        "from": "tracker",
+        "to": "progression"
+      },
+      {
+        "from": "tracker",
+        "to": "rewards"
+      }
+    ],
+    "circular_domain_dependencies": 2,
+    "circular_cycles": [
+      [
+        "tracker",
+        "rewards",
+        "tracker"
+      ],
+      [
+        "progression",
+        "insights",
+        "progression"
+      ]
+    ],
+    "median_files_touched_single_domain_commit": 4,
+    "single_domain_commit_sample_size": 15,
+    "domain_db_callsites": {
+      "tracker": 9,
+      "progression": 15,
+      "quests": 2,
+      "reflection": 0,
+      "insights": 13,
+      "rewards": 7
+    },
+    "commit_proxy_window": {
+      "since": "8 weeks ago",
+      "commits_sampled": 120,
+      "max_commits": 120
+    }
+  }
+}

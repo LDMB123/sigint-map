@@ -1,10 +1,18 @@
 # Troubleshooting Guide
 
+- Archive Path: `docs/archive/reference-full/TROUBLESHOOTING.full.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Troubleshooting Guide`
+
+## Summary
+**For Parents & Caregivers**
+
+## Context
 **For Parents & Caregivers**
 
 ---
 
-## Common Issues
+### Common Issues
 
 ### Reflection Prompt Not Appearing
 
@@ -143,7 +151,7 @@
 
 ---
 
-## Advanced Troubleshooting
+### Advanced Troubleshooting
 
 ### Safari Web Inspector
 
@@ -189,7 +197,7 @@ await window.db.query("SELECT * FROM weekly_insights");
 
 ---
 
-## Known Limitations
+### Known Limitations
 
 ### Safari 26.2 Required
 
@@ -231,7 +239,7 @@ await window.db.query("SELECT * FROM weekly_insights");
 
 ---
 
-## Getting Help
+### Getting Help
 
 ### Reporting Bugs
 
@@ -262,7 +270,7 @@ await window.db.query("SELECT * FROM weekly_insights");
 
 ---
 
-## Changelog
+### Changelog
 
 ### v0.2.0 (2026-W06)
 - ✅ Fixed category story mismatch (P0)
@@ -283,7 +291,7 @@ await window.db.query("SELECT * FROM weekly_insights");
 
 ---
 
-## Emergency Recovery
+### Emergency Recovery
 
 ### App Won't Load
 
@@ -308,7 +316,7 @@ await window.db.query("SELECT * FROM weekly_insights");
 
 ---
 
-## Performance Optimization
+### Performance Optimization
 
 ### If App Feels Slow
 
@@ -324,7 +332,7 @@ await window.db.query("SELECT * FROM weekly_insights");
 
 ---
 
-## Privacy & Data
+### Privacy & Data
 
 ### What Data is Stored?
 
@@ -345,3 +353,13 @@ await window.db.query("SELECT * FROM weekly_insights");
 **Current:** No export feature
 
 **Future:** CSV export via Mom Mode for backup/analysis
+
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

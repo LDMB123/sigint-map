@@ -251,9 +251,12 @@ extern "C" {
     pub type GpuAdapter;
     #[wasm_bindgen(method, js_name = requestDevice)]
     pub fn request_device(this: &GpuAdapter) -> js_sys::Promise;
+    #[wasm_bindgen(extends = EventTarget)]
     pub type GpuDevice;
     #[wasm_bindgen(method, getter)]
     pub fn queue(this: &GpuDevice) -> GpuQueue;
+    #[wasm_bindgen(method, getter)]
+    pub fn lost(this: &GpuDevice) -> js_sys::Promise;
     #[wasm_bindgen(method, js_name = createBuffer)]
     pub fn create_buffer(this: &GpuDevice, descriptor: &GpuBufferDescriptor) -> GpuBuffer;
     #[wasm_bindgen(method, js_name = createShaderModule)]
@@ -297,10 +300,16 @@ extern "C" {
     #[wasm_bindgen(method)]
     pub fn submit(this: &GpuQueue, command_buffers: &js_sys::Array);
     pub type GpuBuffer;
+    #[wasm_bindgen(method, js_name = getMappedRange)]
+    pub fn get_mapped_range(this: &GpuBuffer) -> js_sys::ArrayBuffer;
+    #[wasm_bindgen(method)]
+    pub fn unmap(this: &GpuBuffer);
     #[wasm_bindgen(extends = js_sys::Object)]
     pub type GpuBufferDescriptor;
     #[wasm_bindgen(method, setter)]
     pub fn set_label(this: &GpuBufferDescriptor, val: &str);
+    #[wasm_bindgen(method, setter, js_name = mappedAtCreation)]
+    pub fn set_mapped_at_creation(this: &GpuBufferDescriptor, val: bool);
     pub type GpuShaderModule;
     #[wasm_bindgen(extends = js_sys::Object)]
     pub type GpuShaderModuleDescriptor;
@@ -362,6 +371,14 @@ extern "C" {
     #[wasm_bindgen(method, js_name = createView)]
     pub fn create_view(this: &GpuTexture) -> GpuTextureView;
     pub type GpuTextureView;
+    pub type GpuUncapturedErrorEvent;
+    #[wasm_bindgen(method, getter)]
+    pub fn error(this: &GpuUncapturedErrorEvent) -> JsValue;
+    pub type GpuDeviceLostInfo;
+    #[wasm_bindgen(method, getter)]
+    pub fn reason(this: &GpuDeviceLostInfo) -> JsValue;
+    #[wasm_bindgen(method, getter)]
+    pub fn message(this: &GpuDeviceLostInfo) -> JsValue;
 }
 impl GpuRequestAdapterOptions {
     pub fn new() -> Self {

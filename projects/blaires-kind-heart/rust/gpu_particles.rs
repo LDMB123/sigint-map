@@ -10,7 +10,9 @@ const PARTICLE_BUFFER_SIZE: usize = MAX_PARTICLES * FLOATS_PER_PARTICLE * 4;
 const PARTICLE_UNIFORM_FLOATS: usize = 12;
 const PARTICLE_UNIFORM_BUFFER_SIZE: f64 = (PARTICLE_UNIFORM_FLOATS * 4) as f64;
 const IPAD_MINI_PARTICLE_SCALE: f32 = 0.75;
-const IPAD_MINI_PARTICLE_FRAME_MS: f64 = 33.0;
+const THROUGHPUT_PARTICLE_FRAME_MS: f64 = 40.0;
+const BALANCED_PARTICLE_FRAME_MS: f64 = 33.0;
+const QUALITY_PARTICLE_FRAME_MS: f64 = 16.0;
 pub struct BurstConfig {
     pub count: u32,
     pub lifetime: f32,
@@ -102,6 +104,13 @@ pub fn set_paused(paused: bool) {
         *cell.borrow_mut() = paused;
     });
 }
+
+pub fn clear_pipeline() {
+    stop_active_burst();
+    PIPELINE.with(|cell| {
+        *cell.borrow_mut() = None;
+    });
+}
 struct ParticlePipeline {
     compute_pipeline: bindings::GpuComputePipeline,
     render_pipeline: bindings::GpuRenderPipeline,
@@ -146,14 +155,18 @@ fn create_pipeline(state: &gpu::GpuState) -> Option<ParticlePipeline> {
             | bindings::gpu_buffer_usage::COPY_DST,
     );
     particle_desc.set_label("particles");
+    particle_desc.set_mapped_at_creation(true);
     let particle_buffer = device.create_buffer(&particle_desc);
+    initialize_mapped_buffer(&particle_buffer, PARTICLE_BUFFER_SIZE);
 
     let uniform_desc = bindings::GpuBufferDescriptor::new(
         PARTICLE_UNIFORM_BUFFER_SIZE,
         bindings::gpu_buffer_usage::UNIFORM | bindings::gpu_buffer_usage::COPY_DST,
     );
     uniform_desc.set_label("uniforms");
+    uniform_desc.set_mapped_at_creation(true);
     let uniform_buffer = device.create_buffer(&uniform_desc);
+    initialize_mapped_buffer(&uniform_buffer, PARTICLE_UNIFORM_BUFFER_SIZE as usize);
 
     let compute_shader = create_shader(
         device,
@@ -216,6 +229,14 @@ fn create_shader(
     let desc = bindings::GpuShaderModuleDescriptor::new(code);
     desc.set_label(label);
     device.create_shader_module(&desc)
+}
+
+fn initialize_mapped_buffer(buffer: &bindings::GpuBuffer, byte_len: usize) {
+    let mapped = buffer.get_mapped_range();
+    let view = js_sys::Uint8Array::new(&mapped);
+    let zeros = js_sys::Uint8Array::new_with_length(byte_len as u32);
+    view.set(&zeros, 0);
+    buffer.unmap();
 }
 fn create_bind_group_layout_desc(is_compute: bool) -> bindings::GpuBindGroupLayoutDescriptor {
     let entries = js_sys::Array::new();
@@ -317,7 +338,6 @@ fn spawn_burst(config: &BurstConfig) {
     let now = crate::browser_apis::now_ms();
     PARTICLE_SCRATCH.with(|scratch| {
         let mut particle_data = scratch.borrow_mut();
-        particle_data.fill(0.0);
         for i in 0..count as usize {
             let base = i * FLOATS_PER_PARTICLE;
             let seed = ((now as u64).wrapping_add(i as u64 * 7919)) % 10000;
@@ -339,8 +359,13 @@ fn spawn_burst(config: &BurstConfig) {
             let Some(pipeline) = guard.as_ref() else {
                 return;
             };
+            let active_floats = count as usize * FLOATS_PER_PARTICLE;
             gpu::with_gpu(|state| {
-                write_buffer_from_f32(&state.queue, &pipeline.particle_buffer, &particle_data[..]);
+                write_buffer_from_f32(
+                    &state.queue,
+                    &pipeline.particle_buffer,
+                    &particle_data[..active_floats],
+                );
             });
         });
     });
@@ -348,9 +373,13 @@ fn spawn_burst(config: &BurstConfig) {
     let gravity = config.gravity;
     let particle_count = count;
     let target_frame_ms = if gpu::is_ipad_mini_6_profile() {
-        IPAD_MINI_PARTICLE_FRAME_MS
+        match gpu::current_perf_mode() {
+            gpu::PerfMode::Throughput => THROUGHPUT_PARTICLE_FRAME_MS,
+            gpu::PerfMode::Balanced => BALANCED_PARTICLE_FRAME_MS,
+            gpu::PerfMode::Quality => QUALITY_PARTICLE_FRAME_MS,
+        }
     } else {
-        16.0
+        QUALITY_PARTICLE_FRAME_MS
     };
     let last_frame_ts = Rc::new(RefCell::new(0.0f64));
     type RafClosure = Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>>;

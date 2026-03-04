@@ -1,15 +1,23 @@
 # Project Standing
 
+- Archive Path: `docs/archive/phase-docs/PROJECT_STANDING.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Project Standing`
+
+## Summary
 Last updated: 2026-02-15
 
-## What This Repo Is
+## Context
+Last updated: 2026-02-15
+
+### What This Repo Is
 `blaires-kind-heart` is an offline-first Rust/WASM PWA with:
 - A child-focused kindness UI and mini-games.
 - Service worker + offline shell behavior.
 - Browser-side persistence and diagnostics contracts.
 - Playwright-based quality gates (runtime, DB, a11y, visual, smoke).
 
-## Where It Stands Right Now
+### Where It Stands Right Now
 
 ### Verified on 2026-02-15
 - `node --check public/runtime-diagnostics.js`: PASS
@@ -36,15 +44,25 @@ Last updated: 2026-02-15
 2. Keep active docs under the 25k budget gate as docs evolve.
 3. Keep dead-code warnings from drifting upward (baseline enforced at 3 warnings).
 
-## Repository Reorganization Performed
-- Moved root screenshot files into `docs/archive/assets/root-screenshots/`.
+### Repository Reorganization Performed
+- Moved root screenshot files into `../assets/root-screenshots`.
 - Removed duplicated active docs that already existed in archive:
-  - Removed duplicate active testing docs (archived copies retained under `docs/archive/testing/`).
-  - Removed duplicate active report copy (archived canonical copy at `docs/archive/reports/safari-26.2-simplification-deep-dive.md`).
+  - Removed duplicate active testing docs (archived copies retained under `../testing`).
+  - Removed duplicate active report copy (archived canonical copy at `../reports/safari-26.2-simplification-deep-dive.md`).
 - Added shared ignore rules for local/generated outputs in `.gitignore`.
 
-## Canonical Documentation Flow
+### Canonical Documentation Flow
 1. `docs/PROJECT_STANDING.md` (this file): high-level project state.
 2. `docs/APP_STATUS.md`: latest gate snapshot and operational status.
 3. `docs/STATUS_LEDGER.md`: command evidence and dated changes.
 4. `docs/INDEX.md`: active vs archived document map.
+
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

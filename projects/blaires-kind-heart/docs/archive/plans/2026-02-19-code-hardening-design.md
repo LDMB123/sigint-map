@@ -1,11 +1,10 @@
 # Wave 4: Code Hardening Design
 
-> **Date:** 2026-02-19
-> **Focus:** Bug fixes, error recovery, edge cases, performance
-> **Approach:** Critical Path First — fix issues that crash the app or lose data before polish
+- Archive Path: `docs/archive/plans/2026-02-19-code-hardening-design.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Wave 4: Code Hardening Design`
 
-## Audit Summary
-
+## Summary
 Three audits were conducted against the codebase (62 Rust modules, 15 CSS files, 3 JS files):
 
 | Audit | CRITICAL | HIGH | MEDIUM | LOW |
@@ -19,7 +18,7 @@ Three audits were conducted against the codebase (62 Rust modules, 15 CSS files,
 2. `offline_queue` table missing from db-worker.js schema = all offline writes silently fail
 3. No DB worker crash recovery = single worker failure kills all persistence
 
-## Architecture Decision
+### Architecture Decision
 
 **Selected: Approach A — "Critical Path First"**
 
@@ -29,7 +28,7 @@ Prioritize by real user impact: WASM panic prevention first (crash = blank scree
 - Layer-by-layer (bottom-up systematic) — slower to reach critical fixes
 - Minimal viable hardening (6 tasks) — leaves HIGH-severity issues unaddressed
 
-## Tier 1: WASM Panic Prevention (Tasks 1-4)
+### Tier 1: WASM Panic Prevention (Tasks 1-4)
 
 **Problem:** Any `.unwrap()` or `.expect()` on `None`/`Err` in WASM = immediate abort. No recovery.
 
@@ -67,7 +66,7 @@ The `errors.rs` module already exists (init_schema for error logging). Expand wi
 - `partial_cmp().unwrap()` on f64 → `unwrap_or(std::cmp::Ordering::Equal)`
 - Debug-only module but still a crash vector during development
 
-## Tier 2: Offline Queue & DB Schema (Tasks 5-7)
+### Tier 2: Offline Queue & DB Schema (Tasks 5-7)
 
 **Problem:** `offline_queue` table not in db-worker.js SCHEMA. All queued offline writes silently fail.
 
@@ -104,7 +103,7 @@ CREATE TABLE IF NOT EXISTS offline_queue (
 - Add `flush_stats()` for diagnostics in mom-mode
 - Never silently discard failed operations
 
-## Tier 3: DB Worker Resilience (Tasks 8-10)
+### Tier 3: DB Worker Resilience (Tasks 8-10)
 
 ### Task 8: DB Worker Heartbeat & Crash Recovery
 
@@ -140,7 +139,7 @@ CREATE TABLE IF NOT EXISTS offline_queue (
   - `streaks.rs` — streak recording
 - Non-critical paths (animations, companion idle) keep bare `spawn_local`
 
-## Tier 4: Service Worker Hardening (Tasks 11-13)
+### Tier 4: Service Worker Hardening (Tasks 11-13)
 
 ### Task 11: Fix Precache Manifest
 
@@ -169,7 +168,7 @@ CREATE TABLE IF NOT EXISTS offline_queue (
 - Clear stale SW caches on version bump
 - Log cleanup actions to console for debugging
 
-## Tier 5: CSS & Accessibility Polish (Tasks 14-16)
+### Tier 5: CSS & Accessibility Polish (Tasks 14-16)
 
 ### Task 14: Fix Gradient Text Rendering
 
@@ -205,7 +204,7 @@ CREATE TABLE IF NOT EXISTS offline_queue (
 - Replace all hardcoded z-index values (9000, 9001, 9002, etc.)
 - Prevents future z-fighting bugs
 
-## Tier 6: Edge Case Fixes (Tasks 17-18)
+### Tier 6: Edge Case Fixes (Tasks 17-18)
 
 ### Task 17: Companion Render Race Condition Guard
 
@@ -226,8 +225,15 @@ CREATE TABLE IF NOT EXISTS offline_queue (
 - If still fails: skip gracefully (don't block UI flow)
 - Track speech failures in session for mom-mode diagnostics
 
-## Verification Checklist
+## Context
+> **Date:** 2026-02-19
+> **Focus:** Bug fixes, error recovery, edge cases, performance
+> **Approach:** Critical Path First — fix issues that crash the app or lose data before polish
 
+## Actions
+_No actions recorded._
+
+## Validation
 1. `trunk build --release` — 0 errors
 2. `trunk serve --address 0.0.0.0` — load on iPad mini 6 Safari 26.2
 3. **No panics:** Deliberately break DOM (remove elements) — app recovers gracefully
@@ -238,7 +244,7 @@ CREATE TABLE IF NOT EXISTS offline_queue (
 8. **Companion stable:** Rapid tapping doesn't cause flickering
 9. **Speech recovery:** Interrupt speech mid-sentence → retries → continues
 
-## Critical Files
+### Critical Files
 
 | File | Changes |
 |------|---------|
@@ -268,3 +274,7 @@ CREATE TABLE IF NOT EXISTS offline_queue (
 - `db_client::query()`, `exec()` — DB access
 - `state::with_state_mut()` — state updates
 - `offline_queue::queued_exec()` — queue writes
+
+## References
+_No references recorded._
+

@@ -1,22 +1,27 @@
 # Worktree Cleanup Design - 2026-02-15
 
-## Context
+- Archive Path: `docs/archive/plans/2026-02-15-worktree-cleanup-design.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Worktree Cleanup Design - 2026-02-15`
 
+## Summary
+Current branch: `codex/dmb-almanac-handoff-20260215`
+
+## Context
 Current branch: `codex/dmb-almanac-handoff-20260215`
 Working directory contains uncommitted changes from multiple sessions:
 - Today's session: Rust warning cleanup (4→3)
 - Pre-existing: Database optimizations, code refactorings
 
-## Goal
+### Goal
 
 Clean worktree by committing all blaires-kind-heart improvements while excluding:
 - Other projects (dmb-almanac, emerson-violin-pwa)
 - Workspace-level files outside project scope
 
-## Analysis
+### Analysis
 
-### Changes Categorized
-
+## Actions
 **Category 1: Today's Session (Primary)**
 - `rust/errors/types.rs` - Added `#[allow(dead_code)]` to `title()` method
 - `rust/metrics/performance.rs` - Added `#[allow(dead_code)]` to `get_marks()`
@@ -38,34 +43,6 @@ Clean worktree by committing all blaires-kind-heart improvements while excluding
 **Category 3: Excluded**
 - `../dmb-almanac/*` - Different project
 - `../emerson-violin-pwa` - Different project (appears as submodule change)
-
-### Verification Status
-
-All quality gates passing:
-```
-✅ qa:pwa-contract       (PWA health)
-✅ qa:runtime            (1 test)
-✅ qa:db-contract        (2 tests)
-✅ test:e2e              (39 passed, 1 skipped)
-✅ qa:docs-links         (all links valid)
-✅ qa:rust-warning-drift (3/3 baseline)
-✅ qa:docs-budget        (24,543/25,000 tokens)
-```
-
-## Decision: Single Atomic Commit
-
-**Approach:** Commit all blaires-kind-heart changes together
-
-**Rationale:**
-1. All changes are quality improvements
-2. Thematically cohesive (code cleanup + optimization)
-3. All gates pass as a unit
-4. Creates clean checkpoint for future work
-5. Pre-existing changes complement today's work
-
-**Alternative rejected:** Separate commits would complicate history without benefit
-
-## Implementation Plan
 
 1. **Stage blaires-kind-heart files only**
    ```bash
@@ -109,7 +86,7 @@ All quality gates passing:
    - Confirm worktree clean for blaires-kind-heart
    - Run quick gate check
 
-## Success Criteria
+### Success Criteria
 
 - ✅ All blaires-kind-heart changes committed
 - ✅ Worktree shows clean status for project files
@@ -117,8 +94,37 @@ All quality gates passing:
 - ✅ Other projects remain untouched
 - ✅ Clear commit message documenting all changes
 
-## Risk Mitigation
+### Risk Mitigation
 
 - Pre-commit: Verify no unintended files staged
 - Post-commit: Run gate verification
 - Fallback: `git reset --soft HEAD~1` if issues found
+
+## Validation
+All quality gates passing:
+```
+✅ qa:pwa-contract       (PWA health)
+✅ qa:runtime            (1 test)
+✅ qa:db-contract        (2 tests)
+✅ test:e2e              (39 passed, 1 skipped)
+✅ qa:docs-links         (all links valid)
+✅ qa:rust-warning-drift (3/3 baseline)
+✅ qa:docs-budget        (24,543/25,000 tokens)
+```
+
+### Decision: Single Atomic Commit
+
+**Approach:** Commit all blaires-kind-heart changes together
+
+**Rationale:**
+1. All changes are quality improvements
+2. Thematically cohesive (code cleanup + optimization)
+3. All gates pass as a unit
+4. Creates clean checkpoint for future work
+5. Pre-existing changes complement today's work
+
+**Alternative rejected:** Separate commits would complicate history without benefit
+
+## References
+_No references recorded._
+

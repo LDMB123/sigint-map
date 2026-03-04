@@ -1,18 +1,40 @@
 # Week 3 Integration - Validation Report
 
-**Date**: 2026-02-11  
-**Build**: Release  
+- Archive Path: `docs/archive/testing/week3-validation-report.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Week 3 Integration - Validation Report`
+
+## Summary
+✅ **All 78 assets generated and integrated**
+✅ **All code compiled successfully**
+✅ **All critical fixes applied**
+✅ **Service Worker precache configured**
+✅ **Ready for manual browser testing**
+
+**Estimated time to production**: 2-3 hours (manual testing + documentation)
+
+## Context
+**Date**: 2026-02-11
+**Build**: Release
 **Status**: ✅ PASSING
 
-## Asset Verification
+## Actions
+### Immediate (Phase 3)
+1. Open http://127.0.0.1:8080/ in Safari
+2. Check DevTools console for errors
+3. Verify companion shows default_happy.webp
+4. Navigate to gardens panel
+5. Run SQL helpers to unlock test gardens
+6. Verify garden cards render with stage images
 
+## Validation
 ### Companion Skins ✅
 - **Location**: `assets/companions/`
 - **Count**: 18 WebP files (expected: 18)
 - **Size**: 676KB total
 - **Files**:
   - default_{happy,celebrate,encourage}.webp
-  - unicorn_{happy,celebrate,encourage}.webp  
+  - unicorn_{happy,celebrate,encourage}.webp
   - rainbow_{happy,celebrate,encourage}.webp
   - galaxy_{happy,celebrate,encourage}.webp
   - crystal_{happy,celebrate,encourage}.webp
@@ -28,8 +50,6 @@
 - **Assets**: 78 WebP files
 - **Size**: 3.8MB (companions 676KB + gardens 3.1MB)
 - **Service Worker**: All 78 paths precached in `/public/sw-assets.js`
-
-## Build Verification
 
 ### Development Server ✅
 - **URL**: http://127.0.0.1:8080/
@@ -49,7 +69,7 @@ trunk build --release
 - **Warnings**: 24 dead code warnings (expected, unused quest features)
 - **Errors**: 0
 
-## Code Integration
+### Code Integration
 
 ### Companion Rendering ✅
 **File**: `rust/companion.rs` (397 lines)
@@ -60,8 +80,8 @@ trunk build --release
 - Thread-local closure storage (no memory leak)
 
 ### Gardens Panel ✅
-**File**: `rust/gardens.rs` (473 lines)  
-- Implemented `render_gardens_panel()` 
+**File**: `rust/gardens.rs` (473 lines)
+- Implemented `render_gardens_panel()`
 - Implemented `populate_gardens_grid()`
 - Implemented `render_garden_card()` with stage mapping
 - Navigation API listener for panel open
@@ -88,15 +108,15 @@ trunk build --release
 - gardens.css linked in head
 - Companion div with data-companion attribute
 
-## Critical Fixes Applied
+### Critical Fixes Applied
 
 ### C1: Memory Leak ✅
-**Issue**: Error closure using `forget()` leaked memory  
+**Issue**: Error closure using `forget()` leaked memory
 **Fix**: Replaced with `thread_local!` storage pattern
 **File**: `rust/companion.rs` line 158-169
 **Verification**: Closures stored in RefCell<Vec>, properly managed
 
-### C2: Race Condition ✅  
+### C2: Race Condition ✅
 **Issue**: Multiple async renders could show stale expression
 **Fix**: Added RENDER_COUNTER to track latest request
 **File**: `rust/companion.rs` line 280-294
@@ -108,7 +128,7 @@ trunk build --release
 **File**: `src/styles/gardens.css` (4 replacements)
 **Verification**: `grep "var(--" gardens.css` - all valid tokens
 
-## Service Worker Precache
+### Service Worker Precache
 
 **File**: `public/sw-assets.js`
 - **Companion assets**: 18 paths starting line 124
@@ -116,7 +136,7 @@ trunk build --release
 - **Total precached paths**: 79 (78 Week 3 + 1 legacy PNG)
 - **Cache-first strategy**: All assets served offline
 
-## Compilation Status
+### Compilation Status
 
 ### Success ✅
 ```
@@ -131,15 +151,11 @@ applying new distribution
 - No borrow checker errors
 - No undefined behavior
 
-## Test Readiness
-
-### Manual Testing Ready ✅
 - Development server running: http://127.0.0.1:8080/
 - All assets accessible via dev server
 - HTML structure includes gardens panel
 - Companion div ready for WASM hydration
 
-### Test Plan Available ✅
 - **Location**: `docs/testing/week3-manual-test-plan.md`
 - **Test cases**: 14 functional + edge case tests
 - **SQL helpers**: Seed scripts for test data
@@ -151,9 +167,8 @@ applying new distribution
 - **Touch targets**: All ≥48px per Safari guidelines
 - **Viewport**: Responsive grid adapts to orientation
 
-## Known Limitations
+### Known Limitations
 
-### Not Tested Yet
 1. **Browser verification** - Need manual Safari testing to confirm:
    - Companion WebP renders on boot
    - Expression changes swap assets smoothly
@@ -162,7 +177,7 @@ applying new distribution
    - Offline mode serves from cache
 
 2. **Database seed** - Need to run app once to populate:
-   - `companion_skins::seed_companion_skins()` 
+   - `companion_skins::seed_companion_skins()`
    - `gardens::seed_gardens()`
    - Test data for manual verification
 
@@ -172,17 +187,6 @@ applying new distribution
    - Safari Timelines jank measurement
    - Airplane mode offline verification
 
-## Next Actions
-
-### Immediate (Phase 3)
-1. Open http://127.0.0.1:8080/ in Safari
-2. Check DevTools console for errors
-3. Verify companion shows default_happy.webp
-4. Navigate to gardens panel
-5. Run SQL helpers to unlock test gardens
-6. Verify garden cards render with stage images
-
-### iPad Testing (Phase 3)
 1. Get local IP: `ipconfig getifaddr en0`
 2. Start network server: `trunk serve --address 0.0.0.0`
 3. Connect iPad to http://192.168.1.x:8080/
@@ -195,12 +199,6 @@ applying new distribution
 3. Document expression → asset mapping
 4. Document stage → array index calculation
 
-## Summary
+## References
+_No references recorded._
 
-✅ **All 78 assets generated and integrated**  
-✅ **All code compiled successfully**  
-✅ **All critical fixes applied**  
-✅ **Service Worker precache configured**  
-✅ **Ready for manual browser testing**
-
-**Estimated time to production**: 2-3 hours (manual testing + documentation)

@@ -1,5 +1,49 @@
 # Week 3 QA Report - Comprehensive Feature Audit
 
+- Archive Path: `docs/archive/testing/week3-qa-report.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Week 3 QA Report - Comprehensive Feature Audit`
+
+## Summary
+**Features Audited**: 5
+**Issues Found**: 1
+**Issues Fixed**: 1
+**Pass Rate**: 100% (after fix)
+
+**Bug Fix Details**:
+- **BUG-001**: Missing skill_breakdown column in weekly_insights table
+  - Severity: High (data loss - insights couldn't cache)
+  - Status: Fixed
+  - Files: public/db-worker.js (lines 214, 347-351)
+
+**All Features Verified Working**:
+1. ✅ Adaptive quests with focus skill prioritization
+2. ✅ Skill progression tracking with mastery badges
+3. ✅ Reflection prompts with emotion check-in flow
+4. ✅ Parent insights with weekly analytics (after bug fix)
+5. ✅ PWA offline mode with resilient caching + offline queue
+
+---
+
+### 🔍 Code Quality Observations
+
+**Strengths**:
+- Offline-first architecture: offline_queue prevents data loss
+- Error handling: SerDe failures logged, fallbacks in place
+- Performance: Single query for skill breakdown + timestamps (no N+1)
+- Type safety: Rust structs with proper deserialization
+- Event-driven: CustomEvent for loose coupling between modules
+
+**Architecture Highlights**:
+- Zero JavaScript frameworks - pure Rust/WASM
+- Event delegation for memory efficiency
+- Thread-local storage for debouncing and state
+- View Transitions API for smooth animations
+- Service Worker tiered loading for fast boot
+
+---
+
+## Context
 **Date**: 2026-02-12
 **Tester**: Claude (systematic code audit)
 **Scope**: All features from completion report + PWA offline functionality
@@ -7,7 +51,7 @@
 
 ---
 
-## QA Methodology
+### QA Methodology
 
 Systematic verification of:
 1. Database schema matches Rust expectations
@@ -18,8 +62,19 @@ Systematic verification of:
 
 ---
 
-## ✅ Feature Verification
+## Actions
+1. ✅ Production build to verify fix
+2. ⏳ Test on iPad mini 6 (requires physical device)
+3. ⏳ User acceptance testing with 4-year-old
+4. ⏳ Deploy to production hosting
 
+---
+
+**Report Generated**: 2026-02-12
+**Audit Tool**: Manual code inspection + database schema validation
+**Confidence Level**: High (all data flows traced from DB → UI)
+
+## Validation
 ### 1. Adaptive Quests System
 
 **Status**: ✅ VERIFIED - Fully functional
@@ -183,55 +238,6 @@ progress.rs::render_weekly_insights()
 
 ---
 
-## 🎯 Summary
+## References
+_No references recorded._
 
-**Features Audited**: 5
-**Issues Found**: 1
-**Issues Fixed**: 1
-**Pass Rate**: 100% (after fix)
-
-**Bug Fix Details**:
-- **BUG-001**: Missing skill_breakdown column in weekly_insights table
-  - Severity: High (data loss - insights couldn't cache)
-  - Status: Fixed
-  - Files: public/db-worker.js (lines 214, 347-351)
-
-**All Features Verified Working**:
-1. ✅ Adaptive quests with focus skill prioritization
-2. ✅ Skill progression tracking with mastery badges
-3. ✅ Reflection prompts with emotion check-in flow
-4. ✅ Parent insights with weekly analytics (after bug fix)
-5. ✅ PWA offline mode with resilient caching + offline queue
-
----
-
-## 🔍 Code Quality Observations
-
-**Strengths**:
-- Offline-first architecture: offline_queue prevents data loss
-- Error handling: SerDe failures logged, fallbacks in place
-- Performance: Single query for skill breakdown + timestamps (no N+1)
-- Type safety: Rust structs with proper deserialization
-- Event-driven: CustomEvent for loose coupling between modules
-
-**Architecture Highlights**:
-- Zero JavaScript frameworks - pure Rust/WASM
-- Event delegation for memory efficiency
-- Thread-local storage for debouncing and state
-- View Transitions API for smooth animations
-- Service Worker tiered loading for fast boot
-
----
-
-## 📋 Next Steps
-
-1. ✅ Production build to verify fix
-2. ⏳ Test on iPad mini 6 (requires physical device)
-3. ⏳ User acceptance testing with 4-year-old
-4. ⏳ Deploy to production hosting
-
----
-
-**Report Generated**: 2026-02-12
-**Audit Tool**: Manual code inspection + database schema validation
-**Confidence Level**: High (all data flows traced from DB → UI)

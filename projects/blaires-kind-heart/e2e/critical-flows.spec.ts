@@ -1,15 +1,13 @@
-import { expect, test, type Page } from "@playwright/test";
-import { dismissOnboardingIfPresent, readHearts } from "./helpers";
+import { expect, test } from "@playwright/test";
+import {
+  applyFlowE2ESetup,
+  clickFirstMatchingSelector,
+  clickWhenSelectorAppears,
+  dismissOnboardingIfPresent,
+  readHearts,
+} from "./helpers";
 
-test.use({ video: "off", serviceWorkers: "block" });
-
-test.afterEach(async ({ page }) => {
-  try {
-    await page.goto("about:blank", { waitUntil: "domcontentloaded", timeout: 5_000 });
-  } catch {
-    // Best-effort cleanup to avoid long context shutdown when worker tasks are active.
-  }
-});
+applyFlowE2ESetup(test);
 
 test.describe("critical user flows", () => {
   test.describe.configure({ mode: "serial" });
@@ -48,36 +46,10 @@ test.describe("critical user flows", () => {
       .poll(() => page.evaluate(() => document.querySelectorAll("[data-quest-idx]").length), { timeout: 30_000 })
       .toBeGreaterThan(0);
 
-    const triggered = await Promise.race([
-      page.evaluate(() => {
-        const quest = document.querySelector("[data-quest-idx]");
-        if (!quest) return false;
-        quest.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-        return true;
-      }),
-      new Promise<boolean>((resolve) => {
-        setTimeout(() => resolve(false), 8_000);
-      })
-    ]);
+    const triggered = await clickFirstMatchingSelector(page, "[data-quest-idx]");
     expect(triggered).toBe(true);
 
-    const confirmed = await Promise.race([
-      page.evaluate(() => {
-        return new Promise<boolean>((resolve) => {
-          const check = setInterval(() => {
-            const btn = document.querySelector(".quest-confirm-prompt button");
-            if (btn) {
-              clearInterval(check);
-              btn.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-              resolve(true);
-            }
-          }, 100);
-        });
-      }),
-      new Promise<boolean>((resolve) => {
-        setTimeout(() => resolve(false), 8_000);
-      })
-    ]);
+    const confirmed = await clickWhenSelectorAppears(page, ".quest-confirm-prompt button");
     expect(confirmed).toBe(true);
 
     await expect

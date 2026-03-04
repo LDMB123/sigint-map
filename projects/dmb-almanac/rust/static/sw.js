@@ -1,4 +1,4 @@
-const VERSION = '2026-02-15';
+const VERSION = '2026-03-04';
 const CACHE_PREFIX = 'dmb-almanac-rs';
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${VERSION}`;
 const DATA_CACHE = `${CACHE_PREFIX}-data-${VERSION}`;
@@ -7,6 +7,14 @@ const OFFLINE_FALLBACK = '/offline.html';
 
 const SHELL_ASSETS = [
   '/',
+  '/shows',
+  '/songs',
+  '/venues',
+  '/guests',
+  '/tours',
+  '/releases',
+  '/stats',
+  '/search',
   '/app.css',
   '/manifest.json',
   '/webgpu.js',
@@ -93,6 +101,17 @@ self.addEventListener('activate', (event) => {
       )
     )
   );
+  event.waitUntil(
+    (async () => {
+      if (self.registration?.navigationPreload) {
+        try {
+          await self.registration.navigationPreload.enable();
+        } catch (err) {
+          console.warn('navigation preload enable failed:', err);
+        }
+      }
+    })()
+  );
   event.waitUntil(self.clients.claim());
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
@@ -158,21 +177,31 @@ self.addEventListener('fetch', (event) => {
   if (url.origin === location.origin && isHtmlNavigation) {
     const cacheKey = url.pathname || '/';
     event.respondWith(
-      fetch(new Request(request, { cache: 'no-store' }))
-        .then(async (response) => {
-          // Store by path (not the full Request) so later navigations match reliably even if
-          // headers differ (Playwright offline mode, different Accept headers, etc).
-          if (isCacheable(response)) {
-            try {
-              const cache = await caches.open(SHELL_CACHE);
-              await cache.put(cacheKey, response.clone());
-            } catch (err) {
-              console.warn('cache write failed:', SHELL_CACHE, cacheKey, err);
-            }
-          }
+      (async () => {
+        let preloadResponse;
+        try {
+          preloadResponse = await event.preloadResponse;
+        } catch (err) {
+          console.warn('navigation preload response failed:', err);
+        }
+        if (isCacheable(preloadResponse)) {
+          cacheResponse(event, SHELL_CACHE, cacheKey, preloadResponse);
+          return preloadResponse;
+        }
+
+        try {
+          const response = await fetch(new Request(request, { cache: 'no-store' }));
+          cacheResponse(event, SHELL_CACHE, cacheKey, response);
           return response;
-        })
-        .catch(() => caches.match(cacheKey).then((res) => res || caches.match(OFFLINE_FALLBACK)))
+        } catch (_) {
+          const cached = await caches.match(cacheKey);
+          if (cached) {
+            return cached;
+          }
+          const appShell = await caches.match('/');
+          return appShell || caches.match(OFFLINE_FALLBACK);
+        }
+      })()
     );
     return;
   }

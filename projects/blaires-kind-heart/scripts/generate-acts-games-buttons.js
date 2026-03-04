@@ -1,62 +1,43 @@
 #!/usr/bin/env node
 
 /**
- * Generate act category + game card button assets
+ * Generate act category + game card button assets.
  */
 
-import { GoogleAuth } from 'google-auth-library';
-import fs from 'fs/promises';
 import path from 'path';
+import { ensureDir, sleep } from './lib/fs-helpers.mjs';
+import { generateImagenFile } from './lib/imagen-file-generator.mjs';
 
-const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-0925343693';
-const LOCATION = 'us-central1';
-const MODEL = 'imagen-3.0-generate-001';
 const OUTPUT_DIR = path.join(process.env.HOME, 'imagen-output', 'bkh-buttons');
+const NEGATIVE_PROMPT = 'text, words, letters, numbers, watermark, signature, ugly, blurry, low quality, dark, scary, realistic photo';
 
-const auth = new GoogleAuth({
-  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-});
-
-await fs.mkdir(OUTPUT_DIR, { recursive: true });
+await ensureDir(OUTPUT_DIR);
 
 async function generateImage(prompt, filename, retries = 1) {
-  const filepath = path.join(OUTPUT_DIR, filename);
-  try { await fs.access(filepath); console.log(`SKIP: ${filename} exists`); return filepath; } catch {}
-
   console.log(`Generating: ${filename}`);
-  const client = await auth.getClient();
-  const accessToken = await client.getAccessToken();
-
-  const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}:predict`;
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${accessToken.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      instances: [{ prompt }],
-      parameters: { sampleCount: 1, aspectRatio: '1:1', negativePrompt: 'text, words, letters, numbers, watermark, signature, ugly, blurry, low quality, dark, scary, realistic photo' },
-    }),
+  const result = await generateImagenFile({
+    prompt,
+    filename,
+    outputDir: OUTPUT_DIR,
+    negativePrompt: NEGATIVE_PROMPT,
+    skipExisting: true,
+    attempts: retries + 1,
+    rateLimitDelayMs: 65_000,
+    onRateLimit: () => {
+      console.log('  Rate limited — waiting 65s then retrying...');
+    },
   });
 
-  if (!response.ok) {
-    const err = await response.json();
-    if (err.error?.code === 429 && retries > 0) {
-      console.log(`  Rate limited — waiting 65s then retrying...`);
-      await new Promise(r => setTimeout(r, 65000));
-      return generateImage(prompt, filename, retries - 1);
-    }
-    console.error(`  ERROR: ${err.error?.message || JSON.stringify(err)}`);
-    return null;
+  if (result.status === 'skipped') {
+    console.log(`SKIP: ${filename} exists`);
+    return result;
   }
-
-  const data = await response.json();
-  const pred = data.predictions?.[0];
-  if (pred?.bytesBase64Encoded) {
-    const buf = Buffer.from(pred.bytesBase64Encoded, 'base64');
-    await fs.writeFile(filepath, buf);
-    console.log(`  Saved: ${filename} (${(buf.length / 1024).toFixed(0)} KB)`);
-    return filepath;
+  if (result.status === 'generated' && result.bytes !== null) {
+    console.log(`  Saved: ${filename} (${(result.bytes / 1024).toFixed(0)} KB)`);
+    return result;
   }
-  return null;
+  console.error(`  ERROR: ${result.errorMessage || 'No image data returned'}`);
+  return result;
 }
 
 const STYLE = 'cute kawaii children\'s illustration style, soft pastel colors, rounded shapes, sparkles and magic stars, whimsical fairy-tale aesthetic, clean flat design with subtle gradients, transparent background, centered icon composition, no text, digital art for a kids app';
@@ -78,11 +59,19 @@ const buttons = [
 ];
 
 console.log(`=== Generating ${buttons.length} act + game assets ===`);
-let ok = 0;
+let generated = 0;
+let skipped = 0;
+let failed = 0;
 for (const btn of buttons) {
   try {
-    if (await generateImage(btn.prompt, btn.name)) ok++;
-  } catch (e) { console.error(`Failed ${btn.name}: ${e.message}`); }
-  await new Promise(r => setTimeout(r, 12000));
+    const result = await generateImage(btn.prompt, btn.name);
+    if (result.status === 'generated') generated++;
+    if (result.status === 'skipped') skipped++;
+    if (result.status === 'failed') failed++;
+  } catch (error) {
+    failed++;
+    console.error(`Failed ${btn.name}:`, error instanceof Error ? error.message : String(error));
+  }
+  await sleep(12_000);
 }
-console.log(`\n=== Done: ${ok}/${buttons.length} ===`);
+console.log(`\n=== Done: ${generated} generated, ${skipped} skipped, ${failed} failed (${buttons.length} total) ===`);

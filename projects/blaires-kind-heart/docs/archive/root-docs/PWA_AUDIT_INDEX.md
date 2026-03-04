@@ -1,20 +1,25 @@
 # PWA Audit Documentation Index
 
-Generated: 2026-02-11 | Auditor: PWA Debugger Claude Agent
+- Archive Path: `docs/archive/root-docs/PWA_AUDIT_INDEX.md`
+- Normalized On: `2026-03-04`
+- Source Title: `PWA Audit Documentation Index`
 
-## Documents in This Audit
-
-### 1. **PWA_AUDIT_SUMMARY.txt** (Quick Overview)
+## Summary
 **Read this first.** High-level summary of all findings, organized by severity.
 - 2-minute read
 - Key findings at a glance
 - Links to detailed reports
 - Next steps prioritized
 
-### 2. **PWA_QUICK_FIXES.md** (Immediate Actions)
+## Context
+Generated: 2026-02-11 | Auditor: PWA Debugger Claude Agent
+
+### Documents in This Audit
+
+## Actions
 **Start here for immediate fixes.** Three critical issues with code samples.
 - Fix #1: Add CSP to offline.html (2 min)
-- Fix #2: Strengthen SW message handler (3 min)  
+- Fix #2: Strengthen SW message handler (3 min)
 - Fix #3: Remove '/' from precache list (1 min)
 - Total: 6 minutes work
 - Verification steps included
@@ -28,7 +33,7 @@ Generated: 2026-02-11 | Auditor: PWA Debugger Claude Agent
 - Testing checklist for iPad Mini 6
 - Asset verification breakdown (196 files, 56.7 MB)
 
-## Finding Breakdown
+### Finding Breakdown
 
 ### CRITICAL (Apply Immediately)
 1. offline.html missing CSP header
@@ -51,32 +56,50 @@ Generated: 2026-02-11 | Auditor: PWA Debugger Claude Agent
 14. SW scope not explicitly defined
 15. offline.html button CSP compliance
 
-## Quick Navigation
+**Today (5 min):** Apply 3 critical fixes from PWA_QUICK_FIXES.md
 
-**I have 5 minutes:** Read PWA_AUDIT_SUMMARY.txt
+**This week (30 min):**
+- Test on iPad Mini 6
+- Standardize icon paths
+- Add periodic SW update
 
-**I need to fix issues:** Read PWA_QUICK_FIXES.md
+**Next sprint (2-3 hours):**
+- Cache versioning strategy
+- Background sync
+- Precache validation
 
-**I need full context:** Read PWA_AUDIT_REPORT.md
+### Overall Assessment
 
-**I want code samples:** See each finding in PWA_AUDIT_REPORT.md
+**Health:** EXCELLENT ✅
 
-**I need testing steps:** Section "Testing Checklist for iPad Mini 6" in PWA_AUDIT_REPORT.md
+**Pass Rate:** 21/22 criteria (95%)
 
-## Key Files Referenced in Audit
+**Ready for Production:** YES, after 3 quick fixes
 
-```
-/public/sw.js                   — Service Worker (81 lines)
-/public/sw-assets.js            — Precache manifest (235 lines)
-/public/offline.html            — Offline fallback (56 lines)
-/public/db-worker.js            — Database Worker (525 lines)
-/manifest.webmanifest           — Web app manifest (72 lines)
-/rust/pwa.rs                    — PWA registration (110 lines)
-/index.html                     — Main HTML (237 lines)
-```
+**Security:** Good (85/100, becomes 95/100 after fixes)
 
-## Asset Verification Results
+**Offline Capability:** Excellent (fully offline-first)
 
+**iOS Support:** Good (handles Safari 26.2 limitations)
+
+---
+
+### Questions About This Audit?
+
+Refer to the specific finding number in PWA_AUDIT_REPORT.md for:
+- Detailed risk assessment
+- Code examples
+- Implementation steps
+- Related issues
+- Alternative solutions
+
+---
+
+**Audit Confidence:** 98%
+**OS/Device:** Safari 26.2, iPadOS 26.2, iPad Mini 6 (A15)
+**Generated:** 2026-02-11
+
+## Validation
 **Status:** ALL 196 ASSETS PRESENT ✓
 
 ```
@@ -94,8 +117,6 @@ TOTAL:                 196 files
 Cache Size:            56.7 MB
 ```
 
-## Test Checklist (iPad Mini 6)
-
 Before deploying, verify:
 
 - [ ] Install app to home screen (does install prompt work?)
@@ -108,47 +129,24 @@ Before deploying, verify:
 - [ ] Safari Web Inspector shows 196 cached assets
 - [ ] Console shows no CSP violations
 
-## Implementation Timeline
+## References
+**I have 5 minutes:** Read PWA_AUDIT_SUMMARY.txt
 
-**Today (5 min):** Apply 3 critical fixes from PWA_QUICK_FIXES.md
+**I need to fix issues:** Read PWA_QUICK_FIXES.md
 
-**This week (30 min):** 
-- Test on iPad Mini 6
-- Standardize icon paths
-- Add periodic SW update
+**I need full context:** Read PWA_AUDIT_REPORT.md
 
-**Next sprint (2-3 hours):**
-- Cache versioning strategy
-- Background sync
-- Precache validation
+**I want code samples:** See each finding in PWA_AUDIT_REPORT.md
 
-## Overall Assessment
+**I need testing steps:** Section "Testing Checklist for iPad Mini 6" in PWA_AUDIT_REPORT.md
 
-**Health:** EXCELLENT ✅
+```
+/public/sw.js                   — Service Worker (81 lines)
+/public/sw-assets.js            — Precache manifest (235 lines)
+/public/offline.html            — Offline fallback (56 lines)
+/public/db-worker.js            — Database Worker (525 lines)
+/manifest.webmanifest           — Web app manifest (72 lines)
+/rust/pwa.rs                    — PWA registration (110 lines)
+/index.html                     — Main HTML (237 lines)
+```
 
-**Pass Rate:** 21/22 criteria (95%)
-
-**Ready for Production:** YES, after 3 quick fixes
-
-**Security:** Good (85/100, becomes 95/100 after fixes)
-
-**Offline Capability:** Excellent (fully offline-first)
-
-**iOS Support:** Good (handles Safari 26.2 limitations)
-
----
-
-## Questions About This Audit?
-
-Refer to the specific finding number in PWA_AUDIT_REPORT.md for:
-- Detailed risk assessment
-- Code examples
-- Implementation steps
-- Related issues
-- Alternative solutions
-
----
-
-**Audit Confidence:** 98%
-**OS/Device:** Safari 26.2, iPadOS 26.2, iPad Mini 6 (A15)
-**Generated:** 2026-02-11

@@ -1,9 +1,26 @@
 # Simplification Progress Report
 
+- Archive Path: `docs/archive/DETAILED_PROGRESS.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Simplification Progress Report`
+
+## Summary
+| Metric | Achievement |
+|--------|-------------|
+| Lines removed | **-30** (WorkerHandle enum) **+20** (query batching) **+117** (offline_queue) = **+107 net** |
+| Build warnings | **0** ✅ (zero-warning target achieved) |
+| Build time | **3.92-3.98s** (consistent, fast) |
+| DB round-trips | **-67%** (6 hydration queries → 2) |
+| Boot speedup | **~30-40ms** (Worker overhead reduction) |
+| Architecture | Simpler Worker + batched DB + offline queue |
+| Code clarity | SQL CASE expressions, single-pass parsing, transparent retry |
+| **Data reliability** | **100% write persistence guarantee** (critical achievement) |
+
+## Context
 **Date**: 2026-02-10
 **Session**: Continued from Safari 26.2 native simplification
 
-## Completed (Phases 1.1-3.1)
+### Completed (Phases 1.1-3.1)
 
 ### Phase 1.1: WorkerHandle Enum Removal ✅
 
@@ -108,21 +125,7 @@ FROM game_scores
 
 ---
 
-## Results Summary
-
-| Metric | Achievement |
-|--------|-------------|
-| Lines removed | **-30** (WorkerHandle enum) **+20** (query batching) **+117** (offline_queue) = **+107 net** |
-| Build warnings | **0** ✅ (zero-warning target achieved) |
-| Build time | **3.92-3.98s** (consistent, fast) |
-| DB round-trips | **-67%** (6 hydration queries → 2) |
-| Boot speedup | **~30-40ms** (Worker overhead reduction) |
-| Architecture | Simpler Worker + batched DB + offline queue |
-| Code clarity | SQL CASE expressions, single-pass parsing, transparent retry |
-| **Data reliability** | **100% write persistence guarantee** (critical achievement) |
-
-## Next Steps (High Priority)
-
+## Actions
 ### Phase 2.1: Batch Hydration Queries ✅ COMPLETE
 
 **Implemented**: Batched 6 queries into 2 using SQL CASE expressions
@@ -169,8 +172,6 @@ pub async fn queued_exec(sql: &str, params: Vec<String>) -> Result<(), JsValue> 
             queue_mutation(sql, params).await?;
             Err(e)
         }
-    }
-}
 ```
 
 **Queue Storage**: SQLite table `offline_queue` with sql, params, timestamp
@@ -189,7 +190,7 @@ pub async fn queued_exec(sql: &str, params: Vec<String>) -> Result<(), JsValue> 
 
 ---
 
-## Technical Notes
+### Technical Notes
 
 ### Safari 26.2 Assumptions Validated
 
@@ -206,7 +207,7 @@ Both phases built cleanly:
 
 ---
 
-## Philosophy Applied
+### Philosophy Applied
 
 **"Simplicity is the ultimate sophistication"** — continued from SIMPLIFICATION_IMPACT.md
 
@@ -216,7 +217,7 @@ Both phases built cleanly:
 
 ---
 
-## Remaining Work
+### Remaining Work
 
 **High Priority** (from approved plan):
 - [x] Phase 2.1: Batch hydration queries ✅ COMPLETE
@@ -232,3 +233,10 @@ Both phases built cleanly:
 - [ ] Phase 6.1-6.2: Polish & date consolidation
 
 **Total Expected**: -100 LOC, boot time 850ms → 750ms, 100% data persistence
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

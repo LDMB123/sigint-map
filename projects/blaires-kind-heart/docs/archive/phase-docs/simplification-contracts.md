@@ -1,14 +1,22 @@
 # Simplification Contracts (Wave 0 Freeze)
 
+- Archive Path: `docs/archive/phase-docs/simplification-contracts.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Simplification Contracts (Wave 0 Freeze)`
+
+## Summary
 Last updated: 2026-02-13
 
-## Baseline Gates
+## Context
+Last updated: 2026-02-13
+
+### Baseline Gates
 - `cargo check --release`: PASS
 - `cargo test --release`: PASS (8 tests)
 - `npm run test:e2e`: FAIL (port conflict at freeze time)
 - Failure detail at freeze time: `http://127.0.0.1:4173 is already used`
 
-## Current Gates (Wave 7 Closeout Target)
+### Current Gates (Wave 7 Closeout Target)
 - `cargo check --release`: PASS
 - `cargo test --release`: PASS (8 tests)
 - `npm run test:e2e`: PASS
@@ -16,11 +24,10 @@ Last updated: 2026-02-13
 - E2E port handling: PASS (auto-fallback to `4174` when `4173` was occupied)
 - Note: final gate is re-run at Wave 7 closeout and should remain green.
 
-## Operator Context Anchor
 - Active execution context is tracked in:
   - `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/docs/CODEX_WORKING_CONTEXT_PLAN.md`
 
-## Wasm Export Contract (`rust/lib.rs`)
+### Wasm Export Contract (`rust/lib.rs`)
 Preserve exported symbol names and signatures exactly:
 
 ```rust
@@ -28,7 +35,7 @@ Preserve exported symbol names and signatures exactly:
 pub fn start()
 ```
 
-## Persistence Contract
+### Persistence Contract
 No schema/key-shape breaking changes in the following modules.
 
 ### `rust/mom_mode.rs`
@@ -51,7 +58,7 @@ No schema/key-shape breaking changes in the following modules.
 - Relies on `weekly_goals` + `mom_notes` data shape and current `week_key` resolution from `parent_insights` / `utils`.
 - No behavior changes to goal completion, mom note rendering, or panel-open refresh triggers.
 
-## Analytics / Metrics Contract
+### Analytics / Metrics Contract
 Preserve metric field names and semantics used by Web Vitals tracking.
 
 ### `rust/metrics/web_vitals.rs`
@@ -69,7 +76,17 @@ Preserve metric field names and semantics used by Web Vitals tracking.
 ### Related accessors
 - `metrics::get_vitals()` and `metrics::init_web_vitals()` usage contract remains stable.
 
-## Compatibility Rules for Refactor Waves
+### Compatibility Rules for Refactor Waves
 - Internal refactors are allowed if externally visible behavior remains unchanged.
 - If internals are renamed/restructured, keep compatibility wrappers until all call sites migrate.
 - Do not rename DB keys/fields, wasm exports, or metric identifiers listed above.
+
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

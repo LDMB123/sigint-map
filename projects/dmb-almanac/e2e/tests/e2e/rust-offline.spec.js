@@ -16,6 +16,15 @@ test.describe('Rust PWA offline flow', () => {
                 await navigator.serviceWorker.ready;
             }
         });
+        const preloadEnabled = await page.evaluate(async () => {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (!reg || !('navigationPreload' in reg) || !reg.navigationPreload?.getState) {
+                return false;
+            }
+            const state = await reg.navigationPreload.getState();
+            return !!state.enabled;
+        });
+        expect(preloadEnabled).toBe(true);
 
         await gotoHydrated(page, '/shows', {
             gotoOptions: { waitUntil: 'domcontentloaded', timeout: 60_000 },

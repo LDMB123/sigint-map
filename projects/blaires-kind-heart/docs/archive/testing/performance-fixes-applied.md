@@ -1,12 +1,20 @@
 # Performance Fixes Applied - 2026-02-12
 
+- Archive Path: `docs/archive/testing/performance-fixes-applied.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Performance Fixes Applied - 2026-02-12`
+
+## Summary
+**Context**: User reported "Everything's broken or looks ugly" despite code working correctly.
+
+## Context
 **Context**: User reported "Everything's broken or looks ugly" despite code working correctly.
 
 **Root Cause**: Catastrophic interaction performance (7088ms INP) caused by expensive CSS effects.
 
 ---
 
-## Fixes Applied ✅
+### Fixes Applied ✅
 
 ### 1. Sparkle Gradient Reduction (CRITICAL FIX)
 **File**: `src/styles/home.css`
@@ -43,7 +51,7 @@ Reduced expensive blur effects across the app:
 
 ---
 
-## Performance Budget Impact
+### Performance Budget Impact
 
 ### Before Optimizations
 ```
@@ -63,7 +71,7 @@ Animated gradients: 4 (static, no animation)
 
 ---
 
-## Files Modified
+### Files Modified
 
 1. ✅ `src/styles/home.css` - Sparkle gradients + home-streak blur
 2. ✅ `src/styles/app.css` - Panel header blur
@@ -73,7 +81,7 @@ Animated gradients: 4 (static, no animation)
 
 ---
 
-## Remaining Performance Opportunities
+### Remaining Performance Opportunities
 
 ### Lower Priority (Not Yet Optimized)
 
@@ -96,8 +104,10 @@ Animated gradients: 4 (static, no animation)
 
 ---
 
-## Testing Plan
+## Actions
+_No actions recorded._
 
+## Validation
 1. ✅ Apply all fixes
 2. ⏳ Test on dev server (http://192.168.1.xxx:8080)
 3. ⏳ Measure actual INP with browser devtools
@@ -106,7 +116,7 @@ Animated gradients: 4 (static, no animation)
 
 ---
 
-## Expected User Experience Improvement
+### Expected User Experience Improvement
 
 **Before**:
 - "Everything's broken" feeling
@@ -126,3 +136,7 @@ Animated gradients: 4 (static, no animation)
 
 **Dev Server**: `trunk serve --address 0.0.0.0 --port 8080` (running)
 **Report Date**: 2026-02-12 19:32 UTC
+
+## References
+_No references recorded._
+

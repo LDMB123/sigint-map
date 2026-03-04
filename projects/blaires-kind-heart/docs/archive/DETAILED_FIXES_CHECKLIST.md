@@ -1,7 +1,10 @@
 # PWA Caching Bugs - Fix Checklist
 
-## Quick Summary
+- Archive Path: `docs/archive/DETAILED_FIXES_CHECKLIST.md`
+- Normalized On: `2026-03-04`
+- Source Title: `PWA Caching Bugs - Fix Checklist`
 
+## Summary
 **Total Bugs Found:** 8
 **Critical (Block Offline):** 2
 **High (Degrade UX):** 2
@@ -12,7 +15,7 @@
 
 ---
 
-## CRITICAL FIX #1: Copy WebP Assets to Build Output
+### CRITICAL FIX #1: Copy WebP Assets to Build Output
 
 ### Status: REQUIRED
 
@@ -30,41 +33,28 @@ Trunk automatically copies anything in `public/` to `dist/`. This is the simples
 ```bash
 cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart
 
-# Create assets directory in public
 mkdir -p public/assets
 
-# Copy companion skins
 cp -r assets/companions public/assets/
 
-# Copy garden stages
 cp -r assets/gardens public/assets/
 
-# Verify copy worked
 ls public/assets/companions/ | wc -l
-# Should print: 18
 
 ls public/assets/gardens/ | wc -l
-# Should print: 60
 
-# Clean build
 rm -rf dist
 trunk build --release
 
-# Verify assets now in dist
 ls dist/assets/companions/ | wc -l
-# Should print: 18
 
 ls dist/assets/gardens/ | wc -l
-# Should print: 60
 ```
 
 **Verification:**
 ```bash
-# Should see sw-assets.js with updated assets/ paths
 ls -la dist/sw-assets.js
 
-# Compare file size before/after
-# After should be larger due to WebP files
 ```
 
 ---
@@ -76,7 +66,6 @@ ls -la dist/sw-assets.js
 If you want to keep `assets/` in root and configure Trunk to copy it:
 
 ```toml
-# In Trunk.toml, add:
 [hooks.pre_build]
 stage = "build"
 command = "sh"
@@ -87,7 +76,7 @@ However, this requires ensuring the dist/ directory is already created. Solution
 
 ---
 
-## CRITICAL FIX #2: Update Precache Manifest
+### CRITICAL FIX #2: Update Precache Manifest
 
 ### Status: REQUIRED (after Fix #1)
 
@@ -148,7 +137,7 @@ However, this requires ensuring the dist/ directory is already created. Solution
 
 ---
 
-## HIGH PRIORITY FIX #1: Add Image Fallback to Service Worker
+### HIGH PRIORITY FIX #1: Add Image Fallback to Service Worker
 
 ### Status: RECOMMENDED
 
@@ -198,11 +187,7 @@ However, this requires ensuring the dist/ directory is already created. Solution
 First, create a placeholder image:
 
 ```bash
-# Create 1x1 transparent WebP
-# Using Python PIL or online tool, save to:
-# public/placeholder-1x1.webp
 
-# Then update sw.js to:
     }).catch(() => {
       // Offline fallbacks
       const accept = event.request.headers.get('Accept') || '';
@@ -220,7 +205,6 @@ First, create a placeholder image:
       return undefined;
     })
 
-# Add to sw-assets.js:
   '/placeholder-1x1.webp',
 ```
 
@@ -230,17 +214,19 @@ First, create a placeholder image:
 
 ---
 
-## HIGH PRIORITY FIX #2: Verify Build Copies Everything
+### HIGH PRIORITY FIX #2: Verify Build Copies Everything
 
-### Status: REQUIRED (validation)
+## Context
+_Context not recorded in source archive document._
 
+## Actions
+_No actions recorded._
+
+## Validation
 **Verify all precache items exist:**
 
 ```bash
 cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart
-
-# Extract PRECACHE_ASSETS from sw-assets.js and verify each exists in dist/
-# Script to check:
 
 cat > /tmp/verify_precache.sh << 'EOF'
 #!/bin/bash
@@ -249,7 +235,6 @@ cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart
 MISSING=0
 FOUND=0
 
-# Extract paths from PRECACHE_ASSETS
 paths=$(grep -oE "'[^']+'" public/sw-assets.js | sed "s/'//g")
 
 for path in $paths; do
@@ -295,7 +280,7 @@ Summary:
 
 ---
 
-## MEDIUM PRIORITY: Add Error Logging
+### MEDIUM PRIORITY: Add Error Logging
 
 ### Status: OPTIONAL
 
@@ -354,8 +339,6 @@ self.addEventListener('activate', (event) => {
 
 ---
 
-## Testing Checklist
-
 ### After ALL Fixes
 
 - [ ] Run `trunk build --release` (takes ~2 min)
@@ -387,28 +370,24 @@ self.addEventListener('activate', (event) => {
 
 ---
 
-## Rollback Plan
+### Rollback Plan
 
 If anything breaks:
 
 ```bash
-# Undo public/assets copy
 rm -rf public/assets
 
-# Restore original sw-assets.js
 git checkout public/sw-assets.js
 
-# Restore original sw.js
 git checkout public/sw.js
 
-# Rebuild
 rm -rf dist
 trunk build --release
 ```
 
 ---
 
-## Fix Timeline
+### Fix Timeline
 
 **Phase 1 (5 minutes):**
 1. Copy assets/ to public/assets/
@@ -434,7 +413,7 @@ Optional additions (10-15 min):
 
 ---
 
-## Recommended Order
+### Recommended Order
 
 ### Must Do (Blocking)
 1. Move assets/ to public/assets/
@@ -452,37 +431,25 @@ Optional additions (10-15 min):
 
 ---
 
-## Validation Commands
-
 ```bash
-# After Fix #1:
 ls public/assets/companions/ | wc -l
-# Output: 18
 
 ls public/assets/gardens/ | wc -l
-# Output: 60
 
 ls dist/assets/companions/ | wc -l
-# Output: 18 (after rebuild)
 
-# After Fix #2:
 grep '/scroll-effects.css' public/sw-assets.js
-# Output: (line with it)
 
 grep '/particle-effects.css' public/sw-assets.js
-# Output: (line with it)
 
-# After Fix #3:
 trunk build --release
 
-# Verify no 404s for WebP files in dist:
 find dist -name "*.webp" | wc -l
-# Output: 78 (18 companions + 60 gardens)
 ```
 
 ---
 
-## Common Issues & Solutions
+### Common Issues & Solutions
 
 ### Issue: "cp: cannot open directory `assets/`"
 **Solution:** Make sure you're in project root before running copy commands
@@ -506,7 +473,7 @@ trunk build --release
 
 ---
 
-## Questions to Answer
+### Questions to Answer
 
 After fixes, verify:
 - [ ] Do companions render correctly offline?
@@ -515,3 +482,7 @@ After fixes, verify:
 - [ ] Does update detection still work?
 - [ ] No broken image icons anywhere?
 - [ ] Cache contains exactly 168 items?
+
+## References
+_No references recorded._
+

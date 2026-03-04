@@ -384,6 +384,8 @@ struct PwaStatusState {
     integrity_report: RwSignal<Option<crate::data::IntegrityReport>>,
     sqlite_parity: RwSignal<Option<crate::data::SqliteParityReport>>,
     sw_action_status: RwSignal<Option<String>>,
+    perf_metrics: RwSignal<Option<crate::pages::InpMetricsSnapshot>>,
+    import_tuning_enabled: RwSignal<bool>,
 }
 
 #[cfg(feature = "hydrate")]
@@ -438,6 +440,8 @@ impl PwaStatusState {
             integrity_report: RwSignal::new(None::<crate::data::IntegrityReport>),
             sqlite_parity: RwSignal::new(None::<crate::data::SqliteParityReport>),
             sw_action_status: RwSignal::new(None::<String>),
+            perf_metrics: RwSignal::new(None::<crate::pages::InpMetricsSnapshot>),
+            import_tuning_enabled: RwSignal::new(false),
         }
     }
 }
@@ -457,7 +461,20 @@ fn action_export_parity(state: PwaStatusState) {
                     "progress": current_status.progress,
                     "done": current_status.done,
                     "error": current_status.error,
+                    "tuning": current_status.tuning.as_ref().map(|tuning| serde_json::json!({
+                        "chunkRecords": tuning.chunk_records,
+                        "txBatchSize": tuning.tx_batch_size,
+                        "lastChunkMs": tuning.last_chunk_ms,
+                        "longTaskCount": tuning.long_task_count,
+                    })),
+                    "adaptiveEnabled": state.import_tuning_enabled.get_untracked(),
                 },
+                "inpMetrics": state.perf_metrics.get_untracked().map(|metrics| serde_json::json!({
+                    "supported": metrics.supported,
+                    "p75InteractionMs": metrics.p75_interaction_ms,
+                    "longFrameCount": metrics.long_frame_count,
+                    "interactionCount": metrics.interaction_count,
+                })),
                 "sw": {
                     "version": state.sw_version.get_untracked(),
                     "activatedAtMs": state.sw_activated_at.get_untracked(),
@@ -840,14 +857,18 @@ fn hydrate_local_snapshot(state: &PwaStatusState) {
     if let Some(value) = local_storage_f64_by_key(PREVIOUS_CACHE_CLEANED_AT_KEY) {
         state.previous_cache_cleaned_at.set(Some(value));
     }
-    if let Some(version) = local_storage_item_by_key(crate::ai::AI_CONFIG_VERSION_KEY) {
-        state.ai_config_version.set(Some(version));
-    }
-    if let Some(generated_at) = local_storage_item_by_key(crate::ai::AI_CONFIG_GENERATED_AT_KEY) {
-        state.ai_config_generated_at.set(Some(generated_at));
-    }
-    if let Some(sample) = local_storage_item_by_key(crate::ai::EMBEDDING_SAMPLE_KEY) {
-        state.embedding_sample_enabled.set(Some(sample == "1"));
+    #[cfg(feature = "ai_diagnostics_full")]
+    {
+        if let Some(version) = local_storage_item_by_key(crate::ai::AI_CONFIG_VERSION_KEY) {
+            state.ai_config_version.set(Some(version));
+        }
+        if let Some(generated_at) = local_storage_item_by_key(crate::ai::AI_CONFIG_GENERATED_AT_KEY)
+        {
+            state.ai_config_generated_at.set(Some(generated_at));
+        }
+        if let Some(sample) = local_storage_item_by_key(crate::ai::EMBEDDING_SAMPLE_KEY) {
+            state.embedding_sample_enabled.set(Some(sample == "1"));
+        }
     }
 }
 
@@ -878,7 +899,7 @@ fn spawn_storage_health_tasks(state: &PwaStatusState) {
     spawn_cache_entries_refresh(state.cache_entries);
 }
 
-#[cfg(feature = "hydrate")]
+#[cfg(all(feature = "hydrate", feature = "ai_diagnostics_full"))]
 fn spawn_ai_config_sync_task(state: &PwaStatusState) {
     let ai_config_status = state.ai_config_status;
     let ai_config_version = state.ai_config_version;
@@ -1226,14 +1247,23 @@ fn initialize_pwa_status_state(state: PwaStatusState) {
                 .update_snoozed
                 .set(refresh_update_notice_state(&state));
             hydrate_local_snapshot(&state);
-            state.ann_cap_override.set(crate::ai::ann_cap_override_mb());
+            #[cfg(feature = "ai_diagnostics_full")]
+            {
+                state.ann_cap_override.set(crate::ai::ann_cap_override_mb());
+            }
 
             // Defer non-critical PWA diagnostics/import work so first paint and hydration
             // complete before large IndexedDB and metadata tasks run.
             schedule_window_timeout(DEFERRED_STATUS_TASKS_DELAY_MS, move || {
+                state
+                    .import_tuning_enabled
+                    .set(crate::data::current_import_tuning_enabled());
                 spawn_seed_and_diagnostics_refresh(&state);
                 spawn_storage_health_tasks(&state);
-                spawn_ai_config_sync_task(&state);
+                #[cfg(feature = "ai_diagnostics_full")]
+                {
+                    spawn_ai_config_sync_task(&state);
+                }
                 spawn_sw_runtime_task(&state);
                 register_online_offline_listeners(&state);
             });
@@ -1280,6 +1310,22 @@ fn render_import_status_rows(state: PwaStatusState) -> impl IntoView {
                 current.error.as_ref().map(|err| {
                     let err_text = err.clone();
                     view! { <div class="pwa-status__row pwa-status__row--error">{err_text}</div> }
+                })
+            }}
+            {move || {
+                let current = status.get();
+                current.tuning.as_ref().map(|tuning| {
+                    view! {
+                        <div class="pwa-status__row muted">
+                            {format!(
+                                "Import tuning: chunk {} • tx {} • last {:.0}ms • long frames {}",
+                                tuning.chunk_records,
+                                tuning.tx_batch_size,
+                                tuning.last_chunk_ms,
+                                tuning.long_task_count
+                            )}
+                        </div>
+                    }
                 })
             }}
             <Show
@@ -1375,6 +1421,8 @@ fn render_metadata_rows(state: PwaStatusState) -> impl IntoView {
     let ann_cap_override = state.ann_cap_override;
     let cache_entries = state.cache_entries;
     let update_state = state.update_state;
+    let perf_metrics = state.perf_metrics;
+    let import_tuning_enabled = state.import_tuning_enabled;
 
     view! {
         <>
@@ -1425,6 +1473,36 @@ fn render_metadata_rows(state: PwaStatusState) -> impl IntoView {
             {move || {
                 cache_entries.get().map(|count| {
                     view! { <div class="pwa-status__row muted">{format!("Cache entries: {count}")}</div> }
+                })
+            }}
+            <div class="pwa-status__row muted">
+                {move || format!(
+                    "Adaptive import tuning: {}",
+                    if import_tuning_enabled.get() { "on" } else { "off" }
+                )}
+            </div>
+            {move || {
+                perf_metrics.get().map(|metrics| {
+                    let message = if !metrics.supported {
+                        "INP telemetry: unsupported in this browser/runtime".to_string()
+                    } else {
+                        let p75 = metrics
+                            .p75_interaction_ms
+                            .map(|value| format!("{value:.0}ms"))
+                            .unwrap_or_else(|| "n/a".to_string());
+                        let interactions = metrics
+                            .interaction_count
+                            .map_or_else(|| "n/a".to_string(), |value| value.to_string());
+                        format!(
+                            "INP p75 {p75} • long frames {} • interactions {}",
+                            metrics.long_frame_count, interactions
+                        )
+                    };
+                    view! {
+                        <div class="pwa-status__row muted">
+                            {message}
+                        </div>
+                    }
                 })
             }}
             {move || {

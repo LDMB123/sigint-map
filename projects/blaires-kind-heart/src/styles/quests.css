@@ -373,8 +373,7 @@
   position: relative;
   overflow: hidden;
   /* Frosted glass effect */
-  backdrop-filter: blur(4px) saturate(1.1);
-  /* Optimized from blur(6px) for mobile performance */
+  backdrop-filter: var(--backdrop-soft);
 
   /* Glossy top highlight */
   &::before {

@@ -191,6 +191,36 @@ jobs:
       - name: Run runtime diagnostics QA gate
         run: npm run qa:runtime
 
+  index-shell-contract-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install Trunk
+        run: cargo install trunk --locked
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run index-shell contract deep QA gate
+        run: npm run qa:index-shell-deep
+
   db-contract-gate:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -220,6 +250,126 @@ jobs:
 
       - name: Run DB contract QA gate
         run: npm run qa:db-contract
+
+  generated-sync-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Enforce generated artifact sync
+        run: npm run qa:generated-sync
+
+  taxonomy-contract-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Enforce taxonomy contract
+        run: npm run qa:taxonomy-contract
+
+  e2e-skip-waiver-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Enforce E2E skip waiver manifest
+        run: npm run qa:e2e-skip-waivers
+
+  phase5-kpi-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run Phase 5 KPI report
+        run: npm run qa:phase5-kpi
+
+      - name: Upload Phase 5 KPI report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase5-kpi-report
+          path: scripts/reports/phase5-kpi-*.md
+          if-no-files-found: warn
+          retention-days: 7
+
+  ipad-performance-budget-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install Trunk
+        run: cargo install trunk --locked
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run iPad performance budget gate
+        run: npm run qa:ipad-performance-budget
+
+      - name: Upload iPad performance budget report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipad-performance-budget-report
+          path: scripts/reports/ipad-performance-budget-*.md
+          if-no-files-found: warn
+          retention-days: 7
 
   docs-budget-gate:
     runs-on: ubuntu-latest
@@ -272,7 +422,13 @@ jobs:
   e2e-quality-gates:
     needs:
       - runtime-diagnostics-gate
+      - index-shell-contract-gate
       - db-contract-gate
+      - generated-sync-gate
+      - taxonomy-contract-gate
+      - e2e-skip-waiver-gate
+      - phase5-kpi-gate
+      - ipad-performance-budget-gate
       - docs-budget-gate
       - docs-links-gate
       - rust-warning-drift-gate

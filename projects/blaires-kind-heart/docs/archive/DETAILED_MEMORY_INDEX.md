@@ -1,12 +1,95 @@
 # Memory Leak Findings Index
 
+- Archive Path: `docs/archive/DETAILED_MEMORY_INDEX.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Memory Leak Findings Index`
+
+## Summary
+| # | Issue | File | Lines | Severity | Type | Status | Fix Time |
+|---|-------|------|-------|----------|------|--------|----------|
+| 1 | Navigation API listener | navigation.rs | 62-95 | HIGH | Permanent | UNFIXED | 30 min |
+| 2 | Click delegation listener | navigation.rs | 155-177 | HIGH | Permanent | UNFIXED | 20 min |
+| 3 | Gesture detector | gestures.rs | 14-48 | HIGH | Permanent+growth | UNFIXED | 10-25 min |
+| 4 | Gardens navigation | gardens.rs | 182-219 | MEDIUM | Conditional | PARTIAL | 20 min |
+| 5 | Speech voiceschanged | speech.rs | 21-53 | MEDIUM | Permanent | UNFIXED | 10-15 min |
+| 6 | Catcher RAF cycle | game_catcher.rs | 589-632 | MEDIUM | Conditional | DEPENDS | 5 min verify |
+| 7 | Companion race | companion.rs | 119-343 | LOW-MEDIUM | Growth | MITIGATED | 10 min |
+| 8 | Worker listener | db_client.rs | 50-75 | LOW | Conditional | UNLIKELY | 10 min |
+| 9 | Onboarding handler | onboarding.rs | 66-82 | NONE | N/A | SAFE | 0 min |
+
+---
+
+### Fix Priority Order
+
+### Immediate (This Sprint)
+1. Issue #3: Gesture retention logic (10 min, prevents 10-20KB growth)
+2. Issue #1: Navigation API listeners (30 min, prevents unbounded growth)
+3. Issue #2: Click delegation (20 min, prevents permanent overhead)
+
+### Near-Term (Next Cycle)
+4. Issue #5: Speech voiceschanged guard (10 min, prevents duplicate listener)
+5. Issue #4: Gardens listener removal (20 min, future-proofs module)
+
+### Long-Term (Maintenance)
+6. Issue #8: Worker listener storage (10 min, defensive coding)
+7. Issue #7: Companion race optimization (10 min, clean code)
+8. Issue #6: Catcher RAF verification (5 min, document pattern)
+
+---
+
+### Expected Outcomes
+
+**Before Fixes**
+- Session growth: 30-50KB per 8 hours
+- Pattern risk: HIGH (permanent listeners)
+- Maintenance burden: HIGH (no cleanup mechanisms)
+
+**After Fixes**
+- Session growth: <5KB per 8 hours
+- Pattern risk: LOW (AbortSignal cleanup standard)
+- Maintenance burden: LOW (cleanup documented)
+
+---
+
+### Files Analyzed
+
+**Total Rust source files reviewed**: 50
+**Lines of code analyzed**: ~15,000
+**Confidence level**: HIGH
+
+**Critical review files**:
+- companion.rs (16KB)
+- gardens.rs (19KB)
+- navigation.rs (10KB)
+- lib.rs (18KB)
+- game_catcher.rs (37KB)
+- gpu_particles.rs (18KB)
+- speech.rs (4KB)
+- gestures.rs (2KB)
+- browser_apis.rs (4KB)
+
+**Extended review files**:
+- dom.rs - Event delegation patterns
+- db_client.rs - Worker lifecycle
+- pwa.rs - Service Worker listeners
+- All 40+ other .rs modules - Pattern verification
+
+---
+
+## Context
 Complete reference of all memory issues identified in Blaire's Kind Heart WASM codebase.
 
 ---
 
-## Critical Issues (Fix First)
+### Critical Issues (Fix First)
 
-### Issue #1: Navigation API Event Listener Leak
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
 **Severity**: HIGH
 **Type**: Permanent Memory Leak
 **Files**: `/rust/navigation.rs`
@@ -152,7 +235,6 @@ tap_times.retain(|&t| t >= cutoff);
 
 ---
 
-### Issue #4: Gardens Module Navigation Listener
 **Severity**: MEDIUM
 **Type**: Permanent Leak (Conditional)
 **Files**: `/rust/gardens.rs`
@@ -185,7 +267,6 @@ pub fn init() {
                     populate_gardens_grid().await;
                 });
             }
-        }
     }) as Box<dyn FnMut(_)>);
 
     let _ = nav_target.add_event_listener_with_callback(
@@ -321,7 +402,7 @@ thread_local! {
 
 ---
 
-## Growth Leak Risks
+### Growth Leak Risks
 
 ### Risk #6: Game Catcher RAF Loop Cycle
 **Severity**: MEDIUM
@@ -374,7 +455,6 @@ pub fn cleanup() {
                 let window = dom::window();
                 let _ = window.cancel_animation_frame(id);
             }
-        }
         *game = None;  // Drop the closure via drop(game)
     });
 }
@@ -511,7 +591,7 @@ cb.forget();
 
 ---
 
-## Properly Handled Patterns (No Issues)
+### Properly Handled Patterns (No Issues)
 
 ### ✅ GPU Particles RAF Loop
 **File**: `/rust/gpu_particles.rs`
@@ -553,82 +633,8 @@ cb.forget();
 
 ---
 
-## Summary Table
-
-| # | Issue | File | Lines | Severity | Type | Status | Fix Time |
-|---|-------|------|-------|----------|------|--------|----------|
-| 1 | Navigation API listener | navigation.rs | 62-95 | HIGH | Permanent | UNFIXED | 30 min |
-| 2 | Click delegation listener | navigation.rs | 155-177 | HIGH | Permanent | UNFIXED | 20 min |
-| 3 | Gesture detector | gestures.rs | 14-48 | HIGH | Permanent+growth | UNFIXED | 10-25 min |
-| 4 | Gardens navigation | gardens.rs | 182-219 | MEDIUM | Conditional | PARTIAL | 20 min |
-| 5 | Speech voiceschanged | speech.rs | 21-53 | MEDIUM | Permanent | UNFIXED | 10-15 min |
-| 6 | Catcher RAF cycle | game_catcher.rs | 589-632 | MEDIUM | Conditional | DEPENDS | 5 min verify |
-| 7 | Companion race | companion.rs | 119-343 | LOW-MEDIUM | Growth | MITIGATED | 10 min |
-| 8 | Worker listener | db_client.rs | 50-75 | LOW | Conditional | UNLIKELY | 10 min |
-| 9 | Onboarding handler | onboarding.rs | 66-82 | NONE | N/A | SAFE | 0 min |
-
----
-
-## Fix Priority Order
-
-### Immediate (This Sprint)
-1. Issue #3: Gesture retention logic (10 min, prevents 10-20KB growth)
-2. Issue #1: Navigation API listeners (30 min, prevents unbounded growth)
-3. Issue #2: Click delegation (20 min, prevents permanent overhead)
-
-### Near-Term (Next Cycle)
-4. Issue #5: Speech voiceschanged guard (10 min, prevents duplicate listener)
-5. Issue #4: Gardens listener removal (20 min, future-proofs module)
-
-### Long-Term (Maintenance)
-6. Issue #8: Worker listener storage (10 min, defensive coding)
-7. Issue #7: Companion race optimization (10 min, clean code)
-8. Issue #6: Catcher RAF verification (5 min, document pattern)
-
----
-
-## Expected Outcomes
-
-**Before Fixes**
-- Session growth: 30-50KB per 8 hours
-- Pattern risk: HIGH (permanent listeners)
-- Maintenance burden: HIGH (no cleanup mechanisms)
-
-**After Fixes**
-- Session growth: <5KB per 8 hours
-- Pattern risk: LOW (AbortSignal cleanup standard)
-- Maintenance burden: LOW (cleanup documented)
-
----
-
-## Files Analyzed
-
-**Total Rust source files reviewed**: 50
-**Lines of code analyzed**: ~15,000
-**Confidence level**: HIGH
-
-**Critical review files**:
-- companion.rs (16KB)
-- gardens.rs (19KB)
-- navigation.rs (10KB)
-- lib.rs (18KB)
-- game_catcher.rs (37KB)
-- gpu_particles.rs (18KB)
-- speech.rs (4KB)
-- gestures.rs (2KB)
-- browser_apis.rs (4KB)
-
-**Extended review files**:
-- dom.rs - Event delegation patterns
-- db_client.rs - Worker lifecycle
-- pwa.rs - Service Worker listeners
-- All 40+ other .rs modules - Pattern verification
-
----
-
-## References
-
 See accompanying documents:
 - **MEMORY_LEAK_ANALYSIS.md** - Detailed technical analysis
 - **MEMORY_LEAK_FIXES.md** - Before/after code and implementation guide
 - **MEMORY_DIAGNOSTIC_CHECKLIST.md** - iPad testing procedures
+

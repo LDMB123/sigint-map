@@ -1,14 +1,22 @@
 # Phase 4 Manual Testing Guide
 
-## Overview
+- Archive Path: `docs/archive/audits/phase4-manual-test-guide.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Phase 4 Manual Testing Guide`
 
+## Summary
+**Date**: 2026-02-11
+
+## Context
 **Date**: 2026-02-11
 **Phase**: Phase 4 Bug Fixes → Phase 5 Manual Testing
 **Environment**: Safari 26.2 on iPad Mini 6 (A15, 4GB RAM, iPadOS 26.2)
 **Build**: Production release with all critical fixes applied
 
-## Test Environment Setup
+## Actions
+_No actions recorded._
 
+## Validation
 ### 1. Start Development Server (Network Access)
 
 ```bash
@@ -24,8 +32,6 @@ trunk serve --address 0.0.0.0 --port 8080
 2. Mac: Safari → Develop → [iPad Name] → http://[IP]:8080
 3. Open Web Inspector → Console, Network, Timelines tabs
 
-### 3. Pre-Test Database Setup (Optional)
-
 If fresh install needed:
 ```sql
 -- Clear all data
@@ -35,10 +41,6 @@ DELETE FROM kind_acts;
 
 -- Re-seed (will happen automatically on boot)
 ```
-
-## Test Suite
-
-### ✅ Test 1: Memory Leak Fix Verification (CRITICAL)
 
 **Bug Fixed**: #8 (Companion memory leak), #12 (View Transitions memory leak)
 
@@ -66,8 +68,6 @@ DELETE FROM kind_acts;
 
 ---
 
-### ✅ Test 2: Race Condition Fix Verification (CRITICAL)
-
 **Bug Fixed**: #9 (set_expression race condition + revert bypass)
 
 **Setup**:
@@ -94,8 +94,6 @@ DELETE FROM kind_acts;
 **Pass Criteria**: No flicker, correct final asset 100% of time
 
 ---
-
-### ✅ Test 3: "Stage 6 of 5" Display Fix (HIGH)
 
 **Bug Fixed**: #4 (Stage index mapping + display clamp)
 
@@ -125,8 +123,6 @@ DELETE FROM kind_acts;
 
 ---
 
-### ✅ Test 4: Navigation API State Sync (HIGH)
-
 **Bug Fixed**: #10 (Navigation API state desync)
 
 **Test Steps**:
@@ -151,8 +147,6 @@ DELETE FROM kind_acts;
 **Pass Criteria**: 10+ back/forward cycles without desync
 
 ---
-
-### ✅ Test 5: Database Type Safety (HIGH)
 
 **Bug Fixed**: #11 (Boolean confusion), #13 (Integer mismatch), #14 (NULL safety)
 
@@ -183,8 +177,6 @@ DELETE FROM kind_acts;
 
 ---
 
-### ✅ Test 6: OPFS Safari Skip (CRITICAL)
-
 **Bug Fixed**: #5 (OPFS detection broken)
 
 **Test Steps**:
@@ -206,8 +198,6 @@ DELETE FROM kind_acts;
 **Pass Criteria**: Fast load (<5s), kvvfs backend used, no OPFS errors
 
 ---
-
-### ✅ Test 7: Service Worker Precache (CRITICAL)
 
 **Bug Fixed**: #2 (Missing CSS in precache)
 
@@ -233,8 +223,6 @@ DELETE FROM kind_acts;
 **Pass Criteria**: All assets load offline, UI fully functional
 
 ---
-
-### ✅ Test 8: Asset Copy to Build (CRITICAL)
 
 **Bug Fixed**: #1 (Assets not copied to build)
 
@@ -263,8 +251,6 @@ DELETE FROM kind_acts;
 
 ---
 
-### ✅ Test 9: Database Export Interval (CRITICAL)
-
 **Bug Fixed**: #6 (Export interval too long → data loss risk)
 
 **Test Steps**:
@@ -286,8 +272,6 @@ DELETE FROM kind_acts;
 **Pass Criteria**: Data persists with <5s export interval
 
 ---
-
-### ✅ Test 10: Gardens Seed Function (CRITICAL)
 
 **Bug Fixed**: #3 (Gardens seed empty)
 
@@ -312,10 +296,6 @@ DELETE FROM kind_acts;
 
 ---
 
-## Regression Testing
-
-### Run Full Week 3 Test Plan
-
 Execute all 14 test cases from `docs/testing/week3-manual-test-plan.md`:
 
 1. ✅ Companion renders default skin on boot
@@ -337,7 +317,7 @@ Execute all 14 test cases from `docs/testing/week3-manual-test-plan.md`:
 
 ---
 
-## Performance Metrics
+### Performance Metrics
 
 ### Key Performance Indicators
 
@@ -361,9 +341,7 @@ Track these metrics during testing:
 
 ---
 
-## Bug Tracking
-
-### If Test Fails
+### Bug Tracking
 
 For each failure:
 
@@ -377,7 +355,7 @@ For each failure:
 ### Bug Report Template
 
 ```markdown
-## Bug #XX: [Short Description]
+### Bug #XX: [Short Description]
 
 **Severity**: CRITICAL/HIGH/MEDIUM/LOW
 **Test**: Test #X - [Test Name]
@@ -403,7 +381,7 @@ For each failure:
 
 ---
 
-## Success Criteria
+### Success Criteria
 
 ### Phase 5 Complete When:
 
@@ -421,8 +399,6 @@ For each failure:
 - ✅ No known CRITICAL or HIGH bugs remaining
 
 ---
-
-## Testing Checklist
 
 Print this and check off during testing:
 
@@ -445,3 +421,7 @@ Print this and check off during testing:
 
 **Phase 5 Manual Testing Guide - Ready for Execution**
 **Estimated Time: 2-3 hours**
+
+## References
+_No references recorded._
+

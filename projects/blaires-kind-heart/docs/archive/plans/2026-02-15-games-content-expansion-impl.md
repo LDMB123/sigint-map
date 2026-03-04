@@ -1,5 +1,13 @@
 # Games Content Expansion + Polish Implementation Plan
 
+- Archive Path: `docs/archive/plans/2026-02-15-games-content-expansion-impl.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Games Content Expansion + Polish Implementation Plan`
+
+## Summary
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+## Context
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Add theme pickers and new content variants to all 5 games for daily replayability, plus execute the existing 17-task debug-and-polish plan.
@@ -10,7 +18,7 @@
 
 ---
 
-## Phase 1: Bug Fixes (from debug-and-polish-impl.md)
+### Phase 1: Bug Fixes (from debug-and-polish-impl.md)
 
 > Execute Tasks 1-6 from `docs/plans/2026-02-15-debug-and-polish-impl.md` exactly as written. Those tasks cover:
 > - Task 1: Add 12 missing CSS `<link data-trunk>` tags in `index.html`
@@ -25,7 +33,7 @@
 
 ---
 
-## Task 7: Add CatcherTheme Data Structure
+### Task 7: Add CatcherTheme Data Structure
 
 **Files:**
 - Modify: `rust/game_catcher.rs:17-32`
@@ -60,7 +68,6 @@ impl CatcherTheme {
             Self::SweetTreats => &THEME_SWEETS,
             Self::StarryNight => &THEME_STARRY,
         }
-    }
     fn name(&self) -> &str { self.data().name }
     fn picker_emoji(&self) -> &str { self.data().picker_emoji }
     fn attr(&self) -> &str {
@@ -70,8 +77,6 @@ impl CatcherTheme {
             Self::SweetTreats => "sweets",
             Self::StarryNight => "starry",
         }
-    }
-}
 
 const THEME_CLASSIC: CatcherThemeData = CatcherThemeData {
     name: "Classic",
@@ -140,7 +145,7 @@ Each theme defines catch items, hazard, background gradient, and picker emoji."
 
 ---
 
-## Task 8: Add Catcher Theme Picker UI
+### Task 8: Add Catcher Theme Picker UI
 
 **Files:**
 - Modify: `rust/game_catcher.rs:147` (`start()` function)
@@ -226,7 +231,7 @@ launches the game with that theme's content."
 
 ---
 
-## Task 9: Wire Catcher Theme Into Gameplay
+### Task 9: Wire Catcher Theme Into Gameplay
 
 **Files:**
 - Modify: `rust/game_catcher.rs`
@@ -280,7 +285,7 @@ Power-ups remain universal. Play Again returns to theme picker."
 
 ---
 
-## Task 10: Add 3 New Memory Match Card Themes
+### Task 10: Add 3 New Memory Match Card Themes
 
 **Files:**
 - Modify: `rust/game_memory.rs:72-123`
@@ -359,7 +364,7 @@ Total themes: 6 (was 3)."
 
 ---
 
-## Task 11: Update Memory Theme Picker for 6 Themes
+### Task 11: Update Memory Theme Picker for 6 Themes
 
 **Files:**
 - Modify: `rust/game_memory.rs:310-344` (`show_theme_select()`)
@@ -430,7 +435,7 @@ for --bugs (green), --food (yellow/gold), --music (pink/coral)."
 
 ---
 
-## Task 12: Add 4 New Hug Machine Stages
+### Task 12: Add 4 New Hug Machine Stages
 
 **Files:**
 - Modify: `rust/game_hug.rs:20-137`
@@ -522,7 +527,7 @@ emojis, bubble text, background gradient, and completion sounds."
 
 ---
 
-## Task 13: Add Hug Machine Mood Picker
+### Task 13: Add Hug Machine Mood Picker
 
 **Files:**
 - Modify: `rust/game_hug.rs`
@@ -642,7 +647,7 @@ from all 15 stages."
 
 ---
 
-## Task 14: Add New Paint Stamps, Templates, and Patterns
+### Task 14: Add New Paint Stamps, Templates, and Patterns
 
 **Files:**
 - Modify: `rust/game_paint.rs:41-79,277-284`
@@ -709,8 +714,6 @@ Find the pattern rendering code and add `"clouds"`, `"polkadots"`, `"zigzag"` ar
             ctx.arc(col as f64 + 55.0, row as f64 + 25.0, 15.0, 0.0, std::f64::consts::TAU).ok();
             ctx.fill();
         }
-    }
-}
 "polkadots" => {
     for row in (0..h as i32).step_by(40) {
         for col in (0..w as i32).step_by(40) {
@@ -718,8 +721,6 @@ Find the pattern rendering code and add `"clouds"`, `"polkadots"`, `"zigzag"` ar
             ctx.arc(col as f64 + 20.0, row as f64 + 20.0, 8.0, 0.0, std::f64::consts::TAU).ok();
             ctx.fill();
         }
-    }
-}
 "zigzag" => {
     ctx.begin_path();
     for row in (0..h as i32).step_by(30) {
@@ -728,7 +729,6 @@ Find the pattern rendering code and add `"clouds"`, `"polkadots"`, `"zigzag"` ar
             if col == 0 { ctx.move_to(col as f64, y); }
             else { ctx.line_to(col as f64, y); }
         }
-    }
     ctx.stroke();
 }
 ```
@@ -751,7 +751,7 @@ New patterns: clouds, polka dots, zigzag (total 9)."
 
 ---
 
-## Task 15: Add Paint Category Picker
+### Task 15: Add Paint Category Picker
 
 **Files:**
 - Modify: `rust/game_paint.rs`
@@ -823,7 +823,7 @@ related stamps and templates."
 
 ---
 
-## Task 16: Add Unicorn Biome Data Structure
+### Task 16: Add Unicorn Biome Data Structure
 
 **Files:**
 - Modify: `rust/game_unicorn_friends.rs:1-22`
@@ -926,7 +926,7 @@ Each biome has 8 unique friends, background gradient, and ambient frequency."
 
 ---
 
-## Task 17: Add Unicorn Biome Picker
+### Task 17: Add Unicorn Biome Picker
 
 **Files:**
 - Modify: `rust/game_unicorn.rs`
@@ -992,7 +992,7 @@ background gradient, and ambient audio frequency."
 
 ---
 
-## Task 18: Update Hub Cards with Theme Counts
+### Task 18: Update Hub Cards with Theme Counts
 
 **Files:**
 - Modify: `rust/games.rs:13-19`
@@ -1025,7 +1025,7 @@ git commit -m "feat(hub): update game card descriptions with theme/mood/world co
 
 ---
 
-## Task 19: Execute Remaining Polish Tasks (7-17)
+### Task 19: Execute Remaining Polish Tasks (7-17)
 
 > Execute Tasks 7-17 from `docs/plans/2026-02-15-debug-and-polish-impl.md` exactly as written. Those tasks cover:
 > - Task 7: Sound effect — reflection prompt
@@ -1044,8 +1044,10 @@ git commit -m "feat(hub): update game card descriptions with theme/mood/world co
 
 ---
 
-## Task 20: Final Integration Verification
+## Actions
+_No actions recorded._
 
+## Validation
 **Step 1: Full release build**
 
 Run: `trunk build --release 2>&1 | tail -10`
@@ -1094,3 +1096,7 @@ Added theme pickers and new content to all 5 games:
 
 Plus 17 debug/polish fixes from the polish plan."
 ```
+
+## References
+_No references recorded._
+

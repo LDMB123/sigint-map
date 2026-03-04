@@ -1,7 +1,13 @@
 # Blaire's Kind Heart - Icon Design Reference
 
-## Visual Design Overview
+- Archive Path: `docs/archive/ICON_DESIGN_REFERENCE.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Blaire's Kind Heart - Icon Design Reference`
 
+## Summary
+```
+
+## Context
 ```
 ┌─────────────────────────────────────────────────┐
 │                                                 │
@@ -22,9 +28,8 @@
 
 ---
 
-## Component Breakdown
+### Component Breakdown
 
-### 1. Background
 ```
 Gradient (top to bottom):
 ┌─────────────────────────────────────┐
@@ -152,7 +157,7 @@ Style: Cute, welcoming arc
 
 ---
 
-## Color Palette
+### Color Palette
 
 ### Primary Colors
 ```
@@ -189,7 +194,7 @@ Outlines (darker shade of fill):
 
 ---
 
-## Sizing & Scaling
+### Sizing & Scaling
 
 ### Icon Sizes
 ```
@@ -240,7 +245,7 @@ Examples for 192×192:
 
 ---
 
-## Design Principles
+### Design Principles
 
 ### 1. Kawaii Style Elements
 - Large eyes with highlights (cute)
@@ -271,7 +276,7 @@ Examples for 192×192:
 
 ---
 
-## Maskable Icon Considerations
+### Maskable Icon Considerations
 
 For Android 12+ support, maskable icons follow these rules:
 
@@ -300,7 +305,7 @@ Unicorn centered in this area.
 
 ---
 
-## File Format & Quality
+### File Format & Quality
 
 ### PNG Specifications
 ```
@@ -326,7 +331,7 @@ Transparency:     Support for smooth edges
 
 ---
 
-## Comparison: Different Sizes
+### Comparison: Different Sizes
 
 ### Visual Appearance at Different Scales
 ```
@@ -357,8 +362,10 @@ Transparency:     Support for smooth edges
 
 ---
 
-## Design Validation Checklist
+## Actions
+_No actions recorded._
 
+## Validation
 Before finalizing icons, verify:
 
 - [ ] Unicorn head is clearly visible
@@ -377,8 +384,7 @@ Before finalizing icons, verify:
 
 ---
 
-## Example References
-
+## References
 ### Similar Successful App Icons
 - **Toca Boca Apps**: Colorful, rounded, child-friendly
 - **Duck Duck Go**: Simple, recognizable character
@@ -394,7 +400,7 @@ Before finalizing icons, verify:
 
 ---
 
-## Final Notes
+### Final Notes
 
 This icon is designed to be:
 - ✅ Cute and appealing to a 4-year-old
@@ -414,3 +420,4 @@ The design emphasizes the kindness theme through the prominent pink heart, while
 **Target User:** 4-year-old Blaire
 **Devices:** iPad Mini 6 (primary), iOS/Android PWAs
 **Status:** Reference Complete, Ready for Generation
+

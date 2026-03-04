@@ -1,5 +1,13 @@
 # Wave 7: Companion Care & Personality — Implementation Plan
 
+- Archive Path: `docs/archive/plans/2026-02-19-companion-care.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Wave 7: Companion Care & Personality — Implementation Plan`
+
+## Summary
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+## Context
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Transform Sparkle into a living companion with mood, feeding, petting, play animations, and contextual speech — driven by kindness activity, zero negative states.
@@ -113,8 +121,6 @@ pub fn munch() { with_audio("chomp", |preset| { for i in 0..3 { play_layered_not
 **Commit:** `feat: add 6 companion care sounds (chomp, purr, boing, shimmer, twinkle, munch)`
 
 ---
-
-### Task 3: companion_speech.rs — contextual speech bubbles
 
 **Goal:** Create module with all 20 contextual messages and trigger logic with rate-limiting.
 
@@ -339,7 +345,6 @@ pub fn mood_to_expression(mood: &str) -> &'static str {
         "happy" => "happy",
         _ => "encourage", // "sleepy" default
     }
-}
 ```
 
 In `companion.rs` `init()` (line 9), change the initial `spawn_skin_render(&PENDING_RENDER_ABORT, "happy")` to use mood:
@@ -376,8 +381,10 @@ Do the same for `celebrate_first_act_today()`.
 
 ---
 
-### Task 6: SW cache bump + final verification
+## Actions
+_No actions recorded._
 
+## Validation
 **Goal:** Bump SW cache version to v10 for Wave 7. Verify complete build.
 
 **Files:**
@@ -407,3 +414,7 @@ No new assets to add to `sw-assets.js` — this wave reuses existing companion W
 7. `grep -c 'pub fn chomp\|pub fn purr\|pub fn boing\|pub fn shimmer\|pub fn twinkle\|pub fn munch' rust/synth_audio.rs` — returns 6
 
 **Commit:** `feat: bump SW cache to v10 for Wave 7 companion care`
+
+## References
+_No references recorded._
+

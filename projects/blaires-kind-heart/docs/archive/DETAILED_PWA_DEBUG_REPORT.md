@@ -1,11 +1,15 @@
 # Blaire's Kind Heart PWA - Debugging Report
 
-## Executive Summary
+- Archive Path: `docs/archive/DETAILED_PWA_DEBUG_REPORT.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Blaire's Kind Heart PWA - Debugging Report`
+
+## Summary
 Widespread Service Worker and asset caching bugs preventing offline functionality. 78 WebP companion and garden assets are referenced in precache manifest but **never copied to dist/**, causing cache installation to fail and all dynamic asset requests to fail offline.
 
 ---
 
-## Bug #1: CRITICAL - Missing Companion and Garden Assets in Build
+### Bug #1: CRITICAL - Missing Companion and Garden Assets in Build
 
 **Severity:** CRITICAL (breaks offline completely)
 
@@ -20,19 +24,13 @@ Widespread Service Worker and asset caching bugs preventing offline functionalit
 ```bash
 cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart
 
-# Check source assets exist
 ls assets/companions/ | wc -l
-# Output: 18 WebP files present
 
 ls assets/gardens/ | wc -l
-# Output: 60 WebP files present
 
-# Check dist build
 ls dist/assets/companions/ 2>&1
-# Output: cannot access (directory doesn't exist)
 
 ls dist/assets/gardens/ 2>&1
-# Output: cannot access (directory doesn't exist)
 ```
 
 **Files Affected:**
@@ -65,7 +63,7 @@ Trunk is not configured to copy the `assets/companions/` and `assets/gardens/` d
 
 ---
 
-## Bug #2: Service Worker Cache Installation Incomplete
+### Bug #2: Service Worker Cache Installation Incomplete
 
 **Severity:** CRITICAL
 
@@ -110,7 +108,7 @@ Ensure all files in PRECACHE_ASSETS exist in dist/ before Service Worker install
 
 ---
 
-## Bug #3: Service Worker Update Detection Works, But Update Fails
+### Bug #3: Service Worker Update Detection Works, But Update Fails
 
 **Severity:** MEDIUM
 
@@ -129,7 +127,6 @@ match JsFuture::from(promise).await {
         if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
             detect_sw_update(&reg);
         }
-    }
     Err(e) => web_sys::console::warn_1(&format!("[pwa] SW failed: {:?}", e).into()),
 }
 ```
@@ -158,7 +155,7 @@ navigator.serviceWorker.getRegistration().then(reg => {
 
 ---
 
-## Bug #4: Cache-First Strategy Assumes All Assets Precached
+### Bug #4: Cache-First Strategy Assumes All Assets Precached
 
 **Severity:** HIGH
 
@@ -214,8 +211,133 @@ event.respondWith(
 
 ---
 
-## Bug #5: Manifest.webmanifest References Correct Icons But Missing Maskable Purpose
+### CRITICAL - Prevents Offline
+1. **Add build rule to copy assets/companions/ and assets/gardens/ to dist/**
+   - Method 1: Update `Trunk.toml` with asset copy directive
+   - Method 2: Move files to `public/assets/` so Trunk copies automatically
+   - Method 3: Add shell script to build process
 
+2. **Add missing CSS to PRECACHE_ASSETS**
+   - Add `/scroll-effects.css`
+   - Add `/particle-effects.css`
+   - Add `/gardens.css` (if not already present)
+
+### HIGH - Improves Offline Experience
+3. **Create placeholder.webp image**
+   - 1x1 transparent WebP for fallback
+   - Precache it
+   - Return from SW fetch handler for missing images
+
+### MEDIUM - Polish
+4. **Implement stale-while-revalidate** (optional)
+   - Background fetch + serve stale immediately
+   - Better user experience for frequent visitors
+
+5. **Add error boundaries**
+   - Catch broken image loads
+   - Show placeholder with message
+
+---
+
+### Files to Modify
+
+1. **`Trunk.toml`** - Add asset copy rules
+2. **`public/sw-assets.js`** - Add missing CSS files
+3. **`public/sw.js`** - Add image fallback handler
+4. **Build script** - Ensure assets/ copied to dist/
+5. **`rust/companion_skins.rs`** - Handle missing images gracefully
+
+---
+
+## Context
+_Context not recorded in source archive document._
+
+## Actions
+**Severity:** MEDIUM
+
+**Issue:**
+- Service Worker uses pure cache-first (always serve from cache)
+- No background revalidation of stale assets
+- If App version updates but user has old cache, they see stale images
+- No `stale-while-revalidate` pattern (fetch in background, serve stale immediately)
+
+**Current Pattern (sw.js:60-72):**
+```javascript
+caches.match(event.request).then((cached) => {
+  if (cached) return cached;  // Serve immediately, never revalidate
+  return fetch(event.request);  // Only fetch if not cached
+})
+```
+
+**Better Pattern Would Be:**
+```javascript
+// Return cached immediately, but fetch in background
+const cached = await caches.match(request);
+if (cached) {
+  // Fetch in background without awaiting
+  fetch(request).then(response => {
+    if (response.ok) caches.open(CACHE_NAME).then(c => c.put(request, response.clone()));
+  });
+  return cached;  // Serve stale while background fetch happens
+}
+return fetch(request);
+```
+
+**Impact:**
+- Users may see old companion images for days after update
+- No feedback that fresher version available
+- Works offline but serves stale content
+
+**Fix Required:**
+Optional: implement stale-while-revalidate for dynamic assets. Not critical if precache works properly.
+
+---
+
+## Validation
+- [ ] Run `trunk build --release`
+- [ ] Verify `dist/assets/companions/` exists with 18 WebP files
+- [ ] Verify `dist/assets/gardens/` exists with 60 WebP files
+- [ ] Verify `dist/sw-assets.js` matches `public/sw-assets.js`
+- [ ] Verify all CSS files in HTML are in PRECACHE_ASSETS
+
+### Phase 2: Service Worker Registration
+- [ ] Open app in Safari 26.2
+- [ ] Open DevTools → Application → Service Workers
+- [ ] Verify `sw.js` shows "installed"
+- [ ] Check console for: `[pwa] SW registered`
+- [ ] Verify no errors in console about file loading
+
+### Phase 3: Cache Storage
+- [ ] DevTools → Application → Cache Storage
+- [ ] Click `kindheart-v3` cache
+- [ ] Scroll through list - should see 168 items:
+  - [ ] 18 companion WebP files
+  - [ ] 60 garden WebP files
+  - [ ] 7 background PNGs
+  - [ ] 22 sticker PNGs
+  - [ ] All CSS files
+  - [ ] All JS/WASM files
+
+### Phase 4: Offline Behavior
+- [ ] DevTools → Network → toggle "Offline"
+- [ ] Reload page
+- [ ] Verify home screen loads (index.html cached)
+- [ ] Click "My Gardens" → should show garden images (not broken)
+- [ ] Companion should render correctly
+- [ ] All stickers should load
+- [ ] All background images should display
+
+### Phase 5: Update Detection
+- [ ] Make a dummy code change
+- [ ] Run `trunk build --release` again
+- [ ] On iPad: reload in Safari
+- [ ] Should show sparkle toast: "Update available! Tap to refresh"
+- [ ] Tap toast → page reloads with new version
+- [ ] Verify new assets load
+
+---
+
+## References
 **Severity:** LOW (iOS only)
 
 **Issue:**
@@ -245,7 +367,7 @@ Minor: verify maskable icons have proper safe zone for adaptive icon rendering.
 
 ---
 
-## Bug #6: CSS Files Mismatch in HTML vs Actually Available
+### Bug #6: CSS Files Mismatch in HTML vs Actually Available
 
 **Severity:** LOW
 
@@ -290,8 +412,6 @@ Add missing CSS files to `public/sw-assets.js` PRECACHE_ASSETS list.
 
 ---
 
-## Bug #7: Offline.html Fallback Works But Only for Navigation
-
 **Severity:** MEDIUM
 
 **Issue:**
@@ -322,136 +442,6 @@ Create placeholder images and add fallback in SW for all request types.
 
 ---
 
-## Bug #8: No Stale-While-Revalidate Implementation
-
-**Severity:** MEDIUM
-
-**Issue:**
-- Service Worker uses pure cache-first (always serve from cache)
-- No background revalidation of stale assets
-- If App version updates but user has old cache, they see stale images
-- No `stale-while-revalidate` pattern (fetch in background, serve stale immediately)
-
-**Current Pattern (sw.js:60-72):**
-```javascript
-caches.match(event.request).then((cached) => {
-  if (cached) return cached;  // Serve immediately, never revalidate
-  return fetch(event.request);  // Only fetch if not cached
-})
-```
-
-**Better Pattern Would Be:**
-```javascript
-// Return cached immediately, but fetch in background
-const cached = await caches.match(request);
-if (cached) {
-  // Fetch in background without awaiting
-  fetch(request).then(response => {
-    if (response.ok) caches.open(CACHE_NAME).then(c => c.put(request, response.clone()));
-  });
-  return cached;  // Serve stale while background fetch happens
-}
-return fetch(request);
-```
-
-**Impact:**
-- Users may see old companion images for days after update
-- No feedback that fresher version available
-- Works offline but serves stale content
-
-**Fix Required:**
-Optional: implement stale-while-revalidate for dynamic assets. Not critical if precache works properly.
-
----
-
-## Testing Checklist for Safari 26.2 iPad
-
-### Phase 1: Build Verification
-- [ ] Run `trunk build --release`
-- [ ] Verify `dist/assets/companions/` exists with 18 WebP files
-- [ ] Verify `dist/assets/gardens/` exists with 60 WebP files
-- [ ] Verify `dist/sw-assets.js` matches `public/sw-assets.js`
-- [ ] Verify all CSS files in HTML are in PRECACHE_ASSETS
-
-### Phase 2: Service Worker Registration
-- [ ] Open app in Safari 26.2
-- [ ] Open DevTools → Application → Service Workers
-- [ ] Verify `sw.js` shows "installed"
-- [ ] Check console for: `[pwa] SW registered`
-- [ ] Verify no errors in console about file loading
-
-### Phase 3: Cache Storage
-- [ ] DevTools → Application → Cache Storage
-- [ ] Click `kindheart-v3` cache
-- [ ] Scroll through list - should see 168 items:
-  - [ ] 18 companion WebP files
-  - [ ] 60 garden WebP files
-  - [ ] 7 background PNGs
-  - [ ] 22 sticker PNGs
-  - [ ] All CSS files
-  - [ ] All JS/WASM files
-
-### Phase 4: Offline Behavior
-- [ ] DevTools → Network → toggle "Offline"
-- [ ] Reload page
-- [ ] Verify home screen loads (index.html cached)
-- [ ] Click "My Gardens" → should show garden images (not broken)
-- [ ] Companion should render correctly
-- [ ] All stickers should load
-- [ ] All background images should display
-
-### Phase 5: Update Detection
-- [ ] Make a dummy code change
-- [ ] Run `trunk build --release` again
-- [ ] On iPad: reload in Safari
-- [ ] Should show sparkle toast: "Update available! Tap to refresh"
-- [ ] Tap toast → page reloads with new version
-- [ ] Verify new assets load
-
----
-
-## Summary of Fixes Required
-
-### CRITICAL - Prevents Offline
-1. **Add build rule to copy assets/companions/ and assets/gardens/ to dist/**
-   - Method 1: Update `Trunk.toml` with asset copy directive
-   - Method 2: Move files to `public/assets/` so Trunk copies automatically
-   - Method 3: Add shell script to build process
-
-2. **Add missing CSS to PRECACHE_ASSETS**
-   - Add `/scroll-effects.css`
-   - Add `/particle-effects.css`
-   - Add `/gardens.css` (if not already present)
-
-### HIGH - Improves Offline Experience
-3. **Create placeholder.webp image**
-   - 1x1 transparent WebP for fallback
-   - Precache it
-   - Return from SW fetch handler for missing images
-
-### MEDIUM - Polish
-4. **Implement stale-while-revalidate** (optional)
-   - Background fetch + serve stale immediately
-   - Better user experience for frequent visitors
-
-5. **Add error boundaries**
-   - Catch broken image loads
-   - Show placeholder with message
-
----
-
-## Files to Modify
-
-1. **`Trunk.toml`** - Add asset copy rules
-2. **`public/sw-assets.js`** - Add missing CSS files
-3. **`public/sw.js`** - Add image fallback handler
-4. **Build script** - Ensure assets/ copied to dist/
-5. **`rust/companion_skins.rs`** - Handle missing images gracefully
-
----
-
-## DevTools Navigation (Safari 26.2 iPad)
-
 ```
 Safari Menu → Develop → [Your iPad Name] → [App] → Inspector
 
@@ -460,3 +450,4 @@ Application Tab:
 ├── Service Workers → Check registration state
 └── Cache Storage → Check kindheart-v3 cache contents
 ```
+

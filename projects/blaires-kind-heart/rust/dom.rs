@@ -34,31 +34,8 @@ pub fn query_in(parent: &Element, selector: &str) -> Option<Element> {
         .ok()
         .flatten()
 }
-pub fn query_all(selector: &str) -> Vec<Element> {
-    document()
-        .query_selector_all(wasm_bindgen::intern(selector))
-        .map(|list| {
-            let mut out = Vec::with_capacity(list.length() as usize);
-            for idx in 0..list.length() {
-                if let Some(node) = list.get(idx) {
-                    if let Ok(el) = node.dyn_into::<Element>() {
-                        out.push(el);
-                    }
-                }
-            }
-            out
-        })
-        .unwrap_or_default()
-}
-/// Count matching elements without allocating a Vec (just returns NodeList.length)
-pub fn query_count(selector: &str) -> u32 {
-    document()
-        .query_selector_all(wasm_bindgen::intern(selector))
-        .map(|list| list.length())
-        .unwrap_or(0)
-}
-/// Iterate matching elements without allocating a Vec (iterates NodeList in-place)
-pub fn for_each_match(selector: &str, mut f: impl FnMut(Element)) {
+
+fn with_query_matches(selector: &str, mut f: impl FnMut(Element)) {
     if let Ok(list) = document().query_selector_all(wasm_bindgen::intern(selector)) {
         for idx in 0..list.length() {
             if let Some(node) = list.get(idx) {
@@ -68,6 +45,23 @@ pub fn for_each_match(selector: &str, mut f: impl FnMut(Element)) {
             }
         }
     }
+}
+
+pub fn query_all(selector: &str) -> Vec<Element> {
+    let mut out = Vec::new();
+    with_query_matches(selector, |el| out.push(el));
+    out
+}
+/// Count matching elements without allocating a Vec (just returns NodeList.length)
+pub fn query_count(selector: &str) -> u32 {
+    document()
+        .query_selector_all(wasm_bindgen::intern(selector))
+        .map(|list| list.length())
+        .unwrap_or(0)
+}
+/// Iterate matching elements without allocating a Vec (iterates NodeList in-place)
+pub fn for_each_match(selector: &str, f: impl FnMut(Element)) {
+    with_query_matches(selector, f);
 }
 pub fn set_text(selector: &str, text: &str) {
     if let Some(el) = query(selector) {
@@ -112,6 +106,7 @@ pub fn toast(message: &str) {
 use std::cell::RefCell;
 thread_local! {
     static TT_POLICY: RefCell<Option<crate::bindings::TrustedTypePolicy>> = const { RefCell::new(None) };
+    static TEXT_BUF: RefCell<String> = const { RefCell::new(String::new()) };
 }
 pub fn init_trusted_types() {
     // Safety: Both "kindheart" and "default" policies are passthrough identity
@@ -156,6 +151,22 @@ pub fn safe_set_inner_html(el: &Element, html: &str) {
     });
     if !used_tt {
         el.set_inner_html(html);
+    }
+
+    // Decorative sticker images are injected as inline text embellishments.
+    // Ensure they are consistently excluded from accessible name computation.
+    if let Ok(node_list) = el.query_selector_all("img.inline-emoji") {
+        for idx in 0..node_list.length() {
+            if let Some(node) = node_list.get(idx) {
+                if let Ok(img) = node.dyn_into::<Element>() {
+                    if !img.has_attribute("alt") {
+                        let _ = img.set_attribute("alt", "");
+                    }
+                    let _ = img.set_attribute("aria-hidden", "true");
+                    let _ = img.set_attribute("role", "presentation");
+                }
+            }
+        }
     }
 }
 pub fn trusted_script_url(url: &str) -> Option<crate::bindings::TrustedScriptURL> {
@@ -205,21 +216,27 @@ pub fn on(target: &EventTarget, event: &str, handler: impl FnMut(Event) + 'stati
     let _ = target.add_event_listener_with_callback(event, cb.as_ref().unchecked_ref());
     cb.forget();
 }
+const USER_UNLOCK_EVENTS: [&str; 4] = ["pointerdown", "touchstart", "mousedown", "keydown"];
+pub fn bind_unlock_gesture_listeners(handler: impl FnMut() + 'static) {
+    let document = document();
+    let target: &EventTarget = document.as_ref();
+    let handler = std::rc::Rc::new(RefCell::new(handler));
+    for event_name in USER_UNLOCK_EVENTS {
+        let handler_ref = handler.clone();
+        let cb = Closure::<dyn FnMut(Event)>::new(move |_: Event| {
+            (handler_ref.borrow_mut())();
+        });
+        let _ = target.add_event_listener_with_callback(event_name, cb.as_ref().unchecked_ref());
+        cb.forget();
+    }
+}
 pub fn on_with_signal(
     target: &EventTarget,
     event: &str,
     signal: &web_sys::AbortSignal,
     handler: impl FnMut(Event) + 'static,
 ) {
-    let cb = Closure::<dyn FnMut(Event)>::new(handler);
-    let opts = web_sys::AddEventListenerOptions::new();
-    opts.set_signal(signal);
-    let _ = target.add_event_listener_with_callback_and_add_event_listener_options(
-        event,
-        cb.as_ref().unchecked_ref(),
-        &opts,
-    );
-    cb.forget();
+    add_listener_with_signal(target, event, signal, Closure::<dyn FnMut(Event)>::new(handler));
 }
 pub fn on_pointer_with_signal(
     target: &EventTarget,
@@ -227,7 +244,22 @@ pub fn on_pointer_with_signal(
     signal: &web_sys::AbortSignal,
     handler: impl FnMut(web_sys::PointerEvent) + 'static,
 ) {
-    let cb = Closure::<dyn FnMut(web_sys::PointerEvent)>::new(handler);
+    add_listener_with_signal(
+        target,
+        event,
+        signal,
+        Closure::<dyn FnMut(web_sys::PointerEvent)>::new(handler),
+    );
+}
+
+fn add_listener_with_signal<E>(
+    target: &EventTarget,
+    event: &str,
+    signal: &web_sys::AbortSignal,
+    cb: Closure<dyn FnMut(E)>,
+) where
+    E: wasm_bindgen::convert::FromWasmAbi + 'static,
+{
     let opts = web_sys::AddEventListenerOptions::new();
     opts.set_signal(signal);
     let _ = target.add_event_listener_with_callback_and_add_event_listener_options(
@@ -253,8 +285,7 @@ pub fn delayed_remove(el: Element, ms: i32) {
     });
 }
 pub fn fmt_text(selector: &str, f: impl FnOnce(&mut String)) {
-    thread_local! { static BUF: RefCell<String> = const { RefCell::new(String::new()) }; }
-    BUF.with(|b| {
+    TEXT_BUF.with(|b| {
         let mut buf = b.borrow_mut();
         buf.clear();
         f(&mut buf);
@@ -262,8 +293,7 @@ pub fn fmt_text(selector: &str, f: impl FnOnce(&mut String)) {
     });
 }
 pub fn with_buf<R>(f: impl FnOnce(&mut String) -> R) -> R {
-    thread_local! { static BUF: RefCell<String> = const { RefCell::new(String::new()) }; }
-    BUF.with(|b| {
+    TEXT_BUF.with(|b| {
         let mut buf = b.borrow_mut();
         buf.clear();
         f(&mut buf)
@@ -295,11 +325,6 @@ pub fn dispatch_custom_event(event_name: &str, detail: JsValue) {
         let _ = document().dispatch_event(&event);
     }
 }
-pub fn dispatch_kv_event(event_name: &str, key: &str, value: &str) {
-    let detail = js_sys::Object::new();
-    let _ = js_sys::Reflect::set(&detail, &key.into(), &value.into());
-    dispatch_custom_event(event_name, detail.into());
-}
 pub fn delayed_set_attr(el: Element, attr: &str, value: &str, ms: i32) {
     let attr = attr.to_string();
     let value = value.to_string();
@@ -309,6 +334,21 @@ pub fn delayed_set_attr(el: Element, attr: &str, value: &str, ms: i32) {
 }
 pub fn set_attr(el: &Element, key: &str, value: &str) {
     let _ = el.set_attribute(intern(key), intern(value));
+}
+fn set_centered_position_style(el: &Element, position: &str, x: f64, y: f64, z_index: i32) {
+    with_buf(|buf| {
+        let _ = write!(
+            buf,
+            "position: {position}; left: {x}px; top: {y}px; transform: translate(-50%, -50%); z-index: {z_index};"
+        );
+        set_attr(el, "style", buf);
+    });
+}
+pub fn set_centered_fixed_style(el: &Element, x: f64, y: f64, z_index: i32) {
+    set_centered_position_style(el, "fixed", x, y, z_index);
+}
+pub fn set_centered_absolute_style(el: &Element, x: f64, y: f64, z_index: i32) {
+    set_centered_position_style(el, "absolute", x, y, z_index);
 }
 pub fn remove_attr(el: &Element, key: &str) {
     let _ = el.remove_attribute(intern(key));

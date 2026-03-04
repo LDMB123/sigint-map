@@ -23,7 +23,9 @@ const CRITICAL_ASSETS = [
   '/offline.html',
   '/manifest.webmanifest',
   '/wasm-init.js',
+  '/panel-registry.js',
   '/db-worker.js',
+  '/db-contract.js',
 
   // App WASM + JS glue (Trunk output):
   '/blaires-kind-heart.js',

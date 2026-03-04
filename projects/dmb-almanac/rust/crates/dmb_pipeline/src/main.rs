@@ -222,7 +222,7 @@ static PIPELINE_WARN_ONCE: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::ne
 
 const SETLIST_ENTRIES_FILE: &str = "setlist-entries.json";
 const SETLIST_CHUNK_PREFIX: &str = "setlist-entries-chunk-";
-const SETLIST_CHUNK_RECORDS: usize = 10_000;
+const SETLIST_CHUNK_RECORDS: usize = 2_500;
 
 const IDB_REQUIRED_DATA_FILES: &[&str] = &[
     "venues.json",

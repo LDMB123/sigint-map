@@ -84,6 +84,8 @@ fn show_dialog(text: &str, btn_text: &str, with_sparkle: bool) {
             "Sparkle the Unicorn",
             "onboarding-dialog-sparkle",
         ) {
+            dom::set_attr(&img, "width", "120");
+            dom::set_attr(&img, "height", "120");
             let _ = dialog.append_child(&img);
         }
     }
@@ -123,48 +125,78 @@ fn de_elevate_element(selector: &str) {
 }
 
 async fn await_button_click() {
-    let (tx, rx) = futures::channel::oneshot::channel::<()>();
-    let tx = std::cell::RefCell::new(Some(tx));
-    let _handle = browser_apis::new_abort_handle();
-    let cb = wasm_bindgen::closure::Closure::<dyn FnMut(web_sys::Event)>::new(
-        move |_: web_sys::Event| {
-            if let Some(sender) = tx.borrow_mut().take() {
-                let _ = sender.send(());
-            }
-        },
-    );
     if let Some(el) = dom::query("[data-onboarding-btn]") {
-        if let Some(ref handle) = _handle {
-            let opts = web_sys::AddEventListenerOptions::new();
-            opts.set_signal(&handle.signal());
-            let _ = el.add_event_listener_with_callback_and_add_event_listener_options(
-                "click",
-                cb.as_ref().unchecked_ref(),
-                &opts,
-            );
-        }
+        let target: &web_sys::EventTarget = el.unchecked_ref();
+        await_event_with_timeout(target, "click", None, |_| true, None).await;
     }
-    cb.forget();
-    let _ = rx.await;
-    // _handle drops here → AbortHandle::drop() calls abort() → listener removed
 }
 
 async fn await_custom_event_timeout(event_name: &str, timeout_ms: i32) {
+    let doc = dom::document();
+    let target: &web_sys::EventTarget = doc.unchecked_ref();
+    await_event_with_timeout(
+        target,
+        event_name,
+        Some(timeout_ms),
+        |_| true,
+        Some(format!(
+            "[onboarding] timed out waiting for '{event_name}' after {timeout_ms}ms"
+        )),
+    )
+    .await;
+}
+
+async fn await_panel_open_timeout(expected_panel: &str, timeout_ms: i32) {
+    let expected = expected_panel.to_string();
+    let doc = dom::document();
+    let target: &web_sys::EventTarget = doc.unchecked_ref();
+    await_event_with_timeout(
+        target,
+        constants::EVENT_PANEL_OPENED,
+        Some(timeout_ms),
+        move |event| {
+            let Some(custom_event) = event.dyn_ref::<web_sys::CustomEvent>() else {
+                return false;
+            };
+            let detail = custom_event.detail();
+            let opened_panel = js_sys::Reflect::get(&detail, &"target_panel".into())
+                .ok()
+                .and_then(|v| v.as_string());
+            opened_panel.as_deref() == Some(expected.as_str())
+        },
+        Some(format!(
+            "[onboarding] timed out waiting for panel '{expected_panel}' after {timeout_ms}ms"
+        )),
+    )
+    .await;
+}
+
+async fn await_event_with_timeout<F>(
+    target: &web_sys::EventTarget,
+    event_name: &str,
+    timeout_ms: Option<i32>,
+    mut should_resolve: F,
+    timeout_warning: Option<String>,
+) where
+    F: FnMut(&web_sys::Event) -> bool + 'static,
+{
     let (tx, rx) = futures::channel::oneshot::channel::<()>();
     let tx = std::cell::RefCell::new(Some(tx));
     let _handle = browser_apis::new_abort_handle();
     let cb = wasm_bindgen::closure::Closure::<dyn FnMut(web_sys::Event)>::new(
-        move |_: web_sys::Event| {
+        move |event: web_sys::Event| {
+            if !should_resolve(&event) {
+                return;
+            }
             if let Some(sender) = tx.borrow_mut().take() {
                 let _ = sender.send(());
             }
         },
     );
-    let doc = dom::document();
     if let Some(ref handle) = _handle {
         let opts = web_sys::AddEventListenerOptions::new();
         opts.set_signal(&handle.signal());
-        let _ = doc.add_event_listener_with_callback_and_add_event_listener_options(
+        let _ = target.add_event_listener_with_callback_and_add_event_listener_options(
             event_name,
             cb.as_ref().unchecked_ref(),
             &opts,
@@ -175,67 +207,17 @@ async fn await_custom_event_timeout(event_name: &str, timeout_ms: i32) {
     let event_fut = async {
         let _ = rx.await;
     };
-    let timeout_fut = browser_apis::sleep_ms(timeout_ms);
-    futures::pin_mut!(event_fut);
-    futures::pin_mut!(timeout_fut);
-    match futures::future::select(event_fut, timeout_fut).await {
-        futures::future::Either::Left(_) => { /* event fired */ }
-        futures::future::Either::Right(_) => {
-            dom::warn(&format!(
-                "[onboarding] timed out waiting for '{event_name}' after {timeout_ms}ms"
-            ));
-        }
-    }
-    // _handle drops here → listener removed
-}
-
-async fn await_panel_open_timeout(expected_panel: &str, timeout_ms: i32) {
-    let (tx, rx) = futures::channel::oneshot::channel::<()>();
-    let tx = std::cell::RefCell::new(Some(tx));
-    let expected = expected_panel.to_string();
-    let _handle = browser_apis::new_abort_handle();
-    let cb = wasm_bindgen::closure::Closure::<dyn FnMut(web_sys::Event)>::new(
-        move |event: web_sys::Event| {
-            let Some(custom_event) = event.dyn_ref::<web_sys::CustomEvent>() else {
-                return;
-            };
-            let detail = custom_event.detail();
-            let opened_panel = js_sys::Reflect::get(&detail, &"target_panel".into())
-                .ok()
-                .and_then(|v| v.as_string());
-            if opened_panel.as_deref() != Some(expected.as_str()) {
-                return;
+    if let Some(timeout_ms) = timeout_ms {
+        let timeout_fut = browser_apis::sleep_ms(timeout_ms);
+        futures::pin_mut!(event_fut);
+        futures::pin_mut!(timeout_fut);
+        if let futures::future::Either::Right(_) = futures::future::select(event_fut, timeout_fut).await {
+            if let Some(message) = timeout_warning {
+                dom::warn(&message);
             }
-            if let Some(sender) = tx.borrow_mut().take() {
-                let _ = sender.send(());
-            }
-        },
-    );
-    let doc = dom::document();
-    if let Some(ref handle) = _handle {
-        let opts = web_sys::AddEventListenerOptions::new();
-        opts.set_signal(&handle.signal());
-        let _ = doc.add_event_listener_with_callback_and_add_event_listener_options(
-            constants::EVENT_PANEL_OPENED,
-            cb.as_ref().unchecked_ref(),
-            &opts,
-        );
-    }
-    cb.forget();
-
-    let event_fut = async {
-        let _ = rx.await;
-    };
-    let timeout_fut = browser_apis::sleep_ms(timeout_ms);
-    futures::pin_mut!(event_fut);
-    futures::pin_mut!(timeout_fut);
-    match futures::future::select(event_fut, timeout_fut).await {
-        futures::future::Either::Left(_) => { /* expected panel opened */ }
-        futures::future::Either::Right(_) => {
-            dom::warn(&format!(
-                "[onboarding] timed out waiting for panel '{expected_panel}' after {timeout_ms}ms"
-            ));
         }
+    } else {
+        let _ = event_fut.await;
     }
 }
 

@@ -1,11 +1,16 @@
-# Archive Testing Index
+# Archive testing Index
 
-Last updated: 2026-03-03
+- Archive Path: `docs/archive/testing/INDEX.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Archive testing Index`
 
-Historical QA runs, test plans, and validation summaries.
+## Summary
+Historical archive index for `testing` (10 entries).
 
-## Files
+## Context
+Generated from current archive markdown inventory.
 
+## Actions
 - [comprehensive-ui-ux-audit.md](comprehensive-ui-ux-audit.md) - Comprehensive UI/UX Audit - 2026-02-12
 - [performance-fixes-applied.md](performance-fixes-applied.md) - Performance Fixes Applied - 2026-02-12
 - [session-2-fixes-applied.md](session-2-fixes-applied.md) - Session 2: Games Panel UI/UX Fixes Applied - 2026-02-12
@@ -17,6 +22,10 @@ Historical QA runs, test plans, and validation summaries.
 - [week3-qa-report.md](week3-qa-report.md) - Week 3 QA Report - Comprehensive Feature Audit
 - [week3-validation-report.md](week3-validation-report.md) - Week 3 Integration - Validation Report
 
-## Navigation
+## Validation
+- Rebuilt by `scripts/rewrite-archive-docs.mjs`.
 
-- Parent archive index: [docs/archive/INDEX.md](../INDEX.md)
+## References
+- Parent archive index: [../INDEX.md](../INDEX.md)
+- Root archive index: [../INDEX.md](../INDEX.md)
+

@@ -1,12 +1,18 @@
 # Production Polish Design
 
+- Archive Path: `docs/archive/plans/2026-02-20-production-polish-design.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Production Polish Design`
+
+## Summary
+**Date:** 2026-02-20
+
+## Context
 **Date:** 2026-02-20
 **Goal:** Get app production-ready for immediate iPad mini 6 PWA install
 **Approach:** Full parallel audit + fix across 4 independent domains
 
 ---
-
-## Context
 
 - Target: Blaire (age 4), iPad mini 6 (A15), iPadOS 26.2, Safari 26.2
 - Deployment: PWA installed to home screen from local network
@@ -15,7 +21,7 @@
 
 ---
 
-## Audit Domains
+### Audit Domains
 
 ### Agent 1 — Image Wiring Audit
 
@@ -89,7 +95,7 @@
 
 ---
 
-## Integration & Build
+### Integration & Build
 
 After all agents return and fixes are applied:
 
@@ -104,7 +110,7 @@ After all agents return and fixes are applied:
 
 ---
 
-## iPad Install Steps (post-build)
+### iPad Install Steps (post-build)
 
 1. `trunk serve --address 0.0.0.0 --release` (or serve `dist/` with `python3 -m http.server`)
 2. On iPad: open Safari → navigate to `http://<mac-ip>:8080`
@@ -113,7 +119,7 @@ After all agents return and fixes are applied:
 
 ---
 
-## Success Criteria
+### Success Criteria
 
 - All `npm run qa:*` pass
 - Zero clippy warnings
@@ -121,3 +127,13 @@ After all agents return and fixes are applied:
 - All 78 WebP images in `dist/`
 - All E2E tests pass (≥ 39)
 - App installs and runs offline on iPad mini 6
+
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

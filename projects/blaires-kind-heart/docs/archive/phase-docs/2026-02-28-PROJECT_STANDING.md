@@ -1,25 +1,26 @@
 # Project Standing
 
-Last updated: 2026-02-28
+- Archive Path: `docs/archive/phase-docs/2026-02-28-PROJECT_STANDING.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Project Standing`
 
 ## Summary
-
 Blaire's Kind Heart is a production-ready offline PWA for a 4-year-old.
 Target device: iPad mini 6, iPadOS 26.2, Safari 26.2.
 
-## QA Standing
+### QA Standing
 
 All core release gates pass as of 2026-02-21, including full E2E and Lighthouse CI. See `docs/STATUS_LEDGER.md` for details.
 
-## Game Polish (2026-02-27)
+### Game Polish (2026-02-27)
 
 23 fixes across all 5 games — shield timing, flower lifecycle, stage selection, canvas events, CSS animations, accessibility. See `docs/STATUS_LEDGER.md` for full list.
 
-## Dead Code Pass (2026-02-28)
+### Dead Code Pass (2026-02-28)
 
 Full 4-domain audit: Rust, CSS, JS/HTML/config, feature completeness. Deleted orphaned `public/wasm-init.js`, cleaned dead selectors from `home.css` reduced-motion block. All 10 nav panels confirmed working. See `docs/STATUS_LEDGER.md` for details.
 
-## Technical Standing
+### Technical Standing
 
 - Rust/WASM: builds clean, no warnings above baseline
 - DB schema: versioned migrations, contract tests pass
@@ -27,11 +28,24 @@ Full 4-domain audit: Rust, CSS, JS/HTML/config, feature completeness. Deleted or
 - OPFS SQLite: write-protected by Web Locks, no race conditions
 - Games: all 5 games polished and verified (Catcher, Memory, Hug, Paint, Unicorn)
 
-## Outstanding Work
+### Outstanding Work
 
 - Physical iPad regression run needed before deployment
 - Production firebase deploy pending app store review decision
 
-## History
+### History
 
 See `docs/archive/` for historical plans, reports, and design documents.
+
+## Context
+Last updated: 2026-02-28
+
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

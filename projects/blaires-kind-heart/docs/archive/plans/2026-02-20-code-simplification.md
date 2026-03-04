@@ -1,5 +1,13 @@
 # Wave 10: Code Simplification Pass
 
+- Archive Path: `docs/archive/plans/2026-02-20-code-simplification.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Wave 10: Code Simplification Pass`
+
+## Summary
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
+
+## Context
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
 
 **Goal:** Remove dead CSS, define missing CSS variables, strip unnecessary `-webkit-` prefixes for Safari 26.2, and remove a dead CSS selector — making the codebase cleaner and smaller without changing any functionality.
@@ -12,7 +20,7 @@
 
 ---
 
-## Task 1: Define Missing `--color-text-muted` CSS Variable
+### Task 1: Define Missing `--color-text-muted` CSS Variable
 
 **Files:**
 - Modify: `src/styles/tokens.css` — add `--color-text-muted` to the `:root` variables
@@ -62,7 +70,7 @@ color: var(--color-text-muted);
 
 ---
 
-## Task 2: Remove Dead `.home-btn:nth-child(4)` CSS Selector
+### Task 2: Remove Dead `.home-btn:nth-child(4)` CSS Selector
 
 **Files:**
 - Modify: `src/styles/scroll-effects.css` — remove lines 115-117
@@ -82,7 +90,7 @@ color: var(--color-text-muted);
 
 ---
 
-## Task 3: Remove Unnecessary `-webkit-mask-image` Prefixes
+### Task 3: Remove Unnecessary `-webkit-mask-image` Prefixes
 
 **Files:**
 - Modify: `src/styles/home.css` — remove line 188 (`-webkit-mask-image`)
@@ -98,7 +106,7 @@ color: var(--color-text-muted);
 
 ---
 
-## Task 4: Remove Unnecessary `-webkit-backdrop-filter` Prefix
+### Task 4: Remove Unnecessary `-webkit-backdrop-filter` Prefix
 
 **Files:**
 - Modify: `src/styles/tracker.css` — remove the `-webkit-backdrop-filter` line (around line 336)
@@ -111,7 +119,7 @@ color: var(--color-text-muted);
 
 ---
 
-## Task 5: Remove Unnecessary `-webkit-overflow-scrolling` Property
+### Task 5: Remove Unnecessary `-webkit-overflow-scrolling` Property
 
 **Files:**
 - Modify: `src/styles/progress.css` — remove the `-webkit-overflow-scrolling: touch;` line (around line 498)
@@ -124,7 +132,7 @@ color: var(--color-text-muted);
 
 ---
 
-## Task 6: Clean Up `-webkit-text-fill-color` and `-webkit-text-stroke` Usage
+### Task 6: Clean Up `-webkit-text-fill-color` and `-webkit-text-stroke` Usage
 
 **Files:**
 - Modify: `src/styles/home.css` — check lines 125, 133
@@ -148,7 +156,7 @@ color: var(--color-text-muted);
 
 ---
 
-## Task 7: Remove `-webkit-user-select` Prefix Duplicates
+### Task 7: Remove `-webkit-user-select` Prefix Duplicates
 
 **Files:**
 - Modify: `src/styles/home.css` — line 383
@@ -165,7 +173,7 @@ color: var(--color-text-muted);
 
 ---
 
-## Task 8: Remove `-webkit-tap-highlight-color` and `-webkit-text-size-adjust` Prefixes
+### Task 8: Remove `-webkit-tap-highlight-color` and `-webkit-text-size-adjust` Prefixes
 
 **Files:**
 - Modify: `src/styles/app.css` — lines 15-16
@@ -182,28 +190,10 @@ color: var(--color-text-muted);
 
 ---
 
-## Task 9: Fix Undefined `--purple-300` CSS Variable Reference
+## Actions
+_No actions recorded._
 
-**Files:**
-- Modify: `src/styles/home.css` — line 674
-
-**Context:** `var(--purple-300, #c084fc)` references a non-existent variable. The fallback `#c084fc` is being used. Design system defines `--color-purple-light`. Replace with the correct token.
-
-**Step 1:** In `src/styles/home.css`, line 674, change:
-```css
-border: 2px solid var(--purple-300, #c084fc);
-```
-To:
-```css
-border: 2px solid var(--color-purple-light, #c084fc);
-```
-
-**Step 2:** Commit: `fix: use correct --color-purple-light token instead of undefined --purple-300`
-
----
-
-## Task 10: Final Build Verification & SW Version Bump
-
+## Validation
 **Files:**
 - Modify: `public/sw.js` — bump `CACHE_VERSION` from v13 to v14
 
@@ -215,8 +205,6 @@ border: 2px solid var(--color-purple-light, #c084fc);
 
 ---
 
-## Verification
-
 1. `trunk build --release` — **0 errors, 0 warnings**
 2. All CSS variables defined (no undefined var references without fallbacks)
 3. No `-webkit-` prefixes where Safari 26.2 supports unprefixed
@@ -226,7 +214,7 @@ border: 2px solid var(--color-purple-light, #c084fc);
 
 ---
 
-## Critical Files
+### Critical Files
 
 | File | Changes |
 |------|---------|
@@ -249,3 +237,23 @@ border: 2px solid var(--color-purple-light, #c084fc);
 - **`-webkit-background-clip: padding-box, border-box`**: This is the standard `background-clip` with multiple values — the `-webkit-` prefix may be needed here for Safari's gradient border trick. Leave for separate investigation.
 - **JS files**: Already cleaned in Wave 9. Only `clearEvents()` in `runtime-diagnostics.js` is unused but it's a debug utility — intentionally kept.
 - **Game card hardcoded colors**: Functional but not design-system compliant. A theming task, not simplification.
+
+## References
+**Files:**
+- Modify: `src/styles/home.css` — line 674
+
+**Context:** `var(--purple-300, #c084fc)` references a non-existent variable. The fallback `#c084fc` is being used. Design system defines `--color-purple-light`. Replace with the correct token.
+
+**Step 1:** In `src/styles/home.css`, line 674, change:
+```css
+border: 2px solid var(--purple-300, #c084fc);
+```
+To:
+```css
+border: 2px solid var(--color-purple-light, #c084fc);
+```
+
+**Step 2:** Commit: `fix: use correct --color-purple-light token instead of undefined --purple-300`
+
+---
+

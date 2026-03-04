@@ -1,16 +1,25 @@
-# Archive Full Reference Index
+# Archive reference-full Index
 
-Last updated: 2026-03-03
+- Archive Path: `docs/archive/reference-full/INDEX.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Archive reference-full Index`
 
-Verbose reference versions of active operational docs.
+## Summary
+Historical archive index for `reference-full` (4 entries).
 
-## Files
+## Context
+Generated from current archive markdown inventory.
 
+## Actions
 - [EMOTION_SYSTEM.full.md](EMOTION_SYSTEM.full.md) - Emotion Vocabulary & Learning System
 - [ICONS.full.md](ICONS.full.md) - Icons - Blaire's Kind Heart
 - [TESTING.full.md](TESTING.full.md) - Testing Guide: Reflection & Emotion System
 - [TROUBLESHOOTING.full.md](TROUBLESHOOTING.full.md) - Troubleshooting Guide
 
-## Navigation
+## Validation
+- Rebuilt by `scripts/rewrite-archive-docs.mjs`.
 
-- Parent archive index: [docs/archive/INDEX.md](../INDEX.md)
+## References
+- Parent archive index: [../INDEX.md](../INDEX.md)
+- Root archive index: [../INDEX.md](../INDEX.md)
+

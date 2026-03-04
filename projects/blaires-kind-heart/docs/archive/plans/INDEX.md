@@ -1,11 +1,16 @@
-# Archive Plans Index
+# Archive plans Index
 
-Last updated: 2026-03-03
+- Archive Path: `docs/archive/plans/INDEX.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Archive plans Index`
 
-Historical implementation and design plans.
+## Summary
+Historical archive index for `plans` (20 entries).
 
-## Files
+## Context
+Generated from current archive markdown inventory.
 
+## Actions
 - [2026-02-15-debug-and-polish-design.md](2026-02-15-debug-and-polish-design.md) - Debug & Polish Pass — Blaire's Kind Heart
 - [2026-02-15-debug-and-polish-impl.md](2026-02-15-debug-and-polish-impl.md) - Debug & Polish Implementation Plan
 - [2026-02-15-games-content-expansion-design.md](2026-02-15-games-content-expansion-design.md) - Games Content Expansion + Polish — Design
@@ -27,6 +32,10 @@ Historical implementation and design plans.
 - [2026-02-20-zero-warnings-polish.md](2026-02-20-zero-warnings-polish.md) - Wave 8: Zero Warnings Polish — Blaire's Kind Heart
 - [2026-02-28-safari-debug-opt-pass.md](2026-02-28-safari-debug-opt-pass.md) - Safari 26.2 / iPad mini 6 Debug & Optimization Pass
 
-## Navigation
+## Validation
+- Rebuilt by `scripts/rewrite-archive-docs.mjs`.
 
-- Parent archive index: [docs/archive/INDEX.md](../INDEX.md)
+## References
+- Parent archive index: [../INDEX.md](../INDEX.md)
+- Root archive index: [../INDEX.md](../INDEX.md)
+

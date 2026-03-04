@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "release_track": "RC4",
+  "device_target": "iPad mini 6",
+  "os_target": "iPadOS 26.2",
+  "browser_target": "Safari 26.2",
+  "physical_runs": [
+    {
+      "id": "rc3_run_01",
+      "date": "2026-03-05",
+      "operator": "TBD",
+      "report_path": "docs/testing/release-evidence/runs/rc3_run_01.md",
+      "status": "PENDING",
+      "p0_open": 0,
+      "p1_open": 0,
+      "notes": "Pending execution. Update with operator, findings, and linked screenshots."
+    },
+    {
+      "id": "rc4_run_02",
+      "date": "2026-03-06",
+      "operator": "TBD",
+      "report_path": "docs/testing/release-evidence/runs/rc4_run_02.md",
+      "status": "PENDING",
+      "p0_open": 0,
+      "p1_open": 0,
+      "notes": "Pending execution. Final release-blocking physical run."
+    }
+  ],
+  "kpi_status": {
+    "db_reduction_status": "FAIL",
+    "source_report_path": "scripts/reports/phase5-kpi-20260304-074707.md"
+  },
+  "waivers": [
+    {
+      "id": "phase5-db-reduction-rc4",
+      "status": "APPROVED",
+      "owner": "Engineering",
+      "justification": "RC4 is strict freeze; this KPI miss does not affect correctness, safety, or runtime stability for release.",
+      "followup_milestone": "RC5 Wave 1",
+      "expires_on": "2026-04-15",
+      "doc_path": "docs/testing/release-evidence/waivers/phase5-db-reduction-rc4.md"
+    }
+  ]
+}

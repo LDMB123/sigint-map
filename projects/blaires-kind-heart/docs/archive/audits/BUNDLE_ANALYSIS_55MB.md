@@ -1,13 +1,10 @@
 # Bundle Analysis Report: 55MB Production Build
 
-**Analysis Date**: 2026-02-10
-**Build**: `trunk build --release` (Rust + WASM)
-**Target**: iPad mini 6 (A15, 4GB RAM), Safari 26.2
+- Archive Path: `docs/archive/audits/BUNDLE_ANALYSIS_55MB.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Bundle Analysis Report: 55MB Production Build`
 
----
-
-## Executive Summary
-
+## Summary
 **Current Size**: 55MB (unacceptable)
 **Critical Issue**: ~44MB bloat from abandoned/legacy illustration assets
 **Quick Win**: Remove unused illustrations = -44MB
@@ -16,7 +13,7 @@
 
 ---
 
-## Itemized Bundle Breakdown (55MB Total)
+### Itemized Bundle Breakdown (55MB Total)
 
 ### TIER 1: CRITICAL BLOAT (44MB+)
 
@@ -84,7 +81,7 @@
 
 ---
 
-## Rust WASM Binary Analysis (2.9MB)
+### Rust WASM Binary Analysis (2.9MB)
 
 ### Current Profile (Cargo.toml)
 ```toml
@@ -127,7 +124,7 @@ strip = "symbols"       # Strip symbols: YES
 
 ---
 
-## Dead Code Impact (24 Compiler Warnings)
+### Dead Code Impact (24 Compiler Warnings)
 
 All modules in `rust/lib.rs` are compiled into the binary, **even if never called**:
 
@@ -149,7 +146,7 @@ All modules in `rust/lib.rs` are compiled into the binary, **even if never calle
 
 ---
 
-## Asset Pipeline Analysis
+### Asset Pipeline Analysis
 
 ### Story Assets (18MB total)
 
@@ -188,7 +185,7 @@ illustrations/stories/lost-bunny-1.webp  (110KB WebP)  ← Keep this
 
 ---
 
-## CSS Bloat Analysis (280KB across 14 files)
+### CSS Bloat Analysis (280KB across 14 files)
 
 | File | Size | Lines | Issue |
 |------|------|-------|-------|
@@ -204,7 +201,7 @@ illustrations/stories/lost-bunny-1.webp  (110KB WebP)  ← Keep this
 
 ---
 
-## SQLite Bundle (1.2MB)
+### SQLite Bundle (1.2MB)
 
 ### Breakdown
 
@@ -218,7 +215,7 @@ illustrations/stories/lost-bunny-1.webp  (110KB WebP)  ← Keep this
 
 ---
 
-## Icon Optimization Opportunity (1.6MB savings)
+### Icon Optimization Opportunity (1.6MB savings)
 
 ### Current Icon Issues
 
@@ -240,8 +237,6 @@ icons/
 4. **Total savings: 1.6MB**
 
 ---
-
-## Summary: Size Reduction Roadmap
 
 ### CRITICAL PATH (Quick Wins)
 
@@ -266,7 +261,7 @@ icons/
 
 ---
 
-## Realistic Target Bundle Size
+### Realistic Target Bundle Size
 
 ### Conservative Estimate (Just asset cleanup)
 
@@ -307,8 +302,14 @@ With Brotli compression on HTTP (typical deployment):
 
 ---
 
-## Implementation Plan
+## Context
+**Analysis Date**: 2026-02-10
+**Build**: `trunk build --release` (Rust + WASM)
+**Target**: iPad mini 6 (A15, 4GB RAM), Safari 26.2
 
+---
+
+## Actions
 ### Phase 1: Asset Cleanup (1-2 hours) → -46MB
 
 1. **Delete bloated illustration directories**
@@ -386,8 +387,17 @@ With Brotli compression on HTTP (typical deployment):
 
 ---
 
-## Validation Checklist
+```
+rust/quest_chains.rs
 
+rust/badges.rs
+
+rust/weekly_themes.rs
+```
+
+---
+
+## Validation
 - [ ] After asset deletion, visual tests pass on iPad
 - [ ] Stories still render with WebP images
 - [ ] Stickers load correctly
@@ -400,7 +410,7 @@ With Brotli compression on HTTP (typical deployment):
 
 ---
 
-## Before/After Metrics
+### Before/After Metrics
 
 | Metric | Before | After | Savings |
 |--------|--------|-------|---------|
@@ -414,19 +424,17 @@ With Brotli compression on HTTP (typical deployment):
 
 ---
 
-## Appendix: Files to Delete
+### Appendix: Files to Delete
 
 ### High-Priority Deletions
 
 ```
-# Bloated illustration directories (40MB)
 dist/illustrations/backgrounds/
 dist/illustrations/games/
 dist/illustrations/acts/
 dist/illustrations/blaire/
 dist/illustrations/animals/
 
-# Unused game sprites (2.9MB)
 dist/game-sprites/unicorn_sprite.png
 dist/game-sprites/owl_sprite.png
 dist/game-sprites/hedgehog_sprite.png
@@ -434,33 +442,16 @@ dist/game-sprites/fox_sprite.png
 dist/game-sprites/deer_sprite.png
 dist/game-sprites/bunny_sprite.png
 
-# Story PNG duplicates (1.5MB) - keep WebP
 dist/illustrations/stories/*.png (except if no .webp counterpart)
 
-# Duplicate icons (464KB)
 dist/icons/icon-512.png
 dist/icons/icon-512-maskable.png
 ```
 
-### Conditional Deletions (After Feature Flag Implementation)
-
-```
-# If quest-chains feature disabled:
-rust/quest_chains.rs
-
-# If badges feature disabled:
-rust/badges.rs
-
-# If weekly-themes feature disabled:
-rust/weekly_themes.rs
-```
-
----
-
 ## References
-
 - **Cargo.toml**: Release profile already optimized (LTO, opt-level="z", strip=symbols)
 - **index.html**: Copy-dir directives need refinement (remove illustrations/ as blanket copy)
 - **story_data.rs**: Confirms only 14 story images used (5 stories × ~2-3 images each)
 - **games.rs**: Confirms game sprites referenced
 - **build warnings**: 24 unused functions indicating dead code in WASM binary
+

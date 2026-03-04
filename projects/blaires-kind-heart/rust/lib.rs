@@ -17,9 +17,11 @@ mod db_messages;
 mod db_worker;
 #[cfg(debug_assertions)]
 mod debug;
+mod domain_services;
 mod dom;
 mod errors;
 mod family_board;
+mod feature_flags;
 mod game_catcher;
 mod game_hug;
 mod game_memory;
@@ -44,16 +46,17 @@ pub(crate) mod navigation;
 mod offline_queue;
 mod onboarding;
 mod parent_insights;
+mod panel_registry;
 mod progress;
 mod pwa;
 mod quests;
 mod reflection;
+mod reliability;
 mod render;
 mod rewards;
-#[cfg(debug_assertions)]
-mod safari_apis;
 mod session_timer;
 mod skill_progression;
+mod skill_taxonomy;
 mod sparkle_mail;
 mod speech;
 mod state;
@@ -127,8 +130,6 @@ async fn boot_async(state: Rc<RefCell<AppState>>) {
     tap_ripple::init();
     pwa::init();
     celebration::init();
-    #[cfg(debug_assertions)]
-    safari_apis::init();
     metrics::init_web_vitals();
     metrics::mark("boot:batch3:end");
     metrics::measure("boot:batch3", "boot:batch3:start", "boot:batch3:end");
@@ -136,6 +137,7 @@ async fn boot_async(state: Rc<RefCell<AppState>>) {
     browser_apis::scheduler_yield().await;
     metrics::mark("boot:batch4:start");
     db_client::wait_for_ready().await;
+    feature_flags::ensure_defaults().await;
     if let Err(e) = offline_queue::init().await {
         dom::warn(&format!("[boot] offline_queue::init failed: {e:?}"));
     }
@@ -183,14 +185,8 @@ async fn boot_async(state: Rc<RefCell<AppState>>) {
         browser_apis::sleep_ms(600).await;
         dom::set_attr(&screen, "hidden", "");
     }
-    for sel in [
-        "[data-home-title]",
-        "[data-heart-counter]",
-        constants::SELECTOR_COMPANION,
-    ] {
-        if let Some(el) = dom::query(sel) {
-            let _ = el.class_list().add_1("entrance-visible");
-        }
+    if let Some(companion) = dom::query(constants::SELECTOR_COMPANION) {
+        let _ = companion.class_list().add_1("entrance-visible");
     }
     for btn in dom::query_all("[data-home-btn]") {
         let _ = btn.class_list().add_1("entrance-visible");
@@ -482,11 +478,13 @@ fn cache_boot_elements() {
     use crate::dom;
     let companion = dom::query(constants::SELECTOR_COMPANION);
     let hearts = dom::query(constants::SELECTOR_HEARTS);
+    let home_tracker_hearts = dom::query(constants::SELECTOR_HOME_TRACKER_HEARTS);
     let tracker_hearts = dom::query(constants::SELECTOR_TRACKER_HEARTS);
     let toast = dom::query(constants::SELECTOR_TOAST);
     for (el, sel) in [
         (&companion, constants::SELECTOR_COMPANION),
         (&hearts, constants::SELECTOR_HEARTS),
+        (&home_tracker_hearts, constants::SELECTOR_HOME_TRACKER_HEARTS),
         (&tracker_hearts, constants::SELECTOR_TRACKER_HEARTS),
         (&toast, constants::SELECTOR_TOAST),
     ] {
@@ -497,6 +495,7 @@ fn cache_boot_elements() {
     state::with_state_mut(|s| {
         s.companion_element = companion;
         s.hearts_counter = hearts;
+        s.home_tracker_hearts_counter = home_tracker_hearts;
         s.tracker_hearts_counter = tracker_hearts;
         s.toast_element = toast;
     });

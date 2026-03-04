@@ -1,6 +1,5 @@
 use crate::{
-    confetti, constants::*, dom, parent_insights, render, rewards, speech, synth_audio,
-    weekly_goals,
+    confetti, constants::*, dom, domain_services, render, speech, synth_audio, weekly_goals,
 };
 use wasm_bindgen::JsCast;
 use web_sys::{Element, Event};
@@ -178,7 +177,7 @@ async fn refresh_garden() {
             );
             confetti::burst_party();
             synth_audio::fanfare();
-            rewards::award_goal_sticker("Garden Hero");
+            domain_services::award_goal_sticker("Garden Hero");
         }
     }
     update_sparkle_motivation(&goals);
@@ -307,7 +306,7 @@ fn verify_pin_and_show_insights() {
     };
     let pin = input_el.value();
     wasm_bindgen_futures::spawn_local(async move {
-        let stored_pin = crate::mom_mode::get_parent_pin().await;
+        let stored_pin = domain_services::get_parent_pin().await;
         if stored_pin.is_some_and(|s| pin == s) {
             dom::hide("[data-pin-form]");
             if let Some(insights) = dom::query("[data-insights-area]") {
@@ -335,21 +334,17 @@ fn clear_pin_input() {
 fn reset_moms_view() {
     dom::show("[data-pin-form]");
     dom::hide("[data-insights-area]");
-    if let Some(insights) = dom::query("[data-insights-area]") {
-        dom::safe_set_inner_html(&insights, "");
-    }
+    clear_insights_area();
 }
 async fn render_weekly_insights() {
-    let week_key = parent_insights::current_week_key();
-    let Some(insight) = parent_insights::get_weekly_insights(&week_key).await else {
+    let week_key = domain_services::current_week_key();
+    let Some(insight) = domain_services::get_weekly_insights(&week_key).await else {
         render_no_insights();
         return;
     };
-    let Some(insights_area) = dom::query("[data-insights-area]") else {
+    let Some((doc, insights_area)) = fresh_insights_area() else {
         return;
     };
-    let doc = dom::document();
-    dom::safe_set_inner_html(&insights_area, "");
     render::append_text(
         &doc,
         &insights_area,
@@ -443,11 +438,9 @@ fn append_label_value(
     let _ = parent.append_child(&section);
 }
 fn render_no_insights() {
-    let Some(insights_area) = dom::query("[data-insights-area]") else {
+    let Some((doc, insights_area)) = fresh_insights_area() else {
         return;
     };
-    let doc = dom::document();
-    dom::safe_set_inner_html(&insights_area, "");
     render::append_text(
         &doc,
         &insights_area,
@@ -455,4 +448,17 @@ fn render_no_insights() {
         "insights-empty",
         "No data yet for this week. Check back after Blaire logs some kind acts!",
     );
+}
+
+fn clear_insights_area() {
+    if let Some(insights_area) = dom::query("[data-insights-area]") {
+        dom::safe_set_inner_html(&insights_area, "");
+    }
+}
+
+fn fresh_insights_area() -> Option<(web_sys::Document, Element)> {
+    let insights_area = dom::query("[data-insights-area]")?;
+    let doc = dom::document();
+    dom::safe_set_inner_html(&insights_area, "");
+    Some((doc, insights_area))
 }

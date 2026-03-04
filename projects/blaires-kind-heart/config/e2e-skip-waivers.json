@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "allowed_skips": [
+    {
+      "file": "e2e/_probe-tracker-dom.spec.ts",
+      "match": "RUN_E2E_PROBES",
+      "reason": "Probe-only test intentionally opt-in"
+    }
+  ]
+}

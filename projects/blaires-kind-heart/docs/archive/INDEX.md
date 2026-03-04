@@ -1,25 +1,26 @@
 # Archive Documentation Index
 
-Last updated: 2026-03-03
+- Archive Path: `docs/archive/INDEX.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Archive Documentation Index`
 
-This archive stores historical, low-frequency, or superseded documentation.
-Use active docs in `docs/` first, then use this index for historical traceability.
+## Summary
+Historical archive index for `root` (39 entries).
 
-## Subdirectories
+## Context
+Generated from current archive markdown inventory.
 
-- [audits/INDEX.md](audits/INDEX.md) - 9 files
-- [plans/INDEX.md](plans/INDEX.md) - 20 files
-- [phase-docs/INDEX.md](phase-docs/INDEX.md) - 27 files
-- [reference-full/INDEX.md](reference-full/INDEX.md) - 4 files
-- [reports/INDEX.md](reports/INDEX.md) - 4 files
-- [root-docs/INDEX.md](root-docs/INDEX.md) - 4 files
-- [sessions/INDEX.md](sessions/INDEX.md) - 1 files
-- [snapshots/INDEX.md](snapshots/INDEX.md) - 20 files
-- [testing/INDEX.md](testing/INDEX.md) - 10 files
-- [assets/README.md](assets/README.md) - archived visual artifacts and screenshots
-
-## Root Archive Files
-
+## Actions
+- [assets/INDEX.md](assets/INDEX.md) - 3 files
+- [audits/INDEX.md](audits/INDEX.md) - 10 files
+- [phase-docs/INDEX.md](phase-docs/INDEX.md) - 28 files
+- [plans/INDEX.md](plans/INDEX.md) - 21 files
+- [reference-full/INDEX.md](reference-full/INDEX.md) - 5 files
+- [reports/INDEX.md](reports/INDEX.md) - 7 files
+- [root-docs/INDEX.md](root-docs/INDEX.md) - 5 files
+- [sessions/INDEX.md](sessions/INDEX.md) - 2 files
+- [snapshots/INDEX.md](snapshots/INDEX.md) - 21 files
+- [testing/INDEX.md](testing/INDEX.md) - 11 files
 - [DETAILED_BUG_FIXES_COMPLETE.md](DETAILED_BUG_FIXES_COMPLETE.md) - Bug Fixes & Optimizations - Complete ✅
 - [DETAILED_CONSOLIDATED_FIXES.md](DETAILED_CONSOLIDATED_FIXES.md) - Phase 3 Bug Fixes - Consolidated Implementation Plan
 - [DETAILED_CRITICAL_FIXES.md](DETAILED_CRITICAL_FIXES.md) - Critical Bug Fixes - Session 2026-02-10
@@ -50,6 +51,8 @@ Use active docs in `docs/` first, then use this index for historical traceabilit
 - [ICON_GENERATION_SUMMARY.md](ICON_GENERATION_SUMMARY.md) - Blaire's Kind Heart - PWA Icon Generation Summary
 - [ICONS_SETUP.md](ICONS_SETUP.md) - Blaire's Kind Heart - Icon Generation Guide
 
-## Navigation
+## Validation
+- Rebuilt by `scripts/rewrite-archive-docs.mjs`.
 
+## References
 - Active docs index: [../INDEX.md](../INDEX.md)

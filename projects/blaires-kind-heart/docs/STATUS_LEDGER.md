@@ -1,6 +1,6 @@
 # Status Ledger
 
-Last updated: 2026-03-03 (session 18)
+Last updated: 2026-03-04 (session 30)
 
 ## QA Gate Results
 
@@ -9,18 +9,33 @@ Last updated: 2026-03-03 (session 18)
 | Runtime diagnostics | `npm run qa:runtime` | PASS | 2026-03-03 |
 | PWA contract | `npm run qa:pwa-contract` | PASS | 2026-03-03 |
 | DB contract | `npm run qa:db-contract` | PASS | 2026-03-03 |
-| Rust wasm32 compile gate | `cargo check --target wasm32-unknown-unknown` | PASS | 2026-03-03 |
+| Critical token sync | `npm run qa:critical-token-sync` | PASS | 2026-03-03 |
+| Generated artifacts sync | `npm run qa:generated-sync` | PASS | 2026-03-03 |
+| Taxonomy contract gate | `npm run qa:taxonomy-contract` | PASS | 2026-03-03 |
+| E2E skip-waiver enforcement | `npm run qa:e2e-skip-waivers` | PASS | 2026-03-03 |
+| Phase 5 KPI report gate | `npm run qa:phase5-kpi` | PASS | 2026-03-04 |
+| iPad performance budget gate | `npm run qa:ipad-performance-budget` | PASS | 2026-03-04 |
+| Apple Silicon trace budget comparator | `npm run qa:apple-silicon-trace-budget` | PENDING (new evidence workflow) | 2026-03-04 |
+| RC aggregate gate suite | `npm run qa:rc-gates` | PASS | 2026-03-04 |
+| Index shell config | `npm run qa:index-shell-config` | PASS | 2026-03-04 |
+| Index shell contract | `npm run qa:index-shell-contract` | PASS | 2026-03-04 |
+| Index shell negative contract | `npm run qa:index-shell-contract-negative` | PASS | 2026-03-04 |
+| Index shell deep aggregate | `npm run qa:index-shell-deep` | PASS | 2026-03-04 |
+| Rust wasm32 compile gate | `cargo check --target wasm32-unknown-unknown` | PASS | 2026-03-04 |
 | WASM tests (wasm-bindgen runner) | `cargo test --target wasm32-unknown-unknown` | PASS | 2026-03-03 |
-| Symbolized release verification | `npm run build:verify:release` | PASS | 2026-03-03 |
+| Symbolized release verification | `npm run build:verify:release` | PASS | 2026-03-04 |
 | WebKit smoke | `npm run test:e2e:webkit` | PASS | 2026-03-03 |
 | Full E2E suite (64/1 skip) | `npm run test:e2e:all` | PASS* | 2026-03-03 |
 | Visual regression (16 snapshots) | `npm run test:e2e -- e2e/visual.spec.ts` | PASS | 2026-03-03 |
-| Rust warning drift (baseline=5) | `npm run qa:rust-warning-drift` | PASS | 2026-03-02 |
+| Rust warning drift (baseline=5) | `npm run qa:rust-warning-drift` | PASS | 2026-03-04 |
+| Release evidence (soft) | `npm run qa:release-evidence:soft` | PASS | 2026-03-04 |
+| Release evidence (strict) | `npm run qa:release-evidence` | FAIL* | 2026-03-04 |
 | Docs budget | `npm run qa:docs-budget` | PASS | 2026-03-03 |
-| Docs links | `npm run qa:docs-links` | PASS | 2026-03-03 |
+| Docs links | `npm run qa:docs-links` | PASS | 2026-03-04 |
 | Lighthouse CI | `npm run lighthouse:ci` | PASS | 2026-02-21 |
 
-\* `1 skipped` is the expected non-blocking probe skip in the full Playwright matrix.
+\* `1 skipped` is explicitly covered by `config/e2e-skip-waivers.json`; non-waived skips fail gate.
+\* `qa:release-evidence` remains blocked until both physical runs are `PASS` with zero open P0/P1 in `docs/testing/release-evidence/manifest.json`.
 
 ## E2E Summary
 
@@ -37,6 +52,361 @@ Last updated: 2026-03-03 (session 18)
 - `npm run build:release` PASS on 2026-02-21
 - Release WASM build completed cleanly
 - Source maps retained in `dist` per `scripts/build-verify-release.sh`
+
+## Phase 5 Expansion-Grade Alignment (KindHeartPhase5.md)
+
+Execution is aligned to the 8-week RC model with quality gates treated as non-negotiable.
+
+| Wave / RC | Plan Intent | Status | Evidence |
+|-----------|-------------|--------|----------|
+| Wave 1 / RC1 | Canonicalization + critical flow gaps | DONE (software) | taxonomy contracts/generators, game lifecycle assertions, shared E2E fixtures, skip-waiver gate |
+| Wave 2 / RC2 | Domain modularization + redundancy collapse | DONE (software baseline) | generated badges/prompts/taxonomy, schema v2 + v1 compatibility path, unified insights core behavior |
+| Wave 3 / RC3 | Hardening + rollback controls + diagnostics | PARTIAL | local Mom feature toggles + runtime reliability counters + iPad-profile automated performance budget gate done; physical iPad run #1 pending archive |
+| Wave 4 / RC4 | Freeze + final hardening + physical validation #2 | PENDING | requires final freeze window, second physical iPad run archive, final clean P0/P1 pass |
+
+**Primary KPI (module decoupling index)**:
+- Instrumentation and baseline capture are live via `scripts/checks/phase5-kpi-report.mjs` and `config/phase5-kpi-baseline.json`.
+- Latest report (`scripts/reports/phase5-kpi-20260304-074707.md`): `cross_domain_db_callsites=46`, `cross_domain_direct_imports=0`, `circular_domain_dependencies=0`, `median_files_touched_single_domain_commit=4`.
+- Delta vs first captured baseline (`scripts/reports/phase5-kpi-20260304-070016.md`): direct imports improved `20 -> 0`, circular dependencies improved `2 -> 0`, DB callsites unchanged (`46`).
+
+**Secondary product KPI**:
+- Reflection completion + skill-balance computation path is implemented in the same KPI reporter via `--snapshot <export.json>`.
+- Active docs still need a published sufficient-volume snapshot evidence run for final KPI status.
+
+**KPI waiver (RC4-bounded)**:
+- Waiver id: `phase5-db-reduction-rc4`
+- Status: `APPROVED`
+- Doc: `docs/testing/release-evidence/waivers/phase5-db-reduction-rc4.md`
+- Expiry: `2026-04-15`
+
+**Open required evidence before RC4 close**:
+- Complete `docs/testing/release-evidence/runs/rc3_run_01.md` and set run status `PASS` in manifest.
+- Complete `docs/testing/release-evidence/runs/rc4_run_02.md` with clean P0/P1 and set run status `PASS`.
+- Pass canonical release go/no-go sequence and `v*` tag workflow (`.github/workflows/release-readiness.yml`).
+- Include A/B Apple Silicon trace evidence (`artifacts/apple-silicon-profile/*/abc-summary-*.csv`) plus comparator output from `qa:apple-silicon-trace-budget`.
+
+## Work Completed 2026-03-04 (session 30)
+
+Apple Silicon throughput deep-pass implementation wave (runtime contracts + loop/CSS/GPU resilience + trace budgets).
+
+**Implemented**:
+- Added runtime perf contract:
+  - query `?perf=auto|throughput|balanced|quality`
+  - body attribute `data-perf-mode=\"<resolved-mode>\"`
+  - iPad mini 6 auto-resolution default now maps to `throughput`; non-iPad auto maps to `balanced`.
+- Extended GPU lifecycle hardening in `rust/gpu.rs` + `rust/bindings.rs`:
+  - uncaptured GPU error listener and diagnostics emission
+  - `device.lost` handling with controlled one-time re-init attempt
+  - fallback to DOM-safe path with status updates (`lost`/`recovering`/`unavailable`).
+- Applied mode-aware throughput refactors:
+  - `rust/gpu.rs`: iPad render scale by mode (`throughput=0.62`, `balanced=0.75`, `quality=1.0`)
+  - `rust/gpu_particles.rs`: removed full scratch zero-fill and added mode cadence (`40/33/16ms`)
+  - `rust/game_catcher.rs`: moved per-frame falling-item updates to in-memory state vector (no per-frame DOM attr parsing)
+  - `rust/game_unicorn.rs`: hidden-tab frame suspension + throughput-mode 30fps clamp + iPad throughput DPR cap
+  - `rust/game_paint.rs`: iPad throughput DPR cap + pointer-move batching in throughput mode.
+- Added trace budget workflow artifacts:
+  - `config/apple-silicon-trace-budget.json`
+  - `scripts/checks/apple-silicon-trace-budget.mjs`
+  - `package.json` scripts `qa:apple-silicon-trace-budget` and `qa:apple-silicon-trace-budget:write-baseline`
+  - `scripts/apple-silicon-profile*.sh` now include `perf=` query controls.
+- Added runtime diagnostics E2E coverage for perf mode contract:
+  - `e2e/runtime-diagnostics.spec.ts` now validates valid perf modes and invalid-value fallback behavior.
+- Tightened iPad panel transition budgets to `<=180ms` in `config/ipad-performance-budget.json`.
+
+## Work Completed 2026-03-04 (session 28)
+
+RC4 deep freeze readiness wave completed for evidence contract + enforcement.
+
+**Implemented**:
+- Added in-repo release evidence pack:
+  - `docs/testing/release-evidence/manifest.json`
+  - `docs/testing/release-evidence/manifest.schema.json`
+  - run templates, seeded run records, and waiver doc.
+- Added deterministic validator:
+  - `scripts/check-release-evidence.mjs`
+  - strict mode (release-blocking) and soft mode (pending-run tolerant).
+- Added package scripts:
+  - `qa:release-evidence`
+  - `qa:release-evidence:soft`
+- Added tag-only release workflow:
+  - `.github/workflows/release-readiness.yml` (`v*` + `workflow_dispatch`)
+  - runs `qa:rc-gates`, `build:verify:release`, `qa:release-evidence`, and uploads artifacts.
+- Synced active docs with canonical go/no-go flow and waiver references.
+
+**Validation**:
+- `npm run -s qa:release-evidence:soft` PASS.
+- `npm run -s qa:release-evidence` FAIL (expected; physical runs still `PENDING`).
+- `npm run -s qa:rc-gates` PASS.
+- `npm run -s build:verify:release` PASS.
+- `npm run -s qa:docs-links` PASS.
+
+## Work Completed 2026-03-04 (session 27)
+
+Wave 3 RC3 gate stabilization pass: resolved iPad budget gate flakiness and aligned run duration to configured probe windows.
+
+**Gate reliability fixes**:
+- `e2e/ipad-performance-budget.spec.ts`
+  - aligned home-state checks with runtime value `home-scene` (keeps `home` fallback for compatibility).
+  - added panel-open cooldown (`320ms`) between loops to respect navigation debounce (`300ms`) and avoid false timeout failures.
+  - passed `homePanelId` + `debounceMs` into `page.evaluate` payloads explicitly (browser-context-safe).
+  - raised test timeout to `180000ms` so the `45000ms` stability probe can complete with headroom.
+
+**Validation**:
+- `npm run -s qa:ipad-performance-budget` PASS
+  - report: `scripts/reports/ipad-performance-budget-20260304-072743.md`
+- `npm run -s qa:rc-gates` PASS
+  - iPad report from aggregate run: `scripts/reports/ipad-performance-budget-20260304-072940.md`
+  - rust warning drift: PASS (`warning_count=5`, `baseline=5`)
+
+## Work Completed 2026-03-04 (session 25)
+
+Phase 5 decoupling follow-up: removed circular domain dependencies via explicit service-boundary wrappers and published KPI deltas.
+
+**Plan-alignment fixes**:
+- Added infra boundary module:
+  - `rust/domain_services.rs`
+  - routes cross-domain interactions through explicit boundary helpers (sticker award/reaction, parent PIN lookup, weekly insights fetch, focus-skill/friendly-name lookup).
+- Broke `tracker <-> rewards` cycle:
+  - `rust/tracker.rs` now uses `domain_services::award_kind_act_sticker()` instead of direct `rewards` import.
+  - `rust/rewards.rs` now uses `domain_services::notify_sticker_earned()` instead of direct `companion` import.
+- Broke `progression <-> insights` cycle:
+  - `rust/progress.rs` now resolves mom PIN + weekly insights via `domain_services`.
+  - `rust/parent_insights.rs` now resolves focus/friendly labels via `domain_services`.
+  - `rust/mom_mode.rs` now resolves friendly skill labels via `domain_services`.
+- Expanded boundary wrappers to remove remaining direct cross-domain imports:
+  - `rust/tracker.rs`, `rust/quests.rs`, `rust/story_engine.rs`, `rust/reflection.rs`, `rust/skill_progression.rs`, `rust/streaks.rs`, `rust/progress.rs`, `rust/adaptive_quests.rs`, `rust/mom_mode.rs`.
+- Registered new infra module in `rust/lib.rs`.
+
+**Validation**:
+- `cargo check --target wasm32-unknown-unknown` PASS (3 existing dead_code warnings in `rust/theme.rs`).
+- `npm run -s qa:phase5-kpi` PASS.
+  - report: `scripts/reports/phase5-kpi-20260304-071153.md`
+  - metrics: `cross_domain_db_callsites=46`, `cross_domain_direct_imports=0`, `circular_domain_dependencies=0`, `median_files_touched_single_domain_commit=4`
+- `npm run -s qa:rc-gates` PASS.
+
+## Work Completed 2026-03-04 (session 26)
+
+Wave 3 RC3 progression pass: added enforceable iPad-profile performance budgets and wired them into local/CI gate pipelines.
+
+**Plan-alignment fixes**:
+- Added versioned iPad budget config from active template thresholds:
+  - `config/ipad-performance-budget.json`
+  - budgets include boot time (`<=3000ms`), panel transition (`<=300ms` per-sample and p95), and runtime error budget for a stability probe.
+- Added automated iPad-profile performance gate test:
+  - `e2e/ipad-performance-budget.spec.ts`
+  - uses Playwright `iPad Mini` profile
+  - measures `wasm-init-total` boot duration
+  - measures repeated home→panel open transition timings
+  - runs stability probe loop and enforces runtime diagnostics error/rejection budget
+  - emits evidence report to `scripts/reports/ipad-performance-budget-*.md`
+- Added new QA command and RC aggregate inclusion:
+  - `package.json`:
+    - `qa:ipad-performance-budget`
+    - `qa:rc-gates` now includes `qa:ipad-performance-budget`
+- Added CI gate + artifact upload:
+  - `.github/workflows/pwa-health.yml`
+    - new `ipad-performance-budget-gate`
+    - added to `e2e-quality-gates.needs`
+    - uploads `scripts/reports/ipad-performance-budget-*.md`
+- Updated active runbooks:
+  - `docs/TESTING.md`
+  - `docs/HANDOFF.md`
+
+**Validation**:
+- `npm run -s qa:ipad-performance-budget` PASS
+  - report: `scripts/reports/ipad-performance-budget-20260304-*.md`
+- `npm run -s qa:rc-gates` PASS
+- `npm run -s qa:docs-links` PASS
+
+## Work Completed 2026-03-04 (session 24)
+
+Phase 5 conformance hardening pass against `KindHeartPhase5.md` with fresh gate evidence.
+
+**Plan-alignment fixes**:
+- Restored generated artifact availability in E2E/release output by adding generated contract files to index-shell source-of-truth:
+  - `config/index-shell.json` now includes:
+    - `public/skill-taxonomy.js`
+    - `public/skill-mastery-badges.js`
+    - `public/reflection-prompts.generated.js`
+- Regenerated shell/manifests to sync outputs:
+  - `index.html`
+  - `public/asset-manifest.js`
+  - `public/asset-manifest.json`
+- Fixed warning-drift regression in `rust/dom.rs` by removing a clippy redundant closure in `for_each_match`.
+
+**Validation**:
+- `npm run -s qa:taxonomy-contract` PASS
+- `npm run -s qa:e2e-skip-waivers` PASS
+- `npm run -s qa:generated-sync` PASS
+- `cargo check --target wasm32-unknown-unknown` PASS (3 existing dead_code warnings in `rust/theme.rs`)
+- `npm run -s qa:db-contract` PASS
+- `node scripts/run-e2e.mjs --grep "games lifecycle supports launch, return, relaunch, and reset|TG-6|TG-7|TG-8"` PASS
+- `npm run -s qa:e2e-gap-report` PASS
+  - report: `scripts/reports/e2e-gap-report-20260303-235057.md`
+  - route coverage `11/11` (100%), flow coverage `10/10` (100%), gaps `critical=0 high=0 medium=0`
+- `npm run -s qa:runtime` PASS
+- `npm run -s qa:rust-warning-drift` PASS (`warning_count=5`, `baseline=5`)
+- `npm run -s qa:rc-gates` PASS
+
+## Work Completed 2026-03-03 (session 20)
+
+Generated-artifacts sync gate operationalization for panel-registry rollout.
+
+**CI and runbook updates**:
+- Added `generated-sync-gate` to `.github/workflows/pwa-health.yml`
+- Added `generated-sync-gate` to `e2e-quality-gates.needs` so generated outputs are enforced before end-to-end quality gates
+- Updated active checklists to include generated-sync:
+  - `docs/HANDOFF.md`
+  - `docs/TESTING.md`
+
+**Validation**:
+- `npm run qa:generated-sync` PASS
+- `npm run qa:docs-links` PASS
+
+## Work Completed 2026-03-04 (session 22)
+
+Deep Pass II — index-shell contract and CI hardening follow-up.
+
+**Contract and checker hardening**:
+- Added config validation gate: `scripts/check-index-shell-config.mjs`
+- Added negative contract mutation gate: `scripts/check-index-shell-contract-negative.mjs`
+- Refactored `scripts/check-index-shell-contract.mjs` to expose reusable contract collection and invariant-coverage validation
+- Added frozen invariant-to-gate ownership matrix in `config/index-shell.json` under `qa.contract_invariants`
+
+**Generator guardrails**:
+- `scripts/generate-index-shell.mjs` now enforces:
+  - marker multiplicity and ordering preflight checks
+  - duplicate head directive rejection
+  - duplicate panel ID rejection
+  - exact panel order parity with `config/panels.json` (excluding `home-scene`)
+  - normalized output and single trailing newline
+- `scripts/check-generated-sync.sh` now fails fast with explicit index-shell preflight messaging
+
+**CI integration**:
+- Added `index-shell-contract-gate` to `.github/workflows/pwa-health.yml` running `npm run qa:index-shell-deep`
+- Added `index-shell-contract-gate` to `e2e-quality-gates.needs`
+
+**E2E coverage deepening**:
+- Expanded index-shell contract coverage to include all-panel deep-link hash restore assertions
+- Expanded panel-registry tests to validate full-panel hydration and full-panel missing-registry fallback labels
+- Hardened games flow checks to verify arena + exit control visibility toggling
+
+**Validation**:
+- `cargo check -q` PASS
+- `npm run -s qa:generated-sync` PASS
+- `npm run -s qa:critical-token-sync` PASS
+- `npm run -s qa:panel-registry-shape` PASS
+- `npm run -s qa:runtime` PASS
+- `npm run -s qa:index-shell-config` PASS
+- `npm run -s qa:index-shell-contract` PASS
+- `npm run -s qa:index-shell-contract-negative` PASS
+- `npm run -s qa:db-contract` PASS
+- `npm run -s qa:duplication-budget` PASS
+- `npm run -s qa:docs-links` PASS
+- `node scripts/run-e2e.mjs --grep \"panel registry|runtime diagnostics|feature completeness|index shell contract\"` PASS
+
+## Work Completed 2026-03-04 (session 23)
+
+Phase 4 hybrid modernization pass completed and validated against `KindHeartPhase4.md`.
+
+**Shell + registry modernization**:
+- Switched panel-registry artifact to ESM exports (`PANEL_REGISTRY` + default) and removed global runtime dependency
+- Refactored `wasm-init.js` to dynamic import `./panel-registry.js` with shape validation and resilient inferred-label fallback
+- Removed static `<script src="./panel-registry.js">` contract expectation and runtime coupling
+
+**Hybrid home-shell generation + contracts**:
+- Added `home` schema to `config/index-shell.json` and generated top-level home buttons via markers:
+  - `<!-- INDEX-SHELL HOME BUTTONS START -->`
+  - `<!-- INDEX-SHELL HOME BUTTONS END -->`
+- Added contract invariants for home-marker ownership and generated home button structure
+- Extended config/contract/negative gates for home schema parity and marker mutation coverage
+
+**Dead-path cleanup + runtime wiring**:
+- Removed stale `[data-home-title]` and `[data-heart-counter]` entrance logic in CSS and Rust boot selector flow
+- Wired `.home-btn-badge` using `data-home-tracker-hearts` to live runtime state updates in Rust
+- Kept `[data-home-btn]` and `[data-companion]` entrance behavior intact
+
+**Apple-Silicon init-time GPU improvements**:
+- Added `GpuBuffer.getMappedRange` and `GpuBuffer.unmap` bindings
+- Switched particle/uniform buffers to `mappedAtCreation=true`, initialized mapped ranges, and unmapped
+- Kept per-frame `queue.writeBuffer` path and shader workgroup sizing unchanged
+
+**QA/e2e migration from global assumptions**:
+- Updated panel registry shape gate to validate ESM output strategy and reject legacy global output
+- Refactored panel-registry/index-shell e2e to compare hydration against `config/panels.json` metadata, not `window.BKH_PANEL_REGISTRY`
+- Preserved missing-registry fallback test (network abort on `panel-registry.js`)
+- Added/verified tracker home badge assertion (badge target exists, keeps "Hearts today" semantics, and increments after a kind act)
+
+**Validation**:
+- `node scripts/check-index-shell-config.mjs` PASS
+- `node scripts/check-index-shell-contract.mjs` PASS
+- `node scripts/check-index-shell-contract-negative.mjs` PASS
+- `node scripts/check-panel-registry-shape.mjs` PASS
+- `bash scripts/check-generated-sync.sh` PASS
+- `cargo check --target wasm32-unknown-unknown` PASS
+- `node scripts/run-e2e.mjs --grep "panel registry|index shell contract"` PASS
+- `node scripts/run-e2e.mjs --grep "home tracker badge updates after logging a kind act"` PASS
+
+## Work Completed 2026-03-03 (session 21)
+
+Cross-type redundancy consolidation and ownership alignment across config/JS/Rust/CSS.
+
+**Source-of-truth + dedup updates**:
+- Panel metadata now owns panel title and panel aria fields in `config/panels.json` and generated outputs (`public/panel-registry.js`, `rust/panel_registry_generated.rs`)
+- Runtime hydration now applies panel title/aria from registry in `wasm-init.js`; removed unused panel header data attributes
+- Added centered style helpers in `rust/dom.rs` and refactored repeated drag clone style strings in `rust/rewards.rs`
+- Moved paint animated-stamp static style primitives into CSS (`src/styles/games.css`) with Rust writing only dynamic CSS vars
+
+**Contract and drift fixes**:
+- Added DB contract source file `config/db-contract.json`
+- Added generator `scripts/generate-db-contract.mjs` and generated constants:
+  - `rust/db_contract_generated.rs`
+  - `public/db-contract.js`
+- Updated consumers (`public/db-worker.js`, `rust/db_messages.rs`, `rust/mom_mode.rs`)
+- Updated generated-sync and DB-contract QA checks for the new generated contract files
+- Added critical inline token drift gate: `npm run qa:critical-token-sync`
+- Corrected inline `--font-size-xl` value in `index.html` to match canonical tokens
+
+**Lifecycle and cleanup**:
+- Switched class animation cleanup to event-driven `animationend` / `animationcancel` + timeout fallback (`rust/animations.rs`)
+- Removed dead debug Safari path (`rust/safari_apis.rs`) and associated init hook
+
+**Validation**:
+- `cargo check` PASS
+- `npm run qa:generated-sync` PASS
+- `npm run qa:db-contract` PASS
+- `npm run qa:critical-token-sync` PASS
+- `npm run qa:runtime` PASS
+- `node scripts/run-e2e.mjs --grep "panel registry"` PASS
+- `node scripts/run-e2e.mjs --grep "db contract"` PASS
+
+## Work Completed 2026-03-03 (session 19)
+
+CSS Apple-Silicon optimization follow-up and documentation synchronization.
+
+**CSS/runtime optimization updates**:
+- Confirmed compositor-friendly progress path is active across tracker, quests, gardens, and Hug meter (`transform: scaleX(...)` + CSS vars).
+- Confirmed quest zero-progress marker logic uses `data-progress-zero` (no inline-style width matching).
+- Hardened Hug interaction hot paths with `try_borrow_mut()` in high-frequency/timer-adjacent handlers to avoid `RefCell` panic under rapid pointer/tap overlap.
+
+**Documentation updates**:
+- Synced active docs metadata and navigation links across:
+  - `README.md`
+  - `docs/HANDOFF.md`
+  - `docs/INDEX.md`
+  - `docs/WORKSPACE_DOCS_MAP.md`
+  - `docs/reports/README.md`
+- Added archived pass report:
+  - `docs/archive/reports/2026-03-03-css-apple-silicon-optimizer-pass.md`
+- Updated archive indexes:
+  - `docs/archive/reports/INDEX.md`
+  - `docs/archive/INDEX.md`
+
+**Validation**:
+- `cargo check` PASS
+- Playwright Hug hold-flow smoke on fresh origin (`127.0.0.1:8091`) PASS (no `RefCell already borrowed` panic reproduced)
+- `npm run qa:docs-links` PASS
+- `npm run qa:docs-budget` PASS
 
 ## Work Completed 2026-03-03 (session 18)
 

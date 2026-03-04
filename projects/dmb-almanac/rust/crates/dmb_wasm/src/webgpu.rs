@@ -2,6 +2,26 @@ use js_sys::Float32Array;
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_bindgen_futures::JsFuture;
 
+#[wasm_bindgen(inline_js = r#"
+export function dmb_load_webgpu_helpers() {
+  try {
+    const root = typeof window !== 'undefined' ? window : globalThis;
+    if (!root) return Promise.resolve(false);
+    if (root.dmbWebgpuScores || root.dmbWebgpuProbe) return Promise.resolve(true);
+    if (root.__DMB_WEBGPU_HELPERS_PROMISE__) return root.__DMB_WEBGPU_HELPERS_PROMISE__;
+    root.__DMB_WEBGPU_HELPERS_PROMISE__ = import('/webgpu.js')
+      .then(() => true)
+      .catch(() => false);
+    return root.__DMB_WEBGPU_HELPERS_PROMISE__;
+  } catch (_) {
+    return Promise.resolve(false);
+  }
+}
+"#)]
+extern "C" {
+    fn dmb_load_webgpu_helpers() -> js_sys::Promise;
+}
+
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScoresWorker, catch)]
@@ -33,6 +53,14 @@ extern "C" {
         dim: f64,
         indices: &js_sys::Uint32Array,
     ) -> Result<js_sys::Promise, JsValue>;
+}
+
+pub async fn ensure_webgpu_helpers_loaded() -> bool {
+    let result = JsFuture::from(dmb_load_webgpu_helpers()).await;
+    result
+        .ok()
+        .and_then(|value| value.as_bool())
+        .unwrap_or(false)
 }
 
 fn cpu_dot(a: &[f32], b: &[f32]) -> f32 {
@@ -85,6 +113,7 @@ pub async fn webgpu_scores(
     }
 
     let _window = web_sys::window().ok_or_else(|| JsValue::from_str("window unavailable"))?;
+    let _ = ensure_webgpu_helpers_loaded().await;
     let query_array = Float32Array::from(query.as_slice());
     let matrix_array = Float32Array::from(matrix.as_slice());
     let promise =
@@ -123,6 +152,7 @@ pub async fn webgpu_scores_subset(
     }
 
     let _window = web_sys::window().ok_or_else(|| JsValue::from_str("window unavailable"))?;
+    let _ = ensure_webgpu_helpers_loaded().await;
     let query_array = Float32Array::from(query.as_slice());
     let matrix_array = Float32Array::from(matrix.as_slice());
     let indices_array = js_sys::Uint32Array::from(indices.as_slice());

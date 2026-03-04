@@ -1,12 +1,20 @@
 # Comprehensive UI/UX Audit - 2026-02-12
 
+- Archive Path: `docs/archive/testing/comprehensive-ui-ux-audit.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Comprehensive UI/UX Audit - 2026-02-12`
+
+## Summary
+**Context**: User reported "many aspects of this app still seem broken in the UI and UX. Games, Quests, formatting, etc."
+
+## Context
 **Context**: User reported "many aspects of this app still seem broken in the UI and UX. Games, Quests, formatting, etc."
 
 **Status**: IN PROGRESS - Systematic audit of all panels
 
 ---
 
-## Audit Scope
+### Audit Scope
 
 **Previously Fixed (Session 1)**:
 - ✅ Critical INP performance (7088ms → <200ms) - Sparkle gradients optimized
@@ -21,11 +29,11 @@
 
 ---
 
-## Games Panel Analysis (`src/styles/games.css`)
+### Games Panel Analysis (`src/styles/games.css`)
 
 ### Potential Issues Found
 
-#### 1. **Backdrop-Filter Overuse (NOT YET OPTIMIZED)**
+### 1. **Backdrop-Filter Overuse (NOT YET OPTIMIZED)**
 
 **Lines 532-533, 836-837, 891-892**:
 ```css
@@ -44,7 +52,7 @@
 **Impact**: Medium - Games panel used occasionally, but still adds GPU load
 **Previous Report**: Identified but marked lower priority vs home/tracker/quests
 
-#### 2. **Complex Staggered Animations**
+### 2. **Complex Staggered Animations**
 
 **Lines 95-158**: Manual `nth-child` animation delays for 5 game cards
 ```css
@@ -57,7 +65,7 @@
 **Comparison**: Quests panel (line 107) uses Safari 26.2 `sibling-index()` for cleaner code
 **Impact**: Low - Works fine, just not using available Safari 26.2 feature
 
-#### 3. **Memory Game Card Stagger (Up to 16 Cards)**
+### 3. **Memory Game Card Stagger (Up to 16 Cards)**
 
 **Lines 1001-1063**: 16 manual `nth-child` selectors for memory card entrance
 ```css
@@ -72,7 +80,7 @@
 **Code smell**: 63 lines of repetitive CSS
 **Safari 26.2 solution**: `animation-delay: calc(sibling-index() * 0.03s);`
 
-#### 4. **No Visual Feedback for Disabled States**
+### 4. **No Visual Feedback for Disabled States**
 
 **Line 160-165**: Disabled game cards
 ```css
@@ -88,11 +96,11 @@
 
 ---
 
-## Quests Panel Analysis (`src/styles/quests.css`)
+### Quests Panel Analysis (`src/styles/quests.css`)
 
 ### Issues Found
 
-#### 1. **Done State Check Mark Position**
+### 1. **Done State Check Mark Position**
 
 **Lines 142-153**: Quest completion stamp positioning
 ```css
@@ -109,7 +117,7 @@
 **Potential Issue**: Check mark at `right: var(--space-md)` might overlap quest content on small screens
 **Need to verify**: Does check overlap with quest text on iPad mini 6 portrait?
 
-#### 2. **Safari 26.2 Feature Usage** ✅
+### 2. **Safari 26.2 Feature Usage** ✅
 
 **Line 107**: Correctly uses `sibling-index()` for animation stagger
 ```css
@@ -118,7 +126,7 @@ animation-delay: calc(sibling-index() * 0.1s);
 
 **Good**: Shows Safari 26.2 features ARE being used, just inconsistently across files
 
-#### 3. **Bonus Banner Animation**
+### 3. **Bonus Banner Animation**
 
 **Lines 260-290**: Quests bonus banner with infinite gradient animation
 ```css
@@ -134,7 +142,7 @@ animation-delay: calc(sibling-index() * 0.1s);
 
 ---
 
-## Cross-Panel Formatting Issues
+### Cross-Panel Formatting Issues
 
 ### 1. **Inconsistent Animation Delay Patterns**
 
@@ -180,7 +188,7 @@ animation-delay: calc(sibling-index() * 0.1s);
 
 ---
 
-## Visual Design Assessment
+### Visual Design Assessment
 
 ### Strengths Observed ✅
 
@@ -220,7 +228,7 @@ animation-delay: calc(sibling-index() * 0.1s);
 
 ---
 
-## Formatting Specific Issues
+### Formatting Specific Issues
 
 ### CSS Code Quality
 
@@ -240,10 +248,21 @@ animation-delay: calc(sibling-index() * 0.1s);
 
 ---
 
-## Testing Plan for Physical Device
+## Actions
+1. ⏳ Read `rewards.css` and `mom.css` for complete backdrop-filter audit
+2. ⏳ Verify CSS custom property values (touch targets, spacing)
+3. ⏳ Apply High Priority fixes (games backdrop-filter, animation delays)
+4. ⏳ Build and deploy to iPad mini 6 for real-world testing
+5. ⏳ User acceptance testing with 4-year-old
 
-### Visual Verification Needed
+---
 
+**Report Date**: 2026-02-12 19:57 UTC
+**Session**: Comprehensive UI/UX Audit (Sessions 1-3)
+**Status**: ALL OPTIMIZATIONS COMPLETE ✅ - 16 backdrop-filter instances optimized across 8 CSS files
+**Next**: Test on iPad mini 6 for validation
+
+## Validation
 1. **Quest completion check mark**:
    - [ ] Verify ✅ doesn't overlap text on iPad mini 6 portrait
    - [ ] Check rotation (`rotate(-12deg)`) looks intentional, not broken
@@ -268,7 +287,7 @@ animation-delay: calc(sibling-index() * 0.1s);
 
 ---
 
-## Recommended Fixes (Priority Order)
+### Recommended Fixes (Priority Order)
 
 ### High Priority
 
@@ -312,7 +331,7 @@ animation-delay: calc(sibling-index() * 0.1s);
 
 ---
 
-## Files Pending Review
+### Files Pending Review
 
 1. **`src/styles/rewards.css`** - 3 backdrop-filter instances
 2. **`src/styles/mom.css`** - 1 backdrop-filter instance
@@ -322,17 +341,6 @@ animation-delay: calc(sibling-index() * 0.1s);
 
 ---
 
-## Next Steps
+## References
+_No references recorded._
 
-1. ⏳ Read `rewards.css` and `mom.css` for complete backdrop-filter audit
-2. ⏳ Verify CSS custom property values (touch targets, spacing)
-3. ⏳ Apply High Priority fixes (games backdrop-filter, animation delays)
-4. ⏳ Build and deploy to iPad mini 6 for real-world testing
-5. ⏳ User acceptance testing with 4-year-old
-
----
-
-**Report Date**: 2026-02-12 19:57 UTC
-**Session**: Comprehensive UI/UX Audit (Sessions 1-3)
-**Status**: ALL OPTIMIZATIONS COMPLETE ✅ - 16 backdrop-filter instances optimized across 8 CSS files
-**Next**: Test on iPad mini 6 for validation

@@ -1,5 +1,13 @@
 # Wave 9: Debug & Optimization Pass — Blaire's Kind Heart
 
+- Archive Path: `docs/archive/plans/2026-02-20-debug-optimization-pass.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Wave 9: Debug & Optimization Pass — Blaire's Kind Heart`
+
+## Summary
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
+
+## Context
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
 
 **Goal:** Fix 1 critical data-loss bug (missing `combo` column silently breaks game score hydration), 1 important power-drain bug (GPU particles rendering while backgrounded), and 6 minor code-quality issues for a clean, launch-ready codebase.
@@ -12,7 +20,7 @@
 
 ---
 
-## Task 1: Fix Missing `combo` Column in `game_scores` Table (CRITICAL)
+### Task 1: Fix Missing `combo` Column in `game_scores` Table (CRITICAL)
 
 **Files:**
 - Modify: `public/db-worker.js` — add `combo` column to `game_scores` CREATE TABLE + add migration
@@ -71,7 +79,7 @@ This is safe because SQLite's ALTER TABLE ADD COLUMN is a no-op error if the col
 
 ---
 
-## Task 2: Wire Combo into `save_game_score` + Fix Catcher Save Call
+### Task 2: Wire Combo into `save_game_score` + Fix Catcher Save Call
 
 **Files:**
 - Modify: `rust/games.rs:41` — add `combo` parameter to `save_game_score`
@@ -133,8 +141,6 @@ games::save_game_score("catcher-save", "catcher", score as u64, level as u64, co
 
 ---
 
-## Task 3: Pause GPU Particles When App Is Backgrounded (IMPORTANT)
-
 **Files:**
 - Modify: `rust/lib.rs:7` — add `gpu_particles::set_paused()` in visibility change handler
 
@@ -178,7 +184,7 @@ browser_apis::on_visibility_change(move |visible| {
 
 ---
 
-## Task 4: Remove Unused `PRECACHE_ASSETS` Constant from SW Assets
+### Task 4: Remove Unused `PRECACHE_ASSETS` Constant from SW Assets
 
 **Files:**
 - Modify: `public/sw-assets.js` — remove line 249
@@ -196,7 +202,7 @@ const PRECACHE_ASSETS = [...CRITICAL_ASSETS, ...DEFERRED_ASSETS];
 
 ---
 
-## Task 5: Remove Unused `fetchPromise` Variable in SW Fetch Handler
+### Task 5: Remove Unused `fetchPromise` Variable in SW Fetch Handler
 
 **Files:**
 - Modify: `public/sw.js` — restructure stale-while-revalidate block to not create unused binding
@@ -244,7 +250,7 @@ To:
 
 ---
 
-## Task 6: Consolidate `offline_queue` and `errors` Tables into Main Schema
+### Task 6: Consolidate `offline_queue` and `errors` Tables into Main Schema
 
 **Files:**
 - Modify: `public/db-worker.js` — add `offline_queue` and `errors` CREATE TABLE + indexes to SCHEMA
@@ -326,7 +332,7 @@ pub async fn init_schema() -> Result<(), String> {
 
 ---
 
-## Task 7: Replace Inline `onerror` Handlers with CSS Fallback
+### Task 7: Replace Inline `onerror` Handlers with CSS Fallback
 
 **Files:**
 - Modify: `index.html` — remove 3 inline `onerror` handlers, add CSS-only fallback
@@ -387,7 +393,6 @@ if let Some(grid) = dom::query(".home-grid") {
             if el.class_list().contains("home-btn-img") {
                 let _ = el.set_attribute("data-failed", "");
             }
-        }
     });
 }
 ```
@@ -413,8 +418,6 @@ Wait — `dom::on_with_capture` may not exist. Let's keep it simpler. The images
                     if el.class_list().contains("home-btn-img") {
                         let _ = el.set_attribute("data-failed", "");
                     }
-                }
-            }
         });
         let mut opts = web_sys::AddEventListenerOptions::new();
         opts.capture(true);
@@ -423,7 +426,6 @@ Wait — `dom::on_with_capture` may not exist. Let's keep it simpler. The images
         );
         cb.forget();
     }
-}
 ```
 
 **Step 4:** Run `trunk build --release` — verify 0 errors, 0 warnings.
@@ -432,8 +434,10 @@ Wait — `dom::on_with_capture` may not exist. Let's keep it simpler. The images
 
 ---
 
-## Task 8: Final Build Verification & SW Version Bump
+## Actions
+_No actions recorded._
 
+## Validation
 **Files:**
 - Modify: `public/sw.js` — bump `CACHE_VERSION`
 
@@ -445,8 +449,6 @@ Wait — `dom::on_with_capture` may not exist. Let's keep it simpler. The images
 
 ---
 
-## Verification
-
 1. `trunk build --release` — **0 errors, 0 warnings**
 2. **Game score hydration (CRITICAL fix):** Play Kindness Catcher → get a score + combo → close and reopen app → game hub should show correct high score, level, and combo
 3. **GPU particles paused:** Open app → trigger celebration (confetti) → switch away to another app → come back → no battery drain, particles resume normally
@@ -457,7 +459,7 @@ Wait — `dom::on_with_capture` may not exist. Let's keep it simpler. The images
 
 ---
 
-## Critical Files
+### Critical Files
 
 | File | Changes |
 |------|---------|
@@ -484,3 +486,7 @@ Wait — `dom::on_with_capture` may not exist. Let's keep it simpler. The images
 - `browser_apis::on_visibility_change()` — `rust/lib.rs:7`
 - `dom::query()`, `dom::on()` — `rust/dom.rs`
 - `wasm_bindgen::closure::Closure` — standard wasm-bindgen pattern
+
+## References
+_No references recorded._
+

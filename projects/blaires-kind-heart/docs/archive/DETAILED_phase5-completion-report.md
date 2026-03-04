@@ -1,12 +1,36 @@
 # Phase 5: Asset Prefetching & Caching - Completion Report
 
+- Archive Path: `docs/archive/DETAILED_phase5-completion-report.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Phase 5: Asset Prefetching & Caching - Completion Report`
+
+## Summary
+**Modified**:
+- `public/sw-assets.js` - Moved 17 assets to CRITICAL_ASSETS
+- `public/sw.js` - Incremented cache version to v5
+
+**Build verification**: `trunk build --release` passed
+
+---
+
+### ✨ Key Achievements
+
+1. **83% companion hit rate** vs 17% before (5/6 skins pre-cached)
+2. **20% gardens pre-cached** (12/60 stage_1 thumbnails instant-load)
+3. **17 strategic assets** moved to critical cache (+510KB)
+4. **Service Worker version** properly incremented (v4 → v5)
+5. **Zero build errors** — clean production build
+
+**Phase 5 Status**: COMPLETE (1 of 1 sub-phase implemented, Phase 5.16 intentionally skipped)
+
+## Context
 **Date**: 2026-02-11
 **Target**: iPad mini 6 (A15, 4GB RAM), Safari 26.2
 **Goal**: Maximum cache warmth for offline experience
 
 ---
 
-## ✅ Completed
+### ✅ Completed
 
 ### Phase 5.15: Aggressive Prefetching
 **Status**: COMPLETE
@@ -53,7 +77,7 @@
 
 ---
 
-## 📊 Overall Phase 5 Impact
+### 📊 Overall Phase 5 Impact
 
 ### Cache Warmth Improvements
 1. **Gardens panel**: 12/60 images pre-cached (20% → instant first view)
@@ -73,7 +97,7 @@
 
 ---
 
-## 🚫 Deferred Optimizations
+### 🚫 Deferred Optimizations
 
 ### Phase 5.16: Maximum Pre-cache
 **Status**: SKIPPED
@@ -83,8 +107,7 @@
 
 ---
 
-## 🔍 Next Steps
-
+## Actions
 ### Phase 6: Performance Monitoring
 **Remaining**: Implement Web Vitals tracking and worker monitoring
 **Tasks**:
@@ -98,22 +121,9 @@
 
 ---
 
-## 📁 Files Modified Summary
+## Validation
+_Validation details not recorded._
 
-**Modified**:
-- `public/sw-assets.js` - Moved 17 assets to CRITICAL_ASSETS
-- `public/sw.js` - Incremented cache version to v5
+## References
+_No references recorded._
 
-**Build verification**: `trunk build --release` passed
-
----
-
-## ✨ Key Achievements
-
-1. **83% companion hit rate** vs 17% before (5/6 skins pre-cached)
-2. **20% gardens pre-cached** (12/60 stage_1 thumbnails instant-load)
-3. **17 strategic assets** moved to critical cache (+510KB)
-4. **Service Worker version** properly incremented (v4 → v5)
-5. **Zero build errors** — clean production build
-
-**Phase 5 Status**: COMPLETE (1 of 1 sub-phase implemented, Phase 5.16 intentionally skipped)

@@ -1,5 +1,13 @@
 # Debug & Polish Implementation Plan
 
+- Archive Path: `docs/archive/plans/2026-02-15-debug-and-polish-impl.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Debug & Polish Implementation Plan`
+
+## Summary
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+## Context
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Fix 1 critical CSS loading bug, 3 high-priority code issues, 4 medium UX polish items, and 4 low cosmetic improvements across ~15 files.
@@ -10,8 +18,39 @@
 
 ---
 
-## Task 1: Add 12 Missing CSS Links to index.html
+## Actions
+_No actions recorded._
 
+## Validation
+**Step 1: Clean build**
+
+Run: `trunk build --release 2>&1 | tail -10`
+Expected: Build succeeds with no errors.
+
+**Step 2: Verify all CSS files in dist**
+
+Run: `ls dist/*.css | wc -l`
+Expected: 16.
+
+**Step 3: Verify no contrast-color() remaining**
+
+Run: `grep -r "contrast-color" src/styles/`
+Expected: No matches.
+
+**Step 4: Verify no .forget() in game files**
+
+Run: `grep -n "\.forget()" rust/game_catcher.rs rust/game_memory.rs rust/game_hug.rs`
+Expected: No matches (all replaced with Reflect::set).
+
+**Step 5: Commit all remaining changes (if any unstaged)**
+
+```bash
+git status
+```
+
+If clean, this task is done.
+
+## References
 **Files:**
 - Modify: `index.html:64-66`
 
@@ -68,7 +107,7 @@ so they were never built into dist/ and all panel styling was missing."
 
 ---
 
-## Task 2: Clean Up sw-assets.js CSS Entries
+### Task 2: Clean Up sw-assets.js CSS Entries
 
 **Files:**
 - Modify: `public/sw-assets.js:97-109`
@@ -116,7 +155,7 @@ CSS files are now Trunk-bundled with hashed filenames. The bare paths
 
 ---
 
-## Task 3: Replace contrast-color() with Explicit Colors
+### Task 3: Replace contrast-color() with Explicit Colors
 
 **Files:**
 - Modify: `src/styles/tracker.css:82,99,116,133,150,167`
@@ -152,7 +191,7 @@ and dark text on yellow background."
 
 ---
 
-## Task 4: Fix Game Timer Closure Leaks — Catcher
+### Task 4: Fix Game Timer Closure Leaks — Catcher
 
 **Files:**
 - Modify: `rust/game_catcher.rs`
@@ -198,7 +237,7 @@ is cleared on game exit, closures become eligible for GC."
 
 ---
 
-## Task 5: Fix Game Timer Closure Leaks — Memory
+### Task 5: Fix Game Timer Closure Leaks — Memory
 
 **Files:**
 - Modify: `rust/game_memory.rs`
@@ -233,7 +272,7 @@ Same pattern as catcher — replace .forget() with Reflect::set on arena."
 
 ---
 
-## Task 6: Fix Game Timer Closure Leaks — Hug
+### Task 6: Fix Game Timer Closure Leaks — Hug
 
 **Files:**
 - Modify: `rust/game_hug.rs`
@@ -272,7 +311,7 @@ Three .forget() calls replaced with Reflect::set on arena for GC."
 
 ---
 
-## Task 7: Add Sound Effects — Emotion Check-in
+### Task 7: Add Sound Effects — Emotion Check-in
 
 **Files:**
 - Modify: `rust/reflection.rs:76` (show_reflection_prompt)
@@ -304,7 +343,7 @@ git commit -m "feat: add gentle sound on reflection prompt appearance"
 
 ---
 
-## Task 8: Add Sound Effect — Quest Completion Sparkle
+### Task 8: Add Sound Effect — Quest Completion Sparkle
 
 **Files:**
 - Modify: `rust/quests.rs:318`
@@ -335,7 +374,7 @@ git commit -m "feat: add sparkle sound on all-quests-done celebration"
 
 ---
 
-## Task 9: Add Shimmer Animation to Loading Skeletons
+### Task 9: Add Shimmer Animation to Loading Skeletons
 
 **Files:**
 - Modify: `src/styles/quests.css:60`
@@ -385,7 +424,7 @@ Uses existing shimmer-loading keyframe from animations.css."
 
 ---
 
-## Task 10: Replace Hardcoded Sizes with Design Tokens
+### Task 10: Replace Hardcoded Sizes with Design Tokens
 
 **Files:**
 - Modify: `src/styles/tracker.css:391`
@@ -452,7 +491,7 @@ emoji display sizes."
 
 ---
 
-## Task 11: Add :focus-visible States to Emotion Buttons
+### Task 11: Add :focus-visible States to Emotion Buttons
 
 **Files:**
 - Modify: `src/styles/tracker.css`
@@ -497,7 +536,7 @@ Kind act buttons get purple focus ring, quest cards get yellow."
 
 ---
 
-## Task 12: Add Z-index Scale to Design Tokens
+### Task 12: Add Z-index Scale to Design Tokens
 
 **Files:**
 - Modify: `src/styles/tokens.css:119-123`
@@ -544,7 +583,7 @@ Replace magic z-index numbers with semantic --z-* custom properties."
 
 ---
 
-## Task 13: Optimize Bloom Animation Performance
+### Task 13: Optimize Bloom Animation Performance
 
 **Files:**
 - Modify: `src/styles/animations.css:121`
@@ -583,7 +622,7 @@ handles the fade-in effect."
 
 ---
 
-## Task 14: Fix SW Image Fallback
+### Task 14: Fix SW Image Fallback
 
 **Files:**
 - Modify: `public/sw.js:153-154`
@@ -617,7 +656,7 @@ Replace fetch(dataURI) with new Response(bytes) for reliability."
 
 ---
 
-## Task 15: Document PIN Storage as Intentional v1
+### Task 15: Document PIN Storage as Intentional v1
 
 **Files:**
 - Modify: `rust/progress.rs:287` (approximate)
@@ -647,7 +686,7 @@ git commit -m "docs: document PIN storage as intentional v1 tradeoff"
 
 ---
 
-## Task 16: Game Stats Placeholder Text
+### Task 16: Game Stats Placeholder Text
 
 **Files:**
 - Modify: `rust/games.rs`
@@ -678,32 +717,3 @@ git commit -m "ux: show '...' placeholder while game stats load"
 
 ---
 
-## Task 17: Final Build Verification
-
-**Step 1: Clean build**
-
-Run: `trunk build --release 2>&1 | tail -10`
-Expected: Build succeeds with no errors.
-
-**Step 2: Verify all CSS files in dist**
-
-Run: `ls dist/*.css | wc -l`
-Expected: 16.
-
-**Step 3: Verify no contrast-color() remaining**
-
-Run: `grep -r "contrast-color" src/styles/`
-Expected: No matches.
-
-**Step 4: Verify no .forget() in game files**
-
-Run: `grep -n "\.forget()" rust/game_catcher.rs rust/game_memory.rs rust/game_hug.rs`
-Expected: No matches (all replaced with Reflect::set).
-
-**Step 5: Commit all remaining changes (if any unstaged)**
-
-```bash
-git status
-```
-
-If clean, this task is done.

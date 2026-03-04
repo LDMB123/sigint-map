@@ -1,12 +1,33 @@
 # Blaire's Kind Heart - PWA Icon Generation Summary
 
-## Status: Ready to Generate
+- Archive Path: `docs/archive/ICON_GENERATION_SUMMARY.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Blaire's Kind Heart - PWA Icon Generation Summary`
+
+## Summary
+✅ **All generation tools prepared and ready**
+✅ **Multiple methods available**
+✅ **Full documentation provided**
+✅ **Icon configuration complete**
+
+**Recommended:** Execute `python3 generate_icons.py` for best results.
+
+**Status:** Ready to generate Blaire's Kind Heart app icons.
+
+---
+
+**Last Updated:** 2026-02-08
+**For:** Blaire's Kind Heart PWA v1.0
+**Target Device:** iPad Mini 6 (primary), iOS Safari, Android Chrome
+
+## Context
+### Status: Ready to Generate
 
 All files and scripts are prepared to generate the PWA app icons. Choose your preferred generation method and execute.
 
 ---
 
-## Files Created
+### Files Created
 
 ### Generation Scripts & Tools
 
@@ -34,14 +55,12 @@ All files and scripts are prepared to generate the PWA app icons. Choose your pr
 
 ---
 
-## Quick Start (3 Steps)
+### Quick Start (3 Steps)
 
 ### Step 1: Install Prerequisites
 ```bash
-# Check Python (needed for recommended method)
 python3 --version
 
-# Install Pillow if needed
 pip3 install Pillow
 ```
 
@@ -54,17 +73,9 @@ python3 generate_icons.py
 ### Step 3: Verify
 ```bash
 ls -lh icons/icon-*.png
-# Should show 5 files:
-# - icon-512.png
-# - icon-192.png
-# - icon-180.png
-# - icon-512-maskable.png
-# - icon-192-maskable.png
 ```
 
 ---
-
-## Generation Methods Overview
 
 ### Method 1: Python Script (Recommended) ⭐
 **Command:**
@@ -151,7 +162,7 @@ Visit one of:
 
 ---
 
-## Icon Specifications
+### Icon Specifications
 
 ### Sizes
 ```
@@ -190,71 +201,45 @@ Maskable Icons (Android 12+):
 
 ---
 
-## File Paths Reference
+## Actions
+1. **Generate Icons**
+   ```bash
+   cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/assets
+   python3 generate_icons.py
+   ```
 
-```
-/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/
-├── ICON_GENERATION_SUMMARY.md          (this file)
-├── ICON_GENERATION_OPTIONS.md          (complete methods guide)
-├── ICONS_SETUP.md                      (quick start)
-├── manifest.webmanifest                (already configured)
-└── assets/
-    ├── generate_icons.py               (Python generator)
-    ├── generate-icons.sh               (Shell wrapper)
-    ├── Makefile                        (Make targets)
-    └── icons/
-        ├── README.md                   (Icon specs)
-        ├── sparkle-unicorn.svg         (SVG template)
-        └── [generated icons here]
-```
+2. **Test Locally**
+   ```bash
+   cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart
+   trunk build --release
+   trunk serve
+   ```
 
----
+3. **Test on iPad Mini 6**
+   - Serve on local network: `trunk serve --address 0.0.0.0`
+   - Add to home screen
+   - Verify appearance
 
-## Workflow
-
-### For Development
-```bash
-# 1. Generate initial icons
-cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/assets
-python3 generate_icons.py
-
-# 2. Test in browser
-cd ..
-trunk serve
-
-# 3. Test on iPad Mini 6
-# a. Get your Mac IP: ipconfig getifaddr en0
-# b. Visit http://<IP>:8080 on iPad
-# c. Share > Add to Home Screen
-# d. Verify icon appears correctly
-```
-
-### For CI/CD
-```bash
-#!/bin/bash
-cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/assets
-
-# Check dependencies
-python3 --version || exit 1
-python3 -c "import PIL" || pip3 install Pillow
-
-# Generate icons
-python3 generate_icons.py || exit 1
-
-# Verify all files exist
-test -f icons/icon-512.png || exit 1
-test -f icons/icon-192.png || exit 1
-test -f icons/icon-180.png || exit 1
-test -f icons/icon-512-maskable.png || exit 1
-test -f icons/icon-192-maskable.png || exit 1
-
-echo "Icons generated and verified successfully"
-```
+4. **Deploy**
+   - Icons are automatically included in build
+   - No additional configuration needed
+   - PWA will use appropriate icon for each context
 
 ---
 
-## Testing Checklist
+### Support & Resources
 
+### Documentation
+- [MDN - Web Manifest Icons](https://developer.mozilla.org/en-US/docs/Web/Manifest#icons)
+- [MDN - Maskable Icons](https://developer.mozilla.org/en-US/docs/Web/Manifest/icons#maskable)
+- [Pillow Documentation](https://pillow.readthedocs.io/)
+
+### Tools
+- [PWA Builder](https://www.pwabuilder.com) - Icon validation
+- [Favicon Generator](https://www.favicon-generator.org/) - Quick generation
+- [ImageMagick](https://imagemagick.org/) - Image conversion
+
+## Validation
 After generating icons:
 
 - [ ] All 5 files exist in `/assets/icons/`
@@ -269,7 +254,7 @@ After generating icons:
 
 ---
 
-## Customization
+### Customization
 
 To modify the icon design:
 
@@ -307,7 +292,7 @@ convert -density 150 -resize 512x512 sparkle-unicorn.svg icon-512.png
 
 ---
 
-## Troubleshooting
+### Troubleshooting
 
 ### "ModuleNotFoundError: No module named 'PIL'"
 ```bash
@@ -316,10 +301,8 @@ pip3 install Pillow
 
 ### "python3: command not found"
 ```bash
-# Install Python 3
 brew install python3
 
-# Or update PATH
 export PATH="/usr/local/bin:$PATH"
 ```
 
@@ -346,65 +329,61 @@ brew install imagemagick
 
 ---
 
-## Next Steps
-
-1. **Generate Icons**
-   ```bash
-   cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/assets
-   python3 generate_icons.py
-   ```
-
-2. **Test Locally**
-   ```bash
-   cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart
-   trunk build --release
-   trunk serve
-   ```
-
-3. **Test on iPad Mini 6**
-   - Serve on local network: `trunk serve --address 0.0.0.0`
-   - Add to home screen
-   - Verify appearance
-
-4. **Deploy**
-   - Icons are automatically included in build
-   - No additional configuration needed
-   - PWA will use appropriate icon for each context
+## References
+```
+/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/
+├── ICON_GENERATION_SUMMARY.md          (this file)
+├── ICON_GENERATION_OPTIONS.md          (complete methods guide)
+├── ICONS_SETUP.md                      (quick start)
+├── manifest.webmanifest                (already configured)
+└── assets/
+    ├── generate_icons.py               (Python generator)
+    ├── generate-icons.sh               (Shell wrapper)
+    ├── Makefile                        (Make targets)
+    └── icons/
+        ├── README.md                   (Icon specs)
+        ├── sparkle-unicorn.svg         (SVG template)
+        └── [generated icons here]
+```
 
 ---
 
-## Support & Resources
+### Workflow
 
-### Documentation
-- [MDN - Web Manifest Icons](https://developer.mozilla.org/en-US/docs/Web/Manifest#icons)
-- [MDN - Maskable Icons](https://developer.mozilla.org/en-US/docs/Web/Manifest/icons#maskable)
-- [Pillow Documentation](https://pillow.readthedocs.io/)
+### For Development
+```bash
+cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/assets
+python3 generate_icons.py
 
-### Tools
-- [PWA Builder](https://www.pwabuilder.com) - Icon validation
-- [Favicon Generator](https://www.favicon-generator.org/) - Quick generation
-- [ImageMagick](https://imagemagick.org/) - Image conversion
+cd ..
+trunk serve
 
-### References
+```
+
+### For CI/CD
+```bash
+#!/bin/bash
+cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/assets
+
+python3 --version || exit 1
+python3 -c "import PIL" || pip3 install Pillow
+
+python3 generate_icons.py || exit 1
+
+test -f icons/icon-512.png || exit 1
+test -f icons/icon-192.png || exit 1
+test -f icons/icon-180.png || exit 1
+test -f icons/icon-512-maskable.png || exit 1
+test -f icons/icon-192-maskable.png || exit 1
+
+echo "Icons generated and verified successfully"
+```
+
+---
+
 - [Web App Manifest](https://www.w3.org/TR/appmanifest/)
 - [SVG Specification](https://www.w3.org/TR/SVG2/)
 - [PNG Specification](http://www.libpng.org/pub/png/)
 
 ---
 
-## Summary
-
-✅ **All generation tools prepared and ready**
-✅ **Multiple methods available**
-✅ **Full documentation provided**
-✅ **Icon configuration complete**
-
-**Recommended:** Execute `python3 generate_icons.py` for best results.
-
-**Status:** Ready to generate Blaire's Kind Heart app icons.
-
----
-
-**Last Updated:** 2026-02-08
-**For:** Blaire's Kind Heart PWA v1.0
-**Target Device:** iPad Mini 6 (primary), iOS Safari, Android Chrome

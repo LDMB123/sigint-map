@@ -1,19 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { PANEL_IDS_WITH_PROGRESS } from "./fixtures/panelIds";
 import { waitForAppReady } from "./helpers";
 
 test.use({ video: "off" });
 test.describe.configure({ mode: "serial" });
-
-const PANELS = [
-  "panel-tracker",
-  "panel-quests",
-  "panel-stories",
-  "panel-rewards",
-  "panel-games",
-  "panel-gardens",
-  "panel-progress"
-] as const;
 
 function formatCriticalViolations(
   violations: {
@@ -61,7 +52,7 @@ test.describe("a11y gate: axe critical checks", () => {
     await expectNoCriticalA11yViolations(page, "home");
   });
 
-  for (const panelId of PANELS) {
+  for (const panelId of PANEL_IDS_WITH_PROGRESS) {
     test(`panel ${panelId}`, async ({ page }) => {
       await page.goto(`/?e2e=1&panel=${panelId}#${panelId}`, { waitUntil: "domcontentloaded" });
       await waitForAppReady(page, panelId, 45_000);

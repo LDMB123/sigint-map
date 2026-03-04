@@ -1,6 +1,6 @@
 use crate::{
     animations, browser_apis, companion_care, companion_speech, confetti, db_client, dom, render,
-    session_timer, speech, state, synth_audio, theme, time_awareness,
+    panel_registry, session_timer, speech, state, synth_audio, theme, time_awareness,
 };
 use std::cell::{Cell, RefCell};
 use std::thread::LocalKey;
@@ -263,29 +263,23 @@ fn show_conversation_menu() {
     // Auto-dismiss after 5 seconds
     dom::set_timeout_once(5000, || {
         if let Some(m) = dom::query("[data-care-menu]") {
-            if let Ok(hide_fn) =
-                js_sys::Reflect::get(&m, &wasm_bindgen::JsValue::from_str("hidePopover"))
-            {
-                if let Ok(func) = hide_fn.dyn_into::<js_sys::Function>() {
-                    let _ = func.call0(&m);
-                }
-            }
-            m.remove();
+            hide_and_remove_popover(&m);
         }
     });
     synth_audio::chime();
 }
 fn dismiss_care_menu() {
     if let Some(m) = dom::query("[data-care-menu]") {
-        if let Ok(hide_fn) =
-            js_sys::Reflect::get(&m, &wasm_bindgen::JsValue::from_str("hidePopover"))
-        {
-            if let Ok(func) = hide_fn.dyn_into::<js_sys::Function>() {
-                let _ = func.call0(&m);
-            }
-        }
-        m.remove();
+        hide_and_remove_popover(&m);
     }
+}
+fn hide_and_remove_popover(menu: &Element) {
+    if let Ok(hide_fn) = js_sys::Reflect::get(menu, &wasm_bindgen::JsValue::from_str("hidePopover")) {
+        if let Ok(func) = hide_fn.dyn_into::<js_sys::Function>() {
+            let _ = func.call0(menu);
+        }
+    }
+    menu.remove();
 }
 fn on_care_feed() {
     if companion_care::feed_cooldown_remaining() > 0.0 {
@@ -732,27 +726,19 @@ pub(crate) fn show_bubble_typewriter(companion: &Element, text: &str) {
         TYPEWRITER_ABORT.with(|cell| *cell.borrow_mut() = None);
     });
 }
-const FIRST_VISIT_TIPS: &[(&str, &str)] = &[
-    ("panel-tracker", "Tap a heart to be kind!"),
-    ("panel-quests", "These are your adventures for today!"),
-    ("panel-stories", "Pick a story and I'll read it to you!"),
-    ("panel-rewards", "Your stickers live here!"),
-    ("panel-gardens", "Watch your gardens grow with kindness!"),
-    ("panel-games", "Let's play a game together!"),
-];
 pub fn check_first_visit(panel_id: &str) {
     let panel = panel_id.to_string();
     wasm_bindgen_futures::spawn_local(async move {
-        let key = format!("visited_{panel}");
+        let Some(meta) = panel_registry::get_panel(&panel) else {
+            return;
+        };
+        let key = format!("visited_{}", meta.id);
         let visited = db_client::get_setting(&key).await.is_some();
         if visited {
             return;
         }
         db_client::set_setting(&key, "1").await;
-        if let Some((_, tip)) = FIRST_VISIT_TIPS
-            .iter()
-            .find(|(id, _)| *id == panel.as_str())
-        {
+        if let Some(tip) = meta.first_visit_tip {
             let tip_text = tip.to_string();
             dom::set_timeout_once(600, move || {
                 speech::narrate(&tip_text);

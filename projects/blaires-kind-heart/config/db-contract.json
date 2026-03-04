@@ -1,0 +1,6 @@
+{
+  "db_worker_api_version": 1,
+  "db_worker_min_client_api_version": 1,
+  "db_schema_version": 2,
+  "export_format_version": 2
+}

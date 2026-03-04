@@ -1,13 +1,10 @@
 # Gardens Panel Rendering Bugs - Phase 3 Analysis
 
-**Status**: Critical blocking issues identified
-**Tested on**: Safari 26.2, iPad mini 6
-**Last Updated**: 2026-02-10
+- Archive Path: `docs/archive/DETAILED_GARDENS_BUGS.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Gardens Panel Rendering Bugs - Phase 3 Analysis`
 
----
-
-## Bug Summary
-
+## Summary
 Gardens panel has **5 critical bugs** preventing proper rendering and interaction:
 
 | Bug | Severity | Category | Impact |
@@ -20,7 +17,7 @@ Gardens panel has **5 critical bugs** preventing proper rendering and interactio
 
 ---
 
-## Bug #1: Missing Garden Assets in Build Output
+### Bug #1: Missing Garden Assets in Build Output
 
 **Location**: `index.html`, line 29-31
 **Severity**: CRITICAL - All gardens show broken image icon
@@ -38,7 +35,27 @@ Gardens assets directory is NOT included in Trunk build configuration. Assets ar
 <!-- gardens missing! -->
 ```
 
-### Verification
+| Bug # | File | Line | Type | Fix Effort |
+|-------|------|------|------|-----------|
+| 1 | `index.html` | 31 | Build config | 1 line |
+| 2 | `gardens.rs` | 447 | Logic | 2 lines |
+| 3 | `gardens.rs` | 416 | Logic | 2 lines |
+| 4 | `gardens.rs` | 433 | Event handler | 3 lines |
+| 5 | `gardens.css` | 14-22 | Optional | 2 lines |
+
+---
+
+## Context
+**Status**: Critical blocking issues identified
+**Tested on**: Safari 26.2, iPad mini 6
+**Last Updated**: 2026-02-10
+
+---
+
+## Actions
+_No actions recorded._
+
+## Validation
 - Source assets exist: `/assets/gardens/*.webp` (12 gardens × 5 stages = 60 files)
 - Example file: `bunny_stage_1.webp` (48 KB) ✓
 - Distributed in `/dist/`: NO ✗ (checked dist/assets/ - directory doesn't exist)
@@ -61,7 +78,7 @@ Add missing copy-dir directive to index.html (line 31, after game-sprites):
 
 ---
 
-## Bug #2: Stage Display Shows "Stage X of 5" Where X > 5
+### Bug #2: Stage Display Shows "Stage X of 5" Where X > 5
 
 **Location**: `rust/gardens.rs`, line 447
 **Severity**: CRITICAL - Wrong user-facing text
@@ -108,7 +125,7 @@ stage_text.set_text_content(Some(&format!("Stage {} of 5", growth_stage)));
 
 ---
 
-## Bug #3: Growth Stage to Asset Index Mapping is Wrong
+### Bug #3: Growth Stage to Asset Index Mapping is Wrong
 
 **Location**: `rust/gardens.rs`, lines 411-420
 **Severity**: CRITICAL - Shows wrong garden image
@@ -166,7 +183,7 @@ let asset_path = garden.stage_assets.get(stage_index)
 
 ---
 
-## Bug #4: Emoji Fallback Selector is Too Broad
+### Bug #4: Emoji Fallback Selector is Too Broad
 
 **Location**: `rust/gardens.rs`, lines 433-435
 **Severity**: HIGH - Event listener leak, wrong element selected
@@ -228,7 +245,7 @@ if let Ok(html_img) = img.clone().dyn_into::<web_sys::HtmlImageElement>() {
 
 ---
 
-## Bug #5: CSS Grid May Overflow on iPad Mini 6
+### Bug #5: CSS Grid May Overflow on iPad Mini 6
 
 **Location**: `src/styles/gardens.css`, lines 14-22
 **Severity**: MEDIUM - Layout issue on landscape iPad
@@ -289,24 +306,9 @@ Or keep current but add landscape breakpoint:
   .gardens-grid {
     grid-template-columns: 1fr;  /* Single column on narrow screens */
   }
-}
 ```
 
 ---
-
-## Summary Table
-
-| Bug # | File | Line | Type | Fix Effort |
-|-------|------|------|------|-----------|
-| 1 | `index.html` | 31 | Build config | 1 line |
-| 2 | `gardens.rs` | 447 | Logic | 2 lines |
-| 3 | `gardens.rs` | 416 | Logic | 2 lines |
-| 4 | `gardens.rs` | 433 | Event handler | 3 lines |
-| 5 | `gardens.css` | 14-22 | Optional | 2 lines |
-
----
-
-## Testing Checklist
 
 After fixes, verify:
 
@@ -320,7 +322,7 @@ After fixes, verify:
 
 ---
 
-## Related Components
+### Related Components
 
 - **Database**: `/public/db-worker.js` line 253-260 (gardens table schema ✓)
 - **Module**: `/rust/lib.rs` line 133 (gardens::init() called ✓)
@@ -343,7 +345,7 @@ pub fn init() {
 
 ---
 
-## Recommendations
+### Recommendations
 
 **Priority 1 (CRITICAL)**: Fix bugs #1-3 before next test
 - Bug #1: One-line fix with major impact
@@ -360,8 +362,12 @@ pub fn init() {
 
 ---
 
-## Files to Modify
+### Files to Modify
 
 1. **index.html** - Add gardens assets to Trunk build
 2. **rust/gardens.rs** - Fix stage logic and event handlers
 3. **src/styles/gardens.css** - Optional: improve responsive behavior
+
+## References
+_No references recorded._
+

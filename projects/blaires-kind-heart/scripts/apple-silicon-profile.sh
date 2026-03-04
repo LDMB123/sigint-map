@@ -6,6 +6,7 @@ DIST_DIR="${DIST_DIR:-.verify-dist-release}"
 PORT="${PORT:-4173}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:${PORT}}"
 GPU_MODE="${GPU_MODE:-auto}"
+PERF_MODE="${PERF_MODE:-auto}"
 RUST_PROFILE="${RUST_PROFILE:-release}"
 SYMBOLIZED_RELEASE="${SYMBOLIZED_RELEASE:-1}"
 PROFILE_SECONDS="${PROFILE_SECONDS:-20}"
@@ -52,10 +53,18 @@ case "${GPU_MODE}" in
     ;;
 esac
 
+case "${PERF_MODE}" in
+  auto|throughput|balanced|quality) ;;
+  *)
+    log "Invalid PERF_MODE='${PERF_MODE}', defaulting to auto"
+    PERF_MODE="auto"
+    ;;
+esac
+
 if [[ "${BASE_URL}" == *\?* ]]; then
-  PROFILE_URL="${BASE_URL}&gpu=${GPU_MODE}"
+  PROFILE_URL="${BASE_URL}&gpu=${GPU_MODE}&perf=${PERF_MODE}"
 else
-  PROFILE_URL="${BASE_URL}?gpu=${GPU_MODE}"
+  PROFILE_URL="${BASE_URL}?gpu=${GPU_MODE}&perf=${PERF_MODE}"
 fi
 
 mkdir -p "${OUT_DIR}"
@@ -80,6 +89,8 @@ cleanup() {
 trap cleanup EXIT
 
 log "Profiling URL: ${PROFILE_URL}"
+log "GPU mode query enabled: ${GPU_MODE} (runtime sets data-gpu-mode/data-gpu-status)"
+log "Perf mode query enabled: ${PERF_MODE} (runtime sets data-perf-mode)"
 log "Running PWA health check"
 npm run pwa:health -- "${HEALTH_BASE_URL}" | tee "${OUT_DIR}/pwa-health.txt"
 

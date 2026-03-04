@@ -16,6 +16,8 @@ enum Command {
     BuildHydratePkg {
         #[arg(long, default_value_t = true)]
         release: bool,
+        #[arg(long, default_value_t = false)]
+        ai_diagnostics_full: bool,
     },
     Verify {
         #[arg(long, default_value_t = false)]
@@ -47,7 +49,10 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::BuildHydratePkg { release } => build_hydrate_pkg(release),
+        Command::BuildHydratePkg {
+            release,
+            ai_diagnostics_full,
+        } => build_hydrate_pkg(release, ai_diagnostics_full),
         Command::Verify {
             skip_wasm,
             skip_tests,
@@ -109,7 +114,7 @@ fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
         // `cargo build --target wasm32-unknown-unknown` validates compilation, but it does not
         // produce the JS glue bundle that the SSR server expects to serve for hydration.
         // `wasm-pack` builds both the WASM and the JS loader into `rust/static/pkg`.
-        build_hydrate_pkg(true)?;
+        build_hydrate_pkg(true, false)?;
     }
 
     if !skip_tests {
@@ -129,7 +134,7 @@ fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
     Ok(())
 }
 
-fn build_hydrate_pkg(release: bool) -> Result<()> {
+fn build_hydrate_pkg(release: bool, ai_diagnostics_full: bool) -> Result<()> {
     let repo_root = repo_root_dir()?;
     let rust_dir = repo_root.join("rust");
     let app_dir = rust_dir.join("crates/dmb_app");
@@ -147,7 +152,12 @@ fn build_hydrate_pkg(release: bool) -> Result<()> {
         args.push("--release");
     }
     args.push("--");
-    args.extend(["--features", "hydrate"]);
+    let feature_set = if ai_diagnostics_full {
+        "hydrate ai_diagnostics_full"
+    } else {
+        "hydrate"
+    };
+    args.extend(["--features", feature_set]);
 
     run_command("wasm-pack", &args, &app_dir, &[]).context(
         "wasm-pack build failed (install wasm-pack and ensure wasm32-unknown-unknown target exists)",

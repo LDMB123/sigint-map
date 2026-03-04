@@ -26,7 +26,7 @@
   align-items: center;
   justify-content: center;
   background: rgba(45, 27, 48, 0.55);
-  backdrop-filter: blur(8px) saturate(1.2); /* Optimized from blur(12px) for mobile performance */
+  backdrop-filter: var(--backdrop-soft);
   animation: mom-fade-in var(--duration-normal) var(--ease-smooth);
 }
 

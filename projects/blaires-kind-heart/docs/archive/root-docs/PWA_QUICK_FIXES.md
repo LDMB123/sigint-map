@@ -1,10 +1,18 @@
 # PWA Quick Fixes — Immediate Action Items
 
+- Archive Path: `docs/archive/root-docs/PWA_QUICK_FIXES.md`
+- Normalized On: `2026-03-04`
+- Source Title: `PWA Quick Fixes — Immediate Action Items`
+
+## Summary
+Apply these 3 fixes before next release to eliminate all CRITICAL issues.
+
+## Context
 Apply these 3 fixes before next release to eliminate all CRITICAL issues.
 
 ---
 
-## Fix #1: Add CSP to offline.html
+### Fix #1: Add CSP to offline.html
 
 **File:** `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/public/offline.html`
 
@@ -35,7 +43,7 @@ Apply these 3 fixes before next release to eliminate all CRITICAL issues.
 
 ---
 
-## Fix #2: Strengthen SW Message Handler
+### Fix #2: Strengthen SW Message Handler
 
 **File:** `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/public/sw.js`
 
@@ -66,7 +74,7 @@ self.addEventListener('message', (event) => {
 
 ---
 
-## Fix #3: Remove '/' from Precache List
+### Fix #3: Remove '/' from Precache List
 
 **File:** `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/public/sw-assets.js`
 
@@ -95,8 +103,10 @@ const PRECACHE_ASSETS = [
 
 ---
 
-## Verification
+## Actions
+_No actions recorded._
 
+## Validation
 After applying fixes:
 
 1. **Build:** `trunk build --release`
@@ -107,7 +117,7 @@ After applying fixes:
 
 ---
 
-## Expected Impact
+### Expected Impact
 
 - **Security:** CSP now protects offline.html against potential edge cases
 - **Robustness:** Message handler won't silently fail on malformed data
@@ -118,12 +128,11 @@ After applying fixes:
 
 ---
 
-## Apply via Git
+### Apply via Git
 
 ```bash
 cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart
 
-# Apply fixes manually (shown above), then:
 git add public/offline.html public/sw.js public/sw-assets.js
 git commit -m "PWA: Fix critical security & robustness issues
 
@@ -135,13 +144,12 @@ Fixes CRITICAL #1, #2, #3 from audit report."
 
 trunk build --release
 
-# Test in Safari on iPad, then:
 git push
 ```
 
 ---
 
-## High Priority Fixes (Week 1)
+### High Priority Fixes (Week 1)
 
 After the 3 critical fixes above, prioritize:
 
@@ -154,3 +162,7 @@ See full audit report for details.
 ---
 
 **Next review:** Test on device after applying, then schedule remaining HIGH/MEDIUM fixes for next sprint.
+
+## References
+_No references recorded._
+

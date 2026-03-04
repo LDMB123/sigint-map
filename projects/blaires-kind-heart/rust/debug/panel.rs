@@ -143,14 +143,7 @@ impl DebugPanel {
             active_tab.set(tab_type);
             // Re-render content
             if let Some(content) = dom::query("#debug-content") {
-                let html = match tab_type {
-                    DebugTab::Errors => super::tabs::errors::render(),
-                    DebugTab::Performance => super::tabs::performance::render(),
-                    DebugTab::Database => super::tabs::database::render(),
-                    DebugTab::Queue => super::tabs::queue::render(),
-                    DebugTab::Memory => super::tabs::memory::render(),
-                };
-                dom::safe_set_inner_html(&content, &html);
+                render_content_for_tab(&content, tab_type);
             }
             // Update active state
             if let Some(_tabs_container) = dom::query(".debug-tabs") {
@@ -176,14 +169,7 @@ impl DebugPanel {
         content.set_class_name("debug-content");
 
         // Initial content - render the active tab
-        let html = match self.active_tab.get() {
-            DebugTab::Errors => super::tabs::errors::render(),
-            DebugTab::Performance => super::tabs::performance::render(),
-            DebugTab::Database => super::tabs::database::render(),
-            DebugTab::Queue => super::tabs::queue::render(),
-            DebugTab::Memory => super::tabs::memory::render(),
-        };
-        dom::safe_set_inner_html(&content, &html);
+        render_content_for_tab(&content, self.active_tab.get());
 
         content
     }
@@ -226,4 +212,19 @@ impl DebugPanel {
 
         dom::body().append_child(&style).ok();
     }
+}
+
+fn render_tab_html(tab: DebugTab) -> String {
+    match tab {
+        DebugTab::Errors => super::tabs::errors::render(),
+        DebugTab::Performance => super::tabs::performance::render(),
+        DebugTab::Database => super::tabs::database::render(),
+        DebugTab::Queue => super::tabs::queue::render(),
+        DebugTab::Memory => super::tabs::memory::render(),
+    }
+}
+
+fn render_content_for_tab(content: &Element, tab: DebugTab) {
+    let html = render_tab_html(tab);
+    dom::safe_set_inner_html(content, &html);
 }

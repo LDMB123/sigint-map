@@ -399,7 +399,7 @@
     justify-content: center;
     text-align: center;
     transition: transform 0.15s var(--ease-bounce);
-    animation: jelly-wobble 0.6s ease-out;
+    animation: jelly-wobble var(--timing-jelly-wobble) ease-out;
   }
 
   .feeling-face:active {

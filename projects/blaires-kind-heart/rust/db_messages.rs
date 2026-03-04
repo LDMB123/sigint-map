@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-pub const DB_WORKER_API_VERSION: u16 = 1;
+
+include!("db_contract_generated.rs");
 #[derive(Serialize)]
 pub struct WorkerMessage {
     pub api_version: u16,

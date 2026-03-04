@@ -1,7 +1,6 @@
 use crate::{
     animations, companion, confetti, constants, constants::SELECTOR_TRACKER_BODY, db_client, dom,
-    native_apis, rewards, skill_progression, speech, state, streaks, synth_audio, theme, ui, utils,
-    weekly_goals,
+    domain_services, feature_flags, native_apis, speech, state, synth_audio, theme, ui, utils,
 };
 use std::cell::Cell;
 use wasm_bindgen::JsCast;
@@ -119,7 +118,7 @@ const ACHIEVEMENTS: &[(&str, &str, &str)] = &[
 pub fn init() {
     render_categories();
     bind_tracker_clicks();
-    wasm_bindgen_futures::spawn_local(skill_progression::render_mastery_indicators());
+    wasm_bindgen_futures::spawn_local(domain_services::render_mastery_indicators());
 }
 pub fn render_daily_kindness() {
     let Some(parent) = dom::query("#app") else {
@@ -199,6 +198,7 @@ fn log_kind_act(category: &str) {
     let day_key = utils::today_key();
     let now = utils::now_epoch_ms();
     let cat = category.to_string();
+    let canonical_cat = crate::skill_taxonomy::canonicalize_skill(&cat).to_string();
     let (hearts, is_first_act_today) = state::with_state_mut(|s| {
         s.hearts_today += theme::HEARTS_PER_KIND_ACT;
         s.hearts_total += theme::HEARTS_PER_KIND_ACT;
@@ -221,11 +221,20 @@ fn log_kind_act(category: &str) {
     let cat_for_reflect = cat.clone();
     wasm_bindgen_futures::spawn_local(async move {
         let _ = crate::offline_queue::queued_exec(
-            "INSERT INTO kind_acts (id, category, hearts_earned, created_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5)",
-            vec![id, cat.clone(), theme::HEARTS_PER_KIND_ACT.to_string(), now.to_string(), day_key],
+            "INSERT INTO kind_acts (id, category, canonical_category, hearts_earned, created_at, day_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            vec![
+                id,
+                cat.clone(),
+                canonical_cat,
+                theme::HEARTS_PER_KIND_ACT.to_string(),
+                now.to_string(),
+                day_key,
+            ],
         )
         .await;
-        skill_progression::track_skill_practice(&cat).await;
+        if feature_flags::is_skill_progression_enabled().await {
+            domain_services::track_skill_practice(&cat).await;
+        }
     });
     let session_count = SESSION_ACTS.with(|c| {
         let n = c.get() + 1;
@@ -257,13 +266,13 @@ fn log_kind_act(category: &str) {
     }
     dom::toast("That was kind! \u{1F49C}");
     companion::on_kind_act();
-    streaks::record_today(state::snapshot());
-    weekly_goals::increment_progress("acts", 1);
-    weekly_goals::increment_progress("hearts", theme::HEARTS_PER_KIND_ACT);
+    domain_services::record_streak_today(state::snapshot());
+    domain_services::increment_weekly_goal_progress("acts", 1);
+    domain_services::increment_weekly_goal_progress("hearts", theme::HEARTS_PER_KIND_ACT);
     if hearts.is_multiple_of(theme::STICKER_EVERY_N_HEARTS) {
         synth_audio::sparkle();
         confetti::burst_stars();
-        rewards::award_sticker("kind-act");
+        domain_services::award_kind_act_sticker();
     }
     if hearts > 0 && hearts.is_multiple_of(10) {
         dom::set_timeout_once(2000, || {
@@ -272,10 +281,17 @@ fn log_kind_act(category: &str) {
     }
     dom::dispatch_custom_event("kindheart-kind-act-logged", wasm_bindgen::JsValue::NULL);
     dom::set_timeout_once(constants::REFLECTION_PROMPT_DELAY_MS, move || {
-        let detail = js_sys::Object::new();
-        let _ = js_sys::Reflect::set(&detail, &"act_id".into(), &id_for_reflect.into());
-        let _ = js_sys::Reflect::set(&detail, &"category".into(), &cat_for_reflect.into());
-        dom::dispatch_custom_event("kindheart-reflection-ready", detail.into());
+        let act_id = id_for_reflect.clone();
+        let category = cat_for_reflect.clone();
+        crate::browser_apis::spawn_local_logged("tracker-reflection-ready", async move {
+            if feature_flags::is_reflection_enabled().await {
+                let detail = js_sys::Object::new();
+                let _ = js_sys::Reflect::set(&detail, &"act_id".into(), &act_id.into());
+                let _ = js_sys::Reflect::set(&detail, &"category".into(), &category.into());
+                dom::dispatch_custom_event("kindheart-reflection-ready", detail.into());
+            }
+            Ok(())
+        });
     });
     // Personal bests and achievements
     let today_acts = state::with_state(|s| s.hearts_today / theme::HEARTS_PER_KIND_ACT);

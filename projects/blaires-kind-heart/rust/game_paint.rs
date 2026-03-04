@@ -1,12 +1,12 @@
 use crate::{
-    browser_apis, confetti, dom, games, native_apis, render, speech, state::AppState, synth_audio,
+    browser_apis, confetti, dom, games, gpu, native_apis, render, speech, state::AppState, synth_audio,
     theme, ui, weekly_goals,
 };
 use std::cell::RefCell;
 use std::fmt::Write;
 use std::rc::Rc;
 use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, Event, HtmlCanvasElement, PointerEvent};
+use web_sys::{CanvasRenderingContext2d, Event, HtmlCanvasElement, HtmlElement, PointerEvent};
 const COLORS: &[(&str, &str)] = &[
     ("Red", "#FF4444"),
     ("Orange", "#FF9F43"),
@@ -66,6 +66,9 @@ const TEMPLATES: &[(&str, &str)] = &[
     ("butterfly", "\u{1F98B} Butterfly"),
     ("dinosaur", "\u{1F995} Dinosaur"),
 ];
+const THROUGHPUT_DPR_CAP: f64 = 1.35;
+const THROUGHPUT_POINTER_BATCH_MS: f64 = 18.0;
+const THROUGHPUT_POINTER_MIN_DISTANCE: f64 = 3.0;
 #[derive(Clone, PartialEq)]
 enum PaintTool {
     Brush,
@@ -90,6 +93,10 @@ struct PaintState {
     last_x: f64,
     last_y: f64,
     last_time: f64,
+    pending_x: f64,
+    pending_y: f64,
+    has_pending_pointer: bool,
+    last_pointer_draw_ms: f64,
     undo_stack: Vec<Vec<u8>>,
     rainbow_hue: f64,
     wand_distance: f64,
@@ -107,18 +114,14 @@ pub fn start(state: Rc<RefCell<AppState>>) {
     show_category_picker(state);
 }
 fn show_category_picker(state: Rc<RefCell<AppState>>) {
-    let Some((arena, buttons)) = render::build_game_picker("\u{1F3A8} What Do You Want to Paint?")
+    let Some(picker) =
+        games::setup_picker_with_abort(&PICKER_ABORT, "\u{1F3A8} What Do You Want to Paint?")
     else {
         return;
     };
-    PICKER_ABORT.with(|p| {
-        p.borrow_mut().take();
-    });
-    let Some(abort) = browser_apis::new_abort_handle() else {
-        return;
-    };
-    let signal = abort.signal();
-    let doc = dom::document();
+    let arena = picker.arena;
+    let buttons = picker.buttons;
+    let doc = picker.doc;
     for &(id, emoji, label) in PAINT_CATEGORIES {
         dom::with_buf(|buf| {
             let _ = write!(buf, "{emoji} {label}");
@@ -130,29 +133,15 @@ fn show_category_picker(state: Rc<RefCell<AppState>>) {
         });
     }
     let state_click = state;
-    dom::on_with_signal(
-        arena.unchecked_ref(),
-        "click",
-        &signal,
-        move |event: Event| {
-            let Some(el) = dom::event_target_element(&event) else {
-                return;
-            };
-            if dom::closest(&el, "[data-paint-category]").is_some() {
-                synth_audio::sparkle();
-                native_apis::vibrate_tap();
-                start_painting(state_click.clone());
-            }
-        },
-    );
-    PICKER_ABORT.with(|p| {
-        *p.borrow_mut() = Some(abort);
+    games::bind_picker_selection(&arena, &picker.signal, "[data-paint-category]", move |_| {
+        synth_audio::sparkle();
+        native_apis::vibrate_tap();
+        start_painting(state_click.clone());
     });
+    games::store_picker_abort(&PICKER_ABORT, picker.abort);
 }
 fn start_painting(state: Rc<RefCell<AppState>>) {
-    PICKER_ABORT.with(|p| {
-        p.borrow_mut().take();
-    });
+    games::clear_picker_abort(&PICKER_ABORT);
     let Some((arena, doc)) = games::clear_game_arena() else {
         return;
     };
@@ -163,7 +152,10 @@ fn start_painting(state: Rc<RefCell<AppState>>) {
     let toolbar_height = 130.0;
     let css_w = arena_rect.width().max(f64::from(theme::PAINT_MIN_CANVAS));
     let css_h = (arena_rect.height() - toolbar_height).max(f64::from(theme::PAINT_MIN_CANVAS));
-    let dpr = dom::window().device_pixel_ratio().max(1.0);
+    let mut dpr = dom::window().device_pixel_ratio().max(1.0);
+    if gpu::is_ipad_mini_6_profile() && gpu::is_throughput_mode() {
+        dpr = dpr.min(THROUGHPUT_DPR_CAP);
+    }
     let pixel_w = (css_w * dpr) as u32;
     let pixel_h = (css_h * dpr) as u32;
     let Some(canvas_el) = games::create_canvas_or_bail(&doc, "paint") else {
@@ -394,6 +386,10 @@ fn start_painting(state: Rc<RefCell<AppState>>) {
             last_x: 0.0,
             last_y: 0.0,
             last_time: 0.0,
+            pending_x: 0.0,
+            pending_y: 0.0,
+            has_pending_pointer: false,
+            last_pointer_draw_ms: 0.0,
             undo_stack: Vec::new(),
             rainbow_hue: 0.0,
             wand_distance: 0.0,
@@ -463,6 +459,10 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                             game.last_x = x;
                             game.last_y = y;
                             game.wand_distance = 0.0;
+                            game.pending_x = x;
+                            game.pending_y = y;
+                            game.has_pending_pointer = false;
+                            game.last_pointer_draw_ms = game.last_time;
                             if game.tool == PaintTool::MagicWand {
                                 if let Some(ref ctx) = game.ctx {
                                     ctx.set_shadow_blur(12.0);
@@ -494,9 +494,29 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                     }
                     let Some(ref ctx) = game.ctx else { return };
                     let now = js_sys::Date::now();
+                    let mut draw_x = x;
+                    let mut draw_y = y;
+                    if gpu::is_ipad_mini_6_profile() && gpu::is_throughput_mode() {
+                        game.pending_x = x;
+                        game.pending_y = y;
+                        game.has_pending_pointer = true;
+                        let since_last = now - game.last_pointer_draw_ms;
+                        let travel = ((game.pending_x - game.last_x).powi(2)
+                            + (game.pending_y - game.last_y).powi(2))
+                        .sqrt();
+                        if since_last < THROUGHPUT_POINTER_BATCH_MS
+                            && travel < THROUGHPUT_POINTER_MIN_DISTANCE
+                        {
+                            return;
+                        }
+                        draw_x = game.pending_x;
+                        draw_y = game.pending_y;
+                        game.has_pending_pointer = false;
+                        game.last_pointer_draw_ms = now;
+                    }
                     let dt = (now - game.last_time).max(1.0);
-                    let dx = x - game.last_x;
-                    let dy = y - game.last_y;
+                    let dx = draw_x - game.last_x;
+                    let dy = draw_y - game.last_y;
                     let dist = (dx * dx + dy * dy).sqrt();
                     let speed = dist / dt;
                     match &game.tool {
@@ -516,8 +536,8 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                             ctx.set_line_cap("round");
                             ctx.set_line_join("round");
                             ctx.set_shadow_blur(0.0);
-                            let mid_x = f64::midpoint(game.last_x, x);
-                            let mid_y = f64::midpoint(game.last_y, y);
+                            let mid_x = f64::midpoint(game.last_x, draw_x);
+                            let mid_y = f64::midpoint(game.last_y, draw_y);
                             ctx.begin_path();
                             ctx.move_to(game.last_x, game.last_y);
                             ctx.quadratic_curve_to(game.last_x, game.last_y, mid_x, mid_y);
@@ -531,7 +551,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                             ctx.set_shadow_blur(0.0);
                             ctx.begin_path();
                             ctx.move_to(game.last_x, game.last_y);
-                            ctx.line_to(x, y);
+                            ctx.line_to(draw_x, draw_y);
                             ctx.stroke();
                         }
                         PaintTool::MagicWand => {
@@ -549,7 +569,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                             ctx.set_shadow_blur(12.0);
                             ctx.begin_path();
                             ctx.move_to(game.last_x, game.last_y);
-                            ctx.line_to(x, y);
+                            ctx.line_to(draw_x, draw_y);
                             ctx.stroke();
                             game.wand_distance += dist;
                             if game.wand_distance > 30.0 {
@@ -567,8 +587,8 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                                 ctx.set_font("20px serif");
                                 ctx.set_text_align("center");
                                 ctx.set_text_baseline("middle");
-                                let ox = x + (js_sys::Math::random() - 0.5) * 40.0;
-                                let oy = y + (js_sys::Math::random() - 0.5) * 40.0;
+                                let ox = draw_x + (js_sys::Math::random() - 0.5) * 40.0;
+                                let oy = draw_y + (js_sys::Math::random() - 0.5) * 40.0;
                                 let _ = ctx.fill_text(emoji, ox, oy);
                                 ctx.set_shadow_blur(12.0);
                             }
@@ -582,16 +602,16 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                                 ctx.set_text_baseline("middle");
                                 let _ = ctx.fill_text(
                                     "\u{2B50}",
-                                    x + (js_sys::Math::random() - 0.5) * 20.0,
-                                    y + (js_sys::Math::random() - 0.5) * 20.0,
+                                    draw_x + (js_sys::Math::random() - 0.5) * 20.0,
+                                    draw_y + (js_sys::Math::random() - 0.5) * 20.0,
                                 );
                                 ctx.set_shadow_blur(12.0);
                             }
                         }
                         _ => {}
                     }
-                    game.last_x = x;
-                    game.last_y = y;
+                    game.last_x = draw_x;
+                    game.last_y = draw_y;
                     game.last_time = now;
                 });
             },
@@ -605,6 +625,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                     let mut borrow = g.borrow_mut();
                     let Some(game) = borrow.as_mut() else { return };
                     game.drawing = false;
+                    game.has_pending_pointer = false;
                     if let Some(ref ctx) = game.ctx {
                         ctx.set_shadow_blur(0.0);
                         ctx.set_shadow_color("transparent");
@@ -620,6 +641,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                 GAME.with(|g| {
                     if let Some(game) = g.borrow_mut().as_mut() {
                         game.drawing = false;
+                        game.has_pending_pointer = false;
                         game.gradient_start_x = None;
                         game.gradient_start_y = None;
                         if let Some(ref ctx) = game.ctx {
@@ -637,6 +659,7 @@ fn bind_paint_events(state: Rc<RefCell<AppState>>, signal: &web_sys::AbortSignal
                 GAME.with(|g| {
                     if let Some(game) = g.borrow_mut().as_mut() {
                         game.drawing = false;
+                        game.has_pending_pointer = false;
                         game.gradient_start_x = None;
                         game.gradient_start_y = None;
                         if let Some(ref ctx) = game.ctx {
@@ -854,41 +877,43 @@ fn spawn_animated_stamp(x: f64, y: f64, emoji: &str, size: f64) {
         let dy = -100.0 - js_sys::Math::random() * 100.0;
         let rot = (js_sys::Math::random() - 0.5) * 90.0;
 
-        dom::with_buf(|b| {
-            let _ = write!(
-                b,
-                "position: absolute; left: {}px; top: {}px; font-size: {}px; \
-                 pointer-events: none; z-index: 50; user-select: none; \
-                 transition: transform 2.0s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 2.0s ease-in; \
-                 text-shadow: 0 0 10px rgba(255,255,255,0.8);",
-                x - size / 2.0,
-                y - size / 2.0,
-                size
-            );
-            dom::set_attr(&particle, "style", b);
-        });
+        if let Some(html) = particle.dyn_ref::<HtmlElement>() {
+            let style = html.style();
+            dom::with_buf(|buf| {
+                let _ = write!(buf, "{}px", x - size / 2.0);
+                let _ = style.set_property("--paint-stamp-left", buf);
+            });
+            dom::with_buf(|buf| {
+                let _ = write!(buf, "{}px", y - size / 2.0);
+                let _ = style.set_property("--paint-stamp-top", buf);
+            });
+            dom::with_buf(|buf| {
+                let _ = write!(buf, "{size}px");
+                let _ = style.set_property("--paint-stamp-size", buf);
+            });
+        }
 
         let _ = container.append_child(&particle);
 
         let p_clone = particle.clone();
         dom::set_timeout_once(50, move || {
-            dom::with_buf(|b| {
-                let _ = write!(
-                    b,
-                    "position: absolute; left: {}px; top: {}px; font-size: {}px; \
-                     pointer-events: none; z-index: 50; user-select: none; \
-                     transition: transform 2.0s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 2.0s ease-in; \
-                     text-shadow: 0 0 10px rgba(255,255,255,0.8); \
-                     transform: translate({}px, {}px) rotate({}deg) scale(2.0); opacity: 0;",
-                    x - size / 2.0,
-                    y - size / 2.0,
-                    size,
-                    dx,
-                    dy,
-                    rot
-                );
-                dom::set_attr(&p_clone, "style", b);
-            });
+            if let Some(html) = p_clone.dyn_ref::<HtmlElement>() {
+                let style = html.style();
+                dom::with_buf(|buf| {
+                    let _ = write!(buf, "{dx}px");
+                    let _ = style.set_property("--paint-stamp-translate-x", buf);
+                });
+                dom::with_buf(|buf| {
+                    let _ = write!(buf, "{dy}px");
+                    let _ = style.set_property("--paint-stamp-translate-y", buf);
+                });
+                dom::with_buf(|buf| {
+                    let _ = write!(buf, "{rot}deg");
+                    let _ = style.set_property("--paint-stamp-rotate", buf);
+                });
+                let _ = style.set_property("--paint-stamp-scale", "2");
+                let _ = style.set_property("--paint-stamp-opacity", "0");
+            }
         });
 
         dom::set_timeout_once(2000, move || {
@@ -1554,9 +1579,7 @@ fn show_paint_end(state: Rc<RefCell<AppState>>) {
     );
 }
 pub fn cleanup() {
-    PICKER_ABORT.with(|p| {
-        p.borrow_mut().take();
-    });
+    games::clear_picker_abort(&PICKER_ABORT);
     GAME.with(|g| {
         if let Some(game) = g.borrow_mut().as_mut() {
             game.active = false;

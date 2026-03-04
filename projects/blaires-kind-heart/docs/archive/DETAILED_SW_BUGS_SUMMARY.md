@@ -1,11 +1,18 @@
 # Service Worker & Caching Bugs - Executive Summary
 
-## Overview
+- Archive Path: `docs/archive/DETAILED_SW_BUGS_SUMMARY.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Service Worker & Caching Bugs - Executive Summary`
+
+## Summary
+Found **8 distinct bugs** in the PWA's Service Worker and asset caching system. 2 CRITICAL bugs prevent offline functionality entirely.
+
+## Context
 Found **8 distinct bugs** in the PWA's Service Worker and asset caching system. 2 CRITICAL bugs prevent offline functionality entirely.
 
 ---
 
-## Critical Bugs (Prevent Offline)
+### Critical Bugs (Prevent Offline)
 
 ### Bug #1: Missing 78 WebP Assets in Build
 
@@ -17,19 +24,13 @@ Found **8 distinct bugs** in the PWA's Service Worker and asset caching system. 
 
 **Evidence:**
 ```bash
-# Source assets exist:
 ls assets/companions/ | wc -l
-# → 18 files
 
 ls assets/gardens/ | wc -l
-# → 60 files
 
-# But NOT in build output:
 ls dist/assets/companions/ 2>&1
-# → cannot access (directory doesn't exist)
 
 ls dist/assets/gardens/ 2>&1
-# → cannot access (directory doesn't exist)
 ```
 
 **Impact:**
@@ -74,7 +75,7 @@ self.addEventListener('install', (event) => {
 
 ---
 
-## High Priority Bugs (Degrade Offline)
+### High Priority Bugs (Degrade Offline)
 
 ### Bug #3: No Image Fallback in Service Worker
 
@@ -127,7 +128,7 @@ Add 3 missing CSS files to PRECACHE_ASSETS in `public/sw-assets.js`
 
 ---
 
-## Medium Priority Bugs (Polish)
+### Medium Priority Bugs (Polish)
 
 ### Bug #5: No Stale-While-Revalidate
 
@@ -163,7 +164,7 @@ Add error boundary around install event, report back to main thread
 
 ---
 
-## Low Priority Bugs (Minor)
+### Low Priority Bugs (Minor)
 
 ### Bug #7: Manifest Icon Maskable Safe Zone
 
@@ -181,7 +182,7 @@ Add error boundary around install event, report back to main thread
 
 ---
 
-## Quick Fix Priority List
+### Quick Fix Priority List
 
 ### MUST DO (Breaks Offline)
 1. **Move assets to public/assets/ (5 min)**
@@ -212,8 +213,10 @@ Add error boundary around install event, report back to main thread
 
 ---
 
-## Testing After Fixes
+## Actions
+_No actions recorded._
 
+## Validation
 ```javascript
 // In Safari DevTools Console after rebuild:
 navigator.serviceWorker.getRegistration().then(reg => {
@@ -225,10 +228,6 @@ navigator.serviceWorker.getRegistration().then(reg => {
           console.log(key, ':', reqs.length, 'items');
           reqs.forEach(r => console.log('  -', r.url));
         });
-      });
-    });
-  });
-});
 ```
 
 Expected after fix:
@@ -239,7 +238,7 @@ Expected after fix:
 
 ---
 
-## Files Affected
+### Files Affected
 
 **Read (no changes needed):**
 - `public/sw.js` - Logic is correct
@@ -255,7 +254,7 @@ Expected after fix:
 
 ---
 
-## Root Cause Analysis
+### Root Cause Analysis
 
 **Why did this happen?**
 1. Companions/gardens added late (Week 2)
@@ -268,3 +267,7 @@ Expected after fix:
 - Add CI/CD check: "verify all PRECACHE_ASSETS exist in dist/"
 - Pre-build validation script
 - Error in install event if addAll() fails
+
+## References
+_No references recorded._
+

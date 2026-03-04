@@ -1,11 +1,16 @@
-# Archive Audits Index
+# Archive audits Index
 
-Last updated: 2026-03-03
+- Archive Path: `docs/archive/audits/INDEX.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Archive audits Index`
 
-Historical audit reports and audit planning artifacts.
+## Summary
+Historical archive index for `audits` (9 entries).
 
-## Files
+## Context
+Generated from current archive markdown inventory.
 
+## Actions
 - [BUNDLE_ANALYSIS_55MB.md](BUNDLE_ANALYSIS_55MB.md) - Bundle Analysis Report: 55MB Production Build
 - [phase4-manual-test-guide.md](phase4-manual-test-guide.md) - Phase 4 Manual Testing Guide
 - [phase6-1-fixes-report.md](phase6-1-fixes-report.md) - Phase 6.1: Compilation Errors & Warnings - Fix Report
@@ -16,6 +21,10 @@ Historical audit reports and audit planning artifacts.
 - [phase6-6-cleanup-plan.md](phase6-6-cleanup-plan.md) - Phase 6.6: Comprehensive Cleanup Plan
 - [production-readiness-fixes.md](production-readiness-fixes.md) - Production Readiness Fixes - Complete Report
 
-## Navigation
+## Validation
+- Rebuilt by `scripts/rewrite-archive-docs.mjs`.
 
-- Parent archive index: [docs/archive/INDEX.md](../INDEX.md)
+## References
+- Parent archive index: [../INDEX.md](../INDEX.md)
+- Root archive index: [../INDEX.md](../INDEX.md)
+

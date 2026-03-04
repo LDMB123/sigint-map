@@ -4,12 +4,15 @@ use crate::{
     dom,
 };
 use futures::channel::oneshot;
+use futures::future::Either;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use web_sys::MessageEvent;
+
+const DB_REQUEST_TIMEOUT_MS: i32 = 15_000;
 thread_local! {
     static DB_CLIENT: RefCell<Option<DbClientInner>> = const { RefCell::new(None) };
     static NEXT_ID: RefCell<u32> = const { RefCell::new(1) };
@@ -129,7 +132,12 @@ async fn send_request(request: DbRequest) -> Result<DbResponse, JsValue> {
         match serde_wasm_bindgen::to_value(&envelope) {
             Ok(msg) => {
                 client.pending.borrow_mut().insert(id, tx);
-                let _ = client.worker.post_message(&msg);
+                if let Err(post_err) = client.worker.post_message(&msg) {
+                    let _ = client.pending.borrow_mut().remove(&id);
+                    return Err(JsValue::from_str(&format!(
+                        "Failed to post DB request: {post_err:?}"
+                    )));
+                }
             }
             Err(_) => {
                 // Serialization failed — send error via oneshot so caller doesn't hang forever
@@ -141,8 +149,25 @@ async fn send_request(request: DbRequest) -> Result<DbResponse, JsValue> {
         }
         Ok::<(), JsValue>(())
     })?;
-    rx.await
-        .map_err(|_| JsValue::from_str("DB request cancelled"))
+
+    match futures::future::select(
+        Box::pin(rx),
+        Box::pin(browser_apis::sleep_ms(DB_REQUEST_TIMEOUT_MS)),
+    )
+    .await
+    {
+        Either::Left((resp, _)) => resp.map_err(|_| JsValue::from_str("DB request cancelled")),
+        Either::Right((_, _pending_rx)) => {
+            DB_CLIENT.with(|c| {
+                if let Some(client) = c.borrow().as_ref() {
+                    let _ = client.pending.borrow_mut().remove(&id);
+                }
+            });
+            Err(JsValue::from_str(&format!(
+                "DB request timed out after {DB_REQUEST_TIMEOUT_MS}ms"
+            )))
+        }
+    }
 }
 pub fn exec_fire_and_forget(label: &'static str, sql: &str, params: Vec<String>) {
     let sql = sql.to_string();

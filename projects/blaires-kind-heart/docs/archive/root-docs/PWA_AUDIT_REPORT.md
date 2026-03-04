@@ -1,10 +1,10 @@
 # PWA Architecture Audit: Blaire's Kind Heart
-**Date:** 2026-02-11 | **Target:** Safari 26.2 on iPadOS 26.2 | **Device:** iPad Mini 6 (A15, 4GB RAM)
 
----
+- Archive Path: `docs/archive/root-docs/PWA_AUDIT_REPORT.md`
+- Normalized On: `2026-03-04`
+- Source Title: `PWA Architecture Audit: Blaire's Kind Heart`
 
-## Executive Summary
-
+## Summary
 **Overall Health:** ✅ **EXCELLENT** with minor security & edge-case findings.
 
 - **196 precached assets** (56.7 MB total) — all present and accounted for
@@ -17,11 +17,11 @@
 
 ---
 
-## Findings by Severity
+### Findings by Severity
 
 ---
 
-## CRITICAL
+### CRITICAL
 
 ### 1. Offline Page Missing CSP Header
 **Severity:** CRITICAL | **Status:** High Security Risk | **Category:** Security
@@ -56,7 +56,165 @@ Add explicit CSP meta tag to offline.html matching the parent CSP:
 
 ---
 
-### 2. Service Worker Message Handler Lacks Type Validation
+**Total Precached:** 196 unique assets
+
+| Category | Count | Status |
+|----------|-------|--------|
+| Companion WebP | 18 | ✅ All present |
+| Garden stages WebP | 60 | ✅ All present |
+| Button WebP | 18 | ✅ All present |
+| PNG illustrations | 72 | ✅ All present |
+| CSS files | 15 | ✅ All present |
+| JavaScript | 5 | ✅ All present |
+| WASM binaries | 2 | ✅ All present |
+| WGSL shaders | 2 | ✅ All present |
+| HTML | 2 | ✅ All present |
+| Manifest | 1 | ✅ Present |
+| **TOTAL** | **196** | ✅ **Complete** |
+
+---
+
+### Recommendations Priority
+
+### Immediate (Next Release)
+1. **CRITICAL #1:** Add CSP meta tag to offline.html
+2. **CRITICAL #2:** Add type validation to SW message handler
+3. **CRITICAL #3:** Remove `'/'` from PRECACHE_ASSETS
+
+### Soon (Within 1-2 Weeks)
+4. **HIGH #4:** Implement cache versioning strategy (Trunk filehash)
+5. **HIGH #6:** Add viewport meta tags to offline.html
+6. **MEDIUM #7:** Standardize icon paths in manifest
+7. **MEDIUM #8:** Add periodic SW update check
+
+### Nice to Have (Future)
+8. **MEDIUM #9:** Enable Trunk filehash for automatic cache busting
+9. **MEDIUM #10:** Add beforeunload DB export handler
+10. **MEDIUM #11:** Use absolute paths in manifest
+11. **LOW #12-15:** Logging, scope definition, button accessibility
+
+---
+
+## Context
+**Date:** 2026-02-11 | **Target:** Safari 26.2 on iPadOS 26.2 | **Device:** iPad Mini 6 (A15, 4GB RAM)
+
+---
+
+**Severity:** HIGH | **Status:** Data Loss Risk | **Category:** Offline-First Completeness
+
+**Issue:**
+The app is fully offline-capable with SQLite persistence, but there's no Background Sync API integration to retry failed writes when network returns. If a user goes offline while recording acts/quests, the data is persisted locally, but **there's no automatic sync mechanism when reconnecting.**
+
+**Files:**
+- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/public/db-worker.js` (no sync handler)
+- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/rust/pwa.rs` (no background sync registration)
+
+**Current State:**
+All database operations are synchronous in the Worker. There's no queue for failed network requests.
+
+**Problem:**
+- User logs a kind act → data saved to SQLite
+- Network drops → no sync queue created
+- If user closes app before reconnecting, potential data inconsistency (if any server-side sync was planned)
+
+**Recommendation:**
+Add Background Sync in Rust PWA init:
+
+```rust
+// In rust/pwa.rs, add after line 14
+pub fn init() {
+    register_service_worker();
+    register_background_sync(); // NEW
+    wasm_bindgen_futures::spawn_local(async {
+        request_persistent_storage().await;
+        storage_pressure::warn_if_low().await;
+    });
+}
+
+fn register_background_sync() {
+    let window = dom::window();
+    let navigator = window.navigator();
+    if let Ok(sw_reg_promise) = navigator.service_worker().ready() {
+        wasm_bindgen_futures::spawn_local(async move {
+            if let Ok(reg_val) = JsFuture::from(sw_reg_promise).await {
+                if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
+                    // Tag: 'sync-data' will trigger periodic sync in SW
+                    let _ = reg.sync().register_with_tag("sync-data");
+                    console::log_1(&"[pwa] Background sync registered".into());
+                }
+        });
+    }
+```
+
+And in SW:
+```javascript
+// In public/sw.js, add new handler
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-data') {
+    event.waitUntil(
+      clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'RETRY_SYNC' });
+        });
+      })
+    );
+  }
+});
+```
+
+**Note:** Since this is a kid's app with no server backend mentioned, sync may not be needed. Mark as "NOT APPLICABLE" if no cloud sync is planned.
+
+---
+
+### 6. Offline.html Missing Viewport Meta Tag
+**Severity:** HIGH | **Status:** Display Issue on iPad | **Category:** iOS Compatibility
+
+**Issue:**
+The `offline.html` fallback page lacks proper viewport meta tag configuration matching the main app, causing potential layout shift and poor UX on iPad mini.
+
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/public/offline.html` (line 1-10)
+
+**Current State:**
+```html
+<head>
+  <meta charset="utf-8">
+  <!-- Missing viewport, color-scheme -->
+</head>
+```
+
+**Expected State (from index.html):**
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light" />
+<meta name="theme-color" content="#FFB7C5" />
+```
+
+**Risk:**
+- Content may zoom/scale differently than main app (viewport not locked)
+- Notch/island at top of iPad not handled (viewport-fit=cover missing)
+- Theme color won't match main app in browser chrome
+
+**Recommendation:**
+Update offline.html head:
+
+```html
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#FFB7C5">
+  <!-- Rest of head -->
+</head>
+```
+
+---
+
+### MEDIUM
+
+## Actions
+_No actions recorded._
+
+## Validation
 **Severity:** CRITICAL | **Status:** Security Exposure | **Category:** Service Worker Robustness
 
 **Issue:**
@@ -142,7 +300,7 @@ const PRECACHE_ASSETS = [
 
 ---
 
-## HIGH
+### HIGH
 
 ### 4. No Cache Versioning Strategy for Long-Term Deployments
 **Severity:** HIGH | **Status:** Manual Update Required | **Category:** Cache Management
@@ -179,272 +337,6 @@ const CACHE_NAME = `kindheart-v${CACHE_VERSION}-${BUILD_TIMESTAMP}`;
 
 ---
 
-### 5. No Background Sync or Network Error Recovery
-**Severity:** HIGH | **Status:** Data Loss Risk | **Category:** Offline-First Completeness
-
-**Issue:**
-The app is fully offline-capable with SQLite persistence, but there's no Background Sync API integration to retry failed writes when network returns. If a user goes offline while recording acts/quests, the data is persisted locally, but **there's no automatic sync mechanism when reconnecting.**
-
-**Files:**
-- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/public/db-worker.js` (no sync handler)
-- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/rust/pwa.rs` (no background sync registration)
-
-**Current State:**
-All database operations are synchronous in the Worker. There's no queue for failed network requests.
-
-**Problem:**
-- User logs a kind act → data saved to SQLite
-- Network drops → no sync queue created
-- If user closes app before reconnecting, potential data inconsistency (if any server-side sync was planned)
-
-**Recommendation:**
-Add Background Sync in Rust PWA init:
-
-```rust
-// In rust/pwa.rs, add after line 14
-pub fn init() {
-    register_service_worker();
-    register_background_sync(); // NEW
-    wasm_bindgen_futures::spawn_local(async {
-        request_persistent_storage().await;
-        storage_pressure::warn_if_low().await;
-    });
-}
-
-fn register_background_sync() {
-    let window = dom::window();
-    let navigator = window.navigator();
-    if let Ok(sw_reg_promise) = navigator.service_worker().ready() {
-        wasm_bindgen_futures::spawn_local(async move {
-            if let Ok(reg_val) = JsFuture::from(sw_reg_promise).await {
-                if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
-                    // Tag: 'sync-data' will trigger periodic sync in SW
-                    let _ = reg.sync().register_with_tag("sync-data");
-                    console::log_1(&"[pwa] Background sync registered".into());
-                }
-            }
-        });
-    }
-}
-```
-
-And in SW:
-```javascript
-// In public/sw.js, add new handler
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-data') {
-    event.waitUntil(
-      clients.matchAll().then(clients => {
-        clients.forEach(client => {
-          client.postMessage({ type: 'RETRY_SYNC' });
-        });
-      })
-    );
-  }
-});
-```
-
-**Note:** Since this is a kid's app with no server backend mentioned, sync may not be needed. Mark as "NOT APPLICABLE" if no cloud sync is planned.
-
----
-
-### 6. Offline.html Missing Viewport Meta Tag
-**Severity:** HIGH | **Status:** Display Issue on iPad | **Category:** iOS Compatibility
-
-**Issue:**
-The `offline.html` fallback page lacks proper viewport meta tag configuration matching the main app, causing potential layout shift and poor UX on iPad mini.
-
-**File:** `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/public/offline.html` (line 1-10)
-
-**Current State:**
-```html
-<head>
-  <meta charset="utf-8">
-  <!-- Missing viewport, color-scheme -->
-</head>
-```
-
-**Expected State (from index.html):**
-```html
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="color-scheme" content="light" />
-<meta name="theme-color" content="#FFB7C5" />
-```
-
-**Risk:**
-- Content may zoom/scale differently than main app (viewport not locked)
-- Notch/island at top of iPad not handled (viewport-fit=cover missing)
-- Theme color won't match main app in browser chrome
-
-**Recommendation:**
-Update offline.html head:
-
-```html
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#FFB7C5">
-  <!-- Rest of head -->
-</head>
-```
-
----
-
-## MEDIUM
-
-### 7. Icon File References Inconsistent with Manifest
-**Severity:** MEDIUM | **Status:** Install May Fail on Some Devices | **Category:** Manifest Configuration
-
-**Issue:**
-The `manifest.webmanifest` references icon paths like `./icons/icon-180.png`, but the SW precache list references them as `/icons/icon-180.png`. Different path resolution could cause icons to not load during install.
-
-**Files:**
-- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/manifest.webmanifest` (lines 19-44)
-- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/public/sw-assets.js` (lines 46-52)
-
-**Current State:**
-```json
-// manifest.webmanifest
-"icons": [
-  {
-    "src": "./icons/icon-180.png",  // Relative path
-    "sizes": "180x180",
-    "type": "image/png"
-  }
-]
-```
-
-vs.
-
-```javascript
-// sw-assets.js
-'/icons/app-icon-192.png',
-'/icons/app-icon-512.png',
-'/icons/icon-180.png',           // Absolute path
-```
-
-**Risk:**
-- Browser may resolve `./icons/...` differently during install vs. runtime
-- Some iOS versions may fail to find icons if paths don't match exactly
-- Inconsistency makes debugging difficult
-
-**Recommendation:**
-Standardize all icon paths to absolute form in manifest:
-
-```json
-{
-  "icons": [
-    {
-      "src": "/icons/icon-180.png",
-      "sizes": "180x180",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "/icons/icon-192-maskable.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icons/icon-512-maskable.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ]
-}
-```
-
----
-
-### 8. No Periodic Service Worker Update Check
-**Severity:** MEDIUM | **Status:** Updates Require App Restart | **Category:** Update Mechanism
-
-**Issue:**
-The Service Worker is registered once during app boot, but there's no periodic update check (e.g., every 5 minutes or on page focus). Users must close and reopen the app to discover updates.
-
-**File:** `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/rust/pwa.rs` (lines 17-34)
-
-**Current State:**
-```rust
-fn register_service_worker() {
-    let window = dom::window();
-    let navigator = window.navigator();
-    let sw_container = navigator.service_worker();
-    let promise = sw_container.register("./sw.js");  // One-time registration
-    // No periodic registration or update check
-}
-```
-
-**Problem:**
-- If new PWA version is deployed, user won't know until they manually close the app
-- On iPad, app might stay in memory for hours/days
-- No update prompt after 5+ minutes of inactivity
-
-**Recommendation:**
-Add periodic update check:
-
-```rust
-// In rust/pwa.rs
-fn register_service_worker() {
-    let window = dom::window();
-    let navigator = window.navigator();
-    let sw_container = navigator.service_worker();
-    let promise = sw_container.register("./sw.js");
-
-    wasm_bindgen_futures::spawn_local(async move {
-        match JsFuture::from(promise).await {
-            Ok(reg_val) => {
-                web_sys::console::log_1(&"[pwa] SW registered".into());
-                if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
-                    detect_sw_update(&reg);
-
-                    // NEW: Periodic update check every 5 minutes
-                    spawn_update_checker(reg);
-                }
-            }
-            Err(e) => web_sys::console::warn_1(&format!("[pwa] SW failed: {:?}", e).into()),
-        }
-    });
-}
-
-fn spawn_update_checker(reg: web_sys::ServiceWorkerRegistration) {
-    use gloo_timers::callback::interval;
-    use std::time::Duration;
-
-    let _interval = interval(Duration::from_secs(300), move || {
-        let reg_clone = reg.clone();
-        wasm_bindgen_futures::spawn_local(async move {
-            match JsFuture::from(reg_clone.update()).await {
-                Ok(_) => web_sys::console::log_1(&"[pwa] Update check triggered".into()),
-                Err(_) => {} // Silently fail, network might be offline
-            }
-        });
-    });
-    // Store interval handle to keep it alive (or use forget pattern)
-}
-```
-
-**Alternative (simpler):** Just call `reg.update()` on page visibility change:
-
-```rust
-// Listen for page focus, call registration.update()
-```
-
----
-
-### 9. Cache Invalidation Strategy Unclear for Dynamic Assets
 **Severity:** MEDIUM | **Status:** Stale Content Risk | **Category:** Cache Strategy
 
 **Issue:**
@@ -482,7 +374,6 @@ event.respondWith(
 Option 1 (Simple): Use Trunk's hash-based filenames for cache busting:
 
 ```toml
-# In Trunk.toml
 [build]
 filehash = true  # Currently false, set to true
 ```
@@ -613,9 +504,8 @@ Also add iOS-specific meta tags in index.html (already present, verified):
 
 ---
 
-## LOW
+### LOW
 
-### 12. No Precache Manifest Validation at Build Time
 **Severity:** LOW | **Status:** Manual Maintenance Burden | **Category:** Developer Experience
 
 **Issue:**
@@ -640,7 +530,6 @@ Add build-time validation script (e.g., in Makefile or Trunk post-build hook):
 
 ```bash
 #!/bin/bash
-# scripts/validate-precache.sh
 set -e
 
 DIST_DIR="dist"
@@ -775,8 +664,6 @@ No `script-src 'unsafe-inline'` needed.
 
 ---
 
-## VERIFICATION CHECKLIST
-
 ### PWA Installability
 - [x] HTTPS or localhost
 - [x] Valid manifest.webmanifest (mostly valid, see #11)
@@ -814,50 +701,6 @@ No `script-src 'unsafe-inline'` needed.
 
 ---
 
-## Asset Verification Summary
-
-**Total Precached:** 196 unique assets
-
-| Category | Count | Status |
-|----------|-------|--------|
-| Companion WebP | 18 | ✅ All present |
-| Garden stages WebP | 60 | ✅ All present |
-| Button WebP | 18 | ✅ All present |
-| PNG illustrations | 72 | ✅ All present |
-| CSS files | 15 | ✅ All present |
-| JavaScript | 5 | ✅ All present |
-| WASM binaries | 2 | ✅ All present |
-| WGSL shaders | 2 | ✅ All present |
-| HTML | 2 | ✅ All present |
-| Manifest | 1 | ✅ Present |
-| **TOTAL** | **196** | ✅ **Complete** |
-
----
-
-## Recommendations Priority
-
-### Immediate (Next Release)
-1. **CRITICAL #1:** Add CSP meta tag to offline.html
-2. **CRITICAL #2:** Add type validation to SW message handler
-3. **CRITICAL #3:** Remove `'/'` from PRECACHE_ASSETS
-
-### Soon (Within 1-2 Weeks)
-4. **HIGH #4:** Implement cache versioning strategy (Trunk filehash)
-5. **HIGH #6:** Add viewport meta tags to offline.html
-6. **MEDIUM #7:** Standardize icon paths in manifest
-7. **MEDIUM #8:** Add periodic SW update check
-
-### Nice to Have (Future)
-8. **MEDIUM #9:** Enable Trunk filehash for automatic cache busting
-9. **MEDIUM #10:** Add beforeunload DB export handler
-10. **MEDIUM #11:** Use absolute paths in manifest
-11. **LOW #12-15:** Logging, scope definition, button accessibility
-
----
-
-## Testing Checklist for iPad Mini 6
-
-### Manual Tests
 - [ ] Install app from home screen (does install prompt appear?)
 - [ ] App launches in standalone mode (no Safari UI)
 - [ ] Offline mode: disable WiFi, refresh page, check offline fallback
@@ -881,7 +724,6 @@ No `script-src 'unsafe-inline'` needed.
 
 ### Lighthouse Check (if PWA Auditing on Desktop)
 ```bash
-# From dist/ directory served on localhost
 lighthouse http://localhost:8080 \
   --view \
   --emulated-form-factor=mobile \
@@ -897,7 +739,7 @@ Expect scores:
 
 ---
 
-## Conclusion
+### Conclusion
 
 **Blaire's Kind Heart PWA is production-ready** with 95% of security and robustness criteria met. The 15 findings are mostly edge cases and best-practice improvements. The three CRITICAL issues should be fixed before the next release.
 
@@ -911,3 +753,153 @@ Expect scores:
 **Audit Scope:** Safari 26.2, iPadOS 26.2, iPad Mini 6
 **Auditor:** PWA Debugger Claude Agent
 **Confidence:** 98%
+
+## References
+**Severity:** MEDIUM | **Status:** Install May Fail on Some Devices | **Category:** Manifest Configuration
+
+**Issue:**
+The `manifest.webmanifest` references icon paths like `./icons/icon-180.png`, but the SW precache list references them as `/icons/icon-180.png`. Different path resolution could cause icons to not load during install.
+
+**Files:**
+- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/manifest.webmanifest` (lines 19-44)
+- `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/public/sw-assets.js` (lines 46-52)
+
+**Current State:**
+```json
+// manifest.webmanifest
+"icons": [
+  {
+    "src": "./icons/icon-180.png",  // Relative path
+    "sizes": "180x180",
+    "type": "image/png"
+  }
+]
+```
+
+vs.
+
+```javascript
+// sw-assets.js
+'/icons/app-icon-192.png',
+'/icons/app-icon-512.png',
+'/icons/icon-180.png',           // Absolute path
+```
+
+**Risk:**
+- Browser may resolve `./icons/...` differently during install vs. runtime
+- Some iOS versions may fail to find icons if paths don't match exactly
+- Inconsistency makes debugging difficult
+
+**Recommendation:**
+Standardize all icon paths to absolute form in manifest:
+
+```json
+{
+  "icons": [
+    {
+      "src": "/icons/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
+```
+
+---
+
+### 8. No Periodic Service Worker Update Check
+**Severity:** MEDIUM | **Status:** Updates Require App Restart | **Category:** Update Mechanism
+
+**Issue:**
+The Service Worker is registered once during app boot, but there's no periodic update check (e.g., every 5 minutes or on page focus). Users must close and reopen the app to discover updates.
+
+**File:** `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/rust/pwa.rs` (lines 17-34)
+
+**Current State:**
+```rust
+fn register_service_worker() {
+    let window = dom::window();
+    let navigator = window.navigator();
+    let sw_container = navigator.service_worker();
+    let promise = sw_container.register("./sw.js");  // One-time registration
+    // No periodic registration or update check
+}
+```
+
+**Problem:**
+- If new PWA version is deployed, user won't know until they manually close the app
+- On iPad, app might stay in memory for hours/days
+- No update prompt after 5+ minutes of inactivity
+
+**Recommendation:**
+Add periodic update check:
+
+```rust
+// In rust/pwa.rs
+fn register_service_worker() {
+    let window = dom::window();
+    let navigator = window.navigator();
+    let sw_container = navigator.service_worker();
+    let promise = sw_container.register("./sw.js");
+
+    wasm_bindgen_futures::spawn_local(async move {
+        match JsFuture::from(promise).await {
+            Ok(reg_val) => {
+                web_sys::console::log_1(&"[pwa] SW registered".into());
+                if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
+                    detect_sw_update(&reg);
+
+                    // NEW: Periodic update check every 5 minutes
+                    spawn_update_checker(reg);
+                }
+            Err(e) => web_sys::console::warn_1(&format!("[pwa] SW failed: {:?}", e).into()),
+        }
+    });
+}
+
+fn spawn_update_checker(reg: web_sys::ServiceWorkerRegistration) {
+    use gloo_timers::callback::interval;
+    use std::time::Duration;
+
+    let _interval = interval(Duration::from_secs(300), move || {
+        let reg_clone = reg.clone();
+        wasm_bindgen_futures::spawn_local(async move {
+            match JsFuture::from(reg_clone.update()).await {
+                Ok(_) => web_sys::console::log_1(&"[pwa] Update check triggered".into()),
+                Err(_) => {} // Silently fail, network might be offline
+            }
+        });
+    // Store interval handle to keep it alive (or use forget pattern)
+}
+```
+
+**Alternative (simpler):** Just call `reg.update()` on page visibility change:
+
+```rust
+// Listen for page focus, call registration.update()
+```
+
+---
+

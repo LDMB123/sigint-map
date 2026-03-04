@@ -5,17 +5,12 @@
  * Only generates images that don't already exist on disk.
  */
 
-import { GoogleAuth } from 'google-auth-library';
-import fs from 'fs/promises';
 import path from 'path';
+import { fileExists, sleep, writeBase64Image } from './lib/fs-helpers.mjs';
+import { requestImagenBase64 } from './lib/imagen-client.mjs';
 
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-0925343693';
-const LOCATION = 'us-central1';
 const ROOT = path.resolve(import.meta.dirname, '..');
-
-const auth = new GoogleAuth({
-  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-});
 
 const NEG = 'text, watermark, signature, words, letters, numbers, logo, realistic human face, scary, dark, horror, violence, blood';
 const STYLE = 'cute kawaii children illustration, soft pastel colors, rounded shapes, friendly, warm lighting, simple clean background, storybook art style, digital painting';
@@ -24,68 +19,42 @@ const ICON_STYLE = 'app icon design, flat illustration, vibrant colors, centered
 
 async function generateImage({ prompt, outputPath, aspectRatio = '1:1' }) {
   // Skip if already exists
-  try {
-    await fs.access(outputPath);
+  if (await fileExists(outputPath)) {
     console.log(`  SKIP (exists): ${path.basename(outputPath)}`);
     return outputPath;
-  } catch {}
-
-  const model = 'imagen-3.0-generate-001';
-  const client = await auth.getClient();
-  const accessToken = await client.getAccessToken();
-
-  const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${model}:predict`;
-
-  const requestBody = {
-    instances: [{ prompt }],
-    parameters: {
-      sampleCount: 1,
-      aspectRatio,
-      negativePrompt: NEG,
-    },
-  };
+  }
 
   console.log(`  Generating: ${path.basename(outputPath)}...`);
 
   for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+    const result = await requestImagenBase64({
+      prompt,
+      aspectRatio,
+      negativePrompt: NEG,
+      projectId: PROJECT_ID,
+    });
 
-      if (response.status === 429) {
-        const wait = attempt * 15000;
-        console.log(`  Rate limited, waiting ${wait / 1000}s (attempt ${attempt}/3)...`);
-        await new Promise(r => setTimeout(r, wait));
-        continue;
-      }
+    if (result.ok && result.bytesBase64Encoded) {
+      const bytes = await writeBase64Image(outputPath, result.bytesBase64Encoded);
+      console.log(`  OK: ${path.basename(outputPath)} (${(bytes / 1024).toFixed(0)} KB)`);
+      return outputPath;
+    }
 
-      if (!response.ok) {
-        const error = await response.json();
-        console.error(`  FAILED: ${path.basename(outputPath)} — ${response.status}`);
-        return null;
-      }
+    if (result.status === 429) {
+      const waitMs = attempt * 15_000;
+      console.log(`  Rate limited, waiting ${waitMs / 1000}s (attempt ${attempt}/3)...`);
+      await sleep(waitMs);
+      continue;
+    }
 
-      const data = await response.json();
-      const predictions = data.predictions || [];
-
-      if (predictions[0]?.bytesBase64Encoded) {
-        const imageData = Buffer.from(predictions[0].bytesBase64Encoded, 'base64');
-        await fs.mkdir(path.dirname(outputPath), { recursive: true });
-        await fs.writeFile(outputPath, imageData);
-        console.log(`  OK: ${path.basename(outputPath)} (${(imageData.length / 1024).toFixed(0)} KB)`);
-        return outputPath;
-      }
-      console.error(`  EMPTY: ${path.basename(outputPath)}`);
+    const errorMessage = result.errorMessage || 'No image data returned';
+    if (!result.ok) {
+      console.error(`  FAILED: ${path.basename(outputPath)} — ${errorMessage}`);
       return null;
-    } catch (err) {
-      console.error(`  ERROR (attempt ${attempt}): ${err.message}`);
-      if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 10000));
+    }
+    console.error(`  EMPTY: ${path.basename(outputPath)}`);
+    if (attempt < 3) {
+      await sleep(attempt * 10_000);
     }
   }
   return null;
@@ -171,12 +140,11 @@ async function main() {
     const item = ALL_IMAGES[i];
 
     // Check if exists
-    try {
-      await fs.access(item.outputPath);
+    if (await fileExists(item.outputPath)) {
       console.log(`[${i + 1}/${ALL_IMAGES.length}] SKIP: ${path.basename(item.outputPath)}`);
       skipped++;
       continue;
-    } catch {}
+    }
 
     console.log(`[${i + 1}/${ALL_IMAGES.length}]`);
     const result = await generateImage(item);
@@ -188,7 +156,7 @@ async function main() {
 
     // 6 second delay between requests to stay under rate limit
     if (i < ALL_IMAGES.length - 1) {
-      await new Promise(r => setTimeout(r, 6000));
+      await sleep(6_000);
     }
   }
 

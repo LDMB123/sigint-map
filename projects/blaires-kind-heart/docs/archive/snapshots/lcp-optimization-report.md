@@ -1,13 +1,20 @@
 # LCP Optimization Report
 
+- Archive Path: `docs/archive/snapshots/lcp-optimization-report.md`
+- Normalized On: `2026-03-04`
+- Source Title: `LCP Optimization Report`
+
+## Summary
+**Date**: 2025-02-11
+
+## Context
 **Date**: 2025-02-11
 **Phase**: Post-Phase 5 LCP fixes
 **Build**: Cache v6
 
 ---
 
-## Changes Made
-
+## Actions
 ### 1. Image Optimization
 **File**: `sparkle-splash.png` → `sparkle-splash-optimized.png`
 - **Before**: 1.1MB PNG
@@ -32,48 +39,6 @@
 - Cache name reflects LCP optimization phase
 
 ---
-
-## Performance Results
-
-| Metric | Before (v5) | After (v6) | Change | Status |
-|--------|-------------|------------|--------|--------|
-| **Performance Score** | 79/100 | 83/100 | +4 | ⚠️ IMPROVED |
-| **LCP** | 3.9s | 3.0s | -0.9s | ⚠️ IMPROVED (still >2.5s) |
-| **CLS** | 0.000 | 0.000 | - | ✅ PERFECT |
-| **FCP** | 0.4s | 0.4s | - | ✅ EXCELLENT |
-| **TTI** | 4.2s | 3.5s | -0.7s | ✅ IMPROVED |
-| **TBT** | 40ms | 44ms | +4ms | ✅ GOOD |
-| **Speed Index** | 1.2s | 1.2s | - | ✅ GOOD |
-
----
-
-## Analysis
-
-### Wins
-1. **LCP improvement**: 0.9s reduction (3.9s → 3.0s)
-   - Primarily from sparkle-splash.png compression (1.1MB → 63KB)
-   - Faster critical asset loading
-
-2. **TTI improvement**: 0.7s reduction (4.2s → 3.5s)
-   - CSS cleanup reduced parse time
-   - Faster stylesheet processing
-
-3. **Overall score**: +4 points (79 → 83)
-   - Moving in right direction
-   - Approaching target of 90+
-
-### Remaining Bottleneck
-**WASM files still dominate critical path**:
-- `blaires-kind-heart_bg.wasm`: 3.0MB
-- `sqlite3.wasm`: 840KB
-- `sqlite3.js`: 365KB
-- **Total WASM**: 4.2MB blocking initial render
-
-**LCP target**: 2.5s (currently 3.0s, need 0.5s improvement)
-
----
-
-## Next Steps
 
 ### Option A: WASM Lazy Loading (Recommended)
 1. Defer SQLite WASM load until first DB write
@@ -101,7 +66,7 @@ Proceed with original plan:
 
 ---
 
-## Recommendation
+### Recommendation
 
 **Continue with Option A** (WASM lazy loading):
 - SQLite WASM deferral is low-hanging fruit
@@ -113,7 +78,7 @@ After SQLite optimization, proceed with Phases 6-8 as planned.
 
 ---
 
-## Files Modified
+### Files Modified
 
 ```
 assets/illustrations/blaire/sparkle-splash-optimized.png  (NEW, 63KB)
@@ -126,6 +91,49 @@ public/sw.js                                              (cache version v5 → 
 
 ---
 
-## Conclusion
+### Conclusion
 
 Phase LCP optimizations delivered measurable improvements (+4 performance points, -0.9s LCP, -0.7s TTI). Asset compression (image + CSS) was successful, but WASM bundle size remains the primary blocker. SQLite lazy loading is next logical step to reach Performance 90+ target.
+
+## Validation
+| Metric | Before (v5) | After (v6) | Change | Status |
+|--------|-------------|------------|--------|--------|
+| **Performance Score** | 79/100 | 83/100 | +4 | ⚠️ IMPROVED |
+| **LCP** | 3.9s | 3.0s | -0.9s | ⚠️ IMPROVED (still >2.5s) |
+| **CLS** | 0.000 | 0.000 | - | ✅ PERFECT |
+| **FCP** | 0.4s | 0.4s | - | ✅ EXCELLENT |
+| **TTI** | 4.2s | 3.5s | -0.7s | ✅ IMPROVED |
+| **TBT** | 40ms | 44ms | +4ms | ✅ GOOD |
+| **Speed Index** | 1.2s | 1.2s | - | ✅ GOOD |
+
+---
+
+### Analysis
+
+### Wins
+1. **LCP improvement**: 0.9s reduction (3.9s → 3.0s)
+   - Primarily from sparkle-splash.png compression (1.1MB → 63KB)
+   - Faster critical asset loading
+
+2. **TTI improvement**: 0.7s reduction (4.2s → 3.5s)
+   - CSS cleanup reduced parse time
+   - Faster stylesheet processing
+
+3. **Overall score**: +4 points (79 → 83)
+   - Moving in right direction
+   - Approaching target of 90+
+
+### Remaining Bottleneck
+**WASM files still dominate critical path**:
+- `blaires-kind-heart_bg.wasm`: 3.0MB
+- `sqlite3.wasm`: 840KB
+- `sqlite3.js`: 365KB
+- **Total WASM**: 4.2MB blocking initial render
+
+**LCP target**: 2.5s (currently 3.0s, need 0.5s improvement)
+
+---
+
+## References
+_No references recorded._
+

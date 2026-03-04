@@ -1,5 +1,13 @@
 # Worktree Cleanup Implementation Plan
 
+- Archive Path: `docs/archive/plans/2026-02-15-worktree-cleanup.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Worktree Cleanup Implementation Plan`
+
+## Summary
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+## Context
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Commit all blaires-kind-heart code quality improvements while excluding other projects
@@ -10,7 +18,7 @@
 
 ---
 
-## Task 1: Stage Blaires Kind Heart Files Only
+### Task 1: Stage Blaires Kind Heart Files Only
 
 **Files:**
 - Stage: `projects/blaires-kind-heart/` (all modified files)
@@ -57,7 +65,7 @@ Expected:
 
 ---
 
-## Task 2: Create Comprehensive Commit
+### Task 2: Create Comprehensive Commit
 
 **Files:**
 - Commit: All staged files from Task 1
@@ -68,7 +76,7 @@ Expected:
 git commit -m "$(cat <<'EOF'
 chore(blaires-kind-heart): code quality improvements + warning cleanup
 
-## Rust Warning Cleanup (Today's Session)
+### Rust Warning Cleanup (Today's Session)
 - Added #[allow(dead_code)] to 3 debug utility functions
   * rust/metrics/performance.rs: get_marks()
   * rust/metrics/web_vitals.rs: get_vitals()
@@ -76,7 +84,7 @@ chore(blaires-kind-heart): code quality improvements + warning cleanup
 - Updated warning baseline: 4 → 3
 - All gates passing post-cleanup
 
-## Pre-existing Code Quality Improvements
+### Pre-existing Code Quality Improvements
 - Refactored badges.rs: extracted helper functions
   * extract_count_i64(): reduce duplication
   * extract_bool_flag(): consistent boolean extraction
@@ -87,14 +95,70 @@ chore(blaires-kind-heart): code quality improvements + warning cleanup
 - Removed dead code: hydrate_completed_quest() in quests.rs
 - Minor refactorings: mom_mode, db_client, db_messages
 
-## Documentation Updates
+### Documentation Updates
 - Updated APP_STATUS.md: added warning cleanup to status
 - Updated PROJECT_STANDING.md: updated verification snapshot
 - Updated STATUS_LEDGER.md: added change entry
 - Created HANDOFF_SUMMARY_2026-02-15.md: complete session summary
 - Created docs/HANDOFF.md: handoff instructions
 
-## Verification (All Gates Passing)
+## Actions
+**Executed:** 2026-02-15
+
+**Commit:** [insert commit hash from git rev-parse HEAD]
+
+**Files Committed:** 29 files in projects/blaires-kind-heart/
+
+**Categories:**
+- Today's session: 9 files (warning cleanup + docs)
+- Pre-existing improvements: 11 files (refactorings + optimizations)
+- Build artifacts: 9 files (auto-generated, passing gates)
+
+**Verification Status:** ✅ All gates passing
+
+**Worktree Status:** Clean for blaires-kind-heart
+
+**Excluded:** Other projects (dmb-almanac, emerson-violin-pwa) remain unstaged
+
+**Success Criteria Met:**
+- ✅ All blaires-kind-heart changes committed
+- ✅ Worktree shows clean status for project files
+- ✅ Quality gates still passing
+- ✅ Other projects remain untouched
+- ✅ Clear commit message documenting all changes
+```
+
+**Step 2: Commit the design doc update**
+
+```bash
+git add docs/plans/2026-02-15-worktree-cleanup-design.md
+git commit -m "docs: record worktree cleanup implementation results"
+```
+
+---
+
+### Rollback Plan (If Issues Found)
+
+If any verification step fails:
+
+```bash
+git reset --soft HEAD~1
+
+git reset HEAD~1
+
+git status
+```
+
+### Final State
+
+**Expected after completion:**
+- ✅ One new commit with all blaires-kind-heart improvements
+- ✅ Worktree clean for blaires-kind-heart files
+- ✅ Other projects' changes remain unstaged
+- ✅ All quality gates passing
+- ✅ Design document updated with results
+
+## Validation
 - PWA contract: PASS
 - Runtime diagnostics: PASS (1 test)
 - DB contract: PASS (2 tests)
@@ -121,8 +185,6 @@ Run: `git show --stat HEAD`
 Expected: Should show ~29 files changed, all under `projects/blaires-kind-heart/`
 
 ---
-
-## Task 3: Post-Commit Verification
 
 **Files:**
 - Verify: Worktree status
@@ -167,7 +229,7 @@ echo "✅ Blaires Kind Heart: CLEAN"
 
 ---
 
-## Task 4: Update Design Document Status
+### Task 4: Update Design Document Status
 
 **Files:**
 - Modify: `docs/plans/2026-02-15-worktree-cleanup-design.md`
@@ -178,62 +240,6 @@ Add to end of design doc:
 
 ```markdown
 
-## Implementation Results
+## References
+_No references recorded._
 
-**Executed:** 2026-02-15
-
-**Commit:** [insert commit hash from git rev-parse HEAD]
-
-**Files Committed:** 29 files in projects/blaires-kind-heart/
-
-**Categories:**
-- Today's session: 9 files (warning cleanup + docs)
-- Pre-existing improvements: 11 files (refactorings + optimizations)
-- Build artifacts: 9 files (auto-generated, passing gates)
-
-**Verification Status:** ✅ All gates passing
-
-**Worktree Status:** Clean for blaires-kind-heart
-
-**Excluded:** Other projects (dmb-almanac, emerson-violin-pwa) remain unstaged
-
-**Success Criteria Met:**
-- ✅ All blaires-kind-heart changes committed
-- ✅ Worktree shows clean status for project files
-- ✅ Quality gates still passing
-- ✅ Other projects remain untouched
-- ✅ Clear commit message documenting all changes
-```
-
-**Step 2: Commit the design doc update**
-
-```bash
-git add docs/plans/2026-02-15-worktree-cleanup-design.md
-git commit -m "docs: record worktree cleanup implementation results"
-```
-
----
-
-## Rollback Plan (If Issues Found)
-
-If any verification step fails:
-
-```bash
-# Undo last commit (keep changes staged)
-git reset --soft HEAD~1
-
-# Or undo and unstage everything
-git reset HEAD~1
-
-# Re-evaluate what went wrong
-git status
-```
-
-## Final State
-
-**Expected after completion:**
-- ✅ One new commit with all blaires-kind-heart improvements
-- ✅ Worktree clean for blaires-kind-heart files
-- ✅ Other projects' changes remain unstaged
-- ✅ All quality gates passing
-- ✅ Design document updated with results

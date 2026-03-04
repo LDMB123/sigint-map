@@ -1,16 +1,16 @@
 # Final Deep Apple-Silicon Browser Pass
 
-Date: 2026-03-03  
-Target: Safari 26.2 / iPad mini 6 (A15, 4 GB RAM)
+- Archive Path: `docs/archive/reports/2026-03-03-final-apple-silicon-deep-pass.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Final Deep Apple-Silicon Browser Pass`
 
 ## Summary
-
 Implemented a final balanced optimization pass focused on:
 - lowering WebGPU particle shader/render cost on iPad mini 6 while preserving style,
 - eliminating avoidable timer wakeups in game loops,
 - keeping the current WebGPU upload strategy (`writeBuffer` + `Uint8Array::view`) with no mapped-buffer binding expansion.
 
-## Scope Applied
+### Scope Applied
 
 - In scope:
   - `rust/gpu_particles.rs`
@@ -25,8 +25,11 @@ Implemented a final balanced optimization pass focused on:
   - no new mapped-buffer APIs in `rust/bindings.rs`
   - no gameplay rule changes
 
-## Implemented Changes
+## Context
+Date: 2026-03-03
+Target: Safari 26.2 / iPad mini 6 (A15, 4 GB RAM)
 
+## Actions
 ### 1) GPU Particle Low-Power Quality Path (iPad mini 6)
 
 - Extended particle uniforms in both WGSL shaders:
@@ -79,7 +82,6 @@ Implemented a final balanced optimization pass focused on:
   - reduced blur/shadow intensity and lowered expensive compositing pressure for iPad profile
 
 ## Validation
-
 Commands run after implementation:
 
 ```bash
@@ -93,6 +95,10 @@ Results:
 - PWA contract PASS
 - WebKit smoke PASS (`1 passed`)
 
-## Notes
+### Notes
 
 - Physical iPad mini 6 end-to-end regression evidence is still required before final deployment approval.
+
+## References
+_No references recorded._
+

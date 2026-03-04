@@ -4,11 +4,17 @@ public_url = "/"
 inject_scripts = false
 minify = "on_release"
 
-# Phase 4.1: Generate asset manifest before WASM compilation
+# Canonical panel metadata -> generated Rust + JS registry
+[[hooks]]
+stage = "pre_build"
+command = "node"
+command_arguments = ["scripts/generate-panel-registry.mjs"]
+
+# Generate asset manifest before WASM compilation
 [[hooks]]
 stage = "pre_build"
 command = "bash"
-command_arguments = [".trunk/asset-manifest.sh"]
+command_arguments = ["scripts/asset-manifest.sh"]
 
 [wasm-opt]
 default_optimizations = "z"
@@ -25,7 +31,12 @@ args = [
 [watch]
 # Prevent rebuild loop: pre_build hook writes these files, which would
 # trigger the file watcher, causing another build, ad infinitum.
-ignore = ["public/asset-manifest.js", "public/asset-manifest.json"]
+ignore = [
+    "public/asset-manifest.js",
+    "public/asset-manifest.json",
+    "public/panel-registry.js",
+    "rust/panel_registry_generated.rs",
+]
 
 [serve]
 disable_csp = true

@@ -1,6 +1,14 @@
 # Blaire's Kind Heart - Icon Generation Guide
 
-## Quick Start
+- Archive Path: `docs/archive/ICONS_SETUP.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Blaire's Kind Heart - Icon Generation Guide`
+
+## Summary
+The PWA icons for Blaire's Kind Heart can be generated using a Python script. Follow these steps:
+
+## Context
+### Quick Start
 
 The PWA icons for Blaire's Kind Heart can be generated using a Python script. Follow these steps:
 
@@ -11,23 +19,19 @@ cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/assets
 
 ### Step 2: Ensure Python 3 and Pillow are Installed
 ```bash
-# Check Python version
 python3 --version  # Should be 3.7+
 
-# Install Pillow if needed
 pip3 install Pillow
 ```
 
 ### Step 3: Generate Icons
 ```bash
-# Option A: Run the Python script directly
 python3 generate_icons.py
 
-# Option B: Run the shell script
 bash generate-icons.sh
 ```
 
-## What Gets Generated
+### What Gets Generated
 
 Five PNG icon files will be created in `/assets/icons/`:
 
@@ -39,7 +43,7 @@ Five PNG icon files will be created in `/assets/icons/`:
 | icon-512-maskable.png | 512x512 | Maskable icon for Android 12+ |
 | icon-192-maskable.png | 192x192 | Maskable icon for Android 12+ |
 
-## Icon Design Details
+### Icon Design Details
 
 ### Character: Sparkle the Unicorn
 - **Color**: Purple/lavender with pink accents
@@ -51,7 +55,6 @@ Five PNG icon files will be created in `/assets/icons/`:
   - Cute curved smile
   - Large glowing pink heart on body
 
-### Background
 - Pastel gradient from pink (top) to lavender (bottom)
 - Matches app theme colors
 - Smooth, child-friendly appearance
@@ -62,7 +65,7 @@ Maskable icons are designed with:
 - 10% padding on all sides
 - Works with various mask shapes (rounded, circular, etc.)
 
-## Manual Generation (If Script Fails)
+### Manual Generation (If Script Fails)
 
 If the Python script doesn't work, you can manually create icons:
 
@@ -76,10 +79,8 @@ Use an online tool like [Canva](https://www.canva.com/) or [Figma](https://www.f
 ### Option 2: Use SVG + Convert
 Create an SVG file and convert to PNG using ImageMagick:
 ```bash
-# Install ImageMagick if needed
 brew install imagemagick
 
-# Convert SVG to PNG
 convert -density 144 -resize 512x512 icon.svg icon-512.png
 ```
 
@@ -89,18 +90,21 @@ convert -density 144 -resize 512x512 icon.svg icon-512.png
 - Affinity Designer
 - Procreate (iPad)
 
-## Verification
+## Actions
+1. Run the icon generator
+2. Test icons on iPad Mini 6 (primary target device)
+3. Verify in PWA home screen and app switcher
+4. Build and deploy PWA
 
+---
+
+**Status**: Icon generation script ready. Execute `python3 generate_icons.py` to create icons.
+
+## Validation
 After generation, verify the icons exist:
 ```bash
 ls -lh /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/assets/icons/
 
-# Should show:
-# icon-180.png
-# icon-192.png
-# icon-192-maskable.png
-# icon-512.png
-# icon-512-maskable.png
 ```
 
 Check file sizes (should be 20-100 KB each):
@@ -108,7 +112,7 @@ Check file sizes (should be 20-100 KB each):
 du -h /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/assets/icons/*
 ```
 
-## Integration with PWA
+### Integration with PWA
 
 The icons are already configured in `manifest.webmanifest`:
 
@@ -148,33 +152,24 @@ The icons are already configured in `manifest.webmanifest`:
 
 No additional configuration needed once icons are generated.
 
-## Testing
-
-### Local Testing
 ```bash
-# Build the PWA
 trunk build --release
 
-# Serve locally
 trunk serve
 
-# Visit http://localhost:8080
-# Open DevTools > Application > Manifest to verify icons are found
 ```
 
-### iOS Testing (iPad Mini 6)
 1. Build and serve: `trunk serve --address 0.0.0.0`
 2. Get your Mac's IP address: `ipconfig getifaddr en0`
 3. On iPad: Visit `http://<IP>:8080`
 4. Tap Share > Add to Home Screen
 5. Verify icon appears correctly
 
-### Android Testing
 1. Install PWA on Android device
 2. Icon should be 192x192 or 512x512 depending on device
 3. Maskable icon will be used if device supports it
 
-## Troubleshooting
+### Troubleshooting
 
 ### Icons not appearing in home screen
 - Clear browser cache
@@ -189,11 +184,9 @@ trunk serve
 
 ### Manifest won't validate
 ```bash
-# Validate manifest online
-# https://www.pwabuilder.com/
 ```
 
-## Customization
+### Customization
 
 To modify the icon design:
 
@@ -208,20 +201,13 @@ Example color changes in the function:
 - Heart color: line 122
 - Horn color: line 96
 
-## Support
+### Support
 
 For help with:
 - **PWA icons**: See [MDN Web Docs - App Icons](https://developer.mozilla.org/en-US/docs/Web/Manifest#icons)
 - **Maskable icons**: See [MDN - Maskable Icons](https://developer.mozilla.org/en-US/docs/Web/Manifest/icons#maskable)
 - **Python/Pillow**: See [Pillow Documentation](https://pillow.readthedocs.io/)
 
-## Next Steps
+## References
+_No references recorded._
 
-1. Run the icon generator
-2. Test icons on iPad Mini 6 (primary target device)
-3. Verify in PWA home screen and app switcher
-4. Build and deploy PWA
-
----
-
-**Status**: Icon generation script ready. Execute `python3 generate_icons.py` to create icons.

@@ -1,14 +1,10 @@
 # Phase 6.5: Performance Anti-Patterns Audit
 
-**Date**: 2025-02-11
-**Auditor**: Claude (Phase 6 Code Cleanup)
-**Scope**: Performance-critical code paths in Blaire's Kind Heart
-**Target**: Safari 26.2 on iPad mini 6 (A15, 4GB RAM)
+- Archive Path: `docs/archive/audits/phase6-5-performance-audit.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Phase 6.5: Performance Anti-Patterns Audit`
 
----
-
-## Executive Summary
-
+## Summary
 **Grade**: A- (90/100) - Excellent Performance
 
 - **Critical Issues**: 0
@@ -21,10 +17,76 @@ The codebase demonstrates excellent performance engineering practices for Safari
 
 ---
 
-## 1. Boot Sequence Analysis
+### 1. Boot Sequence Analysis
 
-### Current Implementation ✅
+| Metric | Current | Target | Status |
+|--------|---------|--------|--------|
+| **Boot Time** | 2-3s | <3s | ✅ Good |
+| **INP** | <200ms | <200ms | ✅ Good |
+| **LCP** | TBD | <2.5s | 🟡 Needs measurement |
+| **CLS** | TBD | <0.1 | 🟡 Needs measurement |
+| **WASM Binary** | ~800KB | ≤800KB | ✅ Good |
+| **CSS Bundle** | ~95KB | ≤80KB | 🟡 15KB over (Phase 1 CSS simplification will fix) |
 
+---
+
+### Recommendations
+
+### Medium Priority (Optional) 🟡
+
+1. **DOM Batching via DocumentFragment** (Phase 4.2 from plan)
+   - **Files**: games.rs, quests.rs, gardens.rs
+   - **Benefit**: Reduce ~150 reflows to 3 (50× improvement)
+   - **Effort**: 2-3 hours (add create_fragment() helper, update 3 files)
+   - **Impact**: 50-100ms LCP improvement
+
+2. **Service Worker Conditional Caching** (Phase 2.2 from plan)
+   - **Files**: public/sw.js, rust/pwa.rs
+   - **Benefit**: 30-40% faster PWA install (98 → 40 critical assets)
+   - **Effort**: 3-4 hours (event messaging + cache logic)
+   - **Impact**: Better first-time user experience
+
+### Low Priority (Nice-to-Have) 🟢
+
+3. **SQLite Statement Caching** (Phase 2.3 from plan)
+   - **File**: public/db-worker.js
+   - **Benefit**: 5-10ms per query
+   - **Effort**: 1 hour (add Map-based cache)
+   - **Impact**: Minor (SQLite WASM already fast)
+
+4. **Lazy Load Companion Expressions**
+   - **Files**: rust/companion.rs, rust/render.rs
+   - **Benefit**: Reduce initial load by 12 images
+   - **Effort**: 2 hours (apply lazy loading pattern)
+   - **Impact**: Minor (companion is above-the-fold)
+
+5. **Measure LCP + CLS**
+   - **File**: rust/safari_apis.rs
+   - **Benefit**: Establish baseline metrics
+   - **Effort**: 1 hour (add PerformanceObserver for LCP)
+   - **Impact**: Observability (not performance)
+
+---
+
+### Conclusion
+
+**Overall Grade**: **A- (90/100)** - Excellent Performance
+
+The codebase demonstrates production-ready performance engineering for Safari 26.2 on iPad mini 6. The boot sequence is well-optimized with batched initialization, all async patterns are correct, and modern Safari APIs are leveraged effectively. No critical performance anti-patterns detected.
+
+The two medium-priority optimizations (DOM batching + conditional caching) are optional enhancements that would provide marginal LCP improvements (~100-200ms total). Current performance is already within acceptable ranges for the target device.
+
+**Recommendation**: Proceed to **Phase 6.6 (Create Comprehensive Cleanup Plan)** to consolidate findings from all 5 audits (6.1-6.5) into actionable implementation steps.
+
+## Context
+**Date**: 2025-02-11
+**Auditor**: Claude (Phase 6 Code Cleanup)
+**Scope**: Performance-critical code paths in Blaire's Kind Heart
+**Target**: Safari 26.2 on iPad mini 6 (A15, 4GB RAM)
+
+---
+
+## Actions
 **File**: `rust/lib.rs` (lines 138-260)
 
 **Pattern**: 4-batch async boot with scheduler.yield() between phases
@@ -74,7 +136,7 @@ scheduler_yield().await; // ✅ Yield to browser
 
 ---
 
-## 2. DOM Manipulation Patterns
+### 2. DOM Manipulation Patterns
 
 ### 2.1 Append Operations Analysis
 
@@ -144,7 +206,7 @@ body.append_child(&list).ok();
 
 ---
 
-## 3. Async Patterns Analysis
+### 3. Async Patterns Analysis
 
 ### 3.1 Await Point Distribution
 
@@ -175,7 +237,7 @@ let (hearts_res, quests_res, stories_res, rewards_res, ...) = join!(
 
 ---
 
-## 4. Animation Performance
+### 4. Animation Performance
 
 ### 4.1 requestAnimationFrame Usage
 
@@ -218,9 +280,7 @@ fn animation_loop(state: Rc<RefCell<GameState>>) {
 
 ---
 
-## 5. Image Loading Strategy
-
-### 5.1 Lazy Loading Implementation
+### 5. Image Loading Strategy
 
 **Asset Count**: 78 WebP files (18 companion skins + 60 garden stages)
 
@@ -268,7 +328,7 @@ create_img_lazy(&doc, "companion-celebrating.webp", "Celebrating") // Lazy
 
 ---
 
-## 6. Database Query Patterns
+### 6. Database Query Patterns
 
 ### 6.1 SQL Anti-Pattern Analysis
 
@@ -321,7 +381,7 @@ function getOrPrepare(db, sql) {
 
 ---
 
-## 7. Memory Management
+### 7. Memory Management
 
 ### 7.1 Clone Analysis
 
@@ -369,9 +429,7 @@ let _ = js_sys::Reflect::set(&companion_el_for_store, &key, closure.as_ref());
 
 ---
 
-## 8. Service Worker Caching Strategy
-
-### 8.1 Current Implementation
+### 8. Service Worker Caching Strategy
 
 **File**: `public/sw.js` (118 lines)
 
@@ -426,7 +484,7 @@ self.addEventListener('message', (event) => {
 
 ---
 
-## 9. Safari 26.2 API Usage
+### 9. Safari 26.2 API Usage
 
 ### 9.1 Modern API Adoption
 
@@ -451,63 +509,9 @@ self.addEventListener('message', (event) => {
 
 ---
 
-## Performance Metrics Summary
+## Validation
+_Validation details not recorded._
 
-| Metric | Current | Target | Status |
-|--------|---------|--------|--------|
-| **Boot Time** | 2-3s | <3s | ✅ Good |
-| **INP** | <200ms | <200ms | ✅ Good |
-| **LCP** | TBD | <2.5s | 🟡 Needs measurement |
-| **CLS** | TBD | <0.1 | 🟡 Needs measurement |
-| **WASM Binary** | ~800KB | ≤800KB | ✅ Good |
-| **CSS Bundle** | ~95KB | ≤80KB | 🟡 15KB over (Phase 1 CSS simplification will fix) |
+## References
+_No references recorded._
 
----
-
-## Recommendations
-
-### Medium Priority (Optional) 🟡
-
-1. **DOM Batching via DocumentFragment** (Phase 4.2 from plan)
-   - **Files**: games.rs, quests.rs, gardens.rs
-   - **Benefit**: Reduce ~150 reflows to 3 (50× improvement)
-   - **Effort**: 2-3 hours (add create_fragment() helper, update 3 files)
-   - **Impact**: 50-100ms LCP improvement
-
-2. **Service Worker Conditional Caching** (Phase 2.2 from plan)
-   - **Files**: public/sw.js, rust/pwa.rs
-   - **Benefit**: 30-40% faster PWA install (98 → 40 critical assets)
-   - **Effort**: 3-4 hours (event messaging + cache logic)
-   - **Impact**: Better first-time user experience
-
-### Low Priority (Nice-to-Have) 🟢
-
-3. **SQLite Statement Caching** (Phase 2.3 from plan)
-   - **File**: public/db-worker.js
-   - **Benefit**: 5-10ms per query
-   - **Effort**: 1 hour (add Map-based cache)
-   - **Impact**: Minor (SQLite WASM already fast)
-
-4. **Lazy Load Companion Expressions**
-   - **Files**: rust/companion.rs, rust/render.rs
-   - **Benefit**: Reduce initial load by 12 images
-   - **Effort**: 2 hours (apply lazy loading pattern)
-   - **Impact**: Minor (companion is above-the-fold)
-
-5. **Measure LCP + CLS**
-   - **File**: rust/safari_apis.rs
-   - **Benefit**: Establish baseline metrics
-   - **Effort**: 1 hour (add PerformanceObserver for LCP)
-   - **Impact**: Observability (not performance)
-
----
-
-## Conclusion
-
-**Overall Grade**: **A- (90/100)** - Excellent Performance
-
-The codebase demonstrates production-ready performance engineering for Safari 26.2 on iPad mini 6. The boot sequence is well-optimized with batched initialization, all async patterns are correct, and modern Safari APIs are leveraged effectively. No critical performance anti-patterns detected.
-
-The two medium-priority optimizations (DOM batching + conditional caching) are optional enhancements that would provide marginal LCP improvements (~100-200ms total). Current performance is already within acceptable ranges for the target device.
-
-**Recommendation**: Proceed to **Phase 6.6 (Create Comprehensive Cleanup Plan)** to consolidate findings from all 5 audits (6.1-6.5) into actionable implementation steps.

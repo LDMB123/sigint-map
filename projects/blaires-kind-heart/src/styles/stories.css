@@ -522,10 +522,8 @@
   gap: var(--space-md);
 }
 
-.story-choice {
-  padding: var(--space-lg);
-  background: var(--color-surface);
-  border: 3px solid var(--color-pink);
+.story-choice,
+.story-back-btn {
   border-radius: var(--radius-xl);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
@@ -533,6 +531,16 @@
   cursor: pointer;
   text-align: center;
   min-height: var(--touch-comfortable);
+  transition:
+    transform var(--duration-fast) var(--ease-bounce),
+    box-shadow var(--duration-fast) var(--ease-smooth);
+  touch-action: manipulation;
+}
+
+.story-choice {
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border: 3px solid var(--color-pink);
   transition:
     transform var(--duration-fast) var(--ease-bounce),
     box-shadow var(--duration-fast) var(--ease-smooth),
@@ -543,7 +551,6 @@
     0 4px 12px rgba(45, 27, 48, 0.06);
   position: relative;
   overflow: hidden;
-  touch-action: manipulation;
   color: var(--color-text);
 
   /* Shimmer sweep across choices */
@@ -651,22 +658,11 @@
   background: var(--gradient-magic);
   color: var(--color-white);
   border: none;
-  border-radius: var(--radius-xl);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  font-family: inherit;
-  cursor: pointer;
-  text-align: center;
-  min-height: var(--touch-comfortable);
-  transition:
-    transform var(--duration-fast) var(--ease-bounce),
-    box-shadow var(--duration-fast) var(--ease-smooth);
   align-self: center;
   box-shadow:
     var(--shadow-md),
     0 0 16px rgba(181, 126, 255, 0.35),
     0 0 32px rgba(255, 143, 171, 0.15);
-  touch-action: manipulation;
   position: relative;
   overflow: hidden;
 

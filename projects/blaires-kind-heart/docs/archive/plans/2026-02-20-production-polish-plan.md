@@ -1,5 +1,13 @@
 # Production Polish Implementation Plan
 
+- Archive Path: `docs/archive/plans/2026-02-20-production-polish-plan.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Production Polish Implementation Plan`
+
+## Summary
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+## Context
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Fix all confirmed production gaps so Blaire can install and use the PWA on her iPad mini 6 immediately.
@@ -10,12 +18,12 @@
 
 ---
 
-## Confirmed Bugs
+### Confirmed Bugs
 
 1. **`public/sw.js`** — Missing `importScripts("./runtime-diagnostics.js")` and `scope: "sw"`. Causes `npm run qa:runtime` to fail.
 2. **`rust/gardens.rs:9`** — Fallback path `"assets/gardens/default_stage_1.webp"` doesn't exist in dist. Path prefix `assets/` is wrong (Trunk copies to `dist/gardens/...`). Valid fallback is `"gardens/bunny_stage_1.webp"`.
 
-## Known-Good Image Paths (verified against disk)
+### Known-Good Image Paths (verified against disk)
 
 - Companion skins: 18 WebP in `assets/companions/`, manifest-keyed → `companion.rs` ✅
 - Garden stages: 60 WebP in `assets/gardens/`, manifest-keyed → `gardens.rs` ✅ (except fallback bug)
@@ -215,8 +223,10 @@ If any step fails, do NOT move to Task 5. Read the error, find the root cause (s
 
 ---
 
-### Task 5: Production release build + dist verification
+## Actions
+_No actions recorded._
 
+## Validation
 **Step 1: Build**
 ```bash
 trunk build --release
@@ -257,8 +267,6 @@ git commit -m "build: update asset manifests"
 
 ---
 
-### Task 6: Update STATUS_LEDGER with verification results
-
 **Files:**
 - Modify: `docs/STATUS_LEDGER.md`
 
@@ -287,8 +295,7 @@ git commit -m "docs: record 2026-02-20 production polish verification"
 
 ---
 
-## iPad Install Steps (reference — no code needed)
-
+## References
 After completing all tasks above, serve the built app for iPad install:
 
 1. `trunk serve --address 0.0.0.0`
@@ -301,7 +308,7 @@ The app runs fully offline after the first load (all 78 assets + WASM precached 
 
 ---
 
-## Success Criteria
+### Success Criteria
 
 All of the following must be true before declaring production-ready:
 
@@ -314,3 +321,4 @@ All of the following must be true before declaring production-ready:
 - [ ] 78 assets present in `dist/`
 - [ ] `dist/sw.js` contains runtime-diagnostics wiring
 - [ ] No broken image paths in any Rust source file
+

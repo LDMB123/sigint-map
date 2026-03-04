@@ -1,6 +1,12 @@
 import type { Page } from "@playwright/test";
 
 const DEFAULT_TIMEOUT_MS = 20_000;
+const CLEANUP_TIMEOUT_MS = 5_000;
+
+type E2ETestSetupApi = {
+  use: (options: { video: "off"; serviceWorkers: "block" }) => void;
+  afterEach: (hook: (ctx: { page: Page }) => Promise<void>) => void;
+};
 
 /**
  * Clicks the "Let's go!" onboarding button until it disappears.
@@ -26,6 +32,17 @@ export async function dismissOnboardingIfPresent(page: Page): Promise<void> {
     if (attempt >= 6 && quietCycles >= 6) break;
     await page.waitForTimeout(250);
   }
+}
+
+export function applyFlowE2ESetup(testApi: E2ETestSetupApi): void {
+  testApi.use({ video: "off", serviceWorkers: "block" });
+  testApi.afterEach(async ({ page }) => {
+    try {
+      await page.goto("about:blank", { waitUntil: "domcontentloaded", timeout: CLEANUP_TIMEOUT_MS });
+    } catch {
+      // Best-effort cleanup to avoid long context shutdown when worker tasks are active.
+    }
+  });
 }
 
 export async function waitForAppReady(
@@ -78,6 +95,64 @@ export async function waitForAppReady(
   await page.waitForLoadState("networkidle", {
     timeout: timeoutMs
   });
+}
+
+export async function getHomePanelPresence(
+  page: Page,
+  panelIds: readonly string[]
+): Promise<Record<string, boolean>> {
+  return page.evaluate((ids: readonly string[]) => {
+    return Object.fromEntries(
+      ids.map(id => [id, !!document.querySelector(`[data-panel-open="${id}"]`)])
+    );
+  }, panelIds);
+}
+
+export async function clickFirstMatchingSelector(
+  page: Page,
+  selector: string,
+  timeoutMs = 8_000
+): Promise<boolean> {
+  return Promise.race([
+    page.evaluate((sel) => {
+      const match = document.querySelector(sel);
+      if (!match) return false;
+      match.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      return true;
+    }, selector),
+    new Promise<boolean>((resolve) => {
+      setTimeout(() => resolve(false), timeoutMs);
+    }),
+  ]);
+}
+
+export async function clickWhenSelectorAppears(
+  page: Page,
+  selector: string,
+  timeoutMs = 8_000,
+  pollMs = 100
+): Promise<boolean> {
+  return page.evaluate(
+    ({ sel, timeout, poll }) => {
+      return new Promise<boolean>((resolve) => {
+        const started = Date.now();
+        const check = setInterval(() => {
+          const match = document.querySelector(sel);
+          if (match) {
+            clearInterval(check);
+            match.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+            resolve(true);
+            return;
+          }
+          if (Date.now() - started >= timeout) {
+            clearInterval(check);
+            resolve(false);
+          }
+        }, poll);
+      });
+    },
+    { sel: selector, timeout: timeoutMs, poll: pollMs }
+  );
 }
 
 /** Read the heart counter value from the tracker panel. Returns -1 on timeout. */

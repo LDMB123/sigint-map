@@ -47,11 +47,11 @@ use leptos::hydration::HydrationScripts;
 #[cfg(feature = "hydrate")]
 use leptos::mount::hydrate_body;
 use leptos::prelude::*;
-#[cfg(feature = "hydrate")]
-use leptos::task::spawn_local;
 use leptos_config::LeptosOptions;
 use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
+#[cfg(feature = "hydrate")]
+use wasm_bindgen::JsCast;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen::JsValue;
 
@@ -134,13 +134,43 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
             <body>
                 <App />
                 <noscript>"DMB Almanac works best with JavaScript enabled."</noscript>
-                <script src="/webgpu.js" defer></script>
-                <script>
-                    {r#"if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }); }"#}
-                </script>
             </body>
         </html>
     }
+}
+
+#[cfg(feature = "hydrate")]
+fn register_service_worker() {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let navigator = window.navigator();
+    let Ok(service_worker) =
+        js_sys::Reflect::get(navigator.as_ref(), &JsValue::from_str("serviceWorker"))
+    else {
+        return;
+    };
+    if service_worker.is_null() || service_worker.is_undefined() {
+        return;
+    }
+    let Ok(register_value) = js_sys::Reflect::get(&service_worker, &JsValue::from_str("register"))
+    else {
+        return;
+    };
+    let Ok(register_fn) = register_value.dyn_into::<js_sys::Function>() else {
+        return;
+    };
+    let options = js_sys::Object::new();
+    let _ = js_sys::Reflect::set(
+        options.as_ref(),
+        &JsValue::from_str("updateViaCache"),
+        &JsValue::from_str("none"),
+    );
+    let _ = register_fn.call2(
+        &service_worker,
+        &JsValue::from_str("/sw.js"),
+        options.as_ref(),
+    );
 }
 
 #[cfg(feature = "hydrate")]
@@ -151,10 +181,8 @@ pub fn hydrate() {
 
     // Hydrate the SSR markup instead of mounting a second copy of the app.
     hydrate_body(App);
-
-    spawn_local(async {
-        let _ = dmb_idb::open_db().await;
-    });
+    register_service_worker();
+    ai::preload_webgpu_runtime();
 
     // Lightweight signal for E2E and diagnostics tooling that hydration ran.
     if let Some(window) = web_sys::window() {

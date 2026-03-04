@@ -330,10 +330,13 @@ pub fn start(state: Rc<RefCell<AppState>>) {
     show_mood_picker(state);
 }
 fn show_mood_picker(state: Rc<RefCell<AppState>>) {
-    let Some((arena, buttons)) = render::build_game_picker("\u{1F917} How Should We Play?") else {
+    let Some(picker) = games::setup_picker_with_abort(&PICKER_ABORT, "\u{1F917} How Should We Play?")
+    else {
         return;
     };
-    let doc = dom::document();
+    let arena = picker.arena;
+    let buttons = picker.buttons;
+    let doc = picker.doc;
     for (label, mood) in [
         ("\u{1F60C} Gentle", "gentle"),
         ("\u{1F923} Silly", "silly"),
@@ -345,37 +348,19 @@ fn show_mood_picker(state: Rc<RefCell<AppState>>) {
         dom::set_attr(&btn, "data-hug-mood", mood);
         let _ = buttons.append_child(&btn);
     }
-    let Some(picker_abort) = browser_apis::new_abort_handle() else {
-        return;
-    };
-    let picker_signal = picker_abort.signal();
     let s = state;
-    dom::on_with_signal(
-        arena.unchecked_ref(),
-        "click",
-        &picker_signal,
-        move |event: Event| {
-            let Some(el) = dom::event_target_element(&event) else {
-                return;
+    games::bind_picker_selection(&arena, &picker.signal, "[data-hug-mood]", move |btn| {
+        if let Some(mood_attr) = dom::get_attr(&btn, "data-hug-mood") {
+            games::clear_picker_abort(&PICKER_ABORT);
+            let stages = match mood_attr.as_str() {
+                "gentle" => pick_from_pool(GENTLE_STAGES, theme::HUG_STAGES_PER_GAME),
+                "silly" => pick_from_pool(SILLY_STAGES, theme::HUG_STAGES_PER_GAME),
+                _ => pick_from_pool(&ALL_STAGES, theme::HUG_STAGES_PER_GAME),
             };
-            if let Some(mood_attr) = dom::closest(&el, "[data-hug-mood]")
-                .and_then(|e| dom::get_attr(&e, "data-hug-mood"))
-            {
-                PICKER_ABORT.with(|p| {
-                    p.borrow_mut().take();
-                });
-                let stages = match mood_attr.as_str() {
-                    "gentle" => pick_from_pool(GENTLE_STAGES, theme::HUG_STAGES_PER_GAME),
-                    "silly" => pick_from_pool(SILLY_STAGES, theme::HUG_STAGES_PER_GAME),
-                    _ => pick_from_pool(&ALL_STAGES, theme::HUG_STAGES_PER_GAME),
-                };
-                start_with_stages(s.clone(), stages);
-            }
-        },
-    );
-    PICKER_ABORT.with(|p| {
-        *p.borrow_mut() = Some(picker_abort);
+            start_with_stages(s.clone(), stages);
+        }
     });
+    games::store_picker_abort(&PICKER_ABORT, picker.abort);
 }
 fn pick_from_pool(pool: &[HugStage], count: usize) -> [HugStage; 5] {
     let mut buf = [HugStage::GentlePat; 5];
@@ -399,6 +384,7 @@ fn pick_from_pool(pool: &[HugStage], count: usize) -> [HugStage; 5] {
     buf
 }
 fn start_with_stages(state: Rc<RefCell<AppState>>, stages: [HugStage; 5]) {
+    games::clear_picker_abort(&PICKER_ABORT);
     let Some(abort) = browser_apis::new_abort_handle() else {
         return;
     };
@@ -453,9 +439,7 @@ fn cache_sparkle_element() -> Option<web_sys::Element> {
     el
 }
 pub fn cleanup() {
-    PICKER_ABORT.with(|p| {
-        *p.borrow_mut() = None;
-    });
+    games::clear_picker_abort(&PICKER_ABORT);
     GAME.with(|g| {
         if let Some(game) = g.borrow_mut().as_mut() {
             game.active = false;
@@ -667,7 +651,9 @@ fn spawn_entrance_particles() {
 }
 fn spawn_falling_stars() {
     GAME.with(|g| {
-        let mut borrow = g.borrow_mut();
+        let Ok(mut borrow) = g.try_borrow_mut() else {
+            return;
+        };
         let Some(game) = borrow.as_mut() else { return };
         game.star_targets.clear();
         let Some(zone) = dom::query("[data-hug-stars-zone]") else {
@@ -778,7 +764,9 @@ fn tap_progress(
 }
 fn on_sparkle_tap(state: Rc<RefCell<AppState>>) {
     GAME.with(|g| {
-        let mut borrow = g.borrow_mut();
+        let Ok(mut borrow) = g.try_borrow_mut() else {
+            return;
+        };
         let Some(game) = borrow.as_mut() else { return };
         if !game.active {
             return;
@@ -851,7 +839,9 @@ fn on_sparkle_tap(state: Rc<RefCell<AppState>>) {
 }
 fn on_highfive_tap(state: Rc<RefCell<AppState>>) {
     GAME.with(|g| {
-        let mut borrow = g.borrow_mut();
+        let Ok(mut borrow) = g.try_borrow_mut() else {
+            return;
+        };
         let Some(game) = borrow.as_mut() else { return };
         if !game.active {
             return;
@@ -873,7 +863,9 @@ fn on_highfive_tap(state: Rc<RefCell<AppState>>) {
 }
 fn on_nose_boop(state: Rc<RefCell<AppState>>) {
     GAME.with(|g| {
-        let mut borrow = g.borrow_mut();
+        let Ok(mut borrow) = g.try_borrow_mut() else {
+            return;
+        };
         let Some(game) = borrow.as_mut() else { return };
         if !game.active {
             return;
@@ -907,7 +899,9 @@ fn on_star_catch(star: Element, state: Rc<RefCell<AppState>>) {
         return;
     }
     GAME.with(|g| {
-        let mut borrow = g.borrow_mut();
+        let Ok(mut borrow) = g.try_borrow_mut() else {
+            return;
+        };
         let Some(game) = borrow.as_mut() else { return };
         if !game.active {
             return;
@@ -989,7 +983,9 @@ fn on_pointer_move(pe: PointerEvent, state: Rc<RefCell<AppState>>) {
         return;
     }
     GAME.with(|g| {
-        let mut borrow = g.borrow_mut();
+        let Ok(mut borrow) = g.try_borrow_mut() else {
+            return;
+        };
         let Some(game) = borrow.as_mut() else { return };
         if !game.active {
             return;
@@ -1337,7 +1333,8 @@ fn trigger_grand_finale(state: Rc<RefCell<AppState>>, stages_seen_mask: u16) {
             confetti::burst_unicorn();
             synth_audio::rainbow_burst();
             GAME.with(|g| {
-                if let Some(game) = g.borrow_mut().as_mut() {
+                if let Ok(mut borrow) = g.try_borrow_mut() {
+                    let Some(game) = borrow.as_mut() else { return };
                     let s_clone = s.clone();
                     game.celebration_timeout = Some(dom::set_timeout_cancelable(1500, move || {
                         show_hug_end(s_clone, stages_seen_mask);
@@ -1346,7 +1343,8 @@ fn trigger_grand_finale(state: Rc<RefCell<AppState>>, stages_seen_mask: u16) {
             });
         };
         GAME.with(|g| {
-            if let Some(game) = g.borrow_mut().as_mut() {
+            if let Ok(mut borrow) = g.try_borrow_mut() {
+                let Some(game) = borrow.as_mut() else { return };
                 game.celebration_timeout = Some(dom::set_timeout_cancelable(2500, cb));
             }
         });

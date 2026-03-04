@@ -1,12 +1,18 @@
 # Phase 4 Critical Fixes (Post Devil's Advocate Review)
 
-## Overview
+- Archive Path: `docs/archive/DETAILED_PHASE4_CRITICAL_FIXES.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Phase 4 Critical Fixes (Post Devil's Advocate Review)`
 
+## Summary
+**Date**: 2026-02-11
+
+## Context
 **Date**: 2026-02-11
 **Trigger**: Devil's advocate agents found critical flaws in initial Phase 4 bug fixes
 **Approach**: Applied 4 surgical fixes to address root causes
 
-## Issues Found by Devil's Advocate Review
+### Issues Found by Devil's Advocate Review
 
 ### Critical Issue #1: Closure::forget() Memory Leak (Bugs #8, #12)
 
@@ -43,7 +49,7 @@
 
 **Result**: Type confusion could still occur in unpatched modules.
 
-## Fixes Applied
+### Fixes Applied
 
 ### Fix #1: Use Closure::once_into_js() Instead of forget()
 
@@ -193,8 +199,18 @@ stage_text.set_text_content(Some(&format!("Stage {} of 5", display_stage)));
 
 **Recommendation**: Add to Phase 4B follow-up work or track as technical debt.
 
-## Build Verification
+## Actions
+1. **User**: Perform manual testing in Safari 26.2 on iPad Mini 6
+2. **Follow up**: Address Phase 4B database type standardization if time permits
+3. **Polish**: Phase 4C View Transitions closure lifetime (deferred)
+4. **Deploy**: Production deployment once all tests pass
 
+---
+
+**Phase 4 Critical Fixes: 4/4 APPLIED ✅**
+**Ready for Manual Testing in Safari**
+
+## Validation
 ```bash
 $ trunk build --release
    Compiling blaires-kind-heart v0.1.0
@@ -204,7 +220,7 @@ $ trunk build --release
 
 **Result**: 0 compilation errors, 24 pre-existing dead code warnings (unchanged)
 
-## Files Modified (4 critical fixes)
+### Files Modified (4 critical fixes)
 
 1. **rust/companion.rs**
    - Lines 160-165: Replaced `Closure::wrap()` + `forget()` with `Closure::once_into_js()`
@@ -213,10 +229,6 @@ $ trunk build --release
 2. **rust/gardens.rs**
    - Lines 449-453: Replaced `forget()` with `into_js_value()` for onerror closure
    - Lines 460-463: Added `std::cmp::min()` clamp to prevent "Stage 6 of 5" display
-
-## Testing Plan
-
-### Memory Leak Verification ✅ CRITICAL
 
 **Test**: Open Safari DevTools → Performance Monitor → Memory tab
 1. Rapid-tap companion 50 times (trigger expression changes)
@@ -229,8 +241,6 @@ $ trunk build --release
 
 ---
 
-### Race Condition Verification ✅ CRITICAL
-
 **Test**: Expression change flicker
 1. Tap companion rapidly 10 times/second for 10 seconds
 2. Observe final rendered asset
@@ -241,8 +251,6 @@ $ trunk build --release
 **Success Criteria**: No visual flicker, correct final asset 100% of time
 
 ---
-
-### Display Bug Verification ✅ HIGH
 
 **Test**: Garden completion display
 1. SQL: `UPDATE gardens SET growth_stage=5 WHERE id='garden-hug-1'`
@@ -255,8 +263,6 @@ $ trunk build --release
 
 ---
 
-### Regression Testing ✅ REQUIRED
-
 **Test**: Full Phase 3 test plan
 1. Companion renders correct skin on boot
 2. Expression changes smooth with View Transitions
@@ -265,7 +271,7 @@ $ trunk build --release
 
 **Expected**: Zero regressions from critical fixes
 
-## Success Metrics
+### Success Metrics
 
 **Must Pass Before Manual Testing**:
 - ✅ All 4 critical fixes applied
@@ -280,7 +286,7 @@ $ trunk build --release
 - Clean build with Safari 26.2 compatibility maintained
 - Proper ownership semantics for WASM closures
 
-## Remaining Work
+### Remaining Work
 
 ### Phase 4B: Database Type Standardization
 
@@ -300,21 +306,13 @@ $ trunk build --release
 
 **Deferral Reason**: Requires rethinking callback lifetime management for `updateCallbackDone()`
 
-## Documentation
+### Documentation
 
 - ✅ **PHASE4_CRITICAL_FIXES.md** - This document
 - ✅ **PHASE4_COMPLETE.md** - Original Phase 4 summary
 - ✅ **CONSOLIDATED_FIXES.md** - Initial fix implementation plan
 - ✅ **Plan updated** - toasty-crafting-lemon.md reflects all critical fixes
 
-## Next Steps
+## References
+_No references recorded._
 
-1. **User**: Perform manual testing in Safari 26.2 on iPad Mini 6
-2. **Follow up**: Address Phase 4B database type standardization if time permits
-3. **Polish**: Phase 4C View Transitions closure lifetime (deferred)
-4. **Deploy**: Production deployment once all tests pass
-
----
-
-**Phase 4 Critical Fixes: 4/4 APPLIED ✅**
-**Ready for Manual Testing in Safari**

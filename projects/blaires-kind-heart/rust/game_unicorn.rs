@@ -1,6 +1,6 @@
 use crate::{
     browser_apis, confetti, dom, game_unicorn_audio, game_unicorn_friends, game_unicorn_sparkles,
-    game_unicorn_unicorn, games, native_apis, render, speech, state::AppState, synth_audio, ui,
+    game_unicorn_unicorn, games, gpu, native_apis, render, speech, state::AppState, synth_audio, ui,
     weekly_goals,
 };
 use std::cell::RefCell;
@@ -17,6 +17,8 @@ struct InputState {
     y: f64,
 }
 const SESSION_SECONDS: f64 = 60.0;
+const THROUGHPUT_FRAME_BUDGET_MS: f64 = 1000.0 / 30.0;
+const IPAD_THROUGHPUT_DPR_CAP: f64 = 1.35;
 struct UnicornGameState {
     ctx: CanvasRenderingContext2d,
     canvas_w: f64,
@@ -64,13 +66,14 @@ pub fn start(state: Rc<RefCell<AppState>>) {
     show_biome_picker(state);
 }
 fn show_biome_picker(state: Rc<RefCell<AppState>>) {
-    PICKER_ABORT.with(|p| {
-        p.borrow_mut().take();
-    });
-    let Some((arena, buttons)) = render::build_game_picker("\u{1F984} Choose Your World!") else {
+    let Some(picker) =
+        games::setup_picker_with_abort(&PICKER_ABORT, "\u{1F984} Choose Your World!")
+    else {
         return;
     };
-    let doc = dom::document();
+    let arena = picker.arena;
+    let buttons = picker.buttons;
+    let doc = picker.doc;
     for biome in game_unicorn_friends::ALL_BIOMES {
         let Some(btn) = dom::with_buf(|buf| {
             let _ = write!(buf, "{} {}", biome.picker_emoji, biome.name);
@@ -81,44 +84,25 @@ fn show_biome_picker(state: Rc<RefCell<AppState>>) {
         dom::set_attr(&btn, "data-unicorn-biome", biome.name);
         let _ = buttons.append_child(&btn);
     }
-    let Some(abort) = browser_apis::new_abort_handle() else {
-        return;
-    };
-    let signal = abort.signal();
     let s = state;
-    dom::on_with_signal(
-        arena.unchecked_ref(),
-        "click",
-        &signal,
-        move |event: Event| {
-            let Some(el) = dom::event_target_element(&event) else {
-                return;
-            };
-            let Some(btn) = dom::closest(&el, "[data-unicorn-biome]") else {
-                return;
-            };
-            let Some(biome_name) = dom::get_attr(&btn, "data-unicorn-biome") else {
-                return;
-            };
-            let Some(biome) = game_unicorn_friends::ALL_BIOMES
-                .iter()
-                .find(|b| b.name == biome_name)
-            else {
-                return;
-            };
-            synth_audio::tap();
-            native_apis::vibrate_tap();
-            start_with_biome(s.clone(), biome);
-        },
-    );
-    PICKER_ABORT.with(|p| {
-        *p.borrow_mut() = Some(abort);
+    games::bind_picker_selection(&arena, &picker.signal, "[data-unicorn-biome]", move |btn| {
+        let Some(biome_name) = dom::get_attr(&btn, "data-unicorn-biome") else {
+            return;
+        };
+        let Some(biome) = game_unicorn_friends::ALL_BIOMES
+            .iter()
+            .find(|b| b.name == biome_name)
+        else {
+            return;
+        };
+        synth_audio::tap();
+        native_apis::vibrate_tap();
+        start_with_biome(s.clone(), biome);
     });
+    games::store_picker_abort(&PICKER_ABORT, picker.abort);
 }
 fn start_with_biome(state: Rc<RefCell<AppState>>, biome: &'static game_unicorn_friends::Biome) {
-    PICKER_ABORT.with(|p| {
-        p.borrow_mut().take();
-    });
+    games::clear_picker_abort(&PICKER_ABORT);
     let Some((arena, doc)) = games::clear_game_arena() else {
         return;
     };
@@ -170,7 +154,10 @@ fn start_with_biome(state: Rc<RefCell<AppState>>, biome: &'static game_unicorn_f
     let _ = container.append_child(&hud);
     let _ = container.append_child(&canvas);
     let _ = arena.append_child(&container);
-    let dpr = dom::window().device_pixel_ratio();
+    let mut dpr = dom::window().device_pixel_ratio().max(1.0);
+    if gpu::is_ipad_mini_6_profile() && gpu::is_throughput_mode() {
+        dpr = dpr.min(IPAD_THROUGHPUT_DPR_CAP);
+    }
     let rect = container.get_bounding_client_rect();
     let css_w = rect.width();
     let css_h = rect.height() - 48.0;
@@ -267,12 +254,20 @@ fn start_game_loop() {
             if !game.active {
                 return false;
             }
-            let dt = if game.last_timestamp == 0.0 {
-                0.016
+            if !browser_apis::is_document_visible() {
+                game.last_timestamp = 0.0;
+                return true;
+            }
+            let delta_ms = if game.last_timestamp == 0.0 {
+                16.0
             } else {
-                ((timestamp - game.last_timestamp) / 1000.0).min(0.1)
+                (timestamp - game.last_timestamp).min(100.0)
             };
+            if gpu::is_throughput_mode() && delta_ms < THROUGHPUT_FRAME_BUDGET_MS {
+                return true;
+            }
             game.last_timestamp = timestamp;
+            let dt = (delta_ms / 1000.0).min(0.1);
             update_game(game, dt);
             draw_game(game);
             true
@@ -697,9 +692,7 @@ fn show_end_screen(
     );
 }
 pub fn cleanup() {
-    PICKER_ABORT.with(|p| {
-        p.borrow_mut().take();
-    });
+    games::clear_picker_abort(&PICKER_ABORT);
     game_unicorn_audio::stop_ambient();
     game_unicorn_audio::cleanup();
     GAME.with(|g| {

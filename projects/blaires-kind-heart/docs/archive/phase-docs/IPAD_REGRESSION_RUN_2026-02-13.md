@@ -1,12 +1,22 @@
 # iPad Regression Checklist Run (2026-02-13)
 
+- Archive Path: `docs/archive/phase-docs/IPAD_REGRESSION_RUN_2026-02-13.md`
+- Normalized On: `2026-03-04`
+- Source Title: `iPad Regression Checklist Run (2026-02-13)`
+
+## Summary
 Source checklist: `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/docs/DEPLOYMENT_CHECKLIST.md`
 
-## Scope
+## Context
+Source checklist: `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/docs/DEPLOYMENT_CHECKLIST.md`
+
+### Scope
 This run executes all automatable checklist items from the current workstation and isolates the remaining physical-device items that require an iPad mini 6.
 
-## Automated Preflight Results
+## Actions
+_No actions recorded._
 
+## Validation
 | Item | Command / Evidence | Result |
 |---|---|---|
 | Production build | `NO_COLOR=true trunk build --release` | PASS |
@@ -20,11 +30,11 @@ This run executes all automatable checklist items from the current workstation a
 | `pwa:health` explicit server mode | `npm run pwa:health -- http://127.0.0.1:4192` (and `:4193`) | FAIL (`offline-enable-context` timeout) |
 | Size budget check from checklist | `du -sh dist` = `108M`, `du -sh dist/assets` = `53M` | FAIL vs listed `<10MB` target in checklist |
 
-## Notes on Failing Automated Checks
+### Notes on Failing Automated Checks
 1. `pwa:health` currently fails in this environment in offline phase. It does complete early phases (launch, load, manifest check) but times out during offline context transition.
 2. The deployment checklist size target appears outdated relative to current bundled assets and runtime surface.
 
-## Physical iPad Regression Steps (Pending)
+### Physical iPad Regression Steps (Pending)
 
 Status: `PENDING (device required)`
 
@@ -47,15 +57,19 @@ Status: `PENDING (device required)`
    - No visible flicker/jank.
    - No memory warnings.
 
-## Xcode-Assisted Device Pass (Optional but Helpful)
+### Xcode-Assisted Device Pass (Optional but Helpful)
 1. Connect iPad to Mac and trust the device.
 2. Use Safari Develop menu for live Web Inspector against iPad Safari.
 3. Use Xcode `Window > Devices and Simulators` for device logs and diagnostics capture while running the app.
 4. Record observations and attach them to this file or `docs/STATUS_LEDGER.md`.
 
-## Conclusion
+### Conclusion
 Automated preflight is mostly green except for:
 1. `pwa:health` offline-phase failures.
 2. Checklist size-budget mismatch.
 
 Physical iPad validation remains required to close deployment confidence.
+
+## References
+_No references recorded._
+

@@ -1,11 +1,16 @@
-# Archive Snapshots Index
+# Archive snapshots Index
 
-Last updated: 2026-03-03
+- Archive Path: `docs/archive/snapshots/INDEX.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Archive snapshots Index`
 
-Point-in-time snapshots and verification notes.
+## Summary
+Historical archive index for `snapshots` (20 entries).
 
-## Files
+## Context
+Generated from current archive markdown inventory.
 
+## Actions
 - [boot-optimization-verification.md](boot-optimization-verification.md) - Boot Optimization Verification Report
 - [BUNDLE_QUICK_WINS.md](BUNDLE_QUICK_WINS.md) - Bundle Optimization Quick Wins
 - [DEVTOOLS_INVESTIGATION.md](DEVTOOLS_INVESTIGATION.md) - Service Worker Investigation Guide - Safari 26.2
@@ -27,6 +32,10 @@ Point-in-time snapshots and verification notes.
 - [TOKEN_OPTIMIZATION_FINAL.md](TOKEN_OPTIMIZATION_FINAL.md) - Token Optimization - Final Report
 - [week-2-asset-generation-complete.md](week-2-asset-generation-complete.md) - Week 2 Asset Generation - Completion Report
 
-## Navigation
+## Validation
+- Rebuilt by `scripts/rewrite-archive-docs.mjs`.
 
-- Parent archive index: [docs/archive/INDEX.md](../INDEX.md)
+## References
+- Parent archive index: [../INDEX.md](../INDEX.md)
+- Root archive index: [../INDEX.md](../INDEX.md)
+

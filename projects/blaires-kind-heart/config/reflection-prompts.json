@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "prompts": [
+    {
+      "id": "hug-1",
+      "category": "hug",
+      "prompt_text": "How did your hug make them feel?",
+      "emoji": "🤗",
+      "response_options": ["Happy & loved 💝", "Safe & cozy 🫂", "Warm inside 😊"]
+    },
+    {
+      "id": "hug-2",
+      "category": "hug",
+      "prompt_text": "What made this the perfect time for a hug?",
+      "emoji": "🤗",
+      "response_options": ["They needed comfort 🥹", "To show I care 💖", "Just felt right ✨"]
+    },
+    {
+      "id": "hug-3",
+      "category": "hug",
+      "prompt_text": "Did they hug you back?",
+      "emoji": "🤗",
+      "response_options": ["Yes, tight hug! 🫂", "Yes, gentle hug 🤗", "Not yet, maybe next time 💝"]
+    },
+    {
+      "id": "sharing-1",
+      "category": "sharing",
+      "prompt_text": "Was it hard to share?",
+      "emoji": "🤝",
+      "response_options": ["A little bit 😅", "Not really 😊", "Very hard but I did it! 💪"]
+    },
+    {
+      "id": "sharing-2",
+      "category": "sharing",
+      "prompt_text": "What did you share?",
+      "emoji": "🤝",
+      "response_options": ["My toy 🧸", "My snack 🍎", "My time 🕐"]
+    },
+    {
+      "id": "sharing-3",
+      "category": "sharing",
+      "prompt_text": "How did they say thank you?",
+      "emoji": "🤝",
+      "response_options": ["Big thank you! 🙏", "Gave me a hug 🤗", "Smiled at me 😊"]
+    },
+    {
+      "id": "helping-1",
+      "category": "helping",
+      "prompt_text": "What did you help with?",
+      "emoji": "🆘",
+      "response_options": ["Cleaning up 🧹", "Finding something 🔍", "Carrying things 📦"]
+    },
+    {
+      "id": "helping-2",
+      "category": "helping",
+      "prompt_text": "Did you notice they needed help?",
+      "emoji": "🆘",
+      "response_options": ["Yes, I saw! 👀", "They asked me 🗣️", "Mom told me 👩"]
+    },
+    {
+      "id": "helping-3",
+      "category": "helping",
+      "prompt_text": "How did helping make YOU feel?",
+      "emoji": "🆘",
+      "response_options": ["Proud of myself 😌", "Happy inside 😊", "Like a superhero 🦸"]
+    },
+    {
+      "id": "love-1",
+      "category": "love",
+      "prompt_text": "Who did you show love to?",
+      "emoji": "❤️",
+      "response_options": ["Family member 👨‍👩‍👧", "My friend 👫", "My pet 🐕"]
+    },
+    {
+      "id": "love-2",
+      "category": "love",
+      "prompt_text": "How did you show your love?",
+      "emoji": "❤️",
+      "response_options": ["Big hug 🤗", "Drew a picture 🎨", "Spent time together ⏰"]
+    },
+    {
+      "id": "love-3",
+      "category": "love",
+      "prompt_text": "Why is loving others important?",
+      "emoji": "❤️",
+      "response_options": ["Makes them happy 😊", "Shows I care 💝", "Feels good 🫶"]
+    }
+  ]
+}

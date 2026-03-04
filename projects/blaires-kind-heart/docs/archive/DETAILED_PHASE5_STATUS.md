@@ -1,47 +1,10 @@
 # Phase 5: Manual Testing & Validation - Status
 
-## Current State
+- Archive Path: `docs/archive/DETAILED_PHASE5_STATUS.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Phase 5: Manual Testing & Validation - Status`
 
-**Date**: 2026-02-11
-**Phase**: Phase 5 Manual Testing (following Phase 4 bug fixes completion)
-**Status**: 🟢 Ready for Testing
-
-## Environment Setup ✅
-
-### Development Server
-- **URL**: http://192.168.7.120:8080/
-- **Status**: Running (PID 8510)
-- **Access**: Network accessible for iPad Mini 6 testing
-- **Build**: Production release with all Phase 4 fixes
-
-### Test Environment
-- **Device**: iPad Mini 6 (A15, 4GB RAM)
-- **OS**: iPadOS 26.2
-- **Browser**: Safari 26.2
-- **DevTools**: Enabled (Mac Safari → Develop → iPad)
-
-## Test Plan Overview
-
-### Total Tests: 24
-
-**Critical Bug Verification** (10 tests):
-1. ⏳ Memory leak fix - <5MB heap growth
-2. ⏳ Race condition fix - no flicker
-3. ⏳ "Stage 6 of 5" display fix
-4. ⏳ Navigation API - 10+ back/forward cycles
-5. ⏳ Database type safety
-6. ⏳ OPFS Safari skip - <5s load
-7. ⏳ Service Worker precache - offline mode
-8. ⏳ Asset copy - 78 files present
-9. ⏳ Export interval - <5s persistence
-10. ⏳ Gardens seed - test garden created
-
-**Regression Testing** (14 tests):
-- Week 3 test cases 1-14
-- All must pass (zero regressions allowed)
-
-## Phase 4 Bug Fixes Summary
-
+## Summary
 ### 15 HIGH+CRITICAL Bugs Fixed
 
 **Initial Fixes** (7 CRITICAL):
@@ -69,7 +32,7 @@
 - ✅ Clamped stage display to prevent "Stage 6 of 5"
 - ⏸️ Database type standardization (14+ callsites - DEFERRED)
 
-## Files Modified (Phase 4)
+### Files Modified (Phase 4)
 
 1. **index.html** - Asset copy directives
 2. **public/sw-assets.js** - CSS precache additions
@@ -79,7 +42,7 @@
 6. **rust/companion_skins.rs** - Boolean type fixes
 7. **rust/navigation.rs** - Navigation API sync
 
-## Documentation
+### Documentation
 
 - ✅ **PHASE4_COMPLETE.md** - Full Phase 4 summary
 - ✅ **PHASE4_CRITICAL_FIXES.md** - Devil's advocate fixes
@@ -87,7 +50,7 @@
 - ✅ **phase4-manual-test-guide.md** - Comprehensive test guide
 - ✅ **PHASE5_STATUS.md** - This document
 
-## Success Criteria
+### Success Criteria
 
 ### Must Pass (Zero Failures)
 
@@ -108,7 +71,61 @@
 - ⏳ Zero console errors during normal usage
 - ⏳ All documentation complete
 
-## Testing Instructions
+## Context
+### Current State
+
+**Date**: 2026-02-11
+**Phase**: Phase 5 Manual Testing (following Phase 4 bug fixes completion)
+**Status**: 🟢 Ready for Testing
+
+### Environment Setup ✅
+
+### Development Server
+- **URL**: http://192.168.7.120:8080/
+- **Status**: Running (PID 8510)
+- **Access**: Network accessible for iPad Mini 6 testing
+- **Build**: Production release with all Phase 4 fixes
+
+## Actions
+1. **User**: Execute test plan on iPad Mini 6
+2. **Document**: Record results in test checklist
+3. **Report**: Document any failures in PHASE5_BUGS.md
+4. **Fix**: Address any blocking bugs found
+5. **Deploy**: Production deployment if all tests pass
+
+### Estimated Timeline
+
+- **Testing**: 2-3 hours
+- **Bug fixes** (if needed): 1-2 hours
+- **Documentation**: 30 minutes
+- **Total**: 3.5-5.5 hours
+
+---
+
+**Phase 5 Status: Ready for Manual Testing on iPad Mini 6**
+**Development Server: http://192.168.7.120:8080/**
+
+## Validation
+- **Device**: iPad Mini 6 (A15, 4GB RAM)
+- **OS**: iPadOS 26.2
+- **Browser**: Safari 26.2
+- **DevTools**: Enabled (Mac Safari → Develop → iPad)
+
+**Critical Bug Verification** (10 tests):
+1. ⏳ Memory leak fix - <5MB heap growth
+2. ⏳ Race condition fix - no flicker
+3. ⏳ "Stage 6 of 5" display fix
+4. ⏳ Navigation API - 10+ back/forward cycles
+5. ⏳ Database type safety
+6. ⏳ OPFS Safari skip - <5s load
+7. ⏳ Service Worker precache - offline mode
+8. ⏳ Asset copy - 78 files present
+9. ⏳ Export interval - <5s persistence
+10. ⏳ Gardens seed - test garden created
+
+**Regression Testing** (14 tests):
+- Week 3 test cases 1-14
+- All must pass (zero regressions allowed)
 
 ### Quick Start
 
@@ -125,8 +142,6 @@
    - Follow `docs/testing/phase4-manual-test-guide.md`
    - Check off each test as completed
    - Document any failures in `docs/PHASE5_BUGS.md`
-
-### Test Priorities
 
 **Start with** (most critical):
 1. Test 6: OPFS skip (fast load verification)
@@ -146,7 +161,7 @@
 
 **Regression**: Run all 14 Week 3 tests
 
-## Performance Targets
+### Performance Targets
 
 | Metric | Target | Critical |
 |--------|--------|----------|
@@ -158,22 +173,6 @@
 | View Transition FPS | 60fps | >30fps |
 | Total memory | <50MB | <100MB |
 
-## Next Steps
+## References
+_No references recorded._
 
-1. **User**: Execute test plan on iPad Mini 6
-2. **Document**: Record results in test checklist
-3. **Report**: Document any failures in PHASE5_BUGS.md
-4. **Fix**: Address any blocking bugs found
-5. **Deploy**: Production deployment if all tests pass
-
-## Estimated Timeline
-
-- **Testing**: 2-3 hours
-- **Bug fixes** (if needed): 1-2 hours
-- **Documentation**: 30 minutes
-- **Total**: 3.5-5.5 hours
-
----
-
-**Phase 5 Status: Ready for Manual Testing on iPad Mini 6**
-**Development Server: http://192.168.7.120:8080/**

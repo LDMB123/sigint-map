@@ -1,8 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { gotoHydrated, skipUnlessRust } from './_rust_test_utils.js';
 
+const fullDiagnostics = process.env.RUST_AI_DIAGNOSTICS_FULL === '1';
+
 test.describe('Rust AI pages', () => {
     skipUnlessRust(test);
+    test.skip(!fullDiagnostics, 'Requires ai_diagnostics_full build (set RUST_AI_DIAGNOSTICS_FULL=1).');
     test.describe.configure({ mode: 'serial' });
     test.setTimeout(90_000);
 

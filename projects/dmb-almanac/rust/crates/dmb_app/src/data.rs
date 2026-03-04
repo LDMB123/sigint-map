@@ -5,6 +5,8 @@ use std::collections::{HashMap, HashSet};
 #[cfg(feature = "hydrate")]
 use std::future::Future;
 
+#[cfg(feature = "hydrate")]
+use leptos::prelude::GetUntracked;
 use leptos::prelude::RwSignal;
 #[cfg(feature = "hydrate")]
 use leptos::prelude::Set;
@@ -37,6 +39,12 @@ use web_sys::Response;
 extern "C" {
     #[wasm_bindgen(js_namespace = scheduler, js_name = "yield", catch)]
     fn scheduler_yield() -> Result<js_sys::Promise, JsValue>;
+
+    #[wasm_bindgen(js_namespace = scheduler, js_name = postTask, catch)]
+    fn scheduler_post_task(
+        callback: &js_sys::Function,
+        options: &JsValue,
+    ) -> Result<js_sys::Promise, JsValue>;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -46,6 +54,15 @@ pub struct ImportStatus {
     pub done: bool,
     pub error: Option<String>,
     pub can_reset: bool,
+    pub tuning: Option<ImportTuningSnapshot>,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct ImportTuningSnapshot {
+    pub chunk_records: usize,
+    pub tx_batch_size: usize,
+    pub last_chunk_ms: f64,
+    pub long_task_count: u32,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -613,6 +630,8 @@ struct ImportCheckpoint {
     manifest_version: String,
     file_index: usize,
     chunk_index: usize,
+    #[serde(default)]
+    record_offset: Option<usize>,
     total_files: usize,
     chunk_total: usize,
     updated_at: String,
@@ -635,11 +654,21 @@ struct ImportWorkItem {
 }
 
 #[cfg(feature = "hydrate")]
+struct ImportWorkContext<'a> {
+    manifest_version: &'a str,
+    file_index: usize,
+    total_work_items: usize,
+    total_files: f32,
+}
+
+#[cfg(feature = "hydrate")]
 const IMPORT_MARKER_ID: &str = "data_import_v1";
 #[cfg(feature = "hydrate")]
 const IMPORT_CHECKPOINT_ID: &str = "data_import_checkpoint_v1";
 #[cfg(feature = "hydrate")]
 const SETLIST_CHUNK_PREFIX: &str = "setlist-entries-chunk-";
+#[cfg(feature = "hydrate")]
+pub const IMPORT_TUNING_FLAG_KEY: &str = "pwa_import_tuning_v2";
 #[cfg(feature = "hydrate")]
 const DEFAULT_IMPORT_CHUNK_SIZE: usize = 1000;
 #[cfg(feature = "hydrate")]
@@ -648,6 +677,30 @@ const LARGE_IMPORT_CHUNK_SIZE: usize = 10_000;
 const LARGE_IMPORT_RECORD_THRESHOLD: usize = 20_000;
 #[cfg(feature = "hydrate")]
 const CHECKPOINT_INTERVAL_CHUNKS: usize = 4;
+#[cfg(feature = "hydrate")]
+const ADAPTIVE_CHECKPOINT_INTERVAL_CHUNKS: usize = 2;
+#[cfg(feature = "hydrate")]
+const CHECKPOINT_INTERVAL_MS: f64 = 1_500.0;
+#[cfg(feature = "hydrate")]
+const ADAPTIVE_CHUNK_RECORDS_START: usize = 1_000;
+#[cfg(feature = "hydrate")]
+const ADAPTIVE_TX_BATCH_START: usize = 750;
+#[cfg(feature = "hydrate")]
+const ADAPTIVE_CHUNK_RECORDS_MIN: usize = 250;
+#[cfg(feature = "hydrate")]
+const ADAPTIVE_CHUNK_RECORDS_MAX: usize = 8_000;
+#[cfg(feature = "hydrate")]
+const ADAPTIVE_TX_BATCH_MIN: usize = 128;
+#[cfg(feature = "hydrate")]
+const ADAPTIVE_TX_BATCH_MAX: usize = 1_500;
+#[cfg(feature = "hydrate")]
+const ADAPTIVE_TARGET_CHUNK_MS: f64 = 45.0;
+#[cfg(feature = "hydrate")]
+const ADAPTIVE_SLOW_CHUNK_MS: f64 = 75.0;
+#[cfg(feature = "hydrate")]
+const ADAPTIVE_FAST_CHUNK_MS: f64 = 25.0;
+#[cfg(feature = "hydrate")]
+const ADAPTIVE_FAST_STREAK_REQUIRED: usize = 3;
 pub const STORAGE_PRESSURE_THRESHOLD: f64 = 0.85;
 #[cfg(feature = "hydrate")]
 const AI_CACHE_PATHS: [&str; 4] = [
@@ -664,6 +717,108 @@ fn import_chunk_size(total_records: usize) -> usize {
         LARGE_IMPORT_CHUNK_SIZE
     } else {
         DEFAULT_IMPORT_CHUNK_SIZE
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn parse_boolean_flag(raw: &str) -> Option<bool> {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "1" | "true" | "yes" | "on" => Some(true),
+        "0" | "false" | "no" | "off" => Some(false),
+        _ => None,
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn import_tuning_enabled() -> bool {
+    let Some(window) = web_sys::window() else {
+        return false;
+    };
+    if let Ok(Some(storage)) = window.local_storage() {
+        if let Ok(Some(raw)) = storage.get_item(IMPORT_TUNING_FLAG_KEY) {
+            if let Some(enabled) = parse_boolean_flag(&raw) {
+                return enabled;
+            }
+        }
+    }
+
+    // Rollout default: ON for dev-like hosts, OFF otherwise.
+    match window.location().hostname().ok() {
+        Some(host) => matches!(
+            host.to_ascii_lowercase().as_str(),
+            "localhost" | "127.0.0.1" | "::1"
+        ),
+        None => false,
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn performance_now_ms() -> f64 {
+    web_sys::window()
+        .and_then(|window| window.performance())
+        .map(|performance| performance.now())
+        .unwrap_or_else(js_sys::Date::now)
+}
+
+#[cfg(feature = "hydrate")]
+struct AdaptiveImportGovernor {
+    chunk_records: usize,
+    tx_batch_size: usize,
+    fast_streak: usize,
+}
+
+#[cfg(feature = "hydrate")]
+impl AdaptiveImportGovernor {
+    fn new() -> Self {
+        Self {
+            chunk_records: ADAPTIVE_CHUNK_RECORDS_START,
+            tx_batch_size: ADAPTIVE_TX_BATCH_START,
+            fast_streak: 0,
+        }
+    }
+
+    fn snapshot(&self, last_chunk_ms: f64, long_task_count: u32) -> ImportTuningSnapshot {
+        ImportTuningSnapshot {
+            chunk_records: self.chunk_records,
+            tx_batch_size: self.tx_batch_size,
+            last_chunk_ms,
+            long_task_count,
+        }
+    }
+
+    fn next_chunk_records(&self, remaining_records: usize) -> usize {
+        self.chunk_records.min(remaining_records.max(1))
+    }
+
+    fn update_after_chunk(&mut self, chunk_ms: f64, no_pending_interaction: bool) {
+        let slow_chunk = chunk_ms > ADAPTIVE_SLOW_CHUNK_MS;
+        let fast_chunk = chunk_ms < ADAPTIVE_FAST_CHUNK_MS;
+
+        if slow_chunk {
+            self.fast_streak = 0;
+            self.chunk_records = ((self.chunk_records as f64) * 0.75).round() as usize;
+            self.tx_batch_size = ((self.tx_batch_size as f64) * 0.75).round() as usize;
+        } else if fast_chunk && no_pending_interaction {
+            self.fast_streak = self.fast_streak.saturating_add(1);
+            if self.fast_streak >= ADAPTIVE_FAST_STREAK_REQUIRED {
+                self.chunk_records = ((self.chunk_records as f64) * 1.15).round() as usize;
+                self.tx_batch_size = ((self.tx_batch_size as f64) * 1.15).round() as usize;
+                self.fast_streak = 0;
+            }
+        } else {
+            self.fast_streak = 0;
+            if chunk_ms > ADAPTIVE_TARGET_CHUNK_MS && no_pending_interaction {
+                self.chunk_records = ((self.chunk_records as f64) * 0.9).round() as usize;
+                self.tx_batch_size = ((self.tx_batch_size as f64) * 0.9).round() as usize;
+            }
+        }
+
+        self.chunk_records = self
+            .chunk_records
+            .clamp(ADAPTIVE_CHUNK_RECORDS_MIN, ADAPTIVE_CHUNK_RECORDS_MAX);
+        self.tx_batch_size = self
+            .tx_batch_size
+            .clamp(ADAPTIVE_TX_BATCH_MIN, ADAPTIVE_TX_BATCH_MAX);
     }
 }
 
@@ -794,12 +949,31 @@ fn build_import_work_items(manifest: &DataManifest) -> Vec<ImportWorkItem> {
 
 #[cfg(feature = "hydrate")]
 fn set_import_progress(status: RwSignal<ImportStatus>, message: impl Into<String>, progress: f32) {
+    let tuning = status.get_untracked().tuning;
     status.set(ImportStatus {
         message: message.into(),
         progress: progress.clamp(0.0, 1.0),
         done: false,
         error: None,
         can_reset: false,
+        tuning,
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn set_import_progress_with_tuning(
+    status: RwSignal<ImportStatus>,
+    message: impl Into<String>,
+    progress: f32,
+    tuning: Option<ImportTuningSnapshot>,
+) {
+    status.set(ImportStatus {
+        message: message.into(),
+        progress: progress.clamp(0.0, 1.0),
+        done: false,
+        error: None,
+        can_reset: false,
+        tuning,
     });
 }
 
@@ -811,6 +985,7 @@ fn import_error_status(message: String, progress: f32, error: String) -> ImportS
         done: false,
         error: Some(error),
         can_reset: true,
+        tuning: None,
     }
 }
 
@@ -822,6 +997,7 @@ fn set_import_ready(status: RwSignal<ImportStatus>) {
         done: true,
         error: None,
         can_reset: false,
+        tuning: None,
     });
 }
 
@@ -914,18 +1090,22 @@ async fn check_existing_manifest_integrity(
 }
 
 #[cfg(feature = "hydrate")]
-async fn load_resume_position(manifest: &DataManifest, total_work_items: usize) -> (usize, usize) {
+async fn load_resume_position(
+    manifest: &DataManifest,
+    total_work_items: usize,
+) -> (usize, usize, Option<usize>) {
     let Ok(Some(checkpoint)) =
         dmb_idb::get_sync_meta::<ImportCheckpoint>(IMPORT_CHECKPOINT_ID).await
     else {
-        return (0, 0);
+        return (0, 0, None);
     };
     if checkpoint.manifest_version != manifest.version || checkpoint.completed {
-        return (0, 0);
+        return (0, 0, None);
     }
     (
         checkpoint.file_index.min(total_work_items),
         checkpoint.chunk_index,
+        checkpoint.record_offset,
     )
 }
 
@@ -939,10 +1119,26 @@ fn chunk_values(values: &Array, start: usize, end: usize) -> Vec<JsValue> {
 }
 
 #[cfg(feature = "hydrate")]
+fn resolve_resume_record_offset(
+    start_record_offset_hint: Option<usize>,
+    start_chunk_hint: usize,
+    total_records: usize,
+) -> usize {
+    if let Some(offset) = start_record_offset_hint {
+        return offset.min(total_records);
+    }
+    if start_chunk_hint > 0 {
+        return (start_chunk_hint * ADAPTIVE_CHUNK_RECORDS_START).min(total_records);
+    }
+    0
+}
+
+#[cfg(feature = "hydrate")]
 async fn persist_import_checkpoint(
     manifest_version: &str,
     file_index: usize,
     chunk_number: usize,
+    record_offset: Option<usize>,
     total_work_items: usize,
     chunk_total: usize,
 ) {
@@ -951,6 +1147,7 @@ async fn persist_import_checkpoint(
         manifest_version: manifest_version.to_string(),
         file_index,
         chunk_index: chunk_number,
+        record_offset,
         total_files: total_work_items,
         chunk_total,
         updated_at: js_sys::Date::new_0().to_string().into(),
@@ -961,11 +1158,21 @@ async fn persist_import_checkpoint(
 
 #[cfg(feature = "hydrate")]
 async fn yield_to_browser_scheduler() {
-    let Ok(promise) = scheduler_yield() else {
+    if let Ok(promise) = scheduler_yield() {
+        let _ = JsFuture::from(promise).await;
         return;
-    };
+    }
 
-    let _ = JsFuture::from(promise).await;
+    let options = js_sys::Object::new();
+    let _ = js_sys::Reflect::set(
+        options.as_ref(),
+        &JsValue::from_str("delay"),
+        &JsValue::from_f64(0.0),
+    );
+    let callback = js_sys::Function::new_no_args("");
+    if let Ok(promise) = scheduler_post_task(&callback, options.as_ref()) {
+        let _ = JsFuture::from(promise).await;
+    }
 }
 
 #[cfg(feature = "hydrate")]
@@ -1032,12 +1239,13 @@ async fn import_single_work_item(
         let chunk_number = chunk_index + 1;
         let should_persist_checkpoint = chunk_total <= CHECKPOINT_INTERVAL_CHUNKS
             || chunk_number == chunk_total
-            || chunk_number % CHECKPOINT_INTERVAL_CHUNKS == 0;
+            || chunk_number.is_multiple_of(CHECKPOINT_INTERVAL_CHUNKS);
         if should_persist_checkpoint {
             persist_import_checkpoint(
                 manifest_version,
                 file_index,
                 chunk_number,
+                Some(end),
                 total_work_items,
                 chunk_total,
             )
@@ -1086,6 +1294,179 @@ async fn import_work_items_with_resume(
 }
 
 #[cfg(feature = "hydrate")]
+async fn import_single_work_item_adaptive(
+    status: RwSignal<ImportStatus>,
+    ctx: &ImportWorkContext<'_>,
+    work_item: &ImportWorkItem,
+    start_chunk_hint: usize,
+    start_record_offset_hint: Option<usize>,
+    governor: &mut AdaptiveImportGovernor,
+) -> Result<(), ImportStatus> {
+    let file_number = ctx.file_index + 1;
+    let progress_base = ctx.file_index as f32 / ctx.total_files;
+    set_import_progress(
+        status,
+        format!(
+            "Importing {} ({}/{})",
+            work_item.label, file_number, ctx.total_work_items
+        ),
+        progress_base,
+    );
+
+    let values = fetch_json_array(&work_item.url).await.map_err(|err| {
+        import_error_status(
+            format!("Failed to load {}", work_item.label),
+            progress_base,
+            err.as_string().unwrap_or_default(),
+        )
+    })?;
+    let total_records = values.length() as usize;
+    if total_records == 0 {
+        persist_import_checkpoint(
+            ctx.manifest_version,
+            ctx.file_index,
+            start_chunk_hint,
+            Some(0),
+            ctx.total_work_items,
+            0,
+        )
+        .await;
+        return Ok(());
+    }
+
+    let mut chunk_number = start_chunk_hint;
+    let mut record_offset =
+        resolve_resume_record_offset(start_record_offset_hint, start_chunk_hint, total_records);
+    let mut last_checkpoint_at = performance_now_ms();
+
+    while record_offset < total_records {
+        let remaining = total_records.saturating_sub(record_offset);
+        let chunk_records = governor.next_chunk_records(remaining);
+        let start = record_offset;
+        let end = (start + chunk_records).min(total_records);
+        chunk_number = chunk_number.saturating_add(1);
+
+        let chunk = chunk_values(&values, start, end);
+        let chunk_started_at = performance_now_ms();
+        let write_stats = dmb_idb::bulk_put_with_options(
+            work_item.store,
+            &chunk,
+            dmb_idb::BulkPutOptions {
+                tx_batch_size: governor.tx_batch_size,
+            },
+        )
+        .await
+        .map_err(|err| {
+            import_error_status(
+                format!("Import failed: {}", work_item.label),
+                progress_base,
+                format!("{err:?}"),
+            )
+        })?;
+        let chunk_elapsed_ms = (performance_now_ms() - chunk_started_at).max(0.0);
+        let tuning_chunk_ms = chunk_elapsed_ms.max(write_stats.max_tx_ms);
+        let long_task_count = crate::pages::latest_inp_metrics_snapshot()
+            .map(|metrics| metrics.long_frame_count)
+            .unwrap_or(0);
+        let tuning = governor.snapshot(tuning_chunk_ms, long_task_count);
+
+        let chunk_progress = end as f32 / total_records as f32;
+        let progress = progress_base + (1.0 / ctx.total_files) * chunk_progress;
+        set_import_progress_with_tuning(
+            status,
+            format!(
+                "Importing {} ({}/{}) • chunk {} • {} rows • {:.0}ms chunk / {:.0}ms tx ({} tx)",
+                work_item.label,
+                file_number,
+                ctx.total_work_items,
+                chunk_number,
+                write_stats.inserted,
+                chunk_elapsed_ms,
+                write_stats.max_tx_ms,
+                write_stats.transaction_count
+            ),
+            progress,
+            Some(tuning),
+        );
+
+        let now = performance_now_ms();
+        let is_last_chunk = end >= total_records;
+        let should_persist_checkpoint = is_last_chunk
+            || chunk_number.is_multiple_of(ADAPTIVE_CHECKPOINT_INTERVAL_CHUNKS)
+            || (now - last_checkpoint_at) >= CHECKPOINT_INTERVAL_MS;
+
+        if should_persist_checkpoint {
+            persist_import_checkpoint(
+                ctx.manifest_version,
+                ctx.file_index,
+                chunk_number,
+                Some(end),
+                ctx.total_work_items,
+                total_records.div_ceil(governor.chunk_records.max(1)),
+            )
+            .await;
+            last_checkpoint_at = now;
+        }
+
+        yield_to_browser_scheduler().await;
+
+        let no_pending_interaction = !crate::pages::has_recent_interaction(150.0);
+        governor.update_after_chunk(tuning_chunk_ms, no_pending_interaction);
+        record_offset = end;
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "hydrate")]
+async fn import_work_items_with_adaptive_resume(
+    status: RwSignal<ImportStatus>,
+    manifest_version: &str,
+    import_work: &[ImportWorkItem],
+    resume_file_index: usize,
+    resume_chunk_index: usize,
+    resume_record_offset: Option<usize>,
+) -> Result<(), ImportStatus> {
+    let total_work_items = import_work.len();
+    let total_files = total_work_items.max(1) as f32;
+    let mut governor = AdaptiveImportGovernor::new();
+
+    for (file_index, work_item) in import_work.iter().enumerate() {
+        if file_index < resume_file_index {
+            continue;
+        }
+        let start_chunk_hint = if file_index == resume_file_index {
+            resume_chunk_index
+        } else {
+            0
+        };
+        let start_record_offset = if file_index == resume_file_index {
+            resume_record_offset
+        } else {
+            None
+        };
+        let ctx = ImportWorkContext {
+            manifest_version,
+            file_index,
+            total_work_items,
+            total_files,
+        };
+
+        import_single_work_item_adaptive(
+            status,
+            &ctx,
+            work_item,
+            start_chunk_hint,
+            start_record_offset,
+            &mut governor,
+        )
+        .await?;
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "hydrate")]
 async fn persist_import_completion(manifest: &DataManifest, total_work_items: usize) {
     let manifest_version = manifest.version.clone();
     let marker = ImportMarker {
@@ -1101,6 +1482,7 @@ async fn persist_import_completion(manifest: &DataManifest, total_work_items: us
         manifest_version,
         file_index: total_work_items,
         chunk_index: 0,
+        record_offset: None,
         total_files: total_work_items,
         chunk_total: 0,
         updated_at: js_sys::Date::new_0().to_string().into(),
@@ -1139,18 +1521,35 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
 
     let import_work = build_import_work_items(&manifest);
     let total_work_items = import_work.len();
-    let (resume_file_index, resume_chunk_index) =
+    let (resume_file_index, resume_chunk_index, resume_record_offset) =
         load_resume_position(&manifest, total_work_items).await;
+    let tuning_enabled = import_tuning_enabled();
+    // Start perf observers lazily on first real import demand so both tuned and untuned
+    // paths expose comparable responsiveness metrics.
+    crate::pages::ensure_perf_observers_started();
 
-    if let Err(err_status) = import_work_items_with_resume(
-        status,
-        &manifest.version,
-        &import_work,
-        resume_file_index,
-        resume_chunk_index,
-    )
-    .await
-    {
+    let import_result = if tuning_enabled {
+        import_work_items_with_adaptive_resume(
+            status,
+            &manifest.version,
+            &import_work,
+            resume_file_index,
+            resume_chunk_index,
+            resume_record_offset,
+        )
+        .await
+    } else {
+        import_work_items_with_resume(
+            status,
+            &manifest.version,
+            &import_work,
+            resume_file_index,
+            resume_chunk_index,
+        )
+        .await
+    };
+
+    if let Err(err_status) = import_result {
         status.set(err_status);
         return;
     }
@@ -1358,6 +1757,16 @@ async fn verify_import_integrity(
 pub async fn ensure_seed_data(_status: RwSignal<ImportStatus>) {}
 
 #[cfg(feature = "hydrate")]
+pub fn current_import_tuning_enabled() -> bool {
+    import_tuning_enabled()
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn current_import_tuning_enabled() -> bool {
+    false
+}
+
+#[cfg(feature = "hydrate")]
 pub async fn estimate_storage() -> Option<StorageInfo> {
     let window = web_sys::window()?;
     let manager = window.navigator().storage();
@@ -1455,6 +1864,72 @@ mod tests {
         assert!(!report.available);
         assert_eq!(report.total_mismatches, 0);
         assert!(report.mismatches.is_empty());
+    }
+
+    #[cfg(feature = "hydrate")]
+    #[test]
+    fn adaptive_governor_reduces_on_slow_chunks() {
+        let mut governor = AdaptiveImportGovernor::new();
+        governor.update_after_chunk(ADAPTIVE_SLOW_CHUNK_MS + 5.0, true);
+        assert!(governor.chunk_records < ADAPTIVE_CHUNK_RECORDS_START);
+        assert!(governor.tx_batch_size < ADAPTIVE_TX_BATCH_START);
+    }
+
+    #[cfg(feature = "hydrate")]
+    #[test]
+    fn adaptive_governor_increases_after_fast_streak_without_pending_interaction() {
+        let mut governor = AdaptiveImportGovernor::new();
+        for _ in 0..ADAPTIVE_FAST_STREAK_REQUIRED {
+            governor.update_after_chunk(ADAPTIVE_FAST_CHUNK_MS - 5.0, true);
+        }
+        assert!(governor.chunk_records > ADAPTIVE_CHUNK_RECORDS_START);
+        assert!(governor.tx_batch_size > ADAPTIVE_TX_BATCH_START);
+    }
+
+    #[cfg(feature = "hydrate")]
+    #[test]
+    fn adaptive_governor_does_not_increase_when_interaction_pending() {
+        let mut governor = AdaptiveImportGovernor::new();
+        for _ in 0..(ADAPTIVE_FAST_STREAK_REQUIRED + 1) {
+            governor.update_after_chunk(ADAPTIVE_FAST_CHUNK_MS - 5.0, false);
+        }
+        assert_eq!(governor.chunk_records, ADAPTIVE_CHUNK_RECORDS_START);
+        assert_eq!(governor.tx_batch_size, ADAPTIVE_TX_BATCH_START);
+    }
+
+    #[cfg(feature = "hydrate")]
+    #[test]
+    fn adaptive_governor_state_can_carry_across_work_items() {
+        let mut governor = AdaptiveImportGovernor::new();
+        governor.update_after_chunk(ADAPTIVE_SLOW_CHUNK_MS + 10.0, true);
+        let tuned_chunk_records = governor.chunk_records;
+        let tuned_tx_batch = governor.tx_batch_size;
+
+        // Reusing the same governor for the next file keeps tuned values.
+        let _ = governor.next_chunk_records(1_000);
+        assert_eq!(governor.chunk_records, tuned_chunk_records);
+        assert_eq!(governor.tx_batch_size, tuned_tx_batch);
+    }
+
+    #[cfg(feature = "hydrate")]
+    #[test]
+    fn resolve_resume_record_offset_prefers_persisted_offset() {
+        let resolved = resolve_resume_record_offset(Some(321), 9, 10_000);
+        assert_eq!(resolved, 321);
+    }
+
+    #[cfg(feature = "hydrate")]
+    #[test]
+    fn resolve_resume_record_offset_falls_back_to_chunk_hint_when_offset_missing() {
+        let resolved = resolve_resume_record_offset(None, 3, 10_000);
+        assert_eq!(resolved, ADAPTIVE_CHUNK_RECORDS_START * 3);
+    }
+
+    #[cfg(feature = "hydrate")]
+    #[test]
+    fn resolve_resume_record_offset_clamps_to_total_records() {
+        let resolved = resolve_resume_record_offset(Some(9_999), 1, 500);
+        assert_eq!(resolved, 500);
     }
 
     #[cfg(feature = "hydrate")]

@@ -5,67 +5,34 @@
  * Uses Imagen 3 Pro via Vertex AI
  */
 
-import { GoogleAuth } from 'google-auth-library';
-import fs from 'fs/promises';
 import path from 'path';
+import { ensureDir, sleep, writeBase64Image } from './lib/fs-helpers.mjs';
+import { requestImagenBase64 } from './lib/imagen-client.mjs';
 
-const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-0925343693';
-const LOCATION = 'us-central1';
-const MODEL = 'imagen-3.0-generate-001';
 const OUTPUT_DIR = path.join(process.env.HOME, 'imagen-output', 'bkh-buttons');
+const NEGATIVE_PROMPT = 'text, words, letters, numbers, watermark, signature, ugly, blurry, low quality, dark, scary, realistic photo, photographic';
 
-const auth = new GoogleAuth({
-  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-});
-
-await fs.mkdir(OUTPUT_DIR, { recursive: true });
+await ensureDir(OUTPUT_DIR);
 
 async function generateImage(prompt, filename, aspectRatio = '1:1') {
   console.log(`\n--- Generating: ${filename} ---`);
   console.log(`Prompt: ${prompt}`);
 
-  const client = await auth.getClient();
-  const accessToken = await client.getAccessToken();
-
-  const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}:predict`;
-
-  const requestBody = {
-    instances: [{ prompt }],
-    parameters: {
-      sampleCount: 1,
-      aspectRatio,
-      negativePrompt: 'text, words, letters, numbers, watermark, signature, ugly, blurry, low quality, dark, scary, realistic photo, photographic',
-    },
-  };
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken.token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
+  const result = await requestImagenBase64({
+    prompt,
+    aspectRatio,
+    negativePrompt: NEGATIVE_PROMPT,
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    console.error(`ERROR generating ${filename}:`, JSON.stringify(error, null, 2));
+  if (!result.ok || !result.bytesBase64Encoded) {
+    console.error(`ERROR generating ${filename}:`, result.errorMessage || 'No image data returned');
     return null;
   }
 
-  const data = await response.json();
-  const predictions = data.predictions || [];
-
-  if (predictions.length > 0 && predictions[0].bytesBase64Encoded) {
-    const imageData = Buffer.from(predictions[0].bytesBase64Encoded, 'base64');
-    const filepath = path.join(OUTPUT_DIR, filename);
-    await fs.writeFile(filepath, imageData);
-    console.log(`Saved: ${filepath} (${(imageData.length / 1024).toFixed(1)} KB)`);
-    return filepath;
-  }
-
-  console.error(`No image data returned for ${filename}`);
-  return null;
+  const filepath = path.join(OUTPUT_DIR, filename);
+  const bytes = await writeBase64Image(filepath, result.bytesBase64Encoded);
+  console.log(`Saved: ${filepath} (${(bytes / 1024).toFixed(1)} KB)`);
+  return filepath;
 }
 
 // ── Shared style prompt fragment ──
@@ -183,7 +150,7 @@ for (const btn of buttons) {
     results.failed.push(btn.name);
   }
   // Small delay between API calls to avoid rate limits
-  await new Promise(r => setTimeout(r, 1500));
+  await sleep(1500);
 }
 
 console.log('\n=== Generation Complete ===');

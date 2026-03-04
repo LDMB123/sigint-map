@@ -1,10 +1,13 @@
 # Debug & Polish Pass — Blaire's Kind Heart
 
-## Summary
+- Archive Path: `docs/archive/plans/2026-02-15-debug-and-polish-design.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Debug & Polish Pass — Blaire's Kind Heart`
 
+## Summary
 Full audit and polish of the entire PWA. Fixes 1 critical bug (CSS loading gap), 3 high-priority issues, 4 medium polish items, and 4 low cosmetic improvements.
 
-## Critical: CSS Loading Gap
+### Critical: CSS Loading Gap
 
 **Problem**: Only 4 of 16 CSS files are loaded. `index.html` links `tokens.css`, `app.css`, `home.css`, `animations.css` via Trunk. The remaining 12 panel-specific CSS files (`tracker.css`, `quests.css`, `stories.css`, `rewards.css`, `games.css`, `mom.css`, `progress.css`, `gardens.css`, `particles.css`, `scroll-effects.css`, `particle-effects.css`, `demo-overhaul.css`) are listed in `sw-assets.js` as DEFERRED_ASSETS but:
 - Never linked in `index.html` with `<link data-trunk rel="css">` tags
@@ -15,7 +18,7 @@ Full audit and polish of the entire PWA. Fixes 1 critical bug (CSS loading gap),
 
 **Files**: `index.html`, `public/sw-assets.js`
 
-## High Priority Fixes
+### High Priority Fixes
 
 ### H1: `contrast-color()` CSS function
 
@@ -41,7 +44,7 @@ Full audit and polish of the entire PWA. Fixes 1 critical bug (CSS loading gap),
 
 **Files**: Same as H2
 
-## Medium Priority Polish
+### Medium Priority Polish
 
 ### M1: Missing sound effects
 
@@ -73,7 +76,7 @@ Add `:focus-visible` styling to emotion grid buttons and other interactive eleme
 
 **Files**: `src/styles/tracker.css`
 
-## Low Priority Cosmetic
+### Low Priority Cosmetic
 
 ### L1: Z-index scale
 
@@ -91,8 +94,10 @@ Change `fetch(dataURI)` to `new Response(blob)` for offline image fallback.
 
 Move PIN check in `progress.rs:287` to secure storage (or document as intentional for v1).
 
-## Implementation Order
+## Context
+_Context not recorded in source archive document._
 
+## Actions
 ```
 Batch 1: CSS Loading (Critical)  — index.html, sw-assets.js
 Batch 2: Code Fixes (High)      — game_*.rs, tracker.css
@@ -100,7 +105,7 @@ Batch 3: UX Polish (Medium)     — reflection.rs, quests.rs, tracker.rs, games.
 Batch 4: Cosmetic (Low)         — tokens.css, animations.css, sw.js, progress.rs
 ```
 
-## Scope
+### Scope
 
 - ~15 files modified
 - ~80 lines of new Rust code
@@ -108,3 +113,10 @@ Batch 4: Cosmetic (Low)         — tokens.css, animations.css, sw.js, progress.
 - ~20 lines of JS changes
 - 0 new files
 - 0 new dependencies
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

@@ -1,16 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { waitForAppReady } from "./helpers";
+import { PANEL_IDS } from "./fixtures/panelIds";
+import { getHomePanelPresence, waitForAppReady } from "./helpers";
 
 test.use({ video: "off" });
-
-const PANELS = [
-  "panel-tracker",
-  "panel-quests",
-  "panel-stories",
-  "panel-rewards",
-  "panel-games",
-  "panel-gardens",
-] as const;
 
 test.describe("home smoke", () => {
   test.describe.configure({ mode: "serial" });
@@ -25,18 +17,14 @@ test.describe("home smoke", () => {
   test("home scene renders with key controls", async ({ page }) => {
     await page.goto("/?e2e=1", { waitUntil: "domcontentloaded" });
     await waitForAppReady(page, "panel-tracker");
-    const panelPresence = await page.evaluate((ids: readonly string[]) => {
-      return Object.fromEntries(
-        ids.map(id => [id, !!document.querySelector(`[data-panel-open="${id}"]`)])
-      );
-    }, [...PANELS]);
+    const panelPresence = await getHomePanelPresence(page, [...PANEL_IDS]);
 
-    for (const panelId of PANELS) {
+    for (const panelId of PANEL_IDS) {
       expect(panelPresence[panelId]).toBe(true);
     }
   });
 
-  for (const panelId of PANELS) {
+  for (const panelId of PANEL_IDS) {
     test(`hash deep-link opens ${panelId}`, async ({ page }) => {
       await page.goto(`/?e2e=1&panel=${panelId}#${panelId}`, { waitUntil: "domcontentloaded" });
       await waitForAppReady(page, panelId);

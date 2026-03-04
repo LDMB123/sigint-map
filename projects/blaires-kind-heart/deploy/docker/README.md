@@ -10,6 +10,15 @@ npm run build:release
 docker build -f deploy/docker/Dockerfile -t blaires-kind-heart:latest .
 ```
 
+## Publish to GHCR
+```bash
+npm run deploy:publish-image
+```
+
+Published image repository: `ghcr.io/ldmb123/blaires-kind-heart`
+
+Auth requirement: token used for `docker login ghcr.io` must be able to publish packages for this repository owner.
+
 ## Run Locally
 ```bash
 docker run --rm -p 8080:8080 blaires-kind-heart:latest

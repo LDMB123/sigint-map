@@ -1,7 +1,13 @@
 # Wave 6: Sticker Art Completion — Blaire's Kind Heart
 
-## Context
+- Archive Path: `docs/archive/plans/2026-02-19-sticker-art-completion-design.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Wave 6: Sticker Art Completion — Blaire's Kind Heart`
 
+## Summary
+Sticker art completion wave for a Rust/WASM kindness-tracker PWA built for Blaire (age 4). iPad mini 6, Safari 26.2, fully offline.
+
+## Context
 Sticker art completion wave for a Rust/WASM kindness-tracker PWA built for Blaire (age 4). iPad mini 6, Safari 26.2, fully offline.
 
 **Waves 1-5 complete:** 78 Rust modules, 5 games, 15 illustrated stories, companion system, 12 gardens, family board, garden timeline, sparkle mail, 116 Imagen illustrations. 3.3MB WASM binary. SW cache v8.
@@ -12,7 +18,7 @@ Sticker art completion wave for a Rust/WASM kindness-tracker PWA built for Blair
 
 ---
 
-## Current State
+### Current State
 
 - 45 total stickers in `STICKER_DESIGNS` array (`rewards.rs`)
 - 23 stickers have illustrations on disk (`assets/illustrations/stickers/`)
@@ -62,7 +68,7 @@ Rainbow Unicorn, Sparkle Unicorn, Magic Unicorn, Star Unicorn, Purple Unicorn, R
 
 ---
 
-## Image Specs
+### Image Specs
 
 - **Size:** 512×512px (sticker cells are small — no need for 1K)
 - **Format:** PNG (matching existing sticker assets)
@@ -71,7 +77,7 @@ Rainbow Unicorn, Sparkle Unicorn, Magic Unicorn, Star Unicorn, Purple Unicorn, R
 
 ---
 
-## Prompt Designs
+### Prompt Designs
 
 ### Unique Stickers (10)
 
@@ -123,8 +129,7 @@ Gold trophy style — rich gold/amber tones with skill symbol.
 
 ---
 
-## Code Changes
-
+## Actions
 ### `rewards.rs`
 
 Update 22 `image: None` fields to `image: Some("./illustrations/stickers/<filename>.png")`.
@@ -139,7 +144,7 @@ Bump `CACHE_NAME` from `'kindheart-v8'` to `'kindheart-v9'`.
 
 ---
 
-## Script
+### Script
 
 - Reuse/adapt `scripts/generate-story-illustrations.js` pipeline
 - Imagen 3 via `google-mcp-server` / Vertex AI
@@ -150,7 +155,7 @@ Bump `CACHE_NAME` from `'kindheart-v8'` to `'kindheart-v9'`.
 
 ---
 
-## Critical Files
+### Critical Files
 
 | File | Changes |
 |------|---------|
@@ -162,10 +167,17 @@ Bump `CACHE_NAME` from `'kindheart-v8'` to `'kindheart-v9'`.
 
 ---
 
-## Constraints
+### Constraints
 
 - Same Imagen 3 API pipeline as Wave 5
 - PNG format, 512×512px
 - Matching existing sticker art style (watercolor, pastel, circular)
 - All precached offline via service worker
 - No new Rust modules — only `rewards.rs` field updates
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

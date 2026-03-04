@@ -1,0 +1,255 @@
+{
+  "head": {
+    "copy_files": [
+      "manifest.webmanifest",
+      "wasm-init.js",
+      "public/sw.js",
+      "public/sw-assets.js",
+      "public/db-worker.js",
+      "public/db-contract.js",
+      "public/skill-taxonomy.js",
+      "public/skill-mastery-badges.js",
+      "public/reflection-prompts.generated.js",
+      "public/asset-manifest.js",
+      "public/panel-registry.js",
+      "public/runtime-diagnostics.js",
+      "public/offline.html",
+      "public/offline.js"
+    ],
+    "sqlite_copy_dirs": [
+      "public/sqlite"
+    ],
+    "asset_copy_dirs": [
+      "assets/icons",
+      "assets/illustrations",
+      "assets/game-sprites",
+      "assets/companions",
+      "assets/gardens"
+    ],
+    "asset_copy_files": [
+      "assets/noise.webp"
+    ],
+    "shader_copy_dirs": [
+      "shaders"
+    ],
+    "preloads": [
+      {
+        "comment": "Preload critical assets for faster LCP",
+        "as": "image",
+        "href": "./illustrations/blaire/sparkle-splash-optimized.webp",
+        "fetchpriority": "high"
+      },
+      {
+        "comment": "Critical companion skin (default state)",
+        "as": "image",
+        "href": "/companions/default_happy.webp",
+        "fetchpriority": "high"
+      }
+    ],
+    "scripts": [
+      {
+        "src": "./blaires-kind-heart.js"
+      },
+      {
+        "type": "module",
+        "src": "./wasm-init.js?wasm=blaires-kind-heart_bg.wasm"
+      }
+    ],
+    "rust_link": {
+      "href": "Cargo.toml",
+      "data-target-name": "blaires_kind_heart",
+      "data-wasm-opt": "0",
+      "data-bindgen-target": "no-modules"
+    },
+    "title": "Blaire's Kind Heart",
+    "critical_css": [
+      "src/styles/tokens.css",
+      "src/styles/generated-animation-timings.css",
+      "src/styles/app.css",
+      "src/styles/home.css",
+      "src/styles/animations.css"
+    ],
+    "panel_css": [
+      "src/styles/tracker.css",
+      "src/styles/quests.css",
+      "src/styles/stories.css",
+      "src/styles/rewards.css",
+      "src/styles/games.css",
+      "src/styles/mom.css",
+      "src/styles/progress.css",
+      "src/styles/gardens.css",
+      "src/styles/particles.css",
+      "src/styles/scroll-effects.css"
+    ]
+  },
+  "home": {
+    "buttons": [
+      {
+        "panel": "panel-tracker",
+        "class": "home-btn home-btn--tracker",
+        "img": "illustrations/buttons/btn-kind-acts.webp",
+        "alt": "Be Kind!",
+        "label": "Be Kind!",
+        "badge": {
+          "class": "home-btn-badge",
+          "aria": "Hearts today",
+          "default": "0",
+          "data_attr": "data-home-tracker-hearts"
+        }
+      },
+      {
+        "panel": "panel-adventures",
+        "class": "home-btn home-btn--adventures",
+        "img": "illustrations/buttons/btn-quests.webp",
+        "alt": "Adventures",
+        "label": "Adventures!"
+      },
+      {
+        "panel": "panel-mystuff",
+        "class": "home-btn home-btn--mystuff",
+        "img": "illustrations/buttons/btn-stickers.webp",
+        "alt": "My Stuff",
+        "label": "My Stuff!"
+      }
+    ]
+  },
+  "panels": {
+    "order": [
+      "panel-tracker",
+      "panel-adventures",
+      "panel-mystuff",
+      "panel-quests",
+      "panel-stories",
+      "panel-games",
+      "panel-rewards",
+      "panel-gardens",
+      "panel-progress"
+    ],
+    "comments": {
+      "panel-tracker": "TRACKER PANEL",
+      "panel-quests": "QUESTS PANEL",
+      "panel-stories": "STORIES PANEL",
+      "panel-rewards": "REWARDS PANEL",
+      "panel-games": "GAMES PANEL",
+      "panel-progress": "PROGRESS PANEL",
+      "panel-gardens": "GARDENS PANEL",
+      "panel-adventures": "ADVENTURES PANEL (intermediary)",
+      "panel-mystuff": "MY STUFF PANEL (intermediary)"
+    },
+    "standard_body_comments": {
+      "panel-tracker": "Populated by tracker.rs",
+      "panel-quests": "Populated by quests.rs",
+      "panel-stories": "Populated by stories.rs",
+      "panel-rewards": "Populated by rewards.rs",
+      "panel-games": "Games hub populated by games.rs",
+      "panel-progress": "Populated by progress.rs",
+      "panel-gardens": "Populated by gardens.rs"
+    },
+    "intermediary": {
+      "panel-adventures": {
+        "grid_aria": "Adventure categories",
+        "entries": [
+          {
+            "panel": "panel-quests",
+            "aria": "Quests",
+            "img": "illustrations/buttons/btn-quests.webp",
+            "alt": "Quests",
+            "label": "Quests"
+          },
+          {
+            "panel": "panel-stories",
+            "aria": "Stories",
+            "img": "illustrations/buttons/btn-stories.webp",
+            "alt": "Stories",
+            "label": "Stories"
+          },
+          {
+            "panel": "panel-games",
+            "aria": "Games",
+            "img": "illustrations/buttons/btn-games.webp",
+            "alt": "Games",
+            "label": "Games"
+          }
+        ]
+      },
+      "panel-mystuff": {
+        "grid_aria": "My stuff categories",
+        "entries": [
+          {
+            "panel": "panel-rewards",
+            "aria": "Stickers",
+            "img": "illustrations/buttons/btn-stickers.webp",
+            "alt": "Stickers",
+            "label": "Stickers"
+          },
+          {
+            "panel": "panel-gardens",
+            "aria": "Gardens",
+            "img": "illustrations/buttons/btn-gardens.webp",
+            "alt": "Gardens",
+            "label": "Gardens"
+          },
+          {
+            "panel": "panel-progress",
+            "aria": "My Week",
+            "img": "illustrations/buttons/btn-my-week.webp",
+            "alt": "My Week",
+            "label": "My Week"
+          }
+        ]
+      }
+    }
+  },
+  "qa": {
+    "contract_invariants": [
+      {
+        "id": "head-marker-block",
+        "gate": "generator"
+      },
+      {
+        "id": "home-marker-block",
+        "gate": "generator"
+      },
+      {
+        "id": "home-shell-contract",
+        "gate": "static"
+      },
+      {
+        "id": "panel-marker-block",
+        "gate": "generator"
+      },
+      {
+        "id": "panel-shell-contract",
+        "gate": "static"
+      },
+      {
+        "id": "breadcrumb-template-contract",
+        "gate": "static"
+      },
+      {
+        "id": "trunk-head-directive-contract",
+        "gate": "static"
+      },
+      {
+        "id": "runtime-script-contract",
+        "gate": "static"
+      },
+      {
+        "id": "panel-open-entrypoints",
+        "gate": "static"
+      },
+      {
+        "id": "games-shell-controls",
+        "gate": "e2e"
+      },
+      {
+        "id": "registry-breadcrumb-hydration",
+        "gate": "e2e"
+      },
+      {
+        "id": "hash-deeplink-restore",
+        "gate": "e2e"
+      }
+    ]
+  }
+}

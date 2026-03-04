@@ -1,0 +1,98 @@
+{
+  "generatedAt": "2026-03-04T09:02:17.463Z",
+  "baseUrl": "http://127.0.0.1:3000",
+  "runs": 3,
+  "timeoutMs": 240000,
+  "baseline": {
+    "tuningEnabled": false,
+    "runs": 3,
+    "avgDurationMs": 53441,
+    "p75DurationMs": 54294,
+    "avgP75InteractionMs": 16,
+    "avgLongFrameCount": 0,
+    "samples": [
+      {
+        "tuningEnabled": false,
+        "durationMs": 54294,
+        "statusText": "Offline data ready | Storage 0.2 MB / 1813.9 MB (0%) | SW version 2026-03-04 | Cache entries: 19 | Adaptive import tuning: off | Online | Check for updates | SW 2026-03-04 · Controller sw.js · Controller activated · Impl rust · Cache dmb-almanac-rs · Scope http://127.0.0.1:3000/ · Old caches cleaned: just now · Cache 19 entries · Last checked: just now | Cleanup old cachesPing SWUnregister SW | Export parity report | Last checked: just now | SQLite parity mismatches (13)venues (venues) – IDB 2855 / SQLite 0songs (songs) – IDB 1240 / SQLite 0tours (tours) – IDB 194 / SQLite 0shows (shows) – IDB 3454 / SQLite 0setlistEntries (setlist_entries) – IDB 39949 / SQLite 0",
+        "perf": {
+          "supported": true,
+          "p75InteractionMs": 16,
+          "longFrameCount": 0,
+          "interactionCount": null,
+          "sampleSize": 582
+        }
+      },
+      {
+        "tuningEnabled": false,
+        "durationMs": 53015,
+        "statusText": "Offline data ready | Storage 0.2 MB / 2217.1 MB (0%) | SW version 2026-03-04 | Cache entries: 19 | Adaptive import tuning: off | Online | Check for updates | SW 2026-03-04 · Controller sw.js · Controller activated · Impl rust · Cache dmb-almanac-rs · Scope http://127.0.0.1:3000/ · Old caches cleaned: just now · Cache 19 entries · Last checked: just now | Cleanup old cachesPing SWUnregister SW | Export parity report | Last checked: just now | SQLite parity mismatches (13)venues (venues) – IDB 2855 / SQLite 0songs (songs) – IDB 1240 / SQLite 0tours (tours) – IDB 194 / SQLite 0shows (shows) – IDB 3454 / SQLite 0setlistEntries (setlist_entries) – IDB 39949 / SQLite 0",
+        "perf": {
+          "supported": true,
+          "p75InteractionMs": 16,
+          "longFrameCount": 0,
+          "interactionCount": null,
+          "sampleSize": 372
+        }
+      },
+      {
+        "tuningEnabled": false,
+        "durationMs": 53014,
+        "statusText": "Offline data ready | Storage 0.2 MB / 2042.4 MB (0%) | SW version 2026-03-04 | Cache entries: 19 | Adaptive import tuning: off | Online | Check for updates | SW 2026-03-04 · Controller sw.js · Controller activated · Impl rust · Cache dmb-almanac-rs · Scope http://127.0.0.1:3000/ · Old caches cleaned: just now · Cache 19 entries · Last checked: just now | Cleanup old cachesPing SWUnregister SW | Export parity report | Last checked: just now",
+        "perf": {
+          "supported": true,
+          "p75InteractionMs": 16,
+          "longFrameCount": 0,
+          "interactionCount": null,
+          "sampleSize": 448
+        }
+      }
+    ]
+  },
+  "tuned": {
+    "tuningEnabled": true,
+    "runs": 3,
+    "avgDurationMs": 56420.666666666664,
+    "p75DurationMs": 57058,
+    "avgP75InteractionMs": 16,
+    "avgLongFrameCount": 0,
+    "samples": [
+      {
+        "tuningEnabled": true,
+        "durationMs": 55935,
+        "statusText": "Offline data ready | Storage 0.2 MB / 1977.1 MB (0%) | SW version 2026-03-04 | Cache entries: 19 | Adaptive import tuning: on | Online | Check for updates | SW 2026-03-04 · Controller sw.js · Controller activated · Impl rust · Cache dmb-almanac-rs · Scope http://127.0.0.1:3000/ · Old caches cleaned: just now · Cache 19 entries · Last checked: just now | Cleanup old cachesPing SWUnregister SW | Export parity report | Last checked: just now | SQLite parity mismatches (13)venues (venues) – IDB 2855 / SQLite 0songs (songs) – IDB 1240 / SQLite 0tours (tours) – IDB 194 / SQLite 0shows (shows) – IDB 3454 / SQLite 0setlistEntries (setlist_entries) – IDB 39949 / SQLite 0",
+        "perf": {
+          "supported": true,
+          "p75InteractionMs": 16,
+          "longFrameCount": 0,
+          "interactionCount": null,
+          "sampleSize": 188
+        }
+      },
+      {
+        "tuningEnabled": true,
+        "durationMs": 57058,
+        "statusText": "Offline data ready | Storage 0.2 MB / 1797.3 MB (0%) | SW version 2026-03-04 | Cache entries: 19 | Adaptive import tuning: on | Online | Check for updates | SW 2026-03-04 · Controller sw.js · Controller activated · Impl rust · Cache dmb-almanac-rs · Scope http://127.0.0.1:3000/ · Old caches cleaned: just now · Cache 19 entries · Last checked: just now | Cleanup old cachesPing SWUnregister SW | Export parity report | Last checked: just now | SQLite parity mismatches (13)venues (venues) – IDB 2855 / SQLite 0songs (songs) – IDB 1240 / SQLite 0tours (tours) – IDB 194 / SQLite 0shows (shows) – IDB 3454 / SQLite 0setlistEntries (setlist_entries) – IDB 39949 / SQLite 0",
+        "perf": {
+          "supported": true,
+          "p75InteractionMs": 16,
+          "longFrameCount": 0,
+          "interactionCount": null,
+          "sampleSize": 405
+        }
+      },
+      {
+        "tuningEnabled": true,
+        "durationMs": 56269,
+        "statusText": "Offline data ready | Storage 0.2 MB / 1801.4 MB (0%) | SW version 2026-03-04 | Cache entries: 19 | Adaptive import tuning: on | Online | Check for updates | SW 2026-03-04 · Controller sw.js · Controller activated · Impl rust · Cache dmb-almanac-rs · Scope http://127.0.0.1:3000/ · Old caches cleaned: just now · Cache 19 entries · Last checked: just now | Cleanup old cachesPing SWUnregister SW | Export parity report | Last checked: just now | SQLite parity mismatches (13)venues (venues) – IDB 2855 / SQLite 0songs (songs) – IDB 1240 / SQLite 0tours (tours) – IDB 194 / SQLite 0shows (shows) – IDB 3454 / SQLite 0setlistEntries (setlist_entries) – IDB 39949 / SQLite 0",
+        "perf": {
+          "supported": true,
+          "p75InteractionMs": 16,
+          "longFrameCount": 0,
+          "interactionCount": null,
+          "sampleSize": 315
+        }
+      }
+    ]
+  }
+}

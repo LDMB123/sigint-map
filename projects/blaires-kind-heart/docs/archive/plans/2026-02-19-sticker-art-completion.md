@@ -1,5 +1,13 @@
 # Wave 6: Sticker Art Completion Implementation Plan
 
+- Archive Path: `docs/archive/plans/2026-02-19-sticker-art-completion.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Wave 6: Sticker Art Completion Implementation Plan`
+
+## Summary
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+## Context
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Generate 22 missing sticker illustrations via Imagen 3 and wire them into the rewards panel, making every sticker fully illustrated.
@@ -234,8 +242,10 @@ git commit -m "feat: add 22 sticker illustrations to SW precache, bump to v9"
 
 ---
 
-### Task 5: Final build verification and code review
+## Actions
+_No actions recorded._
 
+## Validation
 **Step 1: Run full release build**
 
 ```bash
@@ -276,3 +286,7 @@ Review should verify:
 - Build passes
 
 **Step 5: Apply any review fixes and commit**
+
+## References
+_No references recorded._
+

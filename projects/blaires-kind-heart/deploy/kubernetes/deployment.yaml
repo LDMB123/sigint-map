@@ -27,7 +27,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: web
-          image: ghcr.io/louisherman/blaires-kind-heart:main
+          image: ghcr.io/ldmb123/blaires-kind-heart:main
           imagePullPolicy: Always
           ports:
             - name: web

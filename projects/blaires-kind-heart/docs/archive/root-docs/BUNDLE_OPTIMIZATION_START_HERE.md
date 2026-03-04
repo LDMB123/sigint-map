@@ -1,8 +1,16 @@
 # Bundle Optimization: 55MB → 8MB
 
+- Archive Path: `docs/archive/root-docs/BUNDLE_OPTIMIZATION_START_HERE.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Bundle Optimization: 55MB → 8MB`
+
+## Summary
 **TL;DR**: Your production build is 55MB because of 44MB of unused legacy illustrations and other bloat. Implement 6 quick wins (2.5-3 hours) to reduce to 8MB (85% reduction).
 
-## The Problem
+## Context
+**TL;DR**: Your production build is 55MB because of 44MB of unused legacy illustrations and other bloat. Implement 6 quick wins (2.5-3 hours) to reduce to 8MB (85% reduction).
+
+### The Problem
 
 ```
 55MB production build
@@ -18,7 +26,7 @@
 = 55MB total (85% bloat!)
 ```
 
-## The Solution: Six Quick Wins
+### The Solution: Six Quick Wins
 
 | Win | Action | Savings | Time |
 |-----|--------|---------|------|
@@ -30,22 +38,10 @@
 | 6 | Remove dead code | -700KB | 1-2hrs |
 | **TOTAL** | | **-47MB** | **2.5-3.5hrs** |
 
-## Reading Order
+### Reading Order
 
 **Start with one of these:**
 
-### Option A: Quick Implementation (Just do it)
-1. Read: `docs/reports/BUNDLE_QUICK_WINS.md` (20 min to read, 2.5 hrs to implement)
-2. Follow step-by-step
-3. Done!
-
-### Option B: Informed Decision (Want details first)
-1. Read: `docs/reports/BUNDLE_SUMMARY.txt` (10 min overview)
-2. Read: `docs/reports/BUNDLE_QUICK_WINS.md` (20 min implementation guide)
-3. Implement (2.5 hrs)
-4. Done!
-
-### Option C: Deep Analysis (Need all the context)
 1. Read: `docs/reports/BUNDLE_SUMMARY.txt` (10 min)
 2. Read: `docs/reports/BUNDLE_ANALYSIS_55MB.md` (45 min detailed analysis)
 3. Read: `docs/reports/BLOAT_VISUAL.txt` (10 min diagrams)
@@ -53,7 +49,7 @@
 5. Implement (2.5 hrs)
 6. Done!
 
-## Where is all this documented?
+### Where is all this documented?
 
 All reports are in: `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/docs/reports/`
 
@@ -65,7 +61,7 @@ All reports are in: `/Users/louisherman/ClaudeCodeProjects/projects/blaires-kind
 | **BUNDLE_QUICK_WINS.md** | Step-by-step implementation | 25 min |
 | **BLOAT_VISUAL.txt** | ASCII diagrams & visualizations | 15 min |
 
-## What Will Get Deleted?
+### What Will Get Deleted?
 
 All verified via `grep -r` search - 100% safe to delete:
 
@@ -93,56 +89,16 @@ All verified via `grep -r` search - 100% safe to delete:
 - Enable aggressive wasm-opt -Oz flag
 - One-line change to index.html
 
-## Expected Results
+## Actions
+1. Read: `docs/reports/BUNDLE_QUICK_WINS.md` (20 min to read, 2.5 hrs to implement)
+2. Follow step-by-step
+3. Done!
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **Uncompressed** | 55MB | 8MB | 85% |
-| **With Brotli** | ~12MB | ~1.8MB | 85% |
-| **WASM binary** | 2.9MB | 1.8MB | 38% |
-| **Load time (LTE)** | ~96s | ~14s | 6.6x faster |
-| **TTI estimate** | ~8-12s | ~2-3s | 70% faster |
-
-## Risk Assessment
-
-**Risk Level: VERY LOW**
-
-- No source code modifications
-- All changes are file deletions + format conversions
-- Every deleted item verified as unused via grep
-- Can rollback in <5 minutes from backup
-
-## Quick Start
-
-```bash
-# 1. Read the quick wins guide
-open docs/reports/BUNDLE_QUICK_WINS.md
-
-# 2. Follow the implementation steps (2.5-3 hours)
-
-# 3. Rebuild and verify
-trunk build --release
-
-# 4. Check final size
-du -sh dist/
-# Should see: 8M or less
-
-# 5. Test on iPad Safari
-# Verify all features work, no 404s
-```
-
-## Questions?
-
-All answered in the reports:
-
-- **"What exactly gets deleted?"** → BUNDLE_QUICK_WINS.md (each win has full details)
-- **"Why is it safe?"** → BUNDLE_ANALYSIS_55MB.md (verified with grep searches)
-- **"Visual breakdown?"** → BLOAT_VISUAL.txt (ASCII diagrams)
-- **"Can I rollback?"** → BUNDLE_QUICK_WINS.md (yes, <5 min)
-- **"Will it break anything?"** → BUNDLE_ANALYSIS_55MB.md (no, verified)
-- **"What about gardens/companions?"** → BUNDLE_ANALYSIS_55MB.md (those are kept, they're needed)
-
-## Next Steps
+### Option B: Informed Decision (Want details first)
+1. Read: `docs/reports/BUNDLE_SUMMARY.txt` (10 min overview)
+2. Read: `docs/reports/BUNDLE_QUICK_WINS.md` (20 min implementation guide)
+3. Implement (2.5 hrs)
+4. Done!
 
 1. **Choose your reading level** (Quick/Informed/Deep)
 2. **Read the appropriate docs** (5-45 min)
@@ -159,3 +115,47 @@ All answered in the reports:
 **Start reading**: `BUNDLE_QUICK_WINS.md` or `BUNDLE_SUMMARY.txt`
 
 **Questions?** All details in the reports with cross-references.
+
+## Validation
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| **Uncompressed** | 55MB | 8MB | 85% |
+| **With Brotli** | ~12MB | ~1.8MB | 85% |
+| **WASM binary** | 2.9MB | 1.8MB | 38% |
+| **Load time (LTE)** | ~96s | ~14s | 6.6x faster |
+| **TTI estimate** | ~8-12s | ~2-3s | 70% faster |
+
+### Risk Assessment
+
+**Risk Level: VERY LOW**
+
+- No source code modifications
+- All changes are file deletions + format conversions
+- Every deleted item verified as unused via grep
+- Can rollback in <5 minutes from backup
+
+### Quick Start
+
+```bash
+open docs/reports/BUNDLE_QUICK_WINS.md
+
+trunk build --release
+
+du -sh dist/
+
+```
+
+### Questions?
+
+All answered in the reports:
+
+- **"What exactly gets deleted?"** → BUNDLE_QUICK_WINS.md (each win has full details)
+- **"Why is it safe?"** → BUNDLE_ANALYSIS_55MB.md (verified with grep searches)
+- **"Visual breakdown?"** → BLOAT_VISUAL.txt (ASCII diagrams)
+- **"Can I rollback?"** → BUNDLE_QUICK_WINS.md (yes, <5 min)
+- **"Will it break anything?"** → BUNDLE_ANALYSIS_55MB.md (no, verified)
+- **"What about gardens/companions?"** → BUNDLE_ANALYSIS_55MB.md (those are kept, they're needed)
+
+## References
+_No references recorded._
+

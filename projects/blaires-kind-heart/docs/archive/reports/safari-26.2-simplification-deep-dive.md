@@ -1,88 +1,31 @@
 # Safari 26.2 Code Simplification — Deep Dive Analysis
 
-**Generated**: 2026-02-12
-**Target**: Blaire's Kind Heart PWA
-**Platform**: Safari 26.2 on iPadOS 26.2
-**Scope**: Extreme deep dive into Safari 26.2 native API opportunities
+- Archive Path: `docs/archive/reports/safari-26.2-simplification-deep-dive.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Safari 26.2 Code Simplification — Deep Dive Analysis`
 
-## Executive Summary
-
+## Summary
 **Overall Assessment**: ✅ **Excellent** — Codebase already leverages Safari 26.2 APIs extensively with minimal simplification opportunities.
 
 The codebase demonstrates exceptional adherence to Safari 26.2 native APIs. Most custom implementations are intentional architectural choices rather than polyfills. Only 3 minor simplification opportunities identified.
 
-## Analysis Methodology
+### Analysis Methodology
 
 Comprehensive file-by-file review:
 - **Rust files**: 15 files (navigation, animations, gestures, DOM, browser APIs, Safari APIs, Web Vitals, PWA)
 - **JavaScript files**: 3 files (wasm-init.js, sw.js, db-worker.js — spec-required only)
 - **Cross-referenced**: All 40+ Safari 26.0-26.2 APIs from safari-web-apis skill
 
-## Findings by Category
+### Findings by Category
 
-### ✅ Already Optimal (No Changes Needed)
+## Context
+**Generated**: 2026-02-12
+**Target**: Blaire's Kind Heart PWA
+**Platform**: Safari 26.2 on iPadOS 26.2
+**Scope**: Extreme deep dive into Safari 26.2 native API opportunities
 
-#### Navigation & History
-- **Navigation API**: Fully implemented in `navigation.rs` (lines 50-166)
-  - Uses `navigation.navigate()`, `navigation.back()`, state management
-  - Proper fallback to `location.hash` for graceful degradation
-  - Intercepts navigate events with `NavigateEvent.intercept()`
-  - **Verdict**: Perfect implementation
-
-#### View Transitions
-- **View Transitions API**: Used in `navigation.rs` (lines 319-334)
-  - Wraps DOM updates with `document.startViewTransition()`
-  - Safari 26.2 implementation via reflection (web-sys incomplete)
-  - **Verdict**: Correct approach, no simplification possible
-
-#### Performance Monitoring
-- **PerformanceObserver**: Comprehensive in `metrics/web_vitals.rs`
-  - LCP (Largest Contentful Paint) — lines 47-73
-  - FID (First Input Delay) — lines 77-109
-  - CLS (Cumulative Layout Shift) — lines 113-155
-  - INP (Interaction to Next Paint) — lines 159-193
-  - Uses `type: "event"`, `type: "largest-contentful-paint"`, etc.
-  - **Verdict**: State-of-the-art implementation
-
-- **Event Timing API**: Used in `safari_apis.rs` (lines 80-113)
-  - INP severity classification (Warning/Critical/Catastrophic)
-  - `durationThreshold: 40.0` for slow interactions
-  - **Verdict**: Exceeds best practices
-
-#### Web Security
-- **Trusted Types API**: Fully implemented in `dom.rs` (lines 87-150)
-  - Policy factory with `createHTML` and `createScriptURL`
-  - Safe innerHTML via `trusted_el.set_inner_html_trusted()`
-  - Default policy for third-party code (SQLite WASM)
-  - **Verdict**: Production-grade XSS prevention
-
-#### PWA Features
-- **Popover API**: Used for toasts in `dom.rs` (lines 71-85)
-  - `showPopover()` / `hidePopover()` for top-layer notifications
-  - No z-index hacks required
-  - **Verdict**: Clean implementation
-
-- **Service Worker**: Modern patterns in `public/sw.js`
-  - Stale-while-revalidate for WASM/JS (lines 94-108)
-  - Tiered asset loading (CRITICAL_ASSETS vs DEFERRED_ASSETS)
-  - Promise.allSettled for resilient caching (lines 54-66)
-  - **Verdict**: Best-in-class offline strategy
-
-#### Web Concurrency
-- **Web Locks API**: Fully utilized in `browser_apis.rs` (lines 62-128)
-  - Exclusive mode for writes: `navigator.locks.request(name, {mode: "exclusive"})`
-  - Shared mode for reads: `{mode: "shared"}`
-  - Contention monitoring via AbortSignal
-  - **Verdict**: Proper multi-tab synchronization
-
-- **AbortController/AbortSignal**: Used throughout
-  - Timeout patterns with `AbortSignal.timeout()` (Safari 20.4+)
-  - Event listener cleanup
-  - **Verdict**: Modern async cancellation
-
-### ⚠️ Intentional Custom Implementations (Not Polyfills)
-
-#### scheduler.yield() via queueMicrotask
+## Actions
+### scheduler.yield() via queueMicrotask
 **File**: `rust/browser_apis.rs` (lines 26-41)
 
 ```rust
@@ -108,7 +51,7 @@ async fn yield_microtask() {
 
 **Reference**: Scheduler API is Chrome 94+, not in Safari 26.2
 
-#### SQLite OPFS Skip on Safari
+### SQLite OPFS Skip on Safari
 **File**: `public/db-worker.js` (lines 22-26)
 
 ```javascript
@@ -124,7 +67,7 @@ if (isSafari) {
 - **Fallback**: kvvfs (key-value virtual filesystem) works perfectly in Safari
 - **Verdict**: ✅ Correct platform-specific optimization
 
-#### WASM Streaming Compilation
+### WASM Streaming Compilation
 **File**: `wasm-init.js` (lines 21-31)
 
 ```javascript
@@ -142,7 +85,7 @@ const wasm = await bindings.default({ module: wasmBytes });
 
 ### 🔍 Simplification Opportunities (3 Minor)
 
-#### 1. **Button Commands API** (Safari 26.2)
+### 1. **Button Commands API** (Safari 26.2)
 **Opportunity**: Replace event delegation with declarative commands
 
 **Current**: `rust/navigation.rs` (lines 180-202)
@@ -186,13 +129,13 @@ fn bind_panel_buttons() {
 - ❌ **Con**: Requires custom `command` handlers for panel logic (not built-in)
 - **Verdict**: **Low priority** — Current event delegation is clean and established
 
-#### 2. **scrollend Event** (Safari 26.2)
+### 2. **scrollend Event** (Safari 26.2)
 **Opportunity**: Replace custom scroll monitoring if present
 
 **Current Status**: No custom scroll monitoring detected in codebase
 **Verdict**: **No action needed** — Not applicable
 
-#### 3. **hidden="until-found"** (Safari 26.2)
+### 3. **hidden="until-found"** (Safari 26.2)
 **Opportunity**: Progressive disclosure for quest/story content
 
 **Potential**: Quest details reveal on search
@@ -229,7 +172,7 @@ fn bind_panel_buttons() {
 
 **Overall**: 7/7 applicable APIs used (100% coverage)
 
-## Recommendations
+### Recommendations
 
 ### High Priority (0)
 None. Codebase is optimal.
@@ -251,7 +194,7 @@ None.
 - URL Pattern API — Navigation API handles routing
 - CHIPS — no third-party cookies
 
-## API Usage Patterns Analysis
+### API Usage Patterns Analysis
 
 ### Excellent Patterns
 1. **Reflection-based API access** for incomplete web-sys bindings
@@ -281,7 +224,7 @@ None.
 4. **Promise.allSettled** for resilient parallel caching
 5. **Event delegation** over per-element listeners
 
-## Code Quality Metrics
+### Code Quality Metrics
 
 ### Rust Code (WASM)
 - **Files analyzed**: 15
@@ -297,7 +240,7 @@ None.
 - **Polyfill count**: 0
 - **Safari API coverage**: 100%
 
-## Conclusion
+### Conclusion
 
 **Final Verdict**: ✅ **No significant simplification needed**
 
@@ -316,10 +259,69 @@ The Blaire's Kind Heart codebase is a **model example** of Safari 26.2-first dev
 ### Only Simplification Opportunity
 - **Button Commands API** (15 LOC reduction) — Low value, defer
 
-### Attestation
+## Validation
 This deep dive analysis confirms that the codebase follows Safari 26.2 best practices and demonstrates exceptional engineering discipline. No actionable simplification opportunities exist beyond the single low-priority Button Commands consideration.
 
 ---
 
 **Analysis completed**: 2026-02-12
 **Recommendation**: Maintain current architecture, monitor Safari releases for Scheduler API support
+
+## References
+- **Navigation API**: Fully implemented in `navigation.rs` (lines 50-166)
+  - Uses `navigation.navigate()`, `navigation.back()`, state management
+  - Proper fallback to `location.hash` for graceful degradation
+  - Intercepts navigate events with `NavigateEvent.intercept()`
+  - **Verdict**: Perfect implementation
+
+### View Transitions
+- **View Transitions API**: Used in `navigation.rs` (lines 319-334)
+  - Wraps DOM updates with `document.startViewTransition()`
+  - Safari 26.2 implementation via reflection (web-sys incomplete)
+  - **Verdict**: Correct approach, no simplification possible
+
+### Performance Monitoring
+- **PerformanceObserver**: Comprehensive in `metrics/web_vitals.rs`
+  - LCP (Largest Contentful Paint) — lines 47-73
+  - FID (First Input Delay) — lines 77-109
+  - CLS (Cumulative Layout Shift) — lines 113-155
+  - INP (Interaction to Next Paint) — lines 159-193
+  - Uses `type: "event"`, `type: "largest-contentful-paint"`, etc.
+  - **Verdict**: State-of-the-art implementation
+
+- **Event Timing API**: Used in `safari_apis.rs` (lines 80-113)
+  - INP severity classification (Warning/Critical/Catastrophic)
+  - `durationThreshold: 40.0` for slow interactions
+  - **Verdict**: Exceeds best practices
+
+### Web Security
+- **Trusted Types API**: Fully implemented in `dom.rs` (lines 87-150)
+  - Policy factory with `createHTML` and `createScriptURL`
+  - Safe innerHTML via `trusted_el.set_inner_html_trusted()`
+  - Default policy for third-party code (SQLite WASM)
+  - **Verdict**: Production-grade XSS prevention
+
+### PWA Features
+- **Popover API**: Used for toasts in `dom.rs` (lines 71-85)
+  - `showPopover()` / `hidePopover()` for top-layer notifications
+  - No z-index hacks required
+  - **Verdict**: Clean implementation
+
+- **Service Worker**: Modern patterns in `public/sw.js`
+  - Stale-while-revalidate for WASM/JS (lines 94-108)
+  - Tiered asset loading (CRITICAL_ASSETS vs DEFERRED_ASSETS)
+  - Promise.allSettled for resilient caching (lines 54-66)
+  - **Verdict**: Best-in-class offline strategy
+
+### Web Concurrency
+- **Web Locks API**: Fully utilized in `browser_apis.rs` (lines 62-128)
+  - Exclusive mode for writes: `navigator.locks.request(name, {mode: "exclusive"})`
+  - Shared mode for reads: `{mode: "shared"}`
+  - Contention monitoring via AbortSignal
+  - **Verdict**: Proper multi-tab synchronization
+
+- **AbortController/AbortSignal**: Used throughout
+  - Timeout patterns with `AbortSignal.timeout()` (Safari 20.4+)
+  - Event listener cleanup
+  - **Verdict**: Modern async cancellation
+

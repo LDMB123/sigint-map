@@ -45,8 +45,10 @@ async fn cache_control_middleware(req: Request<Body>, next: Next) -> Response {
     let mut res = next.run(req).await;
 
     if is_no_cache {
-        res.headers_mut()
-            .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+        res.headers_mut().insert(
+            header::CACHE_CONTROL,
+            HeaderValue::from_static("no-cache, must-revalidate"),
+        );
     } else if accepts_html {
         res.headers_mut()
             .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));

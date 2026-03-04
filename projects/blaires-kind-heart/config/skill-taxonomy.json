@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "canonical_skills": [
+    {
+      "id": "hug",
+      "label": "Hugging",
+      "badge_noun": "Hugger",
+      "quest_indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    },
+    {
+      "id": "sharing",
+      "label": "Sharing",
+      "badge_noun": "Sharer",
+      "quest_indices": [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+    },
+    {
+      "id": "helping",
+      "label": "Helping",
+      "badge_noun": "Helper",
+      "quest_indices": [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41]
+    },
+    {
+      "id": "love",
+      "label": "Showing Love",
+      "badge_noun": "Lover",
+      "quest_indices": [56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69]
+    }
+  ],
+  "aliases": {
+    "nice-words": "love",
+    "unicorn": "love"
+  },
+  "skill_mastery_thresholds": {
+    "bronze": 10,
+    "silver": 25,
+    "gold": 50,
+    "platinum": 100
+  }
+}

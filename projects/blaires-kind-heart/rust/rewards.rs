@@ -1,6 +1,6 @@
 use crate::{
-    animations, companion, confetti, constants::SELECTOR_REWARDS_BODY, db_client, dom, render,
-    speech, synth_audio, ui, utils,
+    animations, confetti, constants::SELECTOR_REWARDS_BODY, db_client, dom, domain_services,
+    render, speech, synth_audio, ui, utils,
 };
 use std::fmt::Write;
 use wasm_bindgen::JsCast;
@@ -383,7 +383,7 @@ pub fn award_sticker(source: &str) {
     }
     dom::toast(&format!("New sticker: {} {}", design.emoji, design.name));
     speech::celebrate(&format!("New sticker! {}", design.name));
-    companion::on_sticker_earned();
+    domain_services::notify_sticker_earned();
 }
 pub fn award_streak_sticker(streak_days: u32) {
     let idx = match streak_days {
@@ -529,7 +529,7 @@ fn setup_drag_and_drop() {
                 .and_then(|n| n.dyn_into::<web_sys::Element>().ok())
             {
                 let _ = clone.class_list().add_1("sticker-dragging");
-                crate::dom::set_attr(&clone, "style", &format!("position: fixed; left: {}px; top: {}px; transform: translate(-50%, -50%); z-index: 100;", x, y));
+                crate::dom::set_centered_fixed_style(&clone, x, y, 100);
                 let Some(body) = dom::document().body() else { return; };
                 let _ = body.append_child(&clone);
 
@@ -545,7 +545,7 @@ fn setup_drag_and_drop() {
         if let Some(clone) = &*move_drag.borrow() {
             e.prevent_default();
             let (x, y) = get_pos(&e);
-            crate::dom::set_attr(clone, "style", &format!("position: fixed; left: {}px; top: {}px; transform: translate(-50%, -50%); z-index: 100;", x, y));
+            crate::dom::set_centered_fixed_style(clone, x, y, 100);
         }
     };
 
@@ -570,7 +570,7 @@ fn setup_drag_and_drop() {
 
                     let _ = clone.class_list().remove_1("sticker-dragging");
                     let _ = clone.class_list().add_1("sticker-placed");
-                    crate::dom::set_attr(&clone, "style", &format!("position: absolute; left: {}px; top: {}px; transform: translate(-50%, -50%); z-index: 20;", rel_x, rel_y));
+                    crate::dom::set_centered_absolute_style(&clone, rel_x, rel_y, 20);
                     let _ = area.append_child(&clone);
 
                     synth_audio::tap();

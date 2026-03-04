@@ -1,10 +1,26 @@
 # Week 3 Manual Test Plan
 
-## Test Server
+- Archive Path: `docs/archive/testing/week3-manual-test-plan.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Week 3 Manual Test Plan`
+
+## Summary
+_No summary captured during normalization._
+
+## Context
+_Context not recorded in source archive document._
+
+## Actions
+1. Log a kind act
+2. Verify companion switches to `default_celebrate.webp`
+3. Wait 4 seconds
+4. Verify reverts to `default_happy.webp`
+
+**Pass criteria**: Smooth transitions, correct assets
+
+## Validation
 - Local: http://127.0.0.1:8080/
 - Network (iPad): http://192.168.1.x:8080/ (get IP with `ipconfig getifaddr en0`)
-
-## Critical Fixes Verification
 
 ### C1: Memory Leak Fix
 **What to test**: Rapid expression changes shouldn't leak memory
@@ -36,11 +52,8 @@
 
 **Pass criteria**: No "invalid property value" or undefined variable errors
 
-## Functional Testing
-
 ### Companion Skin Rendering
 
-#### Test 1: Default Skin on Boot
 1. Refresh page
 2. Wait for WASM hydration
 3. Verify companion shows `default_happy.webp` (unicorn emoji as fallback during load)
@@ -48,15 +61,6 @@
 
 **Pass criteria**: WebP asset displays, no 404 errors
 
-#### Test 2: Expression Changes
-1. Log a kind act
-2. Verify companion switches to `default_celebrate.webp`
-3. Wait 4 seconds
-4. Verify reverts to `default_happy.webp`
-
-**Pass criteria**: Smooth transitions, correct assets
-
-#### Test 3: Asset Load Error Fallback
 1. DevTools → Network tab → Block `/assets/companions/*`
 2. Refresh page
 3. Verify emoji fallback (🦄) displays
@@ -65,14 +69,12 @@
 
 ### Gardens Panel
 
-#### Test 4: Empty State
 1. Fresh DB (or clear gardens table)
 2. Click gardens button in navigation
 3. Verify empty state shows: "🌱 No gardens yet! Complete kind acts to unlock gardens."
 
 **Pass criteria**: Empty state renders with centered emoji + message
 
-#### Test 5: Unlocked Garden Rendering
 **Setup**: SQL to unlock test garden
 ```sql
 INSERT INTO gardens VALUES('garden-hug-1','Bunny Garden','chain-hug-1','🐰',1,1000000000);
@@ -87,7 +89,6 @@ INSERT INTO gardens VALUES('garden-hug-1','Bunny Garden','chain-hug-1','🐰',1,
 
 **Pass criteria**: Garden card renders with correct stage 1 asset
 
-#### Test 6: Garden Growth Update
 **Setup**: From Test 5, update stage
 ```sql
 UPDATE gardens SET growth_stage=3 WHERE id='garden-hug-1';
@@ -102,7 +103,6 @@ UPDATE gardens SET growth_stage=3 WHERE id='garden-hug-1';
 
 **Pass criteria**: Live update without page refresh
 
-#### Test 7: Multiple Gardens
 **Setup**: Unlock 3 gardens with different stages
 ```sql
 INSERT INTO gardens VALUES('garden-hug-2','Flower Garden','chain-hug-1','🌸',2,1000000001);
@@ -115,7 +115,7 @@ INSERT INTO gardens VALUES('garden-help-1','Tree Garden','chain-help-1','🌳',4
 
 **Pass criteria**: Cards display in responsive grid
 
-## SQL Helpers
+### SQL Helpers
 
 ```sql
 -- Reset to fresh state
@@ -140,3 +140,7 @@ INSERT INTO gardens VALUES
 -- Grow garden manually
 UPDATE gardens SET growth_stage = growth_stage + 1 WHERE id='garden-hug-1' AND growth_stage < 5;
 ```
+
+## References
+_No references recorded._
+

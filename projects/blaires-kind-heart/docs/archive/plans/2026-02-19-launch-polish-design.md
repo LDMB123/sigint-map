@@ -1,7 +1,13 @@
 # Wave 5: Launch Polish — Blaire's Kind Heart
 
-## Context
+- Archive Path: `docs/archive/plans/2026-02-19-launch-polish-design.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Wave 5: Launch Polish — Blaire's Kind Heart`
 
+## Summary
+Pre-launch polish wave for a Rust/WASM kindness-tracker PWA built for Blaire (age 4). iPad mini 6, Safari 26.2, fully offline.
+
+## Context
 Pre-launch polish wave for a Rust/WASM kindness-tracker PWA built for Blaire (age 4). iPad mini 6, Safari 26.2, fully offline.
 
 **Waves 1-4 complete:** 62 Rust modules (1,877 lines), 5 games, 15 stories, companion system (6 skins × 3 expressions, conversations, time awareness, session wind-down), 6 gardens (60 WebP stages), celebration system, karaoke engine, game music, daily kindness card, achievements, code hardening. 86 Imagen illustrations.
@@ -12,7 +18,7 @@ Pre-launch polish wave for a Rust/WASM kindness-tracker PWA built for Blaire (ag
 
 ---
 
-## Section 1: Story Illustration Generation
+### Section 1: Story Illustration Generation
 
 **Goal:** Give the 10 emoji-only stories full Imagen illustrations.
 
@@ -42,7 +48,7 @@ Pre-launch polish wave for a Rust/WASM kindness-tracker PWA built for Blaire (ag
 
 ---
 
-## Section 2: Family Kindness Board
+### Section 2: Family Kindness Board
 
 **Goal:** Blaire logs kind acts she sees family members do. Deepens "family connection" parent goal.
 
@@ -88,7 +94,7 @@ Pre-launch polish wave for a Rust/WASM kindness-tracker PWA built for Blaire (ag
 
 ---
 
-## Section 3: Visual Garden Timeline
+### Section 3: Visual Garden Timeline
 
 **Goal:** Scrollable horizontal strip showing daily garden growth over time.
 
@@ -144,7 +150,7 @@ SELECT day_key, COUNT(*) as act_count FROM kind_acts GROUP BY day_key ORDER BY d
 
 ---
 
-## Section 4: Weekly Sparkle Mail
+### Section 4: Weekly Sparkle Mail
 
 **Goal:** Once-per-week surprise delivery that creates anticipation for returning.
 
@@ -198,7 +204,7 @@ const SPARKLE_MAIL: &[SparkleMailEntry] = &[
 
 ---
 
-## Section 5: UX Polish Pass
+### Section 5: UX Polish Pass
 
 ### 5a: Touch Target Audit
 
@@ -246,7 +252,7 @@ Audit all panels for friendly empty states:
 
 ---
 
-## Critical Files
+### Critical Files
 
 | File | Changes |
 |------|---------|
@@ -277,7 +283,7 @@ Audit all panels for friendly empty states:
 
 ---
 
-## Constraints
+### Constraints
 
 - Finger only (no Apple Pencil)
 - Safari 26.2 only
@@ -285,3 +291,13 @@ Audit all panels for friendly empty states:
 - All new images precached via service worker
 - No new JS files — all logic in Rust/WASM
 - Kid-friendly: large touch targets (min 48px), bright colors, emoji-heavy
+
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

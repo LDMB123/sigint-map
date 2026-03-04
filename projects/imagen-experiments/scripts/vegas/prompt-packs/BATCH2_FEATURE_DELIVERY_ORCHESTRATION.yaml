@@ -1,0 +1,66 @@
+feature_delivery:
+  feature: "speakeasy-batch2-image-quality-optimization"
+  status: "COMPLETED"
+  current_phase: 4
+  agents_active:
+    - "feature-delivery-orchestrator"
+  progress:
+    requirements: "complete"
+    design: "complete"
+    implementation: "complete"
+    testing: "complete"
+    documentation: "complete"
+  goals:
+    - "Maintain exact identity + direct lens gaze."
+    - "Keep attire daring/edgy/sultry while remaining non-explicit."
+    - "Preserve true thigh-high hosiery geometry (never under-knee)."
+    - "Increase physics/realism/pose adherence quality floors."
+    - "Run first-principles prompt recompilation on every variant (primary/safe/rescue/retry)."
+    - "Run with 61-second attempt cadence while keeping 429 risk controlled."
+  phase_1_requirements_design:
+    product_manager:
+      acceptance_criteria:
+        - "Quality gate dimensions hold: identity, gaze, attireReplacement, edge, realism, physics, scene, pose."
+        - "Rescue/safe prompts remain high-detail and non-collapsing."
+        - "Output remains non-explicit and policy-safe."
+    ux_designer:
+      visual_direction:
+        - "Edgy nightlife editorial with sultry confidence."
+        - "Distinct prompt-by-prompt scene identity and outfit variance."
+    system_architect:
+      constraints:
+        - "Sequential generation flow with deterministic prompt governance."
+        - "Retry logic for 429/network resiliency."
+        - "Scorer parse fallback and self-heal path."
+  phase_2_implementation:
+    scripts_updated:
+      - "/Users/louisherman/ClaudeCodeProjects/projects/imagen-experiments/scripts/vegas/prompt-packs/run_speakeasy_safe_fallback_batch.mjs"
+      - "/Users/louisherman/ClaudeCodeProjects/projects/imagen-experiments/scripts/vegas/run-speakeasy-batch2-v21-quality-tuned.sh"
+    implementation_focus:
+      - "First-principles prompt compiler that deconstructs each prompt into identity/scene/pose/physics fundamentals."
+      - "No-image recovery recompilation path for safe retries."
+      - "Safe quality-rescue loop to recover quality-gate failures after successful safe renders."
+      - "Near-pass acceptance policy for high-overall single-edge misses."
+      - "First-principles rescue prompt path with deficit-targeted directives."
+      - "Scorer robustness tuning with non-compact defaults and schema-first requery."
+      - "61s baseline pacing with retry floors."
+      - "Adaptive 429 cooldown + jitter to reduce repeated throttling loops."
+      - "Resolution-aware prompt augmentation for high-fidelity output utilization."
+      - "Variant-aware prompt windows (primary/rescue 1200-2200, safe 1050-2000)."
+  phase_3_quality_testing_plan:
+    checkpoints:
+      - "Monitor parse-failure rate vs batch 1 baseline."
+      - "Monitor 429/network retry rate."
+      - "Monitor rescue frequency and selected rescue outputs."
+      - "Confirm no under-knee hosiery regressions."
+      - "Confirm prompt-build diagnostics emit stage-by-stage word counts."
+      - "Confirm output profile uses 2K/4:5 with resolution optimization enabled."
+  phase_4_docs_deploy:
+    artifacts:
+      - "/Users/louisherman/ClaudeCodeProjects/projects/imagen-experiments/scripts/vegas/prompt-packs/BATCH1_AUDIT_AND_BATCH2_TUNING_20260303.md"
+      - "/Users/louisherman/ClaudeCodeProjects/projects/imagen-experiments/scripts/vegas/prompt-packs/BATCH2_FEATURE_DELIVERY_ORCHESTRATION.yaml"
+  blockers:
+    - "Provider-side HTTP 429 can still occur at runtime."
+  next_actions:
+    - "Run canary prompts 21-25 and compare no-image/final-success deltas against pre-first-principles baseline."
+    - "Promote first-principles defaults to any legacy launchers still using old cadence/window policy."

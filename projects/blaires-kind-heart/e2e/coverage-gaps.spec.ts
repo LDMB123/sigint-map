@@ -4,45 +4,24 @@
  * Tests that were missing from the original suite, covering games, companion,
  * DB batch atomicity, security-fix verifications, and mom mode.
  */
-import { expect, test, type Page } from "@playwright/test";
-import { dismissOnboardingIfPresent, waitForAppReady } from "./helpers";
+import { expect, test } from "@playwright/test";
+import {
+  dbWorkerInit,
+  dbWorkerQueryRows,
+  dbWorkerRequest,
+  installDbWorkerHarness,
+  terminateDbWorkerHarness,
+} from "./fixtures/dbWorkerHarness";
+import { launchGame, openGamesPanel } from "./fixtures/domainFlows";
+import { applyFlowE2ESetup, dismissOnboardingIfPresent } from "./helpers";
 
-test.use({ video: "off", serviceWorkers: "block" });
-
-test.afterEach(async ({ page }) => {
-  try {
-    await page.goto("about:blank", { waitUntil: "domcontentloaded", timeout: 5_000 });
-  } catch {
-    // Best-effort cleanup.
-  }
-});
-
-/** Launch a game by its game_id and wait for the arena to be visible. */
-async function launchGame(page: Page, gameId: string): Promise<void> {
-  await page.goto("/?e2e=1&panel=panel-games#panel-games", {
-    waitUntil: "domcontentloaded",
-  });
-  await waitForAppReady(page, "panel-games", 45_000);
-  await dismissOnboardingIfPresent(page);
-
-  // Wait for the specific game card to render.
-  await expect
-    .poll(
-      () => page.evaluate((id) => document.querySelectorAll(`[data-game="${id}"]`).length, gameId),
-      { timeout: 30_000 }
-    )
-    .toBeGreaterThan(0);
-
-  // Use a real Playwright click so the event has proper coordinates.
-  await page.locator(`[data-game="${gameId}"]`).first().click({ force: true });
-
-  await expect(page.locator("#game-arena")).toBeVisible({ timeout: 30_000 });
-}
+applyFlowE2ESetup(test);
 
 // ---------------------------------------------------------------------------
 // TG-6: Paint game canvas renders
 // ---------------------------------------------------------------------------
 test("TG-6: paint game canvas renders after launch", async ({ page }) => {
+  await openGamesPanel(page);
   await launchGame(page, "paint");
   // Paint shows a category picker first; click "free" to start painting.
   await expect
@@ -60,6 +39,7 @@ test("TG-6: paint game canvas renders after launch", async ({ page }) => {
 // TG-7: Memory game cards render
 // ---------------------------------------------------------------------------
 test("TG-7: memory game cards render with data-card-idx attributes", async ({ page }) => {
+  await openGamesPanel(page);
   await launchGame(page, "memory");
   // Memory shows a theme picker first; click "forest" to proceed.
   await expect
@@ -90,6 +70,7 @@ test("TG-7: memory game cards render with data-card-idx attributes", async ({ pa
 // TG-8: Hug game arena renders
 // ---------------------------------------------------------------------------
 test("TG-8: hug game arena renders after launch", async ({ page }) => {
+  await openGamesPanel(page);
   await launchGame(page, "hug");
   // After launching the hug game the arena should be visible.
   await expect(page.locator("#game-arena")).toBeVisible({ timeout: 20_000 });
@@ -138,84 +119,50 @@ test("TG-11: DB Batch handler commits multi-statement transaction atomically", a
 }) => {
   await page.goto("/offline.html", { waitUntil: "domcontentloaded" });
 
-  const result = await page.evaluate(async () => {
-    const worker = new Worker("/db-worker.js", { type: "module" });
-    let requestId = 1;
+  await installDbWorkerHarness(page, { startRequestId: 1 });
 
-    const request = (payload: Record<string, unknown>) =>
-      new Promise<any>((resolve, reject) => {
-        const id = requestId++;
-        const cleanup = () => {
-          worker.removeEventListener("message", onMsg);
-          worker.removeEventListener("error", onErr);
-          clearTimeout(timer);
-        };
-        const onMsg = (ev: MessageEvent) => {
-          if ((ev.data || {}).request_id !== id) return;
-          cleanup();
-          resolve(ev.data);
-        };
-        const onErr = (ev: ErrorEvent) => {
-          cleanup();
-          reject(new Error(ev.message));
-        };
-        const timer = setTimeout(() => {
-          cleanup();
-          reject(new Error(`Timed out id=${id}`));
-        }, 20_000);
-        worker.addEventListener("message", onMsg);
-        worker.addEventListener("error", onErr);
-        worker.postMessage({ request: payload, request_id: id });
-      });
+  let result: { ok: boolean; rowCount: number; hearts: number[] };
+  try {
+    await dbWorkerInit(page);
 
-    try {
-      await request({ type: "Init" });
+    const now = Date.now();
+    const dayKey = new Date(now).toISOString().slice(0, 10);
 
-      const now = Date.now();
-      const dayKey = new Date(now).toISOString().slice(0, 10);
-
-      // Send a two-statement batch transaction.
-      const batchId1 = `batch-tg11-a-${now}`;
-      const batchId2 = `batch-tg11-b-${now}`;
-      const batchResp = await request({
-        type: "Batch",
-        statements: [
-          [
-            "INSERT OR IGNORE INTO kind_acts (id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-            [batchId1, "helping", "TG-11 batch A", "1", String(now), dayKey, "", "", "", "0"],
-          ],
-          [
-            "INSERT OR IGNORE INTO kind_acts (id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
-            [batchId2, "sharing", "TG-11 batch B", "2", String(now + 1), dayKey, "", "", "", "0"],
-          ],
+    // Send a two-statement batch transaction.
+    const batchId1 = `batch-tg11-a-${now}`;
+    const batchId2 = `batch-tg11-b-${now}`;
+    const batchResp = await dbWorkerRequest(page, {
+      type: "Batch",
+      statements: [
+        [
+          "INSERT OR IGNORE INTO kind_acts (id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+          [batchId1, "helping", "TG-11 batch A", "1", String(now), dayKey, "", "", "", "0"],
         ],
-      });
+        [
+          "INSERT OR IGNORE INTO kind_acts (id, category, description, hearts_earned, created_at, day_key, reflection_type, emotion_selected, bonus_context, combo_day) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+          [batchId2, "sharing", "TG-11 batch B", "2", String(now + 1), dayKey, "", "", "", "0"],
+        ],
+      ],
+    });
 
-      if (batchResp.type !== "Ok") {
-        return { ok: false, error: `Batch failed: ${batchResp.type} — ${batchResp.message}` };
-      }
-
+    if (batchResp.type !== "Ok") {
+      result = { ok: false, rowCount: 0, hearts: [] };
+    } else {
       // Query back both rows to confirm the transaction committed.
-      const qResp = await request({
-        type: "Query",
-        sql: "SELECT id, hearts_earned FROM kind_acts WHERE id IN (?1, ?2) ORDER BY id",
-        params: [batchId1, batchId2],
-      });
-
-      if (qResp.type !== "Rows") {
-        return { ok: false, error: `Query failed: ${qResp.type}` };
-      }
-
-      const rows = Array.isArray(qResp.data) ? qResp.data : [];
-      return {
+      const rows = await dbWorkerQueryRows(
+        page,
+        "SELECT id, hearts_earned FROM kind_acts WHERE id IN (?1, ?2) ORDER BY id",
+        [batchId1, batchId2],
+      );
+      result = {
         ok: rows.length === 2,
         rowCount: rows.length,
-        hearts: rows.map((r: any) => Number(r.hearts_earned)),
+        hearts: rows.map((row) => Number(row.hearts_earned)),
       };
-    } finally {
-      worker.terminate();
     }
-  });
+  } finally {
+    await terminateDbWorkerHarness(page);
+  }
 
   expect(result.ok).toBe(true);
   expect(result.rowCount).toBe(2);
@@ -361,47 +308,23 @@ test("TG-18: all 5 game card types render in panel-games", async ({ page }) => {
 test("TG-19: DB Restore returns Error when called before Init", async ({ page }) => {
   await page.goto("/offline.html", { waitUntil: "domcontentloaded" });
 
-  const result = await page.evaluate(async () => {
-    const worker = new Worker("/db-worker.js", { type: "module" });
-    let requestId = 1;
+  await installDbWorkerHarness(page, { startRequestId: 1 });
 
-    const request = (payload: Record<string, unknown>) =>
-      new Promise<any>((resolve, reject) => {
-        const id = requestId++;
-        const cleanup = () => {
-          worker.removeEventListener("message", onMsg);
-          worker.removeEventListener("error", onErr);
-          clearTimeout(timer);
-        };
-        const onMsg = (ev: MessageEvent) => {
-          if ((ev.data || {}).request_id !== id) return;
-          cleanup();
-          resolve(ev.data);
-        };
-        const onErr = (ev: ErrorEvent) => {
-          cleanup();
-          reject(new Error(ev.message));
-        };
-        const timer = setTimeout(() => {
-          cleanup();
-          reject(new Error(`Timed out id=${id}`));
-        }, 10_000);
-        worker.addEventListener("message", onMsg);
-        worker.addEventListener("error", onErr);
-        worker.postMessage({ request: payload, request_id: id });
-      });
-
-    try {
-      // Send Restore WITHOUT calling Init first — the CR-4 guard should reject it.
-      const resp = await request({
+  let result: { type: string; message: string };
+  try {
+    // Send Restore WITHOUT calling Init first — the CR-4 guard should reject it.
+    const response = await dbWorkerRequest(
+      page,
+      {
         type: "Restore",
         snapshot_json: JSON.stringify({ export_format_version: 1, tables: { kind_acts: [] } }),
-      });
-      return { type: resp.type, message: String(resp.message || "") };
-    } finally {
-      worker.terminate();
-    }
-  });
+      },
+      { timeoutMs: 10_000 },
+    );
+    result = { type: String(response.type), message: String(response.message || "") };
+  } finally {
+    await terminateDbWorkerHarness(page);
+  }
 
   // CR-4 added: if (!db) { postMessage({ type: "Error", message: "Restore requires initialized database" }); return; }
   expect(result.type).toBe("Error");

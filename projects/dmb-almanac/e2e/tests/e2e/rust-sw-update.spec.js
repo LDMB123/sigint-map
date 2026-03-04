@@ -51,6 +51,16 @@ test.describe('Rust service worker updates', () => {
 
     await waitForStoredSwVersion(page, patchedVersion, { timeout: 15_000 });
 
+    const preloadEnabled = await page.evaluate(async () => {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg || !('navigationPreload' in reg) || !reg.navigationPreload?.getState) {
+        return false;
+      }
+      const state = await reg.navigationPreload.getState();
+      return !!state.enabled;
+    });
+    expect(preloadEnabled).toBe(true);
+
     await ensureSwDetailsOpen(page);
     await expect(page.getByText(new RegExp(`SW version ${patchedVersion}`))).toBeVisible({
       timeout: 15000,

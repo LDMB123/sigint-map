@@ -1,4 +1,5 @@
 #![allow(clippy::large_types_passed_by_value)]
+#![cfg_attr(not(feature = "ai_diagnostics_full"), allow(dead_code))]
 
 use leptos::prelude::*;
 use leptos::suspense::Suspense;
@@ -83,11 +84,239 @@ async fn wait_ms(ms: i32) {
 }
 
 #[cfg(feature = "hydrate")]
+fn trigger_lazy_runtime_warmup() {
+    use once_cell::sync::OnceCell;
+
+    static WARMUP_ONCE: OnceCell<()> = OnceCell::new();
+    if WARMUP_ONCE.set(()).is_ok() {
+        ensure_perf_observers_started();
+        spawn_local(async {
+            let _ = dmb_idb::open_db().await;
+        });
+    }
+}
+
+#[cfg(feature = "hydrate")]
 fn current_search_param(name: &str) -> Option<String> {
     let window = web_sys::window()?;
     let search = window.location().search().ok()?;
     let params = web_sys::UrlSearchParams::new_with_str(&search).ok()?;
     params.get(name)
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct InpMetricsSnapshot {
+    pub supported: bool,
+    pub p75_interaction_ms: Option<f64>,
+    pub long_frame_count: u32,
+    pub interaction_count: Option<u32>,
+}
+
+#[cfg(feature = "hydrate")]
+fn performance_metrics_object() -> Option<JsValue> {
+    let window = web_sys::window()?;
+    js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("__DMB_PERF_METRICS")).ok()
+}
+
+#[cfg(feature = "hydrate")]
+pub fn ensure_perf_observers_started() {
+    let installer = js_sys::Function::new_no_args(
+        r#"
+(() => {
+  const w = window;
+  if (!w || w.__DMB_PERF_OBS_INIT) return;
+  w.__DMB_PERF_OBS_INIT = true;
+
+  const now = () =>
+    w.performance && typeof w.performance.now === "function"
+      ? w.performance.now()
+      : Date.now();
+
+  const metrics = (w.__DMB_PERF_METRICS = {
+    supported: false,
+    eventTiming: false,
+    loaf: false,
+    interactions: [],
+    longFrames: [],
+    interactionCount: null,
+    lastInteractionTs: 0,
+    windowMs: 5 * 60 * 1000,
+  });
+
+  const prune = () => {
+    const cutoff = now() - metrics.windowMs;
+    metrics.interactions = metrics.interactions.filter((item) => item && item.ts >= cutoff);
+    metrics.longFrames = metrics.longFrames.filter((ts) => typeof ts === "number" && ts >= cutoff);
+  };
+
+  const recordInteraction = (entry) => {
+    if (!entry) return;
+    const duration = Number(entry.duration || 0);
+    if (!Number.isFinite(duration) || duration <= 0) return;
+    const ts = Number(entry.startTime || now());
+    if (!Number.isFinite(ts)) return;
+    const interactionCount = Number(entry.interactionCount);
+    if (Number.isFinite(interactionCount) && interactionCount >= 0) {
+      metrics.interactionCount = Math.max(metrics.interactionCount || 0, interactionCount);
+    }
+    metrics.interactions.push({
+      ts,
+      duration,
+      interactionId: Number(entry.interactionId || 0),
+      renderStart: Number(entry.renderStart || 0),
+      styleAndLayoutStart: Number(entry.styleAndLayoutStart || 0),
+      firstUIEventTimestamp: Number(entry.firstUIEventTimestamp || 0),
+    });
+    metrics.lastInteractionTs = ts;
+    metrics.supported = true;
+  };
+
+  try {
+    if (
+      "PerformanceObserver" in self &&
+      Array.isArray(PerformanceObserver.supportedEntryTypes) &&
+      PerformanceObserver.supportedEntryTypes.includes("event")
+    ) {
+      const eventObserver = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          recordInteraction(entry);
+        }
+        prune();
+      });
+      eventObserver.observe({ type: "event", buffered: true, durationThreshold: 16 });
+      metrics.eventTiming = true;
+    }
+  } catch (_) {}
+
+  try {
+    if (
+      "PerformanceObserver" in self &&
+      Array.isArray(PerformanceObserver.supportedEntryTypes) &&
+      PerformanceObserver.supportedEntryTypes.includes("long-animation-frame")
+    ) {
+      const loafObserver = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          const ts = Number(entry.startTime || now());
+          if (Number.isFinite(ts)) {
+            metrics.longFrames.push(ts);
+          }
+          const firstUI = Number(entry.firstUIEventTimestamp || 0);
+          if (Number.isFinite(firstUI) && firstUI > 0) {
+            metrics.lastInteractionTs = Math.max(metrics.lastInteractionTs || 0, firstUI);
+          }
+        }
+        metrics.supported = true;
+        prune();
+      });
+      loafObserver.observe({ type: "long-animation-frame", buffered: true });
+      metrics.loaf = true;
+    }
+  } catch (_) {}
+
+  metrics.compute = function () {
+    prune();
+    const durations = metrics.interactions
+      .map((item) => Number(item.duration || 0))
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .sort((a, b) => a - b);
+
+    let p75 = null;
+    if (durations.length > 0) {
+      const index = Math.max(0, Math.ceil(durations.length * 0.75) - 1);
+      p75 = durations[index];
+    }
+
+    return {
+      supported: !!(metrics.eventTiming || metrics.loaf),
+      p75InteractionMs: p75,
+      longFrameCount: metrics.longFrames.length,
+      interactionCount: metrics.interactionCount,
+      sampleSize: durations.length,
+    };
+  };
+})();
+"#,
+    );
+    let _ = installer.call0(&JsValue::NULL);
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn ensure_perf_observers_started() {}
+
+#[cfg(feature = "hydrate")]
+pub fn latest_inp_metrics_snapshot() -> Option<InpMetricsSnapshot> {
+    ensure_perf_observers_started();
+    let metrics = performance_metrics_object()?;
+    if metrics.is_null() || metrics.is_undefined() {
+        return Some(InpMetricsSnapshot::default());
+    }
+    let compute = js_sys::Reflect::get(&metrics, &JsValue::from_str("compute"))
+        .ok()?
+        .dyn_into::<js_sys::Function>()
+        .ok()?;
+    let summary = compute.call0(&metrics).ok()?;
+
+    let supported = js_sys::Reflect::get(&summary, &JsValue::from_str("supported"))
+        .ok()
+        .and_then(|value| value.as_bool())
+        .unwrap_or(false);
+    let p75_interaction_ms = js_sys::Reflect::get(&summary, &JsValue::from_str("p75InteractionMs"))
+        .ok()
+        .and_then(|value| value.as_f64())
+        .filter(|value| value.is_finite());
+    let long_frame_count = js_sys::Reflect::get(&summary, &JsValue::from_str("longFrameCount"))
+        .ok()
+        .and_then(|value| value.as_f64())
+        .filter(|value| value.is_finite() && *value >= 0.0)
+        .unwrap_or(0.0) as u32;
+    let interaction_count = js_sys::Reflect::get(&summary, &JsValue::from_str("interactionCount"))
+        .ok()
+        .and_then(|value| value.as_f64())
+        .filter(|value| value.is_finite() && *value >= 0.0)
+        .map(|value| value as u32);
+
+    Some(InpMetricsSnapshot {
+        supported,
+        p75_interaction_ms,
+        long_frame_count,
+        interaction_count,
+    })
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn latest_inp_metrics_snapshot() -> Option<InpMetricsSnapshot> {
+    None
+}
+
+#[cfg(feature = "hydrate")]
+pub fn has_recent_interaction(window_ms: f64) -> bool {
+    ensure_perf_observers_started();
+    let Some(metrics) = performance_metrics_object() else {
+        return false;
+    };
+    if metrics.is_null() || metrics.is_undefined() {
+        return false;
+    }
+
+    let Some(last_interaction_ts) =
+        js_sys::Reflect::get(&metrics, &JsValue::from_str("lastInteractionTs"))
+            .ok()
+            .and_then(|value| value.as_f64())
+    else {
+        return false;
+    };
+
+    let now_ms = web_sys::window()
+        .and_then(|window| window.performance())
+        .map(|performance| performance.now())
+        .unwrap_or_else(js_sys::Date::now);
+
+    (now_ms - last_interaction_ts).abs() <= window_ms.max(0.0)
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn has_recent_interaction(_window_ms: f64) -> bool {
+    false
 }
 
 fn use_seed_data_state() -> RwSignal<crate::data::SeedDataState> {
@@ -1874,6 +2103,7 @@ fn render_ai_diagnostics_cards(state: AiDiagnosticsState) -> impl IntoView {
     }
 }
 
+#[cfg(feature = "ai_diagnostics_full")]
 #[must_use]
 pub fn ai_diagnostics_page() -> impl IntoView {
     let state = AiDiagnosticsState::new();
@@ -1894,6 +2124,7 @@ pub fn ai_diagnostics_page() -> impl IntoView {
     }
 }
 
+#[cfg(feature = "ai_diagnostics_full")]
 #[must_use]
 pub fn ai_benchmark_page() -> impl IntoView {
     let full_bench = RwSignal::new(None::<crate::ai::AiBenchmark>);
@@ -1988,6 +2219,7 @@ pub fn ai_benchmark_page() -> impl IntoView {
     }
 }
 
+#[cfg(feature = "ai_diagnostics_full")]
 #[must_use]
 pub fn ai_warmup_page() -> impl IntoView {
     let status = RwSignal::new("Ready".to_string());
@@ -2042,6 +2274,7 @@ pub fn ai_warmup_page() -> impl IntoView {
     }
 }
 
+#[cfg(feature = "ai_diagnostics_full")]
 #[must_use]
 pub fn ai_smoke_page() -> impl IntoView {
     let query = RwSignal::new("dave matthews".to_string());
@@ -2138,6 +2371,70 @@ pub fn ai_smoke_page() -> impl IntoView {
                     }
                 }}
             </div>
+        </section>
+    }
+}
+
+#[cfg(not(feature = "ai_diagnostics_full"))]
+#[must_use]
+pub fn ai_diagnostics_page() -> impl IntoView {
+    view! {
+        <section class="page">
+            <h1>"AI Diagnostics"</h1>
+            <p class="lead">
+                "Production-lite build: advanced AI diagnostics are available in dev/staging builds."
+            </p>
+            <p class="muted">
+                "Use a build with `ai_diagnostics_full` enabled for benchmark and runtime tuning controls."
+            </p>
+        </section>
+    }
+}
+
+#[cfg(not(feature = "ai_diagnostics_full"))]
+#[must_use]
+pub fn ai_benchmark_page() -> impl IntoView {
+    view! {
+        <section class="page">
+            <h1>"AI Benchmark"</h1>
+            <p class="lead">
+                "Production-lite build: benchmark tools are disabled."
+            </p>
+            <p class="muted">
+                "Enable `ai_diagnostics_full` in dev/staging to run CPU/GPU benchmark diagnostics."
+            </p>
+        </section>
+    }
+}
+
+#[cfg(not(feature = "ai_diagnostics_full"))]
+#[must_use]
+pub fn ai_warmup_page() -> impl IntoView {
+    view! {
+        <section class="page">
+            <h1>"AI Warmup"</h1>
+            <p class="lead">
+                "Production-lite build: explicit warmup controls are disabled."
+            </p>
+            <p class="muted">
+                "Embedding warmup runs on-demand through search/assistant usage."
+            </p>
+        </section>
+    }
+}
+
+#[cfg(not(feature = "ai_diagnostics_full"))]
+#[must_use]
+pub fn ai_smoke_page() -> impl IntoView {
+    view! {
+        <section class="page">
+            <h1>"AI Smoke Test"</h1>
+            <p class="lead">
+                "Production-lite build: smoke test controls are disabled."
+            </p>
+            <p class="muted">
+                "Enable `ai_diagnostics_full` in dev/staging for interactive smoke diagnostics."
+            </p>
         </section>
     }
 }
@@ -4492,6 +4789,7 @@ pub fn search_page() -> impl IntoView {
 
     #[cfg(feature = "hydrate")]
     {
+        trigger_lazy_runtime_warmup();
         let route_query = query.clone();
         let route_active_filter = active_filter.clone();
         let route_search_url_ready = search_url_ready.clone();
@@ -5561,6 +5859,7 @@ pub fn assistant_page() -> impl IntoView {
 
     #[cfg(feature = "hydrate")]
     {
+        trigger_lazy_runtime_warmup();
         let embedding_index_signal = embedding_index.clone();
         spawn_local(async move {
             embedding_index_signal.set(crate::ai::load_embedding_index().await);

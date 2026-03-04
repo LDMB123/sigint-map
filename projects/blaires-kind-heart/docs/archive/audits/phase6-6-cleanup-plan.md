@@ -1,13 +1,10 @@
 # Phase 6.6: Comprehensive Cleanup Plan
 
-**Date**: 2025-02-11
-**Project**: Blaire's Kind Heart - Safari 26.2 PWA
-**Scope**: Consolidation of Phases 6.1-6.5 findings into actionable plan
+- Archive Path: `docs/archive/audits/phase6-6-cleanup-plan.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Phase 6.6: Comprehensive Cleanup Plan`
 
----
-
-## Executive Summary
-
+## Summary
 This plan consolidates findings from 5 comprehensive audits:
 - **Phase 6.1**: Dead Code & Unused Imports (Grade: A-, 92/100)
 - **Phase 6.2**: Type Safety & Error Handling (Grade: A, 93/100)
@@ -21,7 +18,7 @@ The codebase is deployment-ready with only optional improvements remaining. All 
 
 ---
 
-## Priority Classification
+### Priority Classification
 
 - **🔴 Critical** (P0): Blocks deployment - NONE REMAINING ✅
 - **🟡 Medium** (P1): Optional improvements with measurable impact
@@ -30,7 +27,7 @@ The codebase is deployment-ready with only optional improvements remaining. All 
 
 ---
 
-## Cleanup Inventory
+### Cleanup Inventory
 
 ### Phase 6.1 Findings: Dead Code & Unused Imports
 
@@ -87,7 +84,7 @@ The codebase is deployment-ready with only optional improvements remaining. All 
 
 ---
 
-## Recommended Cleanup Phases
+### Recommended Cleanup Phases
 
 ### Phase A: Quick Wins (3-4 hours) 🟢
 
@@ -112,7 +109,7 @@ The codebase is deployment-ready with only optional improvements remaining. All 
 
 **Goal**: Implement P1 medium-priority performance enhancements
 
-#### B.1: DOM Batching via DocumentFragment (3 hours)
+### B.1: DOM Batching via DocumentFragment (3 hours)
 
 **Problem**: 358 `append_child` calls trigger individual reflows
 
@@ -149,7 +146,7 @@ pub fn render_games_grid() {
 
 **Grade Impact**: Phase 6.5 grade increases from A- (90) → A (94)
 
-#### B.2: Service Worker Conditional Caching (4 hours)
+### B.2: Service Worker Conditional Caching (4 hours)
 
 **Problem**: 98 assets precached on install (slow first-time PWA install)
 
@@ -310,7 +307,7 @@ log_info!("boot:start");
 
 ---
 
-## Optional Future Enhancements (Not Planned)
+### Optional Future Enhancements (Not Planned)
 
 These items are deferred to future work and not part of the current cleanup:
 
@@ -336,8 +333,14 @@ These items are deferred to future work and not part of the current cleanup:
 
 ---
 
-## Implementation Timeline
+## Context
+**Date**: 2025-02-11
+**Project**: Blaire's Kind Heart - Safari 26.2 PWA
+**Scope**: Consolidation of Phases 6.1-6.5 findings into actionable plan
 
+---
+
+## Actions
 ### Recommended Sequence
 
 **Week 1: Quick Wins + Performance** (Total: 10-12 hours)
@@ -366,8 +369,7 @@ If shipping immediately, defer all cleanup phases to post-launch maintenance cyc
 
 ---
 
-## Verification Checklist
-
+## Validation
 After each phase, verify:
 
 ### Build Health
@@ -378,7 +380,6 @@ trunk build --release                       # Success
 ls -lh dist/blaires-kind-heart_bg.wasm     # ≤800KB
 ```
 
-### Runtime Testing (iPad mini 6, Safari 26.2)
 - [ ] Boot time <3s
 - [ ] INP <200ms (existing monitoring)
 - [ ] LCP <2.5s (after Phase B.1)
@@ -388,12 +389,11 @@ ls -lh dist/blaires-kind-heart_bg.wasm     # ≤800KB
 - [ ] Offline mode works after install
 - [ ] All 10 games launch and play correctly (after Phase C)
 
-### Manual Test Plan
 Use existing test plan: `docs/testing/week3-manual-test-plan.md`
 
 ---
 
-## Grade Projection
+### Grade Projection
 
 ### Current State (After Phase 6.1-6.5)
 
@@ -421,7 +421,7 @@ Use existing test plan: `docs/testing/week3-manual-test-plan.md`
 
 ---
 
-## Cost-Benefit Analysis
+### Cost-Benefit Analysis
 
 ### Phase A: Quick Wins
 - **Effort**: 3-4 hours
@@ -445,7 +445,7 @@ Use existing test plan: `docs/testing/week3-manual-test-plan.md`
 
 ---
 
-## Recommendation
+### Recommendation
 
 ### Option 1: Ship Now ✅ (Recommended)
 **Rationale**: Codebase is production-ready at A- (91/100). All critical issues resolved, performance targets met, deployment-ready.
@@ -464,10 +464,14 @@ Use existing test plan: `docs/testing/week3-manual-test-plan.md`
 
 ---
 
-## Conclusion
+### Conclusion
 
 The Phase 6 audit (6.1-6.6) has achieved its goal: comprehensive 10x-depth code cleanup analysis across compilation, type safety, documentation, architecture, and performance dimensions. The codebase scored **A- (91/100)** overall and is deployment-ready.
 
 All optional cleanup phases are documented with clear effort estimates, expected benefits, and verification strategies. The decision to ship now vs polish further is a product decision based on timeline constraints and risk tolerance.
 
 **Final Status**: ✅ **Production-Ready** with optional optimization path documented.
+
+## References
+_No references recorded._
+

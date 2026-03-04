@@ -1,4 +1,4 @@
-use crate::{companion, confetti, constants, dom, render, speech, synth_audio};
+use crate::{confetti, constants, dom, domain_services, reliability, render, speech, synth_audio};
 use wasm_bindgen::JsCast;
 use web_sys::Event;
 
@@ -36,7 +36,7 @@ pub fn init() {
         },
     );
 
-    dom::on(&dom::window(), "beforeunload", |_event: Event| {
+    dom::on(&dom::window(), "pagehide", |_event: Event| {
         cancel_pending_timeouts();
     });
 }
@@ -163,7 +163,7 @@ fn handle_feeling_choice(act_id: &str, feeling: &str) {
 
     synth_audio::chime();
     dom::toast("Thanks for sharing! +1 \u{2764}\u{FE0F}");
-    companion::celebrate_reflection();
+    domain_services::celebrate_reflection();
 
     // Save to DB + award bonus heart
     wasm_bindgen_futures::spawn_local(async move {
@@ -172,6 +172,9 @@ fn handle_feeling_choice(act_id: &str, feeling: &str) {
             vec![feeling_str, id],
         ).await {
             dom::warn(&format!("[reflection] Failed to save: {e:?}"));
+            reliability::record_failure(reliability::DOMAIN_REFLECTION).await;
+        } else {
+            reliability::record_success(reliability::DOMAIN_REFLECTION).await;
         }
     });
 }

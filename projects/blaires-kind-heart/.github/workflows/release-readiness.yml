@@ -1,0 +1,56 @@
+name: Release Readiness
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  release-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install Trunk
+        run: cargo install trunk --locked
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install JS dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run RC aggregate gates
+        run: npm run qa:rc-gates
+
+      - name: Run symbolized release verification build
+        run: npm run build:verify:release
+
+      - name: Enforce strict release evidence
+        run: npm run qa:release-evidence
+
+      - name: Upload release readiness artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-readiness-artifacts
+          path: |
+            scripts/reports/*.md
+            docs/testing/release-evidence/**
+            .verify-dist-release/**
+          if-no-files-found: warn
+          retention-days: 14

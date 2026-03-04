@@ -124,6 +124,7 @@
 
   /* Backdrop filters — tokenized for consistent GPU blur cost on A15 */
   --backdrop-light: blur(16px) saturate(1.2);
+  --backdrop-soft: blur(8px) saturate(1.2);
   --backdrop-medium: blur(24px) saturate(1.5);
   --backdrop-heavy: blur(40px) saturate(3.0);
   --backdrop-medium-sat: blur(24px) saturate(2.2);
@@ -149,12 +150,24 @@
    Reduce blur/shadow intensity to lower GPU tile cost on A15 while preserving style. */
 [data-device-profile="ipad-mini-6"] {
   --backdrop-light: blur(10px) saturate(1.08);
+  --backdrop-soft: blur(5px) saturate(1.05);
   --backdrop-medium: blur(14px) saturate(1.2);
   --backdrop-heavy: blur(20px) saturate(1.8);
   --backdrop-medium-sat: blur(14px) saturate(1.35);
   --shadow-md: 0 6px 14px rgba(37, 19, 32, 0.11), 0 10px 22px rgba(37, 19, 32, 0.15);
   --shadow-lg: 0 10px 20px rgba(37, 19, 32, 0.14), 0 20px 36px rgba(37, 19, 32, 0.18);
   --shadow-glow-rainbow: 0 10px 24px rgba(139, 31, 255, 0.38), 0 0 40px rgba(255, 45, 114, 0.26);
+}
+
+[data-device-profile="ipad-mini-6"][data-perf-mode="throughput"] {
+  --backdrop-light: blur(6px) saturate(1.02);
+  --backdrop-soft: blur(3px) saturate(1.01);
+  --backdrop-medium: blur(8px) saturate(1.08);
+  --backdrop-heavy: blur(12px) saturate(1.18);
+  --backdrop-medium-sat: blur(8px) saturate(1.12);
+  --shadow-md: 0 4px 10px rgba(37, 19, 32, 0.10), 0 8px 16px rgba(37, 19, 32, 0.12);
+  --shadow-lg: 0 6px 14px rgba(37, 19, 32, 0.12), 0 12px 24px rgba(37, 19, 32, 0.14);
+  --shadow-glow-rainbow: 0 8px 16px rgba(139, 31, 255, 0.24), 0 0 24px rgba(255, 45, 114, 0.16);
 }
 
 /* ══════ Time-of-Day Color Overrides ══════ */

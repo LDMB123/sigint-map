@@ -8,6 +8,8 @@
 | `scripts/cutover-remote-e2e.sh` | Run Rust E2E subset against an existing remote/staging server | `BASE_URL=https://env bash scripts/cutover-remote-e2e.sh` |
 | `scripts/deploy.sh` | Local deploy helper for Rust server | `bash scripts/deploy.sh local` |
 | `scripts/a11y-keyboard-spotcheck.sh` | Generate dated manual keyboard accessibility spot-check template | `bash scripts/a11y-keyboard-spotcheck.sh` |
+| `scripts/rust-import-perf.mjs` | Run repeatable cold-import timing + INP/long-frame sampling with tuning OFF vs ON | `node scripts/rust-import-perf.mjs --base-url http://127.0.0.1:3000 --runs 3` |
+| `scripts/check-wasm-size.sh` | Report raw/gzip WASM size and optionally enforce 10% gzip reduction gate against baseline | `bash scripts/check-wasm-size.sh --baseline-gzip 1023156` |
 
 ## Data / Warning Utilities
 

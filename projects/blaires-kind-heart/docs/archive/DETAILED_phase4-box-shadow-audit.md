@@ -1,14 +1,17 @@
 # Phase 4.4-4.5: Box-Shadow → Drop-Shadow Conversion Audit
 
-## Summary
+- Archive Path: `docs/archive/DETAILED_phase4-box-shadow-audit.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Phase 4.4-4.5: Box-Shadow → Drop-Shadow Conversion Audit`
 
+## Summary
 **Total instances**: 176 box-shadow declarations across 12 CSS files
 
 **Conversion strategy**:
 - **Keep box-shadow** for multi-layer depth effects (paper-stack, lifted cards)
 - **Convert to drop-shadow()** for simple glow effects (1-2 layers, no inset)
 
-## Per-File Analysis
+### Per-File Analysis
 
 ### animations.css (22 instances)
 - **Convert candidates**: 20 instances (glow animations, simple shadows)
@@ -44,7 +47,7 @@
 - gardens.css (2): 0 convert, 2 keep (simple shadows)
 - particle-effects.css (1): 1 convert, 0 keep
 
-## Conversion Targets
+### Conversion Targets
 
 ### High Priority (Phase 4.5a)
 1. **animations.css** - 20 conversions
@@ -66,7 +69,7 @@
 ### Low Priority (Phase 4.5c)
 5. **All other files** - 40 conversions
 
-## Technical Notes
+### Technical Notes
 
 ### When to use drop-shadow()
 ✅ **Convert** if shadow has:
@@ -87,8 +90,10 @@
 - **box-shadow** requires separate layer for each shadow (N composite operations)
 - On A15 GPU: ~30-40% faster rendering for simple glow effects
 
-## Implementation Plan
+## Context
+_Context not recorded in source archive document._
 
+## Actions
 ### Phase 4.5a: High-Priority Conversions (animations.css + games.css)
 - Target: 55 conversions
 - Impact: Game loop + animation performance
@@ -104,9 +109,14 @@
 - Impact: Overall polish
 - Verify: Lighthouse INP improvement
 
-## Next Steps
-
 1. Start with animations.css (20 conversions)
 2. Test visual parity (screenshot before/after)
 3. Run Lighthouse to measure improvement
 4. Continue with games.css if no regressions
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { assertMemoryGameLifecycle, openGamesPanel } from "./fixtures/domainFlows";
 import { dismissOnboardingIfPresent, waitForAppReady } from "./helpers";
 
 test.use({ video: "off", serviceWorkers: "block" });
@@ -54,24 +55,15 @@ test("home panel navigation open/close flow works", async ({ page }) => {
   await expect(page.locator("#panel-adventures")).toBeHidden();
 });
 
-test("games launch and return flow is available", async ({ page }) => {
-  await page.goto("/?e2e=1&panel=panel-games#panel-games", { waitUntil: "domcontentloaded" });
-  await waitForAppReady(page, "panel-games", 45_000);
-  await dismissOnboardingIfPresent(page);
+test("games lifecycle supports launch, return, relaunch, and reset", async ({ page }) => {
+  await assertMemoryGameLifecycle(page);
+});
 
+test("games panel cards render for launch entry points", async ({ page }) => {
+  await openGamesPanel(page);
   await expect
     .poll(() => page.locator("[data-game]").count(), { timeout: 30_000 })
     .toBeGreaterThan(0);
-
-  await page.locator("[data-game]").first().click();
-  await expect(page.locator("#game-arena")).toBeVisible();
-
-  const endControl = page.locator("[data-game-back], [data-game-again]").first();
-  if (await endControl.isVisible().catch(() => false)) {
-    await endControl.click();
-  } else {
-    await navigateHome(page);
-  }
 });
 
 test("progress panel Mom view PIN gate protects insights", async ({ page }) => {

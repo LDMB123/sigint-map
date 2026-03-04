@@ -6,6 +6,7 @@ DIST_DIR="${DIST_DIR:-.verify-dist-release}"
 PORT="${PORT:-4173}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:${PORT}}"
 GPU_MODE="${GPU_MODE:-auto}"
+PERF_MODE="${PERF_MODE:-auto}"
 RUST_PROFILE="${RUST_PROFILE:-release}"
 SYMBOLIZED_RELEASE="${SYMBOLIZED_RELEASE:-1}"
 PROFILE_SECONDS="${PROFILE_SECONDS:-20}"
@@ -57,13 +58,19 @@ ensure_server() {
 
 first_pid_matching() {
   local pattern="$1"
-  ps -axo pid=,command= -ww | awk -v pat="${pattern}" '$0 ~ pat {print $1; exit}'
+  ps -axo pid=,command= -ww \
+    | awk -v pat="${pattern}" '$0 ~ pat && $0 !~ /System\/iOSSupport/ {print $1}' \
+    | sort -n \
+    | tail -n 1
 }
 
 first_child_pid_matching() {
   local parent_pid="$1"
   local pattern="$2"
-  ps -axo pid=,ppid=,command= -ww | awk -v p="${parent_pid}" -v pat="${pattern}" '$2 == p && $0 ~ pat {print $1; exit}'
+  ps -axo pid=,ppid=,command= -ww \
+    | awk -v p="${parent_pid}" -v pat="${pattern}" '$2 == p && $0 ~ pat && $0 !~ /System\/iOSSupport/ {print $1}' \
+    | sort -n \
+    | tail -n 1
 }
 
 resolve_attach_pid() {
@@ -153,10 +160,18 @@ case "${GPU_MODE}" in
     ;;
 esac
 
+case "${PERF_MODE}" in
+  auto|throughput|balanced|quality) ;;
+  *)
+    log "Invalid PERF_MODE='${PERF_MODE}', defaulting to auto"
+    PERF_MODE="auto"
+    ;;
+esac
+
 if [[ "${BASE_URL}" == *\?* ]]; then
-  PROFILE_URL="${BASE_URL}&gpu=${GPU_MODE}"
+  PROFILE_URL="${BASE_URL}&gpu=${GPU_MODE}&perf=${PERF_MODE}"
 else
-  PROFILE_URL="${BASE_URL}?gpu=${GPU_MODE}"
+  PROFILE_URL="${BASE_URL}?gpu=${GPU_MODE}&perf=${PERF_MODE}"
 fi
 
 mkdir -p "${OUT_ROOT}"
@@ -188,6 +203,8 @@ if ! grep -Fxq "Core Animation" <<<"${TEMPLATE_LIST}"; then
 fi
 log "Using animation template: ${ANIMATION_TEMPLATE}"
 log "Profiling URL: ${PROFILE_URL}"
+log "GPU mode query enabled: ${GPU_MODE} (runtime sets data-gpu-mode/data-gpu-status)"
+log "Perf mode query enabled: ${PERF_MODE} (runtime sets data-perf-mode)"
 log "Attach strategy: time=${TIME_ATTACH_KIND}, animation=${ANIMATION_ATTACH_KIND}, metal=${METAL_ATTACH_KIND}"
 
 run_with_timeout() {

@@ -16,6 +16,53 @@ self.__BKH_RUNTIME_DIAGNOSTICS__?.install({ scope: "sw" });
 
 // Pre-compiled regex for hot fetch path (avoid per-request RegExp construction)
 const RE_APP_LOGIC = /\.(wasm|js)$/;
+const OFFLINE_HTML = '<h1>Offline</h1><p>Please check your connection and refresh.</p>';
+
+function fallbackHtmlResponse() {
+  return new Response(OFFLINE_HTML, {
+    status: 503,
+    headers: { 'Content-Type': 'text/html' }
+  });
+}
+
+function safeCachePut(request, response) {
+  if (!response?.ok) return;
+  const clone = response.clone();
+  caches.open(CACHE_NAME)
+    .then((cache) => cache.put(request, clone))
+    .catch(() => { }); // Ignore cache write failures (quota, etc.)
+}
+
+function revalidateInBackground(request) {
+  fetch(request)
+    .then((response) => {
+      safeCachePut(request, response);
+    })
+    .catch(() => { }); // Ignore transient network failures
+}
+
+function shouldUseStaleWhileRevalidate(url) {
+  // IMPORTANT: Exclude main app bundle (blaires-kind-heart.js + _bg.wasm)
+  // because JS glue and WASM binary are tightly coupled — updating one
+  // without the other causes version mismatch crashes on next load.
+  // Main app bundle updates atomically via SW CACHE_NAME version bump.
+  const isAppBundle = url.pathname.includes('blaires-kind-heart');
+  return RE_APP_LOGIC.test(url.pathname) && !isAppBundle;
+}
+
+function resolveAssetResponse(request, url, cached) {
+  if (cached && shouldUseStaleWhileRevalidate(url)) {
+    revalidateInBackground(request);
+    return cached;
+  }
+  if (cached) {
+    return cached;
+  }
+  return fetch(request).then((response) => {
+    safeCachePut(request, response);
+    return response;
+  });
+}
 
 // Install: precache CRITICAL assets only (fast boot)
 self.addEventListener('install', (event) => {
@@ -95,9 +142,7 @@ self.addEventListener('fetch', (event) => {
         return cached || fetch(event.request);
       }).catch(async () => {
         const offlinePage = await caches.match('/offline.html');
-        return offlinePage ?? new Response('<h1>Offline</h1><p>Please check your connection and refresh.</p>', {
-          status: 503, headers: { 'Content-Type': 'text/html' }
-        });
+        return offlinePage ?? fallbackHtmlResponse();
       })
     );
     return;
@@ -106,48 +151,13 @@ self.addEventListener('fetch', (event) => {
   // All other requests: cache-first with stale-while-revalidate for app logic
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      // Phase 3.2: Stale-while-revalidate for utility JS/WASM files
-      // IMPORTANT: Exclude main app bundle (blaires-kind-heart.js + _bg.wasm)
-      // because JS glue and WASM binary are tightly coupled — updating one
-      // without the other causes version mismatch crashes on next load.
-      // Main app bundle updates atomically via SW CACHE_NAME version bump.
-      const isAppBundle = url.pathname.includes('blaires-kind-heart');
-      const isAppLogic = RE_APP_LOGIC.test(url.pathname) && !isAppBundle;
-
-      if (cached && isAppLogic) {
-        // Serve stale, fetch fresh in background (fire-and-forget)
-        fetch(event.request).then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) =>
-              cache.put(event.request, clone)
-            ).catch(() => { }); // Ignore cache write failures (quota, etc.)
-          }
-        }).catch(() => { }); // Ignore network errors for background revalidation
-
-        return cached; // Return stale immediately
-      }
-
-      // For non-app-logic: standard cache-first
-      if (cached) return cached;
-
-      return fetch(event.request).then((response) => {
-        // Cache successful responses for next time
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) =>
-            cache.put(event.request, clone)
-          ).catch(() => { }); // Ignore cache write failures (quota, etc.)
-        }
-        return response;
-      });
+      // Shared stale-while-revalidate branch helper for utility JS/WASM files.
+      return resolveAssetResponse(event.request, url, cached);
     }).catch(async () => {
       // Offline fallback for HTML
       if (event.request.headers.get('Accept')?.includes('text/html')) {
         const offlinePage = await caches.match('/offline.html');
-        return offlinePage ?? new Response('<h1>Offline</h1><p>Please check your connection and refresh.</p>', {
-          status: 503, headers: { 'Content-Type': 'text/html' }
-        });
+        return offlinePage ?? fallbackHtmlResponse();
       }
       // Offline fallback for images (return transparent 1x1 WebP to avoid broken icons)
       if (event.request.headers.get('Accept')?.includes('image/')) {

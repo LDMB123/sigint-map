@@ -1,7 +1,10 @@
 # Memory Leak Analysis - Blaire's Kind Heart WASM Codebase
 
-## Executive Summary
+- Archive Path: `docs/archive/DETAILED_MEMORY_ANALYSIS.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Memory Leak Analysis - Blaire's Kind Heart WASM Codebase`
 
+## Summary
 **Overall Risk Level: MODERATE**
 
 The codebase demonstrates good memory hygiene patterns overall, with intentional use of `Closure::once_into_js()`, proper RAF cleanup, and thread_local-based listener storage. However, 5 critical issues were identified that present memory leak risks, particularly in long-running scenarios (iPad apps left open for extended periods).
@@ -13,10 +16,151 @@ The codebase demonstrates good memory hygiene patterns overall, with intentional
 
 ---
 
-## Critical Issues
+### Critical Issues
 
-### 1. **Navigation API Event Listeners - Permanent Memory Leak (HIGH)**
+| Module | Issue | Type | Severity | Status |
+|--------|-------|------|----------|--------|
+| navigation.rs | navigate listener | Permanent leak | HIGH | UNFIXED |
+| navigation.rs | click delegation | Permanent leak | HIGH | UNFIXED |
+| gestures.rs | pointerup + TAP_TIMES | Permanent + growth | HIGH | UNFIXED |
+| gardens.rs | navigate listener | Permanent leak | MEDIUM | PARTIALLY (stored but no removal) |
+| speech.rs | voiceschanged | Permanent leak | MEDIUM | UNFIXED |
+| game_catcher.rs | RAF closure cycle | Growth leak | MEDIUM | DEPENDS_ON_CLEANUP |
+| companion.rs | race condition allocs | Growth leak | LOW-MEDIUM | MITIGATED |
+| db_client.rs | worker message | Conditional leak | LOW | UNLIKELY |
+| onboarding.rs | click handler | Transient | LOW | SAFE |
+| gpu_particles.rs | RAF cleanup | Transient | NONE | SAFE ✅ |
+| game_unicorn.rs | RAF cleanup | Transient | NONE | SAFE ✅ |
+| game_memory.rs | RAF cleanup | Transient | NONE | SAFE ✅ |
 
+---
+
+### Conclusion
+
+The codebase demonstrates good understanding of WASM memory patterns (proper use of `Closure::once_into_js()`, RAF tracking, thread_local storage). However, **permanent event listeners on global objects (document, Navigation API, SpeechSynthesis) are the primary leak risk** on a long-running iPad app.
+
+**Recommended Action**: Implement AbortSignal-based cleanup for all global listeners within the next sprint. This is a pattern that will benefit future feature additions and is well-supported in Safari 26.2.
+
+**Expected Impact**: Reduce growth leak potential from 30-50KB/8hrs to <5KB/8hrs.
+
+## Context
+_Context not recorded in source archive document._
+
+## Actions
+_No actions recorded._
+
+## Validation
+```rust
+// Proposed test structure (Playwright + DevTools)
+#[test]
+async fn test_navigation_memory_leak() {
+    // 1. Take baseline heap snapshot
+    // 2. Navigate between panels 50 times
+    // 3. Take heap snapshot
+    // 4. GC and measure growth
+    // Assert: growth < 1MB
+}
+
+#[test]
+async fn test_game_lifecycle_cleanup() {
+    // 1. Start and exit game 10 times
+    // 2. Measure RAF closure count
+    // Assert: raf_id always cleared
+}
+```
+
+### Manual Chrome DevTools Steps
+
+1. **Identify Panel Navigation Leak**:
+   - Open DevTools → Memory
+   - Take heap snapshot
+   - Navigate between panels 20 times
+   - Force GC (trash icon)
+   - Take heap snapshot
+   - Diff snapshots → look for Closure objects with "navigate" in retained
+
+2. **Gesture Leak Detection**:
+   - Rapidly tap screen 100+ times
+   - GC and measure TAP_TIMES vector size
+   - Should be <20 elements in normal use
+
+3. **RAF Leak Detection**:
+   - Play game_catcher 5 times
+   - Measure RequestAnimationFrame callbacks in heap
+   - Should drop to 0 after game cleanup
+
+---
+
+### Code Pattern Recommendations
+
+### Safe Event Listener Pattern
+
+```rust
+// BAD: Permanent listener, can't be removed
+dom::on(&target, "click", |e| { /* handler */ });
+
+// GOOD: One-time, or abortable
+dom::on_with_signal(&target, "click", &signal, |e| { /* handler */ });
+
+// GOOD: Stored for later removal
+thread_local! {
+    static LISTENER: RefCell<Option<Closure<...>>> = const { RefCell::new(None) };
+}
+LISTENER.with(|cell| {
+    let cb = Closure::new(|e| { /* handler */ });
+    target.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
+    *cell.borrow_mut() = Some(cb);
+});
+```
+
+### Safe RAF Loop Pattern
+
+```rust
+// GOOD: Store closure in Rc<RefCell>, clean up in destructor
+let closure = Rc::new(RefCell::new(None));
+let closure_clone = closure.clone();
+
+*closure.borrow_mut() = Some(Closure::new(move |timestamp| {
+    // ... loop logic ...
+    if let Some(cb) = closure_clone.borrow().as_ref() {
+        request_animation_frame(cb);
+    }
+}));
+
+// Cleanup: closure is dropped when Rc refcount reaches 0
+// MUST ensure: drop(closure) or assignment to None
+```
+
+### Safe spawn_local Pattern with Race Conditions
+
+```rust
+// Track request IDs to avoid processing stale results
+thread_local! {
+    static LATEST_REQUEST: Cell<u32> = const { Cell::new(0) };
+}
+
+let request_id = LATEST_REQUEST.with(|c| {
+    let id = c.get().wrapping_add(1);
+    c.set(id);
+    id
+});
+
+spawn_local(async move {
+    let result = expensive_operation().await;
+
+    // Check if still latest before processing
+    if LATEST_REQUEST.with(|c| c.get()) != request_id {
+        return;  // Stale response
+    }
+
+    // Safe to process
+    process_result(result);
+});
+```
+
+---
+
+## References
 **File**: `/rust/navigation.rs` (lines 62-95)
 
 **Issue**: The `listen_navigate_event()` and `listen_navigate_error()` functions attach event listeners to the Navigation API object without any mechanism to remove them. These are called once at boot and never cleaned up.
@@ -122,8 +266,6 @@ pub fn setup_debug_gesture() {
 
 ---
 
-### 4. **Gardens Module Navigation Listener - Stored But Never Removed (MEDIUM)**
-
 **File**: `/rust/gardens.rs` (lines 182-219)
 
 **Issue**: Better than others (listener stored in thread_local), but NO removal mechanism. If the app supported switching out of gardens, this listener would leak.
@@ -188,7 +330,7 @@ cb.forget();  // LEAK: Never removed
 
 ---
 
-## Growth Leak Risks
+### Growth Leak Risks
 
 ### 6. **Game Catcher RAF Animation Frame (MEDIUM)**
 
@@ -288,7 +430,7 @@ cb.forget();
 
 ---
 
-## Transient (Properly Handled) Patterns
+### Transient (Properly Handled) Patterns
 
 ### RAF Loops with Proper Cleanup
 
@@ -310,7 +452,7 @@ cb.forget();
 
 ---
 
-## Heap Growth Analysis
+### Heap Growth Analysis
 
 ### iPad 4GB RAM Scenario: Extended App Use
 
@@ -334,7 +476,7 @@ cb.forget();
 
 ---
 
-## Fixing Strategy (Priority Order)
+### Fixing Strategy (Priority Order)
 
 ### P0 (Critical - Implement First)
 
@@ -393,7 +535,7 @@ if !VOICES_LISTENER_SET.with(|set| set.get()) {
 
 ---
 
-## Closure Capture Analysis
+### Closure Capture Analysis
 
 ### Large Captures (>1KB)
 
@@ -408,143 +550,3 @@ if !VOICES_LISTENER_SET.with(|set| set.get()) {
 
 ---
 
-## Testing Recommendations
-
-### Automated Memory Tests
-
-```rust
-// Proposed test structure (Playwright + DevTools)
-#[test]
-async fn test_navigation_memory_leak() {
-    // 1. Take baseline heap snapshot
-    // 2. Navigate between panels 50 times
-    // 3. Take heap snapshot
-    // 4. GC and measure growth
-    // Assert: growth < 1MB
-}
-
-#[test]
-async fn test_game_lifecycle_cleanup() {
-    // 1. Start and exit game 10 times
-    // 2. Measure RAF closure count
-    // Assert: raf_id always cleared
-}
-```
-
-### Manual Chrome DevTools Steps
-
-1. **Identify Panel Navigation Leak**:
-   - Open DevTools → Memory
-   - Take heap snapshot
-   - Navigate between panels 20 times
-   - Force GC (trash icon)
-   - Take heap snapshot
-   - Diff snapshots → look for Closure objects with "navigate" in retained
-
-2. **Gesture Leak Detection**:
-   - Rapidly tap screen 100+ times
-   - GC and measure TAP_TIMES vector size
-   - Should be <20 elements in normal use
-
-3. **RAF Leak Detection**:
-   - Play game_catcher 5 times
-   - Measure RequestAnimationFrame callbacks in heap
-   - Should drop to 0 after game cleanup
-
----
-
-## Code Pattern Recommendations
-
-### Safe Event Listener Pattern
-
-```rust
-// BAD: Permanent listener, can't be removed
-dom::on(&target, "click", |e| { /* handler */ });
-
-// GOOD: One-time, or abortable
-dom::on_with_signal(&target, "click", &signal, |e| { /* handler */ });
-
-// GOOD: Stored for later removal
-thread_local! {
-    static LISTENER: RefCell<Option<Closure<...>>> = const { RefCell::new(None) };
-}
-LISTENER.with(|cell| {
-    let cb = Closure::new(|e| { /* handler */ });
-    target.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref());
-    *cell.borrow_mut() = Some(cb);
-});
-```
-
-### Safe RAF Loop Pattern
-
-```rust
-// GOOD: Store closure in Rc<RefCell>, clean up in destructor
-let closure = Rc::new(RefCell::new(None));
-let closure_clone = closure.clone();
-
-*closure.borrow_mut() = Some(Closure::new(move |timestamp| {
-    // ... loop logic ...
-    if let Some(cb) = closure_clone.borrow().as_ref() {
-        request_animation_frame(cb);
-    }
-}));
-
-// Cleanup: closure is dropped when Rc refcount reaches 0
-// MUST ensure: drop(closure) or assignment to None
-```
-
-### Safe spawn_local Pattern with Race Conditions
-
-```rust
-// Track request IDs to avoid processing stale results
-thread_local! {
-    static LATEST_REQUEST: Cell<u32> = const { Cell::new(0) };
-}
-
-let request_id = LATEST_REQUEST.with(|c| {
-    let id = c.get().wrapping_add(1);
-    c.set(id);
-    id
-});
-
-spawn_local(async move {
-    let result = expensive_operation().await;
-
-    // Check if still latest before processing
-    if LATEST_REQUEST.with(|c| c.get()) != request_id {
-        return;  // Stale response
-    }
-
-    // Safe to process
-    process_result(result);
-});
-```
-
----
-
-## Summary Table
-
-| Module | Issue | Type | Severity | Status |
-|--------|-------|------|----------|--------|
-| navigation.rs | navigate listener | Permanent leak | HIGH | UNFIXED |
-| navigation.rs | click delegation | Permanent leak | HIGH | UNFIXED |
-| gestures.rs | pointerup + TAP_TIMES | Permanent + growth | HIGH | UNFIXED |
-| gardens.rs | navigate listener | Permanent leak | MEDIUM | PARTIALLY (stored but no removal) |
-| speech.rs | voiceschanged | Permanent leak | MEDIUM | UNFIXED |
-| game_catcher.rs | RAF closure cycle | Growth leak | MEDIUM | DEPENDS_ON_CLEANUP |
-| companion.rs | race condition allocs | Growth leak | LOW-MEDIUM | MITIGATED |
-| db_client.rs | worker message | Conditional leak | LOW | UNLIKELY |
-| onboarding.rs | click handler | Transient | LOW | SAFE |
-| gpu_particles.rs | RAF cleanup | Transient | NONE | SAFE ✅ |
-| game_unicorn.rs | RAF cleanup | Transient | NONE | SAFE ✅ |
-| game_memory.rs | RAF cleanup | Transient | NONE | SAFE ✅ |
-
----
-
-## Conclusion
-
-The codebase demonstrates good understanding of WASM memory patterns (proper use of `Closure::once_into_js()`, RAF tracking, thread_local storage). However, **permanent event listeners on global objects (document, Navigation API, SpeechSynthesis) are the primary leak risk** on a long-running iPad app.
-
-**Recommended Action**: Implement AbortSignal-based cleanup for all global listeners within the next sprint. This is a pattern that will benefit future feature additions and is well-supported in Safari 26.2.
-
-**Expected Impact**: Reduce growth leak potential from 30-50KB/8hrs to <5KB/8hrs.

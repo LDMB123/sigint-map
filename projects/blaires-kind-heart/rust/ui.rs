@@ -52,8 +52,20 @@ pub fn update_heart_counter(count: u32) {
             let _ = el.class_list().add_1("heart-count-pop");
         }
     });
+
+    let hearts_today = state::with_state(|s| s.hearts_today);
+    if let Some(el) = state::get_cached_home_tracker_hearts_counter()
+        .or_else(|| dom::query(crate::constants::SELECTOR_HOME_TRACKER_HEARTS))
+    {
+        el.set_text_content(Some(&hearts_today.to_string()));
+        let _ = el.class_list().add_1("heart-count-pop");
+    }
+
     dom::set_timeout_once(300, || {
         if let Some(el) = dom::query(crate::constants::SELECTOR_HEARTS) {
+            let _ = el.class_list().remove_1("heart-count-pop");
+        }
+        if let Some(el) = dom::query(crate::constants::SELECTOR_HOME_TRACKER_HEARTS) {
             let _ = el.class_list().remove_1("heart-count-pop");
         }
         if let Some(el) = dom::query(crate::constants::SELECTOR_TRACKER_HEARTS) {

@@ -12,8 +12,8 @@
  */
 
 import { generateImage } from '../../imagen-experiments/scripts/experiments/nanobanana-direct.js';
-import fs from 'fs/promises';
 import path from 'path';
+import { runNanobananaBatch } from './lib/nanobanana-batch-runner.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const OUTPUT_DIR = path.join(ROOT, 'assets', 'illustrations', 'stories');
@@ -127,31 +127,7 @@ function getOutputPath(storyId, imageType) {
   return path.join(OUTPUT_DIR, filename);
 }
 
-async function fileExists(filePath) {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function main() {
-  console.log('='.repeat(60));
-  console.log('Blaire\'s Kind Heart — Story Illustration Generator');
-  console.log('='.repeat(60));
-  console.log(`Output directory: ${OUTPUT_DIR}`);
-  console.log(`Style prefix: ${STYLE_PREFIX.substring(0, 60)}...`);
-  console.log(`Delay between calls: ${DELAY_MS / 1000}s`);
-  console.log();
-
-  // Ensure output directory exists
-  await fs.mkdir(OUTPUT_DIR, { recursive: true });
-
   // Build flat list of all images to generate
   const allImages = [];
   for (const story of STORIES) {
@@ -160,103 +136,22 @@ async function main() {
         storyId: story.id,
         imageType: img.type,
         prompt: `${STYLE_PREFIX}, ${img.prompt}`,
+        aspectRatio: '4:3',
         outputPath: getOutputPath(story.id, img.type),
       });
     }
   }
 
-  console.log(`Total images to process: ${allImages.length}`);
-  console.log();
-
-  let generated = 0;
-  let skipped = 0;
-  let failed = 0;
-
-  for (let i = 0; i < allImages.length; i++) {
-    const item = allImages[i];
-    const label = `[${i + 1}/${allImages.length}] ${path.basename(item.outputPath)}`;
-
-    // Skip if file already exists
-    if (await fileExists(item.outputPath)) {
-      console.log(`${label} — SKIP (already exists)`);
-      skipped++;
-      continue;
-    }
-
-    console.log(`${label} — Generating...`);
-    console.log(`  Story: ${item.storyId} | Type: ${item.imageType}`);
-
-    let success = false;
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        const result = await generateImage({
-          prompt: item.prompt,
-          aspectRatio: '4:3',
-          imageSize: '1K',
-          showThinkingProcess: false,
-        });
-
-        if (result.images && result.images.length > 0) {
-          // Move the generated image from nanobanana output dir to our target path
-          const sourcePath = result.images[0];
-          await fs.copyFile(sourcePath, item.outputPath);
-          // Clean up the temp file
-          await fs.unlink(sourcePath).catch(() => {});
-
-          const stats = await fs.stat(item.outputPath);
-          const sizeKB = (stats.size / 1024).toFixed(0);
-          console.log(`  OK: ${path.basename(item.outputPath)} (${sizeKB} KB)`);
-          generated++;
-          success = true;
-          break;
-        } else {
-          console.error(`  EMPTY: No image returned (attempt ${attempt}/${MAX_RETRIES})`);
-        }
-      } catch (err) {
-        const is429 = err.message.includes('429') || err.message.includes('RESOURCE_EXHAUSTED');
-        if (is429 && attempt < MAX_RETRIES) {
-          const backoff = attempt * 60_000; // 60s, 120s, 180s
-          console.log(`  RATE LIMITED (attempt ${attempt}/${MAX_RETRIES}), waiting ${backoff / 1000}s...`);
-          await sleep(backoff);
-          continue;
-        }
-        console.error(`  ERROR: ${item.storyId}-${item.imageType} — ${err.message.substring(0, 120)}`);
-        break;
-      }
-    }
-
-    if (!success) {
-      failed++;
-    }
-
-    // Delay between calls (skip after last image)
-    if (i < allImages.length - 1) {
-      const nextItem = allImages[i + 1];
-      const nextExists = await fileExists(nextItem.outputPath);
-      if (!nextExists) {
-        console.log(`  Waiting ${DELAY_MS / 1000}s before next request...`);
-        await sleep(DELAY_MS);
-      }
-    }
-  }
-
-  console.log();
-  console.log('='.repeat(60));
-  console.log('Summary');
-  console.log('='.repeat(60));
-  console.log(`  Generated: ${generated}`);
-  console.log(`  Skipped:   ${skipped}`);
-  console.log(`  Failed:    ${failed}`);
-  console.log(`  Total:     ${allImages.length}`);
-  console.log();
-
-  if (failed > 0) {
-    console.log('Some images failed. Re-run this script to retry (skip-if-exists).');
-  } else if (generated === 0 && skipped === allImages.length) {
-    console.log('All images already exist. Nothing to generate.');
-  } else {
-    console.log('All images generated successfully!');
-  }
+  await runNanobananaBatch({
+    title: "Blaire's Kind Heart — Story Illustration Generator",
+    outputDir: OUTPUT_DIR,
+    items: allImages,
+    delayMs: DELAY_MS,
+    maxRetries: MAX_RETRIES,
+    generateImage,
+    itemLabel: (item, index, total) => `[${index + 1}/${total}] ${path.basename(item.outputPath)}`,
+    itemContext: (item) => `  Story: ${item.storyId} | Type: ${item.imageType}`,
+  });
 }
 
 main().catch((err) => {

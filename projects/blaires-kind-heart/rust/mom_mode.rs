@@ -1,6 +1,8 @@
 use crate::{
-    browser_apis, constants, db_client, dom, parent_insights, render, speech, state::AppState,
-    synth_audio, utils, weekly_goals,
+    browser_apis, constants, db_client,
+    db_messages::{DB_SCHEMA_VERSION, EXPORT_FORMAT_VERSION},
+    dom, domain_services, feature_flags, parent_insights, reliability, render, speech,
+    state::AppState, synth_audio, utils,
 };
 use futures::join;
 use std::cell::RefCell;
@@ -14,6 +16,35 @@ struct MomModeState {
     state: Rc<RefCell<AppState>>,
     pin_set: bool,
 }
+
+const DASHBOARD_FEATURE_TOGGLES: &[(&str, &str, &str)] = &[
+    (
+        feature_flags::FEATURE_SKILL_PROGRESSION,
+        "Skill Progression",
+        "Track mastery updates and badge progression.",
+    ),
+    (
+        feature_flags::FEATURE_ADAPTIVE_QUESTS,
+        "Adaptive Quests",
+        "Use least-practiced skill focus to pick quests.",
+    ),
+    (
+        feature_flags::FEATURE_REFLECTION,
+        "Reflection Prompts",
+        "Show delayed reflection prompt after kind acts.",
+    ),
+    (
+        feature_flags::FEATURE_PARENT_INSIGHTS,
+        "Mom Insights",
+        "Generate and show weekly insights analytics.",
+    ),
+];
+
+const RELIABILITY_DOMAINS: &[(&str, &str)] = &[
+    (reliability::DOMAIN_PROGRESSION, "Progression"),
+    (reliability::DOMAIN_REFLECTION, "Reflection"),
+    (reliability::DOMAIN_INSIGHTS, "Insights"),
+];
 pub fn init(state: Rc<RefCell<AppState>>) {
     MOM_STATE.with(|m| {
         *m.borrow_mut() = Some(MomModeState {
@@ -364,6 +395,69 @@ fn show_dashboard() {
     insights_loader.set_text_content(Some("Loading Blaire's analytics..."));
     let _ = insights_section.append_child(&insights_loader);
     let _ = card.append_child(&insights_section);
+    let Some(toggle_section) = render::create_el_with_data(
+        &doc,
+        "div",
+        "mom-goals-section",
+        "data-mom-feature-toggles",
+    ) else {
+        return;
+    };
+    let Some(toggle_title) = render::create_el_with_class(&doc, "h3", "mom-section-title") else {
+        return;
+    };
+    dom::safe_set_inner_html(
+        &toggle_title,
+        r#"<img src="illustrations/stickers/lock-gold.webp" class="inline-emoji"/> Safety Toggles (Local)"#,
+    );
+    let _ = toggle_section.append_child(&toggle_title);
+    for (feature_key, feature_label, feature_desc) in DASHBOARD_FEATURE_TOGGLES {
+        let Some(toggle_card) = render::create_el_with_class(&doc, "div", "mom-goal-card") else {
+            continue;
+        };
+        let Some(toggle_header) =
+            render::create_el_with_class(&doc, "div", "mom-goal-header")
+        else {
+            continue;
+        };
+        render::append_text(&doc, &toggle_header, "span", "mom-goal-label", feature_label);
+        let _ = toggle_card.append_child(&toggle_header);
+        render::append_text(&doc, &toggle_card, "p", "mom-goal-desc", feature_desc);
+        let Some(toggle_btn) =
+            render::create_button(&doc, "mom-goal-toggle mom-goal-toggle--off", "Disabled")
+        else {
+            continue;
+        };
+        dom::set_attr(&toggle_btn, "data-feature-toggle", feature_key);
+        let _ = toggle_card.append_child(&toggle_btn);
+        let _ = toggle_section.append_child(&toggle_card);
+    }
+    let _ = card.append_child(&toggle_section);
+    let Some(reliability_section) = render::create_el_with_data(
+        &doc,
+        "div",
+        "mom-insights-section",
+        "data-mom-reliability",
+    ) else {
+        return;
+    };
+    let Some(reliability_title) = render::create_el_with_class(&doc, "h3", "mom-section-title")
+    else {
+        return;
+    };
+    dom::safe_set_inner_html(
+        &reliability_title,
+        r#"<img src="illustrations/stickers/chart-sparkle.webp" class="inline-emoji"/> Runtime Reliability"#,
+    );
+    let _ = reliability_section.append_child(&reliability_title);
+    let Some(reliability_loader) =
+        render::create_el_with_class(&doc, "div", "mom-insights-loader")
+    else {
+        return;
+    };
+    reliability_loader.set_text_content(Some("Loading runtime counters..."));
+    let _ = reliability_section.append_child(&reliability_loader);
+    let _ = card.append_child(&reliability_section);
     let Some(goals_section) = render::create_el_with_class(&doc, "div", "mom-goals-section") else {
         return;
     };
@@ -551,6 +645,8 @@ fn show_dashboard() {
     }
     bind_dashboard_interactions();
     wasm_bindgen_futures::spawn_local(load_existing_goals());
+    wasm_bindgen_futures::spawn_local(load_feature_toggles());
+    wasm_bindgen_futures::spawn_local(load_reliability_counters());
 }
 fn bind_dashboard_interactions() {
     let Some(dashboard) = dom::query("[data-mom-dashboard]") else {
@@ -566,6 +662,13 @@ fn bind_dashboard_interactions() {
         let Some(el) = dom::event_target_element(&event) else {
             return;
         };
+        if let Some(feature_key) = closest_attr(&el, "data-feature-toggle") {
+            let key = feature_key.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                toggle_feature(&key).await;
+            });
+            return;
+        }
         if let Some(goal_type) = dom::get_attr(&el, "data-goal-toggle") {
             toggle_goal(&el, &goal_type);
             return;
@@ -657,6 +760,125 @@ fn closest_attr(el: &Element, attr: &str) -> Option<String> {
         })
     })
 }
+
+fn set_feature_toggle_visual(btn: &Element, enabled: bool) {
+    if enabled {
+        dom::set_attr(btn, "class", "mom-goal-toggle mom-goal-toggle--on");
+        btn.set_text_content(Some("Enabled"));
+    } else {
+        dom::set_attr(btn, "class", "mom-goal-toggle mom-goal-toggle--off");
+        btn.set_text_content(Some("Disabled"));
+    }
+}
+
+fn feature_label(feature_key: &str) -> &'static str {
+    match feature_key {
+        feature_flags::FEATURE_SKILL_PROGRESSION => "Skill Progression",
+        feature_flags::FEATURE_ADAPTIVE_QUESTS => "Adaptive Quests",
+        feature_flags::FEATURE_REFLECTION => "Reflection Prompts",
+        feature_flags::FEATURE_PARENT_INSIGHTS => "Mom Insights",
+        _ => "Feature",
+    }
+}
+
+async fn load_feature_toggles() {
+    let statuses = feature_flags::get_all().await;
+    for (feature_key, enabled) in statuses {
+        if let Some(btn) = dom::query_data("feature-toggle", &feature_key) {
+            set_feature_toggle_visual(&btn, enabled);
+        }
+    }
+}
+
+async fn toggle_feature(feature_key: &str) {
+    let enabled = feature_flags::is_enabled(feature_key).await;
+    let next_state = !enabled;
+    feature_flags::set_enabled(feature_key, next_state).await;
+    if let Some(btn) = dom::query_data("feature-toggle", feature_key) {
+        set_feature_toggle_visual(&btn, next_state);
+    }
+    dom::toast(&format!(
+        "{} {}",
+        feature_label(feature_key),
+        if next_state { "enabled" } else { "disabled" }
+    ));
+    if feature_key == feature_flags::FEATURE_PARENT_INSIGHTS {
+        if next_state {
+            render_insights(&utils::week_key()).await;
+        } else if let Some(insights_box) = dom::query("[data-mom-insights]") {
+            if let Ok(Some(loader)) = insights_box.query_selector(".mom-insights-loader") {
+                loader.remove();
+            }
+            if let Ok(nodes) = insights_box.query_selector_all(".mom-insight-summary, .mom-insight-bars, .mom-insight-empty") {
+                for idx in 0..nodes.length() {
+                    if let Some(node) = nodes.item(idx) {
+                        if let Some(el) = node.dyn_ref::<Element>() {
+                            el.remove();
+                        }
+                    }
+                }
+            }
+            let doc = dom::document();
+            render::append_text(
+                &doc,
+                &insights_box,
+                "p",
+                "mom-insight-empty",
+                "Insights disabled via local safety toggle.",
+            );
+        }
+    }
+}
+
+async fn load_reliability_counters() {
+    let Some(section) = dom::query("[data-mom-reliability]") else {
+        return;
+    };
+    if let Ok(Some(loader)) = section.query_selector(".mom-insights-loader") {
+        loader.remove();
+    }
+    let doc = dom::document();
+    let Some(rows) = render::create_el_with_class(&doc, "div", "mom-insight-bars") else {
+        return;
+    };
+    for (domain, label_text) in RELIABILITY_DOMAINS {
+        let (success, failure) = reliability::read_counts(domain).await;
+        let total = success + failure;
+        let success_rate = if total == 0 {
+            100
+        } else {
+            ((success as f64 / total as f64) * 100.0).round() as u32
+        };
+        let Some(row) = render::create_el_with_class(&doc, "div", "mom-skill-row") else {
+            continue;
+        };
+        let Some(label) = render::create_el_with_class(&doc, "div", "mom-skill-label") else {
+            continue;
+        };
+        label.set_text_content(Some(&format!(
+            "{} · {}✅ {}❌",
+            label_text, success, failure
+        )));
+        let _ = row.append_child(&label);
+        let Some(track) = render::create_el_with_class(&doc, "div", "mom-skill-track") else {
+            continue;
+        };
+        let Some(fill) = render::create_el_with_class(&doc, "div", "mom-skill-fill") else {
+            continue;
+        };
+        dom::set_attr(&fill, "style", &format!("width: {}%;", success_rate.min(100)));
+        let _ = track.append_child(&fill);
+        let _ = row.append_child(&track);
+        let Some(pct) = render::create_el_with_class(&doc, "div", "mom-skill-pct") else {
+            continue;
+        };
+        pct.set_text_content(Some(&format!("{}%", success_rate.min(100))));
+        let _ = row.append_child(&pct);
+        let _ = rows.append_child(&row);
+    }
+    let _ = section.append_child(&rows);
+}
+
 fn toggle_goal(btn: &Element, _goal_type: &str) {
     if dom::get_attr(btn, "class")
         .unwrap_or_default()
@@ -734,7 +956,7 @@ async fn save_goals() {
         }
     }
     close_dashboard();
-    weekly_goals::refresh_goals();
+    domain_services::refresh_weekly_goals();
     speech::speak("Goals saved! Let's have a great week!");
     synth_audio::chime();
 }
@@ -792,8 +1014,31 @@ async fn render_insights(week_key: &str) {
     let Some(insights_box) = dom::query("[data-mom-insights]") else {
         return;
     };
-    if let Some(loader) = dom::query(".mom-insights-loader") {
+    if let Ok(Some(loader)) = insights_box.query_selector(".mom-insights-loader") {
         loader.remove();
+    }
+    if let Ok(nodes) =
+        insights_box.query_selector_all(".mom-insight-summary, .mom-insight-bars, .mom-insight-empty")
+    {
+        for idx in 0..nodes.length() {
+            if let Some(node) = nodes.item(idx) {
+                if let Some(el) = node.dyn_ref::<Element>() {
+                    el.remove();
+                }
+            }
+        }
+    }
+
+    if !feature_flags::is_parent_insights_enabled().await {
+        let doc = dom::document();
+        render::append_text(
+            &doc,
+            &insights_box,
+            "p",
+            "mom-insight-empty",
+            "Insights disabled via local safety toggle.",
+        );
+        return;
     }
 
     let doc = dom::document();
@@ -845,8 +1090,10 @@ async fn render_insights(week_key: &str) {
             };
 
             let emoji = match skill.skill_type.as_str() {
+                "hug" => "\u{1F917}",
                 "helping" => "\u{1F91D}",
                 "sharing" => "\u{1F381}",
+                "love" => "\u{1F49C}",
                 "comforting" => "\u{1F917}",
                 "bravery" => "\u{1F981}",
                 "patience" => "\u{23F3}",
@@ -862,7 +1109,7 @@ async fn render_insights(week_key: &str) {
                     buf,
                     "{} {}",
                     emoji,
-                    crate::skill_progression::skill_to_friendly_name(&skill.skill_type)
+                    domain_services::skill_to_friendly_name(&skill.skill_type)
                 );
                 label.set_text_content(Some(buf));
             });
@@ -946,7 +1193,12 @@ async fn export_json_backup() {
         dom::toast("Export failed \u{2014} please try again.");
         return;
     };
-    let payload = serde_json::json!({ "export_format_version": 1, "schema_version": 1, "exported_at": stamp, "tables": { "kind_acts": kind_acts, "settings": settings, "quests": quests }});
+    let payload = serde_json::json!({
+        "export_format_version": EXPORT_FORMAT_VERSION,
+        "schema_version": DB_SCHEMA_VERSION,
+        "exported_at": stamp,
+        "tables": { "kind_acts": kind_acts, "settings": settings, "quests": quests }
+    });
     if let Ok(json) = serde_json::to_string_pretty(&payload) {
         trigger_text_download(&file_name, &json, "application/json");
     }

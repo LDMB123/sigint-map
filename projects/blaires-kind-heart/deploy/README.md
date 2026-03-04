@@ -7,6 +7,7 @@ Infrastructure deployment documentation entry point.
 ## Environment-Specific Guides
 
 - `deploy/docker/README.md` - build and run static container image.
+- `deploy/kubernetes/README.md` - Kubernetes release flow and preflight checks.
 - `deploy/gitops/README.md` - Argo CD / GitOps manifest usage.
 - `deploy/monitoring/README.md` - Prometheus Operator monitoring manifests.
 

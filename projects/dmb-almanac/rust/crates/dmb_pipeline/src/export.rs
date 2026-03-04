@@ -6,7 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const SETLIST_CHUNK_PREFIX: &str = "setlist-entries-chunk-";
-const SETLIST_CHUNK_RECORDS: usize = 10_000;
+const SETLIST_CHUNK_RECORDS: usize = 2_500;
 
 #[derive(Debug, Clone)]
 struct FileMeta {

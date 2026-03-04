@@ -1,5 +1,13 @@
 # Lighthouse Audit Report
 
+- Archive Path: `docs/archive/snapshots/lighthouse-audit-report.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Lighthouse Audit Report`
+
+## Summary
+**Date**: 2025-02-11
+
+## Context
 **Date**: 2025-02-11
 **Build**: Phase 5 (Cache v5, Aggressive Prefetching)
 **Target**: Desktop preset, Performance category
@@ -7,13 +15,13 @@
 
 ---
 
-## Overall Score
+### Overall Score
 
 **Performance: 79/100** ⚠️
 
 ---
 
-## Core Web Vitals
+### Core Web Vitals
 
 | Metric | Value | Target | Status |
 |--------|-------|--------|--------|
@@ -26,7 +34,7 @@
 
 ---
 
-## Critical Finding: LCP Failure
+### Critical Finding: LCP Failure
 
 **Issue**: LCP exceeds target by 1.4s (3.9s vs 2.5s)
 
@@ -39,7 +47,7 @@
 
 ---
 
-## Asset Analysis
+### Asset Analysis
 
 ### Largest Items (Top 3)
 
@@ -57,7 +65,7 @@
 
 ---
 
-## Recommendations
+### Recommendations
 
 ### High Priority (LCP Fix)
 
@@ -92,7 +100,7 @@
 
 ---
 
-## Wins from Phase 4-5
+### Wins from Phase 4-5
 
 - **CLS**: Perfect 0.000 (no layout shifts) ✅
 - **FCP**: Excellent 0.4s (fast initial paint) ✅
@@ -101,8 +109,7 @@
 
 ---
 
-## Next Steps
-
+## Actions
 **Option A: Address LCP (Recommended)**
 - Phase 6a: WASM lazy loading + code splitting
 - Phase 6b: Image optimization (sparkle-splash.png)
@@ -120,7 +127,7 @@
 
 ---
 
-## Technical Notes
+### Technical Notes
 
 - No render-blocking resources detected ✅
 - Cache strategy working correctly (cache-first)
@@ -130,8 +137,15 @@
 
 ---
 
-## Conclusion
+### Conclusion
 
 Phase 4-5 optimizations delivered significant wins in layout stability (CLS) and initial render (FCP), but exposed LCP bottleneck caused by large WASM files. Primary blocker is 3.8MB of WASM in critical path. Recommend addressing LCP issue before proceeding with remaining phases.
 
 **Next Action**: Decide between Option A (LCP fix), B (continue plan), or C (quick CSS win)
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

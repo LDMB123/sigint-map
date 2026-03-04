@@ -1,12 +1,15 @@
 # Critical Bug Fixes - Session 2026-02-10
 
-## Summary
+- Archive Path: `docs/archive/DETAILED_CRITICAL_FIXES.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Critical Bug Fixes - Session 2026-02-10`
 
+## Summary
 Fixed 3 critical bugs identified by devils-advocate code review after completing Polish Pass phases.
 
 ---
 
-## Fix 1: Speech Synthesis Voice Selection (CRITICAL)
+### Fix 1: Speech Synthesis Voice Selection (CRITICAL)
 
 **Bug**: Fiona voice (top-priority child-friendly voice) is Australian English (`en-AU`), not `en-US`. The filter at line 66 of `rust/speech.rs` checked `voice.lang() == "en-US"`, making Fiona selection dead code.
 
@@ -27,7 +30,7 @@ if voice.name().contains(name) && voice.lang().starts_with("en") {
 
 ---
 
-## Fix 2: Nice Words Mastery Badge Unreachable (CRITICAL)
+### Fix 2: Nice Words Mastery Badge Unreachable (CRITICAL)
 
 **Bug**: `sticker_type_to_name()` at line 318 of `rust/rewards.rs` used `split('-')` on badge IDs. For "skill-bronze-nice-words", this creates 4 parts `["skill", "bronze", "nice", "words"]`, failing the `parts.len() != 3` check.
 
@@ -46,7 +49,7 @@ let parts: Vec<&str> = sticker_type.splitn(3, '-').collect();
 
 ---
 
-## Fix 3: GPU Particle Rendering Freeze After View Transition (CRITICAL)
+### Fix 3: GPU Particle Rendering Freeze After View Transition (CRITICAL)
 
 **Bug**: `resume_rendering()` at lines 488-490 of `rust/gpu_particles.rs` created a new closure with an empty body:
 ```rust
@@ -71,7 +74,6 @@ if cell.borrow().is_some() {
     if let Some(ref mut burst) = *cell.borrow_mut() {
         burst.frame_id = frame_id;
     }
-}
 
 // AFTER:
 if let Some(ref burst) = *cell.borrow() {
@@ -80,21 +82,23 @@ if let Some(ref burst) = *cell.borrow() {
     if let Some(ref mut burst_mut) = *cell.borrow_mut() {
         burst_mut.frame_id = new_frame_id;
     }
-}
 ```
 
 ---
 
-## Build Results
+## Context
+Part of comprehensive Polish Pass (Phases 1-6) for Blaire's Kind Heart PWA. Devils-advocate review performed after Phase 6 completion to catch overlooked issues before shipping.
 
+## Actions
+_No actions recorded._
+
+## Validation
 ✅ All fixes compile successfully
 ✅ Only existing warnings (3 unused functions from Phase 2)
 ✅ No new errors introduced
 ✅ Server running at http://127.0.0.1:8080/ and http://192.168.7.120:8080/
 
 ---
-
-## Testing Checklist
 
 ### Speech Synthesis
 - [ ] Test on iPad mini 6 - verify Fiona voice is selected (check Safari console)
@@ -115,7 +119,7 @@ if let Some(ref burst) = *cell.borrow() {
 
 ---
 
-## Additional Recommendations (Not Yet Implemented)
+### Additional Recommendations (Not Yet Implemented)
 
 From devils-advocate review:
 
@@ -126,6 +130,6 @@ From devils-advocate review:
 
 ---
 
-## Session Context
+## References
+_No references recorded._
 
-Part of comprehensive Polish Pass (Phases 1-6) for Blaire's Kind Heart PWA. Devils-advocate review performed after Phase 6 completion to catch overlooked issues before shipping.

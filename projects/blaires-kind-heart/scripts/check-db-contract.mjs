@@ -26,6 +26,9 @@ function assertPattern({ source, regex, description, file, failures }) {
 async function main() {
   const failures = [];
 
+  const contractConfigFile = "config/db-contract.json";
+  const rustContractGeneratedFile = "rust/db_contract_generated.rs";
+  const jsContractGeneratedFile = "public/db-contract.js";
   const rustMessagesFile = "rust/db_messages.rs";
   const workerFile = "public/db-worker.js";
   const queueFile = "rust/offline_queue.rs";
@@ -35,6 +38,9 @@ async function main() {
   const runtimeContractSpecFile = "e2e/db-contract.spec.ts";
 
   const [
+    contractConfigRaw,
+    rustContractGeneratedSource,
+    jsContractGeneratedSource,
     rustMessages,
     workerSource,
     queueSource,
@@ -43,6 +49,9 @@ async function main() {
     contractDoc,
     runtimeContractSpec,
   ] = await Promise.all([
+    readText(contractConfigFile),
+    readText(rustContractGeneratedFile),
+    readText(jsContractGeneratedFile),
     readText(rustMessagesFile),
     readText(workerFile),
     readText(queueFile),
@@ -52,35 +61,101 @@ async function main() {
     readText(runtimeContractSpecFile),
   ]);
 
-  const rustVersionMatch = rustMessages.match(/DB_WORKER_API_VERSION:\s*u16\s*=\s*(\d+)/);
-  const workerVersionMatch = workerSource.match(/DB_WORKER_API_VERSION\s*=\s*(\d+)/);
-  const workerMinVersionMatch = workerSource.match(/DB_WORKER_MIN_CLIENT_API_VERSION\s*=\s*(\d+)/);
-  const workerSchemaVersionMatch = workerSource.match(/const DB_SCHEMA_VERSION\s*=\s*(\d+)/);
-
-  if (!rustVersionMatch) {
-    failures.push(`${rustMessagesFile}: could not find DB_WORKER_API_VERSION`);
-  }
-  if (!workerVersionMatch) {
-    failures.push(`${workerFile}: could not find self.DB_WORKER_API_VERSION`);
-  }
-  if (!workerMinVersionMatch) {
-    failures.push(`${workerFile}: could not find self.DB_WORKER_MIN_CLIENT_API_VERSION`);
-  }
-  if (!workerSchemaVersionMatch) {
-    failures.push(`${workerFile}: could not find DB_SCHEMA_VERSION`);
+  let contractConfig = null;
+  try {
+    contractConfig = JSON.parse(contractConfigRaw);
+  } catch (error) {
+    failures.push(
+      `${contractConfigFile}: invalid JSON (${error instanceof Error ? error.message : String(error)})`,
+    );
   }
 
-  if (rustVersionMatch && workerVersionMatch) {
-    const rustVersion = Number(rustVersionMatch[1]);
-    const workerVersion = Number(workerVersionMatch[1]);
-    if (rustVersion !== workerVersion) {
-      failures.push(
-        `DB worker API version mismatch (rust=${rustVersion}, worker=${workerVersion})`,
-      );
+  const dbWorkerApiVersion = Number(contractConfig?.db_worker_api_version);
+  const dbWorkerMinClientApiVersion = Number(contractConfig?.db_worker_min_client_api_version);
+  const dbSchemaVersion = Number(contractConfig?.db_schema_version);
+  const exportFormatVersion = Number(contractConfig?.export_format_version);
+
+  for (const [key, value] of [
+    ["db_worker_api_version", dbWorkerApiVersion],
+    ["db_worker_min_client_api_version", dbWorkerMinClientApiVersion],
+    ["db_schema_version", dbSchemaVersion],
+    ["export_format_version", exportFormatVersion],
+  ]) {
+    if (!Number.isInteger(value) || value < 1) {
+      failures.push(`${contractConfigFile}: ${key} must be a positive integer`);
     }
   }
 
+  const generatedContractPatterns = [
+    {
+      file: rustContractGeneratedFile,
+      source: rustContractGeneratedSource,
+      regex: new RegExp(`DB_WORKER_API_VERSION:\\s*u16\\s*=\\s*${dbWorkerApiVersion}`),
+      description: "Rust DB worker API version constant",
+    },
+    {
+      file: rustContractGeneratedFile,
+      source: rustContractGeneratedSource,
+      regex: new RegExp(
+        `DB_WORKER_MIN_CLIENT_API_VERSION:\\s*u16\\s*=\\s*${dbWorkerMinClientApiVersion}`,
+      ),
+      description: "Rust min client API version constant",
+    },
+    {
+      file: rustContractGeneratedFile,
+      source: rustContractGeneratedSource,
+      regex: new RegExp(`DB_SCHEMA_VERSION:\\s*u16\\s*=\\s*${dbSchemaVersion}`),
+      description: "Rust DB schema version constant",
+    },
+    {
+      file: rustContractGeneratedFile,
+      source: rustContractGeneratedSource,
+      regex: new RegExp(`EXPORT_FORMAT_VERSION:\\s*u16\\s*=\\s*${exportFormatVersion}`),
+      description: "Rust export format version constant",
+    },
+    {
+      file: jsContractGeneratedFile,
+      source: jsContractGeneratedSource,
+      regex: new RegExp(`export const DB_WORKER_API_VERSION = ${dbWorkerApiVersion};`),
+      description: "JS DB worker API version constant",
+    },
+    {
+      file: jsContractGeneratedFile,
+      source: jsContractGeneratedSource,
+      regex: new RegExp(
+        `export const DB_WORKER_MIN_CLIENT_API_VERSION = ${dbWorkerMinClientApiVersion};`,
+      ),
+      description: "JS min client API version constant",
+    },
+    {
+      file: jsContractGeneratedFile,
+      source: jsContractGeneratedSource,
+      regex: new RegExp(`export const DB_SCHEMA_VERSION = ${dbSchemaVersion};`),
+      description: "JS DB schema version constant",
+    },
+    {
+      file: jsContractGeneratedFile,
+      source: jsContractGeneratedSource,
+      regex: new RegExp(`export const EXPORT_FORMAT_VERSION = ${exportFormatVersion};`),
+      description: "JS export format version constant",
+    },
+  ];
+
+  for (const pattern of generatedContractPatterns) {
+    assertPattern({
+      source: pattern.source,
+      regex: pattern.regex,
+      description: pattern.description,
+      file: pattern.file,
+      failures,
+    });
+  }
+
   const rustMessagePatterns = [
+    {
+      regex: /include!\("db_contract_generated\.rs"\);/,
+      description: "generated DB contract constants include",
+    },
     {
       regex: /Export,\s*Restore\s*\{\s*snapshot_json:\s*String,\s*\}/s,
       description: "Restore request in Rust protocol enum",
@@ -110,6 +185,7 @@ async function main() {
     "weekly_goals",
     "mom_notes",
     "skill_mastery",
+    "skill_aliases",
     "weekly_insights",
     "reflection_prompts",
     "badges",
@@ -129,8 +205,16 @@ async function main() {
 
   const requiredWorkerPatterns = [
     {
-      regex: /const DB_SCHEMA_VERSION\s*=\s*\d+/,
-      description: "worker schema version constant",
+      regex: /import\s*\{[\s\S]*DB_SCHEMA_VERSION[\s\S]*\}\s*from "\.\/db-contract\.js";/,
+      description: "worker imports shared DB contract constants",
+    },
+    {
+      regex: /self\.DB_WORKER_API_VERSION\s*=\s*DB_WORKER_API_VERSION;/,
+      description: "worker exposes API version from shared contract",
+    },
+    {
+      regex: /self\.DB_WORKER_MIN_CLIENT_API_VERSION\s*=\s*DB_WORKER_MIN_CLIENT_API_VERSION;/,
+      description: "worker exposes minimum client API version from shared contract",
     },
     {
       regex: /SELECT value FROM meta WHERE key = 'schema_version' LIMIT 1/,
@@ -157,6 +241,10 @@ async function main() {
       description: "kind_acts emotion_selected migration",
     },
     {
+      regex: /ALTER TABLE kind_acts ADD COLUMN canonical_category TEXT NOT NULL DEFAULT 'love';/,
+      description: "kind_acts canonical_category migration",
+    },
+    {
       regex: /ALTER TABLE kind_acts ADD COLUMN combo_day INTEGER DEFAULT 0;/,
       description: "kind_acts combo_day migration",
     },
@@ -169,12 +257,28 @@ async function main() {
       description: "stories_progress unlock_tier migration",
     },
     {
+      regex: /CREATE TABLE IF NOT EXISTS skill_aliases \(alias_skill TEXT PRIMARY KEY, canonical_skill TEXT NOT NULL\)/,
+      description: "skill_aliases table migration",
+    },
+    {
       regex: /if \(reqType === "Restore"\)/,
       description: "Restore request handler",
     },
     {
       regex: /restoreFromSnapshot\(snapshotJson\);/,
       description: "restore snapshot application call",
+    },
+    {
+      regex: /function normalizeSnapshotForImport\(parsed\)/,
+      description: "restore import normalization entrypoint",
+    },
+    {
+      regex: /version === EXPORT_FORMAT_VERSION - 1/,
+      description: "restore supports legacy v1 snapshot import",
+    },
+    {
+      regex: /export_format_version must be .*legacy import/s,
+      description: "restore rejects unknown export format versions",
     },
     {
       regex: /DELETE FROM settings WHERE key != 'parent_pin'/,
@@ -340,7 +444,7 @@ async function main() {
       description: "export runtime contract test",
     },
     {
-      regex: /export_format_version\)\.toBe\(1\)/,
+      regex: new RegExp(`export_format_version\\)\\.toBe\\(${exportFormatVersion}\\)`),
       description: "JSON export format assertion",
     },
     {
@@ -386,6 +490,15 @@ async function main() {
   await ensureFile(contractDocFile).catch(() => {
     failures.push(`${contractDocFile}: file is missing`);
   });
+  for (const requiredFile of [
+    contractConfigFile,
+    rustContractGeneratedFile,
+    jsContractGeneratedFile,
+  ]) {
+    await ensureFile(requiredFile).catch(() => {
+      failures.push(`${requiredFile}: file is missing`);
+    });
+  }
 
   if (failures.length > 0) {
     for (const failure of failures) {

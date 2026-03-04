@@ -1,80 +1,43 @@
 #!/usr/bin/env node
 
 /**
- * Generate remaining button assets with longer delays to avoid rate limits
+ * Generate remaining button assets with longer delays to avoid rate limits.
  */
 
-import { GoogleAuth } from 'google-auth-library';
-import fs from 'fs/promises';
 import path from 'path';
+import { ensureDir, sleep } from './lib/fs-helpers.mjs';
+import { generateImagenFile } from './lib/imagen-file-generator.mjs';
 
-const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-0925343693';
-const LOCATION = 'us-central1';
-const MODEL = 'imagen-3.0-generate-001';
 const OUTPUT_DIR = path.join(process.env.HOME, 'imagen-output', 'bkh-buttons');
+const NEGATIVE_PROMPT = 'text, words, letters, numbers, watermark, signature, ugly, blurry, low quality, dark, scary, realistic photo, photographic';
 
-const auth = new GoogleAuth({
-  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-});
-
-await fs.mkdir(OUTPUT_DIR, { recursive: true });
+await ensureDir(OUTPUT_DIR);
 
 async function generateImage(prompt, filename) {
   console.log(`\n--- Generating: ${filename} ---`);
-
-  // Skip if already exists
-  const filepath = path.join(OUTPUT_DIR, filename);
-  try {
-    await fs.access(filepath);
-    console.log(`SKIP: ${filename} already exists`);
-    return filepath;
-  } catch { /* file doesn't exist, proceed */ }
-
-  const client = await auth.getClient();
-  const accessToken = await client.getAccessToken();
-
-  const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL}:predict`;
-
-  const requestBody = {
-    instances: [{ prompt }],
-    parameters: {
-      sampleCount: 1,
-      aspectRatio: '1:1',
-      negativePrompt: 'text, words, letters, numbers, watermark, signature, ugly, blurry, low quality, dark, scary, realistic photo, photographic',
+  const result = await generateImagenFile({
+    prompt,
+    filename,
+    outputDir: OUTPUT_DIR,
+    negativePrompt: NEGATIVE_PROMPT,
+    skipExisting: true,
+    attempts: 2,
+    rateLimitDelayMs: 65_000,
+    onRateLimit: ({ waitMs }) => {
+      console.log(`Rate limited on ${filename} — waiting ${Math.round(waitMs / 1000)} seconds...`);
     },
-  };
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken.token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    if (error.error?.code === 429) {
-      console.log(`Rate limited on ${filename} — waiting 65 seconds...`);
-      await new Promise(r => setTimeout(r, 65000));
-      // Retry once
-      return generateImage(prompt, filename);
-    }
-    console.error(`ERROR: ${JSON.stringify(error)}`);
-    return null;
+  if (result.status === 'skipped') {
+    console.log(`SKIP: ${filename} already exists`);
+    return result;
   }
-
-  const data = await response.json();
-  const predictions = data.predictions || [];
-
-  if (predictions.length > 0 && predictions[0].bytesBase64Encoded) {
-    const imageData = Buffer.from(predictions[0].bytesBase64Encoded, 'base64');
-    await fs.writeFile(filepath, imageData);
-    console.log(`Saved: ${filepath} (${(imageData.length / 1024).toFixed(1)} KB)`);
-    return filepath;
+  if (result.status === 'generated' && result.bytes !== null) {
+    console.log(`Saved: ${result.filepath} (${(result.bytes / 1024).toFixed(1)} KB)`);
+    return result;
   }
-  return null;
+  console.error(`ERROR generating ${filename}:`, result.errorMessage || 'No image data returned');
+  return result;
 }
 
 const STYLE = 'cute kawaii children\'s illustration style, soft pastel colors, rounded shapes, sparkles and magic stars, whimsical fairy-tale aesthetic, clean flat design with subtle gradients, transparent background, centered icon composition, no text, digital art for a kids app';
@@ -93,22 +56,23 @@ const allButtons = [
 
 console.log('=== Generating remaining button assets ===');
 
-let success = 0;
+let generated = 0;
 let skipped = 0;
+let failed = 0;
 for (const btn of allButtons) {
   try {
     const result = await generateImage(btn.prompt, btn.name);
-    if (result) {
-      if (result.includes('already')) skipped++;
-      else success++;
-    }
+    if (result.status === 'generated') generated++;
+    if (result.status === 'skipped') skipped++;
+    if (result.status === 'failed') failed++;
   } catch (err) {
-    console.error(`Failed ${btn.name}:`, err.message);
+    failed++;
+    console.error(`Failed ${btn.name}:`, err instanceof Error ? err.message : String(err));
   }
   // 12-second delay between calls to stay well under rate limits
   console.log('  (waiting 12s before next...)');
-  await new Promise(r => setTimeout(r, 12000));
+  await sleep(12_000);
 }
 
-console.log(`\n=== Done: ${success} generated, ${skipped} skipped ===`);
+console.log(`\n=== Done: ${generated} generated, ${skipped} skipped, ${failed} failed ===`);
 console.log(`Output: ${OUTPUT_DIR}`);

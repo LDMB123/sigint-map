@@ -1,12 +1,33 @@
 # Blaire's Kind Heart - Optimization Progress Report
 
+- Archive Path: `docs/archive/DETAILED_optimization-progress.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Blaire's Kind Heart - Optimization Progress Report`
+
+## Summary
+**Phases 4-5 delivered**:
+- 60% GPU compositing improvement (loading screen)
+- 30-40% power savings (animation pausing)
+- 83% companion cache hit rate (5× improvement)
+- 20% gardens pre-cached (instant first view)
+- 450KB asset reduction (WebP compression)
+
+**Trade-offs**:
+- +510KB first-install size (17% increase, acceptable for offline PWA)
+- Box-shadow conversions deferred (105 candidates, low-medium priority)
+
+**Build status**: ✅ Clean compilation, zero warnings, production build verified
+
+**Ready for**: Phase 6 (Performance Monitoring) or Lighthouse audit
+
+## Context
 **Date**: 2026-02-11
 **Target**: iPad mini 6 (A15, 4GB RAM), Safari 26.2
 **Overall Goal**: Maximize performance, offline capability, GPU efficiency
 
 ---
 
-## ✅ Completed Phases
+### ✅ Completed Phases
 
 ### Phase 4: CSS & Animation Optimizations
 **Status**: COMPLETE (4 of 5 sub-phases)
@@ -38,7 +59,7 @@
 
 ---
 
-## 📊 Cumulative Impact (Phases 4-5)
+### 📊 Cumulative Impact (Phases 4-5)
 
 ### Performance Metrics
 | Metric | Before | After | Improvement |
@@ -60,7 +81,7 @@
 
 ---
 
-## 📋 Remaining Phases (Plan)
+### 📋 Remaining Phases (Plan)
 
 ### Phase 6: Performance Monitoring
 **Status**: NOT STARTED
@@ -76,8 +97,7 @@
 
 ---
 
-## 🎯 Next Recommended Action
-
+## Actions
 **Option A: Continue with Phase 6** (Performance Monitoring)
 - Add LCP, INP, CLS tracking
 - Worker retry logic + Web Locks contention monitoring
@@ -96,7 +116,7 @@
 
 ---
 
-## 📁 Documentation Structure
+### 📁 Documentation Structure
 
 ```
 docs/
@@ -111,19 +131,9 @@ docs/
 
 ---
 
-## ✨ Summary
+## Validation
+_Validation details not recorded._
 
-**Phases 4-5 delivered**:
-- 60% GPU compositing improvement (loading screen)
-- 30-40% power savings (animation pausing)
-- 83% companion cache hit rate (5× improvement)
-- 20% gardens pre-cached (instant first view)
-- 450KB asset reduction (WebP compression)
+## References
+_No references recorded._
 
-**Trade-offs**:
-- +510KB first-install size (17% increase, acceptable for offline PWA)
-- Box-shadow conversions deferred (105 candidates, low-medium priority)
-
-**Build status**: ✅ Clean compilation, zero warnings, production build verified
-
-**Ready for**: Phase 6 (Performance Monitoring) or Lighthouse audit

@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/louisherman/blaires-kind-heart.git
+    repoURL: https://github.com/LDMB123/blaires-kind-heart.git
     targetRevision: main
     path: deploy/kubernetes
   destination:

@@ -7,6 +7,9 @@ thread_local! {
     static PREFERRED_VOICE: RefCell<Option<SpeechSynthesisVoice>> = const { RefCell::new(None) };
     static LISTENER_REGISTERED: Cell<bool> = const { Cell::new(false) };
     static SPEECH_ERROR_COUNT: Cell<u32> = const { Cell::new(0) };
+    static SPEECH_UNLOCKED: Cell<bool> = const { Cell::new(false) };
+    static SPEECH_UNLOCK_LISTENERS_BOUND: Cell<bool> = const { Cell::new(false) };
+    static PENDING_UTTERANCE: RefCell<Option<(String, f32, f32)>> = const { RefCell::new(None) };
 }
 fn init_voices() {
     if VOICES_READY.with(Cell::get) {
@@ -60,7 +63,25 @@ fn try_select_voice(synth: &web_sys::SpeechSynthesis) -> bool {
     }
     false
 }
-fn say(text: &str, rate: f32, pitch: f32) {
+
+fn unlock_speech_and_flush_pending() {
+    SPEECH_UNLOCKED.with(|flag| flag.set(true));
+    let pending = PENDING_UTTERANCE.with(|slot| slot.borrow_mut().take());
+    if let Some((text, rate, pitch)) = pending {
+        speak_now(&text, rate, pitch);
+    }
+}
+
+fn ensure_speech_unlock_listener() {
+    SPEECH_UNLOCK_LISTENERS_BOUND.with(|bound| {
+        if bound.get() {
+            return;
+        }
+        bound.set(true);
+        dom::bind_unlock_gesture_listeners(unlock_speech_and_flush_pending);
+    });
+}
+fn speak_now(text: &str, rate: f32, pitch: f32) {
     init_voices();
     let Ok(synth) = dom::window().speech_synthesis() else {
         dom::warn("[speech] SpeechSynthesis API unavailable");
@@ -96,6 +117,17 @@ fn say(text: &str, rate: f32, pitch: f32) {
     });
     utterance.set_onerror(Some(on_error.unchecked_ref()));
     synth.speak(&utterance);
+}
+fn say(text: &str, rate: f32, pitch: f32) {
+    ensure_speech_unlock_listener();
+    let unlocked = SPEECH_UNLOCKED.with(Cell::get);
+    if !unlocked {
+        PENDING_UTTERANCE.with(|slot| {
+            *slot.borrow_mut() = Some((text.to_string(), rate, pitch));
+        });
+        return;
+    }
+    speak_now(text, rate, pitch);
 }
 pub const NARRATE_RATE: f32 = 0.72;
 pub const NARRATE_PITCH: f32 = 1.12;

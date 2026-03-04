@@ -1,13 +1,10 @@
 # Boot Optimization Verification Report
 
-**Date**: 2026-02-12
-**Target**: Boot time <1.4s (from ~1.8-2.0s baseline)
-**Status**: Implementation complete, manual verification required
+- Archive Path: `docs/archive/snapshots/boot-optimization-verification.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Boot Optimization Verification Report`
 
----
-
-## Implementation Summary
-
+## Summary
 ### Phase 1: Boot Sequence Optimization (Complete ✅)
 
 **1.1 Batch DB Queries**
@@ -90,7 +87,7 @@
 
 ---
 
-## Expected Performance Improvements
+### Expected Performance Improvements
 
 | Optimization | Savings | Confidence |
 |-------------|---------|-----------|
@@ -112,8 +109,43 @@
 
 ---
 
-## Manual Verification Instructions
+**Files modified** (10 total):
+- `rust/lib.rs` - Batched queries, CSS stagger, toast caching
+- `rust/companion.rs` - Cached typewriter element
+- `rust/gardens.rs` - STAGE_LABELS const array
+- `rust/dom.rs` - Toast element caching
+- `rust/state.rs` - Added toast_element field
+- `src/styles/app.css` - CSS containment
+- `src/styles/animations.css` - btn-shine keyframe, stagger delays
+- `src/styles/tracker.css` - Removed duplicate keyframe, CSS variables
+- `public/sw.js` - Promise.allSettled, stale-while-revalidate
+- `public/sw-assets.js` - (no changes, verified import)
 
+**Lines changed**: ~150 total
+**Risk level**: Low (all changes use proven Safari 26.2 APIs)
+**Backward compatibility**: ✅ No breaking changes
+
+---
+
+### Conclusion
+
+All 10 optimization phases are complete. Expected boot time improvement: **700-750ms** (25-40% faster).
+
+**Predicted final boot time**: ~1.0-1.3s (well below <1.4s target)
+
+Manual verification required to confirm actual improvements match expectations.
+
+## Context
+**Date**: 2026-02-12
+**Target**: Boot time <1.4s (from ~1.8-2.0s baseline)
+**Status**: Implementation complete, manual verification required
+
+---
+
+## Actions
+_No actions recorded._
+
+## Validation
 ### 1. Boot Time Measurement
 
 **Steps**:
@@ -135,8 +167,6 @@
 - **Before**: ~1800-2000ms total boot time
 - **After**: ~1000-1300ms total boot time (expected)
 - **Improvement**: 25-40% faster
-
-### 2. Regression Testing Checklist
 
 **Navigation** (All 6 panels):
 - [ ] Home hub loads without stutter
@@ -171,17 +201,8 @@
 - [ ] No TypeScript/WASM errors
 - [ ] GPU particle warnings OK (known dead code)
 
-### 3. Service Worker Verification
-
 **Cache verification**:
 ```bash
-# Open Safari DevTools → Application → Cache Storage
-# Verify "kindheart-v6" cache contains:
-# - /index.html
-# - /blaires_kind_heart_bg.wasm
-# - /wasm-init.js
-# - /assets/* (gardens, companions, etc.)
-# - /styles/*.css
 ```
 
 **Stale-while-revalidate test**:
@@ -207,7 +228,7 @@
 
 ---
 
-## Known Issues
+### Known Issues
 
 **GPU particle warnings** (non-blocking):
 ```
@@ -224,8 +245,6 @@ This affects only the SQLite worker file. No runtime impact.
 
 ---
 
-## Verification Status
-
 **Implementation**: ✅ Complete (all 10 phases done)
 **Build**: ✅ Success (dev server running on port 8080)
 **Manual testing**: ⏳ Pending
@@ -239,30 +258,6 @@ This affects only the SQLite worker file. No runtime impact.
 
 ---
 
-## Code Changes Summary
+## References
+_No references recorded._
 
-**Files modified** (10 total):
-- `rust/lib.rs` - Batched queries, CSS stagger, toast caching
-- `rust/companion.rs` - Cached typewriter element
-- `rust/gardens.rs` - STAGE_LABELS const array
-- `rust/dom.rs` - Toast element caching
-- `rust/state.rs` - Added toast_element field
-- `src/styles/app.css` - CSS containment
-- `src/styles/animations.css` - btn-shine keyframe, stagger delays
-- `src/styles/tracker.css` - Removed duplicate keyframe, CSS variables
-- `public/sw.js` - Promise.allSettled, stale-while-revalidate
-- `public/sw-assets.js` - (no changes, verified import)
-
-**Lines changed**: ~150 total
-**Risk level**: Low (all changes use proven Safari 26.2 APIs)
-**Backward compatibility**: ✅ No breaking changes
-
----
-
-## Conclusion
-
-All 10 optimization phases are complete. Expected boot time improvement: **700-750ms** (25-40% faster).
-
-**Predicted final boot time**: ~1.0-1.3s (well below <1.4s target)
-
-Manual verification required to confirm actual improvements match expectations.

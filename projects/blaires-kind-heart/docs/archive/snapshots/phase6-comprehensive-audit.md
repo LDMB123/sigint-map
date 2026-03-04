@@ -1,16 +1,15 @@
 # Phase 6: Comprehensive Codebase Audit
 
-**Date**: 2026-02-11
-**Depth**: 10x Deep Analysis
-**Status**: IN PROGRESS
+- Archive Path: `docs/archive/snapshots/phase6-comprehensive-audit.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Phase 6: Comprehensive Codebase Audit`
 
-## Executive Summary
-
+## Summary
 Comprehensive audit reveals **10 compilation errors** and **5 warnings** preventing successful build. All issues are fixable and categorized below.
 
 ---
 
-## 1. Compilation Errors (BLOCKING)
+### 1. Compilation Errors (BLOCKING)
 
 ### 1.1 Missing WakeLock API Types (4 errors)
 **File**: `rust/native_apis.rs`
@@ -96,7 +95,7 @@ doc.start_view_transition_with_update_callback(&callback)?;
 
 ---
 
-## 2. Warnings (NON-BLOCKING)
+### 2. Warnings (NON-BLOCKING)
 
 ### 2.1 Unused Imports (2 warnings)
 **Files**: `rust/tracker.rs:10`, `rust/games.rs:10`
@@ -155,7 +154,7 @@ use web_sys::console;
 
 ---
 
-## 3. Dead Code Analysis
+### 3. Dead Code Analysis
 
 ### 3.1 Entire Modules Marked Dead (Confirmed via Clippy)
 ```rust
@@ -190,7 +189,7 @@ debug::memory::capture_snapshot("boot:end");
 
 ---
 
-## 4. Architecture Analysis
+### 4. Architecture Analysis
 
 ### 4.1 Module Organization
 ```
@@ -228,7 +227,7 @@ rust/
 
 ---
 
-## 5. Performance Anti-Patterns
+### 5. Performance Anti-Patterns
 
 ### 5.1 Memory Leaks (Already Fixed)
 **Status**: Phase 3.3 migrated to `AbortController` ✅
@@ -239,9 +238,7 @@ rust/
 Let me scan for common anti-patterns:
 
 ```bash
-# String allocations in hot paths
 grep -rn "to_string()\|String::from" rust/ | wc -l
-# Result: Need to check hot paths
 ```
 
 **Action Required**: Profile hot paths for string allocation overhead
@@ -257,14 +254,13 @@ let companion = state::get_cached_companion()
 
 ---
 
-## 6. Documentation Coverage
+### 6. Documentation Coverage
 
 ### 6.1 Module Documentation
 
 Let me scan for missing module docs:
 
 ```bash
-# Check for modules without //! doc comments
 find rust/ -name "*.rs" -exec head -3 {} \; | grep -v "^//!" | wc -l
 ```
 
@@ -284,7 +280,7 @@ find rust/ -name "*.rs" -exec head -3 {} \; | grep -v "^//!" | wc -l
 
 ---
 
-## 7. Type Safety Gaps
+### 7. Type Safety Gaps
 
 ### 7.1 Unchecked Casts
 
@@ -308,7 +304,7 @@ let wake_lock: web_sys::WakeLock = ext_nav.wake_lock().unchecked_into();
 
 ---
 
-## 8. Dependency Audit
+### 8. Dependency Audit
 
 ### 8.1 Cargo.toml Review Needed
 
@@ -325,36 +321,42 @@ let wake_lock: web_sys::WakeLock = ext_nav.wake_lock().unchecked_into();
 
 ---
 
-## 9. Test Coverage
+## Context
+**Date**: 2026-02-11
+**Depth**: 10x Deep Analysis
+**Status**: IN PROGRESS
 
-### 9.1 Unit Tests
+## Actions
+1. Fix all 10 compilation errors
+2. Fix all 5 warnings
+3. Verify build succeeds
+4. Run comprehensive test suite
+5. Document all fixes
+6. Create final cleanup report
 
+## Validation
 ```bash
 find rust/ -name "*.rs" -exec grep -l "#\[cfg(test)\]" {} \; | wc -l
 ```
 
 **Action Required**: Count test coverage across modules
 
-### 9.2 Integration Tests
-
 **Action Required**: Check for browser-based integration tests
 
 ---
 
-## 10. Security Audit
+### 10. Security Audit
 
 ### 10.1 CSP Compliance
 
 **Status**: CSP meta tag exists in index.html
 **Action Required**: Verify Rust code respects CSP (no eval, no inline scripts)
 
-### 10.2 Input Validation
-
 **Action Required**: Audit user input handling (text inputs, form data)
 
 ---
 
-## Priority Fix Order
+### Priority Fix Order
 
 ### CRITICAL (Blocks Build)
 1. ✅ Fix WakeLock API errors (4 errors)
@@ -379,11 +381,6 @@ find rust/ -name "*.rs" -exec grep -l "#\[cfg(test)\]" {} \; | wc -l
 
 ---
 
-## Next Steps
+## References
+_No references recorded._
 
-1. Fix all 10 compilation errors
-2. Fix all 5 warnings
-3. Verify build succeeds
-4. Run comprehensive test suite
-5. Document all fixes
-6. Create final cleanup report

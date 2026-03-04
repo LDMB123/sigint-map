@@ -1,5 +1,5 @@
 use crate::{
-    confetti, constants::SELECTOR_REWARDS_BODY, db_client, dom, render, rewards, speech,
+    confetti, constants::SELECTOR_REWARDS_BODY, db_client, dom, domain_services, render, speech,
     state::AppState, theme, ui, utils,
 };
 use std::cell::RefCell;
@@ -83,7 +83,7 @@ fn check_milestones(streak: u32) {
                 _ => confetti::CelebrationTier::Nice,
             };
             confetti::celebrate(tier);
-            rewards::award_streak_sticker(milestone);
+            domain_services::award_streak_sticker(milestone);
             if let Some(badge) = dom::query_data("milestone", &milestone.to_string()) {
                 dom::set_attr(&badge, "class", "streak-milestone streak-milestone--earned");
             }

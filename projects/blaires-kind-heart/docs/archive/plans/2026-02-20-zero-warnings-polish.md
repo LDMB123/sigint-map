@@ -1,5 +1,13 @@
 # Wave 8: Zero Warnings Polish — Blaire's Kind Heart
 
+- Archive Path: `docs/archive/plans/2026-02-20-zero-warnings-polish.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Wave 8: Zero Warnings Polish — Blaire's Kind Heart`
+
+## Summary
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
+
+## Context
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task.
 
 **Goal:** Eliminate all 4 compiler warnings by wiring unused companion mood functions into the live codebase, achieving 0 warnings for launch.
@@ -12,7 +20,7 @@
 
 ---
 
-## Task 1: Wire `companion_speech::on_mood_change()` into `companion_care::update_mood()`
+### Task 1: Wire `companion_speech::on_mood_change()` into `companion_care::update_mood()`
 
 **Files:**
 - Modify: `rust/companion_care.rs` — add `on_mood_change` call at end of `update_mood()`
@@ -45,7 +53,7 @@ pub async fn update_mood() {
 
 ---
 
-## Task 2: Wire `companion_skins::mood_to_expression()` into `companion::init()`
+### Task 2: Wire `companion_skins::mood_to_expression()` into `companion::init()`
 
 **Files:**
 - Modify: `rust/companion.rs` — replace hardcoded mood→expression mapping with `mood_to_expression()` call
@@ -75,7 +83,7 @@ Note: `mood_to_expression` maps `"excited"` → `"celebrate"`, `"happy"` → `"h
 
 ---
 
-## Task 3: Wire `synth_audio::chomp()` into Feed Handler
+### Task 3: Wire `synth_audio::chomp()` into Feed Handler
 
 **Files:**
 - Modify: `rust/companion.rs` — add `chomp()` call in `on_care_feed()` before `munch()`
@@ -107,8 +115,10 @@ The food button click handler section should become:
 
 ---
 
-## Task 4: Final Build Verification & SW Version Bump
+## Actions
+_No actions recorded._
 
+## Validation
 **Files:**
 - Modify: `public/sw.js` — bump `CACHE_VERSION`
 
@@ -120,8 +130,6 @@ The food button click handler section should become:
 
 ---
 
-## Verification
-
 1. `trunk build --release` — **0 errors, 0 warnings**
 2. Mood speech bubbles: Log 1+ kind act → mood becomes "happy" → Sparkle shows mood bubble ("I feel so happy! 💜", etc.)
 3. Companion init expression: Fresh boot with "sleepy" mood → companion shows "encourage" expression asset
@@ -130,7 +138,7 @@ The food button click handler section should become:
 
 ---
 
-## Critical Files
+### Critical Files
 
 | File | Changes |
 |------|---------|
@@ -143,3 +151,7 @@ The food button click handler section should become:
 - `companion_speech::on_mood_change(mood)` — `rust/companion_speech.rs:65`
 - `companion_skins::mood_to_expression(mood)` — `rust/companion_skins.rs:11`
 - `synth_audio::chomp()` — `rust/synth_audio.rs:39`
+
+## References
+_No references recorded._
+

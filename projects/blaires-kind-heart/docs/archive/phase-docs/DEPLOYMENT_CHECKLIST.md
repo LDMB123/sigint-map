@@ -1,14 +1,22 @@
 # Production Deployment Checklist
 
-## Overview
+- Archive Path: `docs/archive/phase-docs/DEPLOYMENT_CHECKLIST.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Production Deployment Checklist`
 
+## Summary
+**Date**: 2026-02-11
+
+## Context
 **Date**: 2026-02-11
 **Phase**: Phase 6 - Production Deployment Preparation
 **Target**: iPad Mini 6 (A15, 4GB RAM, iPadOS 26.2, Safari 26.2)
 **Deployment Type**: Offline-first PWA (local file:// serving)
 
-## Pre-Deployment Verification
+## Actions
+_No actions recorded._
 
+## Validation
 ### Build Quality ✅
 
 - [x] Production build compiles with 0 errors
@@ -18,8 +26,6 @@
 - [x] index.html includes all asset copy directives
 - [ ] Bundle size check: Total <10MB (3.8MB assets + code)
 - [ ] All dead code warnings documented and acceptable
-
-### Testing Status
 
 **Critical Bugs** (15/15 fixed):
 - [x] Memory leaks eliminated (<1KB/min growth)
@@ -45,7 +51,7 @@
 - [x] NULL safety validation in place
 - [ ] Code review approval (if team exists)
 
-## Deployment Steps
+### Deployment Steps
 
 ### 1. Final Production Build
 
@@ -64,14 +70,10 @@ trunk build --release
 - [ ] dist/db-worker.js exists
 - [ ] All CSS files present
 
-### 2. Asset Verification
-
 ```bash
-# Count assets
 ls -1 dist/assets/companions/*.webp | wc -l  # Should be 18
 ls -1 dist/assets/gardens/*.webp | wc -l     # Should be 60
 
-# Check file sizes
 du -sh dist/                                  # Should be ~4-5MB
 du -sh dist/assets/                           # Should be ~3.8MB
 ```
@@ -81,8 +83,6 @@ du -sh dist/assets/                           # Should be ~3.8MB
 - [ ] 60 garden WebP files (3.1MB total)
 - [ ] All files <200KB each (optimized)
 - [ ] No placeholder/broken images
-
-### 3. Service Worker Verification
 
 **Check precache manifest**:
 ```bash
@@ -128,14 +128,10 @@ grep -A 100 "PRECACHE_ASSETS" dist/sw-assets.js
 **Option C: Network Serve from Mac** (Development/Testing)
 
 ```bash
-# Serve production build over network
 cd dist/
 python3 -m http.server 8080 --bind 0.0.0.0
 
-# Access from iPad: http://[MAC_IP]:8080/
 ```
-
-### 5. Post-Deployment Verification (iPad)
 
 **Initial Load**:
 - [ ] Page loads in <5 seconds (no OPFS delay)
@@ -180,7 +176,7 @@ python3 -m http.server 8080 --bind 0.0.0.0
 - [ ] Splash screen appears (if configured)
 - [ ] Orientation locked to portrait (if configured)
 
-## Post-Deployment Monitoring
+### Post-Deployment Monitoring
 
 ### First 24 Hours
 
@@ -215,7 +211,7 @@ python3 -m http.server 8080 --bind 0.0.0.0
 - [ ] Plan UI/UX polish for Phase 6C
 - [ ] Consider new features for Phase 7
 
-## Rollback Plan
+### Rollback Plan
 
 ### If Critical Bug Discovered
 
@@ -239,7 +235,7 @@ python3 -m http.server 8080 --bind 0.0.0.0
    - Set expectations for fix timeline
    - Provide workaround if available
 
-## Success Metrics
+### Success Metrics
 
 ### Deployment Success
 - [x] All build steps complete without errors
@@ -254,7 +250,7 @@ python3 -m http.server 8080 --bind 0.0.0.0
 - [ ] Positive user engagement (daily use)
 - [ ] Performance remains stable (no degradation)
 
-## Documentation Updates
+### Documentation Updates
 
 ### Required Before Deployment
 - [x] KNOWN_BUGS.md - Document remaining bugs
@@ -268,7 +264,7 @@ python3 -m http.server 8080 --bind 0.0.0.0
 - [ ] TROUBLESHOOTING.md - Common issues and fixes
 - [ ] CONTRIBUTING.md - If planning future development
 
-## Sign-Off
+### Sign-Off
 
 ### Pre-Deployment
 - [ ] Developer: Build verified ✅
@@ -286,3 +282,7 @@ python3 -m http.server 8080 --bind 0.0.0.0
 
 **Deployment Checklist: Phase 6 - Ready for Execution**
 **Status**: Awaiting final build and iPad deployment
+
+## References
+_No references recorded._
+

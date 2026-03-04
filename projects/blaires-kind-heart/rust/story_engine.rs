@@ -1,6 +1,6 @@
 use crate::{
-    animations, companion, confetti, constants::SELECTOR_STORIES_BODY, db_client, dom, navigation,
-    render, rewards, speech, story_data, synth_audio, utils, weekly_goals,
+    animations, confetti, constants::SELECTOR_STORIES_BODY, db_client, dom, domain_services,
+    navigation, render, speech, story_data, synth_audio, utils,
 };
 use std::fmt::Write;
 use wasm_bindgen::closure::Closure;
@@ -76,9 +76,9 @@ fn render_page(story: &story_data::Story, page_idx: usize) {
         speech::celebrate("The End! Great job being kind!");
         synth_audio::fanfare();
         confetti::burst_stars();
-        companion::on_story_complete();
-        rewards::award_sticker("story-complete");
-        weekly_goals::increment_progress("stories", 1);
+        domain_services::on_story_complete();
+        domain_services::award_sticker("story-complete");
+        domain_services::increment_weekly_goal_progress("stories", 1);
         let sid = story.id.to_string();
         let pidx = page_idx;
         let now = utils::now_epoch_ms();

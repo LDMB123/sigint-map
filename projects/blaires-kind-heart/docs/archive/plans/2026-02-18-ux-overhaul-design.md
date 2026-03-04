@@ -1,7 +1,13 @@
 # UI/UX Overhaul Design — Blaire's Kind Heart
 
-## Context
+- Archive Path: `docs/archive/plans/2026-02-18-ux-overhaul-design.md`
+- Normalized On: `2026-03-04`
+- Source Title: `UI/UX Overhaul Design — Blaire's Kind Heart`
 
+## Summary
+Pre-launch UX polish for a Rust/WASM kindness-tracker PWA built for Blaire (age 4). iPad mini 6, Safari 26.2, fully offline. She hasn't used the app yet.
+
+## Context
 Pre-launch UX polish for a Rust/WASM kindness-tracker PWA built for Blaire (age 4). iPad mini 6, Safari 26.2, fully offline. She hasn't used the app yet.
 
 **Current problems:** 8 home buttons (overwhelming), 3-step text reflection (too complex), single-dialog onboarding (too basic), competing CSS systems (`tokens.css` vs `demo-overhaul.css`).
@@ -14,7 +20,7 @@ Pre-launch UX polish for a Rust/WASM kindness-tracker PWA built for Blaire (age 
 
 ---
 
-## Architecture Decisions
+### Architecture Decisions
 
 ### Home: 3 buttons replace 8
 - "Be Kind!" (pink) → tracker
@@ -22,7 +28,13 @@ Pre-launch UX polish for a Rust/WASM kindness-tracker PWA built for Blaire (age 
 - "My Stuff!" (gold) → stickers/gardens tabs
 - Games hidden in Adventures tab; parent mode via long-press Sparkle (PIN)
 
-### Navigation: 10 improvements
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
 - Emoji breadcrumbs, directional view transitions, swipe-back, panel signature sounds, haptic feedback, Sparkle flies between panels, first-visit guidance
 
 ### Reflection: 3-step → single screen
@@ -45,7 +57,7 @@ Pre-launch UX polish for a Rust/WASM kindness-tracker PWA built for Blaire (age 
 
 ---
 
-## New Features
+### New Features
 
 ### 4 new games (replace all 4 existing)
 1. **Dress-Up Sparkle** — drag accessories onto Sparkle, outfits persist everywhere
@@ -89,7 +101,7 @@ Pre-launch UX polish for a Rust/WASM kindness-tracker PWA built for Blaire (age 
 
 ---
 
-## Art & Assets
+### Art & Assets
 
 **~530+ Imagen illustrations** via existing `generate-images.mjs` pipeline.
 
@@ -110,7 +122,7 @@ Pre-launch UX polish for a Rust/WASM kindness-tracker PWA built for Blaire (age 
 
 ---
 
-## Economy
+### Economy
 
 - 1 heart per kind act, bonus heart for reflection
 - Sticker unlocked every 5 hearts
@@ -120,7 +132,7 @@ Pre-launch UX polish for a Rust/WASM kindness-tracker PWA built for Blaire (age 
 
 ---
 
-## Key Constraints
+### Key Constraints
 
 - Finger only (no Apple Pencil)
 - No undo on logged acts
@@ -131,8 +143,9 @@ Pre-launch UX polish for a Rust/WASM kindness-tracker PWA built for Blaire (age 
 
 ---
 
-## Timeline
+### Timeline
 
 - **Wave 1 (Week 1):** Foundation — home, nav, reflection, CSS, loading screen
 - **Wave 2 (Week 2-3):** Stories + quests + core assets (~80 illustrations)
 - **Wave 3 (Week 4+):** Games, companion, galleries, seasonal content
+

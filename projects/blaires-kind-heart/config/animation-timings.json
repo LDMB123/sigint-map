@@ -1,0 +1,7 @@
+{
+  "timings": {
+    "float_heart_removal_ms": 800,
+    "sparkle_reveal_ms": 600,
+    "jelly_wobble_ms": 600
+  }
+}

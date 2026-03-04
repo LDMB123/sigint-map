@@ -18,6 +18,7 @@ pub struct AppState {
     pub active_skin: String,
     pub companion_element: Option<web_sys::Element>,
     pub hearts_counter: Option<web_sys::Element>,
+    pub home_tracker_hearts_counter: Option<web_sys::Element>,
     pub tracker_hearts_counter: Option<web_sys::Element>,
     pub toast_element: Option<web_sys::Element>,
     pub hug_unique_stages_seen: u32,
@@ -61,6 +62,10 @@ pub fn get_cached_companion() -> Option<web_sys::Element> {
 #[inline]
 pub fn get_cached_hearts_counter() -> Option<web_sys::Element> {
     with_state(|s| s.hearts_counter.clone())
+}
+#[inline]
+pub fn get_cached_home_tracker_hearts_counter() -> Option<web_sys::Element> {
+    with_state(|s| s.home_tracker_hearts_counter.clone())
 }
 #[inline]
 pub fn get_cached_tracker_hearts_counter() -> Option<web_sys::Element> {

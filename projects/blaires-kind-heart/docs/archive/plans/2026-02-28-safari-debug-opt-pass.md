@@ -1,14 +1,20 @@
 # Safari 26.2 / iPad mini 6 Debug & Optimization Pass
 
-## Context
+- Archive Path: `docs/archive/plans/2026-02-28-safari-debug-opt-pass.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Safari 26.2 / iPad mini 6 Debug & Optimization Pass`
 
+## Summary
+The app is feature-complete and all automated CI gates pass (Playwright Chromium + WebKit on Ubuntu). The sole release blocker is a physical iPad mini 6 (iPadOS 26.2 / Safari 26.2) regression run — never performed on any build. Static analysis of all 3 JS interface files and ~...
+
+## Context
 The app is feature-complete and all automated CI gates pass (Playwright Chromium + WebKit on Ubuntu). The sole release blocker is a physical iPad mini 6 (iPadOS 26.2 / Safari 26.2) regression run — never performed on any build. Static analysis of all 3 JS interface files and ~75 Rust source files reveals **11 fixable issues** across 5 independent domains before that test. Issues range from a P0 boot-responsiveness regression (scheduler_yield actually calls queueMicrotask, not scheduler.yield()) to low-risk polish items.
 
 All agents will use `model: "sonnet"` (Sonnet 4.6 with thinking).
 
 ---
 
-## Issue Registry (prioritized)
+### Issue Registry (prioritized)
 
 ### P0 — Safari-Specific Correctness
 
@@ -38,8 +44,7 @@ All agents will use `model: "sonnet"` (Sonnet 4.6 with thinking).
 
 ---
 
-## Recommended Implementation
-
+## Actions
 ### Approach: 4 Parallel Agents
 
 Issues are in fully independent domains. Dispatch 4 agents simultaneously; no edit conflicts.
@@ -73,9 +78,6 @@ pub async fn scheduler_yield() {
                     let _ = JsFuture::from(promise).await;
                     return;
                 }
-            }
-        }
-    }
     // Fallback: queueMicrotask
     yield_microtask().await;
 }
@@ -210,7 +212,7 @@ if (typeof trustedTypes !== 'undefined' && !trustedTypes.defaultPolicy) {
 
 ---
 
-## Files to Modify
+### Files to Modify
 
 | File | Domain | Fixes |
 |------|--------|-------|
@@ -229,7 +231,7 @@ if (typeof trustedTypes !== 'undefined' && !trustedTypes.defaultPolicy) {
 
 ---
 
-## Existing Utilities to Reuse
+### Existing Utilities to Reuse
 
 - `browser_apis::now_ms()` → replace `Date::now()` in synth_audio
 - `browser_apis::sleep_ms()` → already used; don't duplicate
@@ -239,8 +241,7 @@ if (typeof trustedTypes !== 'undefined' && !trustedTypes.defaultPolicy) {
 
 ---
 
-## Verification
-
+## Validation
 After all 4 agents complete:
 
 1. **Build:** `trunk build --release` — must succeed with zero new Rust warnings
@@ -257,10 +258,14 @@ After all 4 agents complete:
 
 ---
 
-## Out of Scope
+### Out of Scope
 
 - State snapshot divergence in game modules (architectural, benign — panels are exclusive)
 - Tier 3 memory+blob data loss on OS kill (Safari architectural limitation)
 - kvvfs tier no-op in workers (gracefully falls through, no crash)
 - Manifest shortcuts (Safari silently ignores them, harmless)
 - WebKit CI not being real Safari (structural limitation of CI environment)
+
+## References
+_No references recorded._
+

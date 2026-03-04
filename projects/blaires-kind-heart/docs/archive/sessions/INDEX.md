@@ -1,13 +1,22 @@
-# Archive Sessions Index
+# Archive sessions Index
 
-Last updated: 2026-03-03
+- Archive Path: `docs/archive/sessions/INDEX.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Archive sessions Index`
 
-Session-specific historical notes.
+## Summary
+Historical archive index for `sessions` (1 entries).
 
-## Files
+## Context
+Generated from current archive markdown inventory.
 
+## Actions
 - [2026-02-10-enhancements.md](2026-02-10-enhancements.md) - Feature Building & Polish Enhancements Log
 
-## Navigation
+## Validation
+- Rebuilt by `scripts/rewrite-archive-docs.mjs`.
 
-- Parent archive index: [docs/archive/INDEX.md](../INDEX.md)
+## References
+- Parent archive index: [../INDEX.md](../INDEX.md)
+- Root archive index: [../INDEX.md](../INDEX.md)
+

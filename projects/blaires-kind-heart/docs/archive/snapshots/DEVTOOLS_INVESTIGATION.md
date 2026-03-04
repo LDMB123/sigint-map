@@ -1,6 +1,14 @@
 # Service Worker Investigation Guide - Safari 26.2
 
-## How to Verify Bugs on iPad
+- Archive Path: `docs/archive/snapshots/DEVTOOLS_INVESTIGATION.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Service Worker Investigation Guide - Safari 26.2`
+
+## Summary
+```
+
+## Context
+### How to Verify Bugs on iPad
 
 ### Step 1: Connect iPad to Mac
 
@@ -21,7 +29,7 @@ On iPad, open the app normally. Switch to Mac Inspector.
 
 ---
 
-## Bug #1: Verify Missing Assets
+### Bug #1: Verify Missing Assets
 
 ### Check if assets/companions/ and assets/gardens/ exist
 
@@ -51,9 +59,6 @@ navigator.serviceWorker.getRegistration().then(reg => {
         console.log('Gardens cached:', gardens.length);
         gardens.forEach(r => console.log('  ✓', r.url));
       });
-    });
-  });
-});
 ```
 
 **Expected Output (CURRENT - BROKEN):**
@@ -80,7 +85,7 @@ Gardens cached: 60
 
 ---
 
-## Bug #2: Verify Cache Installation Failure
+### Bug #2: Verify Cache Installation Failure
 
 ### Check Service Worker Install Event
 
@@ -114,7 +119,7 @@ Blob size: 33656
 
 ---
 
-## Bug #3: Check CSS in Cache
+### Bug #3: Check CSS in Cache
 
 ### Verify all CSS files precached
 
@@ -148,8 +153,6 @@ caches.open('kindheart-v3').then(cache => {
       const found = cssFiles.some(r => r.url.includes(css));
       console.log(found ? '✓' : '✗', css);
     });
-  });
-});
 ```
 
 **Expected (CURRENT - BROKEN):**
@@ -174,8 +177,10 @@ CSS files cached: 13
 
 ---
 
-## Bug #4: Test Offline Mode
+## Actions
+_No actions recorded._
 
+## Validation
 ### Simulate offline and check image loading
 
 **On iPad:**
@@ -212,7 +217,7 @@ Image loaded successfully: true
 
 ---
 
-## Bug #5: Check Service Worker Registration
+### Bug #5: Check Service Worker Registration
 
 ### Verify SW registered and active
 
@@ -266,7 +271,7 @@ Installing SW: NONE
 
 ---
 
-## Bug #6: Check Network Tab
+### Bug #6: Check Network Tab
 
 ### Monitor what's actually being loaded
 
@@ -290,7 +295,7 @@ Installing SW: NONE
 
 ---
 
-## Bug #7: Check Cache Storage UI
+### Bug #7: Check Cache Storage UI
 
 ### Visual inspection in Safari DevTools
 
@@ -329,7 +334,7 @@ Expected 168 entries:
 
 ---
 
-## Debug Companion Loading
+### Debug Companion Loading
 
 ### Check if Rust is trying to load companions
 
@@ -358,7 +363,7 @@ App loading image: https://your-domain/assets/gardens/bunny_stage_1.webp
 
 ---
 
-## Check Console for Errors
+### Check Console for Errors
 
 ### Look for error messages
 
@@ -378,8 +383,6 @@ Failed to load image: /assets/gardens/bunny_stage_1.webp
 ```
 
 ---
-
-## Automated Test Script
 
 Copy this to Console to run full diagnostic:
 
@@ -434,7 +437,7 @@ diagnosePWA();
 
 ---
 
-## After Fixes: Expected Output
+### After Fixes: Expected Output
 
 ```javascript
 diagnosePWA();
@@ -464,8 +467,6 @@ diagnosePWA();
 
 ---
 
-## Network Throttling Test
-
 ### Simulate slow network and verify caching works
 
 **In DevTools Network tab:**
@@ -486,21 +487,16 @@ diagnosePWA();
 
 ---
 
-## One More Test: Clear Cache and Rebuild
-
 ```bash
-# On Mac, during development:
 trunk build --release
 
-# On iPad:
-# 1. Close Safari
-# 2. Settings → Safari → Advanced → Website Data → Remove All
-# 3. Reopen Safari, reload app
-# 4. Check DevTools → Service Workers
-# 5. Check DevTools → Cache Storage
 ```
 
 **Expected:**
 - New SW installs cleanly
 - Cache populates with all 168 items
 - No 404 errors in console
+
+## References
+_No references recorded._
+

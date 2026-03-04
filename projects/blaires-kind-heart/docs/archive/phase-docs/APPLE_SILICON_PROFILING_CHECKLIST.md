@@ -1,9 +1,17 @@
 # Apple Silicon Profiling Checklist
 
+- Archive Path: `docs/archive/phase-docs/APPLE_SILICON_PROFILING_CHECKLIST.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Apple Silicon Profiling Checklist`
+
+## Summary
+Last updated: 2026-02-14
+
+## Context
 Last updated: 2026-02-14
 Scope: Safari on Apple Silicon (M-series), symbolized release builds.
 
-## 1. Build + Baseline
+### 1. Build + Baseline
 1. Run `GPU_MODE=on scripts/apple-silicon-profile.sh` (WebGPU path).
 2. Run `GPU_MODE=off scripts/apple-silicon-profile.sh` (DOM fallback path).
 3. Optional batch: `GPU_MODE=on|off scripts/apple-silicon-profile-iterate.sh`.
@@ -13,7 +21,7 @@ Scope: Safari on Apple Silicon (M-series), symbolized release builds.
    - `<dist>/source-map-summary.json`
    - `<dist>/*.js.map`
 
-## 2. Capture Traces
+### 2. Capture Traces
 Use generated command file:
 - `artifacts/apple-silicon-profile/<timestamp>/xctrace-commands.txt`
 
@@ -28,7 +36,7 @@ Capture at least 20 seconds each for:
 3. Celebration/particle burst interactions
 4. A/B compare `gpu=on` vs `gpu=off`
 
-## 3. Review Targets
+### 3. Review Targets
 
 ### CPU
 1. No sustained main-thread hotspots equivalent to >20ms frame budget.
@@ -50,13 +58,13 @@ Capture at least 20 seconds each for:
 1. Idle home should not sustain high CPU/GPU use.
 2. Interaction energy should remain low-to-moderate for normal use.
 
-## 4. Pass Criteria
+### 4. Pass Criteria
 1. Release build and PWA health checks pass.
 2. Chromium E2E gate passes.
 3. No new regressions in CPU, animation, or Metal traces.
 4. WebKit Playwright crash status is explicitly recorded when relevant.
 
-## 5. Report Template
+### 5. Report Template
 Record:
 1. Device (`chip`, `macOS version`)
 2. Build/date
@@ -64,3 +72,13 @@ Record:
 4. Top 3 hotspots
 5. Top 3 remediation actions
 6. Artifact paths
+
+## Actions
+_No actions recorded._
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

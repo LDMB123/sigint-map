@@ -1,14 +1,14 @@
 # Workspace Markdown Map
 
-Last updated: 2026-03-03
+Last updated: 2026-03-04 (session 22)
 
 This file is the fastest way to locate any Markdown documentation in this repository.
 
 ## Inventory Summary
 
-- Total Markdown files: `148`
-- Active docs (`docs/` excluding archive): `~15`
-- Archive docs (under `docs/archive/`): `142`
+- Total Markdown files: `168`
+- Active docs (`docs/` excluding archive): `13`
+- Archive docs (under `docs/archive/`): `147`
 - Non-docs Markdown locations:
   - Root: `README.md`, `CLAUDE.md`
   - Deploy: `deploy/**/README.md`
@@ -21,6 +21,7 @@ This file is the fastest way to locate any Markdown documentation in this reposi
 3. Active docs navigation: `docs/INDEX.md`
 4. Archive navigation: `docs/archive/INDEX.md`
 5. Deployment navigation: `deploy/README.md`
+6. Index-shell deep gate context: `npm run qa:index-shell-deep` + `index-shell-contract-gate` (see `docs/STATUS_LEDGER.md`)
 
 ## Active Documentation Areas
 

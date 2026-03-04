@@ -1,15 +1,15 @@
 # Phase 6.1: Compilation Errors & Warnings - Fix Report
 
-**Date**: 2026-02-11
-**Status**: ✅ Complete - All 10 errors resolved, 7 warnings remain
+- Archive Path: `docs/archive/audits/phase6-1-fixes-report.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Phase 6.1: Compilation Errors & Warnings - Fix Report`
 
 ## Summary
-
 Fixed all 10 compilation errors identified in initial Clippy audit. Build now succeeds with only 7 harmless warnings (dead code, unused results). All fixes use Safari 26.2-native patterns without cross-browser fallbacks.
 
 ---
 
-## Errors Fixed (10 total)
+### Errors Fixed (10 total)
 
 ### ✅ Fix 1-4: WakeLock API Missing Types (4 errors)
 
@@ -141,7 +141,6 @@ if let Ok(start_vt) = Reflect::get(&doc, &JsValue::from_str("startViewTransition
     if let Ok(func) = start_vt.dyn_into::<js_sys::Function>() {
         let _ = func.call1(&doc, cb.as_ref().unchecked_ref());
     }
-}
 ```
 
 **Benefits**:
@@ -167,7 +166,7 @@ error[E0282]: type annotations needed
 
 ---
 
-## Warnings Fixed (5 total, 3 fixed)
+### Warnings Fixed (5 total, 3 fixed)
 
 ### ✅ Fix 1: Unused AppState Import (tracker.rs)
 
@@ -268,7 +267,7 @@ use web_sys::console;
 
 ---
 
-## Remaining Warnings (7 total - all harmless)
+### Remaining Warnings (7 total - all harmless)
 
 ### Warning 1: Unused Function get_garden_stages
 
@@ -302,8 +301,91 @@ use web_sys::console;
 
 ---
 
-### Warnings 6-9: Unused Result (4 instances)
+## Context
+**Date**: 2026-02-11
+**Status**: ✅ Complete - All 10 errors resolved, 7 warnings remain
 
+## Actions
+### Phase 6.2: Type Safety Audit
+- [ ] Audit all `unchecked_ref()` casts for safety
+- [ ] Review `JsValue` usage for potential type strengthening
+- [ ] Check error handling completeness (unwrap vs graceful fallback)
+
+### Phase 6.3: Documentation Coverage
+- [ ] Add doc comments to all public functions (currently ~60% coverage)
+- [ ] Document Safari 26.2 feature usage patterns in CLAUDE.md
+- [ ] Create examples for js_sys::Reflect pattern
+
+### Phase 6.4: Architecture Audit
+- [ ] Review thread_local usage (9 instances - is this excessive?)
+- [ ] Audit state management (AppState vs module-local state)
+- [ ] Check for circular dependencies
+
+### Phase 6.5: Performance Anti-Patterns
+- [ ] Profile DOM manipulation patterns (excessive reflows?)
+- [ ] Audit closure memory retention (Closure::forget() usage)
+- [ ] Review WASM binary size (currently ~780KB, target ≤800KB)
+
+### Phase 6.6: Create Cleanup Plan
+- [ ] Prioritize remaining 7 warnings (fix unused Result instances?)
+- [ ] Document planned features (badges, quest chains) to prevent accidental deletion
+- [ ] Create migration guide for web_sys updates (when WakeLock/ViewTransitions land)
+
+---
+
+### Files Modified
+
+| File | Lines Changed | Type |
+|------|---------------|------|
+| `rust/native_apis.rs` | 30-65 rewritten | Fix 1-4, 8-10 |
+| `rust/metrics/performance.rs` | +9 lines (68-76) | Fix 5 |
+| `rust/metrics/web_vitals.rs` | +5 lines (40-44) | Fix 6 |
+| `rust/navigation.rs` | 317-329 rewritten | Fix 7 |
+| `rust/tracker.rs` | Line 10 edited | Warning 1 |
+| `rust/games.rs` | Line 10 edited | Warning 2 |
+| `rust/db_client.rs` | Lines 107-108 edited | Warning 3 |
+| `rust/badges.rs` | Lines 4-6 edited | Warning 5 |
+| `rust/metrics/mod.rs` | +2 exports | Module API |
+
+**Total**: 9 files modified, ~100 lines changed
+
+---
+
+### Performance Impact
+
+**Build Time**: No change (~5.5s debug build)
+
+**Runtime**: No measurable impact
+- WakeLock/ViewTransitions are one-time calls (not hot path)
+- Debug panel data retrieval only on triple-tap (rare)
+
+**Binary Size**: No change (780KB WASM, well under 800KB target)
+
+---
+
+### Safari 26.2 Compatibility
+
+All fixes maintain Safari 26.2 exclusive targeting:
+
+✅ **WakeLock API**: Safari 26.2 only (iOS 26.2, macOS Tahoe)
+✅ **View Transitions**: Safari 26.2 only
+✅ **Performance API**: Standard, Safari support since 15+
+✅ **js_sys::Reflect**: Standard ECMAScript, works in all browsers
+
+**No cross-browser fallbacks added** - code remains Safari-only as mandated
+
+---
+
+### Conclusion
+
+Phase 6.1 successfully resolved all 10 compilation errors using Safari 26.2-native patterns. The codebase now builds cleanly with only 7 harmless warnings (dead code for planned features). Key achievement: established reusable pattern for accessing cutting-edge Safari APIs before web_sys support lands.
+
+**Build Status**: ✅ 0 errors, 7 warnings (all documented)
+**Performance**: ✅ No degradation
+**Safari 26.2 Compliance**: ✅ 100%
+**Ready for Phase 6.2**: ✅ Type safety audit
+
+## Validation
 **Files**:
 - `rust/celebration.rs:190`
 - `rust/mom_mode.rs:163, 436`
@@ -319,8 +401,6 @@ use web_sys::console;
 
 ---
 
-## Build Verification
-
 ```bash
 $ cargo build 2>&1
    Compiling blaires-kind-heart v0.1.0
@@ -335,7 +415,7 @@ warning: unused `Result` that must be used (4 instances)
 
 ---
 
-## Patterns Established
+### Patterns Established
 
 ### Pattern 1: Using js_sys::Reflect for Missing web_sys Bindings
 
@@ -398,83 +478,6 @@ pub use module::get_data;
 
 ---
 
-## Next Steps (Phase 6.2+)
+## References
+_No references recorded._
 
-### Phase 6.2: Type Safety Audit
-- [ ] Audit all `unchecked_ref()` casts for safety
-- [ ] Review `JsValue` usage for potential type strengthening
-- [ ] Check error handling completeness (unwrap vs graceful fallback)
-
-### Phase 6.3: Documentation Coverage
-- [ ] Add doc comments to all public functions (currently ~60% coverage)
-- [ ] Document Safari 26.2 feature usage patterns in CLAUDE.md
-- [ ] Create examples for js_sys::Reflect pattern
-
-### Phase 6.4: Architecture Audit
-- [ ] Review thread_local usage (9 instances - is this excessive?)
-- [ ] Audit state management (AppState vs module-local state)
-- [ ] Check for circular dependencies
-
-### Phase 6.5: Performance Anti-Patterns
-- [ ] Profile DOM manipulation patterns (excessive reflows?)
-- [ ] Audit closure memory retention (Closure::forget() usage)
-- [ ] Review WASM binary size (currently ~780KB, target ≤800KB)
-
-### Phase 6.6: Create Cleanup Plan
-- [ ] Prioritize remaining 7 warnings (fix unused Result instances?)
-- [ ] Document planned features (badges, quest chains) to prevent accidental deletion
-- [ ] Create migration guide for web_sys updates (when WakeLock/ViewTransitions land)
-
----
-
-## Files Modified
-
-| File | Lines Changed | Type |
-|------|---------------|------|
-| `rust/native_apis.rs` | 30-65 rewritten | Fix 1-4, 8-10 |
-| `rust/metrics/performance.rs` | +9 lines (68-76) | Fix 5 |
-| `rust/metrics/web_vitals.rs` | +5 lines (40-44) | Fix 6 |
-| `rust/navigation.rs` | 317-329 rewritten | Fix 7 |
-| `rust/tracker.rs` | Line 10 edited | Warning 1 |
-| `rust/games.rs` | Line 10 edited | Warning 2 |
-| `rust/db_client.rs` | Lines 107-108 edited | Warning 3 |
-| `rust/badges.rs` | Lines 4-6 edited | Warning 5 |
-| `rust/metrics/mod.rs` | +2 exports | Module API |
-
-**Total**: 9 files modified, ~100 lines changed
-
----
-
-## Performance Impact
-
-**Build Time**: No change (~5.5s debug build)
-
-**Runtime**: No measurable impact
-- WakeLock/ViewTransitions are one-time calls (not hot path)
-- Debug panel data retrieval only on triple-tap (rare)
-
-**Binary Size**: No change (780KB WASM, well under 800KB target)
-
----
-
-## Safari 26.2 Compatibility
-
-All fixes maintain Safari 26.2 exclusive targeting:
-
-✅ **WakeLock API**: Safari 26.2 only (iOS 26.2, macOS Tahoe)
-✅ **View Transitions**: Safari 26.2 only
-✅ **Performance API**: Standard, Safari support since 15+
-✅ **js_sys::Reflect**: Standard ECMAScript, works in all browsers
-
-**No cross-browser fallbacks added** - code remains Safari-only as mandated
-
----
-
-## Conclusion
-
-Phase 6.1 successfully resolved all 10 compilation errors using Safari 26.2-native patterns. The codebase now builds cleanly with only 7 harmless warnings (dead code for planned features). Key achievement: established reusable pattern for accessing cutting-edge Safari APIs before web_sys support lands.
-
-**Build Status**: ✅ 0 errors, 7 warnings (all documented)
-**Performance**: ✅ No degradation
-**Safari 26.2 Compliance**: ✅ 100%
-**Ready for Phase 6.2**: ✅ Type safety audit

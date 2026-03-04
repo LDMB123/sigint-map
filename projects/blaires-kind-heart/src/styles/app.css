@@ -46,6 +46,15 @@ html {
 body {
   min-height: 100dvh;
   overscroll-behavior: none;
+  /* Centralized motion/perf controls consumed by app + particles styles. */
+  --grain-overlay-opacity: 0.6;
+  --grain-overlay-blend-mode: soft-light;
+  --panel-header-shimmer-duration: 3s;
+  --panel-particle-layer-display: block;
+  --panel-particle-base-before-animation: sparkle-drift-medium 8s ease-in-out infinite alternate;
+  --panel-particle-base-after-animation: sparkle-float-slow 15s ease-in-out infinite alternate-reverse;
+  --game-card-shine-animation: card-shine-sweep 5s ease-in-out infinite;
+  --game-card-float-animation: float-emoji 2s var(--ease-bounce) infinite;
 
   /* Optimized dreamy background — 4 static gradient layers + blended grain (85% faster compositing, no animation) */
   background:
@@ -70,16 +79,42 @@ body::before {
   inset: 0;
   background: url('/noise.webp') repeat;
   background-size: 64px 64px;
-  mix-blend-mode: soft-light;
-  opacity: 0.6;
+  mix-blend-mode: var(--grain-overlay-blend-mode);
+  opacity: var(--grain-overlay-opacity);
   pointer-events: none;
   z-index: 0;
 }
 
-/* iPad mini 6: lower-cost grain compositing for smoother scroll/input on A15. */
-body[data-device-profile="ipad-mini-6"]::before {
-  opacity: 0.38;
-  mix-blend-mode: normal;
+/* iPad mini 6: central perf profile (lower blend cost + slower shimmer sweep). */
+body[data-device-profile="ipad-mini-6"] {
+  --grain-overlay-opacity: 0.38;
+  --grain-overlay-blend-mode: normal;
+  --panel-header-shimmer-duration: 6s;
+}
+
+body[data-device-profile="ipad-mini-6"][data-perf-mode="throughput"] {
+  --grain-overlay-opacity: 0.22;
+  --panel-header-shimmer-duration: 14s;
+  --panel-particle-layer-display: none;
+  --panel-particle-base-before-animation: none;
+  --panel-particle-base-after-animation: none;
+  --game-card-shine-animation: none;
+  --game-card-float-animation: float-emoji 6s ease-in-out infinite;
+}
+
+body[data-device-profile="ipad-mini-6"][data-perf-mode="throughput"] .panel-header {
+  animation: none;
+}
+
+body[data-device-profile="ipad-mini-6"][data-perf-mode="throughput"] .game-card::before,
+body[data-device-profile="ipad-mini-6"][data-perf-mode="throughput"] .quest-card--bonus::before {
+  animation: none !important;
+}
+
+body[data-device-profile="ipad-mini-6"][data-perf-mode="throughput"] .game-card-emoji,
+body[data-device-profile="ipad-mini-6"][data-perf-mode="throughput"] .game-card-img,
+body[data-device-profile="ipad-mini-6"][data-perf-mode="throughput"] .quest-card-emoji {
+  animation-duration: 6s !important;
 }
 
 /* Page Visibility API: Pause all animations when tab hidden (GPU savings) */
@@ -129,18 +164,21 @@ body[data-animations-paused] .fade-in-up {
 
 /* Skip link for a11y */
 .skip-link {
-  position: absolute;
-  left: -9999px;
-  top: 0;
+  position: fixed;
+  left: var(--space-sm);
+  top: var(--space-sm);
   z-index: var(--z-loading);
   padding: var(--space-sm) var(--space-md);
-  background: var(--color-purple);
+  background: var(--color-purple-dark);
   color: var(--color-white);
   border-radius: 0 0 var(--radius-sm) 0;
   font-weight: var(--font-weight-bold);
+  transform: translateY(calc(-100% - var(--space-sm)));
+  transition: transform var(--duration-fast) var(--ease-smooth);
 
-  &:focus {
-    left: 0;
+  &:focus,
+  &:focus-visible {
+    transform: translateY(0);
   }
 }
 
@@ -275,13 +313,8 @@ body[data-animations-paused] .fade-in-up {
   position: sticky;
   top: 0;
   z-index: 2;
-  /* Shimmer animation — 3s linear for smooth, continuous sweep */
-  animation: panel-header-shimmer 3s linear infinite;
-}
-
-/* iPad mini 6: slower shimmer sweep lowers continuous repaint pressure. */
-body[data-device-profile="ipad-mini-6"] .panel-header {
-  animation-duration: 6s;
+  /* Shimmer animation duration is centralized for perf profiles/reduced motion. */
+  animation: panel-header-shimmer var(--panel-header-shimmer-duration) linear infinite;
 }
 
 @keyframes panel-header-shimmer {
@@ -385,40 +418,32 @@ body[data-device-profile="ipad-mini-6"] .panel-header {
 }
 
 /* ── Panel Color Identity ── */
-#panel-tracker .panel-header {
-  border-bottom: 3px solid var(--color-pink);
+[data-panel-theme="kindness"] {
+  --panel-header-accent: var(--color-pink);
 }
 
-#panel-adventures .panel-header {
-  border-bottom: 3px solid var(--color-purple);
+[data-panel-theme="adventures"] {
+  --panel-header-accent: var(--color-purple);
 }
 
-#panel-mystuff .panel-header {
-  border-bottom: 3px solid var(--color-gold);
+[data-panel-theme="collection"] {
+  --panel-header-accent: var(--color-gold);
 }
 
-#panel-quests .panel-header {
-  border-bottom: 3px solid var(--color-purple);
+[data-panel-theme="games"] {
+  --panel-header-accent: var(--color-orange);
 }
 
-#panel-stories .panel-header {
-  border-bottom: 3px solid var(--color-purple);
+[data-panel-theme="gardens"] {
+  --panel-header-accent: var(--color-green);
 }
 
-#panel-games .panel-header {
-  border-bottom: 3px solid var(--color-orange);
+[data-panel-theme="progress"] {
+  --panel-header-accent: var(--color-blue);
 }
 
-#panel-rewards .panel-header {
-  border-bottom: 3px solid var(--color-gold);
-}
-
-#panel-gardens .panel-header {
-  border-bottom: 3px solid var(--color-green);
-}
-
-#panel-progress .panel-header {
-  border-bottom: 3px solid var(--color-blue);
+.panel .panel-header {
+  border-bottom: 3px solid var(--panel-header-accent, var(--color-purple));
 }
 
 .panel-title {
@@ -526,7 +551,7 @@ body[data-device-profile="ipad-mini-6"] .panel-header {
   cursor: pointer;
   box-shadow: var(--shadow-card-hover);
   transition: transform var(--duration-fast) var(--ease-overshoot);
-  animation: jelly-wobble 0.6s var(--ease-overshoot);
+  animation: jelly-wobble var(--timing-jelly-wobble) var(--ease-overshoot);
 }
 
 .onboarding-dialog-btn:active {
@@ -547,8 +572,6 @@ body[data-device-profile="ipad-mini-6"] .panel-header {
 
 /* ====== STAGGER ENTRANCE (boot sequence) ====== */
 /* Phase 1.3: Elements start invisible, stagger via animation-delay (no JS blocking) */
-[data-home-title],
-[data-heart-counter],
 [data-home-btn],
 [data-companion] {
   opacity: 0;
@@ -560,15 +583,6 @@ body[data-device-profile="ipad-mini-6"] .panel-header {
 .entrance-visible {
   opacity: 1;
   transform: scale(1) translateY(0);
-}
-
-/* Phase 1.3: CSS-based stagger timing (saves ~650ms blocking) */
-[data-home-title].entrance-visible {
-  transition-delay: 0ms;
-}
-
-[data-heart-counter].entrance-visible {
-  transition-delay: 100ms;
 }
 
 /* Stagger home buttons — Safari 26.2 sibling-index() */
@@ -621,6 +635,16 @@ body[data-device-profile="ipad-mini-6"] .panel-header {
 
 /* ── Accessibility: reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
+  body {
+    --panel-header-shimmer-duration: 0s;
+    --panel-particle-layer-display: none;
+  }
+
+  .panel .panel-body::before,
+  .panel .panel-body::after {
+    display: none !important;
+  }
+
   .toast-notification,
   .panel-header,
   .onboarding-dialog,

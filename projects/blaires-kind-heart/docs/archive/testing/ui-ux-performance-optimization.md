@@ -1,13 +1,10 @@
 # UI/UX Performance Optimization Report
 
-**Date**: 2026-02-12
-**Scope**: Performance debugging and visual optimization for iPad mini 6 (A15, 4GB RAM, iPadOS 26.2, Safari 26.2)
-**User Feedback**: "Everything's broken or looks ugly"
+- Archive Path: `docs/archive/testing/ui-ux-performance-optimization.md`
+- Normalized On: `2026-03-04`
+- Source Title: `UI/UX Performance Optimization Report`
 
----
-
-## Executive Summary
-
+## Summary
 **Root Cause Identified**: Catastrophic INP (Interaction to Next Paint) of 7088ms caused by 24 animated radial gradients covering the viewport.
 
 **Primary Fix Applied**: Reduced sparkle gradients from 24 to 4 static ones, improving theoretical INP from 7088ms → <200ms (35x improvement).
@@ -16,7 +13,7 @@
 
 ---
 
-## Performance Metrics (Before Fix)
+### Performance Metrics (Before Fix)
 
 ```
 INP: 7088ms (CATASTROPHIC - target: <200ms)
@@ -33,7 +30,7 @@ LCP: 6280ms (POOR - target: <2500ms)
 
 ---
 
-## Issue #1: Animated Sparkle Gradients (FIXED ✅)
+### Issue #1: Animated Sparkle Gradients (FIXED ✅)
 
 ### Problem
 - **File**: `src/styles/home.css`
@@ -60,7 +57,6 @@ LCP: 6280ms (POOR - target: <2500ms)
       /* 8 radial-gradient() layers */
     animation: home-sparkle-float 15s ease-in-out infinite alternate-reverse;
   }
-}
 ```
 
 ### Fix Applied
@@ -80,7 +76,6 @@ LCP: 6280ms (POOR - target: <2500ms)
   &::after {
     content: none; /* Layer 2 removed entirely */
   }
-}
 ```
 
 ### Impact
@@ -90,14 +85,14 @@ LCP: 6280ms (POOR - target: <2500ms)
 
 ---
 
-## Issue #2: Expensive Backdrop-Filter Effects (NEEDS OPTIMIZATION)
+### Issue #2: Expensive Backdrop-Filter Effects (NEEDS OPTIMIZATION)
 
 ### Problem
 19 instances of `backdrop-filter: blur()` across 7 CSS files causing GPU overhead.
 
 ### Breakdown by File
 
-#### High Impact (Panel Headers - Used Frequently)
+### High Impact (Panel Headers - Used Frequently)
 ```css
 /* app.css - Line ~100 */
 .panel-header {
@@ -124,7 +119,7 @@ LCP: 6280ms (POOR - target: <2500ms)
 }
 ```
 
-#### Medium Impact (Rewards Panel)
+### Medium Impact (Rewards Panel)
 ```css
 /* rewards.css */
 .sticker-card {
@@ -138,7 +133,7 @@ LCP: 6280ms (POOR - target: <2500ms)
 }
 ```
 
-#### Lower Impact (Games Panel)
+### Lower Impact (Games Panel)
 ```css
 /* games.css - 8 instances */
 .game-card { backdrop-filter: blur(8px); }
@@ -148,7 +143,7 @@ LCP: 6280ms (POOR - target: <2500ms)
 /* ...4 more instances... */
 ```
 
-#### Parent Dashboard
+### Parent Dashboard
 ```css
 /* mom.css */
 .insights-panel {
@@ -156,7 +151,7 @@ LCP: 6280ms (POOR - target: <2500ms)
 }
 ```
 
-#### Home Panel
+### Home Panel
 ```css
 /* home.css */
 .home-hub-button {
@@ -166,7 +161,7 @@ LCP: 6280ms (POOR - target: <2500ms)
 
 ### Recommended Optimizations
 
-#### Option 1: Reduce Blur Radius (Quick Win)
+### Option 1: Reduce Blur Radius (Quick Win)
 ```css
 /* Before: blur(24px) → After: blur(8px) */
 .panel-header {
@@ -174,7 +169,7 @@ LCP: 6280ms (POOR - target: <2500ms)
 }
 ```
 
-#### Option 2: Use `will-change` Hint (For Interactive Elements)
+### Option 2: Use `will-change` Hint (For Interactive Elements)
 ```css
 .category-button {
   will-change: backdrop-filter;
@@ -182,7 +177,13 @@ LCP: 6280ms (POOR - target: <2500ms)
 }
 ```
 
-#### Option 3: Replace with Semi-Transparent Backgrounds (Most Performant)
+## Context
+**Date**: 2026-02-12
+**Scope**: Performance debugging and visual optimization for iPad mini 6 (A15, 4GB RAM, iPadOS 26.2, Safari 26.2)
+**User Feedback**: "Everything's broken or looks ugly"
+
+---
+
 ```css
 /* Before */
 backdrop-filter: blur(24px) saturate(1.9);
@@ -194,7 +195,7 @@ background: rgba(255, 255, 255, 0.85);
 
 ---
 
-## Issue #3: GPU Initialization Timeout
+### Issue #3: GPU Initialization Timeout
 
 ### Console Warnings
 ```
@@ -214,7 +215,7 @@ background: rgba(255, 255, 255, 0.85);
 
 ---
 
-## Performance Budget Recommendations
+### Performance Budget Recommendations
 
 ### For 4-Year-Old on iPad mini 6
 
@@ -228,8 +229,7 @@ background: rgba(255, 255, 255, 0.85);
 
 ---
 
-## Recommended Action Plan
-
+## Actions
 ### Phase 1: Critical (Already Done ✅)
 - [x] Reduce sparkle gradients from 24 to 4
 - [x] Disable sparkle animations
@@ -266,7 +266,7 @@ background: rgba(255, 255, 255, 0.85);
 
 ---
 
-## Visual Design Assessment
+### Visual Design Assessment
 
 ### Strengths ✅
 - **Color Palette**: Bright, kid-friendly (pink, purple, yellow, blue)
@@ -283,7 +283,7 @@ background: rgba(255, 255, 255, 0.85);
 
 ---
 
-## Technical Notes
+### Technical Notes
 
 ### Browser Environment
 - **Target**: Safari 26.2 on iPadOS 26.2
@@ -298,8 +298,6 @@ background: rgba(255, 255, 255, 0.85);
 
 ---
 
-## Next Steps
-
 1. ✅ **Test Performance Fix**: Measure INP after sparkle reduction
 2. ⏳ **Optimize Backdrop Filters**: Reduce blur radius or replace with solid backgrounds
 3. ⏳ **Add will-change Hints**: For interactive elements with backdrop-filter
@@ -312,3 +310,10 @@ background: rgba(255, 255, 255, 0.85);
 **Report Generated**: 2026-02-12
 **Status**: Phase 1 complete (sparkle optimization), Phase 2 in progress
 **Expected Improvement**: 35x faster interactions (7088ms → <200ms INP)
+
+## Validation
+_Validation details not recorded._
+
+## References
+_No references recorded._
+

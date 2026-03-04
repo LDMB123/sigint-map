@@ -1,0 +1,41 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: blaires-kind-heart
+  namespace: blaires-kind-heart
+  labels:
+    app.kubernetes.io/name: blaires-kind-heart
+    app.kubernetes.io/part-of: blaires-kind-heart
+spec:
+  groups:
+    - name: blaires-kind-heart.availability
+      rules:
+        - alert: BlairesKindHeartDeploymentUnavailable
+          expr: kube_deployment_status_replicas_available{namespace="blaires-kind-heart", deployment="blaires-kind-heart"} < 1
+          for: 5m
+          labels:
+            severity: critical
+            service: blaires-kind-heart
+          annotations:
+            summary: "Blaire's Kind Heart has no available replicas"
+            description: "No pods are available for deployment blaires-kind-heart in namespace blaires-kind-heart."
+        - alert: BlairesKindHeartMetricsNotScraped
+          expr: absent(up{namespace="blaires-kind-heart", service="blaires-kind-heart-metrics"} == 1)
+          for: 10m
+          labels:
+            severity: warning
+            service: blaires-kind-heart
+          annotations:
+            summary: "Metrics scrape missing for Blaire's Kind Heart"
+            description: "Prometheus has not scraped blaires-kind-heart-metrics in the last 10 minutes."
+    - name: blaires-kind-heart.latency
+      rules:
+        - alert: BlairesKindHeartHighP95Latency
+          expr: histogram_quantile(0.95, sum by (le) (rate(nginx_http_request_duration_seconds_bucket{namespace="blaires-kind-heart"}[5m]))) > 0.75
+          for: 10m
+          labels:
+            severity: warning
+            service: blaires-kind-heart
+          annotations:
+            summary: "High p95 latency for Blaire's Kind Heart"
+            description: "Estimated p95 request latency is above 750ms for more than 10 minutes."

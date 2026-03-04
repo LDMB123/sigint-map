@@ -5,22 +5,14 @@
  * Generates all app visuals: icons, story covers, stickers, backgrounds
  */
 
-import { GoogleAuth } from 'google-auth-library';
 import fs from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
+import { fileExists, sleep, writeBase64Image } from './lib/fs-helpers.mjs';
+import { requestImagenBase64 } from './lib/imagen-client.mjs';
 
-const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-0925343693';
-const LOCATION = 'us-central1';
 const ROOT = path.resolve(import.meta.dirname, '..');
-
-const auth = new GoogleAuth({
-  scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-});
-
-async function fileExists(p) {
-  try { await fs.access(p); return true; } catch { return false; }
-}
+const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'gen-lang-client-0925343693';
 
 async function convertToWebP(pngPath, webpPath) {
   await sharp(pngPath)
@@ -37,50 +29,21 @@ async function generateImage({ prompt, outputPath, aspectRatio = '1:1', negative
     return outputPath;
   }
 
-  const model = 'imagen-3.0-generate-001';
-  const client = await auth.getClient();
-  const accessToken = await client.getAccessToken();
-
-  const endpoint = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${model}:predict`;
-
-  const requestBody = {
-    instances: [{ prompt }],
-    parameters: {
-      sampleCount: 1,
-      aspectRatio,
-      ...(negativePrompt && { negativePrompt }),
-    },
-  };
-
   console.log(`  Generating: ${path.basename(outputPath)}...`);
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken.token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
+  const result = await requestImagenBase64({
+    prompt,
+    aspectRatio,
+    negativePrompt,
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    console.error(`  FAILED: ${path.basename(outputPath)} — ${JSON.stringify(error).slice(0, 200)}`);
+  if (!result.ok || !result.bytesBase64Encoded) {
+    console.error(`  FAILED: ${path.basename(outputPath)} — ${result.errorMessage || 'No image data returned'}`);
     return null;
   }
 
-  const data = await response.json();
-  const predictions = data.predictions || [];
-
-  if (predictions[0]?.bytesBase64Encoded) {
-    const imageData = Buffer.from(predictions[0].bytesBase64Encoded, 'base64');
-    await fs.mkdir(path.dirname(outputPath), { recursive: true });
-    await fs.writeFile(outputPath, imageData);
-    console.log(`  OK: ${path.basename(outputPath)} (${(imageData.length / 1024).toFixed(0)} KB)`);
-    return outputPath;
-  }
-  console.error(`  EMPTY: ${path.basename(outputPath)}`);
-  return null;
+  const bytes = await writeBase64Image(outputPath, result.bytesBase64Encoded);
+  console.log(`  OK: ${path.basename(outputPath)} (${(bytes / 1024).toFixed(0)} KB)`);
+  return outputPath;
 }
 
 const NEG = 'text, watermark, signature, words, letters, numbers, logo, realistic human face, scary, dark, horror, violence, blood';
@@ -494,7 +457,7 @@ async function generateBatch(items, concurrency = 2, convertWebP = false) {
 
       // 65s spacing between requests (quota management)
       if (queue.length > 0) {
-        await new Promise(r => setTimeout(r, 65000));
+        await sleep(65_000);
       }
     }
   };

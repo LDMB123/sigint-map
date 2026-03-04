@@ -1,12 +1,18 @@
 # Known Bugs - Post Phase 5 Testing
 
-## Overview
+- Archive Path: `docs/archive/DETAILED_KNOWN_BUGS.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Known Bugs - Post Phase 5 Testing`
 
+## Summary
+**Date**: 2026-02-11
+
+## Context
 **Date**: 2026-02-11
 **Phase**: Phase 5 Testing Complete → Phase 6 Deployment Prep
 **Status**: Some bugs remain but not blocking production deployment
 
-## Bug Categories
+### Bug Categories
 
 ### Deferred from Phase 4 (Not Blocking)
 
@@ -28,8 +34,10 @@
 - **Deferral Reason**: Not yet observed causing issues in testing
 - **Production Impact**: Potential type confusion in unpatched modules
 
-### Discovered During Phase 5 Testing
+## Actions
+_No actions recorded._
 
+## Validation
 **[Document any bugs found during manual testing here]**
 
 **Example format:**
@@ -42,7 +50,7 @@
 - **Fix Status**: Pending/In Progress/Deferred
 ```
 
-## MEDIUM Priority Bugs (From Phase 3 Discovery)
+### MEDIUM Priority Bugs (From Phase 3 Discovery)
 
 ### Visual & Animation Issues
 
@@ -107,7 +115,7 @@
 - **File**: rust/navigation.rs
 - **Production Impact**: UX convenience only
 
-## LOW Priority Bugs (Cosmetic)
+### LOW Priority Bugs (Cosmetic)
 
 **Bug #27: Missing glow-breathe Keyframes**
 - **Impact**: Idle animation doesn't pulse
@@ -128,7 +136,7 @@
 - Minor spacing, color, typography issues
 - Production Impact: Cosmetic only
 
-## Bugs Fixed Since Phase 3
+### Bugs Fixed Since Phase 3
 
 ✅ **Bug #1**: Assets not copied to build
 ✅ **Bug #2**: Missing CSS in SW precache
@@ -145,7 +153,7 @@
 ✅ **Bug #13**: Integer type mismatch
 ✅ **Bug #14**: NULL safety in garden growth
 
-## Production Readiness Assessment
+### Production Readiness Assessment
 
 ### Blocking Issues: 0
 No CRITICAL or HIGH priority bugs blocking deployment
@@ -177,3 +185,7 @@ No CRITICAL or HIGH priority bugs blocking deployment
 
 **Known Bugs: 17 Remaining (0 Blocking)**
 **Production Status: ✅ APPROVED for Deployment**
+
+## References
+_No references recorded._
+

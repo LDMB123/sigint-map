@@ -1,6 +1,14 @@
 # Memory Leak Fixes - Quick Reference
 
-## Quick Wins (5-10 minutes each)
+- Archive Path: `docs/archive/DETAILED_MEMORY_FIXES.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Memory Leak Fixes - Quick Reference`
+
+## Summary
+**File**: `rust/gestures.rs`, line 32
+
+## Context
+### Quick Wins (5-10 minutes each)
 
 ### Fix 1: Gesture TAP_TIMES Retention Logic
 **File**: `rust/gestures.rs`, line 32
@@ -66,9 +74,85 @@ No action needed.
 
 ---
 
-## Medium Complexity Fixes (30-45 minutes each)
+### Medium Complexity Fixes (30-45 minutes each)
 
-### Fix 4: Navigation API Listeners with AbortSignal
+## Actions
+_No actions recorded._
+
+## Validation
+```rust
+#[cfg(test)]
+mod memory_tests {
+    use wasm_bindgen_test::*;
+
+    #[wasm_bindgen_test]
+    fn test_nav_listener_removable() {
+        // 1. Get initial listener count via DevTools
+        // 2. Call listen_navigate_event()
+        // 3. Verify listener count increased
+        // 4. Call some cleanup/reset function
+        // 5. Verify listener count decreased
+    }
+
+    #[wasm_bindgen_test]
+    fn test_gesture_tap_times_bounded() {
+        setup_debug_gesture();
+
+        // Simulate 1000 rapid taps
+        for i in 0..1000 {
+            // Trigger pointerup with timestamp i * 0.5ms apart
+        }
+
+        // TAP_TIMES should never exceed ~3 elements (due to 1000ms window)
+        TAP_TIMES.with(|times| {
+            assert!(times.borrow().len() < 10, "TAP_TIMES grew unbounded");
+        });
+    }
+```
+
+### Manual Chrome DevTools Steps
+
+1. **Before Fix**:
+   - Open Memory tab
+   - Take baseline heap snapshot
+   - Navigate between panels 30 times
+   - GC and take final snapshot
+   - Diff shows multiple Closure objects
+
+2. **After Fix**:
+   - Same steps
+   - Diff shows no Closure growth
+   - EventListener count stays constant
+
+---
+
+- [ ] Gesture TAP_TIMES retention fixed (`t >= cutoff` not `now - t < 1000`)
+- [ ] Speech voiceschanged guard verified
+- [ ] Navigation listeners use AbortSignal
+- [ ] Click delegation listener managed (AbortSignal or documented as permanent)
+- [ ] Gardens listener removable via takedown function
+- [ ] All `Closure::new()` with `.forget()` are either temporary (RAF loops with cleanup) or necessary
+- [ ] No circular Rc<RefCell> cycles in RAF loops (break cycle before dropping)
+- [ ] All game RAF loops call `cancel_animation_frame()` in cleanup
+- [ ] Test suite includes memory regression test
+
+---
+
+### Expected Cleanup Timeline
+
+| Priority | Task | Estimated Time | Impact |
+|----------|------|-----------------|---------|
+| P0 | Fix gesture TAP_TIMES | 5 min | HIGH |
+| P0 | Fix navigation listeners (AbortSignal) | 30 min | HIGH |
+| P1 | Verify speech voiceschanged guard | 10 min | MEDIUM |
+| P1 | Fix gardens listener removal | 20 min | MEDIUM |
+| P2 | Add memory regression tests | 60 min | LONG-TERM |
+| P2 | Document closure patterns for future | 20 min | DOCUMENTATION |
+
+**Total estimated time**: 2.5-3 hours for all fixes
+**Benefit**: Reduce memory growth from 30-50KB/8hrs to <5KB/8hrs
+
+## References
 **File**: `rust/navigation.rs`, lines 62-95
 
 **Before**:
@@ -197,8 +281,6 @@ fn bind_panel_buttons() {
                 if let Some(id) = panel.get_attribute("id") {
                     close_panel(&id);
                 }
-            }
-        }
     });
 
     CLICK_LISTENER_ABORT.with(|cell| {
@@ -253,7 +335,6 @@ pub fn setup_debug_gesture() {
                 tap_times.clear();
             }
         });
-    });
 
     GESTURE_LISTENER_ABORT.with(|cell| {
         if let Some(old) = cell.borrow_mut().take() {
@@ -313,7 +394,6 @@ pub fn setup_debug_gesture() {
 
 ---
 
-### Fix 7: Gardens Navigation Listener with Removal
 **File**: `rust/gardens.rs`, lines 182-219
 
 **Before**:
@@ -332,7 +412,6 @@ pub fn init() {
                     populate_gardens_grid().await;
                 });
             }
-        }
     }) as Box<dyn FnMut(_)>);
 
     let _ = nav_target.add_event_listener_with_callback(
@@ -367,7 +446,6 @@ pub fn init() {
                         populate_gardens_grid().await;
                     });
                 }
-            }
         }) as Box<dyn FnMut(_)>);
 
         let _ = nav_target.add_event_listener_with_callback(
@@ -445,80 +523,3 @@ pub fn init_voices() {
 
 ---
 
-## Testing After Fixes
-
-### Automated Test
-```rust
-#[cfg(test)]
-mod memory_tests {
-    use wasm_bindgen_test::*;
-
-    #[wasm_bindgen_test]
-    fn test_nav_listener_removable() {
-        // 1. Get initial listener count via DevTools
-        // 2. Call listen_navigate_event()
-        // 3. Verify listener count increased
-        // 4. Call some cleanup/reset function
-        // 5. Verify listener count decreased
-    }
-
-    #[wasm_bindgen_test]
-    fn test_gesture_tap_times_bounded() {
-        setup_debug_gesture();
-
-        // Simulate 1000 rapid taps
-        for i in 0..1000 {
-            // Trigger pointerup with timestamp i * 0.5ms apart
-        }
-
-        // TAP_TIMES should never exceed ~3 elements (due to 1000ms window)
-        TAP_TIMES.with(|times| {
-            assert!(times.borrow().len() < 10, "TAP_TIMES grew unbounded");
-        });
-    }
-}
-```
-
-### Manual Chrome DevTools Steps
-
-1. **Before Fix**:
-   - Open Memory tab
-   - Take baseline heap snapshot
-   - Navigate between panels 30 times
-   - GC and take final snapshot
-   - Diff shows multiple Closure objects
-
-2. **After Fix**:
-   - Same steps
-   - Diff shows no Closure growth
-   - EventListener count stays constant
-
----
-
-## Verification Checklist
-
-- [ ] Gesture TAP_TIMES retention fixed (`t >= cutoff` not `now - t < 1000`)
-- [ ] Speech voiceschanged guard verified
-- [ ] Navigation listeners use AbortSignal
-- [ ] Click delegation listener managed (AbortSignal or documented as permanent)
-- [ ] Gardens listener removable via takedown function
-- [ ] All `Closure::new()` with `.forget()` are either temporary (RAF loops with cleanup) or necessary
-- [ ] No circular Rc<RefCell> cycles in RAF loops (break cycle before dropping)
-- [ ] All game RAF loops call `cancel_animation_frame()` in cleanup
-- [ ] Test suite includes memory regression test
-
----
-
-## Expected Cleanup Timeline
-
-| Priority | Task | Estimated Time | Impact |
-|----------|------|-----------------|---------|
-| P0 | Fix gesture TAP_TIMES | 5 min | HIGH |
-| P0 | Fix navigation listeners (AbortSignal) | 30 min | HIGH |
-| P1 | Verify speech voiceschanged guard | 10 min | MEDIUM |
-| P1 | Fix gardens listener removal | 20 min | MEDIUM |
-| P2 | Add memory regression tests | 60 min | LONG-TERM |
-| P2 | Document closure patterns for future | 20 min | DOCUMENTATION |
-
-**Total estimated time**: 2.5-3 hours for all fixes
-**Benefit**: Reduce memory growth from 30-50KB/8hrs to <5KB/8hrs

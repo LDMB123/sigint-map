@@ -2,6 +2,52 @@ use crate::{dom, render, theme};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use web_sys::Element;
+
+fn remove_class_on_animation_complete(el: &Element, class_name: &str, fallback_ms: i32) {
+    let Ok(abort_controller) = web_sys::AbortController::new() else {
+        dom::delayed_class_remove(el.clone(), class_name, fallback_ms);
+        return;
+    };
+    let signal = abort_controller.signal();
+    let event_target: web_sys::EventTarget = el.clone().into();
+
+    {
+        let el = el.clone();
+        let class_name = class_name.to_string();
+        let abort_controller = abort_controller.clone();
+        dom::on_with_signal(
+            &event_target,
+            "animationend",
+            &signal,
+            move |_: web_sys::Event| {
+                let _ = el.class_list().remove_1(&class_name);
+                abort_controller.abort();
+            },
+        );
+    }
+
+    {
+        let el = el.clone();
+        let class_name = class_name.to_string();
+        let abort_controller = abort_controller.clone();
+        dom::on_with_signal(
+            &event_target,
+            "animationcancel",
+            &signal,
+            move |_: web_sys::Event| {
+                let _ = el.class_list().remove_1(&class_name);
+                abort_controller.abort();
+            },
+        );
+    }
+
+    let el = el.clone();
+    let class_name = class_name.to_string();
+    dom::set_timeout_once(fallback_ms, move || {
+        let _ = el.class_list().remove_1(&class_name);
+        abort_controller.abort();
+    });
+}
 fn keyframe(transform: &str) -> JsValue {
     let obj = js_sys::Object::new();
     let _ = js_sys::Reflect::set(
@@ -47,7 +93,7 @@ pub fn sparkle_reveal(el: &Element) {
     }
     let cls = wasm_bindgen::intern("sparkle-reveal");
     let _ = el.class_list().add_1(cls);
-    dom::delayed_class_remove(el.clone(), cls, theme::SPARKLE_REVEAL_MS);
+    remove_class_on_animation_complete(el, cls, theme::SPARKLE_REVEAL_MS);
 }
 pub fn jelly_wobble(el: &Element) {
     if dom::prefers_reduced_motion() {
@@ -55,7 +101,7 @@ pub fn jelly_wobble(el: &Element) {
     }
     let cls = wasm_bindgen::intern("jelly-wobble");
     let _ = el.class_list().add_1(cls);
-    dom::delayed_class_remove(el.clone(), cls, theme::JELLY_WOBBLE_MS);
+    remove_class_on_animation_complete(el, cls, theme::JELLY_WOBBLE_MS);
 }
 pub fn magic_entrance(el: &Element) {
     if dom::prefers_reduced_motion() {

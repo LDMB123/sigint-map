@@ -3,8 +3,8 @@ use crate::companion;
 use crate::constants::*;
 use crate::dom;
 use crate::native_apis;
+use crate::panel_registry;
 use crate::speech;
-use crate::synth_audio;
 use std::cell::{Cell, RefCell};
 use std::fmt::Write;
 use std::rc::Rc;
@@ -59,6 +59,9 @@ fn listen_navigate_event() {
         let Some(panel) = panel_from_js(&state) else {
             return;
         };
+        if !panel_registry::is_known_panel(&panel) {
+            return;
+        }
         if nav_type == "traverse" {
             let id = panel;
             let handler = Closure::<dyn FnMut()>::once(move || {
@@ -131,11 +134,15 @@ fn try_restore_current_entry() -> bool {
     };
     let state = entry.entry_get_state();
     match panel_from_js(&state) {
-        Some(panel) if panel != "home-scene" => {
+        Some(panel) if panel == PANEL_HOME => true,
+        Some(panel) if panel_registry::is_known_panel(&panel) => {
             apply_panel_transition(&panel);
             true
         }
-        Some(_) => true,
+        Some(panel) => {
+            dom::warn(&format!("[nav] ignoring unknown panel in history state: {panel}"));
+            false
+        }
         None => false,
     }
 }
@@ -143,6 +150,9 @@ fn try_restore_hash_panel() -> bool {
     let hash = dom::window().location().hash().unwrap_or_default();
     let panel_id = hash.trim_start_matches('#');
     if panel_id.is_empty() {
+        return false;
+    }
+    if !panel_registry::is_known_panel(panel_id) {
         return false;
     }
     let panel_exists = dom::with_buf(|buf| {
@@ -188,6 +198,10 @@ fn bind_panel_buttons() {
             }
             if let Some(btn) = dom::closest(&el, "[data-nav-panel]") {
                 if let Some(panel_id) = dom::get_attr(&btn, "data-nav-panel") {
+                    if !panel_registry::is_known_panel(&panel_id) {
+                        dom::warn(&format!("[nav] ignoring unknown data-nav-panel id: {panel_id}"));
+                        return;
+                    }
                     close_panel_to_home();
                     let panel = panel_id;
                     dom::set_timeout_once(50, move || {
@@ -198,6 +212,12 @@ fn bind_panel_buttons() {
             }
             if let Some(open_btn) = dom::closest(&el, "[data-panel-open]") {
                 if let Some(panel_id) = dom::get_attr(&open_btn, ATTR_PANEL_OPEN) {
+                    if !panel_registry::is_known_panel(&panel_id) {
+                        dom::warn(&format!(
+                            "[nav] ignoring unknown data-panel-open id: {panel_id}"
+                        ));
+                        return;
+                    }
                     // Debounce: ignore double-tap within 300ms to prevent duplicate history entries
                     let now = js_sys::Date::now();
                     let last = LAST_NAV_MS.with(|c| c.get());
@@ -255,41 +275,14 @@ fn switch_tab(clicked_btn: &Element, tab_id: &str) {
     }
 }
 fn play_panel_sound(panel_id: &str) {
-    match panel_id {
-        "panel-tracker" => synth_audio::gentle(),
-        "panel-quests" => synth_audio::fanfare(),
-        "panel-stories" => synth_audio::dreamy(),
-        "panel-rewards" => synth_audio::sparkle(),
-        "panel-gardens" => synth_audio::gentle(),
-        "panel-games" => synth_audio::chime(),
-        "panel-adventures" => synth_audio::magic_wand(),
-        "panel-mystuff" => synth_audio::sparkle(),
-        _ => {}
-    }
+    panel_registry::play_sound(panel_id);
 }
 fn narrate_panel(panel_id: &str) {
-    let phrase = match panel_id {
-        "panel-tracker" => "Be Kind!",
-        "panel-adventures" => "Adventures!",
-        "panel-mystuff" => "My Stuff!",
-        "panel-quests" => "Let's do a quest!",
-        "panel-stories" => "Story time!",
-        "panel-games" => "Let's play!",
-        "panel-rewards" => "Your stickers!",
-        "panel-gardens" => "Your gardens!",
-        _ => return,
-    };
-    speech::speak(phrase);
+    if let Some(phrase) = panel_registry::narration_phrase(panel_id) {
+        speech::speak(phrase);
+    }
 }
-pub fn open_panel(panel_id: &str) {
-    set_transition_direction("forward");
-    FOCUS_BEFORE_PANEL.with(|cell| {
-        if let Ok(mut guard) = cell.try_borrow_mut() {
-            *guard = dom::active_element();
-        }
-    });
-    push_panel_state(panel_id);
-    apply_panel_transition(panel_id);
+fn run_post_open_effects(panel_id: &str) {
     play_panel_sound(panel_id);
     native_apis::vibrate_tap();
     narrate_panel(panel_id);
@@ -300,6 +293,42 @@ pub fn open_panel(panel_id: &str) {
             dom::focus_first(&panel);
         }
     });
+}
+fn dispatch_panel_event(event_name: &str, target_panel: &str, from_panel: Option<&str>) {
+    let detail = js_sys::Object::new();
+    let _ = js_sys::Reflect::set(&detail, &"target_panel".into(), &target_panel.into());
+    if let Some(from) = from_panel {
+        let _ = js_sys::Reflect::set(&detail, &"from_panel".into(), &from.into());
+    }
+    dom::dispatch_custom_event(event_name, detail.into());
+}
+pub fn open_panel(panel_id: &str) {
+    if !panel_registry::is_known_panel(panel_id) {
+        dom::warn(&format!("[nav] ignoring open_panel for unknown id: {panel_id}"));
+        return;
+    }
+    set_transition_direction("forward");
+    FOCUS_BEFORE_PANEL.with(|cell| {
+        if let Ok(mut guard) = cell.try_borrow_mut() {
+            *guard = dom::active_element();
+        }
+    });
+    if crate::gpu::is_throughput_mode() {
+        // Explicit throughput mode prioritizes immediate panel activation.
+        apply_panel_transition(panel_id);
+        let panel_id_for_history = panel_id.to_string();
+        dom::set_timeout_once(0, move || {
+            push_panel_state(&panel_id_for_history);
+        });
+        let panel_id_owned = panel_id.to_string();
+        dom::set_timeout_once(0, move || {
+            run_post_open_effects(&panel_id_owned);
+        });
+    } else {
+        push_panel_state(panel_id);
+        apply_panel_transition(panel_id);
+        run_post_open_effects(panel_id);
+    }
 }
 pub fn close_panel_to_home() {
     set_transition_direction("back");
@@ -321,6 +350,9 @@ pub fn close_panel_to_home() {
     });
 }
 fn apply_panel_transition(panel_id: &str) {
+    let from_panel = dom::query(SELECTOR_APP)
+        .and_then(|app| dom::get_attr(&app, ATTR_ACTIVE_PANEL))
+        .unwrap_or_else(|| PANEL_HOME.to_string());
     speech::stop();
     dom::with_buf(|buf| {
         let _ = write!(buf, "[data-panel='{panel_id}']");
@@ -329,7 +361,7 @@ fn apply_panel_transition(panel_id: &str) {
         }
     });
     let id = panel_id.to_string();
-    dom::dispatch_kv_event(EVENT_PANEL_LEAVING, "target_panel", panel_id);
+    dispatch_panel_event(EVENT_PANEL_LEAVING, panel_id, Some(&from_panel));
     with_view_transition(move || {
         let going_home = id == PANEL_HOME;
         dom::for_each_match(SELECTOR_PANEL, |panel| {
@@ -360,7 +392,7 @@ fn apply_panel_transition(panel_id: &str) {
             }
         });
     });
-    dom::dispatch_kv_event(EVENT_PANEL_OPENED, "target_panel", panel_id);
+    dispatch_panel_event(EVENT_PANEL_OPENED, panel_id, Some(&from_panel));
 }
 fn bind_swipe_back() {
     let start_x: Rc<RefCell<Option<f64>>> = Rc::new(RefCell::new(None));
@@ -406,6 +438,13 @@ fn bind_swipe_back() {
 pub fn with_view_transition<F: FnOnce() + 'static>(update: F) {
     use js_sys::Reflect;
     use wasm_bindgen::JsValue;
+
+    // Throughput mode prioritizes responsiveness over visual transition effects.
+    if crate::gpu::is_throughput_mode() {
+        update();
+        return;
+    }
+
     let doc = dom::document();
     let vt_func = Reflect::get(&doc, &JsValue::from_str("startViewTransition"))
         .ok()

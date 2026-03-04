@@ -1,18 +1,17 @@
 import { expect, test } from "@playwright/test";
+import { PANEL_IDS_WITH_PROGRESS } from "./fixtures/panelIds";
 import { waitForAppReady } from "./helpers";
 
 test.use({ video: "off" });
 test.describe.configure({ mode: "serial" });
 
-const PANELS = [
-  "panel-tracker",
-  "panel-quests",
-  "panel-stories",
-  "panel-rewards",
-  "panel-games",
-  "panel-gardens",
-  "panel-progress"
-] as const;
+const SNAPSHOT_OPTIONS = {
+  animations: "disabled",
+  caret: "hide",
+  scale: "css"
+} as const;
+
+type ViewportKind = "desktop" | "mobile";
 
 async function stabilizeForSnapshots(page: import("@playwright/test").Page): Promise<void> {
   await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "light" });
@@ -144,23 +143,22 @@ async function waitForDomSettle(
   );
 }
 
-test.describe("visual gate: desktop", () => {
-  test("loading screen", async ({ page }) => {
-    await page.goto("/?e2e=1", { waitUntil: "domcontentloaded" });
-    await stabilizeForSnapshots(page);
-    await forceLoadingScreen(page);
-    await waitForDomSettle(page, "#loading-screen", 300, 30_000);
+async function assertLoadingScreenSnapshot(
+  page: import("@playwright/test").Page,
+  viewportKind: ViewportKind
+): Promise<void> {
+  await page.goto("/?e2e=1", { waitUntil: "domcontentloaded" });
+  await stabilizeForSnapshots(page);
+  await forceLoadingScreen(page);
+  await waitForDomSettle(page, "#loading-screen", 300, 30_000);
 
-    const loading = page.locator("#loading-screen");
-    await expect(loading).toBeVisible();
-    await expect(loading).toHaveScreenshot("desktop-loading-screen.png", {
-      animations: "disabled",
-      caret: "hide",
-      scale: "css"
-    });
-  });
+  const loading = page.locator("#loading-screen");
+  await expect(loading).toBeVisible();
+  await expect(loading).toHaveScreenshot(`${viewportKind}-loading-screen.png`, SNAPSHOT_OPTIONS);
+}
 
-  for (const panelId of PANELS) {
+function registerPanelSnapshotTests(viewportKind: ViewportKind): void {
+  for (const panelId of PANEL_IDS_WITH_PROGRESS) {
     test(`panel ${panelId}`, async ({ page }) => {
       await page.goto(`/?e2e=1&panel=${panelId}#${panelId}`, { waitUntil: "domcontentloaded" });
       await waitForAppReady(page, panelId);
@@ -169,13 +167,16 @@ test.describe("visual gate: desktop", () => {
 
       const panel = page.locator(`#${panelId}`);
       await expect(panel).toBeVisible();
-      await expect(panel).toHaveScreenshot(`desktop-${panelId}.png`, {
-        animations: "disabled",
-        caret: "hide",
-        scale: "css"
-      });
+      await expect(panel).toHaveScreenshot(`${viewportKind}-${panelId}.png`, SNAPSHOT_OPTIONS);
     });
   }
+}
+
+test.describe("visual gate: desktop", () => {
+  test("loading screen", async ({ page }) => {
+    await assertLoadingScreenSnapshot(page, "desktop");
+  });
+  registerPanelSnapshotTests("desktop");
 });
 
 test.describe("visual gate: mobile", () => {
@@ -187,34 +188,7 @@ test.describe("visual gate: mobile", () => {
   });
 
   test("loading screen", async ({ page }) => {
-    await page.goto("/?e2e=1", { waitUntil: "domcontentloaded" });
-    await stabilizeForSnapshots(page);
-    await forceLoadingScreen(page);
-    await waitForDomSettle(page, "#loading-screen", 300, 30_000);
-
-    const loading = page.locator("#loading-screen");
-    await expect(loading).toBeVisible();
-    await expect(loading).toHaveScreenshot("mobile-loading-screen.png", {
-      animations: "disabled",
-      caret: "hide",
-      scale: "css"
-    });
+    await assertLoadingScreenSnapshot(page, "mobile");
   });
-
-  for (const panelId of PANELS) {
-    test(`panel ${panelId}`, async ({ page }) => {
-      await page.goto(`/?e2e=1&panel=${panelId}#${panelId}`, { waitUntil: "domcontentloaded" });
-      await waitForAppReady(page, panelId);
-      await stabilizeForSnapshots(page);
-      await waitForDomSettle(page, `#${panelId}`);
-
-      const panel = page.locator(`#${panelId}`);
-      await expect(panel).toBeVisible();
-      await expect(panel).toHaveScreenshot(`mobile-${panelId}.png`, {
-        animations: "disabled",
-        caret: "hide",
-        scale: "css"
-      });
-    });
-  }
+  registerPanelSnapshotTests("mobile");
 });

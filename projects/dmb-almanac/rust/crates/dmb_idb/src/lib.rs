@@ -14,6 +14,26 @@ mod schema;
 
 pub use schema::*;
 
+#[derive(Debug, Clone, Copy)]
+pub struct BulkPutOptions {
+    pub tx_batch_size: usize,
+}
+
+impl Default for BulkPutOptions {
+    fn default() -> Self {
+        Self {
+            tx_batch_size: 2_000,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct BulkPutStats {
+    pub inserted: u32,
+    pub transaction_count: u32,
+    pub max_tx_ms: f64,
+}
+
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
         use idb::{
@@ -968,16 +988,35 @@ cfg_if::cfg_if! {
             Ok(true)
         }
 
+        fn performance_now_ms() -> f64 {
+            web_sys::window()
+                .and_then(|window| window.performance())
+                .map(|performance| performance.now())
+                .unwrap_or_else(Date::now)
+        }
+
+        fn normalized_tx_batch_size(batch_size: usize) -> usize {
+            batch_size.max(1)
+        }
+
         pub async fn bulk_put(store_name: &str, values: &[JsValue]) -> Result<u32> {
+            let stats = bulk_put_with_options(store_name, values, BulkPutOptions::default()).await?;
+            Ok(stats.inserted)
+        }
+
+        pub async fn bulk_put_with_options(
+            store_name: &str,
+            values: &[JsValue],
+            options: BulkPutOptions,
+        ) -> Result<BulkPutStats> {
             if values.is_empty() {
-                return Ok(0);
+                return Ok(BulkPutStats::default());
             }
-            // Larger write batches reduce transaction overhead during initial offline import
-            // while remaining small enough to avoid long UI jank windows on Chromium.
-            const BULK_PUT_BATCH_SIZE: usize = 2000;
+            let tx_batch_size = normalized_tx_batch_size(options.tx_batch_size);
             let db = open_db().await?;
-            let mut total: u32 = 0;
-            for chunk in values.chunks(BULK_PUT_BATCH_SIZE) {
+            let mut stats = BulkPutStats::default();
+            for chunk in values.chunks(tx_batch_size) {
+                let tx_started_at = performance_now_ms();
                 let tx = db
                     .transaction(&[store_name], TransactionMode::ReadWrite)
                     .js()?;
@@ -987,9 +1026,12 @@ cfg_if::cfg_if! {
                     store.put(value, None).js()?;
                 }
                 tx.await.js()?;
-                total += chunk.len() as u32;
+                let tx_elapsed_ms = (performance_now_ms() - tx_started_at).max(0.0);
+                stats.max_tx_ms = stats.max_tx_ms.max(tx_elapsed_ms);
+                stats.inserted = stats.inserted.saturating_add(chunk.len() as u32);
+                stats.transaction_count = stats.transaction_count.saturating_add(1);
             }
-            Ok(total)
+            Ok(stats)
         }
 
         async fn write_batch(
@@ -1243,6 +1285,7 @@ cfg_if::cfg_if! {
         idb_stub!(get_release_by_slug(_slug: &str) -> Option<Release>);
         idb_stub!(migrate_previous_db() -> bool);
         idb_stub!(bulk_put(_store_name: &str, _values: &[JsValue]) -> u32);
+        idb_stub!(bulk_put_with_options(_store_name: &str, _values: &[JsValue], _options: BulkPutOptions) -> BulkPutStats);
         idb_stub!(delete_sync_meta(_id: &str) -> ());
         idb_stub!(clear_store(_store_name: &str) -> ());
         idb_stub!(store_embedding_chunk(_chunk: &EmbeddingChunk) -> ());
@@ -1267,5 +1310,23 @@ cfg_if::cfg_if! {
         pub async fn list_all<T: serde::de::DeserializeOwned>(_store_name: &str) -> Result<Vec<T>, JsValue> {
             idb_unavailable()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{BulkPutOptions, BulkPutStats};
+
+    #[test]
+    fn bulk_put_options_default_is_non_zero() {
+        assert!(BulkPutOptions::default().tx_batch_size > 0);
+    }
+
+    #[test]
+    fn bulk_put_stats_default_zeroed() {
+        let stats = BulkPutStats::default();
+        assert_eq!(stats.inserted, 0);
+        assert_eq!(stats.transaction_count, 0);
+        assert_eq!(stats.max_tx_ms, 0.0);
     }
 }

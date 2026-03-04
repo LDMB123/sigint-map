@@ -3,11 +3,15 @@ name = "dmb_server"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+ai_diagnostics_full = ["dmb_app/ai_diagnostics_full"]
+
 [dependencies]
 axum = { version = "0.8.8", features = ["macros", "json"] }
-leptos = { version = "0.8.5", features = ["ssr"] }
-leptos_axum = "0.8.5"
-leptos_config = "0.8.5"
+leptos = { version = "0.8.17", features = ["ssr"] }
+leptos_axum = "0.8.8"
+leptos_config = "0.8.9"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }

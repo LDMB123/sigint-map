@@ -1,6 +1,14 @@
 # Game Debugging Guide
 
-## Issues Found (Code Analysis)
+- Archive Path: `docs/archive/DETAILED_GAME_DEBUG.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Game Debugging Guide`
+
+## Summary
+**Location:** `game_paint.rs` line 145, `game_unicorn.rs` lines 136, 157
+
+## Context
+### Issues Found (Code Analysis)
 
 ### 🔴 Critical: Potential Panics from `.unwrap()`
 
@@ -21,9 +29,16 @@
 
 ---
 
-## Manual Testing Checklist
+## Actions
+1. **Run manual tests** for each game using checklist above
+2. **Note failing tests** with specific error messages
+3. **Check console** for panics or warnings
+4. **Run automated test script** for quick validation
+5. **Report findings** with specific game names and symptoms
 
-### Test Environment
+Once you identify which specific games are broken and what the symptoms are, I can provide targeted fixes for each issue.
+
+## Validation
 - Device: iPad mini 6
 - Browser: Safari 26.2
 - Network: Offline mode (disable WiFi after initial load)
@@ -192,7 +207,7 @@ If game crashes immediately:
 
 ---
 
-## Common Issues & Fixes
+### Common Issues & Fixes
 
 ### Issue: Game doesn't start (stays on menu)
 
@@ -282,7 +297,7 @@ db.query("SELECT * FROM game_scores ORDER BY created_at DESC LIMIT 10")
 
 ---
 
-## Performance Benchmarks
+### Performance Benchmarks
 
 ### Expected Performance (iPad mini 6, A15 chip)
 
@@ -317,8 +332,6 @@ db.query("SELECT * FROM game_scores ORDER BY created_at DESC LIMIT 10")
 5. Check peak memory usage
 
 ---
-
-## Automated Test Script
 
 Run this in Safari console after loading app:
 
@@ -384,12 +397,6 @@ Expected output:
 
 ---
 
-## Next Steps
+## References
+_No references recorded._
 
-1. **Run manual tests** for each game using checklist above
-2. **Note failing tests** with specific error messages
-3. **Check console** for panics or warnings
-4. **Run automated test script** for quick validation
-5. **Report findings** with specific game names and symptoms
-
-Once you identify which specific games are broken and what the symptoms are, I can provide targeted fixes for each issue.

@@ -8,6 +8,7 @@ Copy this file as `IPAD_REGRESSION_RUN_YYYY-MM-DD.md` for each testing session.
 - [ ] Host: `trunk serve --address 0.0.0.0`
 - [ ] Navigate to `http://<HOST_IP>:8080` in Safari
 - [ ] Confirm service worker installs (check console)
+- [ ] Perf controls verified: `?perf=throughput`, `?perf=quality`, `?gpu=off` all apply expected body attrs
 
 ## Core Navigation
 
@@ -87,8 +88,15 @@ Copy this file as `IPAD_REGRESSION_RUN_YYYY-MM-DD.md` for each testing session.
 
 - [ ] App boots within 3 seconds
 - [ ] No janky animations
-- [ ] Panel transitions under 300ms
+- [ ] Panel transitions under 180ms
 - [ ] No memory warnings during 10-minute play session
+
+## Apple Silicon Trace Evidence
+
+- [ ] Capture baseline A/B traces (`perf=quality`, `perf=throughput`) with `scripts/apple-silicon-profile-iterate.sh`
+- [ ] Archive both summary CSV files under `artifacts/apple-silicon-profile/`
+- [ ] Run `npm run qa:apple-silicon-trace-budget -- --candidate <candidate-summary.csv>`
+- [ ] Attach comparator PASS output to release evidence pack
 
 ## Visual
 

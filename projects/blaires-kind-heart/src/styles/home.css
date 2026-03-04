@@ -560,7 +560,15 @@
 }
 
 /* Shrink on panels (not home) — smaller but still magical */
-#app:not([data-active-panel="home-scene"])~.companion {
+#app:not([data-active-panel="home-scene"]) {
+  /* Prevent off-screen transform bleed when home is inert under panels. */
+  animation: none;
+  transform: none;
+}
+
+/* Keep companion mounted but less dominant while any panel is open. */
+#app:not([data-active-panel="home-scene"])~.companion,
+#app:not([data-active-panel="home-scene"])~.companion-landmark .companion {
   width: 120px;
   height: 120px;
   font-size: 4rem;

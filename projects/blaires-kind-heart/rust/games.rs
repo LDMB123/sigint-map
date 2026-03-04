@@ -1,8 +1,12 @@
 use crate::{
-    companion, constants::*, db_client, dom, game_catcher, game_hug, game_memory, game_paint,
-    game_unicorn, render, state, synth_audio, utils,
+    browser_apis, companion, constants::*, db_client, dom, game_catcher, game_hug, game_memory,
+    game_paint, game_unicorn, render, state, synth_audio, utils,
 };
+use crate::state::AppState;
+use std::cell::RefCell;
 use std::fmt::Write;
+use std::rc::Rc;
+use std::thread::LocalKey;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, Event};
 thread_local! {
@@ -50,6 +54,117 @@ const GAME_CARDS: &[(&str, &str, &str, &str, &str, &str)] = &[
         "illustrations/buttons/btn-game-unicorn.webp",
     ),
 ];
+
+type GameStartFn = fn(Rc<RefCell<AppState>>);
+type GameCleanupFn = fn();
+
+struct GameLifecycle {
+    id: &'static str,
+    start: GameStartFn,
+    cleanup: GameCleanupFn,
+}
+
+const GAME_LIFECYCLES: &[GameLifecycle] = &[
+    GameLifecycle {
+        id: "catcher",
+        start: game_catcher::start,
+        cleanup: game_catcher::cleanup,
+    },
+    GameLifecycle {
+        id: "memory",
+        start: game_memory::start,
+        cleanup: game_memory::cleanup,
+    },
+    GameLifecycle {
+        id: "hug",
+        start: game_hug::start,
+        cleanup: game_hug::cleanup,
+    },
+    GameLifecycle {
+        id: "paint",
+        start: game_paint::start,
+        cleanup: game_paint::cleanup,
+    },
+    GameLifecycle {
+        id: "unicorn",
+        start: game_unicorn::start,
+        cleanup: game_unicorn::cleanup,
+    },
+];
+
+pub struct PickerSetup {
+    pub arena: Element,
+    pub buttons: Element,
+    pub doc: web_sys::Document,
+    pub abort: browser_apis::AbortHandle,
+    pub signal: web_sys::AbortSignal,
+}
+
+pub type PickerAbortSlot = &'static LocalKey<RefCell<Option<browser_apis::AbortHandle>>>;
+
+pub fn clear_picker_abort(slot: PickerAbortSlot) {
+    slot.with(|cell| {
+        cell.borrow_mut().take();
+    });
+}
+
+pub fn store_picker_abort(slot: PickerAbortSlot, abort: browser_apis::AbortHandle) {
+    slot.with(|cell| {
+        *cell.borrow_mut() = Some(abort);
+    });
+}
+
+pub fn setup_picker_with_abort(slot: PickerAbortSlot, title: &str) -> Option<PickerSetup> {
+    clear_picker_abort(slot);
+    setup_picker(title)
+}
+
+fn game_lifecycle(game_id: &str) -> Option<&'static GameLifecycle> {
+    GAME_LIFECYCLES.iter().find(|entry| entry.id == game_id)
+}
+
+fn cleanup_all_games() {
+    for game in GAME_LIFECYCLES {
+        (game.cleanup)();
+    }
+}
+
+pub fn setup_picker(title: &str) -> Option<PickerSetup> {
+    let (arena, buttons) = render::build_game_picker(title)?;
+    let abort = browser_apis::new_abort_handle()?;
+    let signal = abort.signal();
+    let doc = dom::document();
+    Some(PickerSetup {
+        arena,
+        buttons,
+        doc,
+        abort,
+        signal,
+    })
+}
+
+pub fn bind_picker_selection(
+    arena: &Element,
+    signal: &web_sys::AbortSignal,
+    selector: &str,
+    mut on_select: impl FnMut(Element) + 'static,
+) {
+    let selector = selector.to_string();
+    dom::on_with_signal(
+        arena.unchecked_ref(),
+        "click",
+        signal,
+        move |event: Event| {
+            let Some(el) = dom::event_target_element(&event) else {
+                return;
+            };
+            if let Some(target) = dom::closest(&el, &selector) {
+                on_select(target);
+            }
+        },
+    );
+}
+
 pub fn init() {
     if let Some(body) = dom::query(SELECTOR_GAMES_BODY) {
         let doc = dom::document();
@@ -241,11 +356,7 @@ fn bind_exit_btn() {
         dom::set_attr(&btn, "data-bound-exit", "true");
         dom::on(btn.unchecked_ref(), "click", |_| {
             crate::synth_audio::tap();
-            crate::game_catcher::cleanup();
-            crate::game_memory::cleanup();
-            crate::game_hug::cleanup();
-            crate::game_paint::cleanup();
-            crate::game_unicorn::cleanup();
+            cleanup_all_games();
             return_to_menu();
         });
     }
@@ -274,13 +385,8 @@ fn launch_game(game_id: &str) {
     set_game_view(true);
     synth_audio::start_game_music(game_id);
     let temp_state = state::snapshot();
-    match game_id {
-        "catcher" => game_catcher::start(temp_state),
-        "memory" => game_memory::start(temp_state),
-        "hug" => game_hug::start(temp_state),
-        "paint" => game_paint::start(temp_state),
-        "unicorn" => game_unicorn::start(temp_state),
-        _ => {}
+    if let Some(game) = game_lifecycle(game_id) {
+        (game.start)(temp_state);
     }
 }
 pub fn return_to_menu() {
@@ -452,17 +558,18 @@ fn listen_panel_leaving() {
             let target = js_sys::Reflect::get(&detail, &"target_panel".into())
                 .ok()
                 .and_then(|v| v.as_string());
-            if target.as_deref() != Some(PANEL_GAMES) {
-                synth_audio::stop_game_music();
-                game_catcher::cleanup();
-                game_memory::cleanup();
-                game_hug::cleanup();
-                game_paint::cleanup();
-                game_unicorn::cleanup();
-                return_to_menu();
-                if GAME_PLAYED.with(|g| g.replace(false)) {
-                    companion::on_game_complete();
-                }
+            let from_panel = js_sys::Reflect::get(&detail, &"from_panel".into())
+                .ok()
+                .and_then(|v| v.as_string());
+            if from_panel.as_deref() != Some(PANEL_GAMES) || target.as_deref() == Some(PANEL_GAMES)
+            {
+                return;
+            }
+            synth_audio::stop_game_music();
+            cleanup_all_games();
+            return_to_menu();
+            if GAME_PLAYED.with(|g| g.replace(false)) {
+                companion::on_game_complete();
             }
         },
     );

@@ -262,6 +262,16 @@ fn record_ai_warning_once(warn_key: &str, event: &str, details: &str) {
 }
 
 #[cfg(feature = "hydrate")]
+pub fn preload_webgpu_runtime() {
+    spawn_local(async {
+        let _ = dmb_wasm::ensure_webgpu_helpers_loaded().await;
+    });
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn preload_webgpu_runtime() {}
+
+#[cfg(feature = "hydrate")]
 pub fn detect_ai_capabilities() -> AiCapabilities {
     let Some(window) = web_sys::window() else {
         return AiCapabilities::default();
@@ -281,6 +291,7 @@ pub fn detect_ai_capabilities() -> AiCapabilities {
 pub async fn probe_webgpu_device() -> Option<bool> {
     use wasm_bindgen_futures::JsFuture;
 
+    let _ = dmb_wasm::ensure_webgpu_helpers_loaded().await;
     let promise = dmb_webgpu_probe().ok()?;
     let result = JsFuture::from(promise).await.ok()?;
     serde_wasm_bindgen::from_value::<WebgpuProbeResult>(result)
@@ -292,6 +303,7 @@ pub async fn probe_webgpu_device() -> Option<bool> {
 async fn warm_webgpu_worker() {
     use wasm_bindgen_futures::JsFuture;
 
+    let _ = dmb_wasm::ensure_webgpu_helpers_loaded().await;
     let Ok(promise) = dmb_warm_webgpu_worker() else {
         return;
     };
@@ -2089,6 +2101,7 @@ async fn measure_webgpu_scores(
     use wasm_bindgen::JsCast;
     use wasm_bindgen_futures::JsFuture;
 
+    let _ = dmb_wasm::ensure_webgpu_helpers_loaded().await;
     let window = web_sys::window()?;
     let perf = window.performance()?;
     let start = perf.now();

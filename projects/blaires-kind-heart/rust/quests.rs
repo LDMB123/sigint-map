@@ -1,6 +1,6 @@
 use crate::{
-    adaptive_quests, animations, companion, confetti, constants::SELECTOR_QUESTS_BODY, dom, render,
-    rewards, speech, state::AppState, streaks, synth_audio, theme, ui, utils, weekly_goals,
+    adaptive_quests, animations, confetti, constants::SELECTOR_QUESTS_BODY, dom, domain_services,
+    render, speech, state::AppState, synth_audio, theme, ui, utils,
 };
 use std::cell::RefCell;
 use std::fmt::Write;
@@ -752,14 +752,14 @@ async fn render_daily_quests(state: Rc<RefCell<AppState>>) {
             let _ = heart_counter.class_list().add_1("heart-counter-fill");
             dom::delayed_class_remove(heart_counter, "heart-counter-fill", 1500);
         }
-        companion::on_quest_complete();
+        domain_services::on_quest_complete();
         speech::speak(&spoken_msg);
-        weekly_goals::increment_progress("quests", 1);
-        weekly_goals::increment_progress("hearts", theme::HEARTS_PER_QUEST);
-        streaks::record_today(s.clone());
+        domain_services::increment_weekly_goal_progress("quests", 1);
+        domain_services::increment_weekly_goal_progress("hearts", theme::HEARTS_PER_QUEST);
+        domain_services::record_streak_today(s.clone());
         let completed = s.borrow().quests_completed_today;
         if completed >= 3 {
-            rewards::award_sticker("quest-bonus");
+            domain_services::award_sticker("quest-bonus");
             dom::toast("🌟 All quests done! Bonus sticker! 🌟");
             dom::set_timeout_once(500, || {
                 synth_audio::fanfare();

@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blaires-kind-heart.local/docs/testing/release-evidence/manifest.schema.json",
+  "title": "RC4 Release Evidence Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "release_track",
+    "device_target",
+    "os_target",
+    "browser_target",
+    "physical_runs",
+    "kpi_status",
+    "waivers"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "release_track": {
+      "type": "string",
+      "const": "RC4"
+    },
+    "device_target": {
+      "type": "string",
+      "const": "iPad mini 6"
+    },
+    "os_target": {
+      "type": "string",
+      "const": "iPadOS 26.2"
+    },
+    "browser_target": {
+      "type": "string",
+      "const": "Safari 26.2"
+    },
+    "physical_runs": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "$ref": "#/$defs/physical_run"
+      }
+    },
+    "kpi_status": {
+      "$ref": "#/$defs/kpi_status"
+    },
+    "waivers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/waiver"
+      }
+    }
+  },
+  "$defs": {
+    "physical_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "date",
+        "operator",
+        "report_path",
+        "status",
+        "p0_open",
+        "p1_open",
+        "notes"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": [
+            "rc3_run_01",
+            "rc4_run_02"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "operator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "report_path": {
+          "type": "string",
+          "pattern": "^docs/testing/release-evidence/runs/.+\\.md$"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "p0_open": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "p1_open": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "kpi_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "db_reduction_status",
+        "source_report_path"
+      ],
+      "properties": {
+        "db_reduction_status": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "FAIL"
+          ]
+        },
+        "source_report_path": {
+          "type": "string",
+          "pattern": "^scripts/reports/.+\\.md$"
+        }
+      }
+    },
+    "waiver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "owner",
+        "justification",
+        "followup_milestone",
+        "expires_on",
+        "doc_path"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "DRAFT",
+            "APPROVED",
+            "REJECTED",
+            "EXPIRED"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "justification": {
+          "type": "string",
+          "minLength": 1
+        },
+        "followup_milestone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expires_on": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "doc_path": {
+          "type": "string",
+          "pattern": "^docs/testing/release-evidence/waivers/.+\\.md$"
+        }
+      }
+    }
+  }
+}

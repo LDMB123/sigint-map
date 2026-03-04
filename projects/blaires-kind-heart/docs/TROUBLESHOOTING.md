@@ -1,6 +1,6 @@
 # Troubleshooting (Operational Summary)
 
-Last updated: 2026-03-03
+Last updated: 2026-03-04
 Full reference: `docs/archive/reference-full/TROUBLESHOOTING.full.md`
 
 ## First Response Checklist
@@ -10,6 +10,7 @@ Full reference: `docs/archive/reference-full/TROUBLESHOOTING.full.md`
 npm run qa:pwa-contract
 npm run qa:runtime
 npm run qa:db-contract
+npm run qa:index-shell-deep
 ```
 3. Check latest known state in `docs/STATUS_LEDGER.md`.
 
@@ -23,6 +24,7 @@ npm run qa:db-contract
 ## Useful Diagnostics
 - Runtime diagnostics script and E2E contract.
 - DB contract checks and related Playwright tests.
+- Index-shell contract matrix checks and negative mutation checks (`qa:index-shell-deep`).
 - WASM target tests:
 ```bash
 cargo test --target wasm32-unknown-unknown

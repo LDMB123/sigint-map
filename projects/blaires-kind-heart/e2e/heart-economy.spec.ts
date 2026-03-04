@@ -4,17 +4,15 @@
  * Covers: heart increment, accumulation, display, streak element, and quest heart award.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { dismissOnboardingIfPresent, readHearts } from "./helpers";
+import {
+  applyFlowE2ESetup,
+  clickFirstMatchingSelector,
+  clickWhenSelectorAppears,
+  dismissOnboardingIfPresent,
+  readHearts,
+} from "./helpers";
 
-test.use({ video: "off", serviceWorkers: "block" });
-
-test.afterEach(async ({ page }) => {
-  try {
-    await page.goto("about:blank", { waitUntil: "domcontentloaded", timeout: 5_000 });
-  } catch {
-    // Best-effort cleanup.
-  }
-});
+applyFlowE2ESetup(test);
 
 async function clickAction(page: Page, action = "hug"): Promise<boolean> {
   return Promise.race([
@@ -134,38 +132,11 @@ test.describe("heart economy", () => {
       .toBeGreaterThan(0);
 
     // Click a quest to open the completion prompt.
-    const triggered = await Promise.race([
-      page.evaluate(() => {
-        const quest = document.querySelector("[data-quest-idx]");
-        if (!quest) return false;
-        quest.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-        return true;
-      }),
-      new Promise<boolean>((resolve) => {
-        setTimeout(() => resolve(false), 8_000);
-      }),
-    ]);
+    const triggered = await clickFirstMatchingSelector(page, "[data-quest-idx]");
     expect(triggered).toBe(true);
 
     // Confirm the quest completion.
-    const confirmed = await Promise.race([
-      page.evaluate(
-        () =>
-          new Promise<boolean>((resolve) => {
-            const check = setInterval(() => {
-              const btn = document.querySelector(".quest-confirm-prompt button");
-              if (btn) {
-                clearInterval(check);
-                btn.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-                resolve(true);
-              }
-            }, 100);
-          })
-      ),
-      new Promise<boolean>((resolve) => {
-        setTimeout(() => resolve(false), 8_000);
-      }),
-    ]);
+    const confirmed = await clickWhenSelectorAppears(page, ".quest-confirm-prompt button");
     expect(confirmed).toBe(true);
 
     // After completion, hearts should be > 0 (quest awards hearts).

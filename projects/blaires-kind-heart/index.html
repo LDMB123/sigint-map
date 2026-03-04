@@ -28,14 +28,21 @@
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
   <link rel="apple-touch-icon" href="./icons/icon-180.png" />
+  <!-- INDEX-SHELL HEAD START -->
   <link data-trunk rel="copy-file" href="manifest.webmanifest" />
   <link data-trunk rel="copy-file" href="wasm-init.js" />
   <link data-trunk rel="copy-file" href="public/sw.js" />
   <link data-trunk rel="copy-file" href="public/sw-assets.js" />
   <link data-trunk rel="copy-file" href="public/db-worker.js" />
+  <link data-trunk rel="copy-file" href="public/db-contract.js" />
+  <link data-trunk rel="copy-file" href="public/skill-taxonomy.js" />
+  <link data-trunk rel="copy-file" href="public/skill-mastery-badges.js" />
+  <link data-trunk rel="copy-file" href="public/reflection-prompts.generated.js" />
   <link data-trunk rel="copy-file" href="public/asset-manifest.js" />
+  <link data-trunk rel="copy-file" href="public/panel-registry.js" />
   <link data-trunk rel="copy-file" href="public/runtime-diagnostics.js" />
   <link data-trunk rel="copy-file" href="public/offline.html" />
+  <link data-trunk rel="copy-file" href="public/offline.js" />
   <!-- SQLite WASM loaded from public/sqlite/ -->
   <link data-trunk rel="copy-dir" href="public/sqlite" />
 
@@ -52,22 +59,20 @@
 
   <!-- Preload critical assets for faster LCP -->
   <link rel="preload" as="image" href="./illustrations/blaire/sparkle-splash-optimized.webp" fetchpriority="high" />
+  <link rel="preload" as="image" href="/illustrations/backgrounds/home-bg.webp" fetchpriority="high" />
 
   <!-- Critical companion skin (default state) -->
   <link rel="preload" as="image" href="/companions/default_happy.webp" fetchpriority="high" />
 
-  <!-- Garden images loaded on-demand when Gardens panel opens -->
-
   <script src="./blaires-kind-heart.js"></script>
-  <script type="module" src="./wasm-init.js?js=blaires-kind-heart.js&wasm=blaires-kind-heart_bg.wasm"></script>
+  <script type="module" src="./wasm-init.js?wasm=blaires-kind-heart_bg.wasm"></script>
   <link data-trunk rel="rust" href="Cargo.toml" data-target-name="blaires_kind_heart" data-wasm-opt="0" data-bindgen-target="no-modules" />
-
-  <!-- Native system fonts — SF Pro Rounded on iPadOS, system-ui elsewhere -->
 
   <title>Blaire's Kind Heart</title>
 
   <!-- CRITICAL CSS: Needed for first paint (<2s target) -->
   <link data-trunk rel="css" href="src/styles/tokens.css" />
+  <link data-trunk rel="css" href="src/styles/generated-animation-timings.css" />
   <link data-trunk rel="css" href="src/styles/app.css" />
   <link data-trunk rel="css" href="src/styles/home.css" />
   <link data-trunk rel="css" href="src/styles/animations.css" />
@@ -83,21 +88,24 @@
   <link data-trunk rel="css" href="src/styles/gardens.css" />
   <link data-trunk rel="css" href="src/styles/particles.css" />
   <link data-trunk rel="css" href="src/styles/scroll-effects.css" />
+  <!-- INDEX-SHELL HEAD END -->
 
   <style>
     /* CRITICAL INLINE CSS: Loading screen + GPU canvas (for LCP <2s target) */
 
     /* CSS Custom Properties (subset for loading screen) */
     :root {
+    /* GENERATED CRITICAL TOKENS START */
       --z-loading: 3000;
       --space-xl: 32px;
       --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
       --ease-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6);
       --font-family-display: "SF Pro Rounded", "Chalkboard SE", "Comic Sans MS", system-ui, sans-serif;
-      --font-size-xl: 1.6rem;
+      --font-size-xl: 1.65rem;
       --font-weight-bold: 700;
       --color-pink-dark: #C4446A;
       --radius-sm: 12px;
+    /* GENERATED CRITICAL TOKENS END */
     }
 
     /* GPU canvas overlay — transparent, covers viewport, behind interactive elements */
@@ -217,6 +225,16 @@
 
   <a href="#app" class="skip-link">Skip to main content</a>
 
+  <template id="breadcrumb-home-template">
+    <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
+    <span class="breadcrumb-sep" aria-hidden="true">›</span>
+  </template>
+
+  <template id="breadcrumb-parent-template">
+    <button class="breadcrumb-btn" data-nav-panel></button>
+    <span class="breadcrumb-sep" aria-hidden="true">›</span>
+  </template>
+
   <div class="app-shell">
     <div class="toast" data-toast popover="manual" role="status" aria-live="polite"></div>
 
@@ -231,22 +249,23 @@
       </header>
 
       <nav class="home-grid" aria-label="Main features">
-        <button class="home-btn home-btn--tracker" data-panel-open="panel-tracker" data-home-btn aria-label="Be Kind!">
+        <!-- INDEX-SHELL HOME BUTTONS START -->
+        <button class="home-btn home-btn--tracker" data-panel-open="panel-tracker" data-home-btn>
           <img class="home-btn-img" src="illustrations/buttons/btn-kind-acts.webp" alt="Be Kind!" aria-hidden="true" />
           <span class="home-btn-label">Be Kind!</span>
-          <span class="home-btn-badge" aria-label="Hearts today">0</span>
+          <span class="home-btn-badge" data-home-tracker-hearts aria-label="Hearts today">0</span>
         </button>
 
-        <button class="home-btn home-btn--adventures" data-panel-open="panel-adventures" data-home-btn
-          aria-label="Adventures!">
+        <button class="home-btn home-btn--adventures" data-panel-open="panel-adventures" data-home-btn>
           <img class="home-btn-img" src="illustrations/buttons/btn-quests.webp" alt="Adventures" aria-hidden="true" />
           <span class="home-btn-label">Adventures!</span>
         </button>
 
-        <button class="home-btn home-btn--mystuff" data-panel-open="panel-mystuff" data-home-btn aria-label="My Stuff!">
+        <button class="home-btn home-btn--mystuff" data-panel-open="panel-mystuff" data-home-btn>
           <img class="home-btn-img" src="illustrations/buttons/btn-stickers.webp" alt="My Stuff" aria-hidden="true" />
           <span class="home-btn-label">My Stuff!</span>
         </button>
+        <!-- INDEX-SHELL HOME BUTTONS END -->
       </nav>
 
       <section class="home-streak" aria-label="Kindness streak">
@@ -262,17 +281,18 @@
     </main>
 
     <!-- Sparkle the Unicorn — fixed-position companion -->
-    <div class="companion" data-companion aria-label="Sparkle the Unicorn" role="img"></div>
+    <aside class="companion-landmark" aria-label="Sparkle companion">
+      <div class="companion" data-companion aria-label="Sparkle the Unicorn" role="img"></div>
+    </aside>
 
+    <!-- INDEX-SHELL PANELS START -->
     <!-- ====== TRACKER PANEL ====== -->
-    <section id="panel-tracker" class="panel" hidden aria-label="Kind Acts Tracker">
+    <section id="panel-tracker" class="panel" data-panel-id="panel-tracker" aria-label="Panel" hidden>
       <header class="panel-header">
-        <nav class="breadcrumb" aria-label="Navigation">
-          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <span class="breadcrumb-current" aria-current="page">💖 Be Kind</span>
+        <nav class="breadcrumb" data-panel-id="panel-tracker" aria-label="Navigation">
+          <span class="breadcrumb-current" data-breadcrumb-current aria-current="page"></span>
         </nav>
-        <h2 class="panel-title">Kind Acts</h2>
+        <h2 class="panel-title">Panel</h2>
         <div class="heart-counter" data-tracker-hearts>
           <span class="heart-icon" aria-hidden="true">&#x1F49C;</span>
           <span data-tracker-hearts-count aria-live="polite">0</span>
@@ -283,121 +303,13 @@
       </div>
     </section>
 
-    <!-- ====== QUESTS PANEL ====== -->
-    <section id="panel-quests" class="panel" hidden aria-label="Daily Quests">
-      <header class="panel-header">
-        <nav class="breadcrumb" aria-label="Navigation">
-          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <button class="breadcrumb-btn" data-nav-panel="panel-adventures" aria-label="Adventures">🗺️</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <span class="breadcrumb-current" aria-current="page">🧭 Quests</span>
-        </nav>
-        <h2 class="panel-title">Today's Quests</h2>
-      </header>
-      <div id="quests-body" class="panel-body">
-        <!-- Populated by quests.rs -->
-      </div>
-    </section>
-
-    <!-- ====== STORIES PANEL ====== -->
-    <section id="panel-stories" class="panel" hidden aria-label="Stories">
-      <header class="panel-header">
-        <nav class="breadcrumb" aria-label="Navigation">
-          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <button class="breadcrumb-btn" data-nav-panel="panel-adventures" aria-label="Adventures">🗺️</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <span class="breadcrumb-current" aria-current="page">📖 Stories</span>
-        </nav>
-        <h2 class="panel-title">Stories</h2>
-      </header>
-      <div id="stories-body" class="panel-body">
-        <!-- Populated by stories.rs -->
-      </div>
-    </section>
-
-    <!-- ====== REWARDS PANEL ====== -->
-    <section id="panel-rewards" class="panel" hidden aria-label="Sticker Collection">
-      <header class="panel-header">
-        <nav class="breadcrumb" aria-label="Navigation">
-          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <button class="breadcrumb-btn" data-nav-panel="panel-mystuff" aria-label="My Stuff">✨</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <span class="breadcrumb-current" aria-current="page">⭐ Stickers</span>
-        </nav>
-        <h2 class="panel-title">My Stickers</h2>
-      </header>
-      <div id="rewards-body" class="panel-body">
-        <!-- Populated by rewards.rs -->
-      </div>
-    </section>
-
-    <!-- ====== GAMES PANEL ====== -->
-    <section id="panel-games" class="panel" hidden aria-label="Fun Games">
-      <header class="panel-header">
-        <nav class="breadcrumb" aria-label="Navigation">
-          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <button class="breadcrumb-btn" data-nav-panel="panel-adventures" aria-label="Adventures">🗺️</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <span class="breadcrumb-current" aria-current="page">🎮 Games</span>
-        </nav>
-        <h2 class="panel-title">Games</h2>
-      </header>
-      <div id="games-body" class="panel-body">
-        <!-- Games hub populated by games.rs -->
-      </div>
-      <div id="game-arena" class="game-arena" hidden role="region" aria-label="Game play area">
-        <!-- Individual game renders here (catcher, memory, hug, paint, unicorn) -->
-      </div>
-      <button id="game-exit-btn" class="floating-back-btn" hidden aria-label="Exit Game">⬅️</button>
-    </section>
-
-    <!-- ====== PROGRESS PANEL ====== -->
-    <section id="panel-progress" class="panel" hidden aria-label="Weekly Progress">
-      <header class="panel-header">
-        <nav class="breadcrumb" aria-label="Navigation">
-          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <button class="breadcrumb-btn" data-nav-panel="panel-mystuff" aria-label="My Stuff">✨</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <span class="breadcrumb-current" aria-current="page">📊 My Week</span>
-        </nav>
-        <h2 class="panel-title">My Week</h2>
-      </header>
-      <div id="progress-body" class="panel-body">
-        <!-- Populated by progress.rs -->
-      </div>
-    </section>
-
-    <!-- ====== GARDENS PANEL ====== -->
-    <section id="panel-gardens" class="panel" hidden aria-label="My Gardens">
-      <header class="panel-header">
-        <nav class="breadcrumb" aria-label="Navigation">
-          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <button class="breadcrumb-btn" data-nav-panel="panel-mystuff" aria-label="My Stuff">✨</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <span class="breadcrumb-current" aria-current="page">🌱 Gardens</span>
-        </nav>
-        <h2 class="panel-title">🌱 My Gardens</h2>
-      </header>
-      <div id="gardens-body" class="panel-body">
-        <!-- Populated by gardens.rs -->
-      </div>
-    </section>
-
     <!-- ====== ADVENTURES PANEL (intermediary) ====== -->
-    <section id="panel-adventures" class="panel" hidden aria-label="Adventures">
+    <section id="panel-adventures" class="panel" data-panel-id="panel-adventures" aria-label="Panel" hidden>
       <header class="panel-header">
-        <nav class="breadcrumb" aria-label="Navigation">
-          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <span class="breadcrumb-current" aria-current="page">🗺️ Adventures</span>
+        <nav class="breadcrumb" data-panel-id="panel-adventures" aria-label="Navigation">
+          <span class="breadcrumb-current" data-breadcrumb-current aria-current="page"></span>
         </nav>
-        <h2 class="panel-title">Adventures!</h2>
+        <h2 class="panel-title">Panel</h2>
       </header>
       <div class="panel-body">
         <nav class="home-grid" aria-label="Adventure categories">
@@ -418,14 +330,12 @@
     </section>
 
     <!-- ====== MY STUFF PANEL (intermediary) ====== -->
-    <section id="panel-mystuff" class="panel" hidden aria-label="My Stuff">
+    <section id="panel-mystuff" class="panel" data-panel-id="panel-mystuff" aria-label="Panel" hidden>
       <header class="panel-header">
-        <nav class="breadcrumb" aria-label="Navigation">
-          <button class="breadcrumb-btn" data-nav-home aria-label="Home">🏠</button>
-          <span class="breadcrumb-sep" aria-hidden="true">›</span>
-          <span class="breadcrumb-current" aria-current="page">✨ My Stuff</span>
+        <nav class="breadcrumb" data-panel-id="panel-mystuff" aria-label="Navigation">
+          <span class="breadcrumb-current" data-breadcrumb-current aria-current="page"></span>
         </nav>
-        <h2 class="panel-title">My Stuff!</h2>
+        <h2 class="panel-title">Panel</h2>
       </header>
       <div class="panel-body">
         <nav class="home-grid" aria-label="My stuff categories">
@@ -444,6 +354,89 @@
         </nav>
       </div>
     </section>
+
+    <!-- ====== QUESTS PANEL ====== -->
+    <section id="panel-quests" class="panel" data-panel-id="panel-quests" aria-label="Panel" hidden>
+      <header class="panel-header">
+        <nav class="breadcrumb" data-panel-id="panel-quests" aria-label="Navigation">
+          <span class="breadcrumb-current" data-breadcrumb-current aria-current="page"></span>
+        </nav>
+        <h2 class="panel-title">Panel</h2>
+      </header>
+      <div id="quests-body" class="panel-body">
+        <!-- Populated by quests.rs -->
+      </div>
+    </section>
+
+    <!-- ====== STORIES PANEL ====== -->
+    <section id="panel-stories" class="panel" data-panel-id="panel-stories" aria-label="Panel" hidden>
+      <header class="panel-header">
+        <nav class="breadcrumb" data-panel-id="panel-stories" aria-label="Navigation">
+          <span class="breadcrumb-current" data-breadcrumb-current aria-current="page"></span>
+        </nav>
+        <h2 class="panel-title">Panel</h2>
+      </header>
+      <div id="stories-body" class="panel-body">
+        <!-- Populated by stories.rs -->
+      </div>
+    </section>
+
+    <!-- ====== GAMES PANEL ====== -->
+    <section id="panel-games" class="panel" data-panel-id="panel-games" aria-label="Panel" hidden>
+      <header class="panel-header">
+        <nav class="breadcrumb" data-panel-id="panel-games" aria-label="Navigation">
+          <span class="breadcrumb-current" data-breadcrumb-current aria-current="page"></span>
+        </nav>
+        <h2 class="panel-title">Panel</h2>
+      </header>
+      <div id="games-body" class="panel-body">
+        <!-- Games hub populated by games.rs -->
+      </div>
+      <div id="game-arena" class="game-arena" hidden role="region" aria-label="Game play area">
+        <!-- Individual game renders here (catcher, memory, hug, paint, unicorn) -->
+      </div>
+      <button id="game-exit-btn" class="floating-back-btn" hidden aria-label="Exit Game">⬅️</button>
+    </section>
+
+    <!-- ====== REWARDS PANEL ====== -->
+    <section id="panel-rewards" class="panel" data-panel-id="panel-rewards" aria-label="Panel" hidden>
+      <header class="panel-header">
+        <nav class="breadcrumb" data-panel-id="panel-rewards" aria-label="Navigation">
+          <span class="breadcrumb-current" data-breadcrumb-current aria-current="page"></span>
+        </nav>
+        <h2 class="panel-title">Panel</h2>
+      </header>
+      <div id="rewards-body" class="panel-body">
+        <!-- Populated by rewards.rs -->
+      </div>
+    </section>
+
+    <!-- ====== GARDENS PANEL ====== -->
+    <section id="panel-gardens" class="panel" data-panel-id="panel-gardens" aria-label="Panel" hidden>
+      <header class="panel-header">
+        <nav class="breadcrumb" data-panel-id="panel-gardens" aria-label="Navigation">
+          <span class="breadcrumb-current" data-breadcrumb-current aria-current="page"></span>
+        </nav>
+        <h2 class="panel-title">Panel</h2>
+      </header>
+      <div id="gardens-body" class="panel-body">
+        <!-- Populated by gardens.rs -->
+      </div>
+    </section>
+
+    <!-- ====== PROGRESS PANEL ====== -->
+    <section id="panel-progress" class="panel" data-panel-id="panel-progress" aria-label="Panel" hidden>
+      <header class="panel-header">
+        <nav class="breadcrumb" data-panel-id="panel-progress" aria-label="Navigation">
+          <span class="breadcrumb-current" data-breadcrumb-current aria-current="page"></span>
+        </nav>
+        <h2 class="panel-title">Panel</h2>
+      </header>
+      <div id="progress-body" class="panel-body">
+        <!-- Populated by progress.rs -->
+      </div>
+    </section>
+    <!-- INDEX-SHELL PANELS END -->
   </div>
 </body>
 

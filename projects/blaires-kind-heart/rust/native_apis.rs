@@ -86,18 +86,7 @@ fn ensure_haptic_unlock_listener() {
             return;
         }
         bound.set(true);
-        let document = dom::document();
-        let target: &web_sys::EventTarget = document.as_ref();
-        for event_name in ["pointerdown", "touchstart", "mousedown", "keydown"] {
-            let cb = wasm_bindgen::closure::Closure::<dyn FnMut(web_sys::Event)>::new(
-                |_: web_sys::Event| {
-                    mark_haptics_unlocked();
-                },
-            );
-            let _ =
-                target.add_event_listener_with_callback(event_name, cb.as_ref().unchecked_ref());
-            cb.forget();
-        }
+        dom::bind_unlock_gesture_listeners(mark_haptics_unlocked);
     });
 }
 fn is_automation_env(nav: &web_sys::Navigator) -> bool {

@@ -1,10 +1,31 @@
 # Icons - Blaire's Kind Heart
 
+- Archive Path: `docs/archive/reference-full/ICONS.full.md`
+- Normalized On: `2026-03-04`
+- Source Title: `Icons - Blaire's Kind Heart`
+
+## Summary
+✅ **Python script ready**: `python3 generate_icons.py` (recommended)
+✅ **Multiple generation methods**: Python, Make, SVG+ImageMagick, online tools
+✅ **PWA manifest configured**: No additional setup needed
+✅ **Testing workflows**: Local, iPad Mini 6, Android
+✅ **Full documentation archived**: See `docs/archive/` for details
+
+**Primary target**: iPad Mini 6 (iPadOS 26.2, Safari 26.2)
+**Character**: Sparkle the Unicorn (kawaii, child-friendly)
+**Status**: Ready to generate
+
+---
+
+*Last updated: 2026-02-09*
+*For: Blaire's Kind Heart PWA v1.0*
+
+## Context
 Consolidated icon generation reference for Sparkle the Unicorn PWA icons.
 
 ---
 
-## Quick Start (3 min)
+### Quick Start (3 min)
 
 ### Prerequisites
 ```bash
@@ -21,17 +42,11 @@ python3 generate_icons.py
 ### Verify Output
 ```bash
 ls -lh icons/icon-*.png
-# Should show 5 files (20-100 KB each):
-# - icon-512.png
-# - icon-192.png
-# - icon-180.png
-# - icon-512-maskable.png
-# - icon-192-maskable.png
 ```
 
 ---
 
-## Design: Sparkle the Unicorn
+### Design: Sparkle the Unicorn
 
 **Character**: Kawaii-style unicorn for 4-year-old Blaire
 **Style**: Big eyes, cute smile, child-friendly, recognizable at small sizes
@@ -59,7 +74,7 @@ ls -lh icons/icon-*.png
 
 ---
 
-## Generation Methods
+### Generation Methods
 
 | Method | Command | Time | Pros | Cons |
 |--------|---------|------|------|------|
@@ -115,7 +130,7 @@ Create 512×512 design → Export as PNG → Resize for other sizes
 
 ---
 
-## Files Generated
+### Files Generated
 
 ```
 assets/icons/
@@ -144,7 +159,7 @@ assets/icons/
 
 ---
 
-## Integration
+### Integration
 
 ### PWA Manifest
 
@@ -186,31 +201,25 @@ Icons already configured in `manifest.webmanifest`:
 
 ✅ No additional configuration needed
 
-### Testing Workflow
+## Actions
+_No actions recorded._
 
+## Validation
 **Local browser**:
 ```bash
 trunk build --release
 trunk serve
-# Visit http://localhost:8080
-# DevTools > Application > Manifest → Verify icons
 ```
 
 **iPad Mini 6 (primary target)**:
 ```bash
 trunk serve --address 0.0.0.0
-# Get Mac IP: ipconfig getifaddr en0
-# On iPad: Visit http://<IP>:8080
-# Share > Add to Home Screen
-# Verify icon appearance
 ```
 
 **Android**:
 1. Install PWA on device
 2. Maskable icons used automatically on Android 12+
 3. Standard icons on older versions
-
-### Testing Checklist
 
 - [ ] All 5 files exist in `/assets/icons/`
 - [ ] Files are PNG format
@@ -224,7 +233,7 @@ trunk serve --address 0.0.0.0
 
 ---
 
-## Troubleshooting
+### Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
@@ -239,7 +248,7 @@ trunk serve --address 0.0.0.0
 
 ---
 
-## Customization
+### Customization
 
 To modify icon design, edit `generate_icons.py` → function `create_blaire_kind_heart_icon()`:
 
@@ -247,7 +256,6 @@ To modify icon design, edit `generate_icons.py` → function `create_blaire_kind
 
 **Background gradient** (lines 38-43):
 ```python
-# Change colors
 top_color = (255, 183, 197)    # Pink
 bottom_color = (230, 212, 245)  # Lavender
 ```
@@ -289,7 +297,7 @@ Then convert to PNG with ImageMagick.
 
 ---
 
-## CI/CD Integration
+### CI/CD Integration
 
 Example CI workflow:
 
@@ -297,14 +305,11 @@ Example CI workflow:
 #!/bin/bash
 cd /Users/louisherman/ClaudeCodeProjects/projects/blaires-kind-heart/assets
 
-# Check dependencies
 python3 --version || exit 1
 python3 -c "import PIL" || pip3 install Pillow
 
-# Generate icons
 python3 generate_icons.py || exit 1
 
-# Verify all files exist
 test -f icons/icon-512.png || exit 1
 test -f icons/icon-192.png || exit 1
 test -f icons/icon-180.png || exit 1
@@ -316,18 +321,17 @@ echo "✅ Icons generated and verified"
 
 ---
 
-## Archive & References
-
+## References
 ### Detailed Documentation
 
 Full verbose guides with ASCII art diagrams, extensive explanations, and detailed specifications:
 
-- `docs/archive/ICON_DESIGN_REFERENCE.md` - Complete visual design specs with ASCII art
-- `docs/archive/ICONS_SETUP.md` - Extended quick start guide
-- `docs/archive/ICON_GENERATION_SUMMARY.md` - Comprehensive overview
-- `docs/archive/ICON_GENERATION_INDEX.md` - Master index of all resources
-- `docs/archive/ICON_GENERATION_OPTIONS.md` - Detailed method comparisons
-- `docs/archive/ICON_DELIVERY_MANIFEST.md` - Complete deliverables inventory
+- `../ICON_DESIGN_REFERENCE.md` - Complete visual design specs with ASCII art
+- `../ICONS_SETUP.md` - Extended quick start guide
+- `../ICON_GENERATION_SUMMARY.md` - Comprehensive overview
+- `../ICON_GENERATION_INDEX.md` - Master index of all resources
+- `../ICON_GENERATION_OPTIONS.md` - Detailed method comparisons
+- `../ICON_DELIVERY_MANIFEST.md` - Complete deliverables inventory
 
 ### External Resources
 
@@ -339,19 +343,3 @@ Full verbose guides with ASCII art diagrams, extensive explanations, and detaile
 
 ---
 
-## Summary
-
-✅ **Python script ready**: `python3 generate_icons.py` (recommended)
-✅ **Multiple generation methods**: Python, Make, SVG+ImageMagick, online tools
-✅ **PWA manifest configured**: No additional setup needed
-✅ **Testing workflows**: Local, iPad Mini 6, Android
-✅ **Full documentation archived**: See `docs/archive/` for details
-
-**Primary target**: iPad Mini 6 (iPadOS 26.2, Safari 26.2)
-**Character**: Sparkle the Unicorn (kawaii, child-friendly)
-**Status**: Ready to generate
-
----
-
-*Last updated: 2026-02-09*
-*For: Blaire's Kind Heart PWA v1.0*
