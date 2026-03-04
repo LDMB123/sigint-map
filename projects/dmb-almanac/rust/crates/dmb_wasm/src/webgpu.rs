@@ -1,4 +1,5 @@
 use js_sys::Float32Array;
+use serde::Deserialize;
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_bindgen_futures::JsFuture;
 
@@ -24,6 +25,21 @@ extern "C" {
 
 #[wasm_bindgen]
 extern "C" {
+    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuProbe, catch)]
+    fn dmb_webgpu_probe_js() -> Result<js_sys::Promise, JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbWarmWebgpuWorker, catch)]
+    fn dmb_warm_webgpu_worker_js() -> Result<js_sys::Promise, JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbGetWorkerLimits, catch)]
+    fn dmb_get_worker_limits_js() -> Result<JsValue, JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbClearWorkerFailureStatus, catch)]
+    fn dmb_clear_worker_failure_status_js() -> Result<(), JsValue>;
+
+    #[wasm_bindgen(js_namespace = window, js_name = dmbSetWorkerThreshold, catch)]
+    fn dmb_set_worker_threshold_js(value: f64) -> Result<(), JsValue>;
+
     #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScoresWorker, catch)]
     fn dmb_webgpu_scores_worker_js(
         query: &Float32Array,
@@ -55,12 +71,106 @@ extern "C" {
     ) -> Result<js_sys::Promise, JsValue>;
 }
 
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+struct WebgpuProbeResult {
+    #[serde(default)]
+    available: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+struct WebgpuWarmResult {
+    #[serde(default)]
+    warmed: bool,
+    #[serde(default)]
+    reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+struct WorkerLimitsResult {
+    #[serde(default)]
+    max_floats: Option<f64>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct WarmWebgpuStatus {
+    pub warmed: bool,
+    pub reason: Option<String>,
+}
+
 pub async fn ensure_webgpu_helpers_loaded() -> bool {
     let result = JsFuture::from(dmb_load_webgpu_helpers()).await;
     result
         .ok()
         .and_then(|value| value.as_bool())
         .unwrap_or(false)
+}
+
+pub async fn webgpu_probe_available() -> Option<bool> {
+    let _ = ensure_webgpu_helpers_loaded().await;
+    let promise = dmb_webgpu_probe_js().ok()?;
+    let result = JsFuture::from(promise).await.ok()?;
+    serde_wasm_bindgen::from_value::<WebgpuProbeResult>(result)
+        .ok()
+        .map(|probe| probe.available)
+}
+
+pub async fn warm_webgpu_worker() -> Option<WarmWebgpuStatus> {
+    let _ = ensure_webgpu_helpers_loaded().await;
+    let promise = dmb_warm_webgpu_worker_js().ok()?;
+    let result = JsFuture::from(promise).await.ok()?;
+    serde_wasm_bindgen::from_value::<WebgpuWarmResult>(result)
+        .ok()
+        .map(|status| WarmWebgpuStatus {
+            warmed: status.warmed,
+            reason: status.reason,
+        })
+}
+
+pub fn worker_max_floats() -> Option<usize> {
+    let value = dmb_get_worker_limits_js().ok()?;
+    serde_wasm_bindgen::from_value::<WorkerLimitsResult>(value)
+        .ok()
+        .and_then(|limits| limits.max_floats)
+        .map(|max_floats| max_floats as usize)
+}
+
+pub fn clear_worker_failure_status() {
+    let _ = dmb_clear_worker_failure_status_js();
+}
+
+pub fn set_worker_threshold(value: usize) {
+    let _ = dmb_set_worker_threshold_js(value as f64);
+}
+
+pub async fn webgpu_scores_direct(
+    query: &Float32Array,
+    matrix: &Float32Array,
+    dim: usize,
+) -> Option<Float32Array> {
+    let _ = ensure_webgpu_helpers_loaded().await;
+    let promise = dmb_webgpu_scores_js(query, matrix, dim as f64).ok()?;
+    let result = JsFuture::from(promise).await.ok()?;
+    if result.is_null() || result.is_undefined() {
+        return None;
+    }
+    result.dyn_into().ok()
+}
+
+pub async fn webgpu_scores_worker(
+    query: &Float32Array,
+    matrix: &Float32Array,
+    dim: usize,
+) -> Option<Float32Array> {
+    let _ = ensure_webgpu_helpers_loaded().await;
+    let promise = dmb_webgpu_scores_worker_js(query, matrix, dim as f64).ok()?;
+    let result = JsFuture::from(promise).await.ok()?;
+    if result.is_null() || result.is_undefined() {
+        return None;
+    }
+    result.dyn_into().ok()
 }
 
 fn cpu_dot(a: &[f32], b: &[f32]) -> f32 {

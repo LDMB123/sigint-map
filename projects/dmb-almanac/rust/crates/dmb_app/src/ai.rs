@@ -16,8 +16,6 @@ use dmb_core::{EmbeddingChunk, EmbeddingManifest, CORE_SCHEMA_VERSION};
 #[cfg(feature = "hydrate")]
 use once_cell::sync::OnceCell;
 #[cfg(feature = "hydrate")]
-use wasm_bindgen::prelude::wasm_bindgen;
-#[cfg(feature = "hydrate")]
 use wasm_bindgen::JsValue;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
@@ -32,69 +30,10 @@ pub struct AiCapabilities {
 }
 
 #[cfg(feature = "hydrate")]
-#[derive(Debug, Clone, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-struct WebgpuProbeResult {
-    #[serde(default)]
-    available: bool,
-}
-
-#[cfg(feature = "hydrate")]
-#[derive(Debug, Clone, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-struct WebgpuWarmResult {
-    #[serde(default)]
-    warmed: bool,
-    #[serde(default)]
-    reason: Option<String>,
-}
-
-#[cfg(feature = "hydrate")]
-#[derive(Debug, Clone, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-struct WorkerLimitsResult {
-    #[serde(default)]
-    max_floats: Option<f64>,
-}
-
-#[cfg(feature = "hydrate")]
 #[derive(Debug, Clone, Copy)]
 enum WebgpuScoreFn {
     Direct,
     Worker,
-}
-
-#[cfg(feature = "hydrate")]
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuProbe, catch)]
-    fn dmb_webgpu_probe() -> Result<js_sys::Promise, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbWarmWebgpuWorker, catch)]
-    fn dmb_warm_webgpu_worker() -> Result<js_sys::Promise, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbGetWorkerLimits, catch)]
-    fn dmb_get_worker_limits() -> Result<JsValue, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbClearWorkerFailureStatus, catch)]
-    fn dmb_clear_worker_failure_status() -> Result<(), JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbSetWorkerThreshold, catch)]
-    fn dmb_set_worker_threshold(value: f64) -> Result<(), JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScores, catch)]
-    fn dmb_webgpu_scores_js(
-        query: &js_sys::Float32Array,
-        matrix: &js_sys::Float32Array,
-        dim: f64,
-    ) -> Result<js_sys::Promise, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScoresWorker, catch)]
-    fn dmb_webgpu_scores_worker_js(
-        query: &js_sys::Float32Array,
-        matrix: &js_sys::Float32Array,
-        dim: f64,
-    ) -> Result<js_sys::Promise, JsValue>;
 }
 
 #[cfg(feature = "hydrate")]
@@ -289,30 +228,14 @@ pub fn detect_ai_capabilities() -> AiCapabilities {
 
 #[cfg(feature = "hydrate")]
 pub async fn probe_webgpu_device() -> Option<bool> {
-    use wasm_bindgen_futures::JsFuture;
-
-    let _ = dmb_wasm::ensure_webgpu_helpers_loaded().await;
-    let promise = dmb_webgpu_probe().ok()?;
-    let result = JsFuture::from(promise).await.ok()?;
-    serde_wasm_bindgen::from_value::<WebgpuProbeResult>(result)
-        .ok()
-        .map(|probe| probe.available)
+    dmb_wasm::webgpu_probe_available().await
 }
 
 #[cfg(feature = "hydrate")]
 async fn warm_webgpu_worker() {
-    use wasm_bindgen_futures::JsFuture;
-
-    let _ = dmb_wasm::ensure_webgpu_helpers_loaded().await;
-    let Ok(promise) = dmb_warm_webgpu_worker() else {
-        return;
-    };
-    let result = JsFuture::from(promise).await.ok();
-    if let Some(value) = result {
-        if let Ok(status) = serde_wasm_bindgen::from_value::<WebgpuWarmResult>(value) {
-            if !status.warmed {
-                record_ai_warning("webgpu_worker_warm_failed", status.reason);
-            }
+    if let Some(status) = dmb_wasm::warm_webgpu_worker().await {
+        if !status.warmed {
+            record_ai_warning("webgpu_worker_warm_failed", status.reason);
         }
     }
 }
@@ -798,11 +721,7 @@ fn parse_worker_threshold(raw: Option<String>) -> Option<usize> {
 
 #[cfg(feature = "hydrate")]
 fn read_worker_max_floats() -> Option<usize> {
-    let value = dmb_get_worker_limits().ok()?;
-    serde_wasm_bindgen::from_value::<WorkerLimitsResult>(value)
-        .ok()
-        .and_then(|limits| limits.max_floats)
-        .map(|max_floats| max_floats as usize)
+    dmb_wasm::worker_max_floats()
 }
 
 #[cfg(feature = "hydrate")]
@@ -838,7 +757,7 @@ pub fn clear_worker_failure_status() {
             remove_storage_item(storage, key);
         }
     });
-    let _ = dmb_clear_worker_failure_status();
+    dmb_wasm::clear_worker_failure_status();
 }
 
 #[cfg(feature = "hydrate")]
@@ -892,7 +811,7 @@ pub fn set_webgpu_disabled(disabled: bool) {
 #[cfg(feature = "hydrate")]
 fn store_worker_threshold(value: usize) {
     set_local_storage_item(WORKER_THRESHOLD_KEY, &value.to_string());
-    let _ = dmb_set_worker_threshold(value as f64);
+    dmb_wasm::set_worker_threshold(value);
     mark_worker_threshold_ready();
 }
 
@@ -2098,22 +2017,13 @@ async fn measure_webgpu_scores(
     matrix: &js_sys::Float32Array,
     dim: usize,
 ) -> Option<f64> {
-    use wasm_bindgen::JsCast;
-    use wasm_bindgen_futures::JsFuture;
-
-    let _ = dmb_wasm::ensure_webgpu_helpers_loaded().await;
     let window = web_sys::window()?;
     let perf = window.performance()?;
     let start = perf.now();
-    let promise = match variant {
-        WebgpuScoreFn::Direct => dmb_webgpu_scores_js(query, matrix, dim as f64).ok()?,
-        WebgpuScoreFn::Worker => dmb_webgpu_scores_worker_js(query, matrix, dim as f64).ok()?,
+    let array = match variant {
+        WebgpuScoreFn::Direct => dmb_wasm::webgpu_scores_direct(query, matrix, dim).await?,
+        WebgpuScoreFn::Worker => dmb_wasm::webgpu_scores_worker(query, matrix, dim).await?,
     };
-    let result = JsFuture::from(promise).await.ok()?;
-    if result.is_null() || result.is_undefined() {
-        return None;
-    }
-    let array: js_sys::Float32Array = result.dyn_into().ok()?;
     let _ = array.length();
     Some(perf.now() - start)
 }
