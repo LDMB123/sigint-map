@@ -37,6 +37,7 @@
 - `docs/ops/CUTOVER_RUNBOOK.md`
 - `docs/ops/ROLLBACK_RUNBOOK.md`
 - `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md`
+- `docs/wasm/rust-optimization-report.md`
 - `docs/quick-references/QUICK_REFERENCE.md`
 - `docs/reports/README.md`
 

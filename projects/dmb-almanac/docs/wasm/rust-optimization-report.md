@@ -18,8 +18,8 @@
 
 ## Post-Change Results
 - Date: 2026-03-04
-- `dmb_app_bg.wasm` raw: 2,548,946 bytes
-- `dmb_app_bg.wasm` gzip: 872,247 bytes
+- `dmb_app_bg.wasm` raw: 2,549,868 bytes
+- `dmb_app_bg.wasm` gzip: 872,368 bytes
 - Import perf report: `docs/wasm/rust-import-perf.json`
 - Import timing (3 cold runs each):
   - Tuning `false`: avg duration 53,441.0 ms; p75 duration 54,294.0 ms; avg p75 interaction 16.0 ms; avg long-frame count 0.0
@@ -27,7 +27,16 @@
 - Derived deltas:
   - Interaction p75 improvement: 0.0% (not improved)
   - Long-frame reduction: not computable from baseline=0 (no observed long frames in either bucket)
-  - WASM gzip reduction: 14.75% (pass)
+  - WASM gzip reduction: 14.74% (pass)
+
+## Rust-Only Transition Progress
+
+- App bootstrap ownership moved to Rust hydrate:
+  - service worker registration now initiated from Rust.
+  - WebGPU helper preload now initiated from Rust.
+- AI runtime interop consolidation:
+  - app-level AI module (`dmb_app::ai`) now calls Rust wrappers in `dmb_wasm` for probe/warm/limits/score paths.
+  - browser JS interop boundary centralized in `rust/crates/dmb_wasm/src/webgpu.rs`.
 
 ## Acceptance Gate Tracking
 - [ ] p75 interaction duration during first-import improved by >=25% (current: 0.0%)

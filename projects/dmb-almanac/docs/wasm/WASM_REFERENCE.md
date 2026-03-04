@@ -16,14 +16,27 @@ Hydration needs the JS glue bundle. That is produced via `wasm-pack`:
 
 ```bash
 cd rust
-cargo run -p xtask -- check --skip-tests
+cargo run -p xtask -- build-hydrate-pkg
 ```
 
-Under the hood this runs `wasm-pack` for `dmb_app` with `--features hydrate` and writes the output to `rust/static/pkg/`.
+Full diagnostics build:
+
+```bash
+cd rust
+cargo run -p xtask -- build-hydrate-pkg --ai-diagnostics-full
+```
+
+Under the hood this runs `wasm-pack` for `dmb_app` and writes output to `rust/static/pkg/`.
+
+## Runtime Bootstrap (Rust-owned)
+
+- `dmb_app::hydrate()` is the runtime bootstrap entrypoint.
+- Service worker registration is now performed from Rust (`register_service_worker()` in `rust/crates/dmb_app/src/lib.rs`).
+- WebGPU helper preload is triggered from Rust (`ai::preload_webgpu_runtime()`), instead of inline shell scripts.
 
 ## WebGPU + WASM Interop
 
-`dmb_wasm` exposes async functions that use WebGPU when available, falling back to CPU math when helpers are not present:
+`dmb_wasm` owns the browser interop boundary and exposes async wrappers that use WebGPU when available, with CPU fallback:
 
 - WebGPU helpers registered by `rust/static/webgpu.js`:
   - `window.dmbWebgpuDot`
@@ -31,9 +44,9 @@ Under the hood this runs `wasm-pack` for `dmb_app` with `--features hydrate` and
   - `window.dmbWebgpuScoresWorker`
   - `window.dmbWebgpuScoresSubset`
   - `window.dmbWebgpuScoresSubsetWorker`
-- Rust WASM entrypoints:
+- Rust interop wrappers and score entrypoints:
   - `rust/crates/dmb_wasm/src/webgpu.rs`
-- App usage + benchmarks:
+- App-level usage and benchmarks (calls into `dmb_wasm`, no direct JS FFI in `dmb_app::ai`):
   - `rust/crates/dmb_app/src/ai.rs`
 
 ## Testing

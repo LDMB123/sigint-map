@@ -14,6 +14,8 @@ Keep in **JS** when logic is UI-orchestration-heavy and boundary costs outweigh 
 
 - Core data integrity and parity guardrails are in place.
 - Worker-routed paths exist for expensive operations.
+- Runtime bootstrap moved to Rust hydrate (service worker + WebGPU preload).
+- `dmb_app::ai` now routes browser interop through Rust wrappers in `dmb_wasm` (no app-layer direct JS FFI bindings for probe/warm/limits/scores).
 - IndexedDB/search/index tuning work is active and should remain performance-gated.
 
 ## Migration Phases
@@ -33,6 +35,24 @@ Keep in **JS** when logic is UI-orchestration-heavy and boundary costs outweigh 
 
 5. **Platform-specific performance polish**
 - Reduce main-thread contention and improve rendering consistency.
+
+## Completed in Current Wave
+
+- Rust-owned hydration bootstrap for service worker registration.
+- Rust-triggered lazy WebGPU helper loading.
+- Consolidated WebGPU interop wrappers in `dmb_wasm`.
+- Preserved route contracts for diagnostics in lite/full builds.
+
+## Remaining JS-Bound Surfaces
+
+- `rust/static/webgpu.js` and `rust/static/webgpu-worker.js` still contain GPU pipeline and worker orchestration code (required by browser API surface).
+- Service worker script (`rust/static/sw.js`) remains JavaScript by platform design.
+
+## Next Rust-First Steps
+
+1. Move WebGPU telemetry/cooldown policy storage decisions from helper JS into Rust-managed policy functions where practical.
+2. Keep helper JS focused on GPU kernel execution and worker messaging only.
+3. Continue reducing optional diagnostics payload in production-lite builds without changing route URLs.
 
 ## Validation Gates
 
