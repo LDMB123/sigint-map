@@ -15,8 +15,6 @@ use futures::future::{join, join_all};
 #[cfg(feature = "hydrate")]
 use std::collections::{HashMap, HashSet};
 #[cfg(feature = "hydrate")]
-use wasm_bindgen::prelude::wasm_bindgen;
-#[cfg(feature = "hydrate")]
 use wasm_bindgen::JsCast;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen::JsValue;
@@ -30,6 +28,7 @@ use dmb_core::{
     ReleaseTrack, SearchResult, SetlistEntry, Show, Song, Tour, UserAttendedShow, Venue,
 };
 
+use crate::browser::webgpu_diagnostics::{AppleSiliconProfile, WebgpuRuntimeTelemetry};
 #[cfg(any(feature = "hydrate", feature = "ssr"))]
 use crate::server::{
     get_all_releases, get_curated_list_items, get_curated_lists, get_liberation_list,
@@ -84,219 +83,18 @@ fn current_search_param(name: &str) -> Option<String> {
     params.get(name)
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct InpMetricsSnapshot {
-    pub supported: bool,
-    pub p75_interaction_ms: Option<f64>,
-    pub long_frame_count: u32,
-    pub interaction_count: Option<u32>,
-}
+pub use crate::browser::perf::InpMetricsSnapshot;
 
-#[cfg(feature = "hydrate")]
-fn performance_metrics_object() -> Option<JsValue> {
-    let window = web_sys::window()?;
-    js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("__DMB_PERF_METRICS")).ok()
-}
-
-#[cfg(feature = "hydrate")]
 pub fn ensure_perf_observers_started() {
-    let installer = js_sys::Function::new_no_args(
-        r#"
-(() => {
-  const w = window;
-  if (!w || w.__DMB_PERF_OBS_INIT) return;
-  w.__DMB_PERF_OBS_INIT = true;
-
-  const now = () =>
-    w.performance && typeof w.performance.now === "function"
-      ? w.performance.now()
-      : Date.now();
-
-  const metrics = (w.__DMB_PERF_METRICS = {
-    supported: false,
-    eventTiming: false,
-    loaf: false,
-    interactions: [],
-    longFrames: [],
-    interactionCount: null,
-    lastInteractionTs: 0,
-    windowMs: 5 * 60 * 1000,
-  });
-
-  const prune = () => {
-    const cutoff = now() - metrics.windowMs;
-    metrics.interactions = metrics.interactions.filter((item) => item && item.ts >= cutoff);
-    metrics.longFrames = metrics.longFrames.filter((ts) => typeof ts === "number" && ts >= cutoff);
-  };
-
-  const recordInteraction = (entry) => {
-    if (!entry) return;
-    const duration = Number(entry.duration || 0);
-    if (!Number.isFinite(duration) || duration <= 0) return;
-    const ts = Number(entry.startTime || now());
-    if (!Number.isFinite(ts)) return;
-    const interactionCount = Number(entry.interactionCount);
-    if (Number.isFinite(interactionCount) && interactionCount >= 0) {
-      metrics.interactionCount = Math.max(metrics.interactionCount || 0, interactionCount);
-    }
-    metrics.interactions.push({
-      ts,
-      duration,
-      interactionId: Number(entry.interactionId || 0),
-      renderStart: Number(entry.renderStart || 0),
-      styleAndLayoutStart: Number(entry.styleAndLayoutStart || 0),
-      firstUIEventTimestamp: Number(entry.firstUIEventTimestamp || 0),
-    });
-    metrics.lastInteractionTs = ts;
-    metrics.supported = true;
-  };
-
-  try {
-    if (
-      "PerformanceObserver" in self &&
-      Array.isArray(PerformanceObserver.supportedEntryTypes) &&
-      PerformanceObserver.supportedEntryTypes.includes("event")
-    ) {
-      const eventObserver = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          recordInteraction(entry);
-        }
-        prune();
-      });
-      eventObserver.observe({ type: "event", buffered: true, durationThreshold: 16 });
-      metrics.eventTiming = true;
-    }
-  } catch (_) {}
-
-  try {
-    if (
-      "PerformanceObserver" in self &&
-      Array.isArray(PerformanceObserver.supportedEntryTypes) &&
-      PerformanceObserver.supportedEntryTypes.includes("long-animation-frame")
-    ) {
-      const loafObserver = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          const ts = Number(entry.startTime || now());
-          if (Number.isFinite(ts)) {
-            metrics.longFrames.push(ts);
-          }
-          const firstUI = Number(entry.firstUIEventTimestamp || 0);
-          if (Number.isFinite(firstUI) && firstUI > 0) {
-            metrics.lastInteractionTs = Math.max(metrics.lastInteractionTs || 0, firstUI);
-          }
-        }
-        metrics.supported = true;
-        prune();
-      });
-      loafObserver.observe({ type: "long-animation-frame", buffered: true });
-      metrics.loaf = true;
-    }
-  } catch (_) {}
-
-  metrics.compute = function () {
-    prune();
-    const durations = metrics.interactions
-      .map((item) => Number(item.duration || 0))
-      .filter((value) => Number.isFinite(value) && value > 0)
-      .sort((a, b) => a - b);
-
-    let p75 = null;
-    if (durations.length > 0) {
-      const index = Math.max(0, Math.ceil(durations.length * 0.75) - 1);
-      p75 = durations[index];
-    }
-
-    return {
-      supported: !!(metrics.eventTiming || metrics.loaf),
-      p75InteractionMs: p75,
-      longFrameCount: metrics.longFrames.length,
-      interactionCount: metrics.interactionCount,
-      sampleSize: durations.length,
-    };
-  };
-})();
-"#,
-    );
-    let _ = installer.call0(&JsValue::NULL);
+    crate::browser::perf::ensure_perf_observers_started();
 }
 
-#[cfg(not(feature = "hydrate"))]
-pub fn ensure_perf_observers_started() {}
-
-#[cfg(feature = "hydrate")]
 pub fn latest_inp_metrics_snapshot() -> Option<InpMetricsSnapshot> {
-    ensure_perf_observers_started();
-    let metrics = performance_metrics_object()?;
-    if metrics.is_null() || metrics.is_undefined() {
-        return Some(InpMetricsSnapshot::default());
-    }
-    let compute = js_sys::Reflect::get(&metrics, &JsValue::from_str("compute"))
-        .ok()?
-        .dyn_into::<js_sys::Function>()
-        .ok()?;
-    let summary = compute.call0(&metrics).ok()?;
-
-    let supported = js_sys::Reflect::get(&summary, &JsValue::from_str("supported"))
-        .ok()
-        .and_then(|value| value.as_bool())
-        .unwrap_or(false);
-    let p75_interaction_ms = js_sys::Reflect::get(&summary, &JsValue::from_str("p75InteractionMs"))
-        .ok()
-        .and_then(|value| value.as_f64())
-        .filter(|value| value.is_finite());
-    let long_frame_count = js_sys::Reflect::get(&summary, &JsValue::from_str("longFrameCount"))
-        .ok()
-        .and_then(|value| value.as_f64())
-        .filter(|value| value.is_finite() && *value >= 0.0)
-        .unwrap_or(0.0) as u32;
-    let interaction_count = js_sys::Reflect::get(&summary, &JsValue::from_str("interactionCount"))
-        .ok()
-        .and_then(|value| value.as_f64())
-        .filter(|value| value.is_finite() && *value >= 0.0)
-        .map(|value| value as u32);
-
-    Some(InpMetricsSnapshot {
-        supported,
-        p75_interaction_ms,
-        long_frame_count,
-        interaction_count,
-    })
+    crate::browser::perf::latest_inp_metrics_snapshot()
 }
 
-#[cfg(not(feature = "hydrate"))]
-pub fn latest_inp_metrics_snapshot() -> Option<InpMetricsSnapshot> {
-    None
-}
-
-#[cfg(feature = "hydrate")]
 pub fn has_recent_interaction(window_ms: f64) -> bool {
-    ensure_perf_observers_started();
-    let Some(metrics) = performance_metrics_object() else {
-        return false;
-    };
-    if metrics.is_null() || metrics.is_undefined() {
-        return false;
-    }
-
-    let Some(last_interaction_ts) =
-        js_sys::Reflect::get(&metrics, &JsValue::from_str("lastInteractionTs"))
-            .ok()
-            .and_then(|value| value.as_f64())
-    else {
-        return false;
-    };
-
-    let now_ms = web_sys::window()
-        .and_then(|window| window.performance())
-        .map(|performance| performance.now())
-        .unwrap_or_else(js_sys::Date::now);
-
-    (now_ms - last_interaction_ts).abs() <= window_ms.max(0.0)
-}
-
-#[cfg(not(feature = "hydrate"))]
-pub fn has_recent_interaction(_window_ms: f64) -> bool {
-    false
+    crate::browser::perf::has_recent_interaction(window_ms)
 }
 
 fn use_seed_data_state() -> RwSignal<crate::data::SeedDataState> {
@@ -644,50 +442,6 @@ pub fn offline_page() -> impl IntoView {
 
 #[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct WebgpuRuntimeTelemetry {
-    #[serde(default)]
-    counters: std::collections::HashMap<String, u64>,
-    #[serde(default)]
-    last_event: Option<String>,
-    #[serde(default)]
-    last_event_ts: Option<f64>,
-}
-
-#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct AppleSiliconWorkgroup {
-    #[serde(default)]
-    dot: Option<usize>,
-    #[serde(default)]
-    score: Option<usize>,
-}
-
-#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct AppleSiliconWorkerProfile {
-    #[serde(default)]
-    threshold_floats: Option<usize>,
-    #[serde(default)]
-    max_floats: Option<usize>,
-}
-
-#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct AppleSiliconProfile {
-    #[serde(default)]
-    is_apple_silicon: bool,
-    #[serde(default)]
-    cpu_cores: Option<f64>,
-    #[serde(default)]
-    device_memory_gb: Option<f64>,
-    #[serde(default)]
-    workgroup: Option<AppleSiliconWorkgroup>,
-    #[serde(default)]
-    worker: Option<AppleSiliconWorkerProfile>,
-}
-
-#[derive(Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct IdbRuntimeMetrics {
     #[serde(default)]
     open_blocked_count: u64,
@@ -697,25 +451,6 @@ struct IdbRuntimeMetrics {
     version_change_count: u64,
     #[serde(default)]
     version_change_last_ms: Option<f64>,
-}
-
-#[cfg(feature = "hydrate")]
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = window, js_name = dmbGetWebgpuTelemetry, catch)]
-    fn js_get_webgpu_runtime_telemetry() -> Result<JsValue, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbResetWebgpuTelemetry, catch)]
-    fn js_reset_webgpu_runtime_telemetry() -> Result<(), JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbGetAppleSiliconProfile, catch)]
-    fn js_get_apple_silicon_profile() -> Result<JsValue, JsValue>;
-}
-
-#[cfg(feature = "hydrate")]
-fn load_webgpu_runtime_telemetry() -> Option<WebgpuRuntimeTelemetry> {
-    let value = js_get_webgpu_runtime_telemetry().ok()?;
-    serde_wasm_bindgen::from_value(value).ok()
 }
 
 #[derive(Clone, Copy)]
@@ -829,10 +564,8 @@ fn refresh_ann_cap_override_signals(state: AiDiagnosticsState) {
 
 #[cfg(feature = "hydrate")]
 fn refresh_runtime_metrics_signals(state: AiDiagnosticsState) {
-    let webgpu_runtime = load_webgpu_runtime_telemetry();
-    let apple_silicon_profile = js_get_apple_silicon_profile()
-        .ok()
-        .and_then(|value| serde_wasm_bindgen::from_value(value).ok());
+    let webgpu_runtime = crate::browser::webgpu_diagnostics::load_runtime_telemetry();
+    let apple_silicon_profile = crate::browser::webgpu_diagnostics::load_apple_silicon_profile();
     let idb_runtime_metrics = dmb_idb::js_idb_runtime_metrics()
         .ok()
         .and_then(|value| serde_wasm_bindgen::from_value(value).ok());
@@ -958,16 +691,8 @@ fn apply_runtime_snapshot_values(state: AiDiagnosticsState) {
 
     refresh_runtime_metrics_signals(state);
 
-    if let Some(window) = web_sys::window() {
-        let isolated =
-            js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("crossOriginIsolated"))
-                .ok()
-                .and_then(|value| value.as_bool())
-                .unwrap_or(false);
-        let _ = state.cross_origin_isolated.try_set(Some(isolated));
-    } else {
-        let _ = state.cross_origin_isolated.try_set(Some(false));
-    }
+    let isolated = crate::browser::runtime::cross_origin_isolated().unwrap_or(false);
+    let _ = state.cross_origin_isolated.try_set(Some(isolated));
 }
 
 #[cfg(feature = "hydrate")]
@@ -1277,7 +1002,7 @@ fn action_run_worker_benchmark(state: AiDiagnosticsState) {
             store_benchmark_sample_and_refresh_history(benchmark_history, None, None, result);
             refresh_worker_threshold_signals(state);
             worker_failure.set(crate::ai::worker_failure_status());
-            webgpu_runtime.set(load_webgpu_runtime_telemetry());
+            webgpu_runtime.set(crate::browser::webgpu_diagnostics::load_runtime_telemetry());
         });
     });
 }
@@ -1290,9 +1015,11 @@ fn action_refresh_runtime_metrics(state: AiDiagnosticsState) {
 
 fn action_reset_runtime_metrics(state: AiDiagnosticsState) {
     hydrate_action!(state, {
-        let _ = js_reset_webgpu_runtime_telemetry();
+        crate::browser::webgpu_diagnostics::reset_runtime_telemetry();
         crate::ai::reset_webgpu_policy_telemetry();
-        state.webgpu_runtime.set(load_webgpu_runtime_telemetry());
+        state
+            .webgpu_runtime
+            .set(crate::browser::webgpu_diagnostics::load_runtime_telemetry());
         state
             .telemetry_snapshot
             .set(crate::ai::load_ai_telemetry_snapshot());

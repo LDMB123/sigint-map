@@ -43,4 +43,24 @@ test.describe('Rust AI timeout/degradation guardrails', () => {
     await expect(page.getByRole('button', { name: /Enable WebGPU/i })).toBeVisible();
     await expect(page.locator('li', { hasText: 'WebGPU enabled: no' })).toBeVisible();
   });
+
+  test('diagnostics page remains resilient when WebGPU globals are missing', async ({ page }) => {
+    const pageErrors = [];
+    page.on('pageerror', (error) => {
+      pageErrors.push(String(error));
+    });
+
+    await page.addInitScript(() => {
+      window.dmbGetWebgpuTelemetry = undefined;
+      window.dmbResetWebgpuTelemetry = undefined;
+      window.dmbGetAppleSiliconProfile = undefined;
+    });
+
+    await gotoHydrated(page, '/ai-diagnostics', { hydrationTimeout: 60_000 });
+
+    await expect(page.getByRole('heading', { level: 1, name: /AI Diagnostics/i })).toBeVisible();
+    await expect(page.getByText(/Runtime telemetry unavailable\./i)).toBeVisible();
+    await expect(page.getByText(/Profile unavailable\./i)).toBeVisible();
+    expect(pageErrors).toEqual([]);
+  });
 });

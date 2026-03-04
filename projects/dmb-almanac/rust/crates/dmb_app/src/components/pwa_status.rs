@@ -370,7 +370,7 @@ struct PwaStatusState {
     integrity_report: RwSignal<Option<crate::data::IntegrityReport>>,
     sqlite_parity: RwSignal<Option<crate::data::SqliteParityReport>>,
     sw_action_status: RwSignal<Option<String>>,
-    perf_metrics: RwSignal<Option<crate::pages::InpMetricsSnapshot>>,
+    perf_metrics: RwSignal<Option<crate::browser::perf::InpMetricsSnapshot>>,
     import_tuning_enabled: RwSignal<bool>,
 }
 
@@ -426,7 +426,7 @@ impl PwaStatusState {
             integrity_report: RwSignal::new(None::<crate::data::IntegrityReport>),
             sqlite_parity: RwSignal::new(None::<crate::data::SqliteParityReport>),
             sw_action_status: RwSignal::new(None::<String>),
-            perf_metrics: RwSignal::new(None::<crate::pages::InpMetricsSnapshot>),
+            perf_metrics: RwSignal::new(None::<crate::browser::perf::InpMetricsSnapshot>),
             import_tuning_enabled: RwSignal::new(false),
         }
     }

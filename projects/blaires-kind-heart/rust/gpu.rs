@@ -120,19 +120,42 @@ pub fn is_ipad_mini_6_profile() -> bool {
     let Ok(screen) = window.screen() else {
         return false;
     };
-    let w = screen.width().unwrap_or_default();
-    let h = screen.height().unwrap_or_default();
+    let screen_dims = (screen.width().unwrap_or_default(), screen.height().unwrap_or_default());
+    let avail_dims = (
+        screen.avail_width().unwrap_or_default(),
+        screen.avail_height().unwrap_or_default(),
+    );
+    let outer_dims = (
+        window
+            .outer_width()
+            .ok()
+            .and_then(|value| value.as_f64())
+            .unwrap_or_default() as i32,
+        window
+            .outer_height()
+            .ok()
+            .and_then(|value| value.as_f64())
+            .unwrap_or_default() as i32,
+    );
     let dpr = window.device_pixel_ratio();
     let nav = window.navigator();
     let touch_points = nav.max_touch_points();
+    let ua = nav
+        .user_agent()
+        .unwrap_or_default()
+        .to_ascii_lowercase();
 
-    let native_dims_match = (w == IPAD_MINI_6_SCREEN_W && h == IPAD_MINI_6_SCREEN_H)
-        || (w == IPAD_MINI_6_SCREEN_H && h == IPAD_MINI_6_SCREEN_W);
-    let compat_dims_match = (w == IPAD_MINI_COMPAT_SCREEN_W && h == IPAD_MINI_COMPAT_SCREEN_H)
-        || (w == IPAD_MINI_COMPAT_SCREEN_H && h == IPAD_MINI_COMPAT_SCREEN_W);
-    let dims_match = native_dims_match || compat_dims_match;
+    let dims_match = [screen_dims, avail_dims, outer_dims]
+        .into_iter()
+        .any(|(w, h)| {
+            let native_dims_match = (w == IPAD_MINI_6_SCREEN_W && h == IPAD_MINI_6_SCREEN_H)
+                || (w == IPAD_MINI_6_SCREEN_H && h == IPAD_MINI_6_SCREEN_W);
+            let compat_dims_match = (w == IPAD_MINI_COMPAT_SCREEN_W && h == IPAD_MINI_COMPAT_SCREEN_H)
+                || (w == IPAD_MINI_COMPAT_SCREEN_H && h == IPAD_MINI_COMPAT_SCREEN_W);
+            native_dims_match || compat_dims_match
+        });
     let dpr_match = (dpr - IPAD_MINI_6_DPR).abs() < 0.05;
-    dims_match && dpr_match && touch_points > 0
+    dims_match && dpr_match && (touch_points > 0 || ua.contains("ipad"))
 }
 
 fn gpu_resolution_scale(mode: PerfMode) -> f64 {
@@ -437,6 +460,9 @@ pub async fn init() {
     PERF_MODE.with(|selected| selected.set(perf_mode.mode));
     set_perf_mode_attr(perf_mode.mode);
     apply_profile_attrs(perf_mode.mode);
+    dom::set_timeout_once(250, move || {
+        apply_profile_attrs(perf_mode.mode);
+    });
 
     let perf_details = js_sys::Object::new();
     let _ = js_sys::Reflect::set(
@@ -601,6 +627,7 @@ fn get_or_create_canvas() -> Result<HtmlCanvasElement, JsValue> {
 }
 
 pub fn resize_canvas() {
+    apply_profile_attrs(current_perf_mode());
     GPU.with(|cell| {
         let guard = cell.borrow();
         let Some(state) = guard.as_ref() else { return };

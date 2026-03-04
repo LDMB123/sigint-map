@@ -174,11 +174,12 @@ fn build_hydrate_pkg(release: bool, ai_diagnostics_full: bool) -> Result<()> {
 fn data_release(sqlite: &PathBuf, skip_parity: bool, skip_sw_bump: bool) -> Result<()> {
     let rust_dir = rust_workspace_dir()?;
 
-    let sw_version = if skip_sw_bump {
+    let current_sw_version = if skip_sw_bump {
         read_current_sw_version()?
     } else {
         None
     };
+    let sw_version = resolve_sw_version_for_data_release(skip_sw_bump, current_sw_version);
     generate_sw(sw_version)?;
 
     run_command(
@@ -276,10 +277,7 @@ fn generate_sw(version: Option<String>) -> Result<()> {
     let shell_assets = collect_shell_assets(&repo_root)?;
     let data_assets = collect_data_assets(&repo_root);
 
-    let rendered = template
-        .replace("__DMB_SW_VERSION__", &new_version)
-        .replace("__DMB_SW_SHELL_ASSETS__", &render_js_array(&shell_assets))
-        .replace("__DMB_SW_DATA_ASSETS__", &render_js_array(&data_assets));
+    let rendered = render_sw_template(&template, &new_version, &shell_assets, &data_assets);
     fs::write(&sw_path, rendered).context("write sw.js")?;
     println!(
         "Generated sw.js version={new_version} shell_assets={} data_assets={}",
@@ -296,20 +294,7 @@ fn read_current_sw_version() -> Result<Option<String>> {
         return Ok(None);
     }
     let source = fs::read_to_string(&sw_path).context("read sw.js")?;
-    let marker = "const VERSION = '";
-    let Some(start) = source.find(marker).map(|idx| idx + marker.len()) else {
-        return Ok(None);
-    };
-    let Some(end_rel) = source[start..].find("';") else {
-        return Ok(None);
-    };
-    let end = start + end_rel;
-    let value = source[start..end].trim();
-    if value.is_empty() {
-        Ok(None)
-    } else {
-        Ok(Some(value.to_string()))
-    }
+    Ok(parse_sw_version_from_source(&source))
 }
 
 fn collect_shell_assets(repo_root: &std::path::Path) -> Result<Vec<String>> {
@@ -361,6 +346,10 @@ fn collect_data_assets(repo_root: &std::path::Path) -> Vec<String> {
 fn parse_rust_routes(repo_root: &std::path::Path) -> Result<Vec<String>> {
     let lib_path = repo_root.join("rust/crates/dmb_app/src/lib.rs");
     let source = fs::read_to_string(&lib_path).context("read dmb_app/src/lib.rs")?;
+    parse_rust_routes_from_source(&source)
+}
+
+fn parse_rust_routes_from_source(source: &str) -> Result<Vec<String>> {
     let start_marker = "pub const RUST_ROUTES: &[&str] = &[";
     let start = source
         .find(start_marker)
@@ -388,6 +377,42 @@ fn parse_rust_routes(repo_root: &std::path::Path) -> Result<Vec<String>> {
     Ok(routes)
 }
 
+fn parse_sw_version_from_source(source: &str) -> Option<String> {
+    let marker = "const VERSION = '";
+    let start = source.find(marker).map(|idx| idx + marker.len())?;
+    let end_rel = source[start..].find("';")?;
+    let end = start + end_rel;
+    let value = source[start..end].trim();
+    if value.is_empty() {
+        None
+    } else {
+        Some(value.to_string())
+    }
+}
+
+fn resolve_sw_version_for_data_release(
+    skip_sw_bump: bool,
+    current_version: Option<String>,
+) -> Option<String> {
+    if skip_sw_bump {
+        current_version
+    } else {
+        None
+    }
+}
+
+fn render_sw_template(
+    template: &str,
+    version: &str,
+    shell_assets: &[String],
+    data_assets: &[String],
+) -> String {
+    template
+        .replace("__DMB_SW_VERSION__", version)
+        .replace("__DMB_SW_SHELL_ASSETS__", &render_js_array(shell_assets))
+        .replace("__DMB_SW_DATA_ASSETS__", &render_js_array(data_assets))
+}
+
 fn render_js_array(values: &[String]) -> String {
     let mut out = String::from("[\n");
     for value in values {
@@ -397,6 +422,62 @@ fn render_js_array(values: &[String]) -> String {
     }
     out.push(']');
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        parse_rust_routes_from_source, parse_sw_version_from_source, render_sw_template,
+        resolve_sw_version_for_data_release,
+    };
+
+    #[test]
+    fn parse_rust_routes_from_source_extracts_routes() {
+        let source = r#"
+            pub const RUST_ROUTES: &[&str] = &[
+                "/",
+                "/search",
+                "/shows/:showId",
+                "/*",
+            ];
+        "#;
+
+        let routes = parse_rust_routes_from_source(source).expect("routes should parse");
+        assert_eq!(routes, vec!["/", "/search", "/shows/:showId", "/*"]);
+    }
+
+    #[test]
+    fn render_sw_template_is_stable() {
+        let template = "const VERSION = '__DMB_SW_VERSION__';\nconst SHELL = __DMB_SW_SHELL_ASSETS__;\nconst DATA = __DMB_SW_DATA_ASSETS__;\n";
+        let rendered = render_sw_template(
+            template,
+            "2026-03-04",
+            &["/".to_string(), "/offline".to_string()],
+            &["/data/manifest.json".to_string()],
+        );
+
+        let expected = "const VERSION = '2026-03-04';\nconst SHELL = [\n  '/',\n  '/offline',\n];\nconst DATA = [\n  '/data/manifest.json',\n];\n";
+        assert_eq!(rendered, expected);
+    }
+
+    #[test]
+    fn skip_sw_bump_preserves_existing_version() {
+        let existing = Some("2026-01-15".to_string());
+        assert_eq!(
+            resolve_sw_version_for_data_release(true, existing.clone()),
+            existing
+        );
+        assert_eq!(
+            resolve_sw_version_for_data_release(false, Some("2026-01-15".to_string())),
+            None
+        );
+
+        let sw_source = "const VERSION = '2026-01-15';\n";
+        assert_eq!(
+            parse_sw_version_from_source(sw_source),
+            Some("2026-01-15".to_string())
+        );
+    }
 }
 
 fn run_scrape_qa(

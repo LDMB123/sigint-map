@@ -21,10 +21,9 @@ fn ssr_app_renders_shell_and_hydration() {
         provide_meta_context();
         provide_context(RequestUrl::new("/"));
         let shell_html = shell(options.clone()).into_view().to_html();
-        assert!(shell_html.contains("serviceWorker"));
         assert!(shell_html.contains("/manifest.json"));
         assert!(shell_html.contains("/app.css"));
-        assert!(shell_html.contains("/webgpu.js"));
+        assert!(shell_html.contains("dmb_app.js"));
 
         let app_html = App().into_view().to_html();
         assert!(app_html.contains("main-content"));

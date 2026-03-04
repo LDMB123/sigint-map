@@ -107,6 +107,10 @@ function resetWebgpuTelemetry() {
   runtimeTelemetry.lastEvent = null;
   runtimeTelemetry.lastEventTs = null;
 };
+// DEPRECATED (compatibility shim, one release window):
+// These globals are retained for current compatibility and are now consumed via
+// Rust wrappers in dmb_app::browser::webgpu_diagnostics.
+// Remove in the next migration tranche once the deprecation window closes.
 root.dmbGetWebgpuTelemetry = getWebgpuTelemetry;
 root.dmbResetWebgpuTelemetry = resetWebgpuTelemetry;
 root.dmbGetAppleSiliconProfile = function dmbGetAppleSiliconProfile() {

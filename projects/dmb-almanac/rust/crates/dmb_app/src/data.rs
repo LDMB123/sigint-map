@@ -1336,7 +1336,7 @@ async fn import_single_work_item_adaptive(
         })?;
         let chunk_elapsed_ms = (performance_now_ms() - chunk_started_at).max(0.0);
         let tuning_chunk_ms = chunk_elapsed_ms.max(write_stats.max_tx_ms);
-        let long_task_count = crate::pages::latest_inp_metrics_snapshot()
+        let long_task_count = crate::browser::perf::latest_inp_metrics_snapshot()
             .map(|metrics| metrics.long_frame_count)
             .unwrap_or(0);
         let tuning = governor.snapshot(tuning_chunk_ms, long_task_count);
@@ -1381,7 +1381,7 @@ async fn import_single_work_item_adaptive(
 
         yield_to_browser_scheduler().await;
 
-        let no_pending_interaction = !crate::pages::has_recent_interaction(150.0);
+        let no_pending_interaction = !crate::browser::perf::has_recent_interaction(150.0);
         governor.update_after_chunk(tuning_chunk_ms, no_pending_interaction);
         record_offset = end;
     }
@@ -1497,7 +1497,7 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
     let tuning_enabled = import_tuning_enabled();
     // Start perf observers lazily on first real import demand so both tuned and untuned
     // paths expose comparable responsiveness metrics.
-    crate::pages::ensure_perf_observers_started();
+    crate::browser::perf::ensure_perf_observers_started();
 
     let import_result = if tuning_enabled {
         import_work_items_with_adaptive_resume(

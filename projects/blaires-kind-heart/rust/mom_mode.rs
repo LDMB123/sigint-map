@@ -1,10 +1,9 @@
 use crate::{
-    browser_apis, constants, db_client,
+    browser_apis, constants,
     db_messages::{DB_SCHEMA_VERSION, EXPORT_FORMAT_VERSION},
-    dom, domain_services, feature_flags, parent_insights, reliability, render, speech,
+    dom, domain_services, feature_flags, mom_mode_store, parent_insights, reliability, render, speech,
     state::AppState, synth_audio, utils,
 };
-use futures::join;
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::JsCast;
@@ -56,7 +55,7 @@ pub fn init(state: Rc<RefCell<AppState>>) {
     wasm_bindgen_futures::spawn_local(check_pin_exists(state));
 }
 async fn check_pin_exists(state: Rc<RefCell<AppState>>) {
-    let has_pin = db_client::get_setting("parent_pin").await.is_some();
+    let has_pin = mom_mode_store::has_parent_pin().await;
     MOM_STATE.with(|m| {
         if let Some(mom) = m.borrow_mut().as_mut() {
             mom.pin_set = has_pin;
@@ -263,7 +262,7 @@ fn update_pin_dots(count: usize) {
     }
 }
 async fn save_pin(pin: &str) {
-    db_client::set_setting("parent_pin", pin).await;
+    mom_mode_store::set_parent_pin(pin).await;
     MOM_STATE.with(|m| {
         if let Some(mom) = m.borrow_mut().as_mut() {
             mom.pin_set = true;
@@ -277,15 +276,13 @@ async fn save_pin(pin: &str) {
 async fn verify_pin(entered: &str) -> bool {
     // Rate limiting: check lockout before anything else
     let now_ms = utils::now_epoch_ms();
-    if let Some(locked_until_str) = db_client::get_setting("pin_locked_until").await {
-        if let Ok(locked_until) = locked_until_str.parse::<f64>() {
-            if now_ms < locked_until {
-                let remaining_secs = ((locked_until - now_ms) / 1000.0).ceil() as u32;
-                dom::warn(&format!("[mom_mode] PIN locked for {}s", remaining_secs));
-                dom::show("[data-pin-error]");
-                update_pin_dots(0);
-                return false;
-            }
+    if let Some(locked_until) = mom_mode_store::get_pin_lockout_until().await {
+        if now_ms < locked_until {
+            let remaining_secs = ((locked_until - now_ms) / 1000.0).ceil() as u32;
+            dom::warn(&format!("[mom_mode] PIN locked for {}s", remaining_secs));
+            dom::show("[data-pin-error]");
+            update_pin_dots(0);
+            return false;
         }
     }
 
@@ -298,24 +295,20 @@ async fn verify_pin(entered: &str) -> bool {
 
     if entered == stored {
         // Clear rate-limit counters on success
-        db_client::set_setting("pin_failed_attempts", "0").await;
-        db_client::set_setting("pin_locked_until", "0").await;
+        mom_mode_store::clear_pin_rate_limit().await;
         close_pin_overlay();
         synth_audio::chime();
         show_dashboard();
         true
     } else {
         // Increment failure counter
-        let attempts_str = db_client::get_setting("pin_failed_attempts")
-            .await
-            .unwrap_or_default();
-        let attempts = attempts_str.parse::<u32>().unwrap_or(0) + 1;
-        db_client::set_setting("pin_failed_attempts", &attempts.to_string()).await;
+        let attempts = mom_mode_store::get_pin_failed_attempts().await + 1;
+        mom_mode_store::set_pin_failed_attempts(attempts).await;
 
         // Progressive delay: 1s after attempt 3, 2s after attempt 4; lockout after 5
         if attempts >= 5 {
             let lockout_until = now_ms + 300_000.0; // 5-minute lockout
-            db_client::set_setting("pin_locked_until", &(lockout_until as u64).to_string()).await;
+            mom_mode_store::set_pin_lockout_until(lockout_until as u64).await;
             dom::warn("[mom_mode] PIN locked for 5 minutes after 5 failed attempts");
         } else if attempts >= 4 {
             browser_apis::sleep_ms(2000).await;
@@ -329,7 +322,7 @@ async fn verify_pin(entered: &str) -> bool {
     }
 }
 pub async fn get_parent_pin() -> Option<String> {
-    db_client::get_setting("parent_pin").await
+    mom_mode_store::get_parent_pin().await
 }
 fn close_dialog(selector: &str) {
     if let Some(el) = dom::query(selector) {
@@ -729,7 +722,7 @@ fn bind_dashboard_interactions() {
                     match wasm_bindgen_futures::JsFuture::from(promise).await {
                         Ok(text_val) => {
                             if let Some(snapshot_json) = text_val.as_string() {
-                                if let Err(e) = db_client::restore_snapshot(snapshot_json).await {
+                                if let Err(e) = mom_mode_store::restore_snapshot(snapshot_json).await {
                                     dom::warn(&format!(
                                         "[mom_mode] restore_snapshot failed: {e:?}"
                                     ));
@@ -915,11 +908,7 @@ fn adjust_slider(goal_type: &str, delta: i32) {
 async fn save_goals() {
     let week = utils::week_key();
     let now = utils::now_epoch_ms() as i64;
-    let _ = db_client::exec(
-        "DELETE FROM weekly_goals WHERE week_key = ?1",
-        vec![week.clone()],
-    )
-    .await;
+    let mut goals_to_insert: Vec<mom_mode_store::GoalInsert> = Vec::new();
     let goal_types = ["acts", "quests", "stories", "games", "hearts"];
     for goal_type in &goal_types {
         let Some(toggle) = dom::query_data("goal-toggle", goal_type) else {
@@ -934,25 +923,22 @@ async fn save_goals() {
             .and_then(|s| s.parse().ok())
             .unwrap_or(10);
         let id = utils::create_id();
-        let _ = db_client::exec(
-            "INSERT INTO weekly_goals (id, week_key, goal_type, target, progress, created_at) \
-            VALUES (?1, ?2, ?3, ?4, 0, ?5)",
-            vec![id, week.clone(), goal_type.to_string(), target.to_string(), now.to_string()],
-        )
-        .await;
+        goals_to_insert.push(mom_mode_store::GoalInsert {
+            id,
+            goal_type: goal_type.to_string(),
+            target,
+        });
     }
+
+    mom_mode_store::replace_weekly_goals(&week, &goals_to_insert, now).await;
+
     if let Some(note_el) = dom::query("[data-mom-note]") {
         let note_text = js_sys::Reflect::get(note_el.as_ref(), &"value".into())
             .ok()
             .and_then(|v| v.as_string())
             .unwrap_or_default();
         if !note_text.trim().is_empty() {
-            let note_id = utils::create_id();
-            let _ = db_client::exec(
-                "INSERT OR REPLACE INTO mom_notes (id, week_key, note_text, created_at) VALUES (?1, ?2, ?3, ?4)",
-                vec![note_id, week.clone(), note_text.trim().to_string(), now.to_string()],
-            )
-            .await;
+            mom_mode_store::upsert_mom_note(&week, note_text.trim(), now).await;
         }
     }
     close_dashboard();
@@ -965,16 +951,7 @@ fn close_dashboard() {
 }
 async fn load_existing_goals() {
     let week = utils::week_key();
-    let (goals_rows, note_rows) = join!(
-        db_client::query(
-            "SELECT goal_type, target FROM weekly_goals WHERE week_key = ?1",
-            vec![week.clone()],
-        ),
-        db_client::query(
-            "SELECT note_text FROM mom_notes WHERE week_key = ?1 ORDER BY created_at DESC LIMIT 1",
-            vec![week.clone()],
-        )
-    );
+    let (goals_rows, note_rows) = mom_mode_store::load_existing_goals_and_note(&week).await;
 
     if let Ok(rows) = goals_rows {
         if let Some(arr) = rows.as_array() {
@@ -1176,20 +1153,7 @@ async fn export_json_backup() {
         .to_iso_string()
         .as_string()
         .unwrap_or_default();
-    let (kind_acts_result, settings_result, quests_result) = join!(
-        db_client::query(
-            "SELECT id, category, description, hearts_earned, created_at, day_key, \
-            reflection_type, emotion_selected, bonus_context, combo_day \
-            FROM kind_acts ORDER BY created_at ASC",
-            vec![],
-        ),
-        db_client::query(
-            "SELECT key, value FROM settings WHERE key != 'parent_pin'",
-            vec![],
-        ),
-        db_client::query("SELECT * FROM quests ORDER BY day_key ASC", vec![]),
-    );
-    let (Ok(kind_acts), Ok(settings), Ok(quests)) = (kind_acts_result, settings_result, quests_result) else {
+    let Some(export_tables) = mom_mode_store::export_json_tables().await else {
         dom::toast("Export failed \u{2014} please try again.");
         return;
     };
@@ -1197,7 +1161,11 @@ async fn export_json_backup() {
         "export_format_version": EXPORT_FORMAT_VERSION,
         "schema_version": DB_SCHEMA_VERSION,
         "exported_at": stamp,
-        "tables": { "kind_acts": kind_acts, "settings": settings, "quests": quests }
+        "tables": {
+            "kind_acts": export_tables.kind_acts,
+            "settings": export_tables.settings,
+            "quests": export_tables.quests
+        }
     });
     if let Ok(json) = serde_json::to_string_pretty(&payload) {
         trigger_text_download(&file_name, &json, "application/json");
@@ -1213,14 +1181,7 @@ async fn export_kind_acts_csv() {
     let day = today_iso_day();
     let file_name = format!("blaires-kind-heart-kind-acts-{day}.csv");
     let header = "id,category,description,hearts_earned,created_at,day_key,reflection_type,emotion_selected,bonus_context,combo_day";
-    let rows = db_client::query(
-        "SELECT id, category, description, hearts_earned, created_at, day_key, \
-        reflection_type, emotion_selected, bonus_context, combo_day \
-        FROM kind_acts ORDER BY created_at ASC",
-        vec![],
-    )
-    .await
-    .unwrap_or(serde_json::json!([]));
+    let rows = mom_mode_store::export_kind_acts_rows().await;
     let mut csv = String::from(header);
     if let Some(array) = rows.as_array() {
         for row in array {

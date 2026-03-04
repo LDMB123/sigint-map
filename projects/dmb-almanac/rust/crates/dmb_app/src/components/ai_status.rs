@@ -22,17 +22,12 @@ pub fn AiStatus() -> impl IntoView {
             worker_status.set(crate::ai::worker_failure_status());
 
             // Used only for better user-facing messaging; the actual gating is via capabilities.
-            if let Some(window) = web_sys::window() {
-                let isolated = js_sys::Reflect::get(
-                    window.as_ref(),
-                    &wasm_bindgen::JsValue::from_str("crossOriginIsolated"),
-                )
-                .ok()
-                .and_then(|value| value.as_bool())
-                .unwrap_or(false);
-                cross_origin_isolated.set(Some(isolated));
-                is_secure_context.set(Some(window.is_secure_context()));
-            }
+            cross_origin_isolated.set(Some(
+                crate::browser::runtime::cross_origin_isolated().unwrap_or(false),
+            ));
+            is_secure_context.set(Some(
+                crate::browser::runtime::is_secure_context().unwrap_or(false),
+            ));
         });
     }
 

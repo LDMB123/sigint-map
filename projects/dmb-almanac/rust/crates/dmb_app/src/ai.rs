@@ -860,9 +860,7 @@ fn detect_ai_capabilities_with_webgpu_disabled(
     }
     let webgpu_worker = window_property(window, "dmbWebgpuScoresWorker").is_function();
     let webnn = js_value_exists(&navigator_property(&navigator, "ml"));
-    let threads = window_property(window, "crossOriginIsolated")
-        .as_bool()
-        .unwrap_or(false);
+    let threads = crate::browser::runtime::cross_origin_isolated().unwrap_or(false);
 
     let webgpu_enabled = webgpu_available && !webgpu_disabled;
     AiCapabilities {

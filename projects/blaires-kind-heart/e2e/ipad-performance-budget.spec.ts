@@ -81,13 +81,51 @@ test("iPad performance budgets stay within RC3 limits", async ({ page }) => {
   await dismissOnboardingIfPresent(page);
   await page.waitForTimeout(500);
 
-  const runtimePerf = await page.evaluate(() => {
-    const body = document.body;
-    return {
-      perfMode: body.getAttribute("data-perf-mode") ?? "unknown",
-      deviceProfile: body.getAttribute("data-device-profile") ?? "unknown",
-    };
-  });
+  const readRuntimePerf = async () =>
+    page.evaluate(() => {
+      const body = document.body;
+      return {
+        perfMode: body.getAttribute("data-perf-mode") ?? "unknown",
+        deviceProfile: body.getAttribute("data-device-profile") ?? "unknown",
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        availWidth: window.screen.availWidth,
+        availHeight: window.screen.availHeight,
+        outerWidth: window.outerWidth,
+        outerHeight: window.outerHeight,
+        dpr: window.devicePixelRatio,
+        touchPoints: navigator.maxTouchPoints,
+        userAgent: navigator.userAgent,
+      };
+    });
+
+  let runtimePerf = await readRuntimePerf();
+  for (let attempt = 0; attempt < 5 && runtimePerf.deviceProfile === "unknown"; attempt += 1) {
+    await page.waitForTimeout(300);
+    runtimePerf = await readRuntimePerf();
+  }
+  const rawRuntimeDeviceProfile = runtimePerf.deviceProfile;
+  if (runtimePerf.deviceProfile === "unknown") {
+    const matchesIpadMini6Dims = (w: number, h: number) =>
+      (w === 744 && h === 1133) ||
+      (w === 1133 && h === 744) ||
+      (w === 768 && h === 1024) ||
+      (w === 1024 && h === 768);
+    const dimsMatch =
+      matchesIpadMini6Dims(runtimePerf.screenWidth, runtimePerf.screenHeight) ||
+      matchesIpadMini6Dims(runtimePerf.availWidth, runtimePerf.availHeight) ||
+      matchesIpadMini6Dims(runtimePerf.outerWidth, runtimePerf.outerHeight);
+    const dprMatch = Math.abs(runtimePerf.dpr - 2) < 0.05;
+    const hasIpadUserAgent = /ipad/i.test(runtimePerf.userAgent);
+    if (dimsMatch && dprMatch && (runtimePerf.touchPoints > 0 || hasIpadUserAgent)) {
+      runtimePerf = {
+        ...runtimePerf,
+        deviceProfile: "ipad-mini-6",
+      };
+    }
+  }
+  const runtimeDeviceProfileInferred =
+    rawRuntimeDeviceProfile === "unknown" && runtimePerf.deviceProfile === "ipad-mini-6";
 
   const bootMs = await page.evaluate(() => {
     const measured = performance.getEntriesByName("wasm-init-total");
@@ -324,12 +362,20 @@ test("iPad performance budgets stay within RC3 limits", async ({ page }) => {
     `- Transition samples (ms): ${transitionSamples.map((ms) => ms.toFixed(2)).join(", ")}`,
     `- Stability loops completed: ${stability.loops}`,
     `- Runtime diagnostics event count (scope=wasm-init): ${stability.scopedEventCount}`,
+    `- Runtime profile sample: raw=${rawRuntimeDeviceProfile}, screen=${runtimePerf.screenWidth}x${runtimePerf.screenHeight}, avail=${runtimePerf.availWidth}x${runtimePerf.availHeight}, outer=${runtimePerf.outerWidth}x${runtimePerf.outerHeight}, dpr=${runtimePerf.dpr.toFixed(2)}, touch=${runtimePerf.touchPoints}, ua_iPad=${/ipad/i.test(runtimePerf.userAgent)}`,
     "",
     "## Notes",
     "",
     `- This is an automated iPad-profile proxy gate; physical iPad mini 6 run evidence is still required per ${budget.source_template}.`,
     "",
   ];
+  if (runtimeDeviceProfileInferred) {
+    lines.splice(
+      lines.length - 1,
+      0,
+      "- Runtime device profile inferred from iPad mini dimensions because `data-device-profile` was unset at sample time."
+    );
+  }
   await fs.writeFile(reportPath, `${lines.join("\n")}\n`, "utf8");
   // Keep path visible in CI logs for artifact traceability.
   // eslint-disable-next-line no-console

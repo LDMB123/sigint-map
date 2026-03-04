@@ -1,6 +1,6 @@
 use crate::{
-    confetti, db_client, dom, domain_services, reliability, render, skill_taxonomy, speech,
-    synth_audio, utils,
+    confetti, dom, domain_services, reliability, render, skill_progression_store, skill_taxonomy,
+    speech, synth_audio, utils,
 };
 use wasm_bindgen::JsCast;
 
@@ -13,11 +13,7 @@ pub struct SkillStat {
 pub async fn track_skill_practice(skill: &str) {
     let canonical_skill = skill_taxonomy::canonicalize_skill(skill).to_string();
     let today = utils::today_key();
-    let update_result = db_client::exec(
-        "UPDATE skill_mastery SET total_count = total_count + 1, last_practiced = ?1 WHERE skill_type = ?2",
-        vec![today, canonical_skill.clone()],
-    )
-    .await;
+    let update_result = skill_progression_store::increment_skill_total(&canonical_skill, &today).await;
 
     if update_result.is_err() {
         reliability::record_failure(reliability::DOMAIN_PROGRESSION).await;
@@ -31,11 +27,7 @@ pub async fn track_skill_practice(skill: &str) {
 }
 
 async fn check_and_award_mastery(skill: &str) {
-    let rows = db_client::query(
-        "SELECT total_count, mastery_level FROM skill_mastery WHERE skill_type = ?1",
-        vec![skill.to_string()],
-    )
-    .await;
+    let rows = skill_progression_store::fetch_skill_totals(skill).await;
     let Ok(data) = rows else {
         reliability::record_failure(reliability::DOMAIN_PROGRESSION).await;
         return;
@@ -70,11 +62,7 @@ async fn check_and_award_mastery(skill: &str) {
 }
 
 async fn award_mastery_badge(skill: &str, level: u32) {
-    let _ = db_client::exec(
-        "UPDATE skill_mastery SET mastery_level = ?1 WHERE skill_type = ?2",
-        vec![level.to_string(), skill.to_string()],
-    )
-    .await;
+    let _ = skill_progression_store::set_mastery_level(skill, level).await;
 
     let sticker_type = match level {
         1 => format!("skill-bronze-{skill}"),
@@ -111,11 +99,7 @@ async fn award_mastery_badge(skill: &str, level: u32) {
 }
 
 async fn get_skill_stats() -> Vec<SkillStat> {
-    let rows = db_client::query(
-        "SELECT skill_type, mastery_level FROM skill_mastery ORDER BY skill_type",
-        vec![],
-    )
-    .await;
+    let rows = skill_progression_store::fetch_skill_stats().await;
     let Ok(data) = rows else { return vec![] };
     let Some(arr) = data.as_array() else {
         return vec![];
@@ -135,11 +119,7 @@ async fn get_skill_stats() -> Vec<SkillStat> {
 }
 
 pub async fn get_focus_skill() -> Option<String> {
-    let rows = db_client::query(
-        "SELECT skill_type FROM skill_mastery ORDER BY focus_priority DESC LIMIT 1",
-        vec![],
-    )
-    .await;
+    let rows = skill_progression_store::fetch_focus_skill().await;
     let Ok(data) = rows else { return None };
     let arr = data.as_array()?;
     if arr.is_empty() {
@@ -156,15 +136,8 @@ async fn recalculate_focus_priorities() {
     let seven_days_ago = utils::day_key_n_days_ago(7);
 
     for skill in skill_taxonomy::CANONICAL_SKILLS {
-        let count_result = db_client::query(
-            "SELECT COUNT(*) as c FROM kind_acts WHERE COALESCE(canonical_category, category) = ?1 AND day_key >= ?2",
-            vec![(*skill).to_string(), seven_days_ago.clone()],
-        )
-        .await;
-
-        let recent_count = count_result
-            .ok()
-            .map_or(0, |rows| db_client::extract_count(&rows, "c") as u32);
+        let recent_count =
+            skill_progression_store::count_recent_kind_acts(skill, &seven_days_ago).await;
 
         let priority = if recent_count >= 10 {
             0
@@ -172,15 +145,7 @@ async fn recalculate_focus_priorities() {
             100 - (recent_count * 10)
         };
 
-        let _ = db_client::exec(
-            "UPDATE skill_mastery SET focus_priority = ?1, week_count = ?2 WHERE skill_type = ?3",
-            vec![
-                priority.to_string(),
-                recent_count.to_string(),
-                (*skill).to_string(),
-            ],
-        )
-        .await;
+        let _ = skill_progression_store::update_focus_priority(skill, priority, recent_count).await;
     }
 }
 

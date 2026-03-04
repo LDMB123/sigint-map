@@ -34,6 +34,7 @@ async function main() {
   const queueFile = "rust/offline_queue.rs";
   const errorsFile = "rust/errors/reporter.rs";
   const momModeFile = "rust/mom_mode.rs";
+  const momModeStoreFile = "rust/mom_mode_store.rs";
   const contractDocFile = "docs/PERSISTENCE_CONTRACT.md";
   const runtimeContractSpecFile = "e2e/db-contract.spec.ts";
 
@@ -46,6 +47,7 @@ async function main() {
     queueSource,
     errorsSource,
     momModeSource,
+    momModeStoreSource,
     contractDoc,
     runtimeContractSpec,
   ] = await Promise.all([
@@ -57,9 +59,12 @@ async function main() {
     readText(queueFile),
     readText(errorsFile),
     readText(momModeFile),
+    readText(momModeStoreFile).catch(() => ""),
     readText(contractDocFile),
     readText(runtimeContractSpecFile),
   ]);
+
+  const momModeInvariantSource = `${momModeSource}\n${momModeStoreSource}`;
 
   let contractConfig = null;
   try {
@@ -403,8 +408,14 @@ async function main() {
       description: "CSV export action",
     },
     {
+      regex: /mom_mode_store::export_json_tables|SELECT key, value FROM settings WHERE key != 'parent_pin'/,
+      description: "mom_mode export flow uses helper or inline settings export query",
+    },
+    {
       regex: /SELECT key, value FROM settings WHERE key != 'parent_pin'/,
       description: "PIN excluded from exported settings",
+      source: momModeInvariantSource,
+      file: `${momModeFile}, ${momModeStoreFile}`,
     },
     {
       regex: /blaires-kind-heart-export-.*\.json/,
@@ -423,17 +434,23 @@ async function main() {
       description: "restore JSON file input",
     },
     {
+      regex: /mom_mode_store::restore_snapshot|db_client::restore_snapshot/,
+      description: "restore flow dispatches helper or worker restore request",
+    },
+    {
       regex: /db_client::restore_snapshot/,
       description: "restore flow dispatches worker restore request",
+      source: momModeInvariantSource,
+      file: `${momModeFile}, ${momModeStoreFile}`,
     },
   ];
 
   for (const pattern of momModePatterns) {
     assertPattern({
-      source: momModeSource,
+      source: pattern.source ?? momModeSource,
       regex: pattern.regex,
       description: pattern.description,
-      file: momModeFile,
+      file: pattern.file ?? momModeFile,
       failures,
     });
   }

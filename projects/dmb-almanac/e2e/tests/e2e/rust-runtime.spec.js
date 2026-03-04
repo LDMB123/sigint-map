@@ -21,7 +21,7 @@ test.describe('Rust runtime guardrails', () => {
 
     const statusRow = offlineStatusRow(page);
     await expect(statusRow).toHaveText(
-      /Checking previous-version data|Migrated previous-version data|Previous-version migration failed|Importing|Offline data ready|Integrity check failed|Offline manifest missing/i,
+      /Checking offline data|Checking previous-version data|Migrated previous-version data|Previous-version migration failed|Importing|Offline data ready|Integrity check failed|Offline manifest missing/i,
       { timeout: 5000 }
     );
   });

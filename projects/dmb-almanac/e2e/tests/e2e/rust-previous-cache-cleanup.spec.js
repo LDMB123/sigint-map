@@ -4,7 +4,7 @@ import { ensureSwDetailsOpen, gotoHydrated, skipUnlessRust } from "./_rust_test_
 test.describe("Rust previous cache cleanup", () => {
   skipUnlessRust(test, "Rust E2E disabled (set RUST_E2E=1)");
 
-  test("removes old CacheStorage entries without deleting Rust caches", async ({
+  test("removes old CacheStorage entries without deleting unrelated caches", async ({
     page,
   }) => {
     await gotoHydrated(page, "/");
@@ -22,7 +22,7 @@ test.describe("Rust previous cache cleanup", () => {
         }),
       );
 
-      const keep = await caches.open("dmb-almanac-rs-keep-test");
+      const keep = await caches.open("dmb-unrelated-keep-test");
       await keep.put("/keep.txt", new Response("keep"));
     });
 
@@ -39,6 +39,6 @@ test.describe("Rust previous cache cleanup", () => {
 
     expect(keys).not.toContain("dmb-shell-old-test");
     expect(keys).not.toContain("dmb-api-old-test");
-    expect(keys).toContain("dmb-almanac-rs-keep-test");
+    expect(keys).toContain("dmb-unrelated-keep-test");
   });
 });
