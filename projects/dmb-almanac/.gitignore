@@ -22,3 +22,6 @@ rust/data/*.db-wal
 
 # OS/editor
 .DS_Store
+
+# Local Claude worktree metadata
+.claude/worktrees/
