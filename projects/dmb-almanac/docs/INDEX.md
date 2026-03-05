@@ -5,8 +5,11 @@
 - Project onboarding: `docs/guides/DMB_START_HERE.md`
 - Current repo state (canonical): `STATUS.md`
 - Minimal context starter: `CONTEXT.md`
+- Runtime architecture: `rust/README.md`, `docs/wasm/WASM_REFERENCE.md`, `docs/gpu/GPU_REFERENCE.md`
 - Deployment + verification: `docs/guides/DEPLOYMENT_REFERENCE.md`
 - Cutover operations: `docs/ops/CUTOVER_RUNBOOK.md`
+- Reusable release gate: `docs/reports/QUALITY/RELEASE_READINESS_CHECKLIST.md`
+- Latest dated readiness snapshot: `docs/reports/QUALITY/PRODUCTION_READINESS_2026-03-03.md`
 - Manual a11y keyboard checks: `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md`
 - Docs home and conventions: `docs/README.md`
 
@@ -34,6 +37,9 @@
 - `docs/guides/REPO_ORGANIZATION_POLICY.md`
 - `docs/guides/QUALITY_ASSURANCE_STRATEGY.md`
 - `docs/guides/TOKEN_CONTEXT_WORKFLOW.md`
+- `rust/README.md`
+- `docs/wasm/WASM_REFERENCE.md`
+- `docs/gpu/GPU_REFERENCE.md`
 - `docs/references/DATABASE_SCHEMA_REFERENCE.md`
 - `docs/ops/CUTOVER_RUNBOOK.md`
 - `docs/ops/ROLLBACK_RUNBOOK.md`
@@ -43,6 +49,8 @@
 - `docs/reports/COMPRESSION_ORGANIZATION_REPORT_2026-02-12.md`
 - `docs/reports/DMB_DEPENDENCY_ELIMINATION_MASTER_PLAN.md`
 - `docs/reports/ENCRYPTION_SECURITY_POLICY.md`
+- `docs/reports/QUALITY/RELEASE_READINESS_CHECKLIST.md`
+- `docs/reports/QUALITY/PRODUCTION_READINESS_2026-03-03.md`
 - `docs/reports/QUALITY/README.md`
 - `docs/wasm/rust-optimization-report.md`
 - `docs/quick-references/QUICK_REFERENCE.md`

@@ -7,6 +7,12 @@ Release-readiness checklists, dated readiness snapshots, and supporting evidence
 - `docs/reports/QUALITY/RELEASE_READINESS_CHECKLIST.md` - reusable release gate
 - `docs/reports/QUALITY/PRODUCTION_READINESS_2026-03-03.md` - dated readiness snapshot
 
+## How To Use This Folder
+
+1. Run the reusable checklist for each release candidate.
+2. Keep one current dated readiness snapshot linked from `docs/README.md`, `docs/INDEX.md`, and `docs/reports/README.md`.
+3. Store one-off release-window evidence here when it is needed to support the dated snapshot.
+
 ## Evidence And Templates
 
 - `docs/reports/QUALITY/AI_TIMEOUT_DEGRADATION_SPOTCHECK_2026-03-03.md` - dated release-window evidence

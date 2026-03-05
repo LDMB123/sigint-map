@@ -42,6 +42,9 @@ Keep in **JS** when logic is UI-orchestration-heavy and boundary costs outweigh 
 - Rust-owned hydration bootstrap for service worker registration.
 - Rust-triggered lazy WebGPU helper loading.
 - Consolidated WebGPU interop wrappers in `dmb_wasm`.
+- Fixed inline JS bridge helpers now replace reflection-based interop in the direct/worker score paths.
+- Full and subset GPU top-k reduction now happens in the shared JS helper `dmbTopKScores`, so Rust only pulls back the winners.
+- Worker matrix-init reuse remains Rust-owned via `WebgpuMatrixJsSignature`.
 - Preserved route contracts for diagnostics in lite/full builds.
 
 ## Remaining JS-Bound Surfaces

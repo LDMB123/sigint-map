@@ -49,6 +49,11 @@ All Cargo commands in this section were run from the `rust/` workspace root unle
 
 ## Recent Runtime Fixes
 
+- WebGPU scoring hot-path tightening (2026-03-05):
+  - `rust/crates/dmb_app/src/ai.rs`: worker matrix init reuse now stores `WebgpuMatrixJsSignature` directly and computes the signature only after worker preflight passes, removing string formatting/comparison from the worker hot path.
+  - `rust/crates/dmb_wasm/src/webgpu.rs`: replaced generic JS object reflection with fixed inline helper exports for module calls, worker payload creation, message parsing, and JS error extraction.
+  - `rust/crates/dmb_wasm/src/webgpu.rs`: pending worker requests now live in a small pre-sized map, and request posting no longer clones runtime handles on every dispatch.
+  - `rust/crates/dmb_app/src/ai.rs`: full and subset GPU search now run top-k reduction in the inline JS helper `dmbTopKScores`, so Rust only copies winning indices/scores back and no longer maintains the old full-score scratch buffer.
 - WebGPU helper reliability hardening (2026-03-05):
   - `rust/static/webgpu.js`: failed `ensureDevice()` attempts no longer pin a rejected promise; retries now recover after transient adapter/device failures.
   - `rust/static/webgpu.js`: worker matrix init cache key now includes matrix identity, preventing stale same-shape matrix reuse.

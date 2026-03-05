@@ -49,14 +49,24 @@ cargo run -p dmb_server
 | `scripts/` | Operational and verification scripts (see `scripts/README.md`) |
 | `docs/` | Architecture, runbooks, reports, migration docs (start at `docs/README.md`) |
 
+## Architecture At A Glance
+
+- Browser app (SSR + hydration): `rust/crates/dmb_app/`
+- WASM + WebGPU bridge: `rust/crates/dmb_wasm/`
+- Server: `rust/crates/dmb_server/`
+- IndexedDB/runtime data layer: `rust/crates/dmb_idb/`
+- Scrape/export/validation pipeline: `rust/crates/dmb_pipeline/`
+
 ## Documentation
 
+- Current repo state (canonical): `STATUS.md`
 - Documentation home: `docs/README.md`
 - Full docs index: `docs/INDEX.md`
 - Getting started guide: `docs/guides/DMB_START_HERE.md`
+- Runtime architecture: `rust/README.md`, `docs/wasm/WASM_REFERENCE.md`, `docs/gpu/GPU_REFERENCE.md`
 - Cutover runbook: `docs/ops/CUTOVER_RUNBOOK.md`
 - Deployment reference: `docs/guides/DEPLOYMENT_REFERENCE.md`
-- QA strategy: `docs/guides/QUALITY_ASSURANCE_STRATEGY.md`
+- QA + release docs: `docs/guides/QUALITY_ASSURANCE_STRATEGY.md`, `docs/reports/QUALITY/RELEASE_READINESS_CHECKLIST.md`, `docs/reports/QUALITY/PRODUCTION_READINESS_2026-03-03.md`
 - Token workflow: `docs/guides/TOKEN_CONTEXT_WORKFLOW.md`
 - Repository organization policy: `docs/guides/REPO_ORGANIZATION_POLICY.md`
 

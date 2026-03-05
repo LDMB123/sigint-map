@@ -1,17 +1,21 @@
 # Documentation Home
 
-Use this page as the entry point for all repository documentation.
+Use this page as the entry point for current repository documentation.
+Start with `STATUS.md` when you need the exact repo/runtime state on `main`.
 
-## Start Here
+## Fast Paths
 
 - New to the project: `docs/guides/DMB_START_HERE.md`
+- Need current canonical state: `STATUS.md`
+- Need runtime architecture: `rust/README.md`, `docs/wasm/WASM_REFERENCE.md`, `docs/gpu/GPU_REFERENCE.md`
 - Need full navigation: `docs/INDEX.md`
 - Need operational cutover steps: `docs/ops/CUTOVER_RUNBOOK.md`
 - Need current testing flow: `docs/guides/TESTING_CHECKLIST.md`
+- Need reusable release gate: `docs/reports/QUALITY/RELEASE_READINESS_CHECKLIST.md`
+- Need latest dated readiness snapshot: `docs/reports/QUALITY/PRODUCTION_READINESS_2026-03-03.md`
 - Need manual keyboard a11y checks: `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md`
 - Need current architecture/roadmap summaries: `docs/reports/REVISED_RUST_WASM_PLAN_2026-02-04.md`, `docs/reports/STRATEGIC_ROADMAP_2026.md`
-- Need current policy/quality docs: `docs/reports/DMB_DEPENDENCY_ELIMINATION_MASTER_PLAN.md`, `docs/reports/ENCRYPTION_SECURITY_POLICY.md`, `docs/reports/QUALITY/README.md`
-- Need current repo state: `STATUS.md`
+- Need current policy docs: `docs/reports/DMB_DEPENDENCY_ELIMINATION_MASTER_PLAN.md`, `docs/reports/ENCRYPTION_SECURITY_POLICY.md`
 - Need minimal context pack: `CONTEXT.md`
 
 ## Documentation Map
@@ -36,3 +40,4 @@ Use this page as the entry point for all repository documentation.
 - Prefer linking to canonical docs over duplicating instructions.
 - Archive obsolete docs under `docs/reports/_archived/`.
 - Keep `docs/INDEX.md` updated when files are moved or added.
+- Prefer direct links to the reusable release checklist and latest dated readiness snapshot over directory-only quality links.

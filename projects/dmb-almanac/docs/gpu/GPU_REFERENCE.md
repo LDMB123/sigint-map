@@ -31,6 +31,15 @@ Probe and worker warmup checks are owned by Rust (`dmb_wasm::webgpu_probe_availa
 
 If the helper does not exist (or returns `null`), `dmb_wasm` computes on CPU and returns results.
 
+## Current Hot-Path Design
+
+- `dmb_app::ai` keeps Rust-side direct-path and worker-init reuse keyed by `WebgpuMatrixJsSignature`; the worker path no longer formats that identity into a `String`.
+- Worker signatures are computed only after Rust preflight says the worker path is eligible, so skipped worker attempts avoid extra identity work.
+- `dmb_wasm::webgpu.rs` now uses fixed inline JS bridge helpers for module loading, worker payload creation, message parsing, and JS error extraction; the request loop no longer relies on generic `Reflect` access.
+- Pending worker requests live in a small pre-sized runtime map, and the request path no longer clones worker/runtime handles on every dispatch.
+- Full-matrix and subset GPU searches now run winner selection in the inline JS helper `dmbTopKScores`; Rust copies back only the winning indices/scores instead of the entire score vector.
+- Subset candidate matrices are assembled in Rust with a reusable buffer before dispatch, keeping `webgpu-worker.js` focused on compute/state required by the browser API.
+
 ## Debugging
 
 - If WebGPU seems “on” but performance is poor, check diagnostics for backend labels (`webgpu` vs `webgpu-worker`) to confirm the Rust worker path is being selected.

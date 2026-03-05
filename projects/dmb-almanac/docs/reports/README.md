@@ -13,7 +13,11 @@ This directory contains project reports and reference-style summaries for the Ru
 
 ## Quality Evidence
 
+- `QUALITY/RELEASE_READINESS_CHECKLIST.md`
+- `QUALITY/PRODUCTION_READINESS_2026-03-03.md`
 - `QUALITY/README.md`
+
+Use the checklist as the reusable gate and the dated production-readiness doc as the current release snapshot.
 
 ## Memory Notes
 
@@ -25,6 +29,7 @@ Use `MEMORY_AUDIT_SUMMARY.md` as the single active entry point. Legacy JS-specif
 ## Current vs Historical
 
 - Current operational state: `STATUS.md`
+- Current runtime architecture: `rust/README.md`, `docs/wasm/WASM_REFERENCE.md`, `docs/gpu/GPU_REFERENCE.md`
 - Condensed organization history: `COMPRESSION_ORGANIZATION_REPORT_2026-02-12.md`
 - Historical deep dives: `_full_audits/`
 

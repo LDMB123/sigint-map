@@ -9,9 +9,14 @@ For full current state, always read `STATUS.md`.
 
 1. `README.md`
 2. `STATUS.md`
-3. `docs/README.md`
-4. `docs/INDEX.md`
-5. `docs/ops/CUTOVER_RUNBOOK.md`
+3. `docs/guides/DMB_START_HERE.md`
+4. `docs/README.md`
+5. `rust/README.md`
+
+If you are touching AI/runtime paths, also load:
+
+- `docs/wasm/WASM_REFERENCE.md`
+- `docs/gpu/GPU_REFERENCE.md`
 
 ## Core Commands
 

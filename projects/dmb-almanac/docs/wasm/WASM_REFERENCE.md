@@ -47,11 +47,20 @@ Under the hood this runs `wasm-pack` for `dmb_app` and writes output to `rust/st
 - The worker no longer wraps errors in a JS catch/forward helper; uncaught worker exceptions flow directly to the Rust runtime error handlers.
 - That native worker-error path is now covered by degradation E2E with a forced worker score failure, so the bridge no longer depends on an untested browser quirk.
 - Direct `webgpuScores` payload validation is performed in Rust before the module call, so the JS helper only contains browser-required GPU logic.
+- Inline JS bridge exports now cover module loading, worker payload creation, message parsing, and JS error extraction; the interop loop no longer depends on generic `Reflect` access.
+- Pending worker requests live in a small pre-sized runtime map, and request posting no longer clones runtime handles on every dispatch.
 - Rust interop wrappers and score entrypoints:
   - `rust/crates/dmb_wasm/src/webgpu.rs`
   - Probe/warm logic is Rust-owned (`webgpu_probe_available`, `warm_webgpu_worker`) and uses score helper smoke calls; no dedicated JS probe/warm globals are required.
 - App-level usage and benchmarks (calls into `dmb_wasm`, no direct JS FFI in `dmb_app::ai`):
   - `rust/crates/dmb_app/src/ai.rs`
+
+## Current Search Hot-Path Notes
+
+- `dmb_app::ai` keeps direct-path matrix reuse and worker-init reuse keyed by `WebgpuMatrixJsSignature`, so Rust owns matrix identity policy for both paths.
+- The worker path computes that signature only after Rust preflight says worker dispatch is worth attempting.
+- Full and subset GPU search paths now use the inline JS helper `dmbTopKScores`, so Rust receives only the winning indices/scores rather than copying the full score vector back into a Rust buffer.
+- Subset candidate matrices are assembled in Rust with a reusable scratch buffer before they cross the WASM/JS boundary.
 
 ## Testing
 

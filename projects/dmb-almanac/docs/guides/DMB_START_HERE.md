@@ -48,6 +48,22 @@ cargo run -p xtask -- data-release --sqlite ../data/dmb-almanac.db
 - WASM compute: `rust/crates/dmb_wasm/`
 - Static data bundle: `rust/static/data/`
 
+## Current Source Of Truth
+
+- Canonical repo/runtime state: `STATUS.md`
+- Workspace overview + release flow: `rust/README.md`
+- Wasm/browser bridge reference: `docs/wasm/WASM_REFERENCE.md`
+- WebGPU scoring/runtime reference: `docs/gpu/GPU_REFERENCE.md`
+- Full documentation map: `docs/README.md`, `docs/INDEX.md`
+
+## If You Are Touching...
+
+- Routes, hydration, or browser state: `rust/crates/dmb_app/`, then `rust/README.md`
+- AI search or WebGPU scoring: `rust/crates/dmb_app/src/ai.rs`, `rust/crates/dmb_wasm/src/webgpu.rs`, then `docs/wasm/WASM_REFERENCE.md` and `docs/gpu/GPU_REFERENCE.md`
+- Offline data/runtime schema: `rust/crates/dmb_idb/`, then `docs/references/DATABASE_SCHEMA_REFERENCE.md`
+- Scraping, validation, or release bundles: `rust/crates/dmb_pipeline/`, then `docs/scraping/SCRAPING_REFERENCE.md`
+- Release/cutover operations: `docs/ops/CUTOVER_RUNBOOK.md`, `docs/reports/QUALITY/RELEASE_READINESS_CHECKLIST.md`
+
 ## Operational Docs
 
 - Deployment + verification: `docs/guides/DEPLOYMENT_REFERENCE.md`
@@ -56,4 +72,5 @@ cargo run -p xtask -- data-release --sqlite ../data/dmb-almanac.db
 - Rollback guidance (Rust builds): `docs/ops/ROLLBACK_RUNBOOK.md`
 - Scrape pipeline reference: `docs/scraping/SCRAPING_REFERENCE.md`
 - Architecture + roadmap summaries: `docs/reports/REVISED_RUST_WASM_PLAN_2026-02-04.md`, `docs/reports/STRATEGIC_ROADMAP_2026.md`
-- Policy + quality docs: `docs/reports/DMB_DEPENDENCY_ELIMINATION_MASTER_PLAN.md`, `docs/reports/ENCRYPTION_SECURITY_POLICY.md`, `docs/reports/QUALITY/README.md`
+- Policy docs: `docs/reports/DMB_DEPENDENCY_ELIMINATION_MASTER_PLAN.md`, `docs/reports/ENCRYPTION_SECURITY_POLICY.md`
+- Release quality docs: `docs/reports/QUALITY/RELEASE_READINESS_CHECKLIST.md`, `docs/reports/QUALITY/PRODUCTION_READINESS_2026-03-03.md`

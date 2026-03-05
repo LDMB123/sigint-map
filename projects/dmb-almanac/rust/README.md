@@ -3,6 +3,13 @@
 ## Overview
 This workspace contains the Rust-first rebuild of the DMB Almanac PWA, including SSR, WASM hydration, offline data pipeline, and AI/ANN tooling.
 
+## Current References
+
+- Canonical repo/runtime state: `../STATUS.md`
+- Start-here guide: `../docs/guides/DMB_START_HERE.md`
+- Wasm/browser bridge reference: `../docs/wasm/WASM_REFERENCE.md`
+- WebGPU runtime reference: `../docs/gpu/GPU_REFERENCE.md`
+
 ## Release Checklist
 1. Scrape and validate data: `cargo run -p dmb_pipeline -- scrape --warnings-output data/warnings.json --warnings-max 0`
 2. Validate warning budgets and endpoint retries: `cargo run -p dmb_pipeline -- validate`
@@ -57,6 +64,9 @@ cargo test --workspace
 - WebGPU can be toggled in AI Diagnostics for testing fallback paths.
 - WebGPU runtime recovery now retries cleanly after transient adapter/device failures (failed device promises are not sticky).
 - Worker matrix initialization keys now track matrix identity and Rust cache sentinels to avoid stale same-shape matrix reuse.
+- Worker matrix init reuse now stays on `WebgpuMatrixJsSignature`; the worker path no longer formats matrix identity into a `String`.
 - Subset candidate matrix shaping is now performed in Rust (`dmb_app`/`dmb_wasm`), reducing JS runtime logic and removing JS-only subset worker paths.
+- Full and subset GPU search now perform top-k reduction in the shared JS helper `dmbTopKScores`, so Rust copies back only the winning indices/scores.
+- `dmb_wasm` bridge calls now use fixed inline JS helpers for payload creation, message parsing, and error extraction rather than reflection-heavy worker object access.
 - WebGPU diagnostics/profile cards now read Rust-native telemetry/runtime state; legacy JS global diagnostics shims were removed.
 - WebGPU runtime metric counters are now emitted from Rust policy telemetry only (no JS-side metric mutation).
