@@ -111,8 +111,18 @@ venv/
 
 # Backups (dated backups are archived, not active)
 *_backup_*
+*_backup.*
 *.bak
 *.backup
+
+# SIGINT-MAP intermediates
+*_new.*
+*_combined.*
+*_part*.*
+*_pre_integration_backup.*
+merge_parts.py
+new-integrations.js
+section44-web-apis.js
 
 # OS
 Thumbs.db
