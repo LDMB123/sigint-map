@@ -442,6 +442,8 @@ const MICRO_PHYSICS_BANNED_TERMS_MODE = String(process.env.MICRO_PHYSICS_BANNED_
   .trim()
   .toLowerCase();
 const MICRO_PHYSICS_BANNED_TERMS_STRICT = MICRO_PHYSICS_BANNED_TERMS_MODE === 'strict';
+const MICRODETAIL_PROFILE_LOCK = process.env.MICRODETAIL_PROFILE_LOCK !== '0';
+const EXPECT_MICRODETAIL_PROFILE = process.env.EXPECT_MICRODETAIL_PROFILE === '1';
 const PRESSURE_PAUSE_ENABLED = process.env.PRESSURE_PAUSE_ENABLED !== '0';
 const PRESSURE_PAUSE_CONSECUTIVE_PROMPTS = Math.max(
   1,
@@ -2236,36 +2238,75 @@ function collectPromptAnchorBullets(promptText) {
     pose: []
   };
   const headingMatchers = {
-    scene: /^(?:scene(?:\s+(?:intent|anchors?|preservation|lock|requirements?))?|setting(?:\s+lock)?)(?:\s*\([^)]*\))?\s*:/i,
-    wardrobe: /^(?:wardrobe(?:\s+(?:lock|preservation|topology|requirements?))?|attire(?:\s+lock)?)(?:\s*\([^)]*\))?\s*:/i,
-    pose: /^(?:pose(?:\s+(?:blueprint|and\s+(?:framing|composition)|preservation|choreography|requirements?))?|pose\s+\+\s+kinematic\s+preservation|kinematic\s+path)(?:\s*\([^)]*\))?\s*:/i
+    scene: /^(?:scene(?:\s+(?:intent|anchors?|preservation|lock|requirements?|invariants?))?|setting(?:\s+lock)?|scene\s+anchors?\s+(?:to\s+preserve|must\s+remain\s+visible))(?:\s*\([^)]*\))?\s*:/i,
+    wardrobe: /^(?:wardrobe(?:\s+(?:lock|preservation|topology|requirements?|invariants?|anchors?(?:\s+to\s+preserve|(?:\s+must\s+remain\s+visible)?)))?|attire(?:\s+lock)?)(?:\s*\([^)]*\))?\s*:/i,
+    pose: /^(?:pose(?:\s+(?:blueprint|and\s+(?:framing|composition)|preservation|choreography|requirements?|invariants?|anchors?(?:\s+to\s+preserve|(?:\s+must\s+remain\s+visible)?)))?|pose\s+\+\s+kinematic\s+preservation|kinematic\s+path)(?:\s*\([^)]*\))?\s*:/i
   };
-  let activeKey = '';
+  const combinedMatchers = [
+    /^(?:wardrobe\s*\+\s*pose(?:\s+(?:invariants?|preservation|anchors?))?|pose\s*\+\s*wardrobe(?:\s+(?:invariants?|preservation|anchors?))?)(?:\s*\([^)]*\))?\s*:/i
+  ];
+  let activeKeys = [];
+
+  const appendAnchor = (key, value) => {
+    if (!key || !value || !buckets[key]) {
+      return;
+    }
+    buckets[key].push(value);
+  };
+  const classifyCombinedKeys = (value) => {
+    const normalized = String(value || '').toLowerCase();
+    if (!normalized) {
+      return ['wardrobe', 'pose'];
+    }
+    const poseSignal = /\b(pose|stance|leg|hip|shoulder|fingertip|hand|chin|gaze|load|balance|kinematic|ankle|heel[-\s]?ground|knee)\b/.test(normalized);
+    const wardrobeSignal = /\b(wardrobe|top|skirt|corset|bodice|hosiery|stocking|denier|satin|velvet|seam|slit|hem|heel|pump|stiletto|material|colorway)\b/.test(normalized);
+    if (poseSignal && !wardrobeSignal) {
+      return ['pose'];
+    }
+    if (wardrobeSignal && !poseSignal) {
+      return ['wardrobe'];
+    }
+    return ['wardrobe', 'pose'];
+  };
+
   for (const line of lines) {
+    if (combinedMatchers.some(pattern => pattern.test(line))) {
+      activeKeys = ['wardrobe', 'pose'];
+      continue;
+    }
     if (headingMatchers.scene.test(line)) {
-      activeKey = 'scene';
+      activeKeys = ['scene'];
       continue;
     }
     if (headingMatchers.wardrobe.test(line)) {
-      activeKey = 'wardrobe';
+      activeKeys = ['wardrobe'];
       continue;
     }
     if (headingMatchers.pose.test(line)) {
-      activeKey = 'pose';
+      activeKeys = ['pose'];
       continue;
     }
     if (/^[A-Za-z][A-Za-z0-9\s\-+/()]{2,40}:\s*$/i.test(line)) {
-      activeKey = '';
+      activeKeys = [];
       continue;
     }
-    if (!activeKey) {
+    if (!activeKeys.length) {
       continue;
     }
     const normalized = line.startsWith('- ') ? line.slice(2).trim() : line.trim();
     if (!normalized) {
       continue;
     }
-    buckets[activeKey].push(normalized);
+    const targetKeys = (
+      activeKeys.length === 2
+      && activeKeys.includes('wardrobe')
+      && activeKeys.includes('pose')
+    )
+      ? classifyCombinedKeys(normalized)
+      : activeKeys;
+    for (const key of targetKeys) {
+      appendAnchor(key, normalized);
+    }
   }
   return {
     scene: buckets.scene.slice(0, 4),
@@ -2903,6 +2944,27 @@ function computePhysicsDensityScore(promptText) {
   };
 }
 
+function computeAnchorCoverageDiagnostics(promptText = '') {
+  const anchors = collectPromptAnchorBullets(promptText);
+  const counts = {
+    scene: anchors.scene.length,
+    wardrobe: anchors.wardrobe.length,
+    pose: anchors.pose.length
+  };
+  const missing = Object.entries(counts)
+    .filter(([, count]) => count <= 0)
+    .map(([key]) => key);
+  return {
+    counts,
+    missing,
+    samples: {
+      scene: anchors.scene.slice(0, 2),
+      wardrobe: anchors.wardrobe.slice(0, 2),
+      pose: anchors.pose.slice(0, 2)
+    }
+  };
+}
+
 function buildDensityReinforcementBlock({
   variant = 'primary',
   pass = 1,
@@ -2990,7 +3052,9 @@ function runVariantPreflight({
 
   const bannedTermCount = (bannedFinalPass.violations || [])
     .reduce((sum, item) => sum + (Number(item.count) || 0), 0);
-  const pass = density.pass && bannedFinalPass.pass;
+  const anchorCoverage = computeAnchorCoverageDiagnostics(working);
+  const anchorPass = anchorCoverage.missing.length === 0;
+  const pass = density.pass && bannedFinalPass.pass && anchorPass;
   return {
     ok: pass,
     promptText: working,
@@ -3003,13 +3067,16 @@ function runVariantPreflight({
       coveredZones: density.coveredZones,
       bannedTermCount,
       bannedTerms: bannedFinalPass.violations || [],
-      rewriteApplied: bannedFirstPass.rewriteApplied || bannedFinalPass.rewriteApplied
+      rewriteApplied: bannedFirstPass.rewriteApplied || bannedFinalPass.rewriteApplied,
+      anchorCoverage
     },
     failureReason: pass
       ? null
       : (!density.pass
         ? `physics_density_ratio_below_target (${density.ratio} < ${PHYSICS_DENSITY_MIN_RATIO})`
-        : `banned_terms_remaining (${(bannedFinalPass.violations || []).map(item => item.term).join(', ')})`)
+        : (!bannedFinalPass.pass
+          ? `banned_terms_remaining (${(bannedFinalPass.violations || []).map(item => item.term).join(', ')})`
+          : `anchor_coverage_missing (${anchorCoverage.missing.join(',')})`))
   };
 }
 
@@ -6171,15 +6238,19 @@ function extractPromptIntentDigest(promptText, maxChars = SCORER_INTENT_DIGEST_M
     { key: 'mandatory', regex: /^mandatory(?:\s+locks?)?\s*:/i },
     {
       key: 'scene',
-      regex: /^scene(?:\s+(?:intent|anchors?|preservation|lock|requirements?))?(?:\s*\([^)]*\))?\s*:/i
+      regex: /^(?:scene(?:\s+(?:intent|anchors?|preservation|lock|requirements?|invariants?))?|scene\s+anchors?\s+(?:to\s+preserve|must\s+remain\s+visible)|setting(?:\s+lock)?)\s*(?:\([^)]*\))?\s*:/i
+    },
+    {
+      key: 'wardrobePose',
+      regex: /^(?:wardrobe\s*\+\s*pose(?:\s+(?:invariants?|preservation|anchors?))?|pose\s*\+\s*wardrobe(?:\s+(?:invariants?|preservation|anchors?))?)\s*(?:\([^)]*\))?\s*:/i
     },
     {
       key: 'wardrobe',
-      regex: /^wardrobe(?:\s+(?:lock|preservation|topology|requirements?))?(?:\s*\([^)]*\))?\s*:/i
+      regex: /^(?:wardrobe(?:\s+(?:lock|preservation|topology|requirements?|invariants?|anchors?(?:\s+to\s+preserve|(?:\s+must\s+remain\s+visible)?)))?|attire(?:\s+lock)?)\s*(?:\([^)]*\))?\s*:/i
     },
     {
       key: 'pose',
-      regex: /^(?:pose(?:\s+(?:blueprint|and\s+framing|preservation|choreography|requirements?))?(?:\s*\([^)]*\))?|pose\s+\+\s+kinematic\s+preservation|kinematic\s+path(?:\s*\([^)]*\))?)\s*:/i
+      regex: /^(?:pose(?:\s+(?:blueprint|and\s+framing|preservation|choreography|requirements?|invariants?|anchors?(?:\s+to\s+preserve|(?:\s+must\s+remain\s+visible)?)))?|pose\s+\+\s+kinematic\s+preservation|kinematic\s+path(?:\s*\([^)]*\))?)\s*:/i
     },
     {
       key: 'physics',
@@ -6210,10 +6281,12 @@ function extractPromptIntentDigest(promptText, maxChars = SCORER_INTENT_DIGEST_M
     /^token=/i,
     /^---$/
   ];
+  const headingResetPattern = /^[A-Za-z][A-Za-z0-9+&/\-()\s]{2,80}:\s*$/;
 
   let activeSection = '';
   const buckets = {
     mandatory: [],
+    wardrobePose: [],
     wardrobe: [],
     scene: [],
     pose: [],
@@ -6250,7 +6323,7 @@ function extractPromptIntentDigest(promptText, maxChars = SCORER_INTENT_DIGEST_M
       continue;
     }
 
-    if (/^#+\s+/.test(line)) {
+    if (/^#+\s+/.test(line) || headingResetPattern.test(withoutBullet)) {
       activeSection = '';
       continue;
     }
@@ -6267,8 +6340,29 @@ function extractPromptIntentDigest(promptText, maxChars = SCORER_INTENT_DIGEST_M
     }
   }
 
+  if (buckets.wardrobePose.length) {
+    if (!buckets.wardrobe.length) {
+      buckets.wardrobe.push(...buckets.wardrobePose.slice(0, 6));
+    }
+    if (!buckets.pose.length) {
+      buckets.pose.push(...buckets.wardrobePose.slice(0, 6));
+    }
+  }
+
+  const anchors = collectPromptAnchorBullets(promptText);
+  if (!buckets.scene.length && anchors.scene.length) {
+    buckets.scene.push(...anchors.scene.map(item => `- ${item}`));
+  }
+  if (!buckets.wardrobe.length && anchors.wardrobe.length) {
+    buckets.wardrobe.push(...anchors.wardrobe.map(item => `- ${item}`));
+  }
+  if (!buckets.pose.length && anchors.pose.length) {
+    buckets.pose.push(...anchors.pose.map(item => `- ${item}`));
+  }
+
   const ordered = [
     ...buckets.mandatory.slice(0, 4),
+    ...buckets.wardrobePose.slice(0, 4),
     ...buckets.wardrobe.slice(0, 8),
     ...buckets.scene.slice(0, 8),
     ...buckets.pose.slice(0, 8),
@@ -6738,6 +6832,55 @@ function filterPromptsByEnv(parsedPrompts = []) {
   return filtered;
 }
 
+function shouldExpectMicrodetailProfile({ promptFilePath = '', runDir = '' } = {}) {
+  if (EXPECT_MICRODETAIL_PROFILE) {
+    return true;
+  }
+  const profileSource = `${promptFilePath} ${runDir}`.toLowerCase();
+  return /(microphysics|micro[-_ ]detail|first[-_ ]principles)/i.test(profileSource);
+}
+
+function collectMicrodetailProfileViolations() {
+  const violations = [];
+  if (!FIRST_PRINCIPLES_RECOMPILER_MODE) {
+    violations.push('FIRST_PRINCIPLES_RECOMPILER_MODE must be enabled');
+  }
+  if (!PROMPT_DIRECTION_SUPREMACY_MODE) {
+    violations.push('PROMPT_DIRECTION_SUPREMACY_MODE must be enabled');
+  }
+  if (!ENABLE_RESEARCH_MICRODETAIL_EXPANSION) {
+    violations.push('ENABLE_RESEARCH_MICRODETAIL_EXPANSION must be enabled');
+  }
+  if (!TARGETED_MICRODETAIL_MODE) {
+    violations.push('TARGETED_MICRODETAIL_MODE must be enabled');
+  }
+  if (!MICRO_PHYSICS_LANGUAGE_ENFORCEMENT) {
+    violations.push('MICRO_PHYSICS_LANGUAGE_ENFORCEMENT must be enabled');
+  }
+  if (MICRO_PHYSICS_BANNED_TERMS_MODE === 'off') {
+    violations.push('MICRO_PHYSICS_BANNED_TERMS must not be "off"');
+  }
+  if (PHYSICS_DENSITY_MULTIPLIER < 5) {
+    violations.push(`PHYSICS_DENSITY_MULTIPLIER must be >= 5 (got ${PHYSICS_DENSITY_MULTIPLIER})`);
+  }
+  if (PHYSICS_DENSITY_MIN_RATIO < 5) {
+    violations.push(`PHYSICS_DENSITY_MIN_RATIO must be >= 5 (got ${PHYSICS_DENSITY_MIN_RATIO})`);
+  }
+  return violations;
+}
+
+function validateMicrodetailProfileInvariants({ promptFilePath = '', runDir = '' } = {}) {
+  const expected = shouldExpectMicrodetailProfile({ promptFilePath, runDir });
+  const enforced = expected && MICRODETAIL_PROFILE_LOCK;
+  const violations = enforced ? collectMicrodetailProfileViolations() : [];
+  return {
+    expected,
+    enforced,
+    lockEnabled: MICRODETAIL_PROFILE_LOCK,
+    violations
+  };
+}
+
 async function buildBaselineDensitySnapshot(parsedPrompts = []) {
   let baselinePrompt = null;
   const baselineIndex = findPromptIndexById(parsedPrompts, PHYSICS_DENSITY_BASELINE_PROMPT_ID);
@@ -6841,6 +6984,23 @@ async function main() {
     );
   }
 
+  const microdetailProfileStatus = validateMicrodetailProfileInvariants({
+    promptFilePath: PROMPT_FILE,
+    runDir
+  });
+  if (microdetailProfileStatus.enforced && microdetailProfileStatus.violations.length) {
+    const violationLines = microdetailProfileStatus.violations
+      .map(item => `- ${item}`)
+      .join('\n');
+    throw new Error(
+      [
+        'Microdetail profile invariant check failed:',
+        violationLines,
+        'Set MICRODETAIL_PROFILE_LOCK=0 to bypass this guardrail intentionally.'
+      ].join('\n')
+    );
+  }
+
   const baselineDensitySnapshot = await buildBaselineDensitySnapshot(parsedPrompts);
 
   const createdAt = existingSummary?.runInfo?.createdAt || new Date().toISOString();
@@ -6940,6 +7100,12 @@ async function main() {
     physicsDensityMinRatio: PHYSICS_DENSITY_MIN_RATIO,
     physicsDensityBaselineScore: baselineDensitySnapshot.score,
     microPhysicsBannedTermsMode: MICRO_PHYSICS_BANNED_TERMS_MODE,
+    microdetailProfile: {
+      expected: microdetailProfileStatus.expected,
+      lockEnabled: microdetailProfileStatus.lockEnabled,
+      enforced: microdetailProfileStatus.enforced,
+      violations: microdetailProfileStatus.violations
+    },
     promptWindowPrimary: { min: PROMPT_WINDOW_PRIMARY_MIN, max: PROMPT_WINDOW_PRIMARY_MAX },
     promptWindowSafe: { min: PROMPT_WINDOW_SAFE_MIN, max: PROMPT_WINDOW_SAFE_MAX },
     promptWindowRescue: { min: PROMPT_WINDOW_RESCUE_MIN, max: PROMPT_WINDOW_RESCUE_MAX },
@@ -7229,6 +7395,14 @@ async function main() {
   );
   log(`Micro-physics language enforcement: ${MICRO_PHYSICS_LANGUAGE_ENFORCEMENT ? 'enabled' : 'disabled'}`);
   log(`Micro-physics broad-term policy: ${MICRO_PHYSICS_BANNED_TERMS_MODE}`);
+  log(
+    `Microdetail profile guard: ${microdetailProfileStatus.expected
+      ? (microdetailProfileStatus.enforced ? 'enforced' : 'expected but lock disabled')
+      : 'not-required'}`
+  );
+  if (microdetailProfileStatus.expected && !microdetailProfileStatus.enforced) {
+    log('Microdetail profile guard warning: lock disabled; inherited env can override physics/detail controls.');
+  }
   log(
     `Physics density gate: baselinePrompt=${baselineDensitySnapshot.promptId} baselineScore=${baselineDensitySnapshot.score}`
     + ` targetRatio>=${PHYSICS_DENSITY_MIN_RATIO} multiplier=${PHYSICS_DENSITY_MULTIPLIER}`

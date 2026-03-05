@@ -263,10 +263,95 @@ cfg_if::cfg_if! {
             let value: Option<JsValue> = store.get(key).js()?.await.js()?;
             tx.await.js()?;
 
+            deserialize_optional_value(value)
+        }
+
+        async fn get_by_index_key<T: serde::de::DeserializeOwned>(
+            store_name: &str,
+            index_name: &str,
+            key: JsValue,
+        ) -> Result<Option<T>> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadOnly)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            let index = store.index(index_name).js()?;
+            let value: Option<JsValue> = index.get(Query::Key(key)).js()?.await.js()?;
+            tx.await.js()?;
+            deserialize_optional_value(value)
+        }
+
+        fn deserialize_value<T: serde::de::DeserializeOwned>(value: JsValue) -> Result<T> {
+            serde_wasm_bindgen::from_value(value).js()
+        }
+
+        fn deserialize_optional_value<T: serde::de::DeserializeOwned>(
+            value: Option<JsValue>,
+        ) -> Result<Option<T>> {
             value
                 .map(serde_wasm_bindgen::from_value)
                 .transpose()
                 .js()
+        }
+
+        fn deserialize_values<T: serde::de::DeserializeOwned>(
+            values: Vec<JsValue>,
+        ) -> Result<Vec<T>> {
+            values.into_iter().map(deserialize_value::<T>).collect()
+        }
+
+        async fn put_value_in_store(db: &Database, store_name: &str, value: &JsValue) -> Result<()> {
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadWrite)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            store.put(value, None).js()?.await.js()?;
+            tx.await.js()?;
+            Ok(())
+        }
+
+        async fn put_serialized_in_store_with_db<T: Serialize>(
+            db: &Database,
+            store_name: &str,
+            value: &T,
+        ) -> Result<()> {
+            let payload = serde_wasm_bindgen::to_value(value).js()?;
+            put_value_in_store(db, store_name, &payload).await
+        }
+
+        async fn put_serialized_in_store<T: Serialize>(store_name: &str, value: &T) -> Result<()> {
+            let db = open_db().await?;
+            put_serialized_in_store_with_db(&db, store_name, value).await
+        }
+
+        async fn delete_by_key(store_name: &str, key: JsValue) -> Result<()> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadWrite)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            store.delete(Query::Key(key)).js()?.await.js()?;
+            tx.await.js()?;
+            Ok(())
+        }
+
+        async fn delete_by_index_key(store_name: &str, index_name: &str, key: JsValue) -> Result<()> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadWrite)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            let index = store.index(index_name).js()?;
+            let mut request = index.open_cursor(Some(Query::Key(key)), None).js()?;
+            let mut cursor_opt = request.await.js()?;
+            while let Some(cursor) = cursor_opt {
+                cursor.delete().js()?.await.js()?;
+                request = cursor.next(None).js()?;
+                cursor_opt = request.await.js()?;
+            }
+            tx.await.js()?;
+            Ok(())
         }
 
         pub async fn count_store(store_name: &str) -> Result<u32> {
@@ -319,22 +404,7 @@ cfg_if::cfg_if! {
         }
 
         pub async fn get_song(slug: &str) -> Result<Option<Song>> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_SONGS], TransactionMode::ReadOnly)
-                .js()?;
-            let store = tx.object_store(TABLE_SONGS).js()?;
-            let index = store.index("slug").js()?;
-            let value: Option<JsValue> = index
-                .get(Query::Key(JsValue::from_str(slug)))
-                .js()?
-                .await
-                .js()?;
-            tx.await.js()?;
-            value
-                .map(serde_wasm_bindgen::from_value)
-                .transpose()
-                .js()
+            get_by_index_key(TABLE_SONGS, "slug", JsValue::from_str(slug)).await
         }
 
         pub async fn get_song_by_id(id: i32) -> Result<Option<Song>> {
@@ -346,22 +416,7 @@ cfg_if::cfg_if! {
         }
 
         pub async fn get_tour(year: i32) -> Result<Option<Tour>> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_TOURS], TransactionMode::ReadOnly)
-                .js()?;
-            let store = tx.object_store(TABLE_TOURS).js()?;
-            let index = store.index("year").js()?;
-            let value: Option<JsValue> = index
-                .get(Query::Key(JsValue::from_f64(year as f64)))
-                .js()?
-                .await
-                .js()?;
-            tx.await.js()?;
-            value
-                .map(serde_wasm_bindgen::from_value)
-                .transpose()
-                .js()
+            get_by_index_key(TABLE_TOURS, "year", JsValue::from_f64(year as f64)).await
         }
 
         pub async fn get_tour_by_id(id: i32) -> Result<Option<Tour>> {
@@ -369,41 +424,11 @@ cfg_if::cfg_if! {
         }
 
         pub async fn get_guest_by_slug(slug: &str) -> Result<Option<Guest>> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_GUESTS], TransactionMode::ReadOnly)
-                .js()?;
-            let store = tx.object_store(TABLE_GUESTS).js()?;
-            let index = store.index("slug").js()?;
-            let value: Option<JsValue> = index
-                .get(Query::Key(JsValue::from_str(slug)))
-                .js()?
-                .await
-                .js()?;
-            tx.await.js()?;
-            value
-                .map(serde_wasm_bindgen::from_value)
-                .transpose()
-                .js()
+            get_by_index_key(TABLE_GUESTS, "slug", JsValue::from_str(slug)).await
         }
 
         pub async fn get_release_by_slug(slug: &str) -> Result<Option<Release>> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_RELEASES], TransactionMode::ReadOnly)
-                .js()?;
-            let store = tx.object_store(TABLE_RELEASES).js()?;
-            let index = store.index("slug").js()?;
-            let value: Option<JsValue> = index
-                .get(Query::Key(JsValue::from_str(slug)))
-                .js()?
-                .await
-                .js()?;
-            tx.await.js()?;
-            value
-                .map(serde_wasm_bindgen::from_value)
-                .transpose()
-                .js()
+            get_by_index_key(TABLE_RELEASES, "slug", JsValue::from_str(slug)).await
         }
 
         pub async fn search_global(query: &str) -> Result<Vec<SearchResult>> {
@@ -439,7 +464,7 @@ cfg_if::cfg_if! {
 
                 let mut out = Vec::new();
                 for value in values {
-                    let entity: T = serde_wasm_bindgen::from_value(value).js()?;
+                    let entity: T = deserialize_value(value)?;
                     let score = 1.0;
                     out.push(map_fn(entity, score));
                 }
@@ -534,27 +559,55 @@ cfg_if::cfg_if! {
             index_name: &str,
             limit: usize,
         ) -> Result<Vec<T>> {
+            list_by_index_query(
+                store_name,
+                index_name,
+                None,
+                Some(CursorDirection::Prev),
+                Some(limit),
+            )
+            .await
+        }
+
+        async fn collect_cursor_values<T: serde::de::DeserializeOwned>(
+            mut request: idb::request::OpenCursorStoreRequest,
+            limit: Option<usize>,
+        ) -> Result<Vec<T>> {
+            if matches!(limit, Some(0)) {
+                return Ok(Vec::new());
+            }
+            let mut out = Vec::new();
+            let mut cursor_opt = request.await.js()?;
+            while let Some(cursor) = cursor_opt {
+                let value = cursor.value().js()?;
+                let item: T = deserialize_value(value)?;
+                out.push(item);
+                if let Some(max) = limit {
+                    if out.len() >= max {
+                        break;
+                    }
+                }
+                request = cursor.next(None).js()?;
+                cursor_opt = request.await.js()?;
+            }
+            Ok(out)
+        }
+
+        async fn list_by_index_query<T: serde::de::DeserializeOwned>(
+            store_name: &str,
+            index_name: &str,
+            query: Option<Query>,
+            direction: Option<CursorDirection>,
+            limit: Option<usize>,
+        ) -> Result<Vec<T>> {
             let db = open_db().await?;
             let tx = db
                 .transaction(&[store_name], TransactionMode::ReadOnly)
                 .js()?;
             let store = tx.object_store(store_name).js()?;
             let index = store.index(index_name).js()?;
-            let mut out = Vec::new();
-            let mut request = index
-                .open_cursor(None, Some(CursorDirection::Prev))
-                .js()?;
-            let mut cursor_opt = request.await.js()?;
-            while let Some(cursor) = cursor_opt {
-                let value = cursor.value().js()?;
-                let item: T = serde_wasm_bindgen::from_value(value).js()?;
-                out.push(item);
-                if out.len() >= limit {
-                    break;
-                }
-                request = cursor.next(None).js()?;
-                cursor_opt = request.await.js()?;
-            }
+            let request = index.open_cursor(query, direction).js()?;
+            let out = collect_cursor_values::<T>(request, limit).await?;
             tx.await.js()?;
             Ok(out)
         }
@@ -566,31 +619,14 @@ cfg_if::cfg_if! {
             limit: Option<usize>,
             direction: CursorDirection,
         ) -> Result<Vec<T>> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[store_name], TransactionMode::ReadOnly)
-                .js()?;
-            let store = tx.object_store(store_name).js()?;
-            let index = store.index(index_name).js()?;
-            let mut out = Vec::new();
-            let mut request = index
-                .open_cursor(Some(Query::Key(key)), Some(direction))
-                .js()?;
-            let mut cursor_opt = request.await.js()?;
-            while let Some(cursor) = cursor_opt {
-                let value = cursor.value().js()?;
-                let item: T = serde_wasm_bindgen::from_value(value).js()?;
-                out.push(item);
-                if let Some(max) = limit {
-                    if out.len() >= max {
-                        break;
-                    }
-                }
-                request = cursor.next(None).js()?;
-                cursor_opt = request.await.js()?;
-            }
-            tx.await.js()?;
-            Ok(out)
+            list_by_index_query(
+                store_name,
+                index_name,
+                Some(Query::Key(key)),
+                Some(direction),
+                limit,
+            )
+            .await
         }
 
         async fn list_all_by_index<T: serde::de::DeserializeOwned>(
@@ -598,24 +634,7 @@ cfg_if::cfg_if! {
             index_name: &str,
             direction: CursorDirection,
         ) -> Result<Vec<T>> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[store_name], TransactionMode::ReadOnly)
-                .js()?;
-            let store = tx.object_store(store_name).js()?;
-            let index = store.index(index_name).js()?;
-            let mut out = Vec::new();
-            let mut request = index.open_cursor(None, Some(direction)).js()?;
-            let mut cursor_opt = request.await.js()?;
-            while let Some(cursor) = cursor_opt {
-                let value = cursor.value().js()?;
-                let item: T = serde_wasm_bindgen::from_value(value).js()?;
-                out.push(item);
-                request = cursor.next(None).js()?;
-                cursor_opt = request.await.js()?;
-            }
-            tx.await.js()?;
-            Ok(out)
+            list_by_index_query(store_name, index_name, None, Some(direction), None).await
         }
 
         async fn list_by_index_range<T: serde::de::DeserializeOwned>(
@@ -625,32 +644,15 @@ cfg_if::cfg_if! {
             upper: JsValue,
             limit: Option<usize>,
         ) -> Result<Vec<T>> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[store_name], TransactionMode::ReadOnly)
-                .js()?;
-            let store = tx.object_store(store_name).js()?;
-            let index = store.index(index_name).js()?;
             let range = KeyRange::bound(&lower, &upper, Some(false), Some(false)).js()?;
-            let mut out = Vec::new();
-            let mut request = index
-                .open_cursor(Some(Query::KeyRange(range)), Some(CursorDirection::Next))
-                .js()?;
-            let mut cursor_opt = request.await.js()?;
-            while let Some(cursor) = cursor_opt {
-                let value = cursor.value().js()?;
-                let item: T = serde_wasm_bindgen::from_value(value).js()?;
-                out.push(item);
-                if let Some(max) = limit {
-                    if out.len() >= max {
-                        break;
-                    }
-                }
-                request = cursor.next(None).js()?;
-                cursor_opt = request.await.js()?;
-            }
-            tx.await.js()?;
-            Ok(out)
+            list_by_index_query(
+                store_name,
+                index_name,
+                Some(Query::KeyRange(range)),
+                Some(CursorDirection::Next),
+                limit,
+            )
+            .await
         }
 
         pub async fn list_all<T: serde::de::DeserializeOwned>(store_name: &str) -> Result<Vec<T>> {
@@ -661,11 +663,7 @@ cfg_if::cfg_if! {
             let store = tx.object_store(store_name).js()?;
             let values: Vec<JsValue> = store.get_all(None, None).js()?.await.js()?;
             tx.await.js()?;
-            values
-                .into_iter()
-                .map(|value| serde_wasm_bindgen::from_value(value))
-                .collect::<std::result::Result<Vec<_>, _>>()
-                .js()
+            deserialize_values(values)
         }
 
         pub async fn stats_top_songs(limit: usize) -> Result<Vec<Song>> {
@@ -769,41 +767,22 @@ cfg_if::cfg_if! {
         }
 
         pub async fn add_user_attended_show(show_id: i32, show_date: Option<String>) -> Result<()> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_USER_ATTENDED_SHOWS], TransactionMode::ReadWrite)
-                .js()?;
-            let store = tx.object_store(TABLE_USER_ATTENDED_SHOWS).js()?;
             let record = UserAttendedShow {
                 id: 0,
                 show_id,
                 added_at: js_sys::Date::new_0().to_string().as_string(),
                 show_date,
             };
-            let value = serde_wasm_bindgen::to_value(&record).js()?;
-            store.put(&value, None).js()?.await.js()?;
-            tx.await.js()?;
-            Ok(())
+            put_serialized_in_store(TABLE_USER_ATTENDED_SHOWS, &record).await
         }
 
         pub async fn remove_user_attended_show(show_id: i32) -> Result<()> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_USER_ATTENDED_SHOWS], TransactionMode::ReadWrite)
-                .js()?;
-            let store = tx.object_store(TABLE_USER_ATTENDED_SHOWS).js()?;
-            let index = store.index("showId").js()?;
-            let mut request = index
-                .open_cursor(Some(Query::Key(JsValue::from_f64(show_id as f64))), None)
-                .js()?;
-            let mut cursor_opt = request.await.js()?;
-            while let Some(cursor) = cursor_opt {
-                cursor.delete().js()?.await.js()?;
-                request = cursor.next(None).js()?;
-                cursor_opt = request.await.js()?;
-            }
-            tx.await.js()?;
-            Ok(())
+            delete_by_index_key(
+                TABLE_USER_ATTENDED_SHOWS,
+                "showId",
+                JsValue::from_f64(show_id as f64),
+            )
+            .await
         }
 
         #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -873,14 +852,7 @@ cfg_if::cfg_if! {
                 verified,
                 mismatches,
             };
-            let tx = db
-                .transaction(&[TABLE_SYNC_META], TransactionMode::ReadWrite)
-                .js()?;
-            let store = tx.object_store(TABLE_SYNC_META).js()?;
-            let value = serde_wasm_bindgen::to_value(&record).js()?;
-            store.put(&value, None).js()?.await.js()?;
-            tx.await.js()?;
-            Ok(())
+            put_serialized_in_store_with_db(db, TABLE_SYNC_META, &record).await
         }
 
         async fn copy_store(
@@ -1055,15 +1027,7 @@ cfg_if::cfg_if! {
         }
 
         pub async fn put_sync_meta<T: Serialize>(value: &T) -> Result<()> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_SYNC_META], TransactionMode::ReadWrite)
-                .js()?;
-            let store = tx.object_store(TABLE_SYNC_META).js()?;
-            let payload = serde_wasm_bindgen::to_value(value).js()?;
-            store.put(&payload, None).js()?.await.js()?;
-            tx.await.js()?;
-            Ok(())
+            put_serialized_in_store(TABLE_SYNC_META, value).await
         }
 
         pub async fn get_sync_meta<T: DeserializeOwned>(id: &str) -> Result<Option<T>> {
@@ -1071,18 +1035,7 @@ cfg_if::cfg_if! {
         }
 
         pub async fn delete_sync_meta(id: &str) -> Result<()> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_SYNC_META], TransactionMode::ReadWrite)
-                .js()?;
-            let store = tx.object_store(TABLE_SYNC_META).js()?;
-            store
-                .delete(Query::Key(JsValue::from_str(id)))
-                .js()?
-                .await
-                .js()?;
-            tx.await.js()?;
-            Ok(())
+            delete_by_key(TABLE_SYNC_META, JsValue::from_str(id)).await
         }
 
         pub async fn clear_store(store_name: &str) -> Result<()> {
@@ -1097,15 +1050,7 @@ cfg_if::cfg_if! {
         }
 
         pub async fn store_embedding_chunk(chunk: &EmbeddingChunk) -> Result<()> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_EMBEDDING_CHUNKS], TransactionMode::ReadWrite)
-                .js()?;
-            let store = tx.object_store(TABLE_EMBEDDING_CHUNKS).js()?;
-            let value = serde_wasm_bindgen::to_value(chunk).js()?;
-            store.put(&value, None).js()?.await.js()?;
-            tx.await.js()?;
-            Ok(())
+            put_serialized_in_store(TABLE_EMBEDDING_CHUNKS, chunk).await
         }
 
         pub async fn get_embedding_chunk(chunk_id: u32) -> Result<Option<EmbeddingChunk>> {
@@ -1113,15 +1058,7 @@ cfg_if::cfg_if! {
         }
 
         pub async fn store_embedding_manifest(manifest: &EmbeddingManifest) -> Result<()> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_EMBEDDING_META], TransactionMode::ReadWrite)
-                .js()?;
-            let store = tx.object_store(TABLE_EMBEDDING_META).js()?;
-            let value = serde_wasm_bindgen::to_value(manifest).js()?;
-            store.put(&value, None).js()?.await.js()?;
-            tx.await.js()?;
-            Ok(())
+            put_serialized_in_store(TABLE_EMBEDDING_META, manifest).await
         }
 
         pub async fn get_embedding_manifest(version: &str) -> Result<Option<EmbeddingManifest>> {
@@ -1129,15 +1066,7 @@ cfg_if::cfg_if! {
         }
 
         pub async fn store_ann_index(meta: &AnnIndexMeta) -> Result<()> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_ANN_INDEX], TransactionMode::ReadWrite)
-                .js()?;
-            let store = tx.object_store(TABLE_ANN_INDEX).js()?;
-            let value = serde_wasm_bindgen::to_value(meta).js()?;
-            store.put(&value, None).js()?.await.js()?;
-            tx.await.js()?;
-            Ok(())
+            put_serialized_in_store(TABLE_ANN_INDEX, meta).await
         }
 
         pub async fn get_ann_index(id: &str) -> Result<Option<AnnIndexMeta>> {
@@ -1145,18 +1074,7 @@ cfg_if::cfg_if! {
         }
 
         pub async fn delete_ann_index(id: &str) -> Result<()> {
-            let db = open_db().await?;
-            let tx = db
-                .transaction(&[TABLE_ANN_INDEX], TransactionMode::ReadWrite)
-                .js()?;
-            let store = tx.object_store(TABLE_ANN_INDEX).js()?;
-            store
-                .delete(Query::Key(JsValue::from_str(id)))
-                .js()?
-                .await
-                .js()?;
-            tx.await.js()?;
-            Ok(())
+            delete_by_key(TABLE_ANN_INDEX, JsValue::from_str(id)).await
         }
 
         pub async fn delete_db() -> Result<()> {

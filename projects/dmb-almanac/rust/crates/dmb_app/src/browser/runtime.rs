@@ -185,9 +185,16 @@ pub fn set_window_bool(_name: &str, _value: bool) -> bool {
 }
 
 #[cfg(feature = "hydrate")]
-pub fn location_search_param(name: &str) -> Option<String> {
+fn with_window_location_string(
+    read: impl FnOnce(&web_sys::Window) -> std::result::Result<String, JsValue>,
+) -> Option<String> {
     let window = web_sys::window()?;
-    let search = window.location().search().ok()?;
+    read(&window).ok()
+}
+
+#[cfg(feature = "hydrate")]
+pub fn location_search_param(name: &str) -> Option<String> {
+    let search = location_search()?;
     let params = web_sys::UrlSearchParams::new_with_str(&search).ok()?;
     params.get(name)
 }
@@ -199,8 +206,7 @@ pub fn location_search_param(_name: &str) -> Option<String> {
 
 #[cfg(feature = "hydrate")]
 pub fn location_hostname() -> Option<String> {
-    let window = web_sys::window()?;
-    window.location().hostname().ok()
+    with_window_location_string(|window| window.location().hostname())
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -222,8 +228,7 @@ pub fn performance_now_ms() -> Option<f64> {
 
 #[cfg(feature = "hydrate")]
 pub fn location_href() -> Option<String> {
-    let window = web_sys::window()?;
-    window.location().href().ok()
+    with_window_location_string(|window| window.location().href())
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -233,8 +238,7 @@ pub fn location_href() -> Option<String> {
 
 #[cfg(feature = "hydrate")]
 pub fn location_pathname() -> Option<String> {
-    let window = web_sys::window()?;
-    window.location().pathname().ok()
+    with_window_location_string(|window| window.location().pathname())
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -244,8 +248,7 @@ pub fn location_pathname() -> Option<String> {
 
 #[cfg(feature = "hydrate")]
 pub fn location_search() -> Option<String> {
-    let window = web_sys::window()?;
-    window.location().search().ok()
+    with_window_location_string(|window| window.location().search())
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -255,8 +258,7 @@ pub fn location_search() -> Option<String> {
 
 #[cfg(feature = "hydrate")]
 pub fn location_hash() -> Option<String> {
-    let window = web_sys::window()?;
-    window.location().hash().ok()
+    with_window_location_string(|window| window.location().hash())
 }
 
 #[cfg(not(feature = "hydrate"))]
