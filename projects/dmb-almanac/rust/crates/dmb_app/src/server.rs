@@ -59,6 +59,14 @@ fn cache_entry_is_fresh<T>(entry: &TimedCacheValue<T>) -> bool {
 }
 
 #[cfg(feature = "ssr")]
+fn timed_cache_value<T: Clone>(value: &T) -> TimedCacheValue<T> {
+    TimedCacheValue {
+        value: value.clone(),
+        cached_at: Instant::now(),
+    }
+}
+
+#[cfg(feature = "ssr")]
 fn clone_if_fresh<T: Clone>(entry: &TimedCacheValue<T>) -> Option<T> {
     if cache_entry_is_fresh(entry) {
         Some(entry.value.clone())
@@ -70,18 +78,50 @@ fn clone_if_fresh<T: Clone>(entry: &TimedCacheValue<T>) -> Option<T> {
 #[cfg(feature = "ssr")]
 fn read_ttl_cache<T: Clone>(cache: &OnceLock<RwLock<Option<TimedCacheValue<T>>>>) -> Option<T> {
     let lock = cache.get_or_init(|| RwLock::new(None));
-    let guard = lock.read().ok()?;
-    let entry = guard.as_ref()?;
-    clone_if_fresh(entry)
+    {
+        let guard = lock.read().ok()?;
+        if let Some(cached) = guard.as_ref().and_then(clone_if_fresh) {
+            return Some(cached);
+        }
+    }
+    if let Ok(mut guard) = lock.write() {
+        if guard
+            .as_ref()
+            .map(cache_entry_is_fresh)
+            .is_some_and(|is_fresh| !is_fresh)
+        {
+            *guard = None;
+        }
+    }
+    None
 }
 
 #[cfg(feature = "ssr")]
 fn write_ttl_cache<T: Clone>(cache: &OnceLock<RwLock<Option<TimedCacheValue<T>>>>, value: &T) {
     if let Ok(mut guard) = cache.get_or_init(|| RwLock::new(None)).write() {
-        *guard = Some(TimedCacheValue {
-            value: value.clone(),
-            cached_at: Instant::now(),
-        });
+        *guard = Some(timed_cache_value(value));
+    }
+}
+
+#[cfg(feature = "ssr")]
+fn prune_keyed_cache<K, T>(cache: &mut HashMap<K, TimedCacheValue<T>>)
+where
+    K: Eq + Hash + Clone,
+{
+    cache.retain(|_, entry| cache_entry_is_fresh(entry));
+    if cache.len() <= SSR_DB_CACHE_MAX_ENTRIES {
+        return;
+    }
+
+    let overflow = cache.len() - SSR_DB_CACHE_MAX_ENTRIES;
+    let mut oldest: Vec<(K, Instant)> = cache
+        .iter()
+        .map(|(key, entry)| (key.clone(), entry.cached_at))
+        .collect();
+    oldest.sort_unstable_by_key(|(_, cached_at)| *cached_at);
+
+    for (key, _) in oldest.into_iter().take(overflow) {
+        cache.remove(&key);
     }
 }
 
@@ -95,9 +135,22 @@ where
     T: Clone,
 {
     let lock = cache.get_or_init(|| RwLock::new(HashMap::new()));
-    let guard = lock.read().ok()?;
-    let entry = guard.get(key)?;
-    clone_if_fresh(entry)
+    {
+        let guard = lock.read().ok()?;
+        if let Some(cached) = guard.get(key).and_then(clone_if_fresh) {
+            return Some(cached);
+        }
+    }
+    if let Ok(mut guard) = lock.write() {
+        let stale = guard
+            .get(key)
+            .map(cache_entry_is_fresh)
+            .is_some_and(|is_fresh| !is_fresh);
+        if stale {
+            guard.remove(key);
+        }
+    }
+    None
 }
 
 #[cfg(feature = "ssr")]
@@ -106,22 +159,13 @@ fn write_ttl_keyed_cache<K, T>(
     key: K,
     value: &T,
 ) where
-    K: Eq + Hash,
+    K: Eq + Hash + Clone,
     T: Clone,
 {
     if let Ok(mut guard) = cache.get_or_init(|| RwLock::new(HashMap::new())).write() {
-        guard.insert(
-            key,
-            TimedCacheValue {
-                value: value.clone(),
-                cached_at: Instant::now(),
-            },
-        );
+        guard.insert(key, timed_cache_value(value));
         if guard.len() > SSR_DB_CACHE_MAX_ENTRIES {
-            guard.retain(|_, entry| cache_entry_is_fresh(entry));
-            if guard.len() > SSR_DB_CACHE_MAX_ENTRIES {
-                guard.clear();
-            }
+            prune_keyed_cache(&mut guard);
         }
     }
 }
@@ -151,7 +195,7 @@ async fn cached_keyed_value<K, T, F, Fut>(
     load: F,
 ) -> Result<T, ServerFnError>
 where
-    K: Eq + Hash,
+    K: Eq + Hash + Clone,
     T: Clone,
     F: FnOnce() -> Fut,
     Fut: Future<Output = Result<T, ServerFnError>>,

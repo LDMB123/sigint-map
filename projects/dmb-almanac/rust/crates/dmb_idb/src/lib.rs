@@ -324,6 +324,13 @@ cfg_if::cfg_if! {
             values.into_iter().map(deserialize_value::<T>).collect()
         }
 
+        fn compound_i32_pair_key(first: i32, second: i32) -> JsValue {
+            let key = Array::new_with_length(2);
+            key.set(0, JsValue::from_f64(first as f64));
+            key.set(1, JsValue::from_f64(second as f64));
+            key.into()
+        }
+
         async fn put_value_in_store(db: &Database, store_name: &str, value: &JsValue) -> Result<()> {
             let tx = db
                 .transaction(&[store_name], TransactionMode::ReadWrite)
@@ -359,19 +366,20 @@ cfg_if::cfg_if! {
             Ok(())
         }
 
-        async fn delete_by_index_key(store_name: &str, index_name: &str, key: JsValue) -> Result<()> {
+        async fn delete_unique_by_index_key(
+            store_name: &str,
+            index_name: &str,
+            key: JsValue,
+        ) -> Result<()> {
             let db = open_db().await?;
             let tx = db
                 .transaction(&[store_name], TransactionMode::ReadWrite)
                 .js()?;
             let store = tx.object_store(store_name).js()?;
             let index = store.index(index_name).js()?;
-            let mut request = index.open_cursor(Some(Query::Key(key)), None).js()?;
-            let mut cursor_opt = request.await.js()?;
-            while let Some(cursor) = cursor_opt {
-                cursor.delete().js()?.await.js()?;
-                request = cursor.next(None).js()?;
-                cursor_opt = request.await.js()?;
+            let primary_key: Option<JsValue> = index.get_key(Query::Key(key)).js()?.await.js()?;
+            if let Some(primary_key) = primary_key {
+                store.delete(Query::Key(primary_key)).js()?.await.js()?;
             }
             tx.await.js()?;
             Ok(())
@@ -725,8 +733,8 @@ cfg_if::cfg_if! {
         }
 
         pub async fn list_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>> {
-            let lower = serde_wasm_bindgen::to_value(&vec![show_id, 0]).js()?;
-            let upper = serde_wasm_bindgen::to_value(&vec![show_id, i32::MAX]).js()?;
+            let lower = compound_i32_pair_key(show_id, 0);
+            let upper = compound_i32_pair_key(show_id, i32::MAX);
             list_by_index_range(TABLE_SETLIST_ENTRIES, "showId+position", lower, upper, None).await
         }
 
@@ -793,7 +801,7 @@ cfg_if::cfg_if! {
         }
 
         pub async fn remove_user_attended_show(show_id: i32) -> Result<()> {
-            delete_by_index_key(
+            delete_unique_by_index_key(
                 TABLE_USER_ATTENDED_SHOWS,
                 "showId",
                 JsValue::from_f64(show_id as f64),
