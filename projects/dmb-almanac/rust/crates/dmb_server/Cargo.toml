@@ -1,0 +1,28 @@
+[package]
+name = "dmb_server"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+ai_diagnostics_full = ["dmb_app/ai_diagnostics_full"]
+
+[dependencies]
+axum = { version = "0.8.8", features = ["macros", "json"] }
+leptos = { version = "0.8.17", features = ["ssr"] }
+leptos_axum = "0.8.8"
+leptos_config = "0.8.9"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
+tower-http = { version = "0.6.8", features = ["compression-br", "compression-gzip", "fs", "request-id", "set-header", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
+
+# Internal crates
+dmb_app = { path = "../dmb_app", features = ["ssr"] }
+dmb_core = { path = "../dmb_core" }
+
+[dev-dependencies]
+tower = "0.5"

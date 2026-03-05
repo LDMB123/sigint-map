@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "project": "dmb-almanac",
+  "cacheStrategy": "session-based",
+  "ttl": 86400,
+  "warmOnSessionStart": [
+    "docs/references/DATABASE_SCHEMA_REFERENCE.md",
+    "docs/references/UTILS_MODULE_REFERENCE.md",
+    "docs/references/DATA_BUNDLE_REFERENCE.md",
+    "docs/reports/PWA_AUDIT_SUMMARY.md",
+    "docs/reports/ACCESSIBILITY_AUDIT_SUMMARY.md",
+    "docs/reports/MEMORY_AUDIT_SUMMARY.md"
+  ],
+  "excludePatterns": [
+    "**/node_modules/**",
+    "**/*.test.js",
+    "**/build/**",
+    "**/.svelte-kit/**",
+    "**/coverage/**",
+    "**/target/**",
+    "app/data/**",
+    "app/static/data/**",
+    "rust/static/data/**",
+    "rust/data/**",
+    "**/*.db",
+    "**/*.json.br",
+    "**/*.json.gz"
+  ]
+}

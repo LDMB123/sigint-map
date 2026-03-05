@@ -1,0 +1,1941 @@
+#![allow(clippy::large_types_passed_by_value)]
+
+#[cfg(feature = "hydrate")]
+use crate::browser::{service_worker, storage};
+use leptos::prelude::*;
+#[cfg(feature = "hydrate")]
+use leptos::task::spawn_local;
+#[cfg(feature = "hydrate")]
+use serde_json;
+#[cfg(feature = "hydrate")]
+use serde_wasm_bindgen;
+#[cfg(feature = "hydrate")]
+use wasm_bindgen::JsCast;
+
+use crate::data::{ImportStatus, StorageInfo};
+
+#[cfg(any(feature = "hydrate", test))]
+const UPDATE_SNOOZE_MS: f64 = 6.0 * 60.0 * 60.0 * 1000.0;
+// Proactively check for SW updates so stale cached bundles don't trap users on SSR defaults.
+// Throttled to avoid hammering sw.js on every navigation.
+#[cfg(feature = "hydrate")]
+const AUTO_UPDATE_CHECK_INTERVAL_MS: f64 = 30.0 * 60.0 * 1000.0;
+#[cfg(feature = "hydrate")]
+const DEFERRED_STATUS_TASKS_DELAY_MS: i32 = 8000;
+#[cfg(feature = "hydrate")]
+const UPDATE_CHECKED_AT_KEY: &str = "pwa_update_checked_at";
+#[cfg(feature = "hydrate")]
+const UPDATE_DISMISSED_AT_KEY: &str = "pwa_update_dismissed_at";
+#[cfg(feature = "hydrate")]
+const SW_VERSION_KEY: &str = "pwa_sw_version";
+#[cfg(feature = "hydrate")]
+const SW_ACTIVATED_AT_KEY: &str = "pwa_sw_activated_at";
+// Used during cutover: delete CacheStorage entries created by the previous JS prototype SW
+// (which uses cache names like `dmb-shell-*`, `dmb-api-*`, etc). This prevents quota
+// pressure and confusing "ghost" offline state after the Rust app takes over.
+#[cfg(feature = "hydrate")]
+const PREVIOUS_CACHE_CLEANED_AT_KEY: &str = "pwa_previous_cache_cleaned_at";
+#[cfg(feature = "hydrate")]
+const STORAGE_PRESSURE_CLEARED_MESSAGE: &str = "Cleared AI cache to relieve storage pressure.";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_APPLYING: &str = "Applying update…";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_RELOADING: &str = "Reloading…";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_CHECKING: &str = "Checking for updates…";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_NO_UPDATE_FOUND: &str = "No update found.";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_READY_TO_INSTALL: &str = "Update ready to install.";
+#[cfg(feature = "hydrate")]
+const UPDATE_STATE_DOWNLOADING: &str = "Downloading update…";
+
+macro_rules! hydrate_state_action {
+    ($state:ident, $body:block) => {{
+        #[cfg(feature = "hydrate")]
+        $body
+        #[cfg(not(feature = "hydrate"))]
+        {
+            let _ = $state;
+        }
+    }};
+}
+
+#[cfg(any(feature = "hydrate", test))]
+fn e2e_version_from_sw_script_url(script_url: &str) -> Option<String> {
+    // Playwright SW update E2E tests register `/sw.js?e2e=<version>`.
+    // If present, we can derive the expected version deterministically without waiting on a PONG.
+    let marker = "e2e=";
+    let start = script_url.find(marker)? + marker.len();
+    let rest = &script_url[start..];
+    let end = rest.find('&').unwrap_or(rest.len());
+    let value = rest[..end].trim();
+    if value.is_empty() {
+        None
+    } else {
+        Some(value.to_string())
+    }
+}
+
+#[cfg(any(feature = "hydrate", test))]
+fn should_suppress_update_notice(last_dismissed_ms: Option<f64>, now_ms: f64) -> bool {
+    let Some(last) = last_dismissed_ms else {
+        return false;
+    };
+    if now_ms < last {
+        return true;
+    }
+    (now_ms - last) < UPDATE_SNOOZE_MS
+}
+
+#[cfg(any(feature = "hydrate", test))]
+fn remaining_snooze_ms(last_dismissed_ms: Option<f64>, now_ms: f64) -> Option<f64> {
+    let last = last_dismissed_ms?;
+    if now_ms < last {
+        return Some(UPDATE_SNOOZE_MS);
+    }
+    let elapsed = now_ms - last;
+    if elapsed >= UPDATE_SNOOZE_MS {
+        None
+    } else {
+        Some(UPDATE_SNOOZE_MS - elapsed)
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn format_relative_age(ts: f64, now_ms: f64) -> String {
+    if now_ms <= ts {
+        return "just now".to_string();
+    }
+    let minutes = (now_ms - ts) / 60000.0;
+    if minutes < 1.0 {
+        "just now".to_string()
+    } else if minutes < 60.0 {
+        format!("{minutes:.0}m ago")
+    } else {
+        let hours = minutes / 60.0;
+        format!("{hours:.1}h ago")
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn format_last_checked(ts: f64, now_ms: f64) -> String {
+    format!("Last checked: {}", format_relative_age(ts, now_ms))
+}
+
+#[cfg(feature = "hydrate")]
+fn format_age(prefix: &str, ts: f64, now_ms: f64) -> String {
+    format!("{prefix}: {}", format_relative_age(ts, now_ms))
+}
+
+#[cfg(feature = "hydrate")]
+async fn count_cache_entries() -> Option<usize> {
+    service_worker::count_all_cache_entries().await
+}
+
+#[cfg(feature = "hydrate")]
+async fn refresh_cache_entries(cache_entries: RwSignal<Option<usize>>) {
+    cache_entries.set(count_cache_entries().await);
+}
+
+#[cfg(feature = "hydrate")]
+fn spawn_cache_entries_refresh(cache_entries: RwSignal<Option<usize>>) {
+    spawn_local(async move {
+        refresh_cache_entries(cache_entries).await;
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn is_previous_app_cache_name(name: &str) -> bool {
+    // Rust app SW caches are scoped with a distinct prefix.
+    if name.starts_with("dmb-almanac-rs") {
+        return false;
+    }
+
+    // Previous app cache name prefixes (from the pre-Rust service worker).
+    let previous_prefixes = [
+        "dmb-shell-",
+        "dmb-assets-",
+        "dmb-api-",
+        "dmb-pages-",
+        "dmb-images-",
+        "dmb-fonts-stylesheets-",
+        "dmb-fonts-webfonts-",
+        "dmb-offline-",
+        "dmb-sync-",
+        // Older cache names from earlier iterations/tests.
+        "dmb-almanac-",
+    ];
+
+    previous_prefixes
+        .iter()
+        .any(|prefix| name.starts_with(prefix))
+}
+
+#[cfg(feature = "hydrate")]
+async fn cleanup_previous_app_caches() -> Option<usize> {
+    let names = service_worker::cache_names().await?;
+    let mut deleted = 0usize;
+    for name in names {
+        if !is_previous_app_cache_name(&name) {
+            continue;
+        }
+        if service_worker::delete_cache_by_name(&name).await {
+            deleted += 1;
+        }
+    }
+    Some(deleted)
+}
+
+#[cfg(feature = "hydrate")]
+fn has_sw_controller() -> bool {
+    service_worker::service_worker_container()
+        .map(|container| service_worker::has_controller(&container))
+        .unwrap_or(false)
+}
+
+fn shorten_script_url(url: &str) -> String {
+    // Keep the UI readable. `scriptURL` can be a full origin URL.
+    url.rsplit('/')
+        .next()
+        .map_or_else(|| url.to_string(), std::string::ToString::to_string)
+}
+
+#[cfg(feature = "hydrate")]
+fn schedule_window_timeout(timeout_ms: i32, callback: impl FnOnce() + 'static) {
+    let _ = crate::browser::runtime::set_timeout_once(timeout_ms, callback);
+}
+
+#[cfg(feature = "hydrate")]
+fn set_sw_action_status(sw_action_status: RwSignal<Option<String>>, message: &str) {
+    sw_action_status.set(Some(message.to_string()));
+    schedule_window_timeout(5000, move || {
+        sw_action_status.set(None);
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn parse_sw_message_payload(event: &web_sys::MessageEvent) -> Option<serde_json::Value> {
+    if let Some(data) = event.data().as_string() {
+        if let Ok(payload) = serde_json::from_str::<serde_json::Value>(&data) {
+            return Some(payload);
+        }
+    }
+    serde_wasm_bindgen::from_value::<serde_json::Value>(event.data()).ok()
+}
+
+#[cfg(feature = "hydrate")]
+fn resolve_effective_sw_version(script_url: Option<String>, version: &str) -> String {
+    script_url
+        .and_then(|url| e2e_version_from_sw_script_url(&url))
+        .unwrap_or_else(|| version.to_string())
+}
+
+#[cfg(feature = "hydrate")]
+fn set_local_storage_item(key: &str, value: &str) {
+    storage::set_local_storage_item(key, value);
+}
+
+#[cfg(feature = "hydrate")]
+fn remove_local_storage_item(key: &str) {
+    storage::remove_local_storage_item(key);
+}
+
+#[cfg(feature = "hydrate")]
+fn local_storage_item_by_key(key: &str) -> Option<String> {
+    storage::local_storage_item(key)
+}
+
+#[cfg(feature = "hydrate")]
+fn local_storage_f64_by_key(key: &str) -> Option<f64> {
+    storage::local_storage_f64(key)
+}
+
+#[cfg(feature = "hydrate")]
+fn set_local_storage_f64_item(key: &str, value: f64) {
+    storage::set_local_storage_f64(key, value);
+}
+
+#[cfg(feature = "hydrate")]
+fn set_update_reloading_state(state: &PwaStatusState) {
+    state
+        .update_state
+        .set(Some(UPDATE_STATE_RELOADING.to_string()));
+    state.update_applying.set(false);
+}
+
+#[cfg(feature = "hydrate")]
+fn set_update_ready_state(state: &PwaStatusState) {
+    state.update_ready.set(true);
+    state
+        .update_state
+        .set(Some(UPDATE_STATE_READY_TO_INSTALL.to_string()));
+}
+
+#[cfg(feature = "hydrate")]
+fn clear_update_progress_state(state: &PwaStatusState) {
+    state.update_error.set(None);
+    state.update_applying.set(false);
+    state.update_checking.set(false);
+}
+
+#[derive(Clone, Copy)]
+struct PwaStatusState {
+    status: RwSignal<ImportStatus>,
+    storage: RwSignal<Option<StorageInfo>>,
+    online: RwSignal<bool>,
+    update_ready: RwSignal<bool>,
+    update_version: RwSignal<Option<String>>,
+    update_snoozed: RwSignal<bool>,
+    update_snooze_remaining: RwSignal<Option<f64>>,
+    update_checking: RwSignal<bool>,
+    update_last_checked: RwSignal<Option<f64>>,
+    update_state: RwSignal<Option<String>>,
+    update_applying: RwSignal<bool>,
+    update_error: RwSignal<Option<String>>,
+    sw_version: RwSignal<Option<String>>,
+    sw_activated_at: RwSignal<Option<f64>>,
+    sw_controller_url: RwSignal<Option<String>>,
+    sw_controller_state: RwSignal<Option<String>>,
+    sw_controller_impl: RwSignal<Option<String>>,
+    sw_controller_cache_prefix: RwSignal<Option<String>>,
+    sw_scope: RwSignal<Option<String>>,
+    previous_cache_cleaned_at: RwSignal<Option<f64>>,
+    previous_cache_cleanup: RwSignal<Option<String>>,
+    cache_entries: RwSignal<Option<usize>>,
+    storage_warning: RwSignal<Option<String>>,
+    ann_cap_override: RwSignal<Option<u64>>,
+    ai_config_version: RwSignal<Option<String>>,
+    ai_config_generated_at: RwSignal<Option<String>>,
+    embedding_sample_enabled: RwSignal<Option<bool>>,
+    ai_config_status: RwSignal<Option<String>>,
+    manifest_diff: RwSignal<Option<crate::data::ManifestDiff>>,
+    integrity_report: RwSignal<Option<crate::data::IntegrityReport>>,
+    sqlite_parity: RwSignal<Option<crate::data::SqliteParityReport>>,
+    sw_action_status: RwSignal<Option<String>>,
+    perf_metrics: RwSignal<Option<crate::browser::perf::InpMetricsSnapshot>>,
+    import_tuning_enabled: RwSignal<bool>,
+}
+
+#[cfg(feature = "hydrate")]
+async fn refresh_data_diagnostics(state: PwaStatusState) {
+    let (manifest_diff, integrity_report, sqlite_parity) = futures::join!(
+        crate::data::fetch_manifest_diff(),
+        crate::data::fetch_integrity_report(),
+        crate::data::fetch_sqlite_parity_report(),
+    );
+    batch(move || {
+        state.manifest_diff.set(manifest_diff);
+        state.integrity_report.set(integrity_report);
+        state.sqlite_parity.set(sqlite_parity);
+    });
+}
+
+impl PwaStatusState {
+    fn new() -> Self {
+        Self {
+            status: RwSignal::new(ImportStatus {
+                message: "Checking offline data…".to_string(),
+                ..Default::default()
+            }),
+            storage: RwSignal::new(None::<StorageInfo>),
+            online: RwSignal::new(true),
+            update_ready: RwSignal::new(false),
+            update_version: RwSignal::new(None::<String>),
+            update_snoozed: RwSignal::new(false),
+            update_snooze_remaining: RwSignal::new(None::<f64>),
+            update_checking: RwSignal::new(false),
+            update_last_checked: RwSignal::new(None::<f64>),
+            update_state: RwSignal::new(None::<String>),
+            update_applying: RwSignal::new(false),
+            update_error: RwSignal::new(None::<String>),
+            sw_version: RwSignal::new(None::<String>),
+            sw_activated_at: RwSignal::new(None::<f64>),
+            sw_controller_url: RwSignal::new(None::<String>),
+            sw_controller_state: RwSignal::new(None::<String>),
+            sw_controller_impl: RwSignal::new(None::<String>),
+            sw_controller_cache_prefix: RwSignal::new(None::<String>),
+            sw_scope: RwSignal::new(None::<String>),
+            previous_cache_cleaned_at: RwSignal::new(None::<f64>),
+            previous_cache_cleanup: RwSignal::new(None::<String>),
+            cache_entries: RwSignal::new(None::<usize>),
+            storage_warning: RwSignal::new(None::<String>),
+            ann_cap_override: RwSignal::new(None::<u64>),
+            ai_config_version: RwSignal::new(None::<String>),
+            ai_config_generated_at: RwSignal::new(None::<String>),
+            embedding_sample_enabled: RwSignal::new(None::<bool>),
+            ai_config_status: RwSignal::new(None::<String>),
+            manifest_diff: RwSignal::new(None::<crate::data::ManifestDiff>),
+            integrity_report: RwSignal::new(None::<crate::data::IntegrityReport>),
+            sqlite_parity: RwSignal::new(None::<crate::data::SqliteParityReport>),
+            sw_action_status: RwSignal::new(None::<String>),
+            perf_metrics: RwSignal::new(None::<crate::browser::perf::InpMetricsSnapshot>),
+            import_tuning_enabled: RwSignal::new(false),
+        }
+    }
+}
+
+fn action_export_parity(state: PwaStatusState) {
+    hydrate_state_action!(state, {
+        spawn_local(async move {
+            refresh_data_diagnostics(state).await;
+
+            let current_status = state.status.get_untracked();
+            let payload = serde_json::json!({
+                "generatedAtMs": js_sys::Date::now(),
+                "import": {
+                    "message": current_status.message,
+                    "progress": current_status.progress,
+                    "done": current_status.done,
+                    "error": current_status.error,
+                    "tuning": current_status.tuning.as_ref().map(|tuning| serde_json::json!({
+                        "chunkRecords": tuning.chunk_records,
+                        "txBatchSize": tuning.tx_batch_size,
+                        "lastChunkMs": tuning.last_chunk_ms,
+                        "longTaskCount": tuning.long_task_count,
+                    })),
+                    "adaptiveEnabled": state.import_tuning_enabled.get_untracked(),
+                },
+                "inpMetrics": state.perf_metrics.get_untracked().map(|metrics| serde_json::json!({
+                    "supported": metrics.supported,
+                    "p75InteractionMs": metrics.p75_interaction_ms,
+                    "longFrameCount": metrics.long_frame_count,
+                    "interactionCount": metrics.interaction_count,
+                })),
+                "sw": {
+                    "version": state.sw_version.get_untracked(),
+                    "activatedAtMs": state.sw_activated_at.get_untracked(),
+                },
+                "manifestDiff": state.manifest_diff.get_untracked().map(|diff| serde_json::json!({
+                    "version": diff.version,
+                    "totalChanged": diff.total_changed,
+                    "changed": diff.changed.iter().map(|e| serde_json::json!({
+                        "name": e.name,
+                        "before": e.before,
+                        "after": e.after,
+                        "delta": e.delta,
+                    })).collect::<Vec<_>>(),
+                })),
+                "integrityReport": state.integrity_report.get_untracked().map(|report| serde_json::json!({
+                    "totalMismatches": report.total_mismatches,
+                    "mismatches": report.mismatches.iter().map(|e| serde_json::json!({
+                        "store": e.store,
+                        "expected": e.expected,
+                        "actual": e.actual,
+                    })).collect::<Vec<_>>(),
+                })),
+                "sqliteParity": state.sqlite_parity.get_untracked().map(|report| serde_json::json!({
+                    "available": report.available,
+                    "totalMismatches": report.total_mismatches,
+                    "missingTables": report.missing_tables,
+                    "idbCountFailures": report.idb_count_failures,
+                    "mismatches": report.mismatches.iter().map(|e| serde_json::json!({
+                        "store": e.store,
+                        "sqliteTable": e.sqlite_table,
+                        "idbCount": e.idb_count,
+                        "sqliteCount": e.sqlite_count,
+                    })).collect::<Vec<_>>(),
+                })),
+            });
+
+            let json_str =
+                serde_json::to_string_pretty(&payload).unwrap_or_else(|_| "{}".to_string());
+            let _ =
+                crate::browser::download::download_text_file("dmb-parity-report.json", &json_str);
+        });
+    });
+}
+
+fn action_update_click(state: PwaStatusState) {
+    hydrate_state_action!(state, {
+        state.update_applying.set(true);
+        state.update_error.set(None);
+        state
+            .update_state
+            .set(Some(UPDATE_STATE_APPLYING.to_string()));
+
+        spawn_local(async move {
+            let Some(container) = service_worker::service_worker_container() else {
+                state.update_error.set(Some(
+                    "Service worker unavailable in this context.".to_string(),
+                ));
+                state.update_applying.set(false);
+                state.update_state.set(None);
+                state.update_ready.set(false);
+                return;
+            };
+
+            if let Some(reg) = service_worker::current_registration(&container).await {
+                if let Some(worker) = reg.waiting() {
+                    service_worker::post_message_type(&worker, "SKIP_WAITING");
+                } else {
+                    state.update_error.set(Some(
+                        "No waiting service worker. Try again in a moment.".to_string(),
+                    ));
+                    state.update_applying.set(false);
+                    state.update_state.set(None);
+                    state.update_ready.set(false);
+                    return;
+                }
+            }
+
+            let state_on_change = state.clone();
+            let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
+                set_update_reloading_state(&state_on_change);
+                let _ = crate::browser::runtime::location_reload();
+            }) as Box<dyn Fn()>);
+            container
+                .add_event_listener_with_callback("controllerchange", cb.as_ref().unchecked_ref())
+                .ok();
+            cb.forget();
+
+            let state_timeout = state.clone();
+            schedule_window_timeout(1500, move || {
+                set_update_reloading_state(&state_timeout);
+                if !crate::browser::runtime::location_reload() {
+                    state_timeout
+                        .update_error
+                        .set(Some("Reload blocked. Please refresh manually.".to_string()));
+                }
+            });
+        });
+    });
+}
+
+fn action_update_later(state: PwaStatusState) {
+    hydrate_state_action!(state, {
+        let now = js_sys::Date::now();
+        set_local_storage_f64_item(UPDATE_DISMISSED_AT_KEY, now);
+        state.update_snoozed.set(true);
+        state.update_ready.set(false);
+    });
+}
+
+fn action_update_check(state: PwaStatusState) {
+    hydrate_state_action!(state, {
+        state.update_checking.set(true);
+        state
+            .update_state
+            .set(Some(UPDATE_STATE_CHECKING.to_string()));
+
+        spawn_local(async move {
+            if let Some(container) = service_worker::service_worker_container() {
+                if let Some(reg) = service_worker::current_registration(&container).await {
+                    if let Ok(promise) = reg.update() {
+                        let _ = wasm_bindgen_futures::JsFuture::from(promise).await;
+                    }
+                }
+                let now = js_sys::Date::now();
+                set_local_storage_f64_item(UPDATE_CHECKED_AT_KEY, now);
+                state.update_last_checked.set(Some(now));
+            }
+
+            state.update_checking.set(false);
+            if !state.update_ready.get_untracked() && state.update_error.get_untracked().is_none() {
+                state
+                    .update_state
+                    .set(Some(UPDATE_STATE_NO_UPDATE_FOUND.to_string()));
+                let state_for_timeout = state.clone();
+                schedule_window_timeout(2500, move || {
+                    if state_for_timeout.update_state.get_untracked().as_deref()
+                        == Some(UPDATE_STATE_NO_UPDATE_FOUND)
+                    {
+                        state_for_timeout.update_state.set(None);
+                    }
+                });
+            } else {
+                state.update_state.set(None);
+            }
+        });
+    });
+}
+
+fn action_storage_cleanup(state: PwaStatusState) {
+    hydrate_state_action!(state, {
+        spawn_local(async move {
+            let _ = crate::data::handle_storage_pressure().await;
+            state
+                .storage_warning
+                .set(Some(STORAGE_PRESSURE_CLEARED_MESSAGE.to_string()));
+        });
+    });
+}
+
+fn action_cleanup_previous_caches(state: PwaStatusState) {
+    hydrate_state_action!(state, {
+        state
+            .previous_cache_cleanup
+            .set(Some("Cleaning old caches…".to_string()));
+
+        spawn_local(async move {
+            let deleted = cleanup_previous_app_caches().await.unwrap_or(0);
+            let now = js_sys::Date::now();
+
+            set_local_storage_f64_item(PREVIOUS_CACHE_CLEANED_AT_KEY, now);
+
+            state.previous_cache_cleaned_at.set(Some(now));
+            refresh_cache_entries(state.cache_entries).await;
+
+            let message = if deleted == 0 {
+                "Old caches: none found.".to_string()
+            } else if deleted == 1 {
+                "Old caches: removed 1 cache.".to_string()
+            } else {
+                format!("Old caches: removed {deleted} caches.")
+            };
+            state.previous_cache_cleanup.set(Some(message));
+
+            let state_for_timeout = state.clone();
+            schedule_window_timeout(4500, move || {
+                let current = state_for_timeout.previous_cache_cleanup.get_untracked();
+                if current
+                    .as_deref()
+                    .map(|v| v.starts_with("Old caches:"))
+                    .unwrap_or(false)
+                {
+                    state_for_timeout.previous_cache_cleanup.set(None);
+                }
+            });
+        });
+    });
+}
+
+fn action_ping_sw(state: PwaStatusState) {
+    hydrate_state_action!(state, {
+        set_sw_action_status(state.sw_action_status, "Pinging service worker…");
+
+        spawn_local(async move {
+            let Some(container) = service_worker::service_worker_container() else {
+                set_sw_action_status(state.sw_action_status, "No window");
+                return;
+            };
+
+            let Some(controller) = service_worker::controller(&container) else {
+                set_sw_action_status(state.sw_action_status, "No SW controller yet.");
+                return;
+            };
+
+            if let Some(reg) = service_worker::current_registration(&container).await {
+                if reg.waiting().is_some() {
+                    set_sw_action_status(
+                        state.sw_action_status,
+                        "Ping sent (note: update is waiting).",
+                    );
+                }
+            }
+
+            service_worker::post_message_type(&controller, "PING");
+        });
+    });
+}
+
+fn action_unregister_sw(state: PwaStatusState) {
+    hydrate_state_action!(state, {
+        set_sw_action_status(state.sw_action_status, "Unregistering service worker…");
+
+        spawn_local(async move {
+            let Some(container) = service_worker::service_worker_container() else {
+                set_sw_action_status(state.sw_action_status, "No window");
+                return;
+            };
+
+            let Some(reg) = service_worker::current_registration(&container).await else {
+                set_sw_action_status(state.sw_action_status, "No SW registration found.");
+                return;
+            };
+
+            let promise = match reg.unregister() {
+                Ok(promise) => promise,
+                Err(err) => {
+                    set_sw_action_status(
+                        state.sw_action_status,
+                        &format!("SW unregister failed: {err:?}"),
+                    );
+                    return;
+                }
+            };
+
+            let unregistered = match wasm_bindgen_futures::JsFuture::from(promise).await {
+                Ok(value) => value.as_bool().unwrap_or(true),
+                Err(err) => {
+                    set_sw_action_status(
+                        state.sw_action_status,
+                        &format!("SW unregister failed: {err:?}"),
+                    );
+                    return;
+                }
+            };
+
+            if !unregistered {
+                set_sw_action_status(state.sw_action_status, "SW unregister returned false.");
+                return;
+            }
+
+            remove_local_storage_item(SW_VERSION_KEY);
+            remove_local_storage_item(SW_ACTIVATED_AT_KEY);
+            remove_local_storage_item(UPDATE_DISMISSED_AT_KEY);
+
+            set_sw_action_status(state.sw_action_status, "SW unregistered. Reloading…");
+            let _ = crate::browser::runtime::location_reload();
+        });
+    });
+}
+
+fn action_reset_data() {
+    #[cfg(feature = "hydrate")]
+    {
+        spawn_local(async move {
+            let _ = service_worker::delete_all_caches().await;
+            let _ = dmb_idb::delete_db().await;
+            let _ = crate::browser::runtime::location_reload();
+        });
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn refresh_update_notice_state(state: &PwaStatusState) -> bool {
+    if let Some(ts) = local_storage_f64_by_key(UPDATE_DISMISSED_AT_KEY) {
+        let now = js_sys::Date::now();
+        let remaining = remaining_snooze_ms(Some(ts), now);
+        state.update_snooze_remaining.set(remaining);
+        return should_suppress_update_notice(Some(ts), now);
+    }
+
+    state.update_snooze_remaining.set(None);
+    false
+}
+
+#[cfg(feature = "hydrate")]
+fn hydrate_local_snapshot(state: &PwaStatusState) {
+    if let Some(ts) = local_storage_f64_by_key(UPDATE_CHECKED_AT_KEY) {
+        state.update_last_checked.set(Some(ts));
+    }
+    if let Some(version) = local_storage_item_by_key(SW_VERSION_KEY) {
+        state.sw_version.set(Some(version));
+    }
+    if let Some(value) = local_storage_f64_by_key(SW_ACTIVATED_AT_KEY) {
+        state.sw_activated_at.set(Some(value));
+    }
+    if let Some(value) = local_storage_f64_by_key(PREVIOUS_CACHE_CLEANED_AT_KEY) {
+        state.previous_cache_cleaned_at.set(Some(value));
+    }
+    #[cfg(feature = "ai_diagnostics_full")]
+    {
+        if let Some(version) = local_storage_item_by_key(crate::ai::AI_CONFIG_VERSION_KEY) {
+            state.ai_config_version.set(Some(version));
+        }
+        if let Some(generated_at) = local_storage_item_by_key(crate::ai::AI_CONFIG_GENERATED_AT_KEY)
+        {
+            state.ai_config_generated_at.set(Some(generated_at));
+        }
+        if let Some(sample) = local_storage_item_by_key(crate::ai::EMBEDDING_SAMPLE_KEY) {
+            state.embedding_sample_enabled.set(Some(sample == "1"));
+        }
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn spawn_seed_and_diagnostics_refresh(state: &PwaStatusState) {
+    let status = state.status;
+    spawn_local(async move {
+        crate::data::ensure_seed_data(status).await;
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn spawn_storage_health_tasks(state: &PwaStatusState) {
+    let storage = state.storage;
+    let storage_warning = state.storage_warning;
+
+    spawn_local(async move {
+        let info = crate::data::estimate_storage().await;
+        storage.set(info);
+        let cleared = crate::data::handle_storage_pressure()
+            .await
+            .unwrap_or(false);
+        if cleared {
+            storage_warning.set(Some(STORAGE_PRESSURE_CLEARED_MESSAGE.to_string()));
+        }
+    });
+
+    spawn_cache_entries_refresh(state.cache_entries);
+}
+
+#[cfg(all(feature = "hydrate", feature = "ai_diagnostics_full"))]
+fn spawn_ai_config_sync_task(state: &PwaStatusState) {
+    let ai_config_status = state.ai_config_status;
+    let ai_config_version = state.ai_config_version;
+    let ai_config_generated_at = state.ai_config_generated_at;
+
+    spawn_local(async move {
+        if let Some(reconciled) = crate::ai::fetch_and_reconcile_ai_config_meta(
+            ai_config_version.get_untracked(),
+            ai_config_generated_at.get_untracked(),
+        )
+        .await
+        {
+            ai_config_version.set(reconciled.local_version.clone());
+            ai_config_generated_at.set(reconciled.local_generated_at.clone());
+            ai_config_status.set(crate::ai::ai_config_mismatch_status_message(
+                &reconciled,
+                "AI config mismatch: ",
+                ".",
+            ));
+        }
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn ping_controller_for_metadata(controller: &web_sys::ServiceWorker, state: &PwaStatusState) {
+    state.sw_controller_impl.set(None);
+    state.sw_controller_cache_prefix.set(None);
+
+    service_worker::post_message_type(controller, "PING");
+    state.sw_action_status.set(None);
+}
+
+#[cfg(feature = "hydrate")]
+fn persist_effective_sw_version(state: &PwaStatusState, version: &str) {
+    let effective = resolve_effective_sw_version(state.sw_controller_url.get_untracked(), version);
+    state.sw_version.set(Some(effective.clone()));
+    set_local_storage_item(SW_VERSION_KEY, &effective);
+}
+
+#[cfg(feature = "hydrate")]
+fn sync_controller_version_from_script_url(script_url: &str, state: &PwaStatusState) {
+    if let Some(version) = e2e_version_from_sw_script_url(script_url) {
+        state.sw_version.set(Some(version.clone()));
+        set_local_storage_item(SW_VERSION_KEY, &version);
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn apply_controller_snapshot(controller: &web_sys::ServiceWorker, state: &PwaStatusState) {
+    let script_url = controller.script_url();
+    state.sw_controller_url.set(Some(script_url.clone()));
+    state
+        .sw_controller_state
+        .set(service_worker::worker_state(controller));
+    sync_controller_version_from_script_url(&script_url, state);
+    ping_controller_for_metadata(controller, state);
+}
+
+#[cfg(feature = "hydrate")]
+fn clear_controller_snapshot(state: &PwaStatusState) {
+    state.sw_controller_url.set(None);
+    state.sw_controller_state.set(None);
+    state.sw_controller_impl.set(None);
+    state.sw_controller_cache_prefix.set(None);
+}
+
+#[cfg(feature = "hydrate")]
+fn sync_current_controller_state(
+    container: &web_sys::ServiceWorkerContainer,
+    state: &PwaStatusState,
+) -> bool {
+    if let Some(controller) = container.controller() {
+        apply_controller_snapshot(&controller, state);
+        true
+    } else {
+        clear_controller_snapshot(state);
+        false
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn attach_sw_message_listener(container: &web_sys::ServiceWorkerContainer, state: &PwaStatusState) {
+    let state = state.clone();
+
+    let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move |event: web_sys::MessageEvent| {
+        let Some(payload) = parse_sw_message_payload(&event) else {
+            return;
+        };
+        let Some(event_type) = payload.get("type").and_then(|v| v.as_str()) else {
+            return;
+        };
+
+        match event_type {
+            "PONG" => {
+                if let Some(impl_name) = payload.get("impl").and_then(|v| v.as_str()) {
+                    state.sw_controller_impl.set(Some(impl_name.to_string()));
+                }
+                if let Some(version) = payload.get("version").and_then(|v| v.as_str()) {
+                    persist_effective_sw_version(&state, version);
+                }
+                if let Some(prefix) = payload.get("cachePrefix").and_then(|v| v.as_str()) {
+                    state
+                        .sw_controller_cache_prefix
+                        .set(Some(prefix.to_string()));
+                }
+                set_sw_action_status(state.sw_action_status, "Service worker responded to ping.");
+            }
+            "SW_ACTIVATED" => {
+                if let Some(version) = payload.get("version").and_then(|v| v.as_str()) {
+                    state.update_version.set(Some(version.to_string()));
+                    persist_effective_sw_version(&state, version);
+                }
+                let now = js_sys::Date::now();
+                state.sw_activated_at.set(Some(now));
+                set_local_storage_f64_item(SW_ACTIVATED_AT_KEY, now);
+                state.update_ready.set(false);
+                state.update_state.set(None);
+                state.update_error.set(None);
+                state.update_applying.set(false);
+                remove_local_storage_item(UPDATE_DISMISSED_AT_KEY);
+                state.update_snoozed.set(false);
+                spawn_cache_entries_refresh(state.cache_entries);
+            }
+            "SW_INSTALLED" => {
+                if let Some(version) = payload.get("version").and_then(|v| v.as_str()) {
+                    state.update_version.set(Some(version.to_string()));
+                }
+            }
+            _ => {}
+        }
+    }) as Box<dyn FnMut(web_sys::MessageEvent)>);
+
+    container
+        .add_event_listener_with_callback("message", cb.as_ref().unchecked_ref())
+        .ok();
+    cb.forget();
+}
+
+#[cfg(feature = "hydrate")]
+fn attach_sw_controllerchange_listener(
+    container: &web_sys::ServiceWorkerContainer,
+    state: &PwaStatusState,
+) {
+    let container_on_change = container.clone();
+    let state = state.clone();
+
+    let controllerchange_cb =
+        wasm_bindgen::closure::Closure::wrap(Box::new(move |_event: web_sys::Event| {
+            if let Some(controller) = container_on_change.controller() {
+                apply_controller_snapshot(&controller, &state);
+            }
+        }) as Box<dyn FnMut(web_sys::Event)>);
+
+    container
+        .add_event_listener_with_callback(
+            "controllerchange",
+            controllerchange_cb.as_ref().unchecked_ref(),
+        )
+        .ok();
+    controllerchange_cb.forget();
+}
+
+#[cfg(feature = "hydrate")]
+fn attach_installing_state_listener(
+    reg: web_sys::ServiceWorkerRegistration,
+    worker: web_sys::ServiceWorker,
+    state: PwaStatusState,
+) {
+    let worker_for_state = worker.clone();
+    let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
+        let worker_state = service_worker::worker_state(&worker_for_state);
+
+        if let Some(current_state) = worker_state.as_deref() {
+            state
+                .update_state
+                .set(Some(format!("Update {current_state}…")));
+            if current_state == "installed" {
+                let waiting = reg.waiting().is_some();
+                if has_sw_controller() && waiting && !refresh_update_notice_state(&state) {
+                    set_update_ready_state(&state);
+                }
+                clear_update_progress_state(&state);
+            }
+        }
+    }) as Box<dyn Fn()>);
+
+    worker
+        .add_event_listener_with_callback("statechange", cb.as_ref().unchecked_ref())
+        .ok();
+    cb.forget();
+}
+
+#[cfg(feature = "hydrate")]
+fn attach_updatefound_listener(reg: web_sys::ServiceWorkerRegistration, state: PwaStatusState) {
+    let reg_for_updatefound = reg.clone();
+    let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
+        state.update_checking.set(true);
+        state
+            .update_state
+            .set(Some(UPDATE_STATE_DOWNLOADING.to_string()));
+        state.update_error.set(None);
+        state.update_applying.set(false);
+        state.update_ready.set(false);
+
+        if let Some(worker) = reg_for_updatefound.installing() {
+            attach_installing_state_listener(reg_for_updatefound.clone(), worker, state.clone());
+        }
+    }) as Box<dyn Fn()>);
+
+    reg.add_event_listener_with_callback("updatefound", cb.as_ref().unchecked_ref())
+        .ok();
+    cb.forget();
+}
+
+#[cfg(feature = "hydrate")]
+async fn process_sw_registration(
+    container: web_sys::ServiceWorkerContainer,
+    state: PwaStatusState,
+    has_controller: bool,
+) {
+    use wasm_bindgen_futures::JsFuture;
+
+    let Ok(reg_val) = JsFuture::from(container.get_registration()).await else {
+        return;
+    };
+    let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() else {
+        return;
+    };
+
+    state.sw_scope.set(Some(reg.scope()));
+
+    if reg.waiting().is_some() {
+        if has_controller && !refresh_update_notice_state(&state) {
+            set_update_ready_state(&state);
+        }
+        clear_update_progress_state(&state);
+    }
+
+    if let Some(worker) = reg.installing() {
+        attach_installing_state_listener(reg.clone(), worker, state.clone());
+    }
+
+    attach_updatefound_listener(reg.clone(), state.clone());
+
+    let online = crate::browser::runtime::navigator_on_line().unwrap_or(false);
+
+    if online {
+        let now = js_sys::Date::now();
+        let should_check = should_auto_check_for_updates(now);
+
+        if should_check {
+            if let Ok(promise) = reg.update() {
+                let _ = JsFuture::from(promise).await;
+            }
+            set_local_storage_f64_item(UPDATE_CHECKED_AT_KEY, now);
+            state.update_last_checked.set(Some(now));
+        }
+    }
+
+    if has_controller && online {
+        let now = js_sys::Date::now();
+        let should_cleanup = !has_previous_cache_cleanup_marker();
+
+        if should_cleanup {
+            let _ = cleanup_previous_app_caches().await;
+            set_local_storage_f64_item(PREVIOUS_CACHE_CLEANED_AT_KEY, now);
+            state.previous_cache_cleaned_at.set(Some(now));
+            refresh_cache_entries(state.cache_entries).await;
+        }
+    }
+}
+
+#[cfg(feature = "hydrate")]
+fn spawn_sw_runtime_task(state: &PwaStatusState) {
+    let state = state.clone();
+
+    spawn_local(async move {
+        let Some(container) = service_worker::service_worker_container() else {
+            return;
+        };
+
+        attach_sw_message_listener(&container, &state);
+        attach_sw_controllerchange_listener(&container, &state);
+
+        let has_controller = sync_current_controller_state(&container, &state);
+        process_sw_registration(container, state, has_controller).await;
+    });
+}
+
+#[cfg(feature = "hydrate")]
+fn should_auto_check_for_updates(now_ms: f64) -> bool {
+    let Some(last_checked) = local_storage_f64_by_key(UPDATE_CHECKED_AT_KEY) else {
+        return true;
+    };
+
+    now_ms <= last_checked || (now_ms - last_checked) >= AUTO_UPDATE_CHECK_INTERVAL_MS
+}
+
+#[cfg(feature = "hydrate")]
+fn has_previous_cache_cleanup_marker() -> bool {
+    local_storage_item_by_key(PREVIOUS_CACHE_CLEANED_AT_KEY).is_some()
+}
+
+#[cfg(feature = "hydrate")]
+fn register_online_offline_listeners(state: &PwaStatusState) {
+    let online_for_online = state.online;
+    let online_for_offline = state.online;
+    if let Some(initial_online) = crate::browser::runtime::register_online_offline_listeners(
+        move || {
+            online_for_online.set(true);
+        },
+        move || {
+            online_for_offline.set(false);
+        },
+    ) {
+        state.online.set(initial_online);
+    }
+}
+
+fn initialize_pwa_status_state(state: PwaStatusState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+
+    #[cfg(feature = "hydrate")]
+    {
+        request_animation_frame(move || {
+            state
+                .update_snoozed
+                .set(refresh_update_notice_state(&state));
+            hydrate_local_snapshot(&state);
+            #[cfg(feature = "ai_diagnostics_full")]
+            {
+                state.ann_cap_override.set(crate::ai::ann_cap_override_mb());
+            }
+
+            // Defer non-critical PWA diagnostics/import work so first paint and hydration
+            // complete before large IndexedDB and metadata tasks run.
+            schedule_window_timeout(DEFERRED_STATUS_TASKS_DELAY_MS, move || {
+                state
+                    .import_tuning_enabled
+                    .set(crate::data::current_import_tuning_enabled());
+                spawn_seed_and_diagnostics_refresh(&state);
+                spawn_storage_health_tasks(&state);
+                #[cfg(feature = "ai_diagnostics_full")]
+                {
+                    spawn_ai_config_sync_task(&state);
+                }
+                spawn_sw_runtime_task(&state);
+                register_online_offline_listeners(&state);
+            });
+        });
+    }
+}
+
+fn setup_post_import_refresh(state: PwaStatusState) {
+    #[cfg(not(feature = "hydrate"))]
+    let _ = state;
+
+    #[cfg(feature = "hydrate")]
+    {
+        let post_import_refreshed = RwSignal::new(false);
+        let status = state.status;
+        let state_for_refresh = state;
+
+        Effect::new(move |_| {
+            let current = status.get();
+            if !current.done || current.error.is_some() {
+                return;
+            }
+            if post_import_refreshed.get_untracked() {
+                return;
+            }
+            post_import_refreshed.set(true);
+            spawn_local(async move {
+                refresh_data_diagnostics(state_for_refresh).await;
+            });
+        });
+    }
+}
+
+fn render_import_status_rows(state: PwaStatusState) -> impl IntoView {
+    let status = state.status;
+
+    view! {
+        <>
+            <div class="pwa-status__row" role="status" aria-live="polite">
+                <span>{move || status.get().message.clone()}</span>
+            </div>
+            {move || {
+                let current = status.get();
+                current.error.as_ref().map(|err| {
+                    let err_text = err.clone();
+                    view! { <div class="pwa-status__row pwa-status__row--error">{err_text}</div> }
+                })
+            }}
+            {move || {
+                let current = status.get();
+                current.tuning.as_ref().map(|tuning| {
+                    view! {
+                        <div class="pwa-status__row muted">
+                            {format!(
+                                "Import tuning: chunk {} • tx {} • last {:.0}ms • long frames {}",
+                                tuning.chunk_records,
+                                tuning.tx_batch_size,
+                                tuning.last_chunk_ms,
+                                tuning.long_task_count
+                            )}
+                        </div>
+                    }
+                })
+            }}
+            <Show
+                when=move || {
+                    let current = status.get();
+                    current.progress > 0.0 && !current.done
+                }
+                fallback=|| ()
+            >
+                {move || {
+                    let current = status.get();
+                    let width = format!("{:.0}%", current.progress * 100.0);
+                    view! {
+                        <div class="pwa-progress">
+                            <div class="pwa-progress__bar" style:width=width></div>
+                        </div>
+                    }
+                }}
+            </Show>
+        </>
+    }
+}
+
+fn render_storage_rows(state: PwaStatusState) -> impl IntoView {
+    let storage = state.storage;
+    let storage_warning = state.storage_warning;
+
+    view! {
+        <>
+            {move || {
+                storage.get().map(|info| {
+                    let usage = info.usage.unwrap_or(0.0);
+                    let quota = info.quota.unwrap_or(0.0);
+                    let percent = if quota > 0.0 { (usage / quota) * 100.0 } else { 0.0 };
+                    view! {
+                        <div class="pwa-status__row">
+                            <span>
+                                {format!(
+                                    "Storage {:.1} MB / {:.1} MB ({:.0}%)",
+                                    usage / 1_000_000.0,
+                                    quota / 1_000_000.0,
+                                    percent
+                                )}
+                            </span>
+                        </div>
+                    }
+                })
+            }}
+            {move || {
+                storage.get().and_then(|info| {
+                    let usage = info.usage.unwrap_or(0.0);
+                    let quota = info.quota.unwrap_or(0.0);
+                    if quota <= 0.0 {
+                        return None;
+                    }
+                    let ratio = usage / quota;
+                    if ratio < crate::data::STORAGE_PRESSURE_THRESHOLD {
+                        return None;
+                    }
+                    Some(view! {
+                        <div class="pwa-status__row pwa-status__row--warn">
+                            <span>{format!("Storage pressure: {:.0}% used", ratio * 100.0)}</span>
+                            <button
+                                type="button"
+                                class="pill pill--ghost"
+                                on:click={
+                                    let state = state.clone();
+                                    move |_| action_storage_cleanup(state.clone())
+                                }
+                            >
+                                "Clear AI cache"
+                            </button>
+                        </div>
+                    })
+                })
+            }}
+            {move || {
+                storage_warning.get().map(|message| {
+                    view! { <div class="pwa-status__row muted">{message}</div> }
+                })
+            }}
+        </>
+    }
+}
+
+fn render_metadata_rows(state: PwaStatusState) -> impl IntoView {
+    let sw_version = state.sw_version;
+    let sw_activated_at = state.sw_activated_at;
+    let ai_config_version = state.ai_config_version;
+    let ai_config_generated_at = state.ai_config_generated_at;
+    let embedding_sample_enabled = state.embedding_sample_enabled;
+    let ai_config_status = state.ai_config_status;
+    let ann_cap_override = state.ann_cap_override;
+    let cache_entries = state.cache_entries;
+    let update_state = state.update_state;
+    let perf_metrics = state.perf_metrics;
+    let import_tuning_enabled = state.import_tuning_enabled;
+
+    view! {
+        <>
+            {move || {
+                sw_version.get().map(|version| {
+                    view! { <div class="pwa-status__row">{"SW version "}{version}</div> }
+                })
+            }}
+            <Show when=move || sw_activated_at.get().is_some() fallback=|| ()>
+                {move || {
+                    #[cfg(feature = "hydrate")]
+                    {
+                        let ts = sw_activated_at.get().unwrap_or(0.0);
+                        let now = js_sys::Date::now();
+                        view! { <div class="pwa-status__row muted">{format_age("SW activated", ts, now)}</div> }
+                    }
+                    #[cfg(not(feature = "hydrate"))]
+                    {
+
+                    }
+                }}
+            </Show>
+            {move || {
+                ai_config_version.get().map(|version| {
+                    view! { <div class="pwa-status__row muted">{format!("AI config v{version}")}</div> }
+                })
+            }}
+            {move || {
+                ai_config_generated_at.get().map(|generated_at| {
+                    view! { <div class="pwa-status__row muted">{format!("AI config generated {generated_at}")}</div> }
+                })
+            }}
+            {move || {
+                embedding_sample_enabled.get().map(|enabled| {
+                    view! { <div class="pwa-status__row muted">{format!("Embedding sample: {}", if enabled { "on" } else { "off" })}</div> }
+                })
+            }}
+            {move || {
+                ai_config_status.get().map(|message| {
+                    view! { <div class="pwa-status__row pwa-status__row--warn">{message}</div> }
+                })
+            }}
+            {move || {
+                ann_cap_override.get().map(|override_mb| {
+                    view! { <div class="pwa-status__row muted">{format!("ANN cap override: {override_mb} MB")}</div> }
+                })
+            }}
+            {move || {
+                cache_entries.get().map(|count| {
+                    view! { <div class="pwa-status__row muted">{format!("Cache entries: {count}")}</div> }
+                })
+            }}
+            <div class="pwa-status__row muted">
+                {move || format!(
+                    "Adaptive import tuning: {}",
+                    if import_tuning_enabled.get() { "on" } else { "off" }
+                )}
+            </div>
+            {move || {
+                perf_metrics.get().map(|metrics| {
+                    let message = if !metrics.supported {
+                        "INP telemetry: unsupported in this browser/runtime".to_string()
+                    } else {
+                        let p75 = metrics
+                            .p75_interaction_ms
+                            .map(|value| format!("{value:.0}ms"))
+                            .unwrap_or_else(|| "n/a".to_string());
+                        let interactions = metrics
+                            .interaction_count
+                            .map_or_else(|| "n/a".to_string(), |value| value.to_string());
+                        format!(
+                            "INP p75 {p75} • long frames {} • interactions {}",
+                            metrics.long_frame_count, interactions
+                        )
+                    };
+                    view! {
+                        <div class="pwa-status__row muted">
+                            {message}
+                        </div>
+                    }
+                })
+            }}
+            {move || {
+                update_state.get().map(|message| {
+                    view! { <div class="pwa-status__row muted">{message}</div> }
+                })
+            }}
+        </>
+    }
+}
+
+fn render_network_rows(state: PwaStatusState) -> impl IntoView {
+    let online = state.online;
+    let status = state.status;
+    let on_reset_data = move |_| action_reset_data();
+
+    view! {
+        <>
+            <div class="pwa-status__row">
+                <span class="pill">{move || if online.get() { "Online" } else { "Offline" }}</span>
+            </div>
+            <Show when=move || !online.get() fallback=|| ()>
+                <div class="pwa-status__row pwa-status__row--warn" role="alert">
+                    "You are offline. Cached pages remain available; updates and network sync are paused."
+                </div>
+            </Show>
+            {move || {
+                let current = status.get();
+                if current.can_reset {
+                    Some(view! {
+                        <div class="pwa-status__row pwa-status__row--warn">
+                            <span>"Offline data needs attention."</span>
+                            <button type="button" class="pill pill--ghost" on:click=on_reset_data>
+                                "Reset offline data"
+                            </button>
+                        </div>
+                    })
+                } else {
+                    None
+                }
+            }}
+        </>
+    }
+}
+
+fn sw_details_text(state: &PwaStatusState) -> String {
+    let mut parts = Vec::new();
+
+    if let Some(version) = state.sw_version.get() {
+        parts.push(format!("SW {version}"));
+    }
+    if let Some(url) = state.sw_controller_url.get() {
+        parts.push(format!("Controller {}", shorten_script_url(&url)));
+    }
+    if let Some(controller_state) = state.sw_controller_state.get() {
+        parts.push(format!("Controller {controller_state}"));
+    }
+    if let Some(impl_name) = state.sw_controller_impl.get() {
+        parts.push(format!("Impl {impl_name}"));
+    }
+    if let Some(prefix) = state.sw_controller_cache_prefix.get() {
+        parts.push(format!("Cache {prefix}"));
+    }
+    if let Some(scope) = state.sw_scope.get() {
+        parts.push(format!("Scope {scope}"));
+    }
+    if let Some(_ts) = state.sw_activated_at.get() {
+        #[cfg(feature = "hydrate")]
+        {
+            parts.push(format_age("Activated", _ts, js_sys::Date::now()));
+        }
+    }
+    if let Some(_ts) = state.previous_cache_cleaned_at.get() {
+        #[cfg(feature = "hydrate")]
+        {
+            parts.push(format_age("Old caches cleaned", _ts, js_sys::Date::now()));
+        }
+    }
+    if let Some(count) = state.cache_entries.get() {
+        parts.push(format!("Cache {count} entries"));
+    }
+
+    #[cfg(feature = "hydrate")]
+    {
+        if let Some(ts) = state.update_last_checked.get() {
+            parts.push(format_last_checked(ts, js_sys::Date::now()));
+        }
+    }
+
+    if parts.is_empty() {
+        "No SW details yet.".to_string()
+    } else {
+        parts.join(" · ")
+    }
+}
+
+fn render_update_control_rows(state: PwaStatusState) -> impl IntoView {
+    let update_checking = state.update_checking;
+
+    let on_update_check = {
+        let state = state.clone();
+        move |_| action_update_check(state.clone())
+    };
+
+    view! {
+        <>
+            <div class="pwa-status__row">
+                <button
+                    type="button"
+                    class="pill pill--ghost"
+                    on:click=on_update_check
+                    disabled=move || update_checking.get()
+                >
+                    {move || if update_checking.get() { "Checking updates…" } else { "Check for updates" }}
+                </button>
+            </div>
+            <details class="pwa-status__details">
+                <summary class="pill pill--ghost">"SW details"</summary>
+                {render_sw_details_section(state.clone())}
+            </details>
+        </>
+    }
+}
+
+fn render_sw_details_section(state: PwaStatusState) -> impl IntoView {
+    let sw_controller_impl = state.sw_controller_impl;
+    let online = state.online;
+    let previous_cache_cleanup = state.previous_cache_cleanup;
+    let sw_action_status = state.sw_action_status;
+
+    let on_cleanup_previous_caches = {
+        let state = state.clone();
+        move |_| action_cleanup_previous_caches(state.clone())
+    };
+    let on_ping_sw = {
+        let state = state.clone();
+        move |_| action_ping_sw(state.clone())
+    };
+    let on_unregister_sw = {
+        let state = state.clone();
+        move |_| action_unregister_sw(state.clone())
+    };
+
+    view! {
+        <>
+            <div class="pwa-status__row muted">{move || sw_details_text(&state)}</div>
+            <Show
+                when=move || {
+                    sw_controller_impl
+                        .get()
+                        .is_some_and(|name| name.to_lowercase() != "rust")
+                }
+                fallback=|| ()
+            >
+                <div class="pwa-status__row pwa-status__row--warn">
+                    <span>
+                        "Service worker controller is not the Rust implementation. If the UI looks stale, try unregistering."
+                    </span>
+                </div>
+            </Show>
+            <div class="pwa-status__row">
+                <button
+                    type="button"
+                    class="pill pill--ghost"
+                    on:click=on_cleanup_previous_caches
+                    disabled=move || !online.get()
+                >
+                    "Cleanup old caches"
+                </button>
+                <button type="button" class="pill pill--ghost" on:click=on_ping_sw>
+                    "Ping SW"
+                </button>
+                <button type="button" class="pill pill--ghost" on:click=on_unregister_sw>
+                    "Unregister SW"
+                </button>
+            </div>
+            {move || {
+                previous_cache_cleanup.get().map(|message| {
+                    view! { <div class="pwa-status__row muted">{message}</div> }
+                })
+            }}
+            {move || {
+                sw_action_status.get().map(|message| {
+                    view! { <div class="pwa-status__row muted" role="status" aria-live="polite">{message}</div> }
+                })
+            }}
+        </>
+    }
+}
+
+fn render_export_row(state: PwaStatusState) -> impl IntoView {
+    let status = state.status;
+    let on_export_parity = {
+        let state = state.clone();
+        move |_| action_export_parity(state.clone())
+    };
+
+    view! {
+        <div class="pwa-status__row">
+            <button
+                type="button"
+                class="pill pill--ghost"
+                on:click=on_export_parity
+                disabled=move || {
+                    let current = status.get();
+                    !current.done && current.error.is_none()
+                }
+            >
+                "Export parity report"
+            </button>
+        </div>
+    }
+}
+
+fn render_last_checked_row(state: PwaStatusState) -> impl IntoView {
+    let update_last_checked = state.update_last_checked;
+
+    view! {
+        <Show when=move || update_last_checked.get().is_some() fallback=|| ()>
+            {move || {
+                #[cfg(feature = "hydrate")]
+                {
+                    let ts = update_last_checked.get().unwrap_or(0.0);
+                    let now = js_sys::Date::now();
+                    let label = format_last_checked(ts, now);
+                    view! { <div class="pwa-status__row muted">{label}</div> }
+                }
+                #[cfg(not(feature = "hydrate"))]
+                {
+
+                }
+            }}
+        </Show>
+    }
+}
+
+fn render_update_ready_banner(state: PwaStatusState) -> impl IntoView {
+    let update_ready = state.update_ready;
+    let update_snoozed = state.update_snoozed;
+    let update_version = state.update_version;
+    let update_applying = state.update_applying;
+
+    view! {
+        {move || {
+            if !update_ready.get() || update_snoozed.get() {
+                return ().into_any();
+            }
+
+            let label = update_version
+                .get()
+                .map_or_else(|| "Update ready".to_string(), |version| {
+                    format!("Update ready ({version})")
+                });
+            let state_for_reload = state.clone();
+            let state_for_later = state.clone();
+
+            view! {
+                <div class="pwa-status__row pwa-status__row--update" role="status" aria-live="polite">
+                    <div class="pwa-update-message">{label}</div>
+                    <div class="pwa-update-actions">
+                        <button
+                            type="button"
+                            class="pill"
+                            on:click=move |_| action_update_click(state_for_reload.clone())
+                            disabled=move || update_applying.get()
+                        >
+                            {move || if update_applying.get() { "Applying…" } else { "Reload" }}
+                        </button>
+                        <button
+                            type="button"
+                            class="pill pill--ghost"
+                            on:click=move |_| action_update_later(state_for_later.clone())
+                            disabled=move || update_applying.get()
+                        >
+                            "Later"
+                        </button>
+                    </div>
+                </div>
+            }
+            .into_any()
+        }}
+    }
+}
+
+fn render_manifest_diff_notice(state: PwaStatusState) -> impl IntoView {
+    let manifest_diff = state.manifest_diff;
+
+    view! {
+        <Show
+            when=move || manifest_diff.get().is_some_and(|diff| diff.total_changed > 0)
+            fallback=|| ()
+        >
+            {move || manifest_diff.get().map(|diff| {
+                let items = diff.changed.iter().take(5).map(|entry| {
+                    let sign = if entry.delta >= 0 { "+" } else { "" };
+                    view! {
+                        <li>{format!(
+                            "{}: {}{} ({} → {})",
+                            entry.name,
+                            sign,
+                            entry.delta,
+                            entry.before,
+                            entry.after
+                        )}</li>
+                    }
+                });
+                view! {
+                    <div class="pwa-status__row pwa-status__row--update muted">
+                        <div class="pwa-update-message">
+                            {format!("Data changes detected (manifest v{})", diff.version)}
+                        </div>
+                        <ul class="list">{items.collect_view()}</ul>
+                    </div>
+                }
+            })}
+        </Show>
+    }
+}
+
+fn render_integrity_notice(state: PwaStatusState) -> impl IntoView {
+    let manifest_diff = state.manifest_diff;
+    let integrity_report = state.integrity_report;
+    let status = state.status;
+
+    view! {
+        <Show
+            when=move || {
+                let update_pending = manifest_diff.get().is_some_and(|diff| diff.total_changed > 0);
+                integrity_report
+                    .get()
+                    .is_some_and(|report| report.total_mismatches > 0)
+                    && status.get().done
+                    && !update_pending
+            }
+            fallback=|| ()
+        >
+            {move || integrity_report.get().map(|report| {
+                let items = report.mismatches.iter().take(5).map(|entry| {
+                    view! {
+                        <li>{format!(
+                            "{}: {} expected / {} actual",
+                            entry.store,
+                            entry.expected,
+                            entry.actual
+                        )}</li>
+                    }
+                });
+                view! {
+                    <div class="pwa-status__row pwa-status__row--update" role="alert">
+                        <div class="pwa-update-message">
+                            {format!("Integrity mismatches detected ({})", report.total_mismatches)}
+                        </div>
+                        <ul class="list">{items.collect_view()}</ul>
+                    </div>
+                }
+            })}
+        </Show>
+    }
+}
+
+fn render_update_error_notice(state: PwaStatusState) -> impl IntoView {
+    let update_error = state.update_error;
+
+    view! {
+        <Show when=move || update_error.get().is_some() fallback=|| ()>
+            {move || update_error.get().map(|message| {
+                view! {
+                    <div class="pwa-status__row pwa-status__row--update muted" role="alert">
+                        {message}
+                    </div>
+                }
+            })}
+        </Show>
+    }
+}
+
+fn render_sqlite_mismatch_notice(state: PwaStatusState) -> impl IntoView {
+    let manifest_diff = state.manifest_diff;
+    let sqlite_parity = state.sqlite_parity;
+    let status = state.status;
+
+    view! {
+        <Show
+            when=move || {
+                let update_pending = manifest_diff.get().is_some_and(|diff| diff.total_changed > 0);
+                sqlite_parity
+                    .get()
+                    .is_some_and(|report| report.available && report.total_mismatches > 0)
+                    && status.get().done
+                    && !update_pending
+            }
+            fallback=|| ()
+        >
+            {move || sqlite_parity.get().map(|report| {
+                let items = report.mismatches.iter().take(5).map(|entry| {
+                    view! {
+                        <li>{format!(
+                            "{} ({}) – IDB {} / SQLite {}",
+                            entry.store,
+                            entry.sqlite_table,
+                            entry.idb_count,
+                            entry.sqlite_count
+                        )}</li>
+                    }
+                });
+                view! {
+                    <div class="pwa-status__row pwa-status__row--warn" role="alert">
+                        <div class="pwa-update-message">
+                            {format!("SQLite parity mismatches ({})", report.total_mismatches)}
+                        </div>
+                        <ul class="list">{items.collect_view()}</ul>
+                    </div>
+                }
+            })}
+        </Show>
+    }
+}
+
+fn render_sqlite_failure_notice(state: PwaStatusState) -> impl IntoView {
+    let manifest_diff = state.manifest_diff;
+    let sqlite_parity = state.sqlite_parity;
+    let status = state.status;
+
+    view! {
+        <Show
+            when=move || {
+                let update_pending = manifest_diff.get().is_some_and(|diff| diff.total_changed > 0);
+                sqlite_parity
+                    .get()
+                    .is_some_and(|report| report.available && !report.idb_count_failures.is_empty())
+                    && status.get().done
+                    && !update_pending
+            }
+            fallback=|| ()
+        >
+            {move || sqlite_parity.get().map(|report| {
+                let items = report.idb_count_failures.iter().take(5).map(|store| {
+                    view! { <li>{store.clone()}</li> }
+                });
+                view! {
+                    <div class="pwa-status__row pwa-status__row--warn" role="alert">
+                        <div class="pwa-update-message">
+                            {format!(
+                                "SQLite parity check incomplete (could not count {} IDB stores)",
+                                report.idb_count_failures.len()
+                            )}
+                        </div>
+                        <ul class="list">{items.collect_view()}</ul>
+                    </div>
+                }
+            })}
+        </Show>
+    }
+}
+
+fn render_snooze_row(state: PwaStatusState) -> impl IntoView {
+    let update_snoozed = state.update_snoozed;
+    let update_snooze_remaining = state.update_snooze_remaining;
+
+    view! {
+        <Show
+            when=move || update_snoozed.get() && update_snooze_remaining.get().is_some()
+            fallback=|| ()
+        >
+            {move || {
+                let remaining = update_snooze_remaining.get().unwrap_or(0.0);
+                let hours = remaining / (1000.0 * 60.0 * 60.0);
+                view! {
+                    <div class="pwa-status__row muted">
+                        {format!("Update snoozed ({hours:.1}h remaining)")}
+                    </div>
+                }
+            }}
+        </Show>
+    }
+}
+
+fn render_updated_version_row(state: PwaStatusState) -> impl IntoView {
+    let update_version = state.update_version;
+
+    view! {
+        {move || {
+            update_version.get().map(|version| {
+                view! { <div class="pwa-status__row">{"Updated to "}{version}</div> }
+            })
+        }}
+    }
+}
+
+fn render_update_notices(state: PwaStatusState) -> impl IntoView {
+    view! {
+        <>
+            {render_last_checked_row(state.clone())}
+            {render_update_ready_banner(state.clone())}
+            {render_manifest_diff_notice(state.clone())}
+            {render_integrity_notice(state.clone())}
+            {render_update_error_notice(state.clone())}
+            {render_sqlite_mismatch_notice(state.clone())}
+            {render_sqlite_failure_notice(state.clone())}
+            {render_snooze_row(state.clone())}
+            {render_updated_version_row(state)}
+        </>
+    }
+}
+
+fn render_pwa_status(state: PwaStatusState) -> impl IntoView {
+    view! {
+        <aside class="pwa-status" aria-label="PWA status">
+            <h2>"App Status"</h2>
+            <p class="muted">"Offline availability, update state, cache health, and recovery actions."</p>
+            {render_import_status_rows(state.clone())}
+            {render_storage_rows(state.clone())}
+            {render_metadata_rows(state.clone())}
+            {render_network_rows(state.clone())}
+            {render_update_control_rows(state.clone())}
+            {render_export_row(state.clone())}
+            {render_update_notices(state.clone())}
+            <crate::components::AiStatus />
+        </aside>
+    }
+}
+
+#[component]
+#[allow(clippy::must_use_candidate)]
+#[must_use]
+pub fn PwaStatus() -> impl IntoView {
+    let state = PwaStatusState::new();
+    initialize_pwa_status_state(state.clone());
+    setup_post_import_refresh(state.clone());
+    render_pwa_status(state)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        e2e_version_from_sw_script_url, remaining_snooze_ms, should_suppress_update_notice,
+        UPDATE_SNOOZE_MS,
+    };
+
+    #[test]
+    fn suppress_update_notice_within_snooze_window() {
+        let now = 1_000_000.0;
+        let last = now - (UPDATE_SNOOZE_MS / 2.0);
+        assert!(should_suppress_update_notice(Some(last), now));
+    }
+
+    #[test]
+    fn allow_update_notice_after_snooze_window() {
+        let now = 1_000_000.0;
+        let last = now - (UPDATE_SNOOZE_MS * 1.2);
+        assert!(!should_suppress_update_notice(Some(last), now));
+    }
+
+    #[test]
+    fn remaining_snooze_reports_time_left() {
+        let now = 1_000_000.0;
+        let last = now - (UPDATE_SNOOZE_MS / 2.0);
+        let Some(remaining) = remaining_snooze_ms(Some(last), now) else {
+            panic!("remaining snooze missing");
+        };
+        assert!(remaining > 0.0);
+        assert!(remaining < UPDATE_SNOOZE_MS);
+    }
+
+    #[test]
+    fn suppress_update_notice_with_clock_skew() {
+        let now = 1_000_000.0;
+        let last = now + 5_000.0;
+        assert!(should_suppress_update_notice(Some(last), now));
+    }
+
+    #[test]
+    fn remaining_snooze_none_after_window() {
+        let now = 2_000_000.0;
+        let last = now - (UPDATE_SNOOZE_MS * 2.0);
+        assert!(remaining_snooze_ms(Some(last), now).is_none());
+    }
+
+    #[test]
+    fn e2e_version_parser_handles_query_shapes() {
+        assert_eq!(
+            e2e_version_from_sw_script_url("/sw.js?e2e=build123"),
+            Some("build123".to_string())
+        );
+        assert_eq!(
+            e2e_version_from_sw_script_url("/sw.js?foo=1&e2e=build999&bar=2"),
+            Some("build999".to_string())
+        );
+        assert_eq!(e2e_version_from_sw_script_url("/sw.js"), None);
+    }
+}

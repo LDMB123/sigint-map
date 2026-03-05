@@ -1,0 +1,48 @@
+# AI Timeout/Degradation Runbook
+
+Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+
+Goal: verify AI diagnostics degrade gracefully when worker/GPU paths are unavailable or cooling down.
+
+## Scope
+
+- Worker cooldown/error state is visible to users.
+- Degraded mode controls are actionable (`Clear worker cooldown`, `Enable WebGPU`).
+- No hard crash when AI acceleration is degraded.
+- Native worker score failures surface through worker errors without a JS `{ error }` fallback envelope.
+
+## Preconditions
+
+1. Start Rust server from `rust/`:
+   - `cargo run -p xtask -- build-hydrate-pkg --ai-diagnostics-full`
+   - `cargo run -p dmb_server --features ai_diagnostics_full`
+2. Confirm app is reachable:
+   - `curl -fsS http://127.0.0.1:3000/ >/dev/null`
+3. Ensure Playwright deps are installed:
+   - `cd e2e && npm ci`
+
+## Release-Window Gate Command
+
+From repo root:
+
+```bash
+cd e2e
+RUST_E2E=1 RUST_AI_DIAGNOSTICS_FULL=1 BASE_URL=http://127.0.0.1:3000 \
+  npm run test:e2e -- tests/e2e/rust-ai-degradation.spec.js --project=chromium --workers=1
+```
+
+Expected result:
+- All tests pass.
+- Degradation labels/status copy render without hydration errors.
+
+## Artifact
+
+Record run output in a dated file under `docs/reports/QUALITY/` (for example):
+
+- `docs/reports/QUALITY/AI_TIMEOUT_DEGRADATION_SPOTCHECK_2026-03-03.md`
+
+## Sign-off
+
+- Engineering: confirms guardrail behavior is correct.
+- QA: confirms release-window run output and no regressions.
+- Release owner: approves release with this gate attached.

@@ -1,0 +1,65 @@
+[workspace]
+members = [
+  "crates/dmb_core",
+  "crates/dmb_idb",
+  "crates/dmb_wasm",
+  "crates/dmb_app",
+  "crates/dmb_server",
+  "crates/dmb_pipeline",
+  "crates/xtask"
+]
+resolver = "2"
+
+# WASM Size Optimization Profile (Workspace-level)
+# Target: Reduce gzipped binary size from 9.89 KB to <8 KB (15-20% reduction)
+#
+# SAFETY TRADE-OFFS:
+# - panic = 'abort': Panics become aborts instead of unwinding. Safe for WASM as unwinding
+#   adds significant code size and WASM environments typically can't handle unwinding well.
+# - overflow-checks = false: Disables runtime integer overflow checks in release builds.
+#   REQUIRES: Manual verification that aggregation logic handles edge cases correctly.
+#   Safe only if input data is validated and aggregations use checked operations where needed.
+#
+# SIZE IMPACT BREAKDOWN (estimated):
+# - opt-level = 'z': ~30-40% size reduction (optimize for size over speed)
+# - lto = true: ~10-15% reduction (link-time optimization, removes dead code)
+# - codegen-units = 1: ~5-10% reduction (better optimization, slower compile)
+# - strip = true: ~5-10% reduction (remove debug symbols)
+# - panic = 'abort': ~8-12% reduction (remove panic unwinding infrastructure)
+# - overflow-checks = false: ~3-5% reduction (remove runtime checks)
+#
+# PRODUCTION READINESS:
+# These optimizations are appropriate for production WASM binaries where:
+# 1. Binary size directly impacts page load performance
+# 2. Input data is validated at API boundaries
+# 3. Critical paths use explicit checked operations (checked_add, saturating_mul, etc.)
+# 4. Panics are treated as unrecoverable errors (acceptable in WASM context)
+[profile.release]
+# Optimize for size rather than speed ('z' is more aggressive than 's' or '3')
+opt-level = 'z'
+
+# Enable Link-Time Optimization for better dead code elimination
+lto = true
+
+# Use a single codegen unit for maximum optimization (slower compile, smaller binary)
+codegen-units = 1
+
+# SAFETY: Panics become aborts - removes unwinding infrastructure
+# Safe for WASM: unwinding adds ~8-12% to binary size and isn't well-supported
+panic = 'abort'
+
+# Strip debug symbols from the binary
+strip = true
+
+# SAFETY: Disable runtime overflow checks - removes bounds checking code
+# REQUIRES: Aggregation logic must handle edge cases explicitly
+# Safe if: Input validation prevents overflow scenarios or checked operations are used
+overflow-checks = false
+
+# Optimize dependencies for size as well
+[profile.release.package."*"]
+opt-level = "z"
+
+[profile.release-wasm]
+inherits = "release"
+opt-level = 3

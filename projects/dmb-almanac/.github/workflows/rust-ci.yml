@@ -1,0 +1,197 @@
+name: Rust Pipeline CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'rust/crates/**'
+      - 'rust/Cargo.toml'
+      - 'rust/Leptos.toml'
+      - 'rust/data/**'
+      - 'scripts/**'
+      - '.github/workflows/rust-ci.yml'
+
+concurrency:
+  group: rust-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_VERSION: 'stable'
+
+jobs:
+  rust-verify:
+    name: Rust Verify (fmt + clippy + wasm + tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: ./rust
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          cache: true
+
+      - name: Install rustfmt + clippy
+        run: rustup component add rustfmt clippy
+
+      - name: Install wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Run xtask verify
+        run: cargo run -p xtask -- verify
+
+      - name: Hydrate lib tests
+        run: cargo test -p dmb_app --features hydrate --lib
+
+      - name: Enforce rustfmt
+        run: cargo fmt --all -- --check
+
+      - name: Route parity and render smoke gates
+        run: |
+          cargo test -p dmb_app --features ssr --test route_parity
+          cargo test -p dmb_app --features ssr --test route_render
+          cargo test -p dmb_app --features ssr --test route_smoke
+          cargo test -p dmb_app --features ssr --test a11y_routes
+
+      - name: Phase 5 regression gates (parity + server validation)
+        run: |
+          cargo test -p dmb_core parity
+          cargo test -p dmb_server
+          cargo test -p dmb_app --features ssr normalize_helpers_handle_empty_input
+
+  rust-pipeline-validate:
+    name: Rust Pipeline Validate (Warnings)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ./rust
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          cache: true
+
+      - name: Scrape seed data with warnings report
+        run: cargo run -p dmb_pipeline -- scrape --warnings-output data/warnings.json --warnings-max 0
+
+      - name: Build AI config
+        run: cargo run -p dmb_pipeline -- build-ai-config --output-dir static/data
+
+      - name: Verify AI config exists
+        run: test -f static/data/ai-config.json
+
+      - name: Build data manifest
+        run: cargo run -p dmb_pipeline -- build-data-manifest --source-dir static/data --output static/data/manifest.json
+
+      - name: Build IDB migration dry-run report
+        run: cargo run -p dmb_pipeline -- idb-migration-dry-run --manifest static/data/manifest.json --output static/data/idb-migration-dry-run.json
+
+      - name: Validate with warning thresholds
+        run: cargo run -p dmb_pipeline -- validate
+        env:
+          DMB_VALIDATE_WARNING_REPORT: data/warnings.json
+          DMB_WARNING_MAX_EMPTY: '0'
+          DMB_WARNING_MAX_MISSING: '0'
+          DMB_WARNING_BASELINE: data/warnings.baseline.json
+          DMB_WARNING_MAX_BY_FIELD: data/warnings.max-by-field.json
+          DMB_WARNING_MAX_BY_SELECTOR: data/warnings.max-by-selector.json
+          DMB_ENDPOINT_TIMING_MAX_PCT: '50'
+          DMB_ENDPOINT_RETRY_MAX: '2'
+
+      - name: Build runtime SQLite DB
+        run: cargo run -p dmb_pipeline -- build-runtime-db --source-dir static/data --output data/dmb-almanac.db
+
+      - name: Validate SQLite parity
+        run: cargo run -p dmb_pipeline -- validate-parity --manifest static/data/manifest.json --sqlite data/dmb-almanac.db --strict-manifest --strict-tables
+
+      - name: Upload scrape warning report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rust-scrape-warnings
+          path: rust/data/warnings.json
+          retention-days: 7
+
+  rust-scrape-fixtures:
+    name: Rust Scrape Fixtures (Dry Run)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ./rust
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          cache: true
+
+      - name: Scrape fixtures with warnings report
+        run: cargo run -p dmb_pipeline -- scrape-fixtures --warnings-output data/warnings-fixtures.json --warnings-max 0
+
+      - name: Upload fixtures warning report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rust-scrape-warnings-fixtures
+          path: rust/data/warnings-fixtures.json
+          retention-days: 7
+
+  rust-clippy:
+    name: Rust Clippy (Workspace)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ./rust
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          cache: true
+
+      - name: Install clippy
+        run: rustup component add clippy
+
+      - name: Clippy core + pipeline + server
+        run: cargo clippy -p dmb_core -p dmb_pipeline -p dmb_server --all-targets -- -D warnings
+
+      - name: Clippy app (SSR)
+        run: cargo clippy -p dmb_app --features ssr --all-targets -- -D warnings
+
+      - name: Clippy app (Hydrate)
+        run: cargo clippy -p dmb_app --features hydrate --all-targets -- -D warnings
+
+  rust-security-audit:
+    name: Rust Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          cache: true
+
+      - name: Run security audit gate
+        run: bash scripts/security-audit.sh

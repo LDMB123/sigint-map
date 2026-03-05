@@ -1,0 +1,36 @@
+name: Cutover Remote E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL for the already-running Rust app (example: https://staging.example.com)"
+        required: true
+        type: string
+
+jobs:
+  remote-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: "e2e/package-lock.json"
+
+      - name: Remote Rust E2E
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+          RUST_E2E: "1"
+        run: bash scripts/cutover-remote-e2e.sh
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-remote
+          path: e2e/playwright-report
+          if-no-files-found: ignore

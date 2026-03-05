@@ -1,0 +1,1949 @@
+#![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used))]
+
+use serde::{de::DeserializeOwned, Serialize};
+use wasm_bindgen::prelude::*;
+
+use dmb_core::{
+    AnnIndexMeta, CuratedList, CuratedListItem, EmbeddingChunk, EmbeddingManifest, Guest,
+    LiberationEntry, Release, ReleaseTrack, SearchResult, SetlistEntry, Show, Song, Tour,
+    UserAttendedShow, Venue,
+};
+
+mod schema;
+
+pub use schema::*;
+
+#[derive(Debug, Clone, Copy)]
+pub struct BulkPutOptions {
+    pub tx_batch_size: usize,
+}
+
+impl Default for BulkPutOptions {
+    fn default() -> Self {
+        Self {
+            tx_batch_size: 2_000,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct BulkPutStats {
+    pub inserted: u32,
+    pub transaction_count: u32,
+    pub max_tx_ms: f64,
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        use idb::{
+            CursorDirection, Database, DatabaseEvent, Event as IdbEvent, Factory, IndexParams,
+            KeyPath, KeyRange, ObjectStore, ObjectStoreParams, Query, Request, Transaction,
+            TransactionMode,
+        };
+        use js_sys::{Array, Date, Reflect};
+        use std::{
+            cell::RefCell,
+            collections::{BTreeMap, HashMap, HashSet},
+            rc::Rc,
+        };
+        use wasm_bindgen::{JsCast, JsValue};
+        use wasm_bindgen_futures::JsFuture;
+
+        type Result<T> = std::result::Result<T, JsValue>;
+        type YearCountSeries = Vec<(u32, u32)>;
+        type RarityFiveNum = (f64, f64, f64, f64, f64);
+        type ShowDistributions = (YearCountSeries, YearCountSeries, RarityFiveNum);
+
+        fn js_error(message: impl std::fmt::Display) -> JsValue {
+            JsValue::from_str(&message.to_string())
+        }
+
+        trait JsResultExt<T> {
+            fn js(self) -> Result<T>;
+        }
+
+        impl<T, E: std::fmt::Debug> JsResultExt<T> for std::result::Result<T, E> {
+            fn js(self) -> Result<T> {
+                self.map_err(|e| js_error(format!("{e:?}")))
+            }
+        }
+
+        #[derive(Debug, Clone)]
+        struct IndexSpec {
+            name: String,
+            key_path: KeyPath,
+            unique: bool,
+            multi_entry: bool,
+        }
+
+        #[derive(Debug, Clone)]
+        struct StoreSpec {
+            name: &'static str,
+            key_path: KeyPath,
+            auto_increment: bool,
+            indexes: Vec<IndexSpec>,
+        }
+
+        fn parse_schema(name: &'static str, schema: &'static str) -> StoreSpec {
+            let mut tokens = schema.split(',').map(|t| t.trim()).filter(|t| !t.is_empty());
+            let primary = tokens.next().unwrap_or("id");
+
+            let (key_path, auto_increment) = if let Some(stripped) = primary.strip_prefix("++") {
+                (KeyPath::new_single(stripped), true)
+            } else if let Some(stripped) = primary.strip_prefix('&') {
+                (KeyPath::new_single(stripped), false)
+            } else {
+                (KeyPath::new_single(primary), false)
+            };
+
+            let mut indexes = Vec::new();
+            for token in tokens {
+                let mut unique = false;
+                let mut multi_entry = false;
+                let mut name_token = token;
+
+                while let Some(stripped) = name_token.strip_prefix('&') {
+                    unique = true;
+                    name_token = stripped;
+                }
+
+                while let Some(stripped) = name_token.strip_prefix('*') {
+                    multi_entry = true;
+                    name_token = stripped;
+                }
+
+                if name_token.starts_with('[') && name_token.ends_with(']') {
+                    let inner = &name_token[1..name_token.len() - 1];
+                    let fields: Vec<&str> = inner.split('+').map(|s| s.trim()).collect();
+                    indexes.push(IndexSpec {
+                        name: inner.to_string(),
+                        key_path: KeyPath::new_array(fields),
+                        unique,
+                        multi_entry,
+                    });
+                } else {
+                    indexes.push(IndexSpec {
+                        name: name_token.to_string(),
+                        key_path: KeyPath::new_single(name_token),
+                        unique,
+                        multi_entry,
+                    });
+                }
+            }
+
+            StoreSpec {
+                name,
+                key_path,
+                auto_increment,
+                indexes,
+            }
+        }
+
+        fn store_specs() -> Vec<StoreSpec> {
+            SCHEMA_V12_REFERENCE
+                .iter()
+                .map(|(name, schema)| parse_schema(name, schema))
+                .collect()
+        }
+
+        fn create_store(db: &Database, spec: &StoreSpec) -> Result<()> {
+            let mut params = ObjectStoreParams::new();
+            params.auto_increment(spec.auto_increment);
+            params.key_path(Some(spec.key_path.clone()));
+
+            let store = db.create_object_store(spec.name, params).js()?;
+            migrate_store_indexes(&store, spec)?;
+            Ok(())
+        }
+
+        fn is_primary_key_index(index: &IndexSpec) -> bool {
+            matches!(index.key_path, KeyPath::Single(ref key) if key == "id")
+        }
+
+        fn create_index(store: &ObjectStore, index: &IndexSpec) -> Result<()> {
+            let mut params = IndexParams::new();
+            params.unique(index.unique);
+            params.multi_entry(index.multi_entry);
+            store
+                .create_index(&index.name, index.key_path.clone(), Some(params))
+                .js()?;
+            Ok(())
+        }
+
+        fn migrate_store_indexes(store: &ObjectStore, spec: &StoreSpec) -> Result<()> {
+            let existing_index_names: HashSet<String> = store.index_names().into_iter().collect();
+            for index in &spec.indexes {
+                if is_primary_key_index(index) {
+                    continue;
+                }
+
+                let should_create = if existing_index_names.contains(&index.name) {
+                    let existing_index = store.index(&index.name).js()?;
+                    let key_path_matches = existing_index.key_path().js()? == Some(index.key_path.clone());
+                    let unique_matches = existing_index.unique() == index.unique;
+                    let multi_entry_matches = existing_index.multi_entry() == index.multi_entry;
+                    if key_path_matches && unique_matches && multi_entry_matches {
+                        false
+                    } else {
+                        store.delete_index(&index.name).js()?;
+                        true
+                    }
+                } else {
+                    true
+                };
+
+                if should_create {
+                    create_index(store, index)?;
+                }
+            }
+            Ok(())
+        }
+
+        const IDB_OPEN_BLOCKED_COUNT_KEY: &str = "dmb-idb-open-blocked-count";
+        const IDB_OPEN_BLOCKED_LAST_KEY: &str = "dmb-idb-open-blocked-last";
+        const IDB_VERSIONCHANGE_COUNT_KEY: &str = "dmb-idb-versionchange-count";
+        const IDB_VERSIONCHANGE_LAST_KEY: &str = "dmb-idb-versionchange-last";
+
+        thread_local! {
+            static DB_CACHE: RefCell<Option<Rc<Database>>> = const { RefCell::new(None) };
+        }
+
+        fn cached_db() -> Option<Rc<Database>> {
+            DB_CACHE.with(|cache| cache.borrow().as_ref().cloned())
+        }
+
+        fn store_cached_db(db: Rc<Database>) {
+            DB_CACHE.with(|cache| *cache.borrow_mut() = Some(db));
+        }
+
+        fn clear_cached_db() {
+            DB_CACHE.with(|cache| *cache.borrow_mut() = None);
+        }
+
+        fn with_local_storage(mut f: impl FnMut(&web_sys::Storage)) {
+            let Some(window) = web_sys::window() else {
+                return;
+            };
+            let Ok(Some(storage)) = window.local_storage() else {
+                return;
+            };
+            f(&storage);
+        }
+
+        fn read_storage_u64(key: &str) -> u64 {
+            let mut current = 0;
+            with_local_storage(|storage| {
+                current = storage
+                    .get_item(key)
+                    .ok()
+                    .flatten()
+                    .and_then(|raw| raw.parse::<u64>().ok())
+                    .unwrap_or(0);
+            });
+            current
+        }
+
+        fn write_storage_value(key: &str, value: &str) {
+            with_local_storage(|storage| {
+                let _ = storage.set_item(key, value);
+            });
+        }
+
+        fn bump_storage_counter(key: &str) {
+            let next = read_storage_u64(key).saturating_add(1);
+            write_storage_value(key, &next.to_string());
+        }
+
+        pub async fn open_db() -> Result<Rc<Database>> {
+            if let Some(db) = cached_db() {
+                return Ok(db);
+            }
+
+            let factory = Factory::new().js()?;
+            let mut request = factory.open(DB_NAME, Some(DB_VERSION)).js()?;
+
+            request.on_blocked(|event| {
+                bump_storage_counter(IDB_OPEN_BLOCKED_COUNT_KEY);
+                write_storage_value(IDB_OPEN_BLOCKED_LAST_KEY, &Date::now().to_string());
+                web_sys::console::warn_1(&JsValue::from_str(&format!(
+                    "[IDB] open blocked for `{}`: old_version={:?} new_version={:?}. Close other tabs using the app.",
+                    DB_NAME,
+                    event.old_version().ok(),
+                    event.new_version().ok().flatten()
+                )));
+            });
+
+            request.on_upgrade_needed(|event| {
+                let db = match event.database() {
+                    Ok(db) => db,
+                    Err(err) => {
+                        web_sys::console::error_1(&JsValue::from_str(&format!(
+                            "[IDB] upgrade event database() failed: {err:?}"
+                        )));
+                        return;
+                    }
+                };
+
+                let upgrade_tx = match event.target() {
+                    Ok(request) => match request.transaction() {
+                        Some(tx) => tx,
+                        None => {
+                            web_sys::console::error_1(&JsValue::from_str(
+                                "[IDB] upgrade transaction unavailable during on_upgrade_needed",
+                            ));
+                            return;
+                        }
+                    },
+                    Err(err) => {
+                        web_sys::console::error_1(&JsValue::from_str(&format!(
+                            "[IDB] upgrade event target() failed: {err:?}"
+                        )));
+                        return;
+                    }
+                };
+
+                let existing_store_names: HashSet<String> = db.store_names().into_iter().collect();
+                for spec in store_specs() {
+                    let migration_result = if existing_store_names.contains(spec.name) {
+                        upgrade_tx
+                            .object_store(spec.name)
+                            .js()
+                            .and_then(|store| migrate_store_indexes(&store, &spec))
+                    } else {
+                        create_store(&db, &spec)
+                    };
+
+                    if let Err(err) = migration_result {
+                        web_sys::console::error_1(&JsValue::from_str(&format!(
+                            "[IDB] store/index migration failed: store={} error={:?}",
+                            spec.name, err
+                        )));
+                    }
+                }
+            });
+
+            let mut db = request.await.js()?;
+            db.on_close(|_| {
+                clear_cached_db();
+                web_sys::console::warn_1(&JsValue::from_str(&format!(
+                    "[IDB] close received for `{}`. Cleared cached connection handle.",
+                    DB_NAME
+                )));
+            });
+            db.on_version_change(|event| {
+                bump_storage_counter(IDB_VERSIONCHANGE_COUNT_KEY);
+                write_storage_value(IDB_VERSIONCHANGE_LAST_KEY, &Date::now().to_string());
+                clear_cached_db();
+                if let Ok(database) = event.database() {
+                    database.close();
+                }
+                web_sys::console::warn_1(&JsValue::from_str(&format!(
+                    "[IDB] versionchange received for `{}`. Closed stale connection; refresh if needed.",
+                    DB_NAME
+                )));
+            });
+            let db = Rc::new(db);
+            store_cached_db(Rc::clone(&db));
+            Ok(db)
+        }
+
+        async fn get_by_key<T: serde::de::DeserializeOwned>(
+            store_name: &str,
+            key: JsValue,
+        ) -> Result<Option<T>> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadOnly)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            let value: Option<JsValue> = store.get(key).js()?.await.js()?;
+            tx.await.js()?;
+
+            deserialize_optional_value(value)
+        }
+
+        async fn get_by_index_key<T: serde::de::DeserializeOwned>(
+            store_name: &str,
+            index_name: &str,
+            key: JsValue,
+        ) -> Result<Option<T>> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadOnly)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            let index = store.index(index_name).js()?;
+            let value: Option<JsValue> = index.get(Query::Key(key)).js()?.await.js()?;
+            tx.await.js()?;
+            deserialize_optional_value(value)
+        }
+
+        fn deserialize_value<T: serde::de::DeserializeOwned>(value: JsValue) -> Result<T> {
+            serde_wasm_bindgen::from_value(value).js()
+        }
+
+        fn deserialize_optional_value<T: serde::de::DeserializeOwned>(
+            value: Option<JsValue>,
+        ) -> Result<Option<T>> {
+            value
+                .map(serde_wasm_bindgen::from_value)
+                .transpose()
+                .js()
+        }
+
+        fn percentile_sorted(values: &[f64], percentile: f64) -> f64 {
+            if values.is_empty() {
+                return 0.0;
+            }
+            if values.len() == 1 {
+                return values[0];
+            }
+
+            let rank = percentile * (values.len() - 1) as f64;
+            let lower_index = rank.floor() as usize;
+            let upper_index = rank.ceil() as usize;
+
+            if upper_index >= values.len() {
+                return values[values.len() - 1];
+            }
+            if lower_index == upper_index {
+                return values[lower_index];
+            }
+
+            let lower_value = values[lower_index];
+            let upper_value = values[upper_index];
+            let fraction = rank - lower_index as f64;
+            lower_value + fraction * (upper_value - lower_value)
+        }
+
+        fn show_distributions_from_histograms(
+            shows_by_year_hist: &[u32; 60],
+            shows_by_decade_hist: &[u32; 5],
+            rarity_values: &[f64],
+        ) -> ShowDistributions {
+            let rarity_summary = if rarity_values.is_empty() {
+                (0.0, 0.0, 0.0, 0.0, 0.0)
+            } else {
+                let q1 = percentile_sorted(rarity_values, 0.25);
+                let median = percentile_sorted(rarity_values, 0.5);
+                let q3 = percentile_sorted(rarity_values, 0.75);
+                let min = rarity_values[0];
+                let max = rarity_values[rarity_values.len() - 1];
+                (min, q1, median, q3, max)
+            };
+            let shows_by_year: Vec<(u32, u32)> = shows_by_year_hist
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, count)| {
+                    if *count > 0 {
+                        Some((1991 + idx as u32, *count))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            let shows_by_decade: Vec<(u32, u32)> = shows_by_decade_hist
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, count)| {
+                    if *count > 0 {
+                        Some((1990 + (idx as u32 * 10), *count))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            (shows_by_year, shows_by_decade, rarity_summary)
+        }
+
+        async fn show_distributions_from_store(
+            store: &ObjectStore,
+        ) -> Result<ShowDistributions> {
+            let mut shows_by_year_hist = [0u32; 60]; // 1991..=2050
+            let mut shows_by_decade_hist = [0u32; 5]; // 1990s..2030s
+            let year_index = store.index("year").js()?;
+            let mut request = year_index
+                .open_key_cursor(None, Some(CursorDirection::Next))
+                .js()?;
+            let mut cursor_opt = request.await.js()?;
+            while let Some(cursor) = cursor_opt {
+                let key = cursor.key().js()?;
+                if let Some(year_raw) = key.as_f64() {
+                    if year_raw.is_finite() && year_raw >= 0.0 {
+                        let year = year_raw as u32;
+                        if (1991..=2050).contains(&year) {
+                            shows_by_year_hist[(year - 1991) as usize] += 1;
+                        }
+                        if (1990..2040).contains(&year) {
+                            shows_by_decade_hist[((year - 1990) / 10) as usize] += 1;
+                        }
+                    }
+                }
+
+                request = cursor.next(None).js()?;
+                cursor_opt = request.await.js()?;
+            }
+
+            let rarity_index = store.index("rarityIndex").js()?;
+            let mut request = rarity_index
+                .open_key_cursor(None, Some(CursorDirection::Next))
+                .js()?;
+            let mut cursor_opt = request.await.js()?;
+            let mut rarity_values: Vec<f64> = Vec::new();
+            while let Some(cursor) = cursor_opt {
+                let key = cursor.key().js()?;
+                if let Some(rarity) = key.as_f64() {
+                    if rarity.is_finite() {
+                        rarity_values.push(rarity);
+                    }
+                }
+
+                request = cursor.next(None).js()?;
+                cursor_opt = request.await.js()?;
+            }
+
+            Ok(show_distributions_from_histograms(
+                &shows_by_year_hist,
+                &shows_by_decade_hist,
+                &rarity_values,
+            ))
+        }
+
+        async fn song_debuts_by_year_from_store(store: &ObjectStore) -> Result<Vec<(u32, u32)>> {
+            let mut year_hist = [0u32; 60]; // 1991..=2050
+            let mut overflow_counts: BTreeMap<u32, u32> = BTreeMap::new();
+            let mut last_song_id: Option<i32> = None;
+
+            let index = store.index("songId+year").js()?;
+            let mut request = index
+                .open_key_cursor(None, Some(CursorDirection::Next))
+                .js()?;
+            let mut cursor_opt = request.await.js()?;
+            while let Some(cursor) = cursor_opt {
+                let key = cursor.key().js()?;
+                let Ok(key_parts) = key.dyn_into::<Array>() else {
+                    request = cursor.next(None).js()?;
+                    cursor_opt = request.await.js()?;
+                    continue;
+                };
+                if key_parts.length() < 2 {
+                    request = cursor.next(None).js()?;
+                    cursor_opt = request.await.js()?;
+                    continue;
+                }
+                let Some(song_id_raw) = key_parts.get(0).as_f64() else {
+                    request = cursor.next(None).js()?;
+                    cursor_opt = request.await.js()?;
+                    continue;
+                };
+                let Some(year_raw) = key_parts.get(1).as_f64() else {
+                    request = cursor.next(None).js()?;
+                    cursor_opt = request.await.js()?;
+                    continue;
+                };
+                if !song_id_raw.is_finite() || !year_raw.is_finite() || year_raw < 0.0 {
+                    request = cursor.next(None).js()?;
+                    cursor_opt = request.await.js()?;
+                    continue;
+                }
+
+                let song_id = song_id_raw as i32;
+                if last_song_id == Some(song_id) {
+                    request = cursor.next(None).js()?;
+                    cursor_opt = request.await.js()?;
+                    continue;
+                }
+                last_song_id = Some(song_id);
+
+                let year = year_raw as u32;
+                if (1991..=2050).contains(&year) {
+                    year_hist[(year - 1991) as usize] += 1;
+                } else {
+                    *overflow_counts.entry(year).or_insert(0) += 1;
+                }
+
+                request = cursor.next(None).js()?;
+                cursor_opt = request.await.js()?;
+            }
+
+            let mut counts: Vec<(u32, u32)> = Vec::with_capacity(
+                overflow_counts.len() + year_hist.iter().filter(|count| **count > 0).count(),
+            );
+            for (year, count) in overflow_counts.iter().filter(|(year, _)| **year < 1991) {
+                counts.push((*year, *count));
+            }
+            for (idx, count) in year_hist.iter().enumerate() {
+                if *count > 0 {
+                    counts.push((1991 + idx as u32, *count));
+                }
+            }
+            for (year, count) in overflow_counts.iter().filter(|(year, _)| **year > 2050) {
+                counts.push((*year, *count));
+            }
+            Ok(counts)
+        }
+
+        async fn guest_appearances_by_year_from_store(
+            store: &ObjectStore,
+        ) -> Result<Vec<(u32, u32)>> {
+            let index = store.index("year").js()?;
+            let mut request = index
+                .open_key_cursor(None, Some(CursorDirection::Next))
+                .js()?;
+            let mut cursor_opt = request.await.js()?;
+            let mut counts: Vec<(u32, u32)> = Vec::new();
+            let mut current_year: Option<u32> = None;
+            let mut current_count = 0u32;
+
+            while let Some(cursor) = cursor_opt {
+                let key = cursor.key().js()?;
+                if let Some(year_raw) = key.as_f64() {
+                    if year_raw.is_finite() && year_raw >= 0.0 {
+                        let year = year_raw as u32;
+                        match current_year {
+                            Some(existing) if existing == year => {
+                                current_count += 1;
+                            }
+                            Some(existing) => {
+                                counts.push((existing, current_count));
+                                current_year = Some(year);
+                                current_count = 1;
+                            }
+                            None => {
+                                current_year = Some(year);
+                                current_count = 1;
+                            }
+                        }
+                    }
+                }
+
+                request = cursor.next(None).js()?;
+                cursor_opt = request.await.js()?;
+            }
+            if let Some(year) = current_year {
+                counts.push((year, current_count));
+            }
+
+            Ok(counts)
+        }
+
+        fn compound_i32_pair_key(first: i32, second: i32) -> JsValue {
+            let key = Array::new_with_length(2);
+            key.set(0, JsValue::from_f64(first as f64));
+            key.set(1, JsValue::from_f64(second as f64));
+            key.into()
+        }
+
+        async fn put_value_in_store(db: &Database, store_name: &str, value: &JsValue) -> Result<()> {
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadWrite)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            store.put(value, None).js()?.await.js()?;
+            tx.await.js()?;
+            Ok(())
+        }
+
+        async fn put_serialized_in_store_with_db<T: Serialize>(
+            db: &Database,
+            store_name: &str,
+            value: &T,
+        ) -> Result<()> {
+            let payload = serde_wasm_bindgen::to_value(value).js()?;
+            put_value_in_store(db, store_name, &payload).await
+        }
+
+        async fn put_serialized_in_store<T: Serialize>(store_name: &str, value: &T) -> Result<()> {
+            let db = open_db().await?;
+            put_serialized_in_store_with_db(&db, store_name, value).await
+        }
+
+        async fn delete_by_key(store_name: &str, key: JsValue) -> Result<()> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadWrite)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            store.delete(Query::Key(key)).js()?.await.js()?;
+            tx.await.js()?;
+            Ok(())
+        }
+
+        async fn delete_unique_by_index_key(
+            store_name: &str,
+            index_name: &str,
+            key: JsValue,
+        ) -> Result<()> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadWrite)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            let index = store.index(index_name).js()?;
+            let primary_key: Option<JsValue> = index.get_key(Query::Key(key)).js()?.await.js()?;
+            if let Some(primary_key) = primary_key {
+                store.delete(Query::Key(primary_key)).js()?.await.js()?;
+            }
+            tx.await.js()?;
+            Ok(())
+        }
+
+        pub async fn count_store(store_name: &str) -> Result<u32> {
+            let db = open_db().await?;
+            count_store_in_db(&db, store_name).await
+        }
+
+        pub async fn count_stores_with_missing(
+            store_names: &[&str],
+        ) -> Result<(Vec<(String, u32)>, Vec<String>)> {
+            if store_names.is_empty() {
+                return Ok((Vec::new(), Vec::new()));
+            }
+
+            let db = open_db().await?;
+            let known_store_names: HashSet<String> =
+                db.store_names().iter().cloned().collect();
+            let mut existing: Vec<&str> = Vec::with_capacity(store_names.len());
+            let mut missing: Vec<String> = Vec::with_capacity(store_names.len());
+            for store in store_names {
+                if known_store_names.contains(*store) {
+                    existing.push(*store);
+                } else {
+                    missing.push((*store).to_string());
+                }
+            }
+
+            if existing.is_empty() {
+                return Ok((Vec::new(), missing));
+            }
+
+            let tx = db.transaction(&existing, TransactionMode::ReadOnly).js()?;
+            let mut pending_counts = Vec::with_capacity(existing.len());
+            for store_name in &existing {
+                let store = tx.object_store(store_name).js()?;
+                let count_request = store.count(None).js()?;
+                pending_counts.push((*store_name, count_request));
+            }
+            let mut counts = Vec::with_capacity(pending_counts.len());
+            for (store_name, count_request) in pending_counts {
+                let count = count_request.await.js()?;
+                counts.push((store_name.to_string(), count));
+            }
+            tx.await.js()?;
+            Ok((counts, missing))
+        }
+
+        pub async fn get_show(id: i32) -> Result<Option<Show>> {
+            get_by_key(TABLE_SHOWS, JsValue::from_f64(id as f64)).await
+        }
+
+        pub async fn get_song(slug: &str) -> Result<Option<Song>> {
+            get_by_index_key(TABLE_SONGS, "slug", JsValue::from_str(slug)).await
+        }
+
+        pub async fn get_song_by_id(id: i32) -> Result<Option<Song>> {
+            get_by_key(TABLE_SONGS, JsValue::from_f64(id as f64)).await
+        }
+
+        pub async fn get_venue(id: i32) -> Result<Option<Venue>> {
+            get_by_key(TABLE_VENUES, JsValue::from_f64(id as f64)).await
+        }
+
+        pub async fn get_tour(year: i32) -> Result<Option<Tour>> {
+            get_by_index_key(TABLE_TOURS, "year", JsValue::from_f64(year as f64)).await
+        }
+
+        pub async fn get_tour_by_id(id: i32) -> Result<Option<Tour>> {
+            get_by_key(TABLE_TOURS, JsValue::from_f64(id as f64)).await
+        }
+
+        pub async fn get_guest_by_slug(slug: &str) -> Result<Option<Guest>> {
+            get_by_index_key(TABLE_GUESTS, "slug", JsValue::from_str(slug)).await
+        }
+
+        pub async fn get_release_by_slug(slug: &str) -> Result<Option<Release>> {
+            get_by_index_key(TABLE_RELEASES, "slug", JsValue::from_str(slug)).await
+        }
+
+        pub async fn search_global(query: &str) -> Result<Vec<SearchResult>> {
+            let query_norm = dmb_core::normalize_query(query);
+            if query_norm.is_empty() {
+                return Ok(vec![]);
+            }
+            const SEARCH_PER_STORE_LIMIT: usize = 50;
+            const GLOBAL_SEARCH_LIMIT: usize = 100;
+            let db = open_db().await?;
+            let search_stores = [
+                TABLE_SONGS,
+                TABLE_VENUES,
+                TABLE_TOURS,
+                TABLE_GUESTS,
+                TABLE_RELEASES,
+            ];
+            let tx = db
+                .transaction(&search_stores, TransactionMode::ReadOnly)
+                .js()?;
+            let mut results: Vec<SearchResult> = Vec::with_capacity(GLOBAL_SEARCH_LIMIT);
+            let lower = JsValue::from_str(&query_norm);
+            let upper = JsValue::from_str(&format!("{}\u{FFFF}", query_norm));
+            struct SearchQueryWindow<'a> {
+                lower: &'a JsValue,
+                upper: &'a JsValue,
+                limit: usize,
+            }
+            let query_window = SearchQueryWindow {
+                lower: &lower,
+                upper: &upper,
+                limit: SEARCH_PER_STORE_LIMIT,
+            };
+
+            #[derive(serde::Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct SongSearchRow {
+                id: i32,
+                slug: String,
+                title: String,
+            }
+
+            #[derive(serde::Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct VenueSearchRow {
+                id: i32,
+                name: String,
+            }
+
+            #[derive(serde::Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct TourSearchRow {
+                year: i32,
+                name: String,
+            }
+
+            #[derive(serde::Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct GuestSearchRow {
+                id: i32,
+                slug: String,
+                name: String,
+            }
+
+            #[derive(serde::Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct ReleaseSearchRow {
+                id: i32,
+                slug: String,
+                title: String,
+            }
+
+            async fn collect_search<T: serde::de::DeserializeOwned>(
+                tx: &Transaction,
+                store_name: &str,
+                index_name: &str,
+                query_window: &SearchQueryWindow<'_>,
+                max_collect: usize,
+                out: &mut Vec<SearchResult>,
+                map_fn: impl Fn(T) -> SearchResult,
+            ) -> Result<()> {
+                if max_collect == 0 {
+                    return Ok(());
+                }
+                let store = tx.object_store(store_name).js()?;
+                let index = store.index(index_name).js()?;
+                let range = KeyRange::bound(
+                    query_window.lower,
+                    query_window.upper,
+                    Some(false),
+                    Some(false),
+                )
+                .js()?;
+                let request = index
+                    .open_cursor(
+                        Some(Query::KeyRange(range)),
+                        Some(CursorDirection::Next),
+                    )
+                    .js()?;
+                let mut request = request;
+                let mut cursor_opt = request.await.js()?;
+                let max = query_window.limit.min(max_collect);
+                let start_len = out.len();
+                while let Some(cursor) = cursor_opt {
+                    let value = cursor.value().js()?;
+                    let entity: T = deserialize_value(value)?;
+                    out.push(map_fn(entity));
+                    if out.len().saturating_sub(start_len) >= max {
+                        break;
+                    }
+                    request = cursor.next(None).js()?;
+                    cursor_opt = request.await.js()?;
+                }
+                Ok(())
+            }
+
+            let mut remaining = GLOBAL_SEARCH_LIMIT;
+            collect_search::<SongSearchRow>(
+                &tx,
+                TABLE_SONGS,
+                "searchText",
+                &query_window,
+                remaining,
+                &mut results,
+                |song| SearchResult {
+                    result_type: "song".to_string(),
+                    id: song.id,
+                    slug: Some(song.slug),
+                    label: song.title,
+                    score: 1.0,
+                },
+            )
+            .await?;
+            remaining = GLOBAL_SEARCH_LIMIT.saturating_sub(results.len());
+
+            if remaining > 0 {
+                collect_search::<VenueSearchRow>(
+                    &tx,
+                    TABLE_VENUES,
+                    "searchText",
+                    &query_window,
+                    remaining,
+                    &mut results,
+                    |venue| SearchResult {
+                        result_type: "venue".to_string(),
+                        id: venue.id,
+                        slug: None,
+                        label: venue.name,
+                        score: 1.0,
+                    },
+                )
+                .await?;
+                remaining = GLOBAL_SEARCH_LIMIT.saturating_sub(results.len());
+            }
+
+            if remaining > 0 {
+                collect_search::<TourSearchRow>(
+                    &tx,
+                    TABLE_TOURS,
+                    "searchText",
+                    &query_window,
+                    remaining,
+                    &mut results,
+                    |tour| SearchResult {
+                        result_type: "tour".to_string(),
+                        id: tour.year,
+                        slug: None,
+                        label: tour.name,
+                        score: 1.0,
+                    },
+                )
+                .await?;
+                remaining = GLOBAL_SEARCH_LIMIT.saturating_sub(results.len());
+            }
+
+            if remaining > 0 {
+                collect_search::<GuestSearchRow>(
+                    &tx,
+                    TABLE_GUESTS,
+                    "searchText",
+                    &query_window,
+                    remaining,
+                    &mut results,
+                    |guest| SearchResult {
+                        result_type: "guest".to_string(),
+                        id: guest.id,
+                        slug: Some(guest.slug),
+                        label: guest.name,
+                        score: 1.0,
+                    },
+                )
+                .await?;
+                remaining = GLOBAL_SEARCH_LIMIT.saturating_sub(results.len());
+            }
+
+            if remaining > 0 {
+                collect_search::<ReleaseSearchRow>(
+                    &tx,
+                    TABLE_RELEASES,
+                    "searchText",
+                    &query_window,
+                    remaining,
+                    &mut results,
+                    |release| SearchResult {
+                        result_type: "release".to_string(),
+                        id: release.id,
+                        slug: Some(release.slug),
+                        label: release.title,
+                        score: 1.0,
+                    },
+                )
+                .await?;
+            }
+            tx.await.js()?;
+
+            if results.len() > GLOBAL_SEARCH_LIMIT {
+                results.truncate(GLOBAL_SEARCH_LIMIT);
+            }
+            Ok(results)
+        }
+
+        async fn top_by_index<T: serde::de::DeserializeOwned>(
+            store_name: &str,
+            index_name: &str,
+            limit: usize,
+        ) -> Result<Vec<T>> {
+            list_by_index_query(
+                store_name,
+                index_name,
+                None,
+                Some(CursorDirection::Prev),
+                Some(limit),
+            )
+            .await
+        }
+
+        async fn collect_cursor_values<T: serde::de::DeserializeOwned>(
+            mut request: idb::request::OpenCursorStoreRequest,
+            limit: Option<usize>,
+        ) -> Result<Vec<T>> {
+            if matches!(limit, Some(0)) {
+                return Ok(Vec::new());
+            }
+            let mut out = Vec::with_capacity(limit.unwrap_or(64));
+            let mut cursor_opt = request.await.js()?;
+            match limit {
+                Some(max) => {
+                    while let Some(cursor) = cursor_opt {
+                        let value = cursor.value().js()?;
+                        let item: T = deserialize_value(value)?;
+                        out.push(item);
+                        if out.len() >= max {
+                            break;
+                        }
+                        request = cursor.next(None).js()?;
+                        cursor_opt = request.await.js()?;
+                    }
+                }
+                None => {
+                    while let Some(cursor) = cursor_opt {
+                        let value = cursor.value().js()?;
+                        let item: T = deserialize_value(value)?;
+                        out.push(item);
+                        request = cursor.next(None).js()?;
+                        cursor_opt = request.await.js()?;
+                    }
+                }
+            }
+            Ok(out)
+        }
+
+        async fn list_by_index_query<T: serde::de::DeserializeOwned>(
+            store_name: &str,
+            index_name: &str,
+            query: Option<Query>,
+            direction: Option<CursorDirection>,
+            limit: Option<usize>,
+        ) -> Result<Vec<T>> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadOnly)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            let index = store.index(index_name).js()?;
+            let request = index.open_cursor(query, direction).js()?;
+            let out = collect_cursor_values::<T>(request, limit).await?;
+            tx.await.js()?;
+            Ok(out)
+        }
+
+        async fn list_by_index_key<T: serde::de::DeserializeOwned>(
+            store_name: &str,
+            index_name: &str,
+            key: JsValue,
+            limit: Option<usize>,
+            direction: CursorDirection,
+        ) -> Result<Vec<T>> {
+            list_by_index_query(
+                store_name,
+                index_name,
+                Some(Query::Key(key)),
+                Some(direction),
+                limit,
+            )
+            .await
+        }
+
+        async fn list_all_by_index<T: serde::de::DeserializeOwned>(
+            store_name: &str,
+            index_name: &str,
+            direction: CursorDirection,
+        ) -> Result<Vec<T>> {
+            list_by_index_query(store_name, index_name, None, Some(direction), None).await
+        }
+
+        async fn list_by_index_range<T: serde::de::DeserializeOwned>(
+            store_name: &str,
+            index_name: &str,
+            lower: JsValue,
+            upper: JsValue,
+            limit: Option<usize>,
+        ) -> Result<Vec<T>> {
+            let range = KeyRange::bound(&lower, &upper, Some(false), Some(false)).js()?;
+            list_by_index_query(
+                store_name,
+                index_name,
+                Some(Query::KeyRange(range)),
+                Some(CursorDirection::Next),
+                limit,
+            )
+            .await
+        }
+
+        pub async fn list_all<T: serde::de::DeserializeOwned>(store_name: &str) -> Result<Vec<T>> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadOnly)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            let request = store
+                .open_cursor(None, Some(CursorDirection::Next))
+                .js()?;
+            let values = collect_cursor_values::<T>(request, None).await?;
+            tx.await.js()?;
+            Ok(values)
+        }
+
+        pub async fn stats_top_songs(limit: usize) -> Result<Vec<Song>> {
+            top_by_index(TABLE_SONGS, "totalPerformances", limit).await
+        }
+
+        pub async fn stats_top_openers(limit: usize) -> Result<Vec<Song>> {
+            top_by_index(TABLE_SONGS, "openerCount", limit).await
+        }
+
+        pub async fn stats_top_closers(limit: usize) -> Result<Vec<Song>> {
+            top_by_index(TABLE_SONGS, "closerCount", limit).await
+        }
+
+        pub async fn stats_top_encores(limit: usize) -> Result<Vec<Song>> {
+            top_by_index(TABLE_SONGS, "encoreCount", limit).await
+        }
+
+        pub async fn stats_songs_panel_data(
+            top_played_limit: usize,
+            top_openers_limit: usize,
+            top_closers_limit: usize,
+            top_encores_limit: usize,
+        ) -> Result<(Vec<Song>, Vec<Song>, Vec<Song>, Vec<Song>, Vec<(u32, u32)>)> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(
+                    &[TABLE_SONGS, TABLE_SETLIST_ENTRIES],
+                    TransactionMode::ReadOnly,
+                )
+                .js()?;
+
+            let songs_store = tx.object_store(TABLE_SONGS).js()?;
+            let top_played = {
+                let index = songs_store.index("totalPerformances").js()?;
+                let request = index.open_cursor(None, Some(CursorDirection::Prev)).js()?;
+                collect_cursor_values::<Song>(request, Some(top_played_limit)).await?
+            };
+            let top_openers = {
+                let index = songs_store.index("openerCount").js()?;
+                let request = index.open_cursor(None, Some(CursorDirection::Prev)).js()?;
+                collect_cursor_values::<Song>(request, Some(top_openers_limit)).await?
+            };
+            let top_closers = {
+                let index = songs_store.index("closerCount").js()?;
+                let request = index.open_cursor(None, Some(CursorDirection::Prev)).js()?;
+                collect_cursor_values::<Song>(request, Some(top_closers_limit)).await?
+            };
+            let top_encores = {
+                let index = songs_store.index("encoreCount").js()?;
+                let request = index.open_cursor(None, Some(CursorDirection::Prev)).js()?;
+                collect_cursor_values::<Song>(request, Some(top_encores_limit)).await?
+            };
+
+            let setlist_store = tx.object_store(TABLE_SETLIST_ENTRIES).js()?;
+            let debuts_by_year = song_debuts_by_year_from_store(&setlist_store).await?;
+
+            tx.await.js()?;
+            Ok((
+                top_played,
+                top_openers,
+                top_closers,
+                top_encores,
+                debuts_by_year,
+            ))
+        }
+
+        pub async fn list_recent_shows(limit: usize) -> Result<Vec<Show>> {
+            top_by_index(TABLE_SHOWS, "date", limit).await
+        }
+
+        pub async fn stats_shows_panel_data(
+            recent_tours_limit: usize,
+        ) -> Result<(Vec<(u32, u32)>, Vec<(u32, u32)>, (f64, f64, f64, f64, f64), Vec<Tour>)> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[TABLE_SHOWS, TABLE_TOURS], TransactionMode::ReadOnly)
+                .js()?;
+
+            let shows_store = tx.object_store(TABLE_SHOWS).js()?;
+            let (shows_by_year, shows_by_decade, rarity_summary) =
+                show_distributions_from_store(&shows_store).await?;
+
+            let tours_store = tx.object_store(TABLE_TOURS).js()?;
+            let tours_index = tours_store.index("year").js()?;
+            let tours_request = tours_index
+                .open_cursor(None, Some(CursorDirection::Prev))
+                .js()?;
+            let recent_tours =
+                collect_cursor_values::<Tour>(tours_request, Some(recent_tours_limit)).await?;
+
+            tx.await.js()?;
+
+            Ok((shows_by_year, shows_by_decade, rarity_summary, recent_tours))
+        }
+
+        pub async fn list_top_venues(limit: usize) -> Result<Vec<Venue>> {
+            top_by_index(TABLE_VENUES, "totalShows", limit).await
+        }
+
+        pub async fn stats_venue_shows_by_geo() -> Result<(Vec<(String, u32)>, Vec<(String, u32)>)> {
+            #[derive(serde::Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct VenueGeoRow {
+                country: String,
+                state: Option<String>,
+                total_shows: Option<i32>,
+            }
+
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[TABLE_VENUES], TransactionMode::ReadOnly)
+                .js()?;
+            let store = tx.object_store(TABLE_VENUES).js()?;
+            let mut request = store
+                .open_cursor(None, Some(CursorDirection::Next))
+                .js()?;
+            let mut cursor_opt = request.await.js()?;
+            let mut country_map: HashMap<String, u32> = HashMap::new();
+            let mut state_map: HashMap<String, u32> = HashMap::new();
+
+            while let Some(cursor) = cursor_opt {
+                let value = cursor.value().js()?;
+                let venue: VenueGeoRow = deserialize_value(value)?;
+                let total = venue.total_shows.unwrap_or(0) as u32;
+                *country_map.entry(venue.country.clone()).or_insert(0) += total;
+                if venue.country == "US" || venue.country == "United States" {
+                    if let Some(state) = venue.state.as_ref() {
+                        if !state.is_empty() {
+                            *state_map.entry(state.clone()).or_insert(0) += total;
+                        }
+                    }
+                }
+
+                request = cursor.next(None).js()?;
+                cursor_opt = request.await.js()?;
+            }
+
+            tx.await.js()?;
+
+            let mut shows_by_country: Vec<(String, u32)> = country_map.into_iter().collect();
+            shows_by_country.sort_by(|a, b| b.1.cmp(&a.1));
+
+            let mut shows_by_state: Vec<(String, u32)> = state_map.into_iter().collect();
+            shows_by_state.sort_by(|a, b| b.1.cmp(&a.1));
+
+            Ok((shows_by_country, shows_by_state))
+        }
+
+        pub async fn stats_venues_panel_data(
+            top_venues_limit: usize,
+        ) -> Result<(Vec<Venue>, Vec<(String, u32)>, Vec<(String, u32)>)> {
+            #[derive(serde::Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct VenueGeoRow {
+                country: String,
+                state: Option<String>,
+                total_shows: Option<i32>,
+            }
+
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[TABLE_VENUES], TransactionMode::ReadOnly)
+                .js()?;
+            let store = tx.object_store(TABLE_VENUES).js()?;
+            let index = store.index("totalShows").js()?;
+            let mut request = index.open_cursor(None, Some(CursorDirection::Prev)).js()?;
+            let mut cursor_opt = request.await.js()?;
+            let mut top_venues: Vec<Venue> = Vec::with_capacity(top_venues_limit);
+            let mut country_map: HashMap<String, u32> = HashMap::new();
+            let mut state_map: HashMap<String, u32> = HashMap::new();
+
+            while let Some(cursor) = cursor_opt {
+                let value = cursor.value().js()?;
+                if top_venues.len() < top_venues_limit {
+                    let venue: Venue = deserialize_value(value)?;
+                    let total = venue.total_shows.unwrap_or(0) as u32;
+                    *country_map.entry(venue.country.clone()).or_insert(0) += total;
+                    if venue.country == "US" || venue.country == "United States" {
+                        if let Some(state) = venue.state.as_ref() {
+                            if !state.is_empty() {
+                                *state_map.entry(state.clone()).or_insert(0) += total;
+                            }
+                        }
+                    }
+                    top_venues.push(venue);
+                } else {
+                    let venue: VenueGeoRow = deserialize_value(value)?;
+                    let total = venue.total_shows.unwrap_or(0) as u32;
+                    *country_map.entry(venue.country.clone()).or_insert(0) += total;
+                    if venue.country == "US" || venue.country == "United States" {
+                        if let Some(state) = venue.state.as_ref() {
+                            if !state.is_empty() {
+                                *state_map.entry(state.clone()).or_insert(0) += total;
+                            }
+                        }
+                    }
+                }
+
+                request = cursor.next(None).js()?;
+                cursor_opt = request.await.js()?;
+            }
+
+            tx.await.js()?;
+
+            let mut shows_by_country: Vec<(String, u32)> = country_map.into_iter().collect();
+            shows_by_country.sort_by(|a, b| b.1.cmp(&a.1));
+
+            let mut shows_by_state: Vec<(String, u32)> = state_map.into_iter().collect();
+            shows_by_state.sort_by(|a, b| b.1.cmp(&a.1));
+
+            Ok((top_venues, shows_by_country, shows_by_state))
+        }
+        pub async fn list_top_guests(limit: usize) -> Result<Vec<Guest>> {
+            top_by_index(TABLE_GUESTS, "totalAppearances", limit).await
+        }
+
+        pub async fn stats_guest_appearances_by_year() -> Result<Vec<(u32, u32)>> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[TABLE_GUEST_APPEARANCES], TransactionMode::ReadOnly)
+                .js()?;
+            let store = tx.object_store(TABLE_GUEST_APPEARANCES).js()?;
+            let counts = guest_appearances_by_year_from_store(&store).await?;
+
+            tx.await.js()?;
+            Ok(counts)
+        }
+
+        pub async fn stats_guests_panel_data(
+            top_guests_limit: usize,
+        ) -> Result<(Vec<Guest>, Vec<(u32, u32)>)> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[TABLE_GUESTS, TABLE_GUEST_APPEARANCES], TransactionMode::ReadOnly)
+                .js()?;
+
+            let guests_store = tx.object_store(TABLE_GUESTS).js()?;
+            let top_guests = {
+                let index = guests_store.index("totalAppearances").js()?;
+                let request = index.open_cursor(None, Some(CursorDirection::Prev)).js()?;
+                collect_cursor_values::<Guest>(request, Some(top_guests_limit)).await?
+            };
+
+            let appearances_store = tx.object_store(TABLE_GUEST_APPEARANCES).js()?;
+            let appearances_by_year = guest_appearances_by_year_from_store(&appearances_store).await?;
+
+            tx.await.js()?;
+            Ok((top_guests, appearances_by_year))
+        }
+
+        pub async fn list_recent_tours(limit: usize) -> Result<Vec<Tour>> {
+            top_by_index(TABLE_TOURS, "year", limit).await
+        }
+
+        pub async fn list_recent_releases(limit: usize) -> Result<Vec<Release>> {
+            top_by_index(TABLE_RELEASES, "releaseDate", limit).await
+        }
+
+        pub async fn list_all_releases() -> Result<Vec<Release>> {
+            list_all_by_index(TABLE_RELEASES, "releaseDate", CursorDirection::Prev).await
+        }
+
+        pub async fn list_setlist_entries(show_id: i32) -> Result<Vec<SetlistEntry>> {
+            let lower = compound_i32_pair_key(show_id, 0);
+            let upper = compound_i32_pair_key(show_id, i32::MAX);
+            list_by_index_range(TABLE_SETLIST_ENTRIES, "showId+position", lower, upper, None).await
+        }
+
+        pub async fn stats_song_debuts_by_year() -> Result<Vec<(u32, u32)>> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[TABLE_SETLIST_ENTRIES], TransactionMode::ReadOnly)
+                .js()?;
+            let store = tx.object_store(TABLE_SETLIST_ENTRIES).js()?;
+            let counts = song_debuts_by_year_from_store(&store).await?;
+
+            tx.await.js()?;
+            Ok(counts)
+        }
+
+        pub async fn list_release_tracks(release_id: i32) -> Result<Vec<ReleaseTrack>> {
+            let mut tracks: Vec<ReleaseTrack> = list_by_index_key(
+                TABLE_RELEASE_TRACKS,
+                "releaseId",
+                JsValue::from_f64(release_id as f64),
+                None,
+                CursorDirection::Next,
+            )
+            .await?;
+            tracks.sort_by(|a, b| {
+                let disc_a = a.disc_number.unwrap_or(1);
+                let disc_b = b.disc_number.unwrap_or(1);
+                let track_a = a.track_number.unwrap_or(0);
+                let track_b = b.track_number.unwrap_or(0);
+                (disc_a, track_a).cmp(&(disc_b, track_b))
+            });
+            Ok(tracks)
+        }
+
+        pub async fn list_liberation_entries(limit: usize) -> Result<Vec<LiberationEntry>> {
+            top_by_index(TABLE_LIBERATION_LIST, "daysSince", limit).await
+        }
+
+        pub async fn list_curated_lists() -> Result<Vec<CuratedList>> {
+            list_all(TABLE_CURATED_LISTS).await
+        }
+
+        pub async fn list_curated_list_items(
+            list_id: i32,
+            limit: usize,
+        ) -> Result<Vec<CuratedListItem>> {
+            let lower = compound_i32_pair_key(list_id, i32::MIN);
+            let upper = compound_i32_pair_key(list_id, i32::MAX);
+            list_by_index_range(
+                TABLE_CURATED_LIST_ITEMS,
+                "listId+position",
+                lower,
+                upper,
+                Some(limit),
+            )
+            .await
+        }
+
+        pub async fn list_user_attended_shows() -> Result<Vec<UserAttendedShow>> {
+            list_by_index_query(
+                TABLE_USER_ATTENDED_SHOWS,
+                "showDate",
+                None,
+                Some(CursorDirection::Prev),
+                None,
+            )
+            .await
+        }
+
+        pub async fn add_user_attended_show(show_id: i32, show_date: Option<String>) -> Result<()> {
+            let record = UserAttendedShow {
+                id: 0,
+                show_id,
+                added_at: js_sys::Date::new_0().to_string().as_string(),
+                show_date,
+            };
+            put_serialized_in_store(TABLE_USER_ATTENDED_SHOWS, &record).await
+        }
+
+        pub async fn remove_user_attended_show(show_id: i32) -> Result<()> {
+            delete_unique_by_index_key(
+                TABLE_USER_ATTENDED_SHOWS,
+                "showId",
+                JsValue::from_f64(show_id as f64),
+            )
+            .await
+        }
+
+        #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+        struct MigrationRecord {
+            id: String,
+            migrated_at: String,
+            store_counts: Vec<(String, u32)>,
+            verified: bool,
+            #[serde(default)]
+            mismatches: Vec<(String, u32, u32)>,
+        }
+
+        const PREVIOUS_MIGRATION_KEY: &str = "previous_migration_v1";
+        type MigrationStoreCounts = Vec<(String, u32)>;
+        type MigrationCountMismatches = Vec<(String, u32, u32)>;
+        type PreviousMigrationOutcome = (MigrationStoreCounts, MigrationCountMismatches);
+
+        async fn previous_db_exists() -> Result<bool> {
+            let indexed_db: JsValue = Factory::new().js()?.into();
+            let databases_fn = Reflect::get(&indexed_db, &JsValue::from_str("databases")).js()?;
+            if !databases_fn.is_function() {
+                return Ok(false);
+            }
+
+            let databases_fn = databases_fn
+                .dyn_into::<js_sys::Function>()
+                .map_err(|_| js_error("indexedDB.databases not callable"))?;
+            let promise = databases_fn.call0(&indexed_db).js()?;
+            let promise = promise
+                .dyn_into::<js_sys::Promise>()
+                .map_err(|_| js_error("indexedDB.databases did not return a Promise"))?;
+            let list = JsFuture::from(promise).await.js()?;
+            let databases = parse_database_summaries(list);
+            for database in databases {
+                if database.name.as_deref() == Some(PREVIOUS_DB_NAME) {
+                    return Ok(true);
+                }
+            }
+
+            Ok(false)
+        }
+
+        #[derive(Debug, Clone, Default, serde::Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct DatabaseSummary {
+            #[serde(default)]
+            name: Option<String>,
+        }
+
+        fn parse_database_summaries(value: JsValue) -> Vec<DatabaseSummary> {
+            Array::from(&value)
+                .iter()
+                .filter_map(|entry| serde_wasm_bindgen::from_value::<DatabaseSummary>(entry).ok())
+                .collect()
+        }
+
+        async fn migration_marker_exists(db: &Database) -> Result<bool> {
+            let tx = db
+                .transaction(&[TABLE_SYNC_META], TransactionMode::ReadOnly)
+                .js()?;
+            let store = tx.object_store(TABLE_SYNC_META).js()?;
+            let value: Option<JsValue> = store
+                .get(JsValue::from_str(PREVIOUS_MIGRATION_KEY))
+                .js()?
+                .await
+                .js()?;
+            tx.await.js()?;
+            Ok(value.is_some())
+        }
+
+        async fn write_migration_marker(
+            db: &Database,
+            counts: Vec<(String, u32)>,
+            verified: bool,
+            mismatches: Vec<(String, u32, u32)>,
+        ) -> Result<()> {
+            let record = MigrationRecord {
+                id: PREVIOUS_MIGRATION_KEY.to_string(),
+                migrated_at: js_sys::Date::new_0()
+                    .to_string()
+                    .as_string()
+                    .unwrap_or_default(),
+                store_counts: counts,
+                verified,
+                mismatches,
+            };
+            put_serialized_in_store_with_db(db, TABLE_SYNC_META, &record).await
+        }
+
+        async fn copy_store(
+            source_db: &Database,
+            target_db: &Database,
+            store_name: &str,
+        ) -> Result<u32> {
+            const MIGRATION_BATCH_SIZE: usize = 500;
+            let tx_read = source_db
+                .transaction(&[store_name], TransactionMode::ReadOnly)
+                .js()?;
+            let store_read = tx_read.object_store(store_name).js()?;
+            let mut request = store_read
+                .open_cursor(None, Some(CursorDirection::Next))
+                .js()?;
+            let mut cursor_opt = request.await.js()?;
+            let mut batch: Vec<JsValue> = Vec::with_capacity(MIGRATION_BATCH_SIZE);
+            let mut total: u32 = 0;
+
+            while let Some(cursor) = cursor_opt {
+                let value = cursor.value().js()?;
+                batch.push(value);
+                total += 1;
+                if batch.len() >= MIGRATION_BATCH_SIZE {
+                    write_batch(target_db, store_name, &batch).await?;
+                    batch.clear();
+                }
+                request = cursor.next(None).js()?;
+                cursor_opt = request.await.js()?;
+            }
+            tx_read.await.js()?;
+
+            if !batch.is_empty() {
+                write_batch(target_db, store_name, &batch).await?;
+            }
+
+            Ok(total)
+        }
+
+        async fn count_store_in_db(db: &Database, store_name: &str) -> Result<u32> {
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadOnly)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            let count = store.count(None).js()?.await.js()?;
+            tx.await.js()?;
+            Ok(count)
+        }
+
+        pub async fn migrate_previous_db() -> Result<bool> {
+            let factory = Factory::new().js()?;
+            if !previous_db_exists().await? {
+                return Ok(false);
+            }
+
+            let new_db = open_db().await?;
+            if migration_marker_exists(&new_db).await? {
+                return Ok(false);
+            }
+
+            let previous_db = factory
+                .open(PREVIOUS_DB_NAME, None)
+                .js()?
+                .await
+                .js()?;
+            let migration_result: Result<PreviousMigrationOutcome> = async {
+                let previous_store_names: HashSet<String> =
+                    previous_db.store_names().iter().cloned().collect();
+                let mut counts: MigrationStoreCounts = Vec::new();
+                let mut mismatches: MigrationCountMismatches = Vec::new();
+
+                for (store, _) in SCHEMA_V12_REFERENCE.iter() {
+                    if !previous_store_names.contains(*store) {
+                        continue;
+                    }
+                    let count = copy_store(&previous_db, &new_db, store).await?;
+                    counts.push((store.to_string(), count));
+                    let new_count = match count_store_in_db(&new_db, store).await {
+                        Ok(value) => value,
+                        Err(err) => {
+                            web_sys::console::warn_1(&JsValue::from_str(&format!(
+                                "[IDB] failed to count new store after copy: store={store} error={err:?}"
+                            )));
+                            0
+                        }
+                    };
+                    if new_count != count {
+                        mismatches.push((store.to_string(), count, new_count));
+                    }
+                }
+
+                Ok((counts, mismatches))
+            }
+            .await;
+            // Always close the legacy handle, even when copy/count fails.
+            previous_db.close();
+            let (counts, mismatches) = migration_result?;
+
+            if !mismatches.is_empty() {
+                web_sys::console::warn_1(&JsValue::from_str(&format!(
+                    "[IDB] previous-version migration count mismatch: {mismatches:?}"
+                )));
+                write_migration_marker(&new_db, counts, false, mismatches).await?;
+                return Ok(false);
+            }
+
+            write_migration_marker(&new_db, counts, true, Vec::new()).await?;
+            if let Ok(request) = factory.delete(PREVIOUS_DB_NAME) {
+                if let Err(err) = request.await {
+                    web_sys::console::warn_1(&JsValue::from_str(&format!(
+                        "[IDB] failed to delete previous-version database `{}`: {err:?}",
+                        PREVIOUS_DB_NAME
+                    )));
+                }
+            } else {
+                web_sys::console::warn_1(&JsValue::from_str(&format!(
+                    "[IDB] deleteDatabase request could not start for `{}`",
+                    PREVIOUS_DB_NAME
+                )));
+            }
+            Ok(true)
+        }
+
+        fn performance_now_ms() -> f64 {
+            web_sys::window()
+                .and_then(|window| window.performance())
+                .map(|performance| performance.now())
+                .unwrap_or_else(Date::now)
+        }
+
+        fn normalized_tx_batch_size(batch_size: usize) -> usize {
+            batch_size.max(1)
+        }
+
+        pub async fn bulk_put(store_name: &str, values: &[JsValue]) -> Result<u32> {
+            if values.is_empty() {
+                return Ok(0);
+            }
+            let tx_batch_size = normalized_tx_batch_size(BulkPutOptions::default().tx_batch_size);
+            let db = open_db().await?;
+            let mut inserted = 0u32;
+            for chunk in values.chunks(tx_batch_size) {
+                write_batch(&db, store_name, chunk).await?;
+                inserted = inserted.saturating_add(chunk.len() as u32);
+            }
+            Ok(inserted)
+        }
+
+        pub async fn bulk_put_with_options(
+            store_name: &str,
+            values: &[JsValue],
+            options: BulkPutOptions,
+        ) -> Result<BulkPutStats> {
+            if values.is_empty() {
+                return Ok(BulkPutStats::default());
+            }
+            let tx_batch_size = normalized_tx_batch_size(options.tx_batch_size);
+            let db = open_db().await?;
+            let mut stats = BulkPutStats::default();
+            for chunk in values.chunks(tx_batch_size) {
+                let tx_started_at = performance_now_ms();
+                write_batch(&db, store_name, chunk).await?;
+                let tx_elapsed_ms = (performance_now_ms() - tx_started_at).max(0.0);
+                stats.max_tx_ms = stats.max_tx_ms.max(tx_elapsed_ms);
+                stats.inserted = stats.inserted.saturating_add(chunk.len() as u32);
+                stats.transaction_count = stats.transaction_count.saturating_add(1);
+            }
+            Ok(stats)
+        }
+
+        async fn write_batch(db: &Database, store_name: &str, values: &[JsValue]) -> Result<()> {
+            if values.is_empty() {
+                return Ok(());
+            }
+            let tx_write = db
+                .transaction(&[store_name], TransactionMode::ReadWrite)
+                .js()?;
+            let store_write = tx_write.object_store(store_name).js()?;
+            for value in values {
+                // Queue writes and rely on transaction commit to validate success.
+                store_write.put(value, None).js()?;
+            }
+            tx_write.await.js()?;
+            Ok(())
+        }
+
+        pub async fn put_sync_meta<T: Serialize>(value: &T) -> Result<()> {
+            put_serialized_in_store(TABLE_SYNC_META, value).await
+        }
+
+        pub async fn get_sync_meta<T: DeserializeOwned>(id: &str) -> Result<Option<T>> {
+            get_by_key(TABLE_SYNC_META, JsValue::from_str(id)).await
+        }
+
+        pub async fn delete_sync_meta(id: &str) -> Result<()> {
+            delete_by_key(TABLE_SYNC_META, JsValue::from_str(id)).await
+        }
+
+        pub async fn clear_store(store_name: &str) -> Result<()> {
+            let db = open_db().await?;
+            let tx = db
+                .transaction(&[store_name], TransactionMode::ReadWrite)
+                .js()?;
+            let store = tx.object_store(store_name).js()?;
+            store.clear().js()?.await.js()?;
+            tx.await.js()?;
+            Ok(())
+        }
+
+        pub async fn store_embedding_chunk(chunk: &EmbeddingChunk) -> Result<()> {
+            put_serialized_in_store(TABLE_EMBEDDING_CHUNKS, chunk).await
+        }
+
+        pub async fn get_embedding_chunk(chunk_id: u32) -> Result<Option<EmbeddingChunk>> {
+            get_by_key(TABLE_EMBEDDING_CHUNKS, JsValue::from_f64(chunk_id as f64)).await
+        }
+
+        pub async fn store_embedding_manifest(manifest: &EmbeddingManifest) -> Result<()> {
+            put_serialized_in_store(TABLE_EMBEDDING_META, manifest).await
+        }
+
+        pub async fn get_embedding_manifest(version: &str) -> Result<Option<EmbeddingManifest>> {
+            get_by_key(TABLE_EMBEDDING_META, JsValue::from_str(version)).await
+        }
+
+        pub async fn store_ann_index(meta: &AnnIndexMeta) -> Result<()> {
+            put_serialized_in_store(TABLE_ANN_INDEX, meta).await
+        }
+
+        pub async fn get_ann_index(id: &str) -> Result<Option<AnnIndexMeta>> {
+            get_by_key(TABLE_ANN_INDEX, JsValue::from_str(id)).await
+        }
+
+        pub async fn delete_ann_index(id: &str) -> Result<()> {
+            delete_by_key(TABLE_ANN_INDEX, JsValue::from_str(id)).await
+        }
+
+        pub async fn delete_db() -> Result<()> {
+            let factory = Factory::new().js()?;
+            if let Some(db) = cached_db() {
+                db.close();
+                clear_cached_db();
+            }
+            if let Ok(request) = factory.delete(DB_NAME) {
+                let _ = request.await;
+            }
+            Ok(())
+        }
+
+        #[wasm_bindgen]
+        pub async fn js_open_db() -> std::result::Result<(), JsValue> {
+            open_db()
+                .await
+                .map(|_| ())
+                .map_err(|e| JsValue::from_str(&format!("{e:?}")))
+        }
+
+        #[wasm_bindgen]
+        pub async fn js_migrate_previous_db() -> std::result::Result<bool, JsValue> {
+            migrate_previous_db()
+                .await
+                .map_err(|e| JsValue::from_str(&format!("{e:?}")))
+        }
+
+        #[wasm_bindgen]
+        pub fn js_idb_runtime_metrics() -> std::result::Result<JsValue, JsValue> {
+            let blocked_count = read_storage_u64(IDB_OPEN_BLOCKED_COUNT_KEY);
+            let blocked_last = read_storage_f64(IDB_OPEN_BLOCKED_LAST_KEY);
+            let versionchange_count = read_storage_u64(IDB_VERSIONCHANGE_COUNT_KEY);
+            let versionchange_last = read_storage_f64(IDB_VERSIONCHANGE_LAST_KEY);
+            let metrics = IdbRuntimeMetrics {
+                open_blocked_count: blocked_count,
+                open_blocked_last_ms: blocked_last,
+                version_change_count: versionchange_count,
+                version_change_last_ms: versionchange_last,
+            };
+            serde_wasm_bindgen::to_value(&metrics).js()
+        }
+
+        #[derive(Debug, Clone, Default, serde::Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct IdbRuntimeMetrics {
+            open_blocked_count: u64,
+            open_blocked_last_ms: Option<f64>,
+            version_change_count: u64,
+            version_change_last_ms: Option<f64>,
+        }
+
+        fn read_storage_f64(key: &str) -> Option<f64> {
+            let mut value = None;
+            with_local_storage(|storage| {
+                value = storage
+                    .get_item(key)
+                    .ok()
+                    .flatten()
+                    .and_then(|raw| raw.parse::<f64>().ok());
+            });
+            value
+        }
+    } else {
+        fn idb_unavailable<T>() -> Result<T, JsValue> {
+            Err(JsValue::from_str("IndexedDB not available on server"))
+        }
+
+        macro_rules! idb_stub {
+            ($name:ident ( $( $arg:ident : $arg_ty:ty ),* $(,)? ) -> $ret:ty) => {
+                pub async fn $name( $( $arg : $arg_ty ),* ) -> Result<$ret, JsValue> {
+                    idb_unavailable()
+                }
+            };
+        }
+
+        pub fn js_idb_runtime_metrics() -> std::result::Result<JsValue, JsValue> {
+            Err(JsValue::from_str(
+                "IndexedDB runtime metrics only available in wasm32",
+            ))
+        }
+
+        idb_stub!(open_db() -> ());
+        idb_stub!(get_show(_id: i32) -> Option<Show>);
+        idb_stub!(get_song(_slug: &str) -> Option<Song>);
+        idb_stub!(get_song_by_id(_id: i32) -> Option<Song>);
+        idb_stub!(get_venue(_id: i32) -> Option<Venue>);
+        idb_stub!(get_tour(_year: i32) -> Option<Tour>);
+        idb_stub!(get_tour_by_id(_id: i32) -> Option<Tour>);
+        idb_stub!(search_global(_query: &str) -> Vec<SearchResult>);
+        idb_stub!(stats_top_songs(_limit: usize) -> Vec<Song>);
+        idb_stub!(stats_top_openers(_limit: usize) -> Vec<Song>);
+        idb_stub!(stats_top_closers(_limit: usize) -> Vec<Song>);
+        idb_stub!(stats_top_encores(_limit: usize) -> Vec<Song>);
+        idb_stub!(stats_songs_panel_data(_top_played_limit: usize, _top_openers_limit: usize, _top_closers_limit: usize, _top_encores_limit: usize) -> (Vec<Song>, Vec<Song>, Vec<Song>, Vec<Song>, Vec<(u32, u32)>));
+        idb_stub!(list_recent_shows(_limit: usize) -> Vec<Show>);
+        idb_stub!(stats_shows_panel_data(_recent_tours_limit: usize) -> (Vec<(u32, u32)>, Vec<(u32, u32)>, (f64, f64, f64, f64, f64), Vec<Tour>));
+        idb_stub!(list_top_venues(_limit: usize) -> Vec<Venue>);
+        idb_stub!(stats_venue_shows_by_geo() -> (Vec<(String, u32)>, Vec<(String, u32)>));
+        idb_stub!(stats_venues_panel_data(_top_venues_limit: usize) -> (Vec<Venue>, Vec<(String, u32)>, Vec<(String, u32)>));
+        idb_stub!(list_top_guests(_limit: usize) -> Vec<Guest>);
+        idb_stub!(stats_guest_appearances_by_year() -> Vec<(u32, u32)>);
+        idb_stub!(stats_guests_panel_data(_top_guests_limit: usize) -> (Vec<Guest>, Vec<(u32, u32)>));
+        idb_stub!(list_recent_tours(_limit: usize) -> Vec<Tour>);
+        idb_stub!(list_recent_releases(_limit: usize) -> Vec<Release>);
+        idb_stub!(list_all_releases() -> Vec<Release>);
+        idb_stub!(list_setlist_entries(_show_id: i32) -> Vec<SetlistEntry>);
+        idb_stub!(stats_song_debuts_by_year() -> Vec<(u32, u32)>);
+        idb_stub!(list_release_tracks(_release_id: i32) -> Vec<ReleaseTrack>);
+        idb_stub!(list_liberation_entries(_limit: usize) -> Vec<LiberationEntry>);
+        idb_stub!(list_curated_lists() -> Vec<CuratedList>);
+        idb_stub!(list_curated_list_items(_list_id: i32, _limit: usize) -> Vec<CuratedListItem>);
+        idb_stub!(list_user_attended_shows() -> Vec<UserAttendedShow>);
+        idb_stub!(add_user_attended_show(_show_id: i32, _show_date: Option<String>) -> ());
+        idb_stub!(remove_user_attended_show(_show_id: i32) -> ());
+        idb_stub!(get_guest_by_slug(_slug: &str) -> Option<Guest>);
+        idb_stub!(get_release_by_slug(_slug: &str) -> Option<Release>);
+        idb_stub!(migrate_previous_db() -> bool);
+        idb_stub!(bulk_put(_store_name: &str, _values: &[JsValue]) -> u32);
+        idb_stub!(bulk_put_with_options(_store_name: &str, _values: &[JsValue], _options: BulkPutOptions) -> BulkPutStats);
+        idb_stub!(delete_sync_meta(_id: &str) -> ());
+        idb_stub!(clear_store(_store_name: &str) -> ());
+        idb_stub!(store_embedding_chunk(_chunk: &EmbeddingChunk) -> ());
+        idb_stub!(get_embedding_chunk(_chunk_id: u32) -> Option<EmbeddingChunk>);
+        idb_stub!(store_embedding_manifest(_manifest: &EmbeddingManifest) -> ());
+        idb_stub!(get_embedding_manifest(_version: &str) -> Option<EmbeddingManifest>);
+        idb_stub!(store_ann_index(_meta: &AnnIndexMeta) -> ());
+        idb_stub!(get_ann_index(_id: &str) -> Option<AnnIndexMeta>);
+        idb_stub!(delete_ann_index(_id: &str) -> ());
+        idb_stub!(count_store(_store_name: &str) -> u32);
+        idb_stub!(count_stores_with_missing(_store_names: &[&str]) -> (Vec<(String, u32)>, Vec<String>));
+        idb_stub!(delete_db() -> ());
+
+        pub async fn put_sync_meta<T: Serialize>(_value: &T) -> Result<(), JsValue> {
+            idb_unavailable()
+        }
+
+        pub async fn get_sync_meta<T: DeserializeOwned>(_id: &str) -> Result<Option<T>, JsValue> {
+            idb_unavailable()
+        }
+
+        pub async fn list_all<T: serde::de::DeserializeOwned>(_store_name: &str) -> Result<Vec<T>, JsValue> {
+            idb_unavailable()
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{BulkPutOptions, BulkPutStats};
+
+    #[test]
+    fn bulk_put_options_default_is_non_zero() {
+        assert!(BulkPutOptions::default().tx_batch_size > 0);
+    }
+
+    #[test]
+    fn bulk_put_stats_default_zeroed() {
+        let stats = BulkPutStats::default();
+        assert_eq!(stats.inserted, 0);
+        assert_eq!(stats.transaction_count, 0);
+        assert_eq!(stats.max_tx_ms, 0.0);
+    }
+}

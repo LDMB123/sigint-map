@@ -1,0 +1,12 @@
+{
+  "annCapOverrideMb": null,
+  "benchmarkHistory": [],
+  "generatedAt": "2026-02-18T02:36:24.331776+00:00",
+  "tuning": {
+    "last_latency_ms": null,
+    "probe_override": null,
+    "target_latency_ms": 12.0
+  },
+  "version": "2026-02-04",
+  "workerThresholdDefault": 35000
+}
