@@ -40,8 +40,8 @@ cfg_if::cfg_if! {
             CursorDirection, Database, DatabaseEvent, Factory, IndexParams, KeyPath, KeyRange,
             ObjectStoreParams, Query, TransactionMode,
         };
-        use js_sys::{Array, Date, Function, Reflect};
-        use std::cmp::Ordering;
+        use js_sys::{Array, Date, Reflect};
+        use std::{cmp::Ordering, collections::HashSet};
         use wasm_bindgen::{JsCast, JsValue};
         use wasm_bindgen_futures::JsFuture;
 
@@ -356,13 +356,7 @@ cfg_if::cfg_if! {
 
         pub async fn count_store(store_name: &str) -> Result<u32> {
             let db = open_db().await?;
-            let tx = db
-                .transaction(&[store_name], TransactionMode::ReadOnly)
-                .js()?;
-            let store = tx.object_store(store_name).js()?;
-            let count = store.count(None).js()?.await.js()?;
-            tx.await.js()?;
-            Ok(count as u32)
+            count_store_in_db(&db, store_name).await
         }
 
         pub async fn count_stores_with_missing(
@@ -373,11 +367,12 @@ cfg_if::cfg_if! {
             }
 
             let db = open_db().await?;
-            let known_stores = db.store_names();
+            let known_store_names: HashSet<String> =
+                db.store_names().iter().cloned().collect();
             let mut existing: Vec<&str> = Vec::new();
             let mut missing: Vec<String> = Vec::new();
             for store in store_names {
-                if known_stores.iter().any(|candidate| candidate == *store) {
+                if known_store_names.contains(*store) {
                     existing.push(*store);
                 } else {
                     missing.push((*store).to_string());
@@ -445,7 +440,7 @@ cfg_if::cfg_if! {
                 store_name: &str,
                 index_name: &str,
                 query_norm: &str,
-                map_fn: impl Fn(T, f32) -> SearchResult,
+                map_fn: impl Fn(T) -> SearchResult,
             ) -> Result<Vec<SearchResult>> {
                 let tx = db
                     .transaction(&[store_name], TransactionMode::ReadOnly)
@@ -465,16 +460,15 @@ cfg_if::cfg_if! {
                 let mut out = Vec::new();
                 for value in values {
                     let entity: T = deserialize_value(value)?;
-                    let score = 1.0;
-                    out.push(map_fn(entity, score));
+                    out.push(map_fn(entity));
                 }
                 Ok(out)
             }
 
             results.extend(
-                collect_search::<Song>(&db, TABLE_SONGS, "searchText", &query_norm, |song, _| {
-                    let haystack = song.search_text.clone().unwrap_or_else(|| song.title.clone());
-                    let score = prefix_score(&query_norm, &haystack);
+                collect_search::<Song>(&db, TABLE_SONGS, "searchText", &query_norm, |song| {
+                    let score =
+                        prefix_score(&query_norm, song.search_text.as_deref().unwrap_or(&song.title));
                     SearchResult {
                         result_type: "song".to_string(),
                         id: song.id,
@@ -487,9 +481,9 @@ cfg_if::cfg_if! {
             );
 
             results.extend(
-                collect_search::<Venue>(&db, TABLE_VENUES, "searchText", &query_norm, |venue, _| {
-                    let haystack = venue.search_text.clone().unwrap_or_else(|| venue.name.clone());
-                    let score = prefix_score(&query_norm, &haystack);
+                collect_search::<Venue>(&db, TABLE_VENUES, "searchText", &query_norm, |venue| {
+                    let score =
+                        prefix_score(&query_norm, venue.search_text.as_deref().unwrap_or(&venue.name));
                     SearchResult {
                         result_type: "venue".to_string(),
                         id: venue.id,
@@ -502,9 +496,9 @@ cfg_if::cfg_if! {
             );
 
             results.extend(
-                collect_search::<Tour>(&db, TABLE_TOURS, "searchText", &query_norm, |tour, _| {
-                    let haystack = tour.search_text.clone().unwrap_or_else(|| tour.name.clone());
-                    let score = prefix_score(&query_norm, &haystack);
+                collect_search::<Tour>(&db, TABLE_TOURS, "searchText", &query_norm, |tour| {
+                    let score =
+                        prefix_score(&query_norm, tour.search_text.as_deref().unwrap_or(&tour.name));
                     SearchResult {
                         result_type: "tour".to_string(),
                         id: tour.year,
@@ -517,9 +511,11 @@ cfg_if::cfg_if! {
             );
 
             results.extend(
-                collect_search::<Guest>(&db, TABLE_GUESTS, "searchText", &query_norm, |guest, _| {
-                    let haystack = guest.search_text.clone().unwrap_or_else(|| guest.name.clone());
-                    let score = prefix_score(&query_norm, &haystack);
+                collect_search::<Guest>(&db, TABLE_GUESTS, "searchText", &query_norm, |guest| {
+                    let score = prefix_score(
+                        &query_norm,
+                        guest.search_text.as_deref().unwrap_or(&guest.name),
+                    );
                     SearchResult {
                         result_type: "guest".to_string(),
                         id: guest.id,
@@ -532,12 +528,11 @@ cfg_if::cfg_if! {
             );
 
             results.extend(
-                collect_search::<Release>(&db, TABLE_RELEASES, "searchText", &query_norm, |release, _| {
-                    let haystack = release
-                        .search_text
-                        .clone()
-                        .unwrap_or_else(|| release.title.clone());
-                    let score = prefix_score(&query_norm, &haystack);
+                collect_search::<Release>(&db, TABLE_RELEASES, "searchText", &query_norm, |release| {
+                    let score = prefix_score(
+                        &query_norm,
+                        release.search_text.as_deref().unwrap_or(&release.title),
+                    );
                     SearchResult {
                         result_type: "release".to_string(),
                         id: release.id,
@@ -734,9 +729,7 @@ cfg_if::cfg_if! {
         pub async fn list_liberation_entries(limit: usize) -> Result<Vec<LiberationEntry>> {
             let mut entries: Vec<LiberationEntry> = list_all(TABLE_LIBERATION_LIST).await?;
             entries.sort_by(|a, b| b.days_since.unwrap_or(0).cmp(&a.days_since.unwrap_or(0)));
-            if entries.len() > limit {
-                entries.truncate(limit);
-            }
+            entries.truncate(limit);
             Ok(entries)
         }
 
@@ -798,28 +791,42 @@ cfg_if::cfg_if! {
         const PREVIOUS_MIGRATION_KEY: &str = "previous_migration_v1";
 
         async fn previous_db_exists() -> Result<bool> {
-            let window = web_sys::window().ok_or_else(|| js_error("window missing"))?;
-            let indexed_db = Reflect::get(&window, &JsValue::from_str("indexedDB")).js()?;
+            let indexed_db: JsValue = Factory::new().js()?.into();
             let databases_fn = Reflect::get(&indexed_db, &JsValue::from_str("databases")).js()?;
             if !databases_fn.is_function() {
                 return Ok(false);
             }
 
-            let promise = Function::from(databases_fn).call0(&indexed_db).js()?;
+            let databases_fn = databases_fn
+                .dyn_into::<js_sys::Function>()
+                .map_err(|_| js_error("indexedDB.databases not callable"))?;
+            let promise = databases_fn.call0(&indexed_db).js()?;
             let promise = promise
                 .dyn_into::<js_sys::Promise>()
                 .map_err(|_| js_error("indexedDB.databases did not return a Promise"))?;
             let list = JsFuture::from(promise).await.js()?;
-            let arr = Array::from(&list);
-            for entry in arr.iter() {
-                if let Ok(name) = Reflect::get(&entry, &JsValue::from_str("name")) {
-                    if name.as_string().as_deref() == Some(PREVIOUS_DB_NAME) {
-                        return Ok(true);
-                    }
+            let databases = parse_database_summaries(list);
+            for database in databases {
+                if database.name.as_deref() == Some(PREVIOUS_DB_NAME) {
+                    return Ok(true);
                 }
             }
 
             Ok(false)
+        }
+
+        #[derive(Debug, Clone, Default, serde::Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct DatabaseSummary {
+            #[serde(default)]
+            name: Option<String>,
+        }
+
+        fn parse_database_summaries(value: JsValue) -> Vec<DatabaseSummary> {
+            Array::from(&value)
+                .iter()
+                .filter_map(|entry| serde_wasm_bindgen::from_value::<DatabaseSummary>(entry).ok())
+                .collect()
         }
 
         async fn migration_marker_exists(db: &Database) -> Result<bool> {
@@ -919,12 +926,13 @@ cfg_if::cfg_if! {
                 .await
                 .js()?;
 
-            let store_names = previous_db.store_names();
+            let previous_store_names: HashSet<String> =
+                previous_db.store_names().iter().cloned().collect();
             let mut counts: Vec<(String, u32)> = Vec::new();
             let mut mismatches: Vec<(String, u32, u32)> = Vec::new();
 
             for (store, _) in SCHEMA_V12_REFERENCE.iter() {
-                if !store_names.iter().any(|name| name == store) {
+                if !previous_store_names.contains(*store) {
                     continue;
                 }
                 let count = copy_store(&previous_db, &new_db, store).await?;
@@ -989,15 +997,7 @@ cfg_if::cfg_if! {
             let mut stats = BulkPutStats::default();
             for chunk in values.chunks(tx_batch_size) {
                 let tx_started_at = performance_now_ms();
-                let tx = db
-                    .transaction(&[store_name], TransactionMode::ReadWrite)
-                    .js()?;
-                let store = tx.object_store(store_name).js()?;
-                for value in chunk {
-                    // Queue writes and rely on transaction commit to validate success.
-                    store.put(value, None).js()?;
-                }
-                tx.await.js()?;
+                write_batch(&db, store_name, chunk).await?;
                 let tx_elapsed_ms = (performance_now_ms() - tx_started_at).max(0.0);
                 stats.max_tx_ms = stats.max_tx_ms.max(tx_elapsed_ms);
                 stats.inserted = stats.inserted.saturating_add(chunk.len() as u32);
@@ -1006,15 +1006,11 @@ cfg_if::cfg_if! {
             Ok(stats)
         }
 
-        async fn write_batch(
-            new_db: &Database,
-            store_name: &str,
-            values: &[JsValue],
-        ) -> Result<()> {
+        async fn write_batch(db: &Database, store_name: &str, values: &[JsValue]) -> Result<()> {
             if values.is_empty() {
                 return Ok(());
             }
-            let tx_write = new_db
+            let tx_write = db
                 .transaction(&[store_name], TransactionMode::ReadWrite)
                 .js()?;
             let store_write = tx_write.object_store(store_name).js()?;
@@ -1103,56 +1099,37 @@ cfg_if::cfg_if! {
         #[wasm_bindgen]
         pub fn js_idb_runtime_metrics() -> std::result::Result<JsValue, JsValue> {
             let blocked_count = read_storage_u64(IDB_OPEN_BLOCKED_COUNT_KEY);
-            let blocked_last = {
-                let mut value = None;
-                with_local_storage(|storage| {
-                    value = storage.get_item(IDB_OPEN_BLOCKED_LAST_KEY).ok().flatten();
-                });
-                value
-            };
+            let blocked_last = read_storage_f64(IDB_OPEN_BLOCKED_LAST_KEY);
             let versionchange_count = read_storage_u64(IDB_VERSIONCHANGE_COUNT_KEY);
-            let versionchange_last = {
-                let mut value = None;
-                with_local_storage(|storage| {
-                    value = storage.get_item(IDB_VERSIONCHANGE_LAST_KEY).ok().flatten();
-                });
-                value
+            let versionchange_last = read_storage_f64(IDB_VERSIONCHANGE_LAST_KEY);
+            let metrics = IdbRuntimeMetrics {
+                open_blocked_count: blocked_count,
+                open_blocked_last_ms: blocked_last,
+                version_change_count: versionchange_count,
+                version_change_last_ms: versionchange_last,
             };
+            serde_wasm_bindgen::to_value(&metrics).js()
+        }
 
-            let metrics = js_sys::Object::new();
-            Reflect::set(
-                &metrics,
-                &JsValue::from_str("openBlockedCount"),
-                &JsValue::from_f64(blocked_count as f64),
-            )
-            .js()?;
-            Reflect::set(
-                &metrics,
-                &JsValue::from_str("openBlockedLastMs"),
-                &blocked_last
-                    .as_ref()
-                    .and_then(|value| value.parse::<f64>().ok())
-                    .map(JsValue::from_f64)
-                    .unwrap_or(JsValue::NULL),
-            )
-            .js()?;
-            Reflect::set(
-                &metrics,
-                &JsValue::from_str("versionChangeCount"),
-                &JsValue::from_f64(versionchange_count as f64),
-            )
-            .js()?;
-            Reflect::set(
-                &metrics,
-                &JsValue::from_str("versionChangeLastMs"),
-                &versionchange_last
-                    .as_ref()
-                    .and_then(|value| value.parse::<f64>().ok())
-                    .map(JsValue::from_f64)
-                    .unwrap_or(JsValue::NULL),
-            )
-            .js()?;
-            Ok(metrics.into())
+        #[derive(Debug, Clone, Default, serde::Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct IdbRuntimeMetrics {
+            open_blocked_count: u64,
+            open_blocked_last_ms: Option<f64>,
+            version_change_count: u64,
+            version_change_last_ms: Option<f64>,
+        }
+
+        fn read_storage_f64(key: &str) -> Option<f64> {
+            let mut value = None;
+            with_local_storage(|storage| {
+                value = storage
+                    .get_item(key)
+                    .ok()
+                    .flatten()
+                    .and_then(|raw| raw.parse::<f64>().ok());
+            });
+            value
         }
     } else {
         fn idb_unavailable<T>() -> Result<T, JsValue> {

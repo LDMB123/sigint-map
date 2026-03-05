@@ -25,7 +25,11 @@ This runs:
    - Validates launcher-enforced strict flags are reflected in `summary.runInfo`.
    - Runs launcher twice and asserts fresh-run isolation (`runNonce`, prompt hash, and run directory all change).
 
-5. `e2e-smoke-live-gated.sh` (gated)  
+5. `e2e-smoke-microdetail-guard.mjs` (always)  
+   - Intentionally injects profile-breaking env values (`MICRO_PHYSICS_LANGUAGE_ENFORCEMENT=0`, `MICRO_PHYSICS_BANNED_TERMS=off`).
+   - Verifies microdetail profile guard fails fast with explicit invariant errors.
+
+6. `e2e-smoke-live-gated.sh` (gated)  
    - Skips by default.
    - Uses a fresh per-attempt output base to prevent stale-run false positives.
    - Verifies strict-mode invariants from `summary.runInfo` (hard-fail scorer policy, quality gate, schema enforcement, checklist enforcement).

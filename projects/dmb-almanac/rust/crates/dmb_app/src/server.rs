@@ -54,15 +54,25 @@ struct TimedCacheValue<T> {
 }
 
 #[cfg(feature = "ssr")]
-fn read_ttl_cache<T: Clone>(cache: &OnceLock<RwLock<Option<TimedCacheValue<T>>>>) -> Option<T> {
-    let lock = cache.get_or_init(|| RwLock::new(None));
-    let guard = lock.read().ok()?;
-    let entry = guard.as_ref()?;
-    if entry.cached_at.elapsed() <= SSR_DB_CACHE_TTL {
+fn cache_entry_is_fresh<T>(entry: &TimedCacheValue<T>) -> bool {
+    entry.cached_at.elapsed() <= SSR_DB_CACHE_TTL
+}
+
+#[cfg(feature = "ssr")]
+fn clone_if_fresh<T: Clone>(entry: &TimedCacheValue<T>) -> Option<T> {
+    if cache_entry_is_fresh(entry) {
         Some(entry.value.clone())
     } else {
         None
     }
+}
+
+#[cfg(feature = "ssr")]
+fn read_ttl_cache<T: Clone>(cache: &OnceLock<RwLock<Option<TimedCacheValue<T>>>>) -> Option<T> {
+    let lock = cache.get_or_init(|| RwLock::new(None));
+    let guard = lock.read().ok()?;
+    let entry = guard.as_ref()?;
+    clone_if_fresh(entry)
 }
 
 #[cfg(feature = "ssr")]
@@ -87,11 +97,7 @@ where
     let lock = cache.get_or_init(|| RwLock::new(HashMap::new()));
     let guard = lock.read().ok()?;
     let entry = guard.get(key)?;
-    if entry.cached_at.elapsed() <= SSR_DB_CACHE_TTL {
-        Some(entry.value.clone())
-    } else {
-        None
-    }
+    clone_if_fresh(entry)
 }
 
 #[cfg(feature = "ssr")]
@@ -100,7 +106,7 @@ fn write_ttl_keyed_cache<K, T>(
     key: K,
     value: &T,
 ) where
-    K: Eq + Hash + Clone,
+    K: Eq + Hash,
     T: Clone,
 {
     if let Ok(mut guard) = cache.get_or_init(|| RwLock::new(HashMap::new())).write() {
@@ -112,7 +118,7 @@ fn write_ttl_keyed_cache<K, T>(
             },
         );
         if guard.len() > SSR_DB_CACHE_MAX_ENTRIES {
-            guard.retain(|_, entry| entry.cached_at.elapsed() <= SSR_DB_CACHE_TTL);
+            guard.retain(|_, entry| cache_entry_is_fresh(entry));
             if guard.len() > SSR_DB_CACHE_MAX_ENTRIES {
                 guard.clear();
             }
@@ -145,7 +151,7 @@ async fn cached_keyed_value<K, T, F, Fut>(
     load: F,
 ) -> Result<T, ServerFnError>
 where
-    K: Eq + Hash + Clone,
+    K: Eq + Hash,
     T: Clone,
     F: FnOnce() -> Fut,
     Fut: Future<Output = Result<T, ServerFnError>>,
@@ -247,13 +253,9 @@ async fn fetch_rows<'q>(
 #[cfg(feature = "ssr")]
 fn map_rows<T>(
     rows: Vec<sqlx::sqlite::SqliteRow>,
-    mut map: impl FnMut(sqlx::sqlite::SqliteRow) -> Result<T, ServerFnError>,
+    map: impl FnMut(sqlx::sqlite::SqliteRow) -> Result<T, ServerFnError>,
 ) -> Result<Vec<T>, ServerFnError> {
-    let mut out = Vec::with_capacity(rows.len());
-    for row in rows {
-        out.push(map(row)?);
-    }
-    Ok(out)
+    rows.into_iter().map(map).collect()
 }
 
 #[cfg(not(feature = "ssr"))]
@@ -547,12 +549,13 @@ pub async fn get_show(id: i32) -> Result<Option<Show>, ServerFnError> {
             &pool,
             |row| {
                 let date: String = row_string(row, "date")?;
+                let year = year_from_date(&date);
                 Ok(Show {
                     id: row_i32(row, "id")?,
-                    date: date.clone(),
+                    date,
                     venue_id: row_i32(row, "venue_id")?,
                     tour_id: row_opt_i32(row, "tour_id")?,
-                    year: year_from_date(&date),
+                    year,
                     song_count: row_opt_i32(row, "song_count")?,
                     rarity_index: row_opt_f32(row, "rarity_index")?,
                 })
