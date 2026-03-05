@@ -1,5 +1,5 @@
 #[cfg(feature = "hydrate")]
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::{JsCast, JsValue};
 #[cfg(feature = "hydrate")]
 use wasm_bindgen_futures::JsFuture;
 
@@ -23,16 +23,26 @@ fn choose_backend(yield_supported: bool, post_task_supported: bool) -> Scheduler
 }
 
 #[cfg(feature = "hydrate")]
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = scheduler, js_name = "yield", catch)]
-    fn scheduler_yield() -> Result<js_sys::Promise, JsValue>;
+fn scheduler_object_or_undefined() -> JsValue {
+    crate::browser::runtime::window_property_or_undefined("scheduler")
+}
 
-    #[wasm_bindgen(js_namespace = scheduler, js_name = postTask, catch)]
-    fn scheduler_post_task(
-        callback: &js_sys::Function,
-        options: &JsValue,
-    ) -> Result<js_sys::Promise, JsValue>;
+#[cfg(feature = "hydrate")]
+fn scheduler_promise_call(name: &str, args: &[&JsValue]) -> Option<js_sys::Promise> {
+    let scheduler = scheduler_object_or_undefined();
+    if scheduler.is_null() || scheduler.is_undefined() {
+        return None;
+    }
+    let function = crate::browser::runtime::property_or_undefined(&scheduler, name)
+        .dyn_into::<js_sys::Function>()
+        .ok()?;
+    let value = match args {
+        [] => function.call0(&scheduler).ok()?,
+        [arg1] => function.call1(&scheduler, arg1).ok()?,
+        [arg1, arg2] => function.call2(&scheduler, arg1, arg2).ok()?,
+        _ => return None,
+    };
+    value.dyn_into::<js_sys::Promise>().ok()
 }
 
 #[cfg(feature = "hydrate")]
@@ -51,13 +61,13 @@ fn timeout_promise(delay_ms: i32) -> js_sys::Promise {
 #[cfg(feature = "hydrate")]
 fn post_task(delay_ms: i32) -> Option<js_sys::Promise> {
     let options = js_sys::Object::new();
-    let _ = js_sys::Reflect::set(
+    let _ = crate::browser::runtime::set_property(
         options.as_ref(),
-        &JsValue::from_str("delay"),
+        "delay",
         &JsValue::from_f64(f64::from(delay_ms.max(0))),
     );
     let callback = js_sys::Function::new_no_args("");
-    scheduler_post_task(&callback, options.as_ref()).ok()
+    scheduler_promise_call("postTask", &[callback.as_ref(), options.as_ref()])
 }
 
 #[cfg(feature = "hydrate")]
@@ -67,7 +77,7 @@ async fn await_promise(promise: js_sys::Promise) {
 
 #[cfg(feature = "hydrate")]
 pub async fn yield_now() {
-    let yield_promise = scheduler_yield().ok();
+    let yield_promise = scheduler_promise_call("yield", &[]);
     let post_task_promise = if yield_promise.is_none() {
         post_task(0)
     } else {

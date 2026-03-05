@@ -11,8 +11,10 @@ use wasm_bindgen::{JsCast, JsValue};
 
 #[cfg(feature = "hydrate")]
 fn performance_metrics_object() -> Option<JsValue> {
-    let window = web_sys::window()?;
-    js_sys::Reflect::get(window.as_ref(), &JsValue::from_str("__DMB_PERF_METRICS")).ok()
+    let _window = web_sys::window()?;
+    Some(crate::browser::runtime::window_property_or_undefined(
+        "__DMB_PERF_METRICS",
+    ))
 }
 
 #[cfg(feature = "hydrate")]
@@ -147,28 +149,20 @@ pub fn latest_inp_metrics_snapshot() -> Option<InpMetricsSnapshot> {
     if metrics.is_null() || metrics.is_undefined() {
         return Some(InpMetricsSnapshot::default());
     }
-    let compute = js_sys::Reflect::get(&metrics, &JsValue::from_str("compute"))
-        .ok()?
+    let compute = crate::browser::runtime::property_or_undefined(&metrics, "compute")
         .dyn_into::<js_sys::Function>()
         .ok()?;
     let summary = compute.call0(&metrics).ok()?;
 
-    let supported = js_sys::Reflect::get(&summary, &JsValue::from_str("supported"))
-        .ok()
-        .and_then(|value| value.as_bool())
+    let supported = crate::browser::runtime::property_or_undefined(&summary, "supported")
+        .as_bool()
         .unwrap_or(false);
-    let p75_interaction_ms = js_sys::Reflect::get(&summary, &JsValue::from_str("p75InteractionMs"))
-        .ok()
-        .and_then(|value| value.as_f64())
+    let p75_interaction_ms = crate::browser::runtime::property_f64(&summary, "p75InteractionMs")
         .filter(|value| value.is_finite());
-    let long_frame_count = js_sys::Reflect::get(&summary, &JsValue::from_str("longFrameCount"))
-        .ok()
-        .and_then(|value| value.as_f64())
+    let long_frame_count = crate::browser::runtime::property_f64(&summary, "longFrameCount")
         .filter(|value| value.is_finite() && *value >= 0.0)
         .unwrap_or(0.0) as u32;
-    let interaction_count = js_sys::Reflect::get(&summary, &JsValue::from_str("interactionCount"))
-        .ok()
-        .and_then(|value| value.as_f64())
+    let interaction_count = crate::browser::runtime::property_f64(&summary, "interactionCount")
         .filter(|value| value.is_finite() && *value >= 0.0)
         .map(|value| value as u32);
 
@@ -191,14 +185,8 @@ pub fn has_recent_interaction(window_ms: f64) -> bool {
     let Some(metrics) = performance_metrics_object() else {
         return false;
     };
-    if metrics.is_null() || metrics.is_undefined() {
-        return false;
-    }
-
     let Some(last_interaction_ts) =
-        js_sys::Reflect::get(&metrics, &JsValue::from_str("lastInteractionTs"))
-            .ok()
-            .and_then(|value| value.as_f64())
+        crate::browser::runtime::property_f64(&metrics, "lastInteractionTs")
     else {
         return false;
     };

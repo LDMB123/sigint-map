@@ -7,7 +7,7 @@ use wasm_bindgen_futures::JsFuture;
 
 #[cfg(feature = "hydrate")]
 pub fn local_storage() -> Option<web_sys::Storage> {
-    web_sys::window().and_then(|window| window.local_storage().ok().flatten())
+    crate::browser::runtime::window_local_storage()
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -164,8 +164,7 @@ struct StorageEstimateValue {
 
 #[cfg(feature = "hydrate")]
 pub async fn estimate_usage_quota() -> Option<(Option<f64>, Option<f64>)> {
-    let window = web_sys::window()?;
-    let manager = window.navigator().storage();
+    let manager = crate::browser::runtime::navigator_storage_manager()?;
     let estimate = JsFuture::from(manager.estimate().ok()?).await.ok()?;
     let parsed = serde_wasm_bindgen::from_value::<StorageEstimateValue>(estimate).ok()?;
     Some((parsed.usage, parsed.quota))

@@ -264,7 +264,7 @@ cfg_if::cfg_if! {
             tx.await.js()?;
 
             value
-                .map(|v| serde_wasm_bindgen::from_value(v))
+                .map(serde_wasm_bindgen::from_value)
                 .transpose()
                 .js()
         }
@@ -332,7 +332,7 @@ cfg_if::cfg_if! {
                 .js()?;
             tx.await.js()?;
             value
-                .map(|v| serde_wasm_bindgen::from_value(v))
+                .map(serde_wasm_bindgen::from_value)
                 .transpose()
                 .js()
         }
@@ -359,7 +359,7 @@ cfg_if::cfg_if! {
                 .js()?;
             tx.await.js()?;
             value
-                .map(|v| serde_wasm_bindgen::from_value(v))
+                .map(serde_wasm_bindgen::from_value)
                 .transpose()
                 .js()
         }
@@ -382,7 +382,7 @@ cfg_if::cfg_if! {
                 .js()?;
             tx.await.js()?;
             value
-                .map(|v| serde_wasm_bindgen::from_value(v))
+                .map(serde_wasm_bindgen::from_value)
                 .transpose()
                 .js()
         }
@@ -401,7 +401,7 @@ cfg_if::cfg_if! {
                 .js()?;
             tx.await.js()?;
             value
-                .map(|v| serde_wasm_bindgen::from_value(v))
+                .map(serde_wasm_bindgen::from_value)
                 .transpose()
                 .js()
         }
@@ -927,7 +927,7 @@ cfg_if::cfg_if! {
             let store = tx.object_store(store_name).js()?;
             let count = store.count(None).js()?.await.js()?;
             tx.await.js()?;
-            Ok(count as u32)
+            Ok(count)
         }
 
         pub async fn migrate_previous_db() -> Result<bool> {

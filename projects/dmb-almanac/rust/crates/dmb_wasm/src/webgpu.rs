@@ -23,45 +23,6 @@ extern "C" {
     fn dmb_load_webgpu_helpers() -> js_sys::Promise;
 }
 
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuProbe, catch)]
-    fn dmb_webgpu_probe_js() -> Result<js_sys::Promise, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbWarmWebgpuWorker, catch)]
-    fn dmb_warm_webgpu_worker_js() -> Result<js_sys::Promise, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScoresWorker, catch)]
-    fn dmb_webgpu_scores_worker_js(
-        query: &Float32Array,
-        matrix: &Float32Array,
-        dim: f64,
-    ) -> Result<js_sys::Promise, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScores, catch)]
-    fn dmb_webgpu_scores_js(
-        query: &Float32Array,
-        matrix: &Float32Array,
-        dim: f64,
-    ) -> Result<js_sys::Promise, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScoresSubsetWorker, catch)]
-    fn dmb_webgpu_scores_subset_worker_js(
-        query: &Float32Array,
-        matrix: &Float32Array,
-        dim: f64,
-        indices: &js_sys::Uint32Array,
-    ) -> Result<js_sys::Promise, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbWebgpuScoresSubset, catch)]
-    fn dmb_webgpu_scores_subset_js(
-        query: &Float32Array,
-        matrix: &Float32Array,
-        dim: f64,
-        indices: &js_sys::Uint32Array,
-    ) -> Result<js_sys::Promise, JsValue>;
-}
-
 #[derive(Debug, Clone, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 struct WebgpuProbeResult {
@@ -92,9 +53,26 @@ pub async fn ensure_webgpu_helpers_loaded() -> bool {
         .unwrap_or(false)
 }
 
+fn call_window_promise(name: &str, args: &[&JsValue]) -> Option<js_sys::Promise> {
+    let window = web_sys::window()?;
+    let function = js_sys::Reflect::get(window.as_ref(), &JsValue::from_str(name))
+        .ok()?
+        .dyn_into::<js_sys::Function>()
+        .ok()?;
+    let js_args = js_sys::Array::new();
+    for arg in args {
+        js_args.push(arg);
+    }
+    function
+        .apply(window.as_ref(), &js_args)
+        .ok()?
+        .dyn_into::<js_sys::Promise>()
+        .ok()
+}
+
 pub async fn webgpu_probe_available() -> Option<bool> {
     let _ = ensure_webgpu_helpers_loaded().await;
-    let promise = dmb_webgpu_probe_js().ok()?;
+    let promise = call_window_promise("dmbWebgpuProbe", &[])?;
     let result = JsFuture::from(promise).await.ok()?;
     serde_wasm_bindgen::from_value::<WebgpuProbeResult>(result)
         .ok()
@@ -103,7 +81,7 @@ pub async fn webgpu_probe_available() -> Option<bool> {
 
 pub async fn warm_webgpu_worker() -> Option<WarmWebgpuStatus> {
     let _ = ensure_webgpu_helpers_loaded().await;
-    let promise = dmb_warm_webgpu_worker_js().ok()?;
+    let promise = call_window_promise("dmbWarmWebgpuWorker", &[])?;
     let result = JsFuture::from(promise).await.ok()?;
     serde_wasm_bindgen::from_value::<WebgpuWarmResult>(result)
         .ok()
@@ -127,7 +105,11 @@ pub async fn webgpu_scores_direct(
     dim: usize,
 ) -> Option<Float32Array> {
     let _ = ensure_webgpu_helpers_loaded().await;
-    let promise = dmb_webgpu_scores_js(query, matrix, dim as f64).ok()?;
+    let dim_value = JsValue::from_f64(dim as f64);
+    let promise = call_window_promise(
+        "dmbWebgpuScores",
+        &[query.as_ref(), matrix.as_ref(), &dim_value],
+    )?;
     resolve_scores_promise(promise).await
 }
 
@@ -137,7 +119,11 @@ pub async fn webgpu_scores_worker(
     dim: usize,
 ) -> Option<Float32Array> {
     let _ = ensure_webgpu_helpers_loaded().await;
-    let promise = dmb_webgpu_scores_worker_js(query, matrix, dim as f64).ok()?;
+    let dim_value = JsValue::from_f64(dim as f64);
+    let promise = call_window_promise(
+        "dmbWebgpuScoresWorker",
+        &[query.as_ref(), matrix.as_ref(), &dim_value],
+    )?;
     resolve_scores_promise(promise).await
 }
 
@@ -148,7 +134,16 @@ pub async fn webgpu_scores_subset_direct(
     indices: &js_sys::Uint32Array,
 ) -> Option<Float32Array> {
     let _ = ensure_webgpu_helpers_loaded().await;
-    let promise = dmb_webgpu_scores_subset_js(query, matrix, dim as f64, indices).ok()?;
+    let dim_value = JsValue::from_f64(dim as f64);
+    let promise = call_window_promise(
+        "dmbWebgpuScoresSubset",
+        &[
+            query.as_ref(),
+            matrix.as_ref(),
+            &dim_value,
+            indices.as_ref(),
+        ],
+    )?;
     resolve_scores_promise(promise).await
 }
 
@@ -159,7 +154,16 @@ pub async fn webgpu_scores_subset_worker(
     indices: &js_sys::Uint32Array,
 ) -> Option<Float32Array> {
     let _ = ensure_webgpu_helpers_loaded().await;
-    let promise = dmb_webgpu_scores_subset_worker_js(query, matrix, dim as f64, indices).ok()?;
+    let dim_value = JsValue::from_f64(dim as f64);
+    let promise = call_window_promise(
+        "dmbWebgpuScoresSubsetWorker",
+        &[
+            query.as_ref(),
+            matrix.as_ref(),
+            &dim_value,
+            indices.as_ref(),
+        ],
+    )?;
     resolve_scores_promise(promise).await
 }
 
@@ -216,14 +220,20 @@ pub async fn webgpu_scores(
     let _ = ensure_webgpu_helpers_loaded().await;
     let query_array = Float32Array::from(query.as_slice());
     let matrix_array = Float32Array::from(matrix.as_slice());
-    let promise =
-        if let Ok(worker) = dmb_webgpu_scores_worker_js(&query_array, &matrix_array, dim as f64) {
-            worker
-        } else if let Ok(direct) = dmb_webgpu_scores_js(&query_array, &matrix_array, dim as f64) {
-            direct
-        } else {
-            return Ok(cpu_scores(&query, &matrix, dim));
-        };
+    let dim_value = JsValue::from_f64(dim as f64);
+    let promise = if let Some(worker) = call_window_promise(
+        "dmbWebgpuScoresWorker",
+        &[query_array.as_ref(), matrix_array.as_ref(), &dim_value],
+    ) {
+        worker
+    } else if let Some(direct) = call_window_promise(
+        "dmbWebgpuScores",
+        &[query_array.as_ref(), matrix_array.as_ref(), &dim_value],
+    ) {
+        direct
+    } else {
+        return Ok(cpu_scores(&query, &matrix, dim));
+    };
     let result = JsFuture::from(promise).await?;
     if result.is_null() || result.is_undefined() {
         return Ok(cpu_scores(&query, &matrix, dim));
@@ -256,13 +266,26 @@ pub async fn webgpu_scores_subset(
     let query_array = Float32Array::from(query.as_slice());
     let matrix_array = Float32Array::from(matrix.as_slice());
     let indices_array = js_sys::Uint32Array::from(indices.as_slice());
-    let promise = if let Ok(worker) =
-        dmb_webgpu_scores_subset_worker_js(&query_array, &matrix_array, dim as f64, &indices_array)
-    {
+    let dim_value = JsValue::from_f64(dim as f64);
+    let promise = if let Some(worker) = call_window_promise(
+        "dmbWebgpuScoresSubsetWorker",
+        &[
+            query_array.as_ref(),
+            matrix_array.as_ref(),
+            &dim_value,
+            indices_array.as_ref(),
+        ],
+    ) {
         worker
-    } else if let Ok(direct) =
-        dmb_webgpu_scores_subset_js(&query_array, &matrix_array, dim as f64, &indices_array)
-    {
+    } else if let Some(direct) = call_window_promise(
+        "dmbWebgpuScoresSubset",
+        &[
+            query_array.as_ref(),
+            matrix_array.as_ref(),
+            &dim_value,
+            indices_array.as_ref(),
+        ],
+    ) {
         direct
     } else {
         return Ok(cpu_scores_subset(&query, &matrix, dim, &indices));

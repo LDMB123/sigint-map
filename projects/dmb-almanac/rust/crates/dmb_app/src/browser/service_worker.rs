@@ -12,8 +12,7 @@ const DEFAULT_SW_SCRIPT_URL: &str = "/sw.js";
 
 #[cfg(feature = "hydrate")]
 pub fn service_worker_container() -> Option<ServiceWorkerContainer> {
-    let window = web_sys::window()?;
-    Some(window.navigator().service_worker())
+    crate::browser::runtime::navigator_service_worker_container()
 }
 
 #[cfg(feature = "hydrate")]
@@ -81,9 +80,9 @@ pub fn worker_state(_worker: &web_sys::ServiceWorker) -> Option<String> {
 #[cfg(feature = "hydrate")]
 pub fn post_message_type(worker: &web_sys::ServiceWorker, message_type: &str) -> bool {
     let message = js_sys::Object::new();
-    let _ = js_sys::Reflect::set(
+    let _ = crate::browser::runtime::set_property(
         message.as_ref(),
-        &JsValue::from_str("type"),
+        "type",
         &JsValue::from_str(message_type),
     );
     worker.post_message(&message).is_ok()
@@ -96,10 +95,7 @@ pub fn post_message_type(_worker: &web_sys::ServiceWorker, _message_type: &str) 
 
 #[cfg(feature = "hydrate")]
 pub async fn cache_names() -> Option<Vec<String>> {
-    let window = web_sys::window()?;
-    let Ok(cache_storage) = window.caches() else {
-        return None;
-    };
+    let cache_storage = crate::browser::runtime::window_cache_storage()?;
     let Ok(keys) = JsFuture::from(cache_storage.keys()).await else {
         return None;
     };
@@ -120,10 +116,7 @@ pub async fn cache_names() -> Option<Vec<String>> {
 
 #[cfg(feature = "hydrate")]
 pub async fn count_all_cache_entries() -> Option<usize> {
-    let window = web_sys::window()?;
-    let Ok(cache_storage) = window.caches() else {
-        return None;
-    };
+    let cache_storage = crate::browser::runtime::window_cache_storage()?;
     let names = cache_names().await?;
     let mut total = 0usize;
     for name in names {
@@ -143,10 +136,7 @@ pub async fn count_all_cache_entries() -> Option<usize> {
 
 #[cfg(feature = "hydrate")]
 pub async fn delete_cache_by_name(name: &str) -> bool {
-    let Some(window) = web_sys::window() else {
-        return false;
-    };
-    let Ok(cache_storage) = window.caches() else {
+    let Some(cache_storage) = crate::browser::runtime::window_cache_storage() else {
         return false;
     };
     match JsFuture::from(cache_storage.delete(name)).await {
@@ -162,10 +152,7 @@ pub async fn delete_cache_by_name(_name: &str) -> bool {
 
 #[cfg(feature = "hydrate")]
 pub async fn delete_paths_from_data_caches(paths: &[&str]) -> usize {
-    let Some(window) = web_sys::window() else {
-        return 0;
-    };
-    let Ok(cache_storage) = window.caches() else {
+    let Some(cache_storage) = crate::browser::runtime::window_cache_storage() else {
         return 0;
     };
     let Ok(keys) = JsFuture::from(cache_storage.keys()).await else {

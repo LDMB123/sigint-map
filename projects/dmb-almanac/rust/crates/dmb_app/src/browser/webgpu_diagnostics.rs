@@ -45,35 +45,17 @@ pub struct AppleSiliconProfile {
 }
 
 #[cfg(feature = "hydrate")]
-use wasm_bindgen::prelude::wasm_bindgen;
-#[cfg(feature = "hydrate")]
-use wasm_bindgen::JsValue;
-
-#[cfg(feature = "hydrate")]
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = window, js_name = dmbGetWebgpuTelemetry, catch)]
-    fn js_get_webgpu_runtime_telemetry() -> Result<JsValue, JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbResetWebgpuTelemetry, catch)]
-    fn js_reset_webgpu_runtime_telemetry() -> Result<(), JsValue>;
-
-    #[wasm_bindgen(js_namespace = window, js_name = dmbGetAppleSiliconProfile, catch)]
-    fn js_get_apple_silicon_profile() -> Result<JsValue, JsValue>;
-}
-
-#[cfg(feature = "hydrate")]
-fn has_window_function(name: &str) -> bool {
-    crate::browser::runtime::window_property_or_undefined(name).is_function()
+fn load_window_json<T>(function_name: &str) -> Option<T>
+where
+    T: serde::de::DeserializeOwned,
+{
+    let value = crate::browser::runtime::call_window_function_0(function_name)?;
+    serde_wasm_bindgen::from_value(value).ok()
 }
 
 #[cfg(feature = "hydrate")]
 pub fn load_runtime_telemetry() -> Option<WebgpuRuntimeTelemetry> {
-    if !has_window_function("dmbGetWebgpuTelemetry") {
-        return None;
-    }
-    let value = js_get_webgpu_runtime_telemetry().ok()?;
-    serde_wasm_bindgen::from_value(value).ok()
+    load_window_json("dmbGetWebgpuTelemetry")
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -83,10 +65,7 @@ pub fn load_runtime_telemetry() -> Option<WebgpuRuntimeTelemetry> {
 
 #[cfg(feature = "hydrate")]
 pub fn reset_runtime_telemetry() {
-    if !has_window_function("dmbResetWebgpuTelemetry") {
-        return;
-    }
-    let _ = js_reset_webgpu_runtime_telemetry();
+    let _ = crate::browser::runtime::call_window_function_0("dmbResetWebgpuTelemetry");
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -94,11 +73,7 @@ pub fn reset_runtime_telemetry() {}
 
 #[cfg(feature = "hydrate")]
 pub fn load_apple_silicon_profile() -> Option<AppleSiliconProfile> {
-    if !has_window_function("dmbGetAppleSiliconProfile") {
-        return None;
-    }
-    let value = js_get_apple_silicon_profile().ok()?;
-    serde_wasm_bindgen::from_value(value).ok()
+    load_window_json("dmbGetAppleSiliconProfile")
 }
 
 #[cfg(not(feature = "hydrate"))]
