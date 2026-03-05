@@ -257,6 +257,13 @@ cfg_if::cfg_if! {
             });
 
             let mut db = request.await.js()?;
+            db.on_close(|_| {
+                clear_cached_db();
+                web_sys::console::warn_1(&JsValue::from_str(&format!(
+                    "[IDB] close received for `{}`. Cleared cached connection handle.",
+                    DB_NAME
+                )));
+            });
             db.on_version_change(|event| {
                 bump_storage_counter(IDB_VERSIONCHANGE_COUNT_KEY);
                 write_storage_value(IDB_VERSIONCHANGE_LAST_KEY, &Date::now().to_string());

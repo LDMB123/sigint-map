@@ -4,6 +4,8 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 #[cfg(feature = "hydrate")]
 use std::future::Future;
+#[cfg(feature = "hydrate")]
+use std::sync::OnceLock;
 
 #[cfg(feature = "hydrate")]
 use leptos::prelude::GetUntracked;
@@ -253,13 +255,14 @@ fn read_thread_ttl_cache<T: Clone>(
 ) -> Option<T> {
     let now = js_sys::Date::now();
     cache.with(|cache| {
-        let cached = cache.borrow();
-        let (timestamp_ms, value) = cached.as_ref()?;
-        if now - *timestamp_ms <= ttl_ms {
-            Some(value.clone())
-        } else {
-            None
+        let mut cached = cache.borrow_mut();
+        if let Some((timestamp_ms, value)) = cached.as_ref() {
+            if now - *timestamp_ms <= ttl_ms {
+                return Some(value.clone());
+            }
         }
+        *cached = None;
+        None
     })
 }
 
@@ -864,7 +867,7 @@ const IMPORT_SPECS: &[ImportSpec] = &[
 
 #[cfg(feature = "hydrate")]
 fn build_import_work_items(manifest: &DataManifest) -> Vec<ImportWorkItem> {
-    let mut items = Vec::new();
+    let mut items = Vec::with_capacity(IMPORT_SPECS.len() + manifest.files.len());
     for spec in IMPORT_SPECS {
         if let Some(prefix) = spec.chunk_prefix {
             let chunk_files = manifest.chunk_files_with_prefix(prefix);
@@ -1513,26 +1516,32 @@ struct DryRunReport {
 #[cfg(feature = "hydrate")]
 fn dry_run_store_counts(report: &DryRunReport) -> std::collections::HashMap<String, u64> {
     let mut store_counts = std::collections::HashMap::new();
+    let chunk_specs: Vec<(&'static str, &'static str)> = IMPORT_SPECS
+        .iter()
+        .filter_map(|spec| spec.chunk_prefix.map(|prefix| (prefix, spec.store)))
+        .collect();
+    let mut chunk_totals: std::collections::HashMap<&'static str, u64> =
+        std::collections::HashMap::new();
+
+    for (name, count) in &report.file_counts {
+        let Some(stem) = manifest_name_stem(name) else {
+            continue;
+        };
+        for (prefix, store) in &chunk_specs {
+            if stem.starts_with(prefix) {
+                *chunk_totals.entry(*store).or_insert(0) += *count;
+                break;
+            }
+        }
+    }
+
     for spec in IMPORT_SPECS {
-        if let Some(prefix) = spec.chunk_prefix {
-            let chunk_total = report
-                .file_counts
-                .iter()
-                .filter_map(|(name, count)| {
-                    let stem = manifest_name_stem(name)?;
-                    if stem.starts_with(prefix) {
-                        Some(*count)
-                    } else {
-                        None
-                    }
-                })
-                .sum::<u64>();
+        if let Some(chunk_total) = chunk_totals.get(spec.store).copied() {
             if chunk_total > 0 {
                 store_counts.insert(spec.store.to_string(), chunk_total);
                 continue;
             }
         }
-
         if let Some(count) = report.file_counts.get(spec.file) {
             store_counts.insert(spec.store.to_string(), *count);
         }
@@ -1542,26 +1551,26 @@ fn dry_run_store_counts(report: &DryRunReport) -> std::collections::HashMap<Stri
 
 #[cfg(feature = "hydrate")]
 async fn collect_integrity_mismatches_for_checks(
-    checks: Vec<(String, u64)>,
+    checks: &[(String, u64)],
     counted: &mut HashMap<String, u64>,
     missing_stores: &HashSet<String>,
     mismatches: &mut Vec<IntegrityMismatch>,
     scope: &'static str,
 ) {
     for (store, expected_count) in checks {
-        if missing_stores.contains(&store) {
+        if missing_stores.contains(store.as_str()) {
             mismatches.push(IntegrityMismatch {
-                store,
-                expected: expected_count,
+                store: store.clone(),
+                expected: *expected_count,
                 actual: 0,
             });
             continue;
         }
 
-        let actual = if let Some(value) = counted.get(&store).copied() {
+        let actual = if let Some(value) = counted.get(store.as_str()).copied() {
             value
         } else {
-            match dmb_idb::count_store(&store).await {
+            match dmb_idb::count_store(store).await {
                 Ok(value) => {
                     let value = value as u64;
                     counted.insert(store.clone(), value);
@@ -1570,14 +1579,14 @@ async fn collect_integrity_mismatches_for_checks(
                 Err(err) => {
                     tracing::warn!(
                         store,
-                        expected_count,
+                        expected_count = *expected_count,
                         scope,
                         error = ?err,
                         "integrity: failed to count store; treating as mismatch"
                     );
                     mismatches.push(IntegrityMismatch {
-                        store,
-                        expected: expected_count,
+                        store: store.clone(),
+                        expected: *expected_count,
                         actual: 0,
                     });
                     continue;
@@ -1585,14 +1594,54 @@ async fn collect_integrity_mismatches_for_checks(
             }
         };
 
-        if actual != expected_count {
+        if actual != *expected_count {
             mismatches.push(IntegrityMismatch {
-                store,
-                expected: expected_count,
+                store: store.clone(),
+                expected: *expected_count,
                 actual,
             });
         }
     }
+}
+
+#[cfg(feature = "hydrate")]
+fn import_store_lookup_by_manifest_name() -> &'static HashMap<String, &'static str> {
+    static LOOKUP: OnceLock<HashMap<String, &'static str>> = OnceLock::new();
+    LOOKUP.get_or_init(|| {
+        IMPORT_SPECS
+            .iter()
+            .filter_map(|spec| normalized_manifest_name(spec.file).map(|name| (name, spec.store)))
+            .collect()
+    })
+}
+
+#[cfg(feature = "hydrate")]
+fn build_manifest_checks(expected: HashMap<String, u64>) -> Vec<(String, u64)> {
+    let stores_by_manifest_name = import_store_lookup_by_manifest_name();
+    expected
+        .into_iter()
+        .filter_map(|(name, expected_count)| {
+            stores_by_manifest_name
+                .get(&name)
+                .map(|store| ((*store).to_string(), expected_count))
+        })
+        .collect()
+}
+
+#[cfg(feature = "hydrate")]
+fn dedupe_integrity_mismatches(mut mismatches: Vec<IntegrityMismatch>) -> Vec<IntegrityMismatch> {
+    let mut unique = Vec::with_capacity(mismatches.len());
+    for mismatch in mismatches.drain(..) {
+        let already_seen = unique.iter().any(|existing: &IntegrityMismatch| {
+            existing.store == mismatch.store
+                && existing.expected == mismatch.expected
+                && existing.actual == mismatch.actual
+        });
+        if !already_seen {
+            unique.push(mismatch);
+        }
+    }
+    unique
 }
 
 #[cfg(feature = "hydrate")]
@@ -1605,20 +1654,7 @@ async fn verify_import_integrity(
         return None;
     }
 
-    let mut manifest_checks: Vec<(String, u64)> = Vec::new();
-    for (name, expected_count) in expected {
-        let store = IMPORT_SPECS.iter().find_map(|spec| {
-            let normalized = normalized_manifest_name(spec.file)?;
-            if normalized == name {
-                Some(spec.store)
-            } else {
-                None
-            }
-        });
-        if let Some(store) = store {
-            manifest_checks.push((store.to_string(), expected_count));
-        }
-    }
+    let manifest_checks = build_manifest_checks(expected);
 
     let dry_run_checks = dry_run.map(dry_run_store_counts).unwrap_or_default();
     let dry_run_check_entries: Vec<(String, u64)> = dry_run_checks
@@ -1626,18 +1662,20 @@ async fn verify_import_integrity(
         .map(|(store, count)| (store.clone(), *count))
         .collect();
 
-    let mut stores_to_count: Vec<String> = manifest_checks
+    let mut stores_to_count: HashSet<&str> = manifest_checks
         .iter()
-        .map(|(store, _)| store.clone())
+        .map(|(store, _)| store.as_str())
         .collect();
-    stores_to_count.extend(dry_run_check_entries.iter().map(|(store, _)| store.clone()));
-    stores_to_count.sort_unstable();
-    stores_to_count.dedup();
+    stores_to_count.extend(
+        dry_run_check_entries
+            .iter()
+            .map(|(store, _)| store.as_str()),
+    );
 
     let mut counted: HashMap<String, u64> = HashMap::new();
     let mut missing_stores: HashSet<String> = HashSet::new();
     if !stores_to_count.is_empty() {
-        let store_refs: Vec<&str> = stores_to_count.iter().map(|store| store.as_str()).collect();
+        let store_refs: Vec<&str> = stores_to_count.into_iter().collect();
         match dmb_idb::count_stores_with_missing(&store_refs).await {
             Ok((entries, missing)) => {
                 for (store, count) in entries {
@@ -1656,7 +1694,7 @@ async fn verify_import_integrity(
 
     let mut mismatches = Vec::new();
     collect_integrity_mismatches_for_checks(
-        manifest_checks,
+        &manifest_checks,
         &mut counted,
         &missing_stores,
         &mut mismatches,
@@ -1664,7 +1702,7 @@ async fn verify_import_integrity(
     )
     .await;
     collect_integrity_mismatches_for_checks(
-        dry_run_check_entries,
+        &dry_run_check_entries,
         &mut counted,
         &missing_stores,
         &mut mismatches,
@@ -1672,12 +1710,7 @@ async fn verify_import_integrity(
     )
     .await;
 
-    if mismatches.len() > 1 {
-        let mut seen: HashSet<(String, u64, u64)> = HashSet::new();
-        mismatches.retain(|entry| seen.insert((entry.store.clone(), entry.expected, entry.actual)));
-    }
-
-    Some(mismatches)
+    Some(dedupe_integrity_mismatches(mismatches))
 }
 
 #[cfg(not(feature = "hydrate"))]
