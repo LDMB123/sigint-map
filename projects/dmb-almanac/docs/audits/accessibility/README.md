@@ -1,8 +1,7 @@
-# Accessibility Audit Placeholder
+# Accessibility Audit Notes
 
 Use this directory for accessibility audit references and follow-up reports.
 
-Recommended naming:
+Recommended naming pattern:
 
-- `ACCESSIBILITY_AUDIT_<YYYY-MM-DD>.md`
-
+- ACCESSIBILITY_AUDIT_YYYY-MM-DD.md

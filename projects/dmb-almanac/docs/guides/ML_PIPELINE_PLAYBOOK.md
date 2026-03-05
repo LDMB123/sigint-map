@@ -32,8 +32,8 @@ Deliver lightweight, trustworthy ML features (setlist prediction, liberation lik
 ## Artifacts
 - `features.parquet` (feature store snapshot)
 - `model.onnx` (portable inference)
-- `eval.json` (metrics + slices)
-- `serving.json` (config + thresholds)
+- evaluation metrics artifact (JSON)
+- serving configuration artifact (JSON)
 
 ## Monitoring
 - Drift detection on recency distribution

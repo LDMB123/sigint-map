@@ -50,11 +50,7 @@ test.describe('Rust AI timeout/degradation guardrails', () => {
       /webgpu_worker_cooldown/i
     );
 
-    await page.evaluate(() => {
-      if (typeof window.dmbClearWorkerFailureStatus === 'function') {
-        window.dmbClearWorkerFailureStatus();
-      }
-    });
+    await page.getByRole('button', { name: /Clear worker cooldown/i }).click();
     await page.waitForFunction(
       () =>
         !localStorage.getItem('dmb-webgpu-worker-failure-until') &&

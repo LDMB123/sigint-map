@@ -96,7 +96,7 @@
   - tours: `year desc`, tie `total_shows desc`, then `name asc`
   - releases: `release_date desc`, tie `title asc`, then `id`
 - Applied truncation (`limit`) after normalization to keep page behavior deterministic.
-- Added unit tests in `pages.rs` validating sorting and limit behavior.
+- Added unit tests in `rust/crates/dmb_app/src/pages.rs` validating sorting and limit behavior.
 
 7. PWA update/recovery edge-state test coverage
 
@@ -143,7 +143,7 @@
   - compile/test duration and memory snapshots.
 - Extended route and parity integration test sets beyond current render/parity coverage.
 - Accessibility automated + manual spot-check report for top 10 routes.
-- PWA status component deep hardening pass (`pwa_status.rs`) with update/cache-flow UX checks.
+- PWA status component deep hardening pass (`rust/crates/dmb_app/src/components/pwa_status.rs`) with update/cache-flow UX checks.
 - Duplicate data-source normalization and pipeline/manifest path unification.
 - Manual release-window checks/sign-offs:
   - offline no-network spot-check,
@@ -155,7 +155,7 @@
 Executed from `rust/`:
 
 - `cargo check --workspace` -> pass
-- `cargo fmt --all -- --check` -> fail (format drift in `pages.rs`), then fixed with `cargo fmt --all`
+- `cargo fmt --all -- --check` -> fail (format drift in `rust/crates/dmb_app/src/pages.rs`), then fixed with `cargo fmt --all`
 - `cargo clippy --workspace --all-targets -- -D warnings` -> pass
 - `cargo test -p dmb_app --features ssr` -> pass (unit + integration suites)
 - `cargo test -p dmb_app --test route_render --features ssr` -> pass (`1 passed`)

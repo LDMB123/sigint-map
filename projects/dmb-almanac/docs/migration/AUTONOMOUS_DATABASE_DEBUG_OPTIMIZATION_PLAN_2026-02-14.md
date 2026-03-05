@@ -52,7 +52,7 @@ python3 scripts/check-doc-integrity.py
 
 | Date | Gate | Evidence Artifact |
 |---|---|---|
-| 2026-02-15 | `bash scripts/autonomous-db-optimize.sh` | runtime DB + parity + plan audit outputs in `rust/.tmp/` |
+| 2026-02-15 | `bash scripts/autonomous-db-optimize.sh` | runtime DB + parity + plan audit outputs in `.tmp/` |
 | 2026-02-15 | `bash scripts/cutover-rehearsal.sh` | cutover gate output and E2E pass summary |
 | 2026-02-15 | `BASE_URL=http://127.0.0.1:<port> bash scripts/cutover-remote-e2e.sh` | remote-style E2E pass summary |
 | 2026-02-15 | `python3 scripts/check-doc-integrity.py` | docs integrity pass |

@@ -12,6 +12,8 @@ Operational reference for the active Rust scraping/data pipeline used by the Rus
 
 ## Core Commands
 
+Run from `rust/`:
+
 ```bash
 # Live scrape + warnings report
 cargo run -p dmb_pipeline -- scrape --live --warnings-output data/warnings.json
@@ -32,7 +34,7 @@ DMB_VALIDATE_WARNING_REPORT=data/warnings.json \
 
 ## Primary Outputs
 
-- Warning reports: `data/warnings.json`
+- Warning reports: generated in `rust/data/` (for example `warnings*.json`)
 - Server-served bundle: `rust/static/data/`
 - Data manifest: `rust/static/data/manifest.json`
 
@@ -45,8 +47,8 @@ DMB_VALIDATE_WARNING_REPORT=data/warnings.json \
 ## Troubleshooting (Short)
 
 - Frequent retries/timeouts: reduce concurrency, rerun smoke/fixtures first.
-- Empty/partial scrape output: verify target selectors in `scrape.rs` and rerun fixture gate.
-- Validation failures: inspect `data/warnings.json` and reconcile against strict validation rules.
+- Empty/partial scrape output: verify selectors in `rust/crates/dmb_pipeline/src/scrape.rs` and rerun fixture gate.
+- Validation failures: inspect generated warning reports in `rust/data/` and reconcile against strict validation rules.
 
 ## Deep-Dive Debug Path
 
@@ -55,7 +57,7 @@ When short troubleshooting is insufficient, inspect in this order:
 1. Fixture baselines: `rust/crates/dmb_pipeline/tests/fixtures/`
 2. Parser/selectors: `rust/crates/dmb_pipeline/src/scrape.rs`
 3. CLI wiring and flags: `rust/crates/dmb_pipeline/src/main.rs`
-4. Warning payloads: `data/warnings.json` (and fixture warning outputs)
+4. Warning payloads in `rust/data/` (and fixture warning outputs)
 5. Validation and parity flow: run `validate --strict-warnings` before broad reruns
 
 ## Historical Notes

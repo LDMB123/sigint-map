@@ -29,7 +29,7 @@ From repo root:
 Optional:
 
 - `bash scripts/a11y-keyboard-spotcheck.sh --base-url http://127.0.0.1:3000 --operator "<name>"`
-- `bash scripts/a11y-keyboard-spotcheck.sh --output docs/reports/QUALITY/A11Y_KEYBOARD_SPOTCHECK_<date>.md --force`
+- `bash scripts/a11y-keyboard-spotcheck.sh --output docs/reports/QUALITY/A11Y_KEYBOARD_SPOTCHECK_SAMPLE.md --force`
 
 The script creates a dated report template in `docs/reports/QUALITY/`.
 
@@ -71,6 +71,6 @@ For `Critical` or repeated `Major` findings:
 ## Artifacts
 
 - Latest manual report:
-  - `docs/reports/QUALITY/A11Y_KEYBOARD_SPOTCHECK_<date>.md`
+  - `docs/reports/QUALITY/A11Y_KEYBOARD_SPOTCHECK_SAMPLE.md`
 - Automated baseline test:
   - `rust/crates/dmb_app/tests/a11y_routes.rs`

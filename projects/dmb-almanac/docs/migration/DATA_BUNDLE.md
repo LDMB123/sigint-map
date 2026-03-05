@@ -3,7 +3,7 @@
 ## Files
 - `data/static-data/manifest.json` — canonical manifest (counts + checksums)
 - `data/static-data/*.json` allowlist — runtime-seeded data corpus
-- Optional AI assets (`ann-index*`, `embedding-manifest.json`, `embedding-chunk-*.json`)
+- Optional AI assets in `data/static-data/` (ANN index files and embedding manifest/chunk files)
 
 ## Storage
 - For the Rust-first app, the primary offline store is IndexedDB (seeded from `rust/static/data/*`).

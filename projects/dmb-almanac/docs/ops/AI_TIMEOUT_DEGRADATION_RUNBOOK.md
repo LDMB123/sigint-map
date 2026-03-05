@@ -36,9 +36,9 @@ Expected result:
 
 ## Artifact
 
-Record run output in:
+Record run output in a dated file under `docs/reports/QUALITY/` (for example):
 
-- `docs/reports/QUALITY/AI_TIMEOUT_DEGRADATION_SPOTCHECK_<date>.md`
+- `docs/reports/QUALITY/AI_TIMEOUT_DEGRADATION_SPOTCHECK_2026-03-03.md`
 
 ## Sign-off
 

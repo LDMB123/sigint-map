@@ -13,24 +13,24 @@ This workspace contains the Rust-first rebuild of the DMB Almanac PWA, including
 7. Build data manifest: `cargo run -p dmb_pipeline -- build-data-manifest`
 8. Run Rust tests: `cargo test -p dmb_app -p dmb_server -p dmb_pipeline -p dmb_core`
 9. Run clippy: `cargo clippy -p dmb_core -p dmb_pipeline -p dmb_server --all-targets -D warnings` and `cargo clippy -p dmb_app --features ssr --all-targets -D warnings`
-10. Build hydrate package for `static/pkg`: `cargo run -p xtask -- build-hydrate-pkg`
+10. Build hydrate package for `rust/static/pkg`: `cargo run -p xtask -- build-hydrate-pkg`
 11. Run E2E (Playwright): `cd ../e2e && npm ci && BASE_URL=http://127.0.0.1:3000 npm run test:e2e -- --project=chromium --workers=1`
 12. Verify PWA installability and offline flows in Chrome 143 (macOS 26.2): install, offline navigation, share-target
 13. Verify AI diagnostics: WebGPU enabled status, ANN cap diagnostics, storage pressure handling
 14. Deploy and smoke test `/`, `/search`, `/shows/:id`, `/offline`
 
 ## Cutover Readiness Checklist
-1. Rust pipeline artifacts present in `static/data/`:
-   - `manifest.json`
-   - `ai-config.json`
-   - `idb-migration-dry-run.json`
+1. Rust pipeline artifacts present in `rust/static/data/`:
+   - `rust/static/data/manifest.json`
+   - `rust/static/data/ai-config.json`
+   - `rust/static/data/idb-migration-dry-run.json`
 2. Server smoke endpoints:
    - `/api/health` returns schema `version`
    - `/api/ai-health` returns `status: ok` and shows static artifacts present
    - `/api/data-parity` returns `available: true` when SQLite is mounted
 3. In-app parity signals:
    - `/ai-diagnostics` shows `IDB integrity: ok` and `SQLite parity: ok` (or `unavailable` when SQLite is not mounted)
-   - PWA Status panel shows no mismatches and can export `dmb-parity-report.json`
+   - PWA Status panel shows no mismatches and can export a parity report download (`dmb-parity-report`).
 4. Service worker update UX:
    - Update prompt appears when a new SW is available
    - Manual "check update" reports "no update found" when current

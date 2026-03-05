@@ -2,7 +2,7 @@
 
 This repo is currently a local-only, offline-first PWA built with Rust (Leptos SSR + WASM hydration) and a Rust Service Worker.
 
-If you find older documents that discuss a JavaScript UI or a minified `static/sw.js`, treat them as historical only. The old UI implementation is intentionally removed from this repo.
+If you find older documents that discuss a JavaScript UI or an old minified service-worker artifact, treat them as historical only. The old UI implementation is intentionally removed from this repo.
 
 ## What We Gate Today (Go/No-Go)
 

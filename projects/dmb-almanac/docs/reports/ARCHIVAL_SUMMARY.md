@@ -28,13 +28,12 @@ Moved to `_archived/token-optimization/`:
 
 ## Files Retained
 
-Active reference in `reports/`:
+Active reference in `docs/reports/_archived/obsolete-stubs-2026-02-03/`:
 
 - TOKEN_OPTIMIZATION_AGENT_ANALYSIS_2026-02-03.md (4,176 words ≈ 32k tokens)
-- TOKEN_OPTIMIZATION_AGENT_SUMMARY.md (1,003 words ≈ 8k tokens)
 - BUNDLE_ANALYSIS_TOKEN_IMPACT.md (retained for bundle work)
 
-**Total Active**: 5,179 words ≈ 40k tokens
+**Total Active**: 4,176+ words (primary analysis + bundle impact references)
 
 ## Rationale
 
@@ -46,8 +45,7 @@ Active reference in `reports/`:
 
 ### Why Retain
 - AGENT_ANALYSIS provides comprehensive implementation guide
-- AGENT_SUMMARY provides quick reference for future work
-- Both contain essential patterns and architectural decisions
+- Bundle impact notes preserve sizing and prioritization rationale
 
 ## Access
 

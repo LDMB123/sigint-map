@@ -68,5 +68,5 @@ Then add only one domain-specific file set as needed:
 
 `docs-integrity.yml` generates and uploads two JSON artifacts on PRs:
 
-- `token-context-active.json`
-- `token-context-all.json`
+- `token-context-active` JSON artifact
+- `token-context-all` JSON artifact

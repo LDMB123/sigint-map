@@ -23,10 +23,10 @@ cat docs/reports/PWA_AUDIT_SUMMARY.md
 ## Why This Set
 
 - `STATUS.md`: current state and next actions.
-- `CUTOVER_RUNBOOK.md`: operational gate procedures.
-- `DATA_BUNDLE_REFERENCE.md`: data bundle shape and contracts.
-- `SCRAPING_REFERENCE.md`: active scrape pipeline commands.
-- `PWA_AUDIT_SUMMARY.md`: current PWA risk snapshot.
+- `docs/ops/CUTOVER_RUNBOOK.md`: operational gate procedures.
+- `docs/references/DATA_BUNDLE_REFERENCE.md`: data bundle shape and contracts.
+- `docs/scraping/SCRAPING_REFERENCE.md`: active scrape pipeline commands.
+- `docs/reports/PWA_AUDIT_SUMMARY.md`: current PWA risk snapshot.
 
 ## Exclusions
 

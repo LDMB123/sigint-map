@@ -11,7 +11,7 @@ Route → template category mapping for migration planning.
 - `discography` — **content**
 - `faq` — **content**
 - `guests` — **list**
-- `guests/[slug]` — **detail**
+- `/guests/:slug` — **detail**
 - `liberation` — **list**
 - `my-shows` — **content**
 - `offline` — **utility**
@@ -19,15 +19,15 @@ Route → template category mapping for migration planning.
 - `protocol` — **utility**
 - `search` — **content**
 - `shows` — **list**
-- `shows/[showId]` — **detail**
+- `/shows/:showId` — **detail**
 - `songs` — **list**
-- `songs/[slug]` — **detail**
+- `/songs/:slug` — **detail**
 - `stats` — **list**
 - `test-wasm` — **utility**
 - `tours` — **list**
-- `tours/[year]` — **detail**
+- `/tours/:year` — **detail**
 - `venues` — **list**
-- `venues/[venueId]` — **detail**
+- `/venues/:venueId` — **detail**
 - `visualizations` — **list**
 
 ## Template Categories

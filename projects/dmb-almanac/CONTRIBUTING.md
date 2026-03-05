@@ -57,7 +57,7 @@ BASE_URL=https://your-env bash scripts/cutover-remote-e2e.sh
   - `rust/target/`
   - `rust/static/pkg/`
   - `rust/static/data/`
-  - `rust/data/raw/`
+  - `rust/data/`
   - Playwright reports and local logs
 
 ## Documentation Standards

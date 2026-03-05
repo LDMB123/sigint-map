@@ -766,6 +766,47 @@ function isPromptRateLimitPressure(promptRecord) {
   ));
 }
 
+function hasAny429Failure(attempts = []) {
+  if (!Array.isArray(attempts) || !attempts.length) {
+    return false;
+  }
+  return attempts.some(attempt => !attempt?.success && is429HttpFailure(
+    attempt?.errorType,
+    attempt?.status,
+    attempt?.requestMetrics || null
+  ));
+}
+
+function isPressureDegradedQualityAcceptable(quality) {
+  if (!RATE_LIMIT_PRESSURE_DEGRADED_ACCEPT) {
+    return false;
+  }
+  if (!quality?.scorerAvailable || !quality?.scores) {
+    return false;
+  }
+
+  const scores = quality.scores || {};
+  const identity = clamp(Number(scores.identity) || 0, 0, 10);
+  const gaze = clamp(Number(scores.gaze) || 0, 0, 10);
+  const attire = clamp(Number(scores.attireReplacement) || 0, 0, 10);
+  const realism = clamp(Number(scores.realism) || 0, 0, 10);
+  const physics = clamp(Number(scores.physics) || 0, 0, 10);
+  const overall = clamp(Number(quality?.overallScore) || 0, 0, 10);
+  const checklistFailures = Array.isArray(quality?.physicsChecklistFailures)
+    ? quality.physicsChecklistFailures.length
+    : 0;
+
+  return (
+    checklistFailures === 0
+    && overall >= RATE_LIMIT_PRESSURE_DEGRADED_OVERALL_MIN
+    && identity >= RATE_LIMIT_PRESSURE_DEGRADED_IDENTITY_MIN
+    && gaze >= RATE_LIMIT_PRESSURE_DEGRADED_GAZE_MIN
+    && attire >= RATE_LIMIT_PRESSURE_DEGRADED_ATTIRE_MIN
+    && realism >= RATE_LIMIT_PRESSURE_DEGRADED_REALISM_MIN
+    && physics >= RATE_LIMIT_PRESSURE_DEGRADED_PHYSICS_MIN
+  );
+}
+
 function extToMime(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
@@ -2195,9 +2236,9 @@ function collectPromptAnchorBullets(promptText) {
     pose: []
   };
   const headingMatchers = {
-    scene: /^(scene(?:\s+lock)?|setting(?:\s+lock)?)\s*:/i,
-    wardrobe: /^(wardrobe(?:\s+lock)?|attire(?:\s+lock)?)\s*:/i,
-    pose: /^(pose(?:\s+and\s+(?:framing|composition))?(?:\s+lock)?)\s*:/i
+    scene: /^(?:scene(?:\s+(?:intent|anchors?|preservation|lock|requirements?))?|setting(?:\s+lock)?)(?:\s*\([^)]*\))?\s*:/i,
+    wardrobe: /^(?:wardrobe(?:\s+(?:lock|preservation|topology|requirements?))?|attire(?:\s+lock)?)(?:\s*\([^)]*\))?\s*:/i,
+    pose: /^(?:pose(?:\s+(?:blueprint|and\s+(?:framing|composition)|preservation|choreography|requirements?))?|pose\s+\+\s+kinematic\s+preservation|kinematic\s+path)(?:\s*\([^)]*\))?\s*:/i
   };
   let activeKey = '';
   for (const line of lines) {
@@ -4340,6 +4381,8 @@ function buildQualityScorerPrompt({ promptId, title, variant, promptIntentDigest
       '- If face mismatch is noticeable, identity <= 8.5.',
       '- Penalize conservative outfit outcomes, scene drift, pose drift, and synthetic artifacts.',
       '- If prompt specifies a daring two-piece and image defaults to blouse/businesswear/sheath-dress archetypes, cap attireReplacement <= 8.0 and edge <= 7.5.',
+      '- If prompt-locked wardrobe colorway/material is mismatched (for example scarlet+satin becomes black+matte), cap attireReplacement <= 7.6.',
+      '- If prompt demands two-piece separation and output fuses into one-piece dress styling, cap attireReplacement <= 7.4 and edge <= 7.2.',
       '- If scene/hero props miss prompt anchors, cap sceneAdherence <= 8.2.',
       '- If body language ignores prompt choreography, cap poseAdherence <= 8.2.',
       '- If any checklist item clearly fails, cap physics <= 8.4 and realism <= 8.8.',
@@ -4378,6 +4421,8 @@ function buildQualityScorerPrompt({ promptId, title, variant, promptIntentDigest
     '- Penalize scene drift: if location/hero-prop intent is missed, reduce edge and realism scores.',
     '- Penalize conservative wardrobe outcomes: if the look lacks clear revealing editorial cues (high-cut line, side-waist cut, open-back/shoulder, sheer panel, or high slit), cap edge at <= 8.2.',
     '- Penalize conservative fallback archetypes: if prompt specifies a daring two-piece and output defaults to blouse/businesswear/sweater/sheath-dress styling, cap attireReplacement <= 8.0 and edge <= 7.5.',
+    '- Penalize color/material drift: if prompt-locked wardrobe colorway/material is mismatched (for example scarlet+satin becomes black+matte), cap attireReplacement <= 7.6.',
+    '- Penalize topology fusion: if prompt requires a two-piece look and output collapses into one-piece dress styling, cap attireReplacement <= 7.4 and edge <= 7.2.',
     '- Penalize pose drift: if prompt-specific support-contact and limb choreography are missing, cap edge at <= 8.1 and physics at <= 8.8.',
     '- Penalize wardrobe drift: if prompt-specific silhouette/cutline details are missing, cap attireReplacement at <= 8.8 and edge at <= 8.2.',
     '- Penalize generic homogenization: if output defaults to a generic neutral stance not matching prompt intent, cap edge at <= 8.0.',
@@ -6123,12 +6168,22 @@ function extractPromptIntentDigest(promptText, maxChars = SCORER_INTENT_DIGEST_M
   }
 
   const sectionRules = [
-    { key: 'scene', regex: /^scene\s*:/i },
-    { key: 'wardrobe', regex: /^wardrobe\s*:/i },
-    { key: 'pose', regex: /^pose(?:\s+and\s+framing)?\s*:/i },
+    { key: 'mandatory', regex: /^mandatory(?:\s+locks?)?\s*:/i },
+    {
+      key: 'scene',
+      regex: /^scene(?:\s+(?:intent|anchors?|preservation|lock|requirements?))?(?:\s*\([^)]*\))?\s*:/i
+    },
+    {
+      key: 'wardrobe',
+      regex: /^wardrobe(?:\s+(?:lock|preservation|topology|requirements?))?(?:\s*\([^)]*\))?\s*:/i
+    },
+    {
+      key: 'pose',
+      regex: /^(?:pose(?:\s+(?:blueprint|and\s+framing|preservation|choreography|requirements?))?(?:\s*\([^)]*\))?|pose\s+\+\s+kinematic\s+preservation|kinematic\s+path(?:\s*\([^)]*\))?)\s*:/i
+    },
     {
       key: 'physics',
-      regex: /^(?:micro-physics(?:\s+realism\s+checks)?|physics(?:\s+and\s+micro(?:detail|[-\s]detail))?\s+checks?|first-principles physics checklist)\s*:/i
+      regex: /^(?:safe\s+physics\s+checks?|physics\s+checklist|critical\s+zone\s+checklist|micro-physics(?:\s+realism\s+checks)?|physics(?:\s+and\s+micro(?:detail|[-\s]detail))?\s+checks?|first-principles physics checklist)\s*:/i
     },
     {
       key: 'lightTransport',
@@ -6138,13 +6193,17 @@ function extractPromptIntentDigest(promptText, maxChars = SCORER_INTENT_DIGEST_M
       key: 'failureHotspots',
       regex: /^failure hotspots(?:\s+to\s+avoid)?\s*:/i
     },
-    { key: 'reject', regex: /^reject\s*:/i }
+    { key: 'reject', regex: /^(?:hard\s+reject|reject)\s*:/i }
   ];
   const ignorePatterns = [
+    /^mission\s*:/i,
+    /^goal order(?:\s+\(.*\))?\s*:/i,
+    /^non-explicit(?:\s+limits?)?(?:\s+\(.*\))?\s*:/i,
     /^performance patch/i,
     /^safe performance patch/i,
     /^devils-advocate/i,
     /^adult subject only/i,
+    /^no nudity/i,
     /^identity(?:\s+lock|\s+and\s+gaze)?\s*:/i,
     /^camera\s*:/i,
     /^run uniqueness token/i,
@@ -6153,17 +6212,41 @@ function extractPromptIntentDigest(promptText, maxChars = SCORER_INTENT_DIGEST_M
   ];
 
   let activeSection = '';
-  const picked = [];
+  const buckets = {
+    mandatory: [],
+    wardrobe: [],
+    scene: [],
+    pose: [],
+    reject: [],
+    physics: [],
+    lightTransport: [],
+    failureHotspots: []
+  };
+
+  const pushLine = (key, line) => {
+    if (!key || !line || !buckets[key]) {
+      return;
+    }
+    if (buckets[key].length < 24) {
+      buckets[key].push(line);
+    }
+  };
+
   for (const rawLine of rawLines) {
     const line = rawLine.replace(/\s+/g, ' ').trim();
-    if (!line || ignorePatterns.some(pattern => pattern.test(line))) {
+    if (!line) {
       continue;
     }
 
-    const sectionMatch = sectionRules.find(rule => rule.regex.test(line));
+    const withoutBullet = line.startsWith('- ') ? line.slice(2).trim() : line;
+    if (!withoutBullet || ignorePatterns.some(pattern => pattern.test(withoutBullet))) {
+      continue;
+    }
+
+    const sectionMatch = sectionRules.find(rule => rule.regex.test(withoutBullet));
     if (sectionMatch) {
       activeSection = sectionMatch.key;
-      picked.push(line);
+      pushLine(activeSection, withoutBullet);
       continue;
     }
 
@@ -6174,19 +6257,30 @@ function extractPromptIntentDigest(promptText, maxChars = SCORER_INTENT_DIGEST_M
 
     if (line.startsWith('- ')) {
       if (activeSection) {
-        picked.push(line);
+        pushLine(activeSection, `- ${withoutBullet}`);
       }
       continue;
     }
 
     if (activeSection) {
-      picked.push(`- ${line}`);
+      pushLine(activeSection, `- ${withoutBullet}`);
     }
   }
 
+  const ordered = [
+    ...buckets.mandatory.slice(0, 4),
+    ...buckets.wardrobe.slice(0, 8),
+    ...buckets.scene.slice(0, 8),
+    ...buckets.pose.slice(0, 8),
+    ...buckets.reject.slice(0, 5),
+    ...buckets.physics.slice(0, 4),
+    ...buckets.lightTransport.slice(0, 3),
+    ...buckets.failureHotspots.slice(0, 3)
+  ];
+
   const deduped = [];
   const seen = new Set();
-  for (const line of picked) {
+  for (const line of ordered) {
     const key = line.toLowerCase();
     if (!seen.has(key)) {
       seen.add(key);
@@ -6194,14 +6288,26 @@ function extractPromptIntentDigest(promptText, maxChars = SCORER_INTENT_DIGEST_M
     }
   }
 
-  const digest = deduped.slice(0, 30).join('\n');
-  if (!digest) {
+  if (!deduped.length) {
     return '';
   }
-  if (digest.length <= maxChars) {
-    return digest;
+
+  const digestLines = [];
+  let chars = 0;
+  for (const line of deduped) {
+    const nextChars = chars + line.length + (digestLines.length ? 1 : 0);
+    if (nextChars > maxChars && digestLines.length > 0) {
+      break;
+    }
+    digestLines.push(line);
+    chars = nextChars;
   }
-  return `${digest.slice(0, maxChars - 3)}...`;
+
+  if (!digestLines.length) {
+    return deduped[0].slice(0, maxChars);
+  }
+
+  return digestLines.join('\n');
 }
 
 async function loadReferenceInlineData(referenceImagePath) {
@@ -6774,6 +6880,15 @@ async function main() {
     rateLimitFailFastCooldownSeconds: RATE_LIMIT_FAIL_FAST_COOLDOWN_S,
     rateLimitFailFastMinConsecutive429: RATE_LIMIT_FAIL_FAST_MIN_CONSECUTIVE_429,
     rateLimitSkipSafeFallbackOnPressure: RATE_LIMIT_SKIP_SAFE_FALLBACK_ON_PRESSURE,
+    rateLimitPressureDegradedAccept: RATE_LIMIT_PRESSURE_DEGRADED_ACCEPT,
+    rateLimitPressureDegradedFloors: {
+      overall: RATE_LIMIT_PRESSURE_DEGRADED_OVERALL_MIN,
+      identity: RATE_LIMIT_PRESSURE_DEGRADED_IDENTITY_MIN,
+      gaze: RATE_LIMIT_PRESSURE_DEGRADED_GAZE_MIN,
+      attireReplacement: RATE_LIMIT_PRESSURE_DEGRADED_ATTIRE_MIN,
+      realism: RATE_LIMIT_PRESSURE_DEGRADED_REALISM_MIN,
+      physics: RATE_LIMIT_PRESSURE_DEGRADED_PHYSICS_MIN
+    },
     rateLimitAbortRunConsecutivePrompts: RATE_LIMIT_ABORT_RUN_CONSECUTIVE_PROMPTS,
     pressurePauseEnabled: PRESSURE_PAUSE_ENABLED,
     pressurePauseConsecutivePrompts: PRESSURE_PAUSE_CONSECUTIVE_PROMPTS,
@@ -7030,9 +7145,12 @@ async function main() {
   );
   log(`Attempt pacing invariant: ${STRICT_61S_ATTEMPT_PACING ? 'strict 61.0s' : 'disabled'}`);
   log(
-    `Skip safe fallback on pressure: ${PRESSURE_PAUSE_ENABLED
-      ? 'disabled (pause/resume mode active)'
-      : (RATE_LIMIT_SKIP_SAFE_FALLBACK_ON_PRESSURE ? 'enabled' : 'disabled')}`
+    `Skip safe fallback on pressure: ${RATE_LIMIT_SKIP_SAFE_FALLBACK_ON_PRESSURE ? 'enabled' : 'disabled'}`
+  );
+  log(
+    `Pressure-degraded primary accept: ${RATE_LIMIT_PRESSURE_DEGRADED_ACCEPT
+      ? `enabled (overall>=${RATE_LIMIT_PRESSURE_DEGRADED_OVERALL_MIN}, id>=${RATE_LIMIT_PRESSURE_DEGRADED_IDENTITY_MIN}, gaze>=${RATE_LIMIT_PRESSURE_DEGRADED_GAZE_MIN}, attire>=${RATE_LIMIT_PRESSURE_DEGRADED_ATTIRE_MIN}, realism>=${RATE_LIMIT_PRESSURE_DEGRADED_REALISM_MIN}, physics>=${RATE_LIMIT_PRESSURE_DEGRADED_PHYSICS_MIN})`
+      : 'disabled'}`
   );
   log(
     `Pressure pause orchestration: ${PRESSURE_PAUSE_ENABLED
@@ -7076,9 +7194,7 @@ async function main() {
   log(`Prompt-first priority mode: ${PROMPT_FIRST_PRIORITY_MODE ? 'enabled' : 'disabled'}`);
   log(`Prompt direction supremacy mode: ${PROMPT_DIRECTION_SUPREMACY_MODE ? 'enabled' : 'disabled'}`);
   log(
-    `Skip safe fallback on primary reject: ${PRESSURE_PAUSE_ENABLED
-      ? 'disabled (pause/resume mode active)'
-      : (SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT ? 'enabled' : 'disabled')}`
+    `Skip safe fallback on primary reject: ${SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT ? 'enabled' : 'disabled'}`
   );
   log(`Sensual editorial boost: ${SENSUAL_EDITORIAL_BOOST ? `enabled (level ${SENSUAL_EDITORIAL_LEVEL})` : 'disabled'}`);
   log(`Sensual variance guard: ${SENSUAL_VARIANCE_GUARD ? `enabled (level ${SENSUAL_VARIANCE_LEVEL})` : 'disabled'}`);
@@ -7600,6 +7716,13 @@ async function main() {
       }
 
       const primaryQualityAccepted = isQualityAcceptableForFinal(chosenPrimary.quality, 'primary');
+      const promptHas429AttemptFailure = hasAny429Failure(promptRecord.attempts || []);
+      const pressureSignalActive = promptHas429AttemptFailure
+        || consecutivePromptRateLimitPressure > 0
+        || isRateLimitFailFastPressure('rate_limit_pressure', 429);
+      const pressureDegradedAccept = pressureSignalActive
+        && isPressureDegradedQualityAcceptable(chosenPrimary.quality);
+      const skipSafeFallbackOnPressure = RATE_LIMIT_SKIP_SAFE_FALLBACK_ON_PRESSURE && pressureSignalActive;
       if (primaryQualityAccepted) {
         promptRecord.finalStatus = 'success';
         promptRecord.chosenVariant = 'primary';
@@ -7607,7 +7730,32 @@ async function main() {
         promptRecord.qualityFinal = chosenPrimary.quality || null;
         summary.totals.primarySuccess += 1;
         log(`[${i + 1}/${parsedPrompts.length}] ${promptLabel}: primary success`);
-      } else if (SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT && !PRESSURE_PAUSE_ENABLED) {
+      } else if (pressureDegradedAccept) {
+        promptRecord.finalStatus = 'success';
+        promptRecord.chosenVariant = 'primary';
+        promptRecord.outputFile = chosenPrimary.outputFile;
+        promptRecord.qualityFinal = {
+          ...(chosenPrimary.quality || {}),
+          pressureDegradedAccept: true
+        };
+        summary.totals.primarySuccess += 1;
+        pushAdaptationHistory(summary, {
+          trigger: 'rate_limit_pressure',
+          change: `accept primary under pressure for prompt ${prompt.id}`,
+          result: `overall=${Number(chosenPrimary?.quality?.overallScore || 0).toFixed(3)}, identity=${Number(chosenPrimary?.quality?.scores?.identity || 0).toFixed(2)}, attire=${Number(chosenPrimary?.quality?.scores?.attireReplacement || 0).toFixed(2)}`
+        });
+        log(
+          `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: primary accepted under pressure-degraded policy`
+        );
+      } else if (skipSafeFallbackOnPressure) {
+        summary.totals.failed += 1;
+        promptRecord.chosenVariant = 'primary';
+        promptRecord.outputFile = chosenPrimary.outputFile;
+        promptRecord.qualityFinal = chosenPrimary.quality || null;
+        log(
+          `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: primary image rejected by quality gate; safe fallback skipped due to active rate-limit pressure`
+        );
+      } else if (SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT) {
         summary.totals.failed += 1;
         promptRecord.chosenVariant = 'primary';
         promptRecord.outputFile = chosenPrimary.outputFile;
@@ -7669,15 +7817,17 @@ async function main() {
         requestMetrics: primaryResult.requestMetrics || null
       });
 
-      const skipSafeFallbackOnPressure = !PRESSURE_PAUSE_ENABLED
-        && RATE_LIMIT_SKIP_SAFE_FALLBACK_ON_PRESSURE
-        && isRateLimitFailFastPressure(primaryResult.errorType, primaryResult.status);
+      const skipSafeFallbackOnPressure = RATE_LIMIT_SKIP_SAFE_FALLBACK_ON_PRESSURE
+        && (
+          is429HttpFailure(primaryResult.errorType, primaryResult.status, primaryResult.requestMetrics || null)
+          || isRateLimitFailFastPressure(primaryResult.errorType, primaryResult.status)
+        );
       if (skipSafeFallbackOnPressure) {
         summary.totals.failed += 1;
         log(
           `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: primary failed (${primaryResult.errorType}); safe fallback skipped due to sustained rate-limit pressure`
         );
-      } else if (SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT && !PRESSURE_PAUSE_ENABLED) {
+      } else if (SKIP_SAFE_FALLBACK_ON_PRIMARY_REJECT) {
         summary.totals.failed += 1;
         log(
           `[${i + 1}/${parsedPrompts.length}] ${promptLabel}: primary failed (${primaryResult.errorType}); safe fallback skipped by config`

@@ -1,15 +1,17 @@
 # Local Cutover Status (Pointer)
 
-Date: 2026-02-15  
+Date: 2026-03-05
 Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 
 Detailed current status is canonical in `STATUS.md`.
 
 ## Last Verified Baseline
 
-- Branch: `codex/dmb-almanac-handoff-20260215`
-- Commit: `c928bd74`
-- Local E2E: `RUST_E2E=1 BASE_URL=http://127.0.0.1:3000 npm run test:e2e` passed (`23 passed`)
+- Working branch during latest verification: codex/migration-week-interop-consolidation
+- Rust AI diagnostics/degradation E2E:
+  - `RUST_E2E=1 RUST_AI_DIAGNOSTICS_FULL=1 BASE_URL=http://127.0.0.1:3000 npx playwright test tests/e2e/rust-ai-degradation.spec.js --project=chromium --workers=1` (`3 passed`)
+- Rust AI page smoke + degradation E2E:
+  - `RUST_E2E=1 RUST_AI_DIAGNOSTICS_FULL=1 BASE_URL=http://127.0.0.1:3000 npx playwright test tests/e2e/rust-ai.spec.js tests/e2e/rust-ai-degradation.spec.js --project=chromium --workers=1` (`7 passed`)
 
 ## Local Cutover Commands
 

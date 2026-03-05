@@ -13,7 +13,7 @@ Keep the repository clean, navigable, and deterministic for developers and CI.
 These are generated and should not be committed:
 
 - `rust/static/data/`
-- `rust/data/raw/`
+- `rust/data/`
 - `rust/target/`
 - `rust/static/pkg/`
 - `e2e/playwright-report/`

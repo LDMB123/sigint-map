@@ -2,7 +2,7 @@
 
 Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
 
-Use this file as a low-token session starter.  
+Use this file as a low-token session starter.
 For full current state, always read `STATUS.md`.
 
 ## Load First
@@ -11,7 +11,7 @@ For full current state, always read `STATUS.md`.
 2. `STATUS.md`
 3. `docs/README.md`
 4. `docs/INDEX.md`
-5. `docs/guides/TOKEN_CONTEXT_WORKFLOW.md`
+5. `docs/ops/CUTOVER_RUNBOOK.md`
 
 ## Core Commands
 
