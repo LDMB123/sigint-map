@@ -37,8 +37,9 @@ pub struct BulkPutStats {
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
         use idb::{
-            CursorDirection, Database, DatabaseEvent, Factory, IndexParams, KeyPath, KeyRange,
-            ObjectStoreParams, Query, TransactionMode,
+            CursorDirection, Database, DatabaseEvent, Event as IdbEvent, Factory, IndexParams,
+            KeyPath, KeyRange, ObjectStore, ObjectStoreParams, Query, Request, Transaction,
+            TransactionMode,
         };
         use js_sys::{Array, Date, Reflect};
         use std::{cell::RefCell, cmp::Ordering, collections::HashSet, rc::Rc};
@@ -145,16 +146,49 @@ cfg_if::cfg_if! {
             params.key_path(Some(spec.key_path.clone()));
 
             let store = db.create_object_store(spec.name, params).js()?;
+            migrate_store_indexes(&store, spec)?;
+            Ok(())
+        }
+
+        fn is_primary_key_index(index: &IndexSpec) -> bool {
+            matches!(index.key_path, KeyPath::Single(ref key) if key == "id")
+        }
+
+        fn create_index(store: &ObjectStore, index: &IndexSpec) -> Result<()> {
+            let mut params = IndexParams::new();
+            params.unique(index.unique);
+            params.multi_entry(index.multi_entry);
+            store
+                .create_index(&index.name, index.key_path.clone(), Some(params))
+                .js()?;
+            Ok(())
+        }
+
+        fn migrate_store_indexes(store: &ObjectStore, spec: &StoreSpec) -> Result<()> {
+            let existing_index_names: HashSet<String> = store.index_names().into_iter().collect();
             for index in &spec.indexes {
-                if matches!(index.key_path, KeyPath::Single(ref key) if key == "id") {
+                if is_primary_key_index(index) {
                     continue;
                 }
-                let mut params = IndexParams::new();
-                params.unique(index.unique);
-                params.multi_entry(index.multi_entry);
-                store
-                    .create_index(&index.name, index.key_path.clone(), Some(params))
-                    .js()?;
+
+                let should_create = if existing_index_names.contains(&index.name) {
+                    let existing_index = store.index(&index.name).js()?;
+                    let key_path_matches = existing_index.key_path().js()? == Some(index.key_path.clone());
+                    let unique_matches = existing_index.unique() == index.unique;
+                    let multi_entry_matches = existing_index.multi_entry() == index.multi_entry;
+                    if key_path_matches && unique_matches && multi_entry_matches {
+                        false
+                    } else {
+                        store.delete_index(&index.name).js()?;
+                        true
+                    }
+                } else {
+                    true
+                };
+
+                if should_create {
+                    create_index(store, index)?;
+                }
             }
             Ok(())
         }
@@ -243,14 +277,40 @@ cfg_if::cfg_if! {
                         return;
                     }
                 };
-                for spec in store_specs() {
-                    if db.store_names().iter().any(|name| name == spec.name) {
-                        continue;
-                    }
-                    if let Err(err) = create_store(&db, &spec) {
+
+                let upgrade_tx = match event.target() {
+                    Ok(request) => match request.transaction() {
+                        Some(tx) => tx,
+                        None => {
+                            web_sys::console::error_1(&JsValue::from_str(
+                                "[IDB] upgrade transaction unavailable during on_upgrade_needed",
+                            ));
+                            return;
+                        }
+                    },
+                    Err(err) => {
                         web_sys::console::error_1(&JsValue::from_str(&format!(
-                            "[IDB] store create failed: {:?}",
-                            err
+                            "[IDB] upgrade event target() failed: {err:?}"
+                        )));
+                        return;
+                    }
+                };
+
+                let existing_store_names: HashSet<String> = db.store_names().into_iter().collect();
+                for spec in store_specs() {
+                    let migration_result = if existing_store_names.contains(spec.name) {
+                        upgrade_tx
+                            .object_store(spec.name)
+                            .js()
+                            .and_then(|store| migrate_store_indexes(&store, &spec))
+                    } else {
+                        create_store(&db, &spec)
+                    };
+
+                    if let Err(err) = migration_result {
+                        web_sys::console::error_1(&JsValue::from_str(&format!(
+                            "[IDB] store/index migration failed: store={} error={:?}",
+                            spec.name, err
                         )));
                     }
                 }
@@ -407,8 +467,8 @@ cfg_if::cfg_if! {
             let db = open_db().await?;
             let known_store_names: HashSet<String> =
                 db.store_names().iter().cloned().collect();
-            let mut existing: Vec<&str> = Vec::new();
-            let mut missing: Vec<String> = Vec::new();
+            let mut existing: Vec<&str> = Vec::with_capacity(store_names.len());
+            let mut missing: Vec<String> = Vec::with_capacity(store_names.len());
             for store in store_names {
                 if known_store_names.contains(*store) {
                     existing.push(*store);
@@ -422,11 +482,16 @@ cfg_if::cfg_if! {
             }
 
             let tx = db.transaction(&existing, TransactionMode::ReadOnly).js()?;
-            let mut counts = Vec::with_capacity(existing.len());
-            for store_name in existing {
+            let mut pending_counts = Vec::with_capacity(existing.len());
+            for store_name in &existing {
                 let store = tx.object_store(store_name).js()?;
-                let count = store.count(None).js()?.await.js()?;
-                counts.push((store_name.to_string(), count as u32));
+                let count_request = store.count(None).js()?;
+                pending_counts.push((*store_name, count_request));
+            }
+            let mut counts = Vec::with_capacity(pending_counts.len());
+            for (store_name, count_request) in pending_counts {
+                let count = count_request.await.js()?;
+                counts.push((store_name.to_string(), count));
             }
             tx.await.js()?;
             Ok((counts, missing))
@@ -470,41 +535,69 @@ cfg_if::cfg_if! {
                 return Ok(vec![]);
             }
 
+            const SEARCH_PER_STORE_LIMIT: u32 = 50;
             let db = open_db().await?;
-            let mut results: Vec<SearchResult> = Vec::with_capacity(250);
+            let search_stores = [
+                TABLE_SONGS,
+                TABLE_VENUES,
+                TABLE_TOURS,
+                TABLE_GUESTS,
+                TABLE_RELEASES,
+            ];
+            let tx = db
+                .transaction(&search_stores, TransactionMode::ReadOnly)
+                .js()?;
+            let mut results: Vec<SearchResult> =
+                Vec::with_capacity((SEARCH_PER_STORE_LIMIT as usize) * search_stores.len());
+            let lower = JsValue::from_str(&query_norm);
+            let upper = JsValue::from_str(&format!("{}\u{FFFF}", query_norm));
+            struct SearchQueryWindow<'a> {
+                lower: &'a JsValue,
+                upper: &'a JsValue,
+                limit: u32,
+            }
+            let query_window = SearchQueryWindow {
+                lower: &lower,
+                upper: &upper,
+                limit: SEARCH_PER_STORE_LIMIT,
+            };
 
             async fn collect_search<T: serde::de::DeserializeOwned>(
-                db: &Database,
+                tx: &Transaction,
                 store_name: &str,
                 index_name: &str,
-                query_norm: &str,
+                query_window: &SearchQueryWindow<'_>,
+                out: &mut Vec<SearchResult>,
                 map_fn: impl Fn(T) -> SearchResult,
-            ) -> Result<Vec<SearchResult>> {
-                let tx = db
-                    .transaction(&[store_name], TransactionMode::ReadOnly)
-                    .js()?;
+            ) -> Result<()> {
                 let store = tx.object_store(store_name).js()?;
                 let index = store.index(index_name).js()?;
-                let lower = JsValue::from_str(query_norm);
-                let upper = JsValue::from_str(&format!("{}\u{FFFF}", query_norm));
-                let range = KeyRange::bound(&lower, &upper, Some(false), Some(false)).js()?;
+                let range = KeyRange::bound(
+                    query_window.lower,
+                    query_window.upper,
+                    Some(false),
+                    Some(false),
+                )
+                .js()?;
                 let values: Vec<JsValue> = index
-                    .get_all(Some(Query::KeyRange(range)), Some(50))
+                    .get_all(Some(Query::KeyRange(range)), Some(query_window.limit))
                     .js()?
                     .await
                     .js()?;
-                tx.await.js()?;
-
-                let mut out = Vec::with_capacity(values.len());
                 for value in values {
                     let entity: T = deserialize_value(value)?;
                     out.push(map_fn(entity));
                 }
-                Ok(out)
+                Ok(())
             }
 
-            results.extend(
-                collect_search::<Song>(&db, TABLE_SONGS, "searchText", &query_norm, |song| {
+            collect_search::<Song>(
+                &tx,
+                TABLE_SONGS,
+                "searchText",
+                &query_window,
+                &mut results,
+                |song| {
                     let score =
                         prefix_score(&query_norm, song.search_text.as_deref().unwrap_or(&song.title));
                     SearchResult {
@@ -514,12 +607,17 @@ cfg_if::cfg_if! {
                         label: song.title,
                         score,
                     }
-                })
-                .await?
-            );
+                },
+            )
+            .await?;
 
-            results.extend(
-                collect_search::<Venue>(&db, TABLE_VENUES, "searchText", &query_norm, |venue| {
+            collect_search::<Venue>(
+                &tx,
+                TABLE_VENUES,
+                "searchText",
+                &query_window,
+                &mut results,
+                |venue| {
                     let score =
                         prefix_score(&query_norm, venue.search_text.as_deref().unwrap_or(&venue.name));
                     SearchResult {
@@ -529,12 +627,17 @@ cfg_if::cfg_if! {
                         label: venue.name,
                         score,
                     }
-                })
-                .await?
-            );
+                },
+            )
+            .await?;
 
-            results.extend(
-                collect_search::<Tour>(&db, TABLE_TOURS, "searchText", &query_norm, |tour| {
+            collect_search::<Tour>(
+                &tx,
+                TABLE_TOURS,
+                "searchText",
+                &query_window,
+                &mut results,
+                |tour| {
                     let score =
                         prefix_score(&query_norm, tour.search_text.as_deref().unwrap_or(&tour.name));
                     SearchResult {
@@ -544,12 +647,17 @@ cfg_if::cfg_if! {
                         label: tour.name,
                         score,
                     }
-                })
-                .await?
-            );
+                },
+            )
+            .await?;
 
-            results.extend(
-                collect_search::<Guest>(&db, TABLE_GUESTS, "searchText", &query_norm, |guest| {
+            collect_search::<Guest>(
+                &tx,
+                TABLE_GUESTS,
+                "searchText",
+                &query_window,
+                &mut results,
+                |guest| {
                     let score = prefix_score(
                         &query_norm,
                         guest.search_text.as_deref().unwrap_or(&guest.name),
@@ -561,12 +669,17 @@ cfg_if::cfg_if! {
                         label: guest.name,
                         score,
                     }
-                })
-                .await?
-            );
+                },
+            )
+            .await?;
 
-            results.extend(
-                collect_search::<Release>(&db, TABLE_RELEASES, "searchText", &query_norm, |release| {
+            collect_search::<Release>(
+                &tx,
+                TABLE_RELEASES,
+                "searchText",
+                &query_window,
+                &mut results,
+                |release| {
                     let score = prefix_score(
                         &query_norm,
                         release.search_text.as_deref().unwrap_or(&release.title),
@@ -578,9 +691,10 @@ cfg_if::cfg_if! {
                         label: release.title,
                         score,
                     }
-                })
-                .await?
-            );
+                },
+            )
+            .await?;
+            tx.await.js()?;
 
             results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(Ordering::Equal));
             results.truncate(100);
@@ -609,7 +723,7 @@ cfg_if::cfg_if! {
             if matches!(limit, Some(0)) {
                 return Ok(Vec::new());
             }
-            let mut out = Vec::new();
+            let mut out = Vec::with_capacity(limit.unwrap_or(64));
             let mut cursor_opt = request.await.js()?;
             while let Some(cursor) = cursor_opt {
                 let value = cursor.value().js()?;
@@ -765,10 +879,7 @@ cfg_if::cfg_if! {
         }
 
         pub async fn list_liberation_entries(limit: usize) -> Result<Vec<LiberationEntry>> {
-            let mut entries: Vec<LiberationEntry> = list_all(TABLE_LIBERATION_LIST).await?;
-            entries.sort_by(|a, b| b.days_since.unwrap_or(0).cmp(&a.days_since.unwrap_or(0)));
-            entries.truncate(limit);
-            Ok(entries)
+            top_by_index(TABLE_LIBERATION_LIST, "daysSince", limit).await
         }
 
         pub async fn list_curated_lists() -> Result<Vec<CuratedList>> {
@@ -779,22 +890,27 @@ cfg_if::cfg_if! {
             list_id: i32,
             limit: usize,
         ) -> Result<Vec<CuratedListItem>> {
-            let mut items: Vec<CuratedListItem> = list_by_index_key(
+            let lower = compound_i32_pair_key(list_id, i32::MIN);
+            let upper = compound_i32_pair_key(list_id, i32::MAX);
+            list_by_index_range(
                 TABLE_CURATED_LIST_ITEMS,
-                "listId",
-                JsValue::from_f64(list_id as f64),
+                "listId+position",
+                lower,
+                upper,
                 Some(limit),
-                CursorDirection::Next,
             )
-            .await?;
-            items.sort_by(|a, b| a.position.cmp(&b.position));
-            Ok(items)
+            .await
         }
 
         pub async fn list_user_attended_shows() -> Result<Vec<UserAttendedShow>> {
-            let mut items: Vec<UserAttendedShow> = list_all(TABLE_USER_ATTENDED_SHOWS).await?;
-            items.sort_by(|a, b| b.show_date.cmp(&a.show_date));
-            Ok(items)
+            list_by_index_query(
+                TABLE_USER_ATTENDED_SHOWS,
+                "showDate",
+                None,
+                Some(CursorDirection::Prev),
+                None,
+            )
+            .await
         }
 
         pub async fn add_user_attended_show(show_id: i32, show_date: Option<String>) -> Result<()> {
@@ -827,6 +943,9 @@ cfg_if::cfg_if! {
         }
 
         const PREVIOUS_MIGRATION_KEY: &str = "previous_migration_v1";
+        type MigrationStoreCounts = Vec<(String, u32)>;
+        type MigrationCountMismatches = Vec<(String, u32, u32)>;
+        type PreviousMigrationOutcome = (MigrationStoreCounts, MigrationCountMismatches);
 
         async fn previous_db_exists() -> Result<bool> {
             let indexed_db: JsValue = Factory::new().js()?.into();
@@ -963,31 +1082,38 @@ cfg_if::cfg_if! {
                 .js()?
                 .await
                 .js()?;
+            let migration_result: Result<PreviousMigrationOutcome> = async {
+                let previous_store_names: HashSet<String> =
+                    previous_db.store_names().iter().cloned().collect();
+                let mut counts: MigrationStoreCounts = Vec::new();
+                let mut mismatches: MigrationCountMismatches = Vec::new();
 
-            let previous_store_names: HashSet<String> =
-                previous_db.store_names().iter().cloned().collect();
-            let mut counts: Vec<(String, u32)> = Vec::new();
-            let mut mismatches: Vec<(String, u32, u32)> = Vec::new();
-
-            for (store, _) in SCHEMA_V12_REFERENCE.iter() {
-                if !previous_store_names.contains(*store) {
-                    continue;
-                }
-                let count = copy_store(&previous_db, &new_db, store).await?;
-                counts.push((store.to_string(), count));
-                let new_count = match count_store_in_db(&new_db, store).await {
-                    Ok(value) => value,
-                    Err(err) => {
-                        web_sys::console::warn_1(&JsValue::from_str(&format!(
-                            "[IDB] failed to count new store after copy: store={store} error={err:?}"
-                        )));
-                        0
+                for (store, _) in SCHEMA_V12_REFERENCE.iter() {
+                    if !previous_store_names.contains(*store) {
+                        continue;
                     }
-                };
-                if new_count != count {
-                    mismatches.push((store.to_string(), count, new_count));
+                    let count = copy_store(&previous_db, &new_db, store).await?;
+                    counts.push((store.to_string(), count));
+                    let new_count = match count_store_in_db(&new_db, store).await {
+                        Ok(value) => value,
+                        Err(err) => {
+                            web_sys::console::warn_1(&JsValue::from_str(&format!(
+                                "[IDB] failed to count new store after copy: store={store} error={err:?}"
+                            )));
+                            0
+                        }
+                    };
+                    if new_count != count {
+                        mismatches.push((store.to_string(), count, new_count));
+                    }
                 }
+
+                Ok((counts, mismatches))
             }
+            .await;
+            // Always close the legacy handle, even when copy/count fails.
+            previous_db.close();
+            let (counts, mismatches) = migration_result?;
 
             if !mismatches.is_empty() {
                 web_sys::console::warn_1(&JsValue::from_str(&format!(
@@ -998,10 +1124,18 @@ cfg_if::cfg_if! {
             }
 
             write_migration_marker(&new_db, counts, true, Vec::new()).await?;
-            // Close the previous-version handle before delete to avoid a blocked deleteDatabase request.
-            previous_db.close();
             if let Ok(request) = factory.delete(PREVIOUS_DB_NAME) {
-                let _ = request.await;
+                if let Err(err) = request.await {
+                    web_sys::console::warn_1(&JsValue::from_str(&format!(
+                        "[IDB] failed to delete previous-version database `{}`: {err:?}",
+                        PREVIOUS_DB_NAME
+                    )));
+                }
+            } else {
+                web_sys::console::warn_1(&JsValue::from_str(&format!(
+                    "[IDB] deleteDatabase request could not start for `{}`",
+                    PREVIOUS_DB_NAME
+                )));
             }
             Ok(true)
         }

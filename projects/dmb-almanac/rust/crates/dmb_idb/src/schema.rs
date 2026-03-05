@@ -1,7 +1,7 @@
 pub const DB_NAME: &str = "dmb-almanac-rs";
 // Bump this whenever SCHEMA_V12_REFERENCE changes so existing clients get an upgrade transaction
 // that can create any newly-added stores/indexes.
-pub const DB_VERSION: u32 = 2;
+pub const DB_VERSION: u32 = 3;
 // Prior prototype DB name. Used only for one-time migration/cleanup during cutover.
 pub const PREVIOUS_DB_NAME: &str = "dmb-almanac";
 
@@ -47,7 +47,7 @@ pub const SCHEMA_V12_REFERENCE: &[(&str, &str)] = &[
     (TABLE_USER_FAVORITE_SONGS, "++id, &songId, addedAt"),
     (TABLE_USER_FAVORITE_VENUES, "++id, &venueId, addedAt"),
     (TABLE_CURATED_LISTS, "&id, &slug, category"),
-    (TABLE_CURATED_LIST_ITEMS, "&id, listId, position, itemType"),
+    (TABLE_CURATED_LIST_ITEMS, "&id, listId, position, itemType, [listId+position]"),
     (TABLE_RELEASES, "&id, &slug, releaseType, releaseDate, searchText"),
     (TABLE_RELEASE_TRACKS, "&id, releaseId, songId, showId"),
     (TABLE_SYNC_META, "&id"),

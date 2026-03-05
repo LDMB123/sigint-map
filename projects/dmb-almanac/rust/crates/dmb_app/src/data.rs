@@ -873,9 +873,10 @@ fn build_import_work_items(manifest: &DataManifest) -> Vec<ImportWorkItem> {
             let chunk_files = manifest.chunk_files_with_prefix(prefix);
             if !chunk_files.is_empty() {
                 for name in chunk_files {
+                    let url = format!("/data/{name}");
                     items.push(ImportWorkItem {
-                        label: name.clone(),
-                        url: format!("/data/{name}"),
+                        label: name,
+                        url,
                         store: spec.store,
                     });
                 }
@@ -1055,12 +1056,15 @@ async fn load_resume_position(
 }
 
 #[cfg(feature = "hydrate")]
-fn chunk_values(values: &Array, start: usize, end: usize) -> Vec<JsValue> {
-    let mut chunk: Vec<JsValue> = Vec::with_capacity(end.saturating_sub(start));
+fn refill_chunk_buffer(values: &Array, start: usize, end: usize, chunk: &mut Vec<JsValue>) {
+    chunk.clear();
+    let chunk_len = end.saturating_sub(start);
+    if chunk.capacity() < chunk_len {
+        chunk.reserve(chunk_len - chunk.capacity());
+    }
     for idx in start..end {
         chunk.push(values.get(idx as u32));
     }
-    chunk
 }
 
 #[cfg(feature = "hydrate")]
@@ -1138,6 +1142,7 @@ async fn import_single_work_item(
     let chunk_size = import_chunk_size(total_records);
     let chunk_total = total_records.div_ceil(chunk_size).max(1);
     let start_chunk = start_chunk_hint.min(chunk_total.saturating_sub(1));
+    let mut chunk_buffer: Vec<JsValue> = Vec::with_capacity(chunk_size);
 
     for chunk_index in start_chunk..chunk_total {
         let chunk_progress = (chunk_index + 1) as f32 / chunk_total as f32;
@@ -1157,9 +1162,9 @@ async fn import_single_work_item(
 
         let start = chunk_index * chunk_size;
         let end = (start + chunk_size).min(total_records);
-        let chunk = chunk_values(&values, start, end);
+        refill_chunk_buffer(&values, start, end, &mut chunk_buffer);
 
-        if let Err(err) = dmb_idb::bulk_put(work_item.store, &chunk).await {
+        if let Err(err) = dmb_idb::bulk_put(work_item.store, &chunk_buffer).await {
             return Err(import_error_status(
                 format!("Import failed: {}", work_item.label),
                 progress,
@@ -1269,6 +1274,7 @@ async fn import_single_work_item_adaptive(
     let mut record_offset =
         resolve_resume_record_offset(start_record_offset_hint, start_chunk_hint, total_records);
     let mut last_checkpoint_at = performance_now_ms();
+    let mut chunk_buffer: Vec<JsValue> = Vec::with_capacity(governor.chunk_records);
 
     while record_offset < total_records {
         let remaining = total_records.saturating_sub(record_offset);
@@ -1277,11 +1283,11 @@ async fn import_single_work_item_adaptive(
         let end = (start + chunk_records).min(total_records);
         chunk_number = chunk_number.saturating_add(1);
 
-        let chunk = chunk_values(&values, start, end);
+        refill_chunk_buffer(&values, start, end, &mut chunk_buffer);
         let chunk_started_at = performance_now_ms();
         let write_stats = dmb_idb::bulk_put_with_options(
             work_item.store,
-            &chunk,
+            &chunk_buffer,
             dmb_idb::BulkPutOptions {
                 tx_batch_size: governor.tx_batch_size,
             },
@@ -1515,13 +1521,13 @@ struct DryRunReport {
 
 #[cfg(feature = "hydrate")]
 fn dry_run_store_counts(report: &DryRunReport) -> std::collections::HashMap<String, u64> {
-    let mut store_counts = std::collections::HashMap::new();
+    let mut store_counts = std::collections::HashMap::with_capacity(IMPORT_SPECS.len());
     let chunk_specs: Vec<(&'static str, &'static str)> = IMPORT_SPECS
         .iter()
         .filter_map(|spec| spec.chunk_prefix.map(|prefix| (prefix, spec.store)))
         .collect();
     let mut chunk_totals: std::collections::HashMap<&'static str, u64> =
-        std::collections::HashMap::new();
+        std::collections::HashMap::with_capacity(chunk_specs.len());
 
     for (name, count) in &report.file_counts {
         let Some(stem) = manifest_name_stem(name) else {
@@ -1618,29 +1624,30 @@ fn import_store_lookup_by_manifest_name() -> &'static HashMap<String, &'static s
 #[cfg(feature = "hydrate")]
 fn build_manifest_checks(expected: HashMap<String, u64>) -> Vec<(String, u64)> {
     let stores_by_manifest_name = import_store_lookup_by_manifest_name();
-    expected
+    let mut checks: Vec<(String, u64)> = expected
         .into_iter()
         .filter_map(|(name, expected_count)| {
             stores_by_manifest_name
                 .get(&name)
                 .map(|store| ((*store).to_string(), expected_count))
         })
-        .collect()
+        .collect();
+    checks.sort_unstable_by(|left, right| left.0.cmp(&right.0));
+    checks
 }
 
 #[cfg(feature = "hydrate")]
-fn dedupe_integrity_mismatches(mut mismatches: Vec<IntegrityMismatch>) -> Vec<IntegrityMismatch> {
-    let mut unique = Vec::with_capacity(mismatches.len());
-    for mismatch in mismatches.drain(..) {
-        let already_seen = unique.iter().any(|existing: &IntegrityMismatch| {
-            existing.store == mismatch.store
-                && existing.expected == mismatch.expected
-                && existing.actual == mismatch.actual
-        });
-        if !already_seen {
-            unique.push(mismatch);
-        }
-    }
+fn dedupe_integrity_mismatches(mismatches: Vec<IntegrityMismatch>) -> Vec<IntegrityMismatch> {
+    let mut unique = mismatches;
+    unique.sort_unstable_by(|left, right| {
+        left.store
+            .cmp(&right.store)
+            .then(left.expected.cmp(&right.expected))
+            .then(left.actual.cmp(&right.actual))
+    });
+    unique.dedup_by(|left, right| {
+        left.store == right.store && left.expected == right.expected && left.actual == right.actual
+    });
     unique
 }
 
@@ -1657,10 +1664,8 @@ async fn verify_import_integrity(
     let manifest_checks = build_manifest_checks(expected);
 
     let dry_run_checks = dry_run.map(dry_run_store_counts).unwrap_or_default();
-    let dry_run_check_entries: Vec<(String, u64)> = dry_run_checks
-        .iter()
-        .map(|(store, count)| (store.clone(), *count))
-        .collect();
+    let mut dry_run_check_entries: Vec<(String, u64)> = dry_run_checks.into_iter().collect();
+    dry_run_check_entries.sort_unstable_by(|left, right| left.0.cmp(&right.0));
 
     let mut stores_to_count: HashSet<&str> = manifest_checks
         .iter()
@@ -1675,7 +1680,8 @@ async fn verify_import_integrity(
     let mut counted: HashMap<String, u64> = HashMap::new();
     let mut missing_stores: HashSet<String> = HashSet::new();
     if !stores_to_count.is_empty() {
-        let store_refs: Vec<&str> = stores_to_count.into_iter().collect();
+        let mut store_refs: Vec<&str> = stores_to_count.into_iter().collect();
+        store_refs.sort_unstable();
         match dmb_idb::count_stores_with_missing(&store_refs).await {
             Ok((entries, missing)) => {
                 for (store, count) in entries {
