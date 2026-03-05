@@ -1,0 +1,13 @@
+# Backups and intermediates
+*_backup.*
+*_new.*
+*_combined.*
+*_part*.*
+*_pre_integration_backup.*
+merge_parts.py
+new-integrations.js
+section44-web-apis.js
+
+# OS
+.DS_Store
+Thumbs.db
