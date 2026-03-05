@@ -63,7 +63,15 @@ extern "C" {
 }
 
 #[cfg(feature = "hydrate")]
+fn has_window_function(name: &str) -> bool {
+    crate::browser::runtime::window_property_or_undefined(name).is_function()
+}
+
+#[cfg(feature = "hydrate")]
 pub fn load_runtime_telemetry() -> Option<WebgpuRuntimeTelemetry> {
+    if !has_window_function("dmbGetWebgpuTelemetry") {
+        return None;
+    }
     let value = js_get_webgpu_runtime_telemetry().ok()?;
     serde_wasm_bindgen::from_value(value).ok()
 }
@@ -75,6 +83,9 @@ pub fn load_runtime_telemetry() -> Option<WebgpuRuntimeTelemetry> {
 
 #[cfg(feature = "hydrate")]
 pub fn reset_runtime_telemetry() {
+    if !has_window_function("dmbResetWebgpuTelemetry") {
+        return;
+    }
     let _ = js_reset_webgpu_runtime_telemetry();
 }
 
@@ -83,6 +94,9 @@ pub fn reset_runtime_telemetry() {}
 
 #[cfg(feature = "hydrate")]
 pub fn load_apple_silicon_profile() -> Option<AppleSiliconProfile> {
+    if !has_window_function("dmbGetAppleSiliconProfile") {
+        return None;
+    }
     let value = js_get_apple_silicon_profile().ok()?;
     serde_wasm_bindgen::from_value(value).ok()
 }

@@ -1,4 +1,4 @@
-use crate::{db_client, dom};
+use crate::{companion_skins_store, dom};
 use wasm_bindgen::prelude::*;
 pub struct CompanionSkin {
     pub id: &'static str,
@@ -48,8 +48,7 @@ pub async fn check_and_unlock_skin(badge_id: &str) {
     }
 }
 async fn unlock_skin(skin_id: &str) {
-    let sql = "UPDATE companion_skins SET is_unlocked = 1 WHERE id = ?1";
-    match db_client::exec(sql, vec![skin_id.into()]).await {
+    match companion_skins_store::unlock_skin_by_id(skin_id).await {
         Ok(()) => {
             dom::warn(&format!("[companion_skins] Unlocked skin: {skin_id}"));
             render_transformation_animation(skin_id);
@@ -102,8 +101,7 @@ fn render_transformation_animation(skin_id: &str) {
     }
 }
 pub async fn get_active_skin() -> Option<String> {
-    let sql = "SELECT id, is_active FROM companion_skins WHERE is_active = 1 LIMIT 1";
-    match db_client::query(sql, vec![]).await {
+    match companion_skins_store::fetch_active_skin().await {
         Ok(rows) => {
             rows.as_array()
                 .and_then(|arr| arr.first())
@@ -116,26 +114,22 @@ pub async fn get_active_skin() -> Option<String> {
     }
 }
 pub async fn seed_companion_skins() {
-    let count =
-        match db_client::query("SELECT COUNT(*) as count FROM companion_skins", vec![]).await {
-            Ok(rows) => db_client::extract_count(&rows, "count") as f64,
-            Err(_) => 0.0,
-        };
-    if count > 0.0 {
+    let count = companion_skins_store::count_companion_skins().await;
+    if count > 0 {
         return;
     }
     dom::warn("[companion_skins] Seeding companion_skins table");
     for skin in SKINS {
         let is_default = i32::from(skin.id == "default");
-        let sql = "INSERT INTO companion_skins (id, skin_name, unlock_badge_id, is_unlocked, is_active) VALUES (?1, ?2, ?3, ?4, ?5)";
-        let params = vec![
-            skin.id.to_string(),
-            skin.skin_name.to_string(),
-            skin.unlock_badge_id.unwrap_or("").to_string(),
-            is_default.to_string(),
-            is_default.to_string(),
-        ];
-        if let Err(e) = db_client::exec(sql, params).await {
+        if let Err(e) = companion_skins_store::insert_companion_skin(
+            skin.id,
+            skin.skin_name,
+            skin.unlock_badge_id.unwrap_or(""),
+            is_default,
+            is_default,
+        )
+        .await
+        {
             dom::warn(&format!(
                 "[companion_skins] Failed to seed skin {}: {e:?}",
                 skin.id

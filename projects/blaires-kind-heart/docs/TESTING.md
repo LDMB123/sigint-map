@@ -1,6 +1,6 @@
 # Testing Guide (Operational Summary)
 
-Last updated: 2026-03-04
+Last updated: 2026-03-05
 Full reference: `docs/archive/reference-full/TESTING.full.md`
 Historical test reports index: `docs/testing/README.md`
 
@@ -70,3 +70,5 @@ node scripts/checks/phase5-kpi-report.mjs --snapshot <path-to-export.json>
 2. Two physical iPad runs (`rc3_run_01`, `rc4_run_02`) are `PASS` with `p0_open=0` and `p1_open=0`.
 3. If `db_reduction_status=FAIL`, waiver `phase5-db-reduction-rc4` is `APPROVED` and unexpired.
 4. Release-tag workflow pass is required.
+
+Current state: `db_reduction_status=PASS`; no active KPI waiver is required.

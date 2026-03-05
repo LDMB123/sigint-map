@@ -1,35 +1,21 @@
-use crate::{browser_apis, db_client, dom, state, utils};
+use crate::{browser_apis, companion_care_store, dom, state, utils};
 
 const FEED_COOLDOWN_MS: f64 = 600_000.0; // 10 minutes
 const PLAY_COOLDOWN_MS: f64 = 3_000.0; // 3 seconds
 
 pub async fn get_state(key: &str) -> Option<String> {
-    let sql = "SELECT value FROM companion_state WHERE key = ?1";
-    match db_client::query(sql, vec![key.to_string()]).await {
-        Ok(rows) => rows
-            .get(0)
-            .and_then(|r| r.get("value"))
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string()),
-        Err(_) => None,
-    }
+    companion_care_store::fetch_state_value(key).await
 }
 
 pub async fn set_state(key: &str, value: &str) {
     let now = browser_apis::now_ms() as u64;
-    let sql = "INSERT OR REPLACE INTO companion_state (key, value, updated_at) VALUES (?1, ?2, ?3)";
-    if let Err(e) = db_client::exec(
-        sql,
-        vec![key.to_string(), value.to_string(), now.to_string()],
-    )
-    .await
-    {
+    if let Err(e) = companion_care_store::upsert_state(key, value, now).await {
         dom::warn(&format!("[companion_care] set_state failed: {e:?}"));
     }
 }
 
 pub async fn hydrate() {
-    let rows = match db_client::query("SELECT key, value FROM companion_state", vec![]).await {
+    let rows = match companion_care_store::fetch_all_state_rows().await {
         Ok(r) => r,
         Err(e) => {
             dom::warn(&format!("[companion_care] hydrate query failed: {e:?}"));

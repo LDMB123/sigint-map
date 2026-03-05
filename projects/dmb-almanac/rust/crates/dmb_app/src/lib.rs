@@ -51,8 +51,6 @@ use leptos::prelude::*;
 use leptos_config::LeptosOptions;
 use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
-#[cfg(feature = "hydrate")]
-use wasm_bindgen::JsValue;
 
 #[component]
 #[allow(clippy::must_use_candidate)]
@@ -150,11 +148,5 @@ pub fn hydrate() {
     ai::preload_webgpu_runtime();
 
     // Lightweight signal for E2E and diagnostics tooling that hydration ran.
-    if let Some(window) = web_sys::window() {
-        let _ = js_sys::Reflect::set(
-            window.as_ref(),
-            &JsValue::from_str("__DMB_HYDRATED"),
-            &JsValue::TRUE,
-        );
-    }
+    let _ = browser::runtime::set_window_bool("__DMB_HYDRATED", true);
 }

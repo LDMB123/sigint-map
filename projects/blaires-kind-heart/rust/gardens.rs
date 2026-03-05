@@ -1,4 +1,4 @@
-use crate::{db_client, dom, render};
+use crate::{dom, gardens_store, render};
 use std::fmt::Write;
 use wasm_bindgen::{closure::Closure, JsCast};
 pub struct Garden {
@@ -109,8 +109,7 @@ pub fn init() {
     render_gardens_panel();
 }
 async fn get_unlocked_gardens() -> Vec<(String, String, i32)> {
-    let sql = "SELECT id, garden_name, growth_stage FROM gardens WHERE unlocked_at IS NOT NULL ORDER BY unlocked_at DESC";
-    match db_client::query(sql, vec![]).await {
+    match gardens_store::fetch_unlocked_gardens().await {
         Ok(rows) => rows
             .as_array()
             .map(|arr| {
@@ -235,25 +234,14 @@ fn render_garden_card(garden: &Garden, growth_stage: i32) -> Option<web_sys::Ele
     Some(card)
 }
 pub async fn seed_gardens() {
-    let check_sql = "SELECT COUNT(*) as count FROM gardens";
-    let count = match db_client::query(check_sql, vec![]).await {
-        Ok(rows) => db_client::extract_count(&rows, "count") as f64,
-        Err(_) => 0.0,
-    };
-    if count > 0.0 {
+    let count = gardens_store::count_gardens().await;
+    if count > 0 {
         return;
     }
     let now = js_sys::Date::now() as i64;
-    let sql = "INSERT INTO gardens (id, garden_name, quest_chain_id, theme_emoji, growth_stage, unlocked_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
-    let params = vec![
-        "garden-hug-1".into(),
-        "Bunny Garden".into(),
-        "chain-hug-1".into(),
-        "🐰".into(),
-        1.to_string(),
-        now.to_string(),
-    ];
-    if let Err(e) = db_client::exec(sql, params).await {
+    if let Err(e) =
+        gardens_store::insert_garden_seed("garden-hug-1", "Bunny Garden", "chain-hug-1", "🐰", 1, now).await
+    {
         dom::warn(&format!("[gardens] Failed to seed: {e:?}"));
     }
 }

@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUNNER="$SCRIPT_DIR/prompt-packs/run_speakeasy_safe_fallback_batch.mjs"
 PROMPT_PACK="${PROMPT_PACK:-$SCRIPT_DIR/prompt-packs/speakeasy_prompts_02_100_first_principles_rewrite_v1.md}"
 REFERENCE_IMAGE="${REFERENCE_IMAGE:-/Users/louisherman/Documents/Sierra1.jpeg}"
+USE_STATIC_ACCESS_TOKEN="${USE_STATIC_ACCESS_TOKEN:-0}"
 GCLOUD_BIN="${GCLOUD_BIN:-/Users/louisherman/google-cloud-sdk/bin/gcloud}"
 
 if [[ ! -f "$RUNNER" ]]; then
@@ -19,7 +20,7 @@ if [[ ! -f "$REFERENCE_IMAGE" ]]; then
   echo "Reference image not found: $REFERENCE_IMAGE" >&2
   exit 1
 fi
-if [[ ! -x "$GCLOUD_BIN" ]]; then
+if [[ "$USE_STATIC_ACCESS_TOKEN" == "1" && ! -x "$GCLOUD_BIN" ]]; then
   echo "gcloud binary not executable: $GCLOUD_BIN" >&2
   exit 1
 fi
@@ -35,8 +36,8 @@ SUMMARY_PATH="$RUN_DIR/summary.json"
 
 export STRICT_61S_ATTEMPT_PACING="${STRICT_61S_ATTEMPT_PACING:-1}"
 export WAIT_BEFORE_ATTEMPT_S="${WAIT_BEFORE_ATTEMPT_S:-61}"
-export REQUEST_TIMEOUT_MS="${REQUEST_TIMEOUT_MS:-90000}"
-export IMAGE_HTTP_RETRIES="${IMAGE_HTTP_RETRIES:-0}"
+export REQUEST_TIMEOUT_MS="${REQUEST_TIMEOUT_MS:-180000}"
+export IMAGE_HTTP_RETRIES="${IMAGE_HTTP_RETRIES:-1}"
 export RATE_LIMIT_RETRY_FLOOR_S="${RATE_LIMIT_RETRY_FLOOR_S:-61}"
 export RATE_LIMIT_RETRY_MAX_S="${RATE_LIMIT_RETRY_MAX_S:-61}"
 export RATE_LIMIT_COOLDOWN_BASE_S="${RATE_LIMIT_COOLDOWN_BASE_S:-61}"
@@ -71,12 +72,17 @@ export FIRST_PRINCIPLES_RECOMPILER_MODE="${FIRST_PRINCIPLES_RECOMPILER_MODE:-1}"
 export FIRST_PRINCIPLES_SIGNAL_LEVEL="${FIRST_PRINCIPLES_SIGNAL_LEVEL:-3}"
 export IMAGE_SAFETY_COMPLIANCE_MODE="${IMAGE_SAFETY_COMPLIANCE_MODE:-1}"
 export IMAGE_SAFETY_COMPLIANCE_DROP_LINES="${IMAGE_SAFETY_COMPLIANCE_DROP_LINES:-0}"
+export ENABLE_PRIMARY_UPLIFT_RESCUE="${ENABLE_PRIMARY_UPLIFT_RESCUE:-0}"
+export SAFE_QUALITY_RESCUE_MAX_ATTEMPTS="${SAFE_QUALITY_RESCUE_MAX_ATTEMPTS:-1}"
 
-export DARING_EDITORIAL_MODE="${DARING_EDITORIAL_MODE:-0}"
+export DARING_EDITORIAL_MODE="${DARING_EDITORIAL_MODE:-1}"
+export DARING_EDITORIAL_LEVEL="${DARING_EDITORIAL_LEVEL:-3}"
 export SENSUAL_EDITORIAL_BOOST="${SENSUAL_EDITORIAL_BOOST:-0}"
-export SENSUAL_VARIANCE_GUARD="${SENSUAL_VARIANCE_GUARD:-0}"
+export SENSUAL_VARIANCE_GUARD="${SENSUAL_VARIANCE_GUARD:-1}"
+export SENSUAL_VARIANCE_LEVEL="${SENSUAL_VARIANCE_LEVEL:-3}"
 export SKIN_FORWARD_STYLING="${SKIN_FORWARD_STYLING:-0}"
-export ATTIRE_BOLD_BOOST="${ATTIRE_BOLD_BOOST:-0}"
+export ATTIRE_BOLD_BOOST="${ATTIRE_BOLD_BOOST:-1}"
+export ATTIRE_BOLD_BOOST_LEVEL="${ATTIRE_BOLD_BOOST_LEVEL:-3}"
 
 export RUN_OUTPUT_DIR="$RUN_DIR"
 export MAX_PROMPTS="${MAX_PROMPTS:-99}"
@@ -105,9 +111,83 @@ refresh_access_token() {
   export STATIC_ACCESS_TOKEN="$token"
 }
 
+clamp_int() {
+  local value="$1"
+  local min="$2"
+  local max="$3"
+  if (( value < min )); then
+    echo "$min"
+  elif (( value > max )); then
+    echo "$max"
+  else
+    echo "$value"
+  fi
+}
+
+self_heal_runtime_knobs() {
+  local metrics net_failures timeout_failures rate_limit_failures completion_rate
+  metrics="$(node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const prompts=s?.prompts||[];let net=0,to=0;for(const p of prompts){const r=String(p?.telemetry?.finalFailureReason||"");if(r==="network"||r==="network_error")net+=1;if(r==="timeout")to+=1;}const rl=Number(s?.totals?.rateLimitPressureFailures||0);const cr=Number(s?.metrics?.completionRate||0);process.stdout.write([net,to,rl,cr].join("\t"));' "$SUMMARY_PATH")"
+  IFS=$'\t' read -r net_failures timeout_failures rate_limit_failures completion_rate <<< "$metrics"
+
+  local changed=0
+
+  if (( timeout_failures > 0 || net_failures >= 2 )); then
+    local new_timeout new_retries
+    new_timeout="$(clamp_int $((REQUEST_TIMEOUT_MS + 60000)) 90000 300000)"
+    new_retries="$(clamp_int $((IMAGE_HTTP_RETRIES + 1)) 1 2)"
+    if [[ "$new_timeout" -ne "$REQUEST_TIMEOUT_MS" ]]; then
+      REQUEST_TIMEOUT_MS="$new_timeout"
+      export REQUEST_TIMEOUT_MS
+      changed=1
+    fi
+    if [[ "$new_retries" -ne "$IMAGE_HTTP_RETRIES" ]]; then
+      IMAGE_HTTP_RETRIES="$new_retries"
+      export IMAGE_HTTP_RETRIES
+      changed=1
+    fi
+  fi
+
+  if (( rate_limit_failures > 0 )); then
+    local new_wait
+    new_wait="$(clamp_int $((WAIT_BEFORE_ATTEMPT_S + 9)) 61 90)"
+    if [[ "$new_wait" -ne "$WAIT_BEFORE_ATTEMPT_S" ]]; then
+      WAIT_BEFORE_ATTEMPT_S="$new_wait"
+      RATE_LIMIT_RETRY_FLOOR_S="$new_wait"
+      RATE_LIMIT_RETRY_MAX_S="$new_wait"
+      RATE_LIMIT_COOLDOWN_BASE_S="$new_wait"
+      RATE_LIMIT_COOLDOWN_MAX_S="$new_wait"
+      STRICT_61S_ATTEMPT_PACING=0
+      export WAIT_BEFORE_ATTEMPT_S RATE_LIMIT_RETRY_FLOOR_S RATE_LIMIT_RETRY_MAX_S RATE_LIMIT_COOLDOWN_BASE_S RATE_LIMIT_COOLDOWN_MAX_S STRICT_61S_ATTEMPT_PACING
+      changed=1
+    fi
+    if [[ "$RATE_LIMIT_FAIL_FAST_MIN_CONSECUTIVE_429" -lt 2 ]]; then
+      RATE_LIMIT_FAIL_FAST_MIN_CONSECUTIVE_429=2
+      export RATE_LIMIT_FAIL_FAST_MIN_CONSECUTIVE_429
+      changed=1
+    fi
+    if [[ "$RATE_LIMIT_FAIL_FAST_COOLDOWN_S" -lt 120 ]]; then
+      RATE_LIMIT_FAIL_FAST_COOLDOWN_S=120
+      export RATE_LIMIT_FAIL_FAST_COOLDOWN_S
+      changed=1
+    fi
+  fi
+
+  if (( changed )); then
+    printf "Self-heal tuning applied: timeout=%sms retries=%s wait=%ss failFastCooldown=%ss min429=%s (net=%s timeout=%s rateLimit=%s completionRate=%s)\n" \
+      "$REQUEST_TIMEOUT_MS" "$IMAGE_HTTP_RETRIES" "$WAIT_BEFORE_ATTEMPT_S" "$RATE_LIMIT_FAIL_FAST_COOLDOWN_S" "$RATE_LIMIT_FAIL_FAST_MIN_CONSECUTIVE_429" \
+      "$net_failures" "$timeout_failures" "$rate_limit_failures" "$completion_rate" | tee -a "$LOG_FILE"
+  fi
+}
+
+if [[ "$USE_STATIC_ACCESS_TOKEN" != "1" ]]; then
+  unset STATIC_ACCESS_TOKEN || true
+fi
+
 while true; do
   export RESUME_FROM_PROMPT_ID
-  refresh_access_token
+  if [[ "$USE_STATIC_ACCESS_TOKEN" == "1" ]]; then
+    refresh_access_token
+  fi
 
   set +e
   node "$RUNNER" "$PROMPT_PACK" "$REFERENCE_IMAGE" > >(tee -a "$LOG_FILE") 2>&1
@@ -134,6 +214,7 @@ while true; do
       exit 1
     fi
     printf "\nPaused on pressure. Next resume at %s from prompt %s.\n" "$NEXT_RESUME_AT" "$RESUME_FROM_PROMPT_ID" | tee -a "$LOG_FILE"
+    self_heal_runtime_knobs
 
     while true; do
       REMAINING_S="$(node -e 'const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const t=Date.parse(s?.runState?.nextResumeAt||"");const now=Date.now();const rem=Number.isFinite(t)?Math.max(0,Math.ceil((t-now)/1000)):0;process.stdout.write(String(rem));' "$SUMMARY_PATH")"

@@ -1,5 +1,5 @@
 use crate::{
-    db_client, dom, domain_services, feature_flags, reliability, skill_taxonomy, utils,
+    dom, domain_services, feature_flags, parent_insights_store, reliability, skill_taxonomy, utils,
 };
 use std::fmt::Write;
 #[derive(Debug, Clone)]
@@ -68,30 +68,20 @@ async fn generate_weekly_insights(week_key: &str) -> Option<WeeklyInsight> {
             return Some(insight);
         }
     };
-    let _ = db_client::exec(
-        "INSERT OR REPLACE INTO weekly_insights \
-        (week_key, top_skill, focus_skill, pattern_text, reflection_rate, skill_breakdown, generated_at) \
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        vec![
-            week_key_str,
-            top_skill,
-            focus_skill,
-            pattern_text,
-            reflection_rate.to_string(),
-            skill_breakdown_json,
-            now.to_string(),
-        ],
+    let _ = parent_insights_store::upsert_weekly_insight(
+        &week_key_str,
+        &top_skill,
+        &focus_skill,
+        &pattern_text,
+        reflection_rate,
+        skill_breakdown_json,
+        now,
     )
     .await;
     Some(insight)
 }
 async fn get_cached_insights(week_key: &str) -> Option<WeeklyInsight> {
-    let rows = db_client::query(
-        "SELECT week_key, focus_skill, pattern_text, reflection_rate, skill_breakdown \
-        FROM weekly_insights WHERE week_key = ?1",
-        vec![week_key.to_string()],
-    )
-    .await;
+    let rows = parent_insights_store::fetch_cached_weekly_insight(week_key).await;
     let Ok(data) = rows else {
         reliability::record_failure(reliability::DOMAIN_INSIGHTS).await;
         return None;
@@ -137,11 +127,7 @@ async fn get_cached_insights(week_key: &str) -> Option<WeeklyInsight> {
 async fn calculate_skill_breakdown_and_times(week_key: &str) -> (Vec<SkillBreakdown>, Vec<f64>) {
     let week_start = week_key.to_string();
     let week_end = utils::week_key_end(&week_start);
-    let rows = db_client::query(
-        "SELECT COALESCE(canonical_category, category) as category, created_at FROM kind_acts WHERE day_key >= ?1 AND day_key <= ?2",
-        vec![week_start, week_end],
-    )
-    .await;
+    let rows = parent_insights_store::fetch_kind_acts_week_window(&week_start, &week_end).await;
     let Ok(data) = rows else {
         reliability::record_failure(reliability::DOMAIN_INSIGHTS).await;
         return (vec![], vec![]);
@@ -231,8 +217,9 @@ fn detect_time_pattern_from_timestamps(timestamps: &[f64]) -> String {
 async fn calculate_reflection_rate(week_key: &str) -> u32 {
     let week_start = week_key.to_string();
     let week_end = utils::week_key_end(&week_start);
-    let Ok(rows) = db_client::query( "SELECT COUNT(*) as total, SUM(CASE WHEN reflection_type IS NOT NULL THEN 1 ELSE 0 END) as reflected \
-         FROM kind_acts WHERE day_key >= ?1 AND day_key <= ?2", vec![week_start, week_end],).await else {
+    let Ok(rows) =
+        parent_insights_store::fetch_reflection_counts_week_window(&week_start, &week_end).await
+    else {
         reliability::record_failure(reliability::DOMAIN_INSIGHTS).await;
         return 0;
     };

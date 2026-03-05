@@ -1,4 +1,9 @@
+#[cfg(feature = "hydrate")]
+use serde::Deserialize;
 use serde::Serialize;
+
+#[cfg(feature = "hydrate")]
+use wasm_bindgen_futures::JsFuture;
 
 #[cfg(feature = "hydrate")]
 pub fn local_storage() -> Option<web_sys::Storage> {
@@ -147,6 +152,30 @@ pub fn parse_f64(value: Option<&str>) -> Option<f64> {
     value.and_then(|raw| raw.parse::<f64>().ok())
 }
 
+#[cfg(feature = "hydrate")]
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StorageEstimateValue {
+    #[serde(default)]
+    usage: Option<f64>,
+    #[serde(default)]
+    quota: Option<f64>,
+}
+
+#[cfg(feature = "hydrate")]
+pub async fn estimate_usage_quota() -> Option<(Option<f64>, Option<f64>)> {
+    let window = web_sys::window()?;
+    let manager = window.navigator().storage();
+    let estimate = JsFuture::from(manager.estimate().ok()?).await.ok()?;
+    let parsed = serde_wasm_bindgen::from_value::<StorageEstimateValue>(estimate).ok()?;
+    Some((parsed.usage, parsed.quota))
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub async fn estimate_usage_quota() -> Option<(Option<f64>, Option<f64>)> {
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::{parse_f64, parse_flag};
@@ -164,5 +193,11 @@ mod tests {
         assert_eq!(parse_f64(Some("42.5")), Some(42.5));
         assert_eq!(parse_f64(Some("not-a-number")), None);
         assert_eq!(parse_f64(None), None);
+    }
+
+    #[cfg(not(feature = "hydrate"))]
+    #[test]
+    fn estimate_usage_quota_is_noop_without_hydrate() {
+        let _ = super::estimate_usage_quota;
     }
 }

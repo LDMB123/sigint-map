@@ -1,4 +1,4 @@
-use crate::{browser_apis, db_client, dom, render, speech, synth_audio, utils};
+use crate::{browser_apis, dom, render, rewards_store, speech, synth_audio, utils};
 use std::fmt::Write;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, Event};
@@ -29,12 +29,9 @@ fn listen_panel() {
 }
 
 async fn render_timeline() {
-    let rows = db_client::query(
-        "SELECT day_key, COUNT(*) as act_count FROM kind_acts GROUP BY day_key ORDER BY day_key DESC LIMIT 30",
-        vec![],
-    )
-    .await
-    .unwrap_or_default();
+    let rows = rewards_store::fetch_kind_act_counts_by_day_last_30()
+        .await
+        .unwrap_or_default();
 
     let mut day_map = std::collections::HashMap::new();
     if let Some(arr) = rows.as_array() {
@@ -180,14 +177,7 @@ fn show_day_tooltip(_tile: &Element, day_key: &str) {
     let dk = day_key.to_string();
     let tile_key = day_key.to_string();
     browser_apis::spawn_local_logged("garden-timeline-tooltip", async move {
-        let count = db_client::query(
-            "SELECT COUNT(*) as cnt FROM kind_acts WHERE day_key = ?1",
-            vec![dk],
-        )
-        .await
-        .ok()
-        .and_then(|rows| rows.get(0)?.get("cnt")?.as_u64())
-        .unwrap_or(0);
+        let count = rewards_store::count_kind_acts_for_day(&dk).await;
 
         let tile_el = dom::with_buf(|buf| {
             let _ = write!(buf, "[data-timeline-day='{tile_key}']");

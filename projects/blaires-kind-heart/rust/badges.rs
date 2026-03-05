@@ -1,4 +1,4 @@
-use crate::{db_client, dom};
+use crate::{badges_store, db_client, dom};
 pub struct Badge {
     pub id: &'static str,
     #[allow(dead_code)] // Data model field — not accessed in Rust but defines badge schema
@@ -309,8 +309,7 @@ fn award_badge_inner(
     Box::pin(award_badge_impl(badge_id, check_platinum))
 }
 async fn award_badge_impl(badge_id: &str, check_platinum: bool) {
-    let check_sql = "SELECT earned FROM badges WHERE id = ?1";
-    let already_earned = match db_client::query(check_sql, vec![badge_id.to_string()]).await {
+    let already_earned = match badges_store::fetch_badge_earned_row(badge_id).await {
         Ok(rows) => extract_bool_flag(&rows, "earned"),
         Err(_) => false,
     };
@@ -318,8 +317,7 @@ async fn award_badge_impl(badge_id: &str, check_platinum: bool) {
         return;
     }
     let now = js_sys::Date::now() as i64;
-    let sql = "UPDATE badges SET earned = 1, earned_at = ?1 WHERE id = ?2";
-    match db_client::exec(sql, vec![now.to_string(), badge_id.to_string()]).await {
+    match badges_store::mark_badge_earned(badge_id, now).await {
         Ok(()) => {
             celebrate_badge_unlock(badge_id);
             crate::companion_skins::check_and_unlock_skin(badge_id).await;
@@ -351,15 +349,8 @@ fn celebrate_badge_unlock(badge_id: &str) {
     }
 }
 async fn check_platinum_achievements() {
-    let aggregate_sql = "\
-        SELECT \
-            (SELECT COUNT(*) FROM badges WHERE badge_type = 'skill_mastery' AND tier = 'platinum' AND earned = 1) as skill_platinum_count, \
-            (SELECT COUNT(*) FROM badges WHERE badge_type = 'story' AND earned = 1) as story_count, \
-            (SELECT COUNT(*) FROM badges WHERE badge_type = 'quest_chain' AND earned = 1) as chain_count, \
-            (SELECT COUNT(*) FROM gardens WHERE growth_stage >= 5) as garden_count \
-        ";
     let (skill_platinum_count, story_count, chain_count, garden_count) =
-        match db_client::query(aggregate_sql, vec![]).await {
+        match badges_store::fetch_platinum_aggregate_counts().await {
             Ok(rows) => (
                 db_client::extract_count(&rows, "skill_platinum_count"),
                 db_client::extract_count(&rows, "story_count"),

@@ -12,10 +12,6 @@ use leptos::prelude::RwSignal;
 use leptos::prelude::Set;
 #[cfg(feature = "hydrate")]
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "hydrate")]
-use wasm_bindgen::JsCast;
-#[cfg(feature = "hydrate")]
-use wasm_bindgen_futures::JsFuture;
 
 #[cfg(feature = "hydrate")]
 use dmb_core::SQLITE_PARITY_STORE_TABLE_MAPPINGS;
@@ -29,8 +25,6 @@ use dmb_idb::{
 use js_sys::Array;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen::JsValue;
-#[cfg(feature = "hydrate")]
-use web_sys::Response;
 
 #[derive(Clone, Debug, Default)]
 pub struct ImportStatus {
@@ -61,16 +55,6 @@ pub enum SeedDataState {
 pub struct StorageInfo {
     pub usage: Option<f64>,
     pub quota: Option<f64>,
-}
-
-#[cfg(feature = "hydrate")]
-#[derive(Clone, Debug, Default, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct StorageEstimateValue {
-    #[serde(default)]
-    usage: Option<f64>,
-    #[serde(default)]
-    quota: Option<f64>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -227,31 +211,12 @@ impl DataManifest {
 
 #[cfg(feature = "hydrate")]
 async fn fetch_json<T: serde::de::DeserializeOwned>(url: &str) -> Option<T> {
-    let window = web_sys::window()?;
-    let resp_value = JsFuture::from(window.fetch_with_str(url)).await.ok()?;
-    let resp: Response = resp_value.dyn_into().ok()?;
-    if !resp.ok() {
-        return None;
-    }
-    let json = JsFuture::from(resp.json().ok()?).await.ok()?;
-    serde_wasm_bindgen::from_value(json).ok()
+    crate::browser::http::fetch_json(url).await
 }
 
 #[cfg(feature = "hydrate")]
 async fn fetch_json_array(url: &str) -> Result<Array, JsValue> {
-    let window = web_sys::window().ok_or_else(|| JsValue::from_str("window missing"))?;
-    let resp_value = JsFuture::from(window.fetch_with_str(url)).await?;
-    let resp: Response = resp_value
-        .dyn_into()
-        .map_err(|_| JsValue::from_str("bad response"))?;
-    if !resp.ok() {
-        return Err(JsValue::from_str(&format!(
-            "fetch failed: {}",
-            resp.status()
-        )));
-    }
-    let json = JsFuture::from(resp.json()?).await?;
-    Ok(Array::from(&json))
+    crate::browser::http::fetch_json_array(url).await
 }
 
 #[cfg(feature = "hydrate")]
@@ -716,19 +681,14 @@ fn parse_boolean_flag(raw: &str) -> Option<bool> {
 
 #[cfg(feature = "hydrate")]
 fn import_tuning_enabled() -> bool {
-    let Some(window) = web_sys::window() else {
-        return false;
-    };
-    if let Ok(Some(storage)) = window.local_storage() {
-        if let Ok(Some(raw)) = storage.get_item(IMPORT_TUNING_FLAG_KEY) {
-            if let Some(enabled) = parse_boolean_flag(&raw) {
-                return enabled;
-            }
+    if let Some(raw) = crate::browser::storage::local_storage_item(IMPORT_TUNING_FLAG_KEY) {
+        if let Some(enabled) = parse_boolean_flag(&raw) {
+            return enabled;
         }
     }
 
     // Rollout default: ON for dev-like hosts, OFF otherwise.
-    match window.location().hostname().ok() {
+    match crate::browser::runtime::location_hostname() {
         Some(host) => matches!(
             host.to_ascii_lowercase().as_str(),
             "localhost" | "127.0.0.1" | "::1"
@@ -739,10 +699,7 @@ fn import_tuning_enabled() -> bool {
 
 #[cfg(feature = "hydrate")]
 fn performance_now_ms() -> f64 {
-    web_sys::window()
-        .and_then(|window| window.performance())
-        .map(|performance| performance.now())
-        .unwrap_or_else(js_sys::Date::now)
+    crate::browser::runtime::performance_now_ms().unwrap_or_else(js_sys::Date::now)
 }
 
 #[cfg(feature = "hydrate")]
@@ -1739,14 +1696,8 @@ pub fn current_import_tuning_enabled() -> bool {
 
 #[cfg(feature = "hydrate")]
 pub async fn estimate_storage() -> Option<StorageInfo> {
-    let window = web_sys::window()?;
-    let manager = window.navigator().storage();
-    let estimate = JsFuture::from(manager.estimate().ok()?).await.ok()?;
-    let parsed = serde_wasm_bindgen::from_value::<StorageEstimateValue>(estimate).ok()?;
-    Some(StorageInfo {
-        usage: parsed.usage,
-        quota: parsed.quota,
-    })
+    let (usage, quota) = crate::browser::storage::estimate_usage_quota().await?;
+    Some(StorageInfo { usage, quota })
 }
 
 #[cfg(feature = "hydrate")]
@@ -1762,28 +1713,7 @@ pub async fn handle_storage_pressure() -> Option<bool> {
         return Some(false);
     }
 
-    if let Some(window) = web_sys::window() {
-        if let Ok(cache_storage) = window.caches() {
-            if let Ok(keys) = JsFuture::from(cache_storage.keys()).await {
-                let keys: js_sys::Array = keys.dyn_into().unwrap_or_default();
-                for key in keys.iter() {
-                    let Some(name) = key.as_string() else {
-                        continue;
-                    };
-                    if !name.contains("-data-") {
-                        continue;
-                    }
-                    if let Ok(cache_val) = JsFuture::from(cache_storage.open(&name)).await {
-                        if let Ok(cache) = cache_val.dyn_into::<web_sys::Cache>() {
-                            for path in AI_CACHE_PATHS {
-                                let _ = JsFuture::from(cache.delete_with_str(path)).await;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    let _ = crate::browser::service_worker::delete_paths_from_data_caches(&AI_CACHE_PATHS).await;
 
     let _ = dmb_idb::delete_ann_index("default").await;
     Some(true)

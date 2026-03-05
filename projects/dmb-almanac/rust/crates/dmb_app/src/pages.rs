@@ -14,12 +14,6 @@ use std::collections::BTreeMap;
 use futures::future::{join, join_all};
 #[cfg(feature = "hydrate")]
 use std::collections::{HashMap, HashSet};
-#[cfg(feature = "hydrate")]
-use wasm_bindgen::JsCast;
-#[cfg(feature = "hydrate")]
-use wasm_bindgen::JsValue;
-#[cfg(feature = "hydrate")]
-use wasm_bindgen_futures::JsFuture;
 
 #[cfg(feature = "hydrate")]
 use dmb_core::GuestAppearance;
@@ -77,10 +71,7 @@ fn trigger_lazy_runtime_warmup() {
 
 #[cfg(feature = "hydrate")]
 fn current_search_param(name: &str) -> Option<String> {
-    let window = web_sys::window()?;
-    let search = window.location().search().ok()?;
-    let params = web_sys::UrlSearchParams::new_with_str(&search).ok()?;
-    params.get(name)
+    crate::browser::runtime::location_search_param(name)
 }
 
 pub use crate::browser::perf::InpMetricsSnapshot;
@@ -299,16 +290,8 @@ fn detail_nav(href: &'static str, label: &'static str) -> impl IntoView {
             let copy_label_signal = copy_label_signal.clone();
             let copy_pending_signal = copy_pending_signal.clone();
             spawn_local(async move {
-                let href = web_sys::window()
-                    .and_then(|window| window.location().href().ok())
-                    .unwrap_or_default();
-                let copied = if let Some(window) = web_sys::window() {
-                    let clipboard = window.navigator().clipboard();
-                    let promise = clipboard.write_text(&href);
-                    JsFuture::from(promise).await.is_ok()
-                } else {
-                    false
-                };
+                let href = crate::browser::runtime::location_href().unwrap_or_default();
+                let copied = crate::browser::runtime::write_clipboard_text(&href).await;
                 if copied {
                     copy_label_signal.set(String::from("Copied"));
                 } else {
@@ -1127,9 +1110,6 @@ fn action_export_diagnostics(state: AiDiagnosticsState) {
     let _ = state;
     #[cfg(feature = "hydrate")]
     {
-        let Some(window) = web_sys::window() else {
-            return;
-        };
         let local_state = crate::ai::local_state_snapshot();
         let telemetry_snapshot = state
             .telemetry_snapshot
@@ -1163,34 +1143,8 @@ fn action_export_diagnostics(state: AiDiagnosticsState) {
         });
 
         if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
-            let array = js_sys::Array::new();
-            array.push(&wasm_bindgen::JsValue::from_str(&json));
-            let Ok(blob) = web_sys::Blob::new_with_str_sequence(&array) else {
-                return;
-            };
-            let Ok(url) = web_sys::Url::create_object_url_with_blob(&blob) else {
-                return;
-            };
-            let Some(document) = window.document() else {
-                let _ = web_sys::Url::revoke_object_url(&url);
-                return;
-            };
-            let Ok(element) = document.create_element("a") else {
-                let _ = web_sys::Url::revoke_object_url(&url);
-                return;
-            };
-            let Ok(anchor) = element.dyn_into::<web_sys::HtmlAnchorElement>() else {
-                let _ = web_sys::Url::revoke_object_url(&url);
-                return;
-            };
-
-            anchor.set_href(&url);
-            anchor.set_download(&format!(
-                "ai-diagnostics-{}.json",
-                js_sys::Date::now() as i64
-            ));
-            anchor.click();
-            let _ = web_sys::Url::revoke_object_url(&url);
+            let filename = format!("ai-diagnostics-{}.json", js_sys::Date::now() as i64);
+            let _ = crate::browser::download::download_text_file(&filename, &json);
         }
     }
 }
@@ -4521,15 +4475,12 @@ pub fn search_page() -> impl IntoView {
             if !sync_search_url_ready.get() {
                 return;
             }
-            let Some(window) = web_sys::window() else {
-                return;
-            };
             let query_value = sync_query.get();
             let query_trimmed = query_value.trim();
             let active_filter_value = sync_active_filter.get();
             let filter = normalize_search_filter(&active_filter_value);
-            let pathname = window.location().pathname().unwrap_or_default();
-            let hash = window.location().hash().unwrap_or_default();
+            let pathname = crate::browser::runtime::location_pathname().unwrap_or_default();
+            let hash = crate::browser::runtime::location_hash().unwrap_or_default();
             let Ok(params) = web_sys::UrlSearchParams::new_with_str("") else {
                 return;
             };
@@ -4549,15 +4500,13 @@ pub fn search_page() -> impl IntoView {
             let current = format!(
                 "{}{}{}",
                 pathname,
-                window.location().search().unwrap_or_default(),
+                crate::browser::runtime::location_search().unwrap_or_default(),
                 hash
             );
             if next == current {
                 return;
             }
-            if let Ok(history) = window.history() {
-                let _ = history.replace_state_with_url(&JsValue::NULL, "", Some(&next));
-            }
+            let _ = crate::browser::runtime::history_replace_url(&next);
         });
 
         let embedding_index = RwSignal::new(None::<SharedEmbeddingIndex>);
@@ -4787,20 +4736,8 @@ fn render_stats_tabs(active_tab: RwSignal<u8>) -> impl IntoView {
                                     keydown_active_tab.set(next_idx);
                                     #[cfg(feature = "hydrate")]
                                     {
-                                        let Some(window) = web_sys::window() else {
-                                            return;
-                                        };
-                                        let Some(document) = window.document() else {
-                                            return;
-                                        };
                                         let tab_id = format!("stats-tab-{next_idx}");
-                                        let Some(element) = document.get_element_by_id(&tab_id) else {
-                                            return;
-                                        };
-                                        let Ok(tab) = element.dyn_into::<web_sys::HtmlElement>() else {
-                                            return;
-                                        };
-                                        let _ = tab.focus();
+                                        let _ = crate::browser::runtime::focus_element_by_id(&tab_id);
                                     }
                                     #[cfg(not(feature = "hydrate"))]
                                     {
@@ -5219,10 +5156,7 @@ pub fn stats_page() -> impl IntoView {
                     match dmb_wasm::calculate_quartiles(&rarity_values) {
                         Ok(obj) => {
                             let get = |key: &str| -> f64 {
-                                js_sys::Reflect::get(&obj, &JsValue::from_str(key))
-                                    .ok()
-                                    .and_then(|v| v.as_f64())
-                                    .unwrap_or(0.0)
+                                crate::browser::runtime::property_f64(&obj, key).unwrap_or(0.0)
                             };
                             (get("min"), get("q1"), get("median"), get("q3"), get("max"))
                         }

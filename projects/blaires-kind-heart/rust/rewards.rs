@@ -1,5 +1,5 @@
 use crate::{
-    animations, confetti, constants::SELECTOR_REWARDS_BODY, db_client, dom, domain_services,
+    animations, confetti, constants::SELECTOR_REWARDS_BODY, dom, domain_services, rewards_store,
     render, speech, synth_audio, ui, utils,
 };
 use std::fmt::Write;
@@ -332,11 +332,7 @@ fn persist_sticker_spawn(sticker_type: &str, source: &str) {
     let st = sticker_type.to_string();
     let src = source.to_string();
     crate::browser_apis::spawn_local_logged("sticker-persist", async move {
-        db_client::exec(
-            "INSERT OR IGNORE INTO stickers (id, sticker_type, earned_at, source) VALUES (?1, ?2, ?3, ?4)",
-            vec![id, st, now.to_string(), src],
-        )
-        .await
+        rewards_store::insert_sticker_ignore(&id, &st, now, &src).await
     });
 }
 fn reveal_sticker_at(idx: usize, emoji: &str, image: Option<&str>) {
@@ -359,11 +355,7 @@ pub fn award_sticker(source: &str) {
     let now = utils::now_epoch_ms();
     let sticker_type = design.name.to_string();
     let source = source.to_string();
-    db_client::exec_fire_and_forget(
-        "sticker-save",
-        "INSERT INTO stickers (id, sticker_type, earned_at, source) VALUES (?1, ?2, ?3, ?4)",
-        vec![id, sticker_type, now.to_string(), source],
-    );
+    rewards_store::insert_sticker_fire_and_forget(&id, &sticker_type, now, &source);
     reveal_sticker_at(idx, design.emoji, design.image);
     update_sticker_count(idx + 1);
     let earned = idx + 1;

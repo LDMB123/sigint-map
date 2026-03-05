@@ -27,18 +27,8 @@
     }
   ],
   "kpi_status": {
-    "db_reduction_status": "FAIL",
-    "source_report_path": "scripts/reports/phase5-kpi-20260304-074707.md"
+    "db_reduction_status": "PASS",
+    "source_report_path": "scripts/reports/phase5-kpi-20260305-000315.md"
   },
-  "waivers": [
-    {
-      "id": "phase5-db-reduction-rc4",
-      "status": "APPROVED",
-      "owner": "Engineering",
-      "justification": "RC4 is strict freeze; this KPI miss does not affect correctness, safety, or runtime stability for release.",
-      "followup_milestone": "RC5 Wave 1",
-      "expires_on": "2026-04-15",
-      "doc_path": "docs/testing/release-evidence/waivers/phase5-db-reduction-rc4.md"
-    }
-  ]
+  "waivers": []
 }

@@ -1,5 +1,5 @@
 use crate::{
-    animations, constants::SELECTOR_STORIES_BODY, db_client, dom, navigation, render, story_data,
+    animations, constants::SELECTOR_STORIES_BODY, dom, navigation, render, stories_store, story_data,
     story_engine, ui,
 };
 use wasm_bindgen::JsCast;
@@ -30,11 +30,7 @@ fn bind_story_done_event() {
 }
 async fn render_library_async() {
     let mut completed: Vec<String> = Vec::new();
-    if let Ok(rows) = db_client::query(
-        "SELECT story_id FROM stories_progress WHERE completed = 1",
-        vec![],
-    )
-    .await
+    if let Ok(rows) = stories_store::fetch_completed_story_ids().await
     {
         if let Some(arr) = rows.as_array() {
             for row in arr {

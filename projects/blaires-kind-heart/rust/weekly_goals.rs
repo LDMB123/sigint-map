@@ -1,4 +1,4 @@
-use crate::{db_client, utils};
+use crate::{utils, weekly_goals_store};
 use std::cell::RefCell;
 thread_local! {
     static GOALS: RefCell<Vec<WeeklyGoal>> = const { RefCell::new(Vec::new()) };
@@ -55,11 +55,7 @@ pub fn refresh_goals() {
 }
 async fn load_goals() {
     let week = utils::week_key();
-    let Ok(rows) = db_client::query(
-        "SELECT id, goal_type, target, progress, completed_at FROM weekly_goals WHERE week_key = ?1",
-        vec![week],
-    )
-    .await
+    let Ok(rows) = weekly_goals_store::fetch_weekly_goals(&week).await
     else {
         return;
     };
@@ -116,26 +112,14 @@ async fn update_goal_progress(goal_id: &str) {
     let Some(goal) = goal else { return };
     if goal.completed {
         let now = utils::now_epoch_ms() as i64;
-        let _ = db_client::exec(
-            "UPDATE weekly_goals SET progress = ?1, completed_at = ?2 WHERE id = ?3",
-            vec![goal.progress.to_string(), now.to_string(), goal.id.clone()],
-        )
-        .await;
+        let _ = weekly_goals_store::update_goal_progress(&goal.id, goal.progress, Some(now)).await;
     } else {
-        let _ = db_client::exec(
-            "UPDATE weekly_goals SET progress = ?1 WHERE id = ?2",
-            vec![goal.progress.to_string(), goal.id.clone()],
-        )
-        .await;
+        let _ = weekly_goals_store::update_goal_progress(&goal.id, goal.progress, None).await;
     }
 }
 pub async fn get_mom_note() -> Option<String> {
     let week = utils::week_key();
-    if let Ok(rows) = db_client::query(
-        "SELECT note_text FROM mom_notes WHERE week_key = ?1 ORDER BY created_at DESC LIMIT 1",
-        vec![week],
-    )
-    .await
+    if let Ok(rows) = weekly_goals_store::fetch_latest_mom_note(&week).await
     {
         rows.as_array()
             .and_then(|a| a.first())

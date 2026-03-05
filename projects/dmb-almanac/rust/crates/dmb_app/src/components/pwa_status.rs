@@ -1,7 +1,7 @@
 #![allow(clippy::large_types_passed_by_value)]
 
 #[cfg(feature = "hydrate")]
-use crate::browser::storage;
+use crate::browser::{service_worker, storage};
 use leptos::prelude::*;
 #[cfg(feature = "hydrate")]
 use leptos::task::spawn_local;
@@ -11,8 +11,6 @@ use serde_json;
 use serde_wasm_bindgen;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen::JsCast;
-#[cfg(feature = "hydrate")]
-use wasm_bindgen::JsValue;
 
 use crate::data::{ImportStatus, StorageInfo};
 
@@ -132,23 +130,7 @@ fn format_age(prefix: &str, ts: f64, now_ms: f64) -> String {
 
 #[cfg(feature = "hydrate")]
 async fn count_cache_entries() -> Option<usize> {
-    use wasm_bindgen::JsCast;
-    use wasm_bindgen_futures::JsFuture;
-
-    let window = web_sys::window()?;
-    let caches = window.caches().ok()?;
-    let keys_value = JsFuture::from(caches.keys()).await.ok()?;
-    let keys = js_sys::Array::from(&keys_value);
-    let mut total = 0usize;
-    for key in keys.iter() {
-        let name = key.as_string().unwrap_or_default();
-        let cache_value = JsFuture::from(caches.open(&name)).await.ok()?;
-        let cache: web_sys::Cache = cache_value.dyn_into().ok()?;
-        let requests_value = JsFuture::from(cache.keys()).await.ok()?;
-        let requests = js_sys::Array::from(&requests_value);
-        total += requests.length() as usize;
-    }
-    Some(total)
+    service_worker::count_all_cache_entries().await
 }
 
 #[cfg(feature = "hydrate")]
@@ -192,40 +174,23 @@ fn is_previous_app_cache_name(name: &str) -> bool {
 
 #[cfg(feature = "hydrate")]
 async fn cleanup_previous_app_caches() -> Option<usize> {
-    use wasm_bindgen::JsCast;
-    use wasm_bindgen_futures::JsFuture;
-
-    let window = web_sys::window()?;
-    let cache_storage = window.caches().ok()?;
-    let keys_value = JsFuture::from(cache_storage.keys()).await.ok()?;
-    let keys: js_sys::Array = keys_value.dyn_into().ok()?;
-
+    let names = service_worker::cache_names().await?;
     let mut deleted = 0usize;
-    for key in keys.iter() {
-        let name = key.as_string().unwrap_or_default();
+    for name in names {
         if !is_previous_app_cache_name(&name) {
             continue;
         }
-        if let Ok(result) = JsFuture::from(cache_storage.delete(&name)).await {
-            if result.as_bool().unwrap_or(false) {
-                deleted += 1;
-            }
+        if service_worker::delete_cache_by_name(&name).await {
+            deleted += 1;
         }
     }
     Some(deleted)
 }
 
 #[cfg(feature = "hydrate")]
-fn sw_state(worker: &web_sys::ServiceWorker) -> Option<String> {
-    js_sys::Reflect::get(worker.as_ref(), &JsValue::from_str("state"))
-        .ok()
-        .and_then(|v| v.as_string())
-}
-
-#[cfg(feature = "hydrate")]
 fn has_sw_controller() -> bool {
-    web_sys::window()
-        .map(|window| window.navigator().service_worker().controller().is_some())
+    service_worker::service_worker_container()
+        .map(|container| service_worker::has_controller(&container))
         .unwrap_or(false)
 }
 
@@ -238,18 +203,7 @@ fn shorten_script_url(url: &str) -> String {
 
 #[cfg(feature = "hydrate")]
 fn schedule_window_timeout(timeout_ms: i32, callback: impl FnOnce() + 'static) {
-    use wasm_bindgen::closure::Closure;
-    use wasm_bindgen::JsCast;
-
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let cb = Closure::once(callback);
-    let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(
-        cb.as_ref().unchecked_ref(),
-        timeout_ms,
-    );
-    cb.forget();
+    let _ = crate::browser::runtime::set_timeout_once(timeout_ms, callback);
 }
 
 #[cfg(feature = "hydrate")]
@@ -258,17 +212,6 @@ fn set_sw_action_status(sw_action_status: RwSignal<Option<String>>, message: &st
     schedule_window_timeout(5000, move || {
         sw_action_status.set(None);
     });
-}
-
-#[cfg(feature = "hydrate")]
-fn post_sw_message_type(worker: &web_sys::ServiceWorker, message_type: &str) {
-    let msg = js_sys::Object::new();
-    let _ = js_sys::Reflect::set(
-        msg.as_ref(),
-        &JsValue::from_str("type"),
-        &JsValue::from_str(message_type),
-    );
-    let _ = worker.post_message(&msg);
 }
 
 #[cfg(feature = "hydrate")]
@@ -435,8 +378,6 @@ impl PwaStatusState {
 fn action_export_parity(state: PwaStatusState) {
     hydrate_state_action!(state, {
         spawn_local(async move {
-            use wasm_bindgen::JsCast;
-
             refresh_data_diagnostics(state).await;
 
             let current_status = state.status.get_untracked();
@@ -497,36 +438,10 @@ fn action_export_parity(state: PwaStatusState) {
                 })),
             });
 
-            let Some(window) = web_sys::window() else {
-                return;
-            };
             let json_str =
                 serde_json::to_string_pretty(&payload).unwrap_or_else(|_| "{}".to_string());
-            let blob_parts = js_sys::Array::new();
-            blob_parts.push(&JsValue::from_str(&json_str));
-            let blob = web_sys::Blob::new_with_str_sequence(&blob_parts).ok();
-            let Some(blob) = blob else {
-                return;
-            };
-            let url = web_sys::Url::create_object_url_with_blob(&blob).ok();
-            let Some(url) = url else {
-                return;
-            };
-            let document = window.document();
-            let Some(document) = document else {
-                return;
-            };
-            let a = document.create_element("a").ok();
-            let Some(a) = a else {
-                return;
-            };
-            let Ok(a) = a.dyn_into::<web_sys::HtmlAnchorElement>() else {
-                return;
-            };
-            a.set_href(&url);
-            a.set_download("dmb-parity-report.json");
-            a.click();
-            let _ = web_sys::Url::revoke_object_url(&url);
+            let _ =
+                crate::browser::download::download_text_file("dmb-parity-report.json", &json_str);
         });
     });
 }
@@ -540,53 +455,49 @@ fn action_update_click(state: PwaStatusState) {
             .set(Some(UPDATE_STATE_APPLYING.to_string()));
 
         spawn_local(async move {
-            use wasm_bindgen_futures::JsFuture;
+            let Some(container) = service_worker::service_worker_container() else {
+                state.update_error.set(Some(
+                    "Service worker unavailable in this context.".to_string(),
+                ));
+                state.update_applying.set(false);
+                state.update_state.set(None);
+                state.update_ready.set(false);
+                return;
+            };
 
-            if let Some(window) = web_sys::window() {
-                let container = window.navigator().service_worker();
-                if let Ok(reg_val) = JsFuture::from(container.get_registration()).await {
-                    if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
-                        if let Some(worker) = reg.waiting() {
-                            post_sw_message_type(&worker, "SKIP_WAITING");
-                        } else {
-                            state.update_error.set(Some(
-                                "No waiting service worker. Try again in a moment.".to_string(),
-                            ));
-                            state.update_applying.set(false);
-                            state.update_state.set(None);
-                            state.update_ready.set(false);
-                            return;
-                        }
-                    }
+            if let Some(reg) = service_worker::current_registration(&container).await {
+                if let Some(worker) = reg.waiting() {
+                    service_worker::post_message_type(&worker, "SKIP_WAITING");
+                } else {
+                    state.update_error.set(Some(
+                        "No waiting service worker. Try again in a moment.".to_string(),
+                    ));
+                    state.update_applying.set(false);
+                    state.update_state.set(None);
+                    state.update_ready.set(false);
+                    return;
                 }
-
-                let container = window.navigator().service_worker();
-                let state_on_change = state.clone();
-                let window_reload = window.clone();
-                let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
-                    set_update_reloading_state(&state_on_change);
-                    let _ = window_reload.location().reload();
-                }) as Box<dyn Fn()>);
-                container
-                    .add_event_listener_with_callback(
-                        "controllerchange",
-                        cb.as_ref().unchecked_ref(),
-                    )
-                    .ok();
-                cb.forget();
-
-                let state_timeout = state.clone();
-                let window_reload = window.clone();
-                schedule_window_timeout(1500, move || {
-                    set_update_reloading_state(&state_timeout);
-                    if let Err(err) = window_reload.location().reload() {
-                        state_timeout.update_error.set(Some(format!(
-                            "Reload blocked: {:?}. Please refresh manually.",
-                            err
-                        )));
-                    }
-                });
             }
+
+            let state_on_change = state.clone();
+            let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
+                set_update_reloading_state(&state_on_change);
+                let _ = crate::browser::runtime::location_reload();
+            }) as Box<dyn Fn()>);
+            container
+                .add_event_listener_with_callback("controllerchange", cb.as_ref().unchecked_ref())
+                .ok();
+            cb.forget();
+
+            let state_timeout = state.clone();
+            schedule_window_timeout(1500, move || {
+                set_update_reloading_state(&state_timeout);
+                if !crate::browser::runtime::location_reload() {
+                    state_timeout
+                        .update_error
+                        .set(Some("Reload blocked. Please refresh manually.".to_string()));
+                }
+            });
         });
     });
 }
@@ -608,15 +519,10 @@ fn action_update_check(state: PwaStatusState) {
             .set(Some(UPDATE_STATE_CHECKING.to_string()));
 
         spawn_local(async move {
-            use wasm_bindgen_futures::JsFuture;
-
-            if let Some(window) = web_sys::window() {
-                let container = window.navigator().service_worker();
-                if let Ok(reg_val) = JsFuture::from(container.get_registration()).await {
-                    if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
-                        if let Ok(promise) = reg.update() {
-                            let _ = JsFuture::from(promise).await;
-                        }
+            if let Some(container) = service_worker::service_worker_container() {
+                if let Some(reg) = service_worker::current_registration(&container).await {
+                    if let Ok(promise) = reg.update() {
+                        let _ = wasm_bindgen_futures::JsFuture::from(promise).await;
                     }
                 }
                 let now = js_sys::Date::now();
@@ -699,31 +605,26 @@ fn action_ping_sw(state: PwaStatusState) {
         set_sw_action_status(state.sw_action_status, "Pinging service worker…");
 
         spawn_local(async move {
-            use wasm_bindgen_futures::JsFuture;
-
-            let Some(window) = web_sys::window() else {
+            let Some(container) = service_worker::service_worker_container() else {
                 set_sw_action_status(state.sw_action_status, "No window");
                 return;
             };
 
-            let container = window.navigator().service_worker();
-            let Some(controller) = container.controller() else {
+            let Some(controller) = service_worker::controller(&container) else {
                 set_sw_action_status(state.sw_action_status, "No SW controller yet.");
                 return;
             };
 
-            if let Ok(reg_val) = JsFuture::from(container.get_registration()).await {
-                if let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() {
-                    if reg.waiting().is_some() {
-                        set_sw_action_status(
-                            state.sw_action_status,
-                            "Ping sent (note: update is waiting).",
-                        );
-                    }
+            if let Some(reg) = service_worker::current_registration(&container).await {
+                if reg.waiting().is_some() {
+                    set_sw_action_status(
+                        state.sw_action_status,
+                        "Ping sent (note: update is waiting).",
+                    );
                 }
             }
 
-            post_sw_message_type(&controller, "PING");
+            service_worker::post_message_type(&controller, "PING");
         });
     });
 }
@@ -733,19 +634,12 @@ fn action_unregister_sw(state: PwaStatusState) {
         set_sw_action_status(state.sw_action_status, "Unregistering service worker…");
 
         spawn_local(async move {
-            use wasm_bindgen_futures::JsFuture;
-
-            let Some(window) = web_sys::window() else {
+            let Some(container) = service_worker::service_worker_container() else {
                 set_sw_action_status(state.sw_action_status, "No window");
                 return;
             };
 
-            let container = window.navigator().service_worker();
-            let Ok(reg_val) = JsFuture::from(container.get_registration()).await else {
-                set_sw_action_status(state.sw_action_status, "No SW registration found.");
-                return;
-            };
-            let Ok(reg) = reg_val.dyn_into::<web_sys::ServiceWorkerRegistration>() else {
+            let Some(reg) = service_worker::current_registration(&container).await else {
                 set_sw_action_status(state.sw_action_status, "No SW registration found.");
                 return;
             };
@@ -761,7 +655,7 @@ fn action_unregister_sw(state: PwaStatusState) {
                 }
             };
 
-            let unregistered = match JsFuture::from(promise).await {
+            let unregistered = match wasm_bindgen_futures::JsFuture::from(promise).await {
                 Ok(value) => value.as_bool().unwrap_or(true),
                 Err(err) => {
                     set_sw_action_status(
@@ -782,7 +676,7 @@ fn action_unregister_sw(state: PwaStatusState) {
             remove_local_storage_item(UPDATE_DISMISSED_AT_KEY);
 
             set_sw_action_status(state.sw_action_status, "SW unregistered. Reloading…");
-            let _ = window.location().reload();
+            let _ = crate::browser::runtime::location_reload();
         });
     });
 }
@@ -791,27 +685,9 @@ fn action_reset_data() {
     #[cfg(feature = "hydrate")]
     {
         spawn_local(async move {
-            if let Some(window) = web_sys::window() {
-                if let Ok(cache_storage) = window.caches() {
-                    if let Ok(keys) =
-                        wasm_bindgen_futures::JsFuture::from(cache_storage.keys()).await
-                    {
-                        let keys: js_sys::Array = keys.dyn_into().unwrap_or_default();
-                        for key in keys.iter() {
-                            if let Some(name) = key.as_string() {
-                                let _ = wasm_bindgen_futures::JsFuture::from(
-                                    cache_storage.delete(&name),
-                                )
-                                .await;
-                            }
-                        }
-                    }
-                }
-            }
+            let _ = service_worker::delete_all_caches().await;
             let _ = dmb_idb::delete_db().await;
-            if let Some(window) = web_sys::window() {
-                let _ = window.location().reload();
-            }
+            let _ = crate::browser::runtime::location_reload();
         });
     }
 }
@@ -914,7 +790,7 @@ fn ping_controller_for_metadata(controller: &web_sys::ServiceWorker, state: &Pwa
     state.sw_controller_impl.set(None);
     state.sw_controller_cache_prefix.set(None);
 
-    post_sw_message_type(controller, "PING");
+    service_worker::post_message_type(controller, "PING");
     state.sw_action_status.set(None);
 }
 
@@ -937,7 +813,9 @@ fn sync_controller_version_from_script_url(script_url: &str, state: &PwaStatusSt
 fn apply_controller_snapshot(controller: &web_sys::ServiceWorker, state: &PwaStatusState) {
     let script_url = controller.script_url();
     state.sw_controller_url.set(Some(script_url.clone()));
-    state.sw_controller_state.set(sw_state(controller));
+    state
+        .sw_controller_state
+        .set(service_worker::worker_state(controller));
     sync_controller_version_from_script_url(&script_url, state);
     ping_controller_for_metadata(controller, state);
 }
@@ -1054,12 +932,7 @@ fn attach_installing_state_listener(
 ) {
     let worker_for_state = worker.clone();
     let cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
-        let worker_state = js_sys::Reflect::get(
-            worker_for_state.as_ref(),
-            &wasm_bindgen::JsValue::from_str("state"),
-        )
-        .ok()
-        .and_then(|v| v.as_string());
+        let worker_state = service_worker::worker_state(&worker_for_state);
 
         if let Some(current_state) = worker_state.as_deref() {
             state
@@ -1111,10 +984,6 @@ async fn process_sw_registration(
 ) {
     use wasm_bindgen_futures::JsFuture;
 
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-
     let Ok(reg_val) = JsFuture::from(container.get_registration()).await else {
         return;
     };
@@ -1137,7 +1006,7 @@ async fn process_sw_registration(
 
     attach_updatefound_listener(reg.clone(), state.clone());
 
-    let online = window.navigator().on_line();
+    let online = crate::browser::runtime::navigator_on_line().unwrap_or(false);
 
     if online {
         let now = js_sys::Date::now();
@@ -1170,11 +1039,10 @@ fn spawn_sw_runtime_task(state: &PwaStatusState) {
     let state = state.clone();
 
     spawn_local(async move {
-        let Some(window) = web_sys::window() else {
+        let Some(container) = service_worker::service_worker_container() else {
             return;
         };
 
-        let container = window.navigator().service_worker();
         attach_sw_message_listener(&container, &state);
         attach_sw_controllerchange_listener(&container, &state);
 
@@ -1199,26 +1067,17 @@ fn has_previous_cache_cleanup_marker() -> bool {
 
 #[cfg(feature = "hydrate")]
 fn register_online_offline_listeners(state: &PwaStatusState) {
-    if let Some(window) = web_sys::window() {
-        state.online.set(window.navigator().on_line());
-
-        let online = state.online;
-        let online_cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
-            online.set(true);
-        }) as Box<dyn Fn()>);
-        window
-            .add_event_listener_with_callback("online", online_cb.as_ref().unchecked_ref())
-            .ok();
-        online_cb.forget();
-
-        let online = state.online;
-        let offline_cb = wasm_bindgen::closure::Closure::wrap(Box::new(move || {
-            online.set(false);
-        }) as Box<dyn Fn()>);
-        window
-            .add_event_listener_with_callback("offline", offline_cb.as_ref().unchecked_ref())
-            .ok();
-        offline_cb.forget();
+    let online_for_online = state.online;
+    let online_for_offline = state.online;
+    if let Some(initial_online) = crate::browser::runtime::register_online_offline_listeners(
+        move || {
+            online_for_online.set(true);
+        },
+        move || {
+            online_for_offline.set(false);
+        },
+    ) {
+        state.online.set(initial_online);
     }
 }
 

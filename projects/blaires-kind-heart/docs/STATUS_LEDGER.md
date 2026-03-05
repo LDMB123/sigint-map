@@ -1,6 +1,6 @@
 # Status Ledger
 
-Last updated: 2026-03-04 (session 30)
+Last updated: 2026-03-05 (session 31)
 
 ## QA Gate Results
 
@@ -13,7 +13,7 @@ Last updated: 2026-03-04 (session 30)
 | Generated artifacts sync | `npm run qa:generated-sync` | PASS | 2026-03-03 |
 | Taxonomy contract gate | `npm run qa:taxonomy-contract` | PASS | 2026-03-03 |
 | E2E skip-waiver enforcement | `npm run qa:e2e-skip-waivers` | PASS | 2026-03-03 |
-| Phase 5 KPI report gate | `npm run qa:phase5-kpi` | PASS | 2026-03-04 |
+| Phase 5 KPI report gate | `npm run qa:phase5-kpi` | PASS | 2026-03-05 |
 | iPad performance budget gate | `npm run qa:ipad-performance-budget` | PASS | 2026-03-04 |
 | Apple Silicon trace budget comparator | `npm run qa:apple-silicon-trace-budget` | PENDING (new evidence workflow) | 2026-03-04 |
 | RC aggregate gate suite | `npm run qa:rc-gates` | PASS | 2026-03-04 |
@@ -66,24 +66,51 @@ Execution is aligned to the 8-week RC model with quality gates treated as non-ne
 
 **Primary KPI (module decoupling index)**:
 - Instrumentation and baseline capture are live via `scripts/checks/phase5-kpi-report.mjs` and `config/phase5-kpi-baseline.json`.
-- Latest report (`scripts/reports/phase5-kpi-20260304-074707.md`): `cross_domain_db_callsites=46`, `cross_domain_direct_imports=0`, `circular_domain_dependencies=0`, `median_files_touched_single_domain_commit=4`.
-- Delta vs first captured baseline (`scripts/reports/phase5-kpi-20260304-070016.md`): direct imports improved `20 -> 0`, circular dependencies improved `2 -> 0`, DB callsites unchanged (`46`).
+- Latest report (`scripts/reports/phase5-kpi-20260305-000315.md`): `cross_domain_db_callsites=0`, `cross_domain_direct_imports=0`, `circular_domain_dependencies=0`, `median_files_touched_single_domain_commit=4`.
+- Delta vs first captured baseline (`scripts/reports/phase5-kpi-20260304-070016.md`): direct imports improved `20 -> 0`, circular dependencies improved `2 -> 0`, DB callsites improved `46 -> 0` (100% reduction).
 
 **Secondary product KPI**:
 - Reflection completion + skill-balance computation path is implemented in the same KPI reporter via `--snapshot <export.json>`.
 - Active docs still need a published sufficient-volume snapshot evidence run for final KPI status.
 
 **KPI waiver (RC4-bounded)**:
-- Waiver id: `phase5-db-reduction-rc4`
-- Status: `APPROVED`
-- Doc: `docs/testing/release-evidence/waivers/phase5-db-reduction-rc4.md`
-- Expiry: `2026-04-15`
+- No active KPI waiver is required. `kpi_status.db_reduction_status=PASS` in `docs/testing/release-evidence/manifest.json`.
+- Historical waiver record remains archived at `docs/testing/release-evidence/waivers/phase5-db-reduction-rc4.md`.
 
 **Open required evidence before RC4 close**:
 - Complete `docs/testing/release-evidence/runs/rc3_run_01.md` and set run status `PASS` in manifest.
 - Complete `docs/testing/release-evidence/runs/rc4_run_02.md` with clean P0/P1 and set run status `PASS`.
 - Pass canonical release go/no-go sequence and `v*` tag workflow (`.github/workflows/release-readiness.yml`).
 - Include A/B Apple Silicon trace evidence (`artifacts/apple-silicon-profile/*/abc-summary-*.csv`) plus comparator output from `qa:apple-silicon-trace-budget`.
+
+## Work Completed 2026-03-05 (session 31)
+
+Phase 5 decoupling closure pass: extracted remaining cross-domain DB callsites into store modules and closed KPI debt.
+
+**Implemented**:
+- Added store boundary modules:
+  - `rust/rewards_store.rs`
+  - `rust/stories_store.rs`
+  - `rust/streaks_store.rs`
+  - `rust/tracker_store.rs`
+- Integrated new stores into core modules:
+  - `rust/garden_timeline.rs`, `rust/rewards.rs`
+  - `rust/stories.rs`, `rust/story_engine.rs`
+  - `rust/streaks.rs`
+  - `rust/tracker.rs`, `rust/companion.rs`
+- Registered store modules in `rust/lib.rs`.
+- Updated release evidence KPI source and status:
+  - `docs/testing/release-evidence/manifest.json` now points to `scripts/reports/phase5-kpi-20260305-000315.md` with `db_reduction_status=PASS`.
+  - Active waiver list cleared (`waivers: []`).
+
+**Validation**:
+- `cargo check` PASS.
+- `npm run -s qa:phase5-kpi` PASS.
+  - report: `scripts/reports/phase5-kpi-20260305-000315.md`
+  - metrics: `cross_domain_db_callsites=0`, `cross_domain_direct_imports=0`, `circular_dependencies=0`, `median_files_touched_single_domain_commit=4`
+- `npm run -s qa:db-contract` PASS.
+- `npm run -s qa:runtime` PASS.
+- `npm run -s qa:ipad-performance-budget` PASS.
 
 ## Work Completed 2026-03-04 (session 30)
 

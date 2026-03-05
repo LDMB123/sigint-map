@@ -1,6 +1,7 @@
 use crate::{
     animations, companion, confetti, constants, constants::SELECTOR_TRACKER_BODY, db_client, dom,
-    domain_services, feature_flags, native_apis, speech, state, synth_audio, theme, ui, utils,
+    domain_services, feature_flags, native_apis, speech, state, synth_audio, theme, tracker_store,
+    ui, utils,
 };
 use std::cell::Cell;
 use wasm_bindgen::JsCast;
@@ -364,15 +365,7 @@ fn check_achievements(category: &str) {
             _ => None,
         };
         if let Some(achievement_id) = first_id {
-            let count_result = db_client::query(
-                "SELECT COUNT(*) as cnt FROM kind_acts WHERE category = ?1",
-                vec![cat.clone()],
-            )
-            .await;
-            let count: u32 = count_result
-                .ok()
-                .and_then(|rows| rows.get(0)?.get("cnt")?.as_u64().map(|v| v as u32))
-                .unwrap_or(0);
+            let count = tracker_store::count_kind_acts_by_category(&cat).await;
             if count == 1 {
                 to_award.push(achievement_id);
             }

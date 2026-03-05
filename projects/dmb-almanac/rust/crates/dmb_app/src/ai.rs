@@ -50,18 +50,13 @@ fn js_value_exists(value: &JsValue) -> bool {
 }
 
 #[cfg(feature = "hydrate")]
-fn get_js_property(target: &JsValue, name: &str) -> JsValue {
-    js_sys::Reflect::get(target, &JsValue::from_str(name)).unwrap_or(JsValue::UNDEFINED)
+fn navigator_property(name: &str) -> JsValue {
+    crate::browser::runtime::navigator_property_or_undefined(name)
 }
 
 #[cfg(feature = "hydrate")]
-fn navigator_property(navigator: &web_sys::Navigator, name: &str) -> JsValue {
-    get_js_property(navigator.as_ref(), name)
-}
-
-#[cfg(feature = "hydrate")]
-fn window_property(window: &web_sys::Window, name: &str) -> JsValue {
-    get_js_property(window.as_ref(), name)
+fn window_property(name: &str) -> JsValue {
+    crate::browser::runtime::window_property_or_undefined(name)
 }
 
 #[cfg(feature = "hydrate")]
@@ -131,12 +126,9 @@ pub fn preload_webgpu_runtime() {}
 
 #[cfg(feature = "hydrate")]
 pub fn detect_ai_capabilities() -> AiCapabilities {
-    let Some(window) = web_sys::window() else {
-        return AiCapabilities::default();
-    };
     ensure_default_worker_threshold();
     let webgpu_disabled = webgpu_disabled_value();
-    detect_ai_capabilities_with_webgpu_disabled(&window, webgpu_disabled)
+    detect_ai_capabilities_with_webgpu_disabled(webgpu_disabled)
 }
 
 #[cfg(not(feature = "hydrate"))]
@@ -475,12 +467,7 @@ fn cap_policy_from_device_memory(device_memory: Option<f64>) -> CapPolicy {
 fn cap_policy_from_navigator() -> CapPolicy {
     #[cfg(feature = "hydrate")]
     {
-        let Some(window) = web_sys::window() else {
-            return cap_policy_from_device_memory(None);
-        };
-        let navigator = window.navigator();
-        let device_memory = navigator_property(&navigator, "deviceMemory").as_f64();
-        cap_policy_from_device_memory(device_memory)
+        cap_policy_from_device_memory(crate::browser::runtime::navigator_device_memory_gb())
     }
     #[cfg(not(feature = "hydrate"))]
     {
@@ -676,12 +663,8 @@ fn parse_worker_threshold(raw: Option<String>) -> Option<usize> {
 
 #[cfg(feature = "hydrate")]
 fn read_worker_max_floats() -> Option<usize> {
-    let Some(window) = web_sys::window() else {
-        return Some(WORKER_MAX_FLOATS_FALLBACK);
-    };
-    let navigator = window.navigator();
-    let device_memory = navigator_property(&navigator, "deviceMemory").as_f64();
-    let cores = navigator.hardware_concurrency().max(1.0) as usize;
+    let device_memory = crate::browser::runtime::navigator_device_memory_gb();
+    let cores = crate::browser::runtime::navigator_hardware_concurrency().unwrap_or(1);
     let max_floats = if device_memory.unwrap_or(0.0) >= 16.0 || cores >= 12 {
         4_000_000
     } else if device_memory.unwrap_or(0.0) >= 8.0 || cores >= 8 {
@@ -819,12 +802,8 @@ fn ensure_default_worker_threshold() {
         mark_worker_threshold_ready();
         return;
     }
-    let Some(window) = web_sys::window() else {
-        return;
-    };
-    let navigator = window.navigator();
-    let device_memory = navigator_property(&navigator, "deviceMemory").as_f64();
-    let cores = window.navigator().hardware_concurrency().max(1.0) as usize;
+    let device_memory = crate::browser::runtime::navigator_device_memory_gb();
+    let cores = crate::browser::runtime::navigator_hardware_concurrency().unwrap_or(1);
     let threshold = if device_memory.unwrap_or(0.0) >= 16.0 || cores >= 12 {
         15_000
     } else if device_memory.unwrap_or(0.0) <= 4.0 || cores <= 4 {
@@ -843,13 +822,9 @@ fn clamp_worker_threshold(value: usize) -> usize {
 }
 
 #[cfg(feature = "hydrate")]
-fn detect_ai_capabilities_with_webgpu_disabled(
-    window: &web_sys::Window,
-    webgpu_disabled: bool,
-) -> AiCapabilities {
-    let navigator = window.navigator();
-    let webgpu = js_value_exists(&navigator_property(&navigator, "gpu"));
-    let webgpu_helper = window_property(window, "dmbWebgpuScores").is_function();
+fn detect_ai_capabilities_with_webgpu_disabled(webgpu_disabled: bool) -> AiCapabilities {
+    let webgpu = js_value_exists(&navigator_property("gpu"));
+    let webgpu_helper = window_property("dmbWebgpuScores").is_function();
     let webgpu_available = webgpu && webgpu_helper;
     if webgpu && !webgpu_helper {
         record_ai_warning_once(
@@ -858,8 +833,8 @@ fn detect_ai_capabilities_with_webgpu_disabled(
             "navigator.gpu present but WebGPU helper missing",
         );
     }
-    let webgpu_worker = window_property(window, "dmbWebgpuScoresWorker").is_function();
-    let webnn = js_value_exists(&navigator_property(&navigator, "ml"));
+    let webgpu_worker = window_property("dmbWebgpuScoresWorker").is_function();
+    let webnn = js_value_exists(&navigator_property("ml"));
     let threads = crate::browser::runtime::cross_origin_isolated().unwrap_or(false);
 
     let webgpu_enabled = webgpu_available && !webgpu_disabled;
@@ -1002,11 +977,7 @@ fn telemetry_storage_snapshot(storage: &web_sys::Storage) -> TelemetryStorageSna
 fn store_ai_telemetry_snapshot(ann_cap: Option<&AnnCapDiagnostics>) {
     ensure_default_worker_threshold();
     let local_state = with_local_storage(telemetry_storage_snapshot).unwrap_or_default();
-    let caps = web_sys::window()
-        .map(|window| {
-            detect_ai_capabilities_with_webgpu_disabled(&window, local_state.webgpu_disabled)
-        })
-        .unwrap_or_default();
+    let caps = detect_ai_capabilities_with_webgpu_disabled(local_state.webgpu_disabled);
     let payload = serde_json::json!({
         "timestampMs": js_sys::Date::now(),
         "annCap": ann_cap,
@@ -1078,18 +1049,7 @@ pub fn load_ai_warning_events() -> Vec<AiWarningEvent> {
 
 #[cfg(feature = "hydrate")]
 async fn fetch_json<T: serde::de::DeserializeOwned>(url: &str) -> Option<T> {
-    use wasm_bindgen::JsCast;
-    use wasm_bindgen_futures::JsFuture;
-    use web_sys::Response;
-
-    let window = web_sys::window()?;
-    let resp_value = JsFuture::from(window.fetch_with_str(url)).await.ok()?;
-    let resp: Response = resp_value.dyn_into().ok()?;
-    if !resp.ok() {
-        return None;
-    }
-    let json = JsFuture::from(resp.json().ok()?).await.ok()?;
-    serde_wasm_bindgen::from_value(json).ok()
+    crate::browser::http::fetch_json(url).await
 }
 
 #[cfg(feature = "hydrate")]
@@ -1208,13 +1168,9 @@ pub fn sync_ai_config_meta(version: Option<&str>, generated_at: Option<&str>) ->
 
 #[cfg(feature = "hydrate")]
 async fn fetch_f32_array_with_cap(url: &str, cap_bytes: u64) -> Option<Vec<f32>> {
-    use wasm_bindgen::JsCast;
     use wasm_bindgen_futures::JsFuture;
-    use web_sys::Response;
 
-    let window = web_sys::window()?;
-    let resp_value = JsFuture::from(window.fetch_with_str(url)).await.ok()?;
-    let resp: Response = resp_value.dyn_into().ok()?;
+    let resp = crate::browser::http::fetch_response(url).await.ok()?;
     if !resp.ok() {
         record_ai_warning(
             "ann_index_fetch_failed",
@@ -2100,10 +2056,9 @@ pub async fn benchmark_subset_scoring(limit: usize) -> Option<AiSubsetBenchmark>
         return None;
     }
 
-    let perf = web_sys::window()?.performance()?;
-    let cpu_start = perf.now();
+    let cpu_start = crate::browser::runtime::performance_now_ms()?;
     let _ = top_k_cosine_candidates_cpu(&query_vec, &index.matrix, index.dim, &candidates, limit);
-    let cpu_ms = perf.now() - cpu_start;
+    let cpu_ms = crate::browser::runtime::performance_now_ms().unwrap_or(cpu_start) - cpu_start;
 
     let caps = detect_ai_capabilities();
     let mut gpu_ms = None;
@@ -2111,13 +2066,13 @@ pub async fn benchmark_subset_scoring(limit: usize) -> Option<AiSubsetBenchmark>
 
     if caps.webgpu_enabled {
         let indices: Vec<u32> = candidates.iter().map(|&idx| idx as u32).collect();
-        let gpu_start = perf.now();
+        let gpu_start = crate::browser::runtime::performance_now_ms().unwrap_or(cpu_start);
         if let Some((scores, path)) =
             webgpu_scores_subset_with_policy(&query_vec, &index.matrix, index.dim, &indices, caps)
                 .await
         {
             let _ = top_k_from_subset(scores, &candidates, limit);
-            gpu_ms = Some(perf.now() - gpu_start);
+            gpu_ms = crate::browser::runtime::performance_now_ms().map(|now| now - gpu_start);
             backend = match path {
                 WebgpuPolicyBackend::Worker => "webgpu-worker-subset".to_string(),
                 WebgpuPolicyBackend::Direct => "webgpu-subset".to_string(),
@@ -2162,10 +2117,9 @@ pub async fn prepare_benchmark_sample(sample_count: usize) -> Option<BenchmarkSa
 
 #[cfg(feature = "hydrate")]
 pub fn benchmark_cpu(sample: &BenchmarkSample) -> Option<f64> {
-    let perf = web_sys::window()?.performance()?;
-    let cpu_start = perf.now();
+    let cpu_start = crate::browser::runtime::performance_now_ms()?;
     let _ = top_k_cosine_native(&sample.query_vec, &sample.matrix, sample.dim, 5);
-    Some(perf.now() - cpu_start)
+    Some(crate::browser::runtime::performance_now_ms().unwrap_or(cpu_start) - cpu_start)
 }
 
 #[cfg(feature = "hydrate")]
@@ -2183,14 +2137,12 @@ pub async fn benchmark_gpu(sample: &BenchmarkSample) -> (Option<f64>, String) {
             );
             return (None, backend);
         }
-        let perf = web_sys::window().and_then(|w| w.performance());
-        if let Some(perf) = perf {
-            let gpu_start = perf.now();
+        if let Some(gpu_start) = crate::browser::runtime::performance_now_ms() {
             if let Some((scores, path)) =
                 webgpu_scores_with_policy(&sample.query_vec, &sample.matrix, sample.dim, caps).await
             {
                 let _ = top_k_from_scores(scores, 5);
-                gpu_ms = Some(perf.now() - gpu_start);
+                gpu_ms = crate::browser::runtime::performance_now_ms().map(|now| now - gpu_start);
                 backend = match path {
                     WebgpuPolicyBackend::Worker => "webgpu-worker".to_string(),
                     WebgpuPolicyBackend::Direct => "webgpu".to_string(),
@@ -2208,15 +2160,13 @@ async fn measure_webgpu_scores(
     matrix: &js_sys::Float32Array,
     dim: usize,
 ) -> Option<f64> {
-    let window = web_sys::window()?;
-    let perf = window.performance()?;
-    let start = perf.now();
+    let start = crate::browser::runtime::performance_now_ms()?;
     let array = match variant {
         WebgpuScoreFn::Direct => dmb_wasm::webgpu_scores_direct(query, matrix, dim).await?,
         WebgpuScoreFn::Worker => dmb_wasm::webgpu_scores_worker(query, matrix, dim).await?,
     };
     let _ = array.length();
-    Some(perf.now() - start)
+    Some(crate::browser::runtime::performance_now_ms().unwrap_or(start) - start)
 }
 
 #[cfg(feature = "hydrate")]
@@ -2410,10 +2360,10 @@ pub async fn tune_ivf_probe(index: &EmbeddingIndex, limit: usize) -> Option<Prob
             let query_vec = hashed_embedding(query, index.dim);
             let candidates = collect_ivf_candidates_with_probe(&query_vec, ivf, Some(probe));
             candidate_count = candidate_count.max(candidates.len());
-            let perf = web_sys::window()?.performance()?;
-            let start = perf.now();
+            let start = crate::browser::runtime::performance_now_ms()?;
             let _ = score_candidates(&query_vec, index, &candidates, limit, caps, index.dim).await;
-            total_ms += perf.now() - start;
+            let end = crate::browser::runtime::performance_now_ms().unwrap_or(start);
+            total_ms += end - start;
         }
         let avg_latency = total_ms / sample_queries.len() as f64;
         metrics.push(ProbeCandidateMetric {

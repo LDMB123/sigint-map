@@ -1,7 +1,8 @@
 use crate::{
-    confetti, constants::SELECTOR_REWARDS_BODY, db_client, dom, domain_services, render, speech,
+    confetti, constants::SELECTOR_REWARDS_BODY, dom, domain_services, render, speech,
     state::AppState, theme, ui, utils,
 };
+use crate::streaks_store;
 use std::cell::RefCell;
 use std::rc::Rc;
 pub fn init() {
@@ -59,12 +60,7 @@ fn render_streak_panel() {
 pub fn record_today(state: Rc<RefCell<AppState>>) {
     let day_key = utils::today_key();
     let hearts = state.borrow().hearts_today;
-    db_client::exec_fire_and_forget(
-        "streak-upsert",
-        "INSERT INTO streaks (day_key, acts_count, hearts_total) VALUES (?1, 1, ?2) \
-        ON CONFLICT(day_key) DO UPDATE SET acts_count = acts_count + 1, hearts_total = excluded.hearts_total",
-        vec![day_key, hearts.to_string()],
-    );
+    streaks_store::upsert_today_streak_fire_and_forget(&day_key, hearts);
     let streak = state.borrow().streak_days;
     ui::update_streak(streak);
     if let Some(dot) = dom::query("[data-day-offset=\"0\"]") {

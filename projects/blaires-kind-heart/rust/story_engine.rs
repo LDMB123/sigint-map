@@ -1,7 +1,8 @@
 use crate::{
-    animations, confetti, constants::SELECTOR_STORIES_BODY, db_client, dom, domain_services,
+    animations, confetti, constants::SELECTOR_STORIES_BODY, dom, domain_services,
     navigation, render, speech, story_data, synth_audio, utils,
 };
+use crate::stories_store;
 use std::fmt::Write;
 use wasm_bindgen::closure::Closure;
 use wasm_bindgen::JsCast;
@@ -83,10 +84,7 @@ fn render_page(story: &story_data::Story, page_idx: usize) {
         let pidx = page_idx;
         let now = utils::now_epoch_ms();
         wasm_bindgen_futures::spawn_local(async move {
-            let _ = db_client::exec( "INSERT INTO stories_progress (story_id, page_index, choices_json, completed, completed_at) \
-                 VALUES (?1, ?2, '[]', 1, ?3) \
-                 ON CONFLICT(story_id) DO UPDATE SET completed = 1, completed_at = ?3, page_index = ?2",
-                vec![sid.clone(), pidx.to_string(), now.to_string()],).await;
+            let _ = stories_store::upsert_story_completion(&sid, pidx, now).await;
             let badge_id = format!("badge-story-{sid}");
             crate::badges::award_badge(&badge_id).await;
         });

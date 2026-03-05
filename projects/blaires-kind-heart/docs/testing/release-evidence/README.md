@@ -32,3 +32,5 @@ Strict mode is release-blocking and requires all of the following:
 5. If `kpi_status.db_reduction_status=FAIL`, waiver `phase5-db-reduction-rc4` must be `APPROVED` with justification and follow-up milestone.
 
 Release tag workflow (`v*`) enforces strict mode.
+
+Current state (2026-03-05): `kpi_status.db_reduction_status=PASS`; no active KPI waiver is present in the manifest.

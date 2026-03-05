@@ -1,5 +1,9 @@
 # Waiver: phase5-db-reduction-rc4
 
+Status: RESOLVED (historical record)
+Resolved on: 2026-03-05
+Resolution evidence: `scripts/reports/phase5-kpi-20260305-000315.md`
+
 ## 1) Failing Metric (Concrete Values)
 
 - Metric: `db_reduction` from Phase 5 KPI report.
@@ -34,3 +38,9 @@ RC4 scope is freeze-readiness and operational closure. Current RC gates, build v
 1. `db_reduction_status` is `PASS` in a new KPI report.
 2. Manifest `kpi_status.source_report_path` points to the new report.
 3. Waiver entry is removed from `docs/testing/release-evidence/manifest.json`.
+
+## 7) Resolution Outcome
+
+- KPI now passes with `cross_domain_db_callsites=0` and `db_reduction_status=PASS`.
+- Manifest now points to `scripts/reports/phase5-kpi-20260305-000315.md`.
+- Waiver entry has been removed from `docs/testing/release-evidence/manifest.json`.

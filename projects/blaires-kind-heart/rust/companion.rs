@@ -2,6 +2,7 @@ use crate::{
     animations, browser_apis, companion_care, companion_speech, confetti, db_client, dom, render,
     panel_registry, session_timer, speech, state, synth_audio, theme, time_awareness,
 };
+use crate::tracker_store;
 use std::cell::{Cell, RefCell};
 use std::thread::LocalKey;
 use wasm_bindgen::JsCast;
@@ -350,11 +351,7 @@ fn on_care_feed() {
                 let id = format!("care-feed-{}", crate::utils::today_key());
                 let now = js_sys::Date::now().to_string();
                 let day_key = crate::utils::today_key();
-                db_client::exec_fire_and_forget(
-                    "care-feed-bonus",
-                    "INSERT OR IGNORE INTO kind_acts (id, category, hearts_earned, created_at, day_key) VALUES (?1, 'care', 1, ?2, ?3)",
-                    vec![id, now, day_key],
-                );
+                tracker_store::insert_care_feed_bonus_fire_and_forget(&id, &now, &day_key);
             }
             Ok(())
         });

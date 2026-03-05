@@ -1,3 +1,5 @@
+pub mod download;
+pub mod http;
 pub mod perf;
 pub mod runtime;
 pub mod scheduler;

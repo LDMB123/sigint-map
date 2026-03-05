@@ -33,6 +33,14 @@ const OUTPUT_BASE = process.env.OUTPUT_BASE
   || path.join(process.env.HOME || '/Users/louisherman', 'nanobanana-output', 'projects', 'img_1300');
 const WAIT_BEFORE_ATTEMPT_S = Math.max(1, parseInt(process.env.WAIT_BEFORE_ATTEMPT_S || '61', 10));
 const REQUEST_TIMEOUT_MS = Math.max(30_000, parseInt(process.env.REQUEST_TIMEOUT_MS || '300000', 10));
+const REQUEST_TIMEOUT_RETRY_INCREMENT_MS = Math.max(
+  0,
+  parseInt(process.env.REQUEST_TIMEOUT_RETRY_INCREMENT_MS || '45000', 10)
+);
+const REQUEST_TIMEOUT_MAX_MS = Math.max(
+  REQUEST_TIMEOUT_MS,
+  parseInt(process.env.REQUEST_TIMEOUT_MAX_MS || String(Math.max(REQUEST_TIMEOUT_MS, 300000)), 10)
+);
 const MAX_PROMPTS = Math.max(1, parseInt(process.env.MAX_PROMPTS || '20', 10));
 const IMAGE_HTTP_RETRIES = Math.max(0, Math.min(8, parseInt(process.env.IMAGE_HTTP_RETRIES || '3', 10)));
 const IMAGE_HTTP_BACKOFF_BASE_MS = Math.max(250, parseInt(process.env.IMAGE_HTTP_BACKOFF_BASE_MS || '2000', 10));
@@ -189,6 +197,37 @@ const RATE_LIMIT_SKIP_SAFE_FALLBACK_ON_PRESSURE = process.env.RATE_LIMIT_SKIP_SA
 const RATE_LIMIT_ABORT_RUN_CONSECUTIVE_PROMPTS = Math.max(
   1,
   Math.min(10, parseInt(process.env.RATE_LIMIT_ABORT_RUN_CONSECUTIVE_PROMPTS || '3', 10))
+);
+const RATE_LIMIT_PRESSURE_DEGRADED_ACCEPT = process.env.RATE_LIMIT_PRESSURE_DEGRADED_ACCEPT !== '0';
+const RATE_LIMIT_PRESSURE_DEGRADED_OVERALL_MIN = clamp(
+  parseNumberEnv('RATE_LIMIT_PRESSURE_DEGRADED_OVERALL_MIN', 8.95),
+  0,
+  10
+);
+const RATE_LIMIT_PRESSURE_DEGRADED_IDENTITY_MIN = clamp(
+  parseNumberEnv('RATE_LIMIT_PRESSURE_DEGRADED_IDENTITY_MIN', 9.0),
+  0,
+  10
+);
+const RATE_LIMIT_PRESSURE_DEGRADED_GAZE_MIN = clamp(
+  parseNumberEnv('RATE_LIMIT_PRESSURE_DEGRADED_GAZE_MIN', 8.9),
+  0,
+  10
+);
+const RATE_LIMIT_PRESSURE_DEGRADED_ATTIRE_MIN = clamp(
+  parseNumberEnv('RATE_LIMIT_PRESSURE_DEGRADED_ATTIRE_MIN', 9.1),
+  0,
+  10
+);
+const RATE_LIMIT_PRESSURE_DEGRADED_REALISM_MIN = clamp(
+  parseNumberEnv('RATE_LIMIT_PRESSURE_DEGRADED_REALISM_MIN', 8.9),
+  0,
+  10
+);
+const RATE_LIMIT_PRESSURE_DEGRADED_PHYSICS_MIN = clamp(
+  parseNumberEnv('RATE_LIMIT_PRESSURE_DEGRADED_PHYSICS_MIN', 8.9),
+  0,
+  10
 );
 const ATTIRE_BOLD_BOOST = process.env.ATTIRE_BOLD_BOOST === '1';
 const ATTIRE_BOLD_BOOST_LEVEL = Math.max(1, Math.min(3, parseInt(process.env.ATTIRE_BOLD_BOOST_LEVEL || '3', 10)));
@@ -533,6 +572,12 @@ function timestampForPath(date = new Date()) {
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function computeRequestTimeoutMs(attempt = 1) {
+  const safeAttempt = Math.max(1, Number(attempt) || 1);
+  const timeoutMs = REQUEST_TIMEOUT_MS + (safeAttempt - 1) * REQUEST_TIMEOUT_RETRY_INCREMENT_MS;
+  return Math.min(REQUEST_TIMEOUT_MAX_MS, timeoutMs);
 }
 
 async function waitBeforeAttempt(seconds, label) {
@@ -1940,6 +1985,8 @@ function buildIdentityOnlyAttireReplacementLock(variant) {
       ? '- Render the safe cocktail variant only, but still replace all source clothing completely.'
       : '- Render the primary cocktail variant only, and replace all source clothing completely.',
     '- Forbidden carryover from reference: casual tops, tanks/tees, denim jeans, streetwear silhouettes, original reference clothing color/material blocks.',
+    '- Forbidden fallback archetypes: conservative blouse looks, office shell tops, modest sheath dresses, cardigan/business styling, plain one-piece substitutes when prompt specifies two-piece.',
+    '- Preserve prompt-defined outfit architecture, colorway, and materials; do not collapse into a repeated black-lace template.',
     '- Output must show a clearly transformed nightlife editorial wardrobe with coherent cocktail silhouette and visible hosiery physics.',
     '',
     'FAIL CONDITION:',
@@ -2446,8 +2493,8 @@ function buildPromptDirectionSupremacyBlock(promptText, promptMeta = {}, variant
     variantLine,
     'Setting invariant: private intimate luxury suite only; never generic public venue substitution.',
     variant === 'safe'
-      ? 'Wardrobe invariant: high-fashion two-piece lace cocktail-set topology (not conservative evening wear), with clear top/skirt separation.'
-      : 'Wardrobe invariant: high-fashion two-piece lace evening-set attire (not conservative evening wear), with clear top/skirt separation.',
+      ? 'Wardrobe invariant: preserve the prompt-specified two-piece top/skirt topology, colorway, and materials with safer wording; never generic lace-template substitution.'
+      : 'Wardrobe invariant: preserve the prompt-specified two-piece top/skirt topology, colorway, and materials; never generic lace-template substitution.',
     'Anti-template invariant: do not reuse a generic pose or styling template from other prompts.'
   ];
   if (anchors.scene.length) {
@@ -2505,13 +2552,14 @@ function buildIdentityDriftSentinelBlock(variant = 'general') {
 }
 
 function buildAttireTopologyInvariantBlock(variant) {
-  const hosieryLine = 'Render sheer black true thigh-high stockings with a coherent denier gradient and a visible, physically plausible top band high on the upper thigh (never knee-high).';
+  const hosieryLine = 'Render true thigh-high hosiery with a coherent denier gradient and a visible, physically plausible top band high on the upper thigh (never knee-high); keep prompt-specified color/finish (default to sheer black only when unspecified).';
   return [
     'ATTIRE TOPOLOGY INVARIANT (MANDATORY):',
-    '- Keep a clear two-piece wardrobe topology: structured lace crop bodice + separate slit skirt.',
+    '- Keep a clear two-piece wardrobe topology from the prompt: separate top and separate skirt with explicit waist separation.',
+    '- Preserve prompt-defined attire colorway, material family, and cutline details; do not collapse into a repeated black-lace look.',
     '- Preserve explicit waist separation between top and skirt; do not merge into a one-piece garment.',
     hosieryLine,
-    '- Keep footwear as pointed high heels with believable contact mechanics and perspective.'
+    '- Keep footwear as pointed high heels with believable contact mechanics and perspective unless the prompt explicitly specifies another formal heel style.'
   ].join('\n');
 }
 
@@ -2523,7 +2571,7 @@ const SAFE_LEXICON_REPLACEMENTS = [
   { pattern: /\bintimate\b/gi, replacement: 'private' },
   { pattern: /\bafterdark\b/gi, replacement: 'nighttime' },
   { pattern: /\bskin-forward\b/gi, replacement: 'contour-forward' },
-  { pattern: /thigh-high hosiery/gi, replacement: 'sheer black thigh-high stockings' },
+  { pattern: /thigh-high hosiery/gi, replacement: 'sheer thigh-high stockings' },
   { pattern: /\bhigh-cut leg lines\b/gi, replacement: 'defined leg-line tailoring' },
   { pattern: /intimate luxury-suite/gi, replacement: 'private luxury-suite' },
   { pattern: /\bbedroom\b/gi, replacement: 'suite-lounge' },
@@ -2924,6 +2972,36 @@ function runVariantPreflight({
   };
 }
 
+const WARDROBE_TEMPLATE_COLLAPSE_PATTERNS = [
+  {
+    id: 'legacy_lace_crop_template',
+    regex: /structured lace crop bodice\s*\+\s*separate slit skirt/i
+  },
+  {
+    id: 'legacy_lace_cocktail_set',
+    regex: /high-fashion two-piece lace cocktail-set/i
+  },
+  {
+    id: 'legacy_lace_evening_set',
+    regex: /high-fashion two-piece lace evening-set/i
+  },
+  {
+    id: 'legacy_safe_lace_lock',
+    regex: /keep elegant lace cocktail styling/i
+  }
+];
+
+function detectWardrobeTemplateCollapse(promptText = '') {
+  const source = String(promptText || '');
+  const matches = [];
+  for (const pattern of WARDROBE_TEMPLATE_COLLAPSE_PATTERNS) {
+    if (pattern.regex.test(source)) {
+      matches.push(pattern.id);
+    }
+  }
+  return matches;
+}
+
 const SAFE_IMAGE_SAFETY_RETRY_REPLACEMENTS = [
   { pattern: /\bthigh-high\b/gi, replacement: 'thigh-high' },
   { pattern: /\bupper-thigh\b/gi, replacement: 'upper-thigh' },
@@ -3005,8 +3083,8 @@ function buildCompactSafeImageSafetyRetryPrompt(sourcePromptText, promptMeta = {
 
   lines.push(
     'Wardrobe safety lock:',
-    '- Keep elegant lace cocktail styling with coverage-forward boundaries and no exposure-focused emphasis.',
-    '- Keep black stockings and pointed heels only when compliant; otherwise keep a conservative equivalent without changing identity.',
+    '- Keep prompt-defined elegant two-piece cocktail styling with coverage-forward boundaries and no exposure-focused emphasis.',
+    '- Keep prompt-specified hosiery/heels when compliant; otherwise keep conservative equivalents without changing identity or color-family intent.',
     'Physics and realism lock:',
     '- Maintain support-contact compression, non-penetration, gravity-consistent drape, and coherent light-shadow geometry.',
     '- Preserve camera-authentic skin and fabric texture; avoid CGI smoothing or composited edges.',
@@ -4261,6 +4339,7 @@ function buildQualityScorerPrompt({ promptId, title, variant, promptIntentDigest
       'Hard rules:',
       '- If face mismatch is noticeable, identity <= 8.5.',
       '- Penalize conservative outfit outcomes, scene drift, pose drift, and synthetic artifacts.',
+      '- If prompt specifies a daring two-piece and image defaults to blouse/businesswear/sheath-dress archetypes, cap attireReplacement <= 8.0 and edge <= 7.5.',
       '- If scene/hero props miss prompt anchors, cap sceneAdherence <= 8.2.',
       '- If body language ignores prompt choreography, cap poseAdherence <= 8.2.',
       '- If any checklist item clearly fails, cap physics <= 8.4 and realism <= 8.8.',
@@ -4298,6 +4377,7 @@ function buildQualityScorerPrompt({ promptId, title, variant, promptIntentDigest
     '- Penalize any age/ethnicity/face-shape drift from the reference identity.',
     '- Penalize scene drift: if location/hero-prop intent is missed, reduce edge and realism scores.',
     '- Penalize conservative wardrobe outcomes: if the look lacks clear revealing editorial cues (high-cut line, side-waist cut, open-back/shoulder, sheer panel, or high slit), cap edge at <= 8.2.',
+    '- Penalize conservative fallback archetypes: if prompt specifies a daring two-piece and output defaults to blouse/businesswear/sweater/sheath-dress styling, cap attireReplacement <= 8.0 and edge <= 7.5.',
     '- Penalize pose drift: if prompt-specific support-contact and limb choreography are missing, cap edge at <= 8.1 and physics at <= 8.8.',
     '- Penalize wardrobe drift: if prompt-specific silhouette/cutline details are missing, cap attireReplacement at <= 8.8 and edge at <= 8.2.',
     '- Penalize generic homogenization: if output defaults to a generic neutral stance not matching prompt intent, cap edge at <= 8.0.',
@@ -5274,7 +5354,8 @@ function buildPrimaryRescuePrompt({ basePrompt, qualityEvaluation, rescueRound =
   }
   if (failingKeys.has('attireReplacement')) {
     targetedDirectives.push(
-      'Force complete wardrobe replacement with clear two-piece topology and no carryover from source casual clothing.'
+      'Force complete wardrobe replacement with clear two-piece topology and no carryover from source casual clothing.',
+      'Reapply prompt-specific outfit color/material/cut details; reject generic lace substitutions and all-black homogenization.'
     );
   }
   if (failingKeys.has('sceneAdherence')) {
@@ -6207,7 +6288,8 @@ async function callImageModel({ promptText, referenceInlineData, label }) {
   for (let requestAttempt = 1; requestAttempt <= maxHttpAttempts; requestAttempt += 1) {
     requestMetrics.requestAttempts = requestAttempt;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const attemptTimeoutMs = computeRequestTimeoutMs(requestAttempt);
+    const timeout = setTimeout(() => controller.abort(), attemptTimeoutMs);
     let response;
     let responseText = '';
     let body = null;
@@ -6243,20 +6325,23 @@ async function callImageModel({ promptText, referenceInlineData, label }) {
     } catch (error) {
       clearTimeout(timeout);
       const message = error instanceof Error ? error.message : String(error);
+      const isTimeoutAbort = (error instanceof Error && error.name === 'AbortError')
+        || /aborted/i.test(message);
       if (requestAttempt < maxHttpAttempts) {
         const retryDelayMs = computeImageRetryDelayMs({ attempt: requestAttempt });
         requestMetrics.retriesUsed += 1;
         consecutive429 = 0;
         log(
-          `${label}: network error on request attempt ${requestAttempt}/${maxHttpAttempts} (${message}); retrying in ${Math.ceil(retryDelayMs / 1000)}s`
+          `${label}: ${isTimeoutAbort ? 'timeout' : 'network error'} on request attempt ${requestAttempt}/${maxHttpAttempts}`
+          + ` (timeout=${attemptTimeoutMs}ms, ${message}); retrying in ${Math.ceil(retryDelayMs / 1000)}s`
         );
         await wait(retryDelayMs);
         continue;
       }
-      requestMetrics.finalFailureReason = 'network_error';
+      requestMetrics.finalFailureReason = isTimeoutAbort ? 'timeout' : 'network_error';
       return {
         ok: false,
-        errorType: 'network',
+        errorType: isTimeoutAbort ? 'timeout' : 'network',
         message,
         requestMetrics: finalizeRequestMetrics()
       };
@@ -6671,6 +6756,9 @@ async function main() {
     pid: process.pid,
     waitBeforeAttemptSeconds: WAIT_BEFORE_ATTEMPT_S,
     strict61AttemptPacing: STRICT_61S_ATTEMPT_PACING,
+    requestTimeoutMs: REQUEST_TIMEOUT_MS,
+    requestTimeoutRetryIncrementMs: REQUEST_TIMEOUT_RETRY_INCREMENT_MS,
+    requestTimeoutMaxMs: REQUEST_TIMEOUT_MAX_MS,
     imageHttpRetries: IMAGE_HTTP_RETRIES,
     imageHttpBackoffBaseMs: IMAGE_HTTP_BACKOFF_BASE_MS,
     imageHttpBackoffMaxMs: IMAGE_HTTP_BACKOFF_MAX_MS,
@@ -6923,6 +7011,9 @@ async function main() {
   log(`Loaded ${parsedPrompts.length} prompt pairs from ${PROMPT_FILE}`);
   log(`Reference image: ${REFERENCE_IMAGE}`);
   log(`Model: ${MODEL}`);
+  log(
+    `Request timeout: base=${REQUEST_TIMEOUT_MS}ms, retryIncrement=${REQUEST_TIMEOUT_RETRY_INCREMENT_MS}ms, max=${REQUEST_TIMEOUT_MAX_MS}ms`
+  );
   log(
     `Image HTTP retries: retries=${IMAGE_HTTP_RETRIES}, backoffBaseMs=${IMAGE_HTTP_BACKOFF_BASE_MS}, backoffMaxMs=${IMAGE_HTTP_BACKOFF_MAX_MS}`
   );
@@ -7183,11 +7274,19 @@ async function main() {
     const postNonceSafeDensity = computePhysicsDensityScore(safePromptText).score / Math.max(0.01, baselineDensitySnapshot.score);
     preflightDiagnostics.primary.postNonceRatio = Number(postNoncePrimaryDensity.toFixed(3));
     preflightDiagnostics.safe.postNonceRatio = Number(postNonceSafeDensity.toFixed(3));
+    const primaryTemplateCollapseSignals = detectWardrobeTemplateCollapse(primaryPromptText);
+    const safeTemplateCollapseSignals = detectWardrobeTemplateCollapse(safePromptText);
+    preflightDiagnostics.primary.templateCollapseSignals = primaryTemplateCollapseSignals;
+    preflightDiagnostics.safe.templateCollapseSignals = safeTemplateCollapseSignals;
     if (!preflightFailureReason) {
       if (postNoncePrimaryDensity < PHYSICS_DENSITY_MIN_RATIO) {
         preflightFailureReason = `primary:post_nonce_density_ratio_below_target (${postNoncePrimaryDensity.toFixed(3)} < ${PHYSICS_DENSITY_MIN_RATIO})`;
       } else if (postNonceSafeDensity < PHYSICS_DENSITY_MIN_RATIO) {
         preflightFailureReason = `safe:post_nonce_density_ratio_below_target (${postNonceSafeDensity.toFixed(3)} < ${PHYSICS_DENSITY_MIN_RATIO})`;
+      } else if (primaryTemplateCollapseSignals.length) {
+        preflightFailureReason = `primary:wardrobe_template_collapse (${primaryTemplateCollapseSignals.join(',')})`;
+      } else if (safeTemplateCollapseSignals.length) {
+        preflightFailureReason = `safe:wardrobe_template_collapse (${safeTemplateCollapseSignals.join(',')})`;
       }
     }
     const primaryPromptHash = shortHash(primaryPromptText, 24);

@@ -583,20 +583,8 @@ fn build_catcher_item(
     catcher_theme: CatcherTheme,
 ) -> Option<FallingItemState> {
     let doc = dom::document();
-    let class = match kind {
-        ItemKind::Heart => "catcher-item catcher-item--heart",
-        ItemKind::Star => "catcher-item catcher-item--star",
-        ItemKind::Unicorn => "catcher-item catcher-item--unicorn",
-        ItemKind::RainCloud => "catcher-item catcher-item--cloud",
-        ItemKind::GoldenHeart => "catcher-item catcher-item--golden",
-        ItemKind::ShieldBubble => "catcher-item catcher-item--shield",
-        ItemKind::Magnet => "catcher-item catcher-item--magnet",
-        ItemKind::RainbowStar => "catcher-item catcher-item--rainbow",
-        ItemKind::TimeFreeze => "catcher-item catcher-item--freeze",
-        ItemKind::StarShower => "catcher-item catcher-item--shower",
-        ItemKind::SizeBoost => "catcher-item catcher-item--size",
-    };
-    let item = render::text_el(&doc, "div", class, kind.themed_emoji(catcher_theme))?;
+    let class = format!("catcher-item catcher-item--{}", kind.kind_attr());
+    let item = render::text_el(&doc, "div", &class, kind.themed_emoji(catcher_theme))?;
     dom::set_attr(&item, "data-item-kind", kind.kind_attr());
     let x = 5.0 + js_sys::Math::random() * 80.0;
     let rot = (js_sys::Math::random() * 30.0 - 15.0) as i32;

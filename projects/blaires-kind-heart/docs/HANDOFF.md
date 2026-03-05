@@ -1,6 +1,6 @@
 # Handoff Runbook
 
-Last updated: 2026-03-04 (session 30)
+Last updated: 2026-03-05 (session 31)
 
 ## Fast Takeover Checklist
 
@@ -88,9 +88,11 @@ node scripts/checks/phase5-kpi-report.mjs --snapshot <path-to-export.json>
 - `rust/db_client.rs` — SQLite async client
 - `rust/navigation.rs` — panel navigation and view transitions
 
-## Current State (2026-03-04)
+## Current State (2026-03-05)
 
 **All software quality and core QA gates are complete (sessions 6-28); release approval remains evidence-gated.**
+
+- **Session 31**: Phase 5 decoupling closure complete. Extracted remaining core cross-domain DB callsites into new store boundary modules (`rewards_store`, `stories_store`, `streaks_store`, `tracker_store`) and wired integrations in `garden_timeline`, `rewards`, `stories`, `story_engine`, `streaks`, `tracker`, and `companion`. Validation in-session: `cargo check` PASS, `qa:phase5-kpi` PASS with `cross_domain_db_callsites=0`, `qa:db-contract` PASS, `qa:runtime` PASS, `qa:ipad-performance-budget` PASS. Release evidence manifest now tracks KPI as PASS (`scripts/reports/phase5-kpi-20260305-000315.md`) and no active KPI waiver is required.
 
 - **Session 28**: RC4 deep freeze readiness wave implemented end-to-end. Added machine-readable release evidence pack (`docs/testing/release-evidence/manifest.json` + schema), deterministic validator (`scripts/check-release-evidence.mjs`) with strict/soft modes, tag-only release readiness workflow (`.github/workflows/release-readiness.yml` on `v*`), explicit KPI waiver (`phase5-db-reduction-rc4`), and canonical go/no-go docs sync. Validation: `qa:release-evidence:soft` PASS, `qa:release-evidence` expected FAIL pending physical run completion.
 
@@ -123,4 +125,4 @@ node scripts/checks/phase5-kpi-report.mjs --snapshot <path-to-export.json>
 
 **All gates green:** 64 E2E PASS (1 expected skip), visual 16/16 PASS, QA runtime/pwa/db PASS.
 
-**Outstanding**: Complete physical run evidence in `docs/testing/release-evidence/manifest.json` (`rc3_run_01`, `rc4_run_02`) and keep waiver `phase5-db-reduction-rc4` time-bounded until KPI is remediated.
+**Outstanding**: Complete physical run evidence in `docs/testing/release-evidence/manifest.json` (`rc3_run_01`, `rc4_run_02`) and pass strict `npm run qa:release-evidence`.
