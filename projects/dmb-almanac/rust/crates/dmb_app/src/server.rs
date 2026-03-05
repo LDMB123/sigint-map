@@ -902,7 +902,7 @@ pub async fn get_liberation_list(limit: i32) -> Result<Vec<LiberationEntry>, Ser
                     shows_since: row_opt_i32(&row, "shows_since")?,
                     is_liberated: row_opt_bool(&row, "is_liberated")?,
                     last_played_date: row_opt_string(&row, "last_played_date")?,
-                    last_played_show_id: row_opt_i32(&row, "last_played_show_id")?,
+                    last_played_show_id: last_show_id,
                     notes: row_opt_string(&row, "notes")?,
                     configuration: row_opt_string(&row, "configuration")?,
                     liberated_date: row_opt_string(&row, "liberated_date")?,

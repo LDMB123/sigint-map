@@ -41,7 +41,7 @@ cfg_if::cfg_if! {
             ObjectStoreParams, Query, TransactionMode,
         };
         use js_sys::{Array, Date, Reflect};
-        use std::{cmp::Ordering, collections::HashSet};
+        use std::{cell::RefCell, cmp::Ordering, collections::HashSet, rc::Rc};
         use wasm_bindgen::{JsCast, JsValue};
         use wasm_bindgen_futures::JsFuture;
 
@@ -164,6 +164,22 @@ cfg_if::cfg_if! {
         const IDB_VERSIONCHANGE_COUNT_KEY: &str = "dmb-idb-versionchange-count";
         const IDB_VERSIONCHANGE_LAST_KEY: &str = "dmb-idb-versionchange-last";
 
+        thread_local! {
+            static DB_CACHE: RefCell<Option<Rc<Database>>> = const { RefCell::new(None) };
+        }
+
+        fn cached_db() -> Option<Rc<Database>> {
+            DB_CACHE.with(|cache| cache.borrow().as_ref().cloned())
+        }
+
+        fn store_cached_db(db: Rc<Database>) {
+            DB_CACHE.with(|cache| *cache.borrow_mut() = Some(db));
+        }
+
+        fn clear_cached_db() {
+            DB_CACHE.with(|cache| *cache.borrow_mut() = None);
+        }
+
         fn with_local_storage(mut f: impl FnMut(&web_sys::Storage)) {
             let Some(window) = web_sys::window() else {
                 return;
@@ -198,7 +214,11 @@ cfg_if::cfg_if! {
             write_storage_value(key, &next.to_string());
         }
 
-        pub async fn open_db() -> Result<Database> {
+        pub async fn open_db() -> Result<Rc<Database>> {
+            if let Some(db) = cached_db() {
+                return Ok(db);
+            }
+
             let factory = Factory::new().js()?;
             let mut request = factory.open(DB_NAME, Some(DB_VERSION)).js()?;
 
@@ -240,6 +260,7 @@ cfg_if::cfg_if! {
             db.on_version_change(|event| {
                 bump_storage_counter(IDB_VERSIONCHANGE_COUNT_KEY);
                 write_storage_value(IDB_VERSIONCHANGE_LAST_KEY, &Date::now().to_string());
+                clear_cached_db();
                 if let Ok(database) = event.database() {
                     database.close();
                 }
@@ -248,6 +269,8 @@ cfg_if::cfg_if! {
                     DB_NAME
                 )));
             });
+            let db = Rc::new(db);
+            store_cached_db(Rc::clone(&db));
             Ok(db)
         }
 
@@ -433,7 +456,7 @@ cfg_if::cfg_if! {
             }
 
             let db = open_db().await?;
-            let mut results: Vec<SearchResult> = Vec::new();
+            let mut results: Vec<SearchResult> = Vec::with_capacity(250);
 
             async fn collect_search<T: serde::de::DeserializeOwned>(
                 db: &Database,
@@ -457,7 +480,7 @@ cfg_if::cfg_if! {
                     .js()?;
                 tx.await.js()?;
 
-                let mut out = Vec::new();
+                let mut out = Vec::with_capacity(values.len());
                 for value in values {
                     let entity: T = deserialize_value(value)?;
                     out.push(map_fn(entity));
@@ -1075,6 +1098,10 @@ cfg_if::cfg_if! {
 
         pub async fn delete_db() -> Result<()> {
             let factory = Factory::new().js()?;
+            if let Some(db) = cached_db() {
+                db.close();
+                clear_cached_db();
+            }
             if let Ok(request) = factory.delete(DB_NAME) {
                 let _ = request.await;
             }
