@@ -1,6 +1,6 @@
 # Cutover Runbook (Rust-First Offline PWA)
 
-Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Repo: `project root`
 
 Goal: Transition to the Rust Leptos SSR + WASM hydrate PWA (`rust/`) without losing offline data or bricking clients via stale service worker caches.
 
@@ -17,7 +17,7 @@ This runbook assumes:
 Run these locally and in CI for the commit you intend to deploy.
 
 Fast path (recommended):
-- `cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac && bash scripts/cutover-rehearsal.sh`
+- `bash scripts/cutover-rehearsal.sh`
 
 1. Rust compile and test gate:
    - `cd rust && cargo run -p xtask -- verify`
@@ -59,7 +59,7 @@ If any gate fails, do not cut over.
 
 ## Remote/Staging E2E (Against An Existing Origin)
 When you have a staging/prod Rust server already running (separate origin strongly recommended), run:
-- `cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac && BASE_URL=https://staging.example.com bash scripts/cutover-remote-e2e.sh`
+- `BASE_URL=https://staging.example.com bash scripts/cutover-remote-e2e.sh`
 
 This validates:
 - Prior IndexedDB migration (Dexie -> Rust IDB)
@@ -71,10 +71,10 @@ It does NOT currently gate on AI diagnostics/degradation coverage; run those sep
 
 ### Local-Only “Staging Origin” (Different Port)
 For local-only cutover rehearsal without DNS/subdomains, simulate a separate origin by using a different port:
-- `cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac && BASE_URL=http://127.0.0.1:3100 bash scripts/cutover-rehearsal.sh`
+- `BASE_URL=http://127.0.0.1:3100 bash scripts/cutover-rehearsal.sh`
 
 CI option (manual trigger):
-- GitHub Actions workflow: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.github/workflows/cutover-remote-e2e.yml`
+- GitHub Actions workflow: `.github/workflows/cutover-remote-e2e.yml`
 - Provide `base_url` input pointing at your staging origin.
 
 ## Staging Deployment Strategy (Recommended)
@@ -141,5 +141,5 @@ The old UI code is intentionally not part of this repo. If you need forensics, u
    - Search remains functional offline to expected degree.
 
 ## Where CI Enforces This
-- Rust-only gates live in `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.github/workflows/rust-ci.yml`.
-- Cutover rehearsal gate lives in `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/.github/workflows/cutover-rehearsal.yml`.
+- Rust-only gates live in `.github/workflows/rust-ci.yml`.
+- Cutover rehearsal gate lives in `.github/workflows/cutover-rehearsal.yml`.

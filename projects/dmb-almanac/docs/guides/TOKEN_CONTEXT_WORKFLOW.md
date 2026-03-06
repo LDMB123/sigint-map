@@ -56,7 +56,7 @@ For most DMB coding tasks, start with this small pack first:
 - `STATUS.md`
 - `docs/README.md`
 - `docs/INDEX.md`
-- `scripts/README.md`
+- [scripts/README.md](../../scripts/README.md)
 
 Then add only one domain-specific file set as needed:
 
@@ -66,7 +66,7 @@ Then add only one domain-specific file set as needed:
 
 ## CI Integration
 
-`.github/workflows/docs-integrity.yml` generates and uploads two JSON artifacts on PRs:
+[.github/workflows/docs-integrity.yml](../../.github/workflows/docs-integrity.yml) generates and uploads two JSON artifacts on PRs:
 
 - `token-context-active` JSON artifact
 - `token-context-all` JSON artifact

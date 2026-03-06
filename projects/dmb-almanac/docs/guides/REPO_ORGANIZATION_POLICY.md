@@ -57,15 +57,15 @@ bash scripts/check-repo-hygiene.sh
 
 CI workflow:
 
-- `.github/workflows/docs-integrity.yml`
+- [.github/workflows/docs-integrity.yml](../../.github/workflows/docs-integrity.yml)
 
 ## Documentation Organization Rules
 
 - Keep repository root minimal: only active entrypoint docs and configs.
-- `AGENTS.md` is allowed at the root as an app-scoping instruction file for local coding agents.
-- Keep project scope local to `projects/dmb-almanac` even if git commands expose the parent superproject root.
+- [AGENTS.md](../../AGENTS.md) is allowed at the root as an app-scoping instruction file for local coding agents.
+- Keep project scope local to this app folder even if git commands expose a broader parent repo root.
 - Do not commit assistant/session metadata such as `.claude/` or `.codex/`.
 - Archive obsolete docs under `docs/reports/_archived/`.
 - Keep a `README.md` landing page in each top-level `docs/*` section.
-- Keep `data/README.md` and `e2e/README.md` current for non-Rust top-level areas.
+- Keep [data/README.md](../../data/README.md) and [e2e/README.md](../../e2e/README.md) current for non-Rust top-level areas.
 - Keep `docs/INDEX.md` current when moving or adding docs.

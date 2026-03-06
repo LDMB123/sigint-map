@@ -1,6 +1,6 @@
 # AI Timeout/Degradation Runbook
 
-Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Repo: `project root`
 
 Goal: verify AI diagnostics degrade gracefully when worker/GPU paths are unavailable or cooling down.
 

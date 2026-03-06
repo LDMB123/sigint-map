@@ -1,6 +1,6 @@
 # Security Reference (Rust-First Local PWA)
 
-Scope: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Scope: `project root`
 
 This project is currently local-only (not publicly deployed). The main security focus is preventing "bricked client" states from stale caches, keeping the Service Worker update path deterministic, and avoiding unsafe server endpoints if/when it is exposed beyond localhost.
 
@@ -44,7 +44,6 @@ Before exposing the server beyond localhost, add:
 ## Quick Verification
 
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac
 bash scripts/cutover-rehearsal.sh
 ```
 

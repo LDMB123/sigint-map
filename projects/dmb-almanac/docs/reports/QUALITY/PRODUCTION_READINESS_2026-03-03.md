@@ -1,7 +1,7 @@
 # Production Readiness Report
 
 Date: 2026-03-03  
-Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Repo: `project root`
 
 ## Summary
 
@@ -55,19 +55,19 @@ Validation refresh on 2026-03-03:
   - `docs/ops/CUTOVER_RUNBOOK.md`
   - `docs/ops/ROLLBACK_RUNBOOK.md`
 - CI regression gate hardening shipped:
-  - replaced stale zero-match test filter with full server suite gate (`cargo test -p dmb_server`) in `.github/workflows/rust-ci.yml`.
+  - replaced stale zero-match test filter with full server suite gate (`cargo test -p dmb_server`) in [.github/workflows/rust-ci.yml](../../../.github/workflows/rust-ci.yml).
 - Rust security audit gate shipped:
   - CI now runs `scripts/security-audit.sh` (fails on new advisories or expired temporary allows).
 
 ## Files Updated During Readiness Pass
 
 - `rust/crates/dmb_server/src/main.rs`
-- `.github/workflows/rust-ci.yml`
+- [.github/workflows/rust-ci.yml](../../../.github/workflows/rust-ci.yml)
 - `docs/reports/QUALITY/RELEASE_READINESS_CHECKLIST.md`
 - `scripts/security-audit.sh`
 - `scripts/check-disk-budget.sh`
 - `scripts/cutover-rehearsal.sh`
-- `scripts/README.md`
+- [scripts/README.md](../../../scripts/README.md)
 - `docs/ops/README.md`
 - `docs/ops/AI_TIMEOUT_DEGRADATION_RUNBOOK.md`
 - `docs/ops/SECURITY_ADVISORY_DISPOSITIONS.md`

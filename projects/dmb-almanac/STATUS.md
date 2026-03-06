@@ -1,7 +1,7 @@
 # DMB Almanac Status (Canonical)
 
 Date: 2026-03-05
-Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Repo: `project root`
 
 `STATUS.md` is the single source of truth for current repo state.
 `CONTEXT.md` is intentionally minimal and links here.

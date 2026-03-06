@@ -9,7 +9,6 @@ If you find older documents that discuss a JavaScript UI or an old minified serv
 The practical PWA reliability gates are:
 
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac
 bash scripts/cutover-rehearsal.sh
 ```
 

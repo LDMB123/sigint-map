@@ -5,7 +5,6 @@ This repo is Rust-first and local-only (offline PWA). Older test steps for the r
 ## Fast Gate (Recommended)
 
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac
 bash scripts/cutover-rehearsal.sh
 ```
 

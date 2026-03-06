@@ -1,14 +1,15 @@
 # Technical References
 
-Reference docs for schema, data bundle, and utilities.
+Use this section for stable technical facts.
+If you need a workflow or procedure, use `docs/guides/` or `docs/ops/` instead.
 
-## Files
+## Primary References
 
 - `docs/references/DATABASE_SCHEMA_REFERENCE.md`
 - `docs/references/DATA_BUNDLE_REFERENCE.md`
 - `docs/references/UTILS_MODULE_REFERENCE.md`
 
-## Parity Mapping Source
+## Runtime Source Of Truth
 
 The canonical IndexedDB-to-SQLite parity mapping used by runtime checks lives in:
 

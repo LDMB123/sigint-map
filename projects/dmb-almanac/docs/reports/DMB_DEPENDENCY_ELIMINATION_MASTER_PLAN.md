@@ -69,7 +69,7 @@ For each candidate dependency:
 
 - Keep `e2e` dependencies minimal and pinned.
 - Avoid adding build-only tooling unless it closes a concrete gap.
-- Validate scripts documentation stays in sync (`scripts/README.md`).
+- Validate scripts documentation stays in sync ([scripts/README.md](../../scripts/README.md)).
 
 ## Validation Checklist
 

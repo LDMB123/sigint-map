@@ -1,15 +1,15 @@
 # AGENTS.md
 
-Scope: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Scope: this repository root
 
-This project should be treated as a self-contained app workspace even though it lives inside a larger personal superproject.
+This project should be treated as a self-contained app workspace.
 
 ## Project Boundary
 
-- Primary project root for all app work: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
-- Do not read from, modify, or reason about sibling projects under `/Users/louisherman/ClaudeCodeProjects/projects/` unless the user explicitly asks.
-- Do not use unrelated superproject branches, stashes, archive tags, or untracked sibling directories as context for this app.
-- If git commands reveal the parent repo root (`/Users/louisherman/ClaudeCodeProjects`), still keep code, docs, and operational decisions scoped to `projects/dmb-almanac`.
+- Primary project root for all app work: this folder.
+- Do not read from, modify, or reason about sibling directories next to this folder unless the user explicitly asks.
+- Do not use unrelated parent-workspace branches, stashes, archive tags, or untracked directories as context for this app.
+- If git commands reveal a broader parent repo root, still keep code, docs, and operational decisions scoped to this folder.
 
 ## Canonical Current State
 

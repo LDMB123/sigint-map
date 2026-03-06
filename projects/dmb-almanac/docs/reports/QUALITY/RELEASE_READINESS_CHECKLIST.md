@@ -1,7 +1,7 @@
 # Release Readiness Checklist (Rust App)
 
 Date: 2026-03-03  
-Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Repo: `project root`
 
 This checklist is the Phase 5 quality gate for release decisions.
 
@@ -45,7 +45,7 @@ Cargo commands in this checklist assume the workspace root is `rust/`.
 ## CI Policy
 
 - [x] CI workflow includes explicit format + route parity/render/a11y smoke steps:
-  - `.github/workflows/rust-ci.yml`
+  - [.github/workflows/rust-ci.yml](../../../.github/workflows/rust-ci.yml)
 - [x] CI enforces clippy warnings as errors.
 - [x] CI includes explicit Phase 5 regression gates for parity and server payload/cache validation.
 

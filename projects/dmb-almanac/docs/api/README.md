@@ -1,11 +1,21 @@
 # API Documentation
 
-## Primary Artifact
+The externally documented API surface is intentionally kept small.
+Treat the OpenAPI contract as the source of truth for request and response shape, then verify behavior in the Rust server and route tests.
 
-- `docs/api/OPENAPI_V1.yaml` - OpenAPI contract for the v1 API surface.
+## Canonical Contract
 
-## Typical Use
+- `docs/api/OPENAPI_V1.yaml`
 
-1. Start with the OpenAPI file to review available endpoints and schemas.
-2. Cross-reference implementation details in Rust crates under `rust/crates/`.
+## Implementation Anchors
 
+- `rust/crates/dmb_server/src/main.rs`
+- `rust/crates/dmb_app/tests/route_parity.rs`
+- `rust/crates/dmb_app/tests/route_render.rs`
+- `rust/crates/dmb_app/tests/route_smoke.rs`
+
+## Update This Area When
+
+- A documented route is added, removed, or renamed.
+- A response shape, error shape, or status code changes.
+- Server-side behavior changes in a way that affects external consumers or parity expectations.

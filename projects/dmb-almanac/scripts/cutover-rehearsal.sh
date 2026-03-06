@@ -4,7 +4,7 @@ set -euo pipefail
 # Cutover rehearsal: run Rust gates + bring up Rust server + run Rust-focused Playwright E2E subset.
 #
 # Usage:
-#   cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac
+#   from the project root:
 #   bash scripts/cutover-rehearsal.sh
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

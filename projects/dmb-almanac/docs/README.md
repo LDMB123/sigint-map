@@ -1,43 +1,46 @@
 # Documentation Home
 
-Use this page as the entry point for current repository documentation.
-Start with `STATUS.md` when you need the exact repo/runtime state on `main`.
+Use this page to get to the current operating docs quickly.
+If you need the exact verified state of the app on `main`, start with `STATUS.md`.
 
-## Fast Paths
+## Start Here
 
-- New to the project: `docs/guides/DMB_START_HERE.md`
-- Need current canonical state: `STATUS.md`
-- Need runtime architecture: `rust/README.md`, `docs/wasm/WASM_REFERENCE.md`, `docs/gpu/GPU_REFERENCE.md`
-- Need full navigation: `docs/INDEX.md`
-- Need operational cutover steps: `docs/ops/CUTOVER_RUNBOOK.md`
-- Need current testing flow: `docs/guides/TESTING_CHECKLIST.md`
-- Need reusable release gate: `docs/reports/QUALITY/RELEASE_READINESS_CHECKLIST.md`
-- Need latest dated readiness snapshot: `docs/reports/QUALITY/PRODUCTION_READINESS_2026-03-03.md`
-- Need manual keyboard a11y checks: `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md`
-- Need current architecture/roadmap summaries: `docs/reports/REVISED_RUST_WASM_PLAN_2026-02-04.md`, `docs/reports/STRATEGIC_ROADMAP_2026.md`
-- Need current policy docs: `docs/reports/DMB_DEPENDENCY_ELIMINATION_MASTER_PLAN.md`, `docs/reports/ENCRYPTION_SECURITY_POLICY.md`
-- Need minimal context pack: `CONTEXT.md`
+- Current repo and runtime state: `STATUS.md`
+- First-pass onboarding: `docs/guides/DMB_START_HERE.md`
+- Minimal context pack: `CONTEXT.md`
+- Runtime architecture: `rust/README.md`, `docs/wasm/WASM_REFERENCE.md`, `docs/gpu/GPU_REFERENCE.md`
+- Testing and release gates: `docs/guides/TESTING_CHECKLIST.md`, `docs/reports/QUALITY/RELEASE_READINESS_CHECKLIST.md`
+- Latest dated readiness snapshot: `docs/reports/QUALITY/PRODUCTION_READINESS_2026-03-03.md`
+- Cutover and rollback operations: `docs/ops/CUTOVER_RUNBOOK.md`, `docs/ops/ROLLBACK_RUNBOOK.md`
+- Full tree browser: `docs/INDEX.md`
 
-## Documentation Map
+## How The Tree Is Organized
 
-| Directory | Landing Page | Contains |
-|---|---|
-| `docs/guides/` | `docs/guides/README.md` | Onboarding, deployment, testing, architecture and design guides |
-| `docs/ops/` | `docs/ops/README.md` | Runbooks for cutover, rollback, and operational checks |
-| `docs/api/` | `docs/api/README.md` | API contract definitions |
-| `docs/migration/` | `docs/migration/README.md` | Current migration references and completed execution records |
-| `docs/reports/` | `docs/reports/README.md` | Summaries, audits, and strategic reports |
-| `docs/references/` | `docs/references/README.md` | Technical reference docs for schema/data/modules |
-| `docs/quick-references/` | `docs/quick-references/README.md` | Short command/reference cheat sheets |
-| `docs/audits/` | `docs/audits/README.md` | Domain-specific audit references |
-| `docs/gpu/` | `docs/gpu/README.md` | GPU-specific reference docs |
-| `docs/wasm/` | `docs/wasm/README.md` | Wasm architecture and roadmap docs |
-| `docs/scraping/` | `docs/scraping/README.md` | Scraping fixtures and extraction references |
+- `docs/guides/` for day-to-day developer workflows.
+- `docs/ops/` for runbooks, release steps, and operational spot checks.
+- `docs/references/` for stable technical facts such as schema and data-bundle shape.
+- `docs/reports/` for dated evidence, policy docs, and strategic summaries.
+- `docs/migration/` for the small set of migration artifacts still relevant to the current Rust-first app.
+- `docs/audits/` for durable audit references and future audit drop zones.
+- `docs/reports/_archived/` and `docs/reports/_full_audits/` for historical material that should not drive day-to-day work.
 
-## Documentation Maintenance Rules
+## Section Landing Pages
 
-- Keep top-level docs brief and task-oriented.
-- Prefer linking to canonical docs over duplicating instructions.
-- Archive obsolete docs under `docs/reports/_archived/`.
-- Keep `docs/INDEX.md` updated when files are moved or added.
-- Prefer direct links to the reusable release checklist and latest dated readiness snapshot over directory-only quality links.
+- `docs/guides/README.md`
+- `docs/ops/README.md`
+- `docs/api/README.md`
+- `docs/migration/README.md`
+- `docs/references/README.md`
+- `docs/reports/README.md`
+- `docs/quick-references/README.md`
+- `docs/audits/README.md`
+- `docs/gpu/README.md`
+- `docs/wasm/README.md`
+- `docs/scraping/README.md`
+
+## Maintenance Rules
+
+- Keep this page short and task-first.
+- Prefer linking to one canonical doc instead of duplicating instructions.
+- Move superseded material into `docs/reports/_archived/`.
+- Update `docs/INDEX.md` whenever files move or a new top-level doc area becomes active.

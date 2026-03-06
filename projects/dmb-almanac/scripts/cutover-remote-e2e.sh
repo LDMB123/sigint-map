@@ -6,7 +6,7 @@ set -euo pipefail
 # build DBs or start/stop the server process.
 #
 # Usage:
-#   cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac
+#   from the project root:
 #   BASE_URL=https://staging.example.com bash scripts/cutover-remote-e2e.sh
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

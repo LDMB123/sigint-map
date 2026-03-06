@@ -1,6 +1,6 @@
 # Security Advisory Dispositions
 
-Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Repo: `project root`
 Last reviewed: 2026-03-03
 
 This document records temporary advisory dispositions that are accepted for release with explicit ownership and revalidation dates.

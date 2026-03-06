@@ -1,6 +1,6 @@
 # DMB Almanac Context Pack (Minimal)
 
-Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Repo: `project root`
 
 Use this file as a low-token session starter.
 For full current state, always read `STATUS.md`.

@@ -1,6 +1,6 @@
 # Accessibility Keyboard Spot-Check Runbook
 
-Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Repo: `project root`
 
 Goal: run a repeatable manual keyboard-only accessibility spot-check for top public routes before release.
 
@@ -14,7 +14,7 @@ Goal: run a repeatable manual keyboard-only accessibility spot-check for top pub
 ## Preconditions
 
 1. Start the Rust app:
-   - `cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/rust`
+   - `cd rust`
    - `cargo run -p xtask -- build-hydrate-pkg`
    - `cargo run -p dmb_server`
 2. Confirm app is reachable:

@@ -59,8 +59,8 @@ The project should maintain a practical test distribution:
 
 ## CI Alignment
 
-- Rust quality checks: `.github/workflows/rust-ci.yml`
-- Docs and structure checks: `.github/workflows/docs-integrity.yml`
+- Rust quality checks: [.github/workflows/rust-ci.yml](../../.github/workflows/rust-ci.yml)
+- Docs and structure checks: [.github/workflows/docs-integrity.yml](../../.github/workflows/docs-integrity.yml)
 
 ## PR Expectations
 

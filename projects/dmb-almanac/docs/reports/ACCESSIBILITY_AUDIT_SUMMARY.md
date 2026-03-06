@@ -1,6 +1,7 @@
 # Accessibility Audit Summary
 
-This repo is currently Rust-first and local-only. Older accessibility audits that referenced removed UI prototypes are intentionally not treated as current guidance.
+This summary is the current accessibility entry point for the Rust-first app.
+Older audits that referenced removed UI prototypes are historical and should not override the baseline below.
 
 ## Current Status
 
@@ -10,11 +11,15 @@ This repo is currently Rust-first and local-only. Older accessibility audits tha
   - `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md`
 - Spot-check report template generator is available:
   - `scripts/a11y-keyboard-spotcheck.sh`
-- A full WCAG audit summary is still pending and should replace this placeholder summary before broad publish.
 
-## Suggested Next Audit Inputs
+## Remaining Work
 
-- Keyboard-only navigation for all primary routes
+- Full keyboard-only pass across primary routes
 - Screen reader pass (VoiceOver/NVDA)
-- Focus management for navigation and dialogs
-- Color contrast and text sizing
+- Focus-management review for navigation and dialogs
+- Color-contrast and text-sizing review
+
+## Where New Audit Material Belongs
+
+- Dated accessibility audits: `docs/audits/accessibility/`
+- Operational keyboard checks: `docs/ops/A11Y_KEYBOARD_SPOTCHECK_RUNBOOK.md`

@@ -1,6 +1,6 @@
 # Rollback Runbook (If Cutover Regresses)
 
-Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Repo: `project root`
 
 Purpose: Safely revert to a known-good Rust build while minimizing client breakage from service worker and cached asset state.
 

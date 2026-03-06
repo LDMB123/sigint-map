@@ -1,6 +1,6 @@
 # DMB Almanac (Rust-First Offline PWA) - Start Here
 
-Repo: `/Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac`
+Repo: `project root`
 
 This repo is a local-only, offline-first PWA built with Rust (Leptos SSR + WASM hydration). The current workflow is Rust-first; the old UI code is intentionally removed.
 
@@ -9,7 +9,6 @@ This repo is a local-only, offline-first PWA built with Rust (Leptos SSR + WASM 
 Run the full green gate (Rust verify + data release + server + E2E subset):
 
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac
 bash scripts/cutover-rehearsal.sh
 ```
 
@@ -28,7 +27,7 @@ cargo run -p dmb_server
 Run Rust-only E2E tests (against a running server):
 
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac/e2e
+cd e2e
 BASE_URL=http://127.0.0.1:3000 npm run test:e2e
 ```
 

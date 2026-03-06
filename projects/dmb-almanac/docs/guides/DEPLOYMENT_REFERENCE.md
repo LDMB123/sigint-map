@@ -25,7 +25,6 @@ cargo run -p dmb_server
 Recommended local cutover gate (starts server, builds runtime SQLite into `.tmp/`, runs Rust-only E2E subset):
 
 ```bash
-cd /Users/louisherman/ClaudeCodeProjects/projects/dmb-almanac
 bash scripts/cutover-rehearsal.sh
 ```
 
