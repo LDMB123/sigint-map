@@ -12,6 +12,7 @@ e2e/test-results/
 # Rust build artifacts
 rust/target/
 rust/static/pkg/
+rust/Cargo.lock
 
 # Generated runtime data artifacts (canonical source is data/static-data/)
 rust/static/data/

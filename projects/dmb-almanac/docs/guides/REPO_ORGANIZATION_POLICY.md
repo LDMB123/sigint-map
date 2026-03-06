@@ -16,6 +16,7 @@ These are generated and should not be committed:
 - `rust/data/`
 - `rust/target/`
 - `rust/static/pkg/`
+- `rust/Cargo.lock`
 - `e2e/playwright-report/`
 - `e2e/test-results/`
 
