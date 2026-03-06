@@ -9,9 +9,15 @@ FAIL=0
 check_tracked_forbidden() {
   local pattern="$1"
   local label="$2"
-  if git ls-files -- "$pattern" | grep -q .; then
+  local tracked_existing=""
+  tracked_existing="$(
+    git ls-files -- "$pattern" | while IFS= read -r path; do
+      [[ -e "$path" ]] && printf '%s\n' "$path"
+    done
+  )" || true
+  if [[ -n "$tracked_existing" ]]; then
     echo "repo-hygiene: error: tracked files found in ${label} (${pattern})"
-    git ls-files -- "$pattern" | sed 's/^/  - /'
+    printf '%s\n' "$tracked_existing" | sed 's/^/  - /'
     FAIL=1
   fi
 }
@@ -37,7 +43,7 @@ check_unexpected_root_markdown() {
     local name
     name="$(basename "$path")"
     case "$name" in
-      README.md|CONTRIBUTING.md|CLAUDE.md|CONTEXT.md|STATUS.md)
+      AGENTS.md|README.md|CONTRIBUTING.md|CLAUDE.md|CONTEXT.md|STATUS.md)
         ;;
       *)
         echo "repo-hygiene: error: unexpected root markdown file: $name"
@@ -54,6 +60,8 @@ check_tracked_forbidden "rust/target/**" "Rust target artifacts"
 check_tracked_forbidden "e2e/node_modules/**" "E2E node_modules"
 check_tracked_forbidden "e2e/playwright-report/**" "Playwright report artifacts"
 check_tracked_forbidden "e2e/test-results/**" "Playwright test-results artifacts"
+check_tracked_forbidden ".claude/**" "local assistant metadata"
+check_tracked_forbidden ".codex/**" "local assistant metadata"
 
 echo "repo-hygiene: checking root-level legacy documentation clutter"
 check_missing_legacy_root_file "JSDOC_EXTRACTION_CHECKLIST.md"
