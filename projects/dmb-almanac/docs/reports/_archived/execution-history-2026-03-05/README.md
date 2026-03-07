@@ -2,7 +2,9 @@
 
 This folder contains completed execution records that were previously left in active doc areas.
 
-These files are preserved as evidence of completed hardening work. They are not current runbooks and should not replace `STATUS.md`, current guides, or current ops docs.
+These files are preserved as evidence of completed hardening work. They are not
+current runbooks and should not replace `STATUS.md`, current guides, or current
+ops docs. Do not start here for current implementation or release work.
 
 Use these docs when you need to answer:
 
@@ -14,3 +16,7 @@ Archived files:
 
 - `AUTONOMOUS_DATABASE_DEBUG_OPTIMIZATION_PLAN_2026-02-14.md`
 - `DB_OPTIMIZATION_DEBUG_EXECUTION_PLAN_2026-02-15.md`
+
+Use active replacements when you need current guidance:
+- `docs/guides/TESTING_CHECKLIST.md`
+- `docs/ops/CUTOVER_RUNBOOK.md`
