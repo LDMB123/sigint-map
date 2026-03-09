@@ -42,7 +42,7 @@ jobs:
 
       - name: Syntax check
         run: |
-          python -m py_compile api_server.py menu_scrapers.py update_prices.py server/config.py server/static_assets.py server/status_helpers.py scripts/backup_db.py scripts/restore_db.py
+          python -m py_compile api_server.py menu_scrapers.py update_prices.py server/config.py server/static_assets.py server/status_helpers.py scripts/backup_db.py scripts/restore_db.py scripts/release_smoke.py scripts/emit_backend_sentry_test.py scripts/restore_rehearsal.py
 
       - name: Run tests
         run: |
@@ -71,6 +71,7 @@ jobs:
           APP_ENV=production \
           CORS_ORIGINS=https://tracker.example.com \
           TRUSTED_HOSTS=127.0.0.1,localhost \
+          RELEASE_SHA=ci \
           AUTO_BOOTSTRAP_IF_EMPTY=false \
           python -m uvicorn api_server:app --host 127.0.0.1 --port 8000 > /tmp/gdl-tracker.log 2>&1 &
           SERVER_PID=$!
@@ -103,6 +104,8 @@ jobs:
             -p 8001:8000 \
             -e APP_ENV=production \
             -e CORS_ORIGINS=https://tracker.example.com \
+            -e TRUSTED_HOSTS=127.0.0.1,localhost \
+            -e RELEASE_SHA=ci \
             -e AUTO_BOOTSTRAP_IF_EMPTY=false \
             -e DB_PATH=/data/gdl_data.db \
             -v "${PWD}/.tmp-data:/data" \
@@ -118,6 +121,7 @@ jobs:
 
           urls = [
               "http://127.0.0.1:8001/healthz",
+              "http://127.0.0.1:8001/readyz",
               "http://127.0.0.1:8001/",
               "http://127.0.0.1:8001/favicon.ico",
           ]

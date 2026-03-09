@@ -10,6 +10,9 @@
     "frontend:audit:all": "npm audit --prefix frontend --audit-level=high",
     "smoke:frontend": "npm run frontend:test",
     "smoke:browser": "node browser_smoke.mjs",
+    "ops:release-smoke": "python3 scripts/release_smoke.py",
+    "ops:sentry:backend-test": "python3 scripts/emit_backend_sentry_test.py",
+    "ops:restore-rehearsal": "python3 scripts/restore_rehearsal.py",
     "security:secrets": "python3 scripts/ci_secret_scan.py",
     "security:python": "python3 -m pip_audit -r requirements.txt --progress-spinner off"
   },

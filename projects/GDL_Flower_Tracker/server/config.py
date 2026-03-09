@@ -73,13 +73,21 @@ def load_settings(app_dir: Path) -> Settings:
     trusted_raw = os.getenv("TRUSTED_HOSTS", "").strip()
     trusted_hosts = [host.strip() for host in trusted_raw.split(",") if host.strip()]
     admin_api_token = os.getenv("ADMIN_API_TOKEN", "").strip() or None
+    release_sha = os.getenv("RELEASE_SHA", "dev").strip() or "dev"
+
+    if is_production and not trusted_hosts:
+        raise ValueError("TRUSTED_HOSTS must be set in production.")
+    if is_production and release_sha == "dev":
+        raise ValueError("RELEASE_SHA must be set to a non-default value in production.")
+    if is_production and admin_api_token and len(admin_api_token) < 24:
+        raise ValueError("ADMIN_API_TOKEN must be at least 24 characters in production.")
 
     return Settings(
         app_env=app_env,
         log_level=log_level,
         sentry_dsn=os.getenv("SENTRY_DSN", "").strip() or None,
         sentry_environment=os.getenv("SENTRY_ENVIRONMENT", app_env).strip() or app_env,
-        release_sha=os.getenv("RELEASE_SHA", "dev").strip() or "dev",
+        release_sha=release_sha,
         db_path=db_path,
         cors_origins=cors_origins,
         trusted_hosts=trusted_hosts,

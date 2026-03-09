@@ -262,6 +262,16 @@ async fn process_sw_registration(
     };
 
     state.sw_scope.set(Some(reg.scope()));
+    if let Some(active_worker) = reg.active() {
+        let script_url = active_worker.script_url();
+        if !script_url.is_empty() {
+            state.sw_controller_url.set(Some(script_url.clone()));
+            state
+                .sw_controller_state
+                .set(service_worker::worker_state(&active_worker));
+            sync_controller_version_from_script_url(&script_url, &state);
+        }
+    }
 
     if reg.waiting().is_some() {
         if has_controller && !refresh_update_notice_state(&state) {

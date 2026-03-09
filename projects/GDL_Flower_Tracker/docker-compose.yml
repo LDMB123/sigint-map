@@ -1,21 +1,32 @@
 services:
   gdl-tracker:
     build: .
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       - APP_ENV=production
       - PORT=8000
       - DB_PATH=/data/gdl_data.db
       - AUTO_BOOTSTRAP_IF_EMPTY=false
       - SCHEDULER_ENABLED=false
-      - CORS_ORIGINS=${CORS_ORIGINS:-https://tracker.example.com}
-      - TRUSTED_HOSTS=${TRUSTED_HOSTS:-tracker.example.com,localhost,127.0.0.1}
-      - ADMIN_API_TOKEN=${ADMIN_API_TOKEN:-change-me}
+      - CORS_ORIGINS=${CORS_ORIGINS:?set CORS_ORIGINS}
+      - TRUSTED_HOSTS=${TRUSTED_HOSTS:?set TRUSTED_HOSTS}
+      - ADMIN_API_TOKEN=${ADMIN_API_TOKEN:?set ADMIN_API_TOKEN}
       - SENTRY_DSN=${SENTRY_DSN:-}
       - NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN:-}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-production}
-      - RELEASE_SHA=${RELEASE_SHA:-dev}
+      - RELEASE_SHA=${RELEASE_SHA:?set RELEASE_SHA}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=5).status == 200 else 1)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     volumes:
       - gdl_data:/data
 

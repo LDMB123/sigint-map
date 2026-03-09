@@ -134,6 +134,8 @@ Or:
 docker compose up --build
 ```
 
+The compose file is production-oriented: it binds the app to `127.0.0.1:8000`, expects explicit `CORS_ORIGINS`, `TRUSTED_HOSTS`, `ADMIN_API_TOKEN`, and `RELEASE_SHA`, and exposes a container healthcheck against `/readyz`.
+
 ---
 
 ## Environment variables
@@ -212,12 +214,15 @@ Production monitoring is intentionally minimal:
 
 - **Sentry** captures backend and browser exceptions with `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ENVIRONMENT`, and `RELEASE_SHA`
 - **Better Stack** (or equivalent) should watch `/healthz` and `/readyz` and retain Docker stdout/stderr logs
+- `python3 scripts/emit_backend_sentry_test.py` emits a backend Sentry test event using the current env
+- Browser Sentry can be verified by throwing one deliberate console error on the live site; see `ops/PRODUCTION_RUNBOOK.md`
 
 ### VM deployment assets
 
 - `ops/Caddyfile` — TLS terminator / reverse proxy example for a single-VM deployment
 - `ops/production.env.example` — production env template for Docker-based deploys
 - `ops/cron/gdl-tracker.cron` — sample cron entries for scheduled syncs and nightly DB backups
+- `ops/PRODUCTION_RUNBOOK.md` — deployment, monitoring, restore rehearsal, rollback, and go-live checklist
 
 ### Public production mode
 
@@ -303,9 +308,21 @@ docker run --rm -p 8000:8000 -e APP_ENV=production -e AUTO_BOOTSTRAP_IF_EMPTY=fa
 1. Build and push the Docker image after CI is green.
 2. Run `scripts/backup_db.py` or snapshot the `/data` volume before updating the container.
 3. Deploy behind Caddy using `ops/Caddyfile` and explicit `CORS_ORIGINS`, `TRUSTED_HOSTS`, `ADMIN_API_TOKEN`, `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ENVIRONMENT`, and `RELEASE_SHA`.
-4. Verify `/healthz`, `/readyz`, `/`, `/favicon.ico`, the browser smoke against the deployed URL, and one Sentry test event from backend plus browser.
-5. Install the sample cron from `ops/cron/gdl-tracker.cron` so syncs and backups are automated on the VM.
-6. If deployment fails, roll back to the previous image and restore the last DB snapshot if the release changed data unexpectedly.
+4. Verify `/healthz`, `/readyz`, `/`, `/favicon.ico`, and the browser smoke against the deployed URL:
+
+```bash
+python3 scripts/release_smoke.py --base-url https://tracker.example.com --expected-admin-status 401
+```
+
+5. Emit one Sentry test event from backend and browser.
+6. Install the sample cron from `ops/cron/gdl-tracker.cron` so syncs and backups are automated on the VM.
+7. Run a restore rehearsal before go-live:
+
+```bash
+python3 scripts/restore_rehearsal.py --source /path/to/backup.db --image gdl-tracker:$RELEASE_SHA --min-dispensaries 1
+```
+
+8. If deployment fails, roll back to the previous image and restore the last DB snapshot if the release changed data unexpectedly.
 
 Recent QA additions include regression coverage for:
 
