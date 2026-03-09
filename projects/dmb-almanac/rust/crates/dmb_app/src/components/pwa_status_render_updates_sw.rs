@@ -21,17 +21,13 @@ fn sw_details_text(state: &PwaStatusState) -> String {
     if let Some(scope) = state.sw_scope.get() {
         parts.push(format!("Scope {scope}"));
     }
+    #[cfg(feature = "hydrate")]
     if let Some(ts) = state.sw_activated_at.get() {
-        #[cfg(feature = "hydrate")]
-        {
-            parts.push(format_age("Activated", ts, js_sys::Date::now()));
-        }
+        parts.push(format_age("Activated", ts, js_sys::Date::now()));
     }
+    #[cfg(feature = "hydrate")]
     if let Some(ts) = state.previous_cache_cleaned_at.get() {
-        #[cfg(feature = "hydrate")]
-        {
-            parts.push(format_age("Old caches cleaned", ts, js_sys::Date::now()));
-        }
+        parts.push(format_age("Old caches cleaned", ts, js_sys::Date::now()));
     }
     if let Some(count) = state.cache_entries.get() {
         parts.push(format!("Cache {count} entries"));

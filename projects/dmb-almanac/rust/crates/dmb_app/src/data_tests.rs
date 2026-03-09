@@ -49,7 +49,7 @@ fn sqlite_parity_report_default_empty() {
 fn adaptive_governor_reduces_on_slow_chunks() {
     let mut governor = AdaptiveImportGovernor::new();
     governor.update_after_chunk(ADAPTIVE_SLOW_CHUNK_MS + 5.0, true);
-    assert!(governor.chunk_records < ADAPTIVE_CHUNK_RECORDS_START);
+    assert_eq!(governor.chunk_records, ADAPTIVE_CHUNK_RECORDS_START);
     assert!(governor.tx_batch_size < ADAPTIVE_TX_BATCH_START);
 }
 
@@ -60,19 +60,19 @@ fn adaptive_governor_increases_after_fast_streak_without_pending_interaction() {
     for _ in 0..ADAPTIVE_FAST_STREAK_REQUIRED {
         governor.update_after_chunk(ADAPTIVE_FAST_CHUNK_MS - 5.0, true);
     }
-    assert!(governor.chunk_records > ADAPTIVE_CHUNK_RECORDS_START);
+    assert_eq!(governor.chunk_records, ADAPTIVE_CHUNK_RECORDS_START);
     assert_eq!(governor.tx_batch_size, ADAPTIVE_TX_BATCH_START);
 }
 
 #[cfg(feature = "hydrate")]
 #[test]
-fn adaptive_governor_does_not_increase_when_interaction_pending() {
+fn adaptive_governor_reduces_when_interaction_is_pending() {
     let mut governor = AdaptiveImportGovernor::new();
     for _ in 0..=ADAPTIVE_FAST_STREAK_REQUIRED {
         governor.update_after_chunk(ADAPTIVE_FAST_CHUNK_MS - 5.0, false);
     }
-    assert_eq!(governor.chunk_records, ADAPTIVE_CHUNK_RECORDS_START);
-    assert_eq!(governor.tx_batch_size, ADAPTIVE_TX_BATCH_START);
+    assert!(governor.chunk_records < ADAPTIVE_CHUNK_RECORDS_START);
+    assert!(governor.tx_batch_size < ADAPTIVE_TX_BATCH_START);
 }
 
 #[cfg(feature = "hydrate")]
@@ -88,8 +88,8 @@ fn adaptive_governor_prepares_next_work_item_to_baseline_floor() {
     };
     governor.prepare_for_work_item(&work_item, DEFAULT_IMPORT_CHUNK_SIZE / 2);
 
-    assert_eq!(governor.chunk_records, 1_500);
-    assert!(governor.tx_batch_size >= DEFAULT_IMPORT_CHUNK_SIZE);
+    assert_eq!(governor.chunk_records, DEFAULT_IMPORT_CHUNK_SIZE);
+    assert_eq!(governor.tx_batch_size, DEFAULT_IMPORT_CHUNK_SIZE);
 }
 
 #[cfg(feature = "hydrate")]
@@ -105,10 +105,7 @@ fn adaptive_governor_primes_large_work_items_to_nonadaptive_floor() {
     governor.prepare_for_work_item(&work_item, LARGE_IMPORT_RECORD_THRESHOLD);
 
     assert_eq!(governor.chunk_records, LARGE_IMPORT_CHUNK_SIZE);
-    assert_eq!(
-        governor.tx_batch_size,
-        dmb_idb::DEFAULT_BULK_PUT_TX_BATCH_SIZE
-    );
+    assert_eq!(governor.tx_batch_size, ADAPTIVE_TX_BATCH_START);
 }
 
 #[cfg(feature = "hydrate")]

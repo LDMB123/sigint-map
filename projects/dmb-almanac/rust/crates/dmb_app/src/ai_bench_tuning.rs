@@ -1,3 +1,4 @@
+#[cfg(feature = "hydrate")]
 use super::*;
 
 #[path = "ai_bench_probe.rs"]

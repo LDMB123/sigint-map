@@ -1,6 +1,9 @@
 use anyhow::{Context, Result};
 use serde_json::Value;
-use std::{fs, path::PathBuf};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+};
 
 use crate::sw_support::{
     collect_data_assets, collect_shell_assets, parse_sw_version_from_source, render_sw_template,
@@ -10,8 +13,17 @@ use crate::xtask_verify::gzip_size_bytes;
 #[derive(Debug, Clone)]
 pub(crate) struct HydrateBudget {
     wasm_gzip_bytes_max: u64,
+    cold_import_avg_ms_max: f64,
+    startup_import_delay_ms_max: f64,
     required_data_assets: Vec<String>,
     required_pkg_assets: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ImportPerfMetrics {
+    pub(crate) tuning_enabled: bool,
+    pub(crate) avg_duration_ms: f64,
+    pub(crate) avg_import_start_delay_ms: f64,
 }
 
 #[derive(Debug, Clone)]
@@ -71,16 +83,59 @@ pub(super) fn verify_service_worker_generated() -> Result<()> {
 
 pub(super) fn verify_hydrate_budget(override_limit: Option<u64>) -> Result<()> {
     let repo_root = super::repo_root_dir()?;
-    let budget = read_hydrate_budget(&repo_root)?;
     let wasm_path = repo_root.join("rust/static/pkg/dmb_app_bg.wasm");
     let gzip_bytes = gzip_size_bytes(&wasm_path)?;
-    let max_bytes = override_limit.unwrap_or(budget.wasm_gzip_bytes_max);
+    let max_bytes = resolve_hydrate_wasm_gzip_limit(&repo_root, override_limit)?;
 
     if gzip_bytes > max_bytes {
         anyhow::bail!(
             "hydrate gzip budget exceeded: {} bytes > {} bytes (see rust/optimization-budgets.json)",
             gzip_bytes,
             max_bytes
+        );
+    }
+
+    Ok(())
+}
+
+pub(super) fn verify_import_perf_report(report: PathBuf) -> Result<()> {
+    let repo_root = super::repo_root_dir()?;
+    let budget = read_hydrate_budget(&repo_root)?;
+    let report_path = resolve_report_path(report)?;
+    let bytes =
+        fs::read(&report_path).with_context(|| format!("read {}", report_path.display()))?;
+    let root: Value = serde_json::from_slice(&bytes).context("parse import perf report")?;
+    let metrics = read_import_perf_metrics(&root, "tuned")?;
+
+    if !metrics.tuning_enabled {
+        anyhow::bail!(
+            "import perf report missing adaptive metrics: tuned.tuningEnabled must be true"
+        );
+    }
+
+    println!("import perf report: {}", report_path.display());
+    println!(
+        "adaptive cold import avg ms: {:.3}",
+        metrics.avg_duration_ms
+    );
+    println!(
+        "adaptive startup import delay ms: {:.3}",
+        metrics.avg_import_start_delay_ms
+    );
+
+    if metrics.avg_duration_ms > budget.cold_import_avg_ms_max {
+        anyhow::bail!(
+            "adaptive cold-import average exceeded: {:.3} ms > {:.3} ms",
+            metrics.avg_duration_ms,
+            budget.cold_import_avg_ms_max
+        );
+    }
+
+    if metrics.avg_import_start_delay_ms > budget.startup_import_delay_ms_max {
+        anyhow::bail!(
+            "adaptive startup import delay exceeded: {:.3} ms > {:.3} ms",
+            metrics.avg_import_start_delay_ms,
+            budget.startup_import_delay_ms_max
         );
     }
 
@@ -131,6 +186,14 @@ fn read_hydrate_budget(repo_root: &std::path::Path) -> Result<HydrateBudget> {
         .get("wasmGzipBytesMax")
         .and_then(Value::as_u64)
         .context("hydrate.wasmGzipBytesMax missing or invalid")?;
+    let cold_import_avg_ms_max = hydrate
+        .get("coldImportAvgMsMax")
+        .and_then(Value::as_f64)
+        .context("hydrate.coldImportAvgMsMax missing or invalid")?;
+    let startup_import_delay_ms_max = hydrate
+        .get("startupImportDelayMsMax")
+        .and_then(Value::as_f64)
+        .context("hydrate.startupImportDelayMsMax missing or invalid")?;
     let required_data_assets = read_string_array(
         hydrate,
         "requiredDataAssets",
@@ -144,6 +207,8 @@ fn read_hydrate_budget(repo_root: &std::path::Path) -> Result<HydrateBudget> {
 
     Ok(HydrateBudget {
         wasm_gzip_bytes_max,
+        cold_import_avg_ms_max,
+        startup_import_delay_ms_max,
         required_data_assets,
         required_pkg_assets,
     })
@@ -213,4 +278,47 @@ pub(crate) fn resolve_sqlite_candidate(
     }
 
     None
+}
+
+pub(crate) fn resolve_hydrate_wasm_gzip_limit(
+    repo_root: &Path,
+    override_limit: Option<u64>,
+) -> Result<u64> {
+    let budget = read_hydrate_budget(repo_root)?;
+    Ok(override_limit.unwrap_or(budget.wasm_gzip_bytes_max))
+}
+
+pub(crate) fn read_import_perf_metrics(root: &Value, key: &str) -> Result<ImportPerfMetrics> {
+    let bucket = root
+        .get(key)
+        .and_then(Value::as_object)
+        .ok_or_else(|| anyhow::anyhow!("import perf report missing `{key}` bucket"))?;
+
+    let tuning_enabled = bucket
+        .get("tuningEnabled")
+        .and_then(Value::as_bool)
+        .ok_or_else(|| anyhow::anyhow!("import perf report `{key}.tuningEnabled` missing"))?;
+    let avg_duration_ms = bucket
+        .get("avgDurationMs")
+        .and_then(Value::as_f64)
+        .ok_or_else(|| anyhow::anyhow!("import perf report `{key}.avgDurationMs` missing"))?;
+    let avg_import_start_delay_ms = bucket
+        .get("avgImportStartDelayMs")
+        .and_then(Value::as_f64)
+        .ok_or_else(|| {
+            anyhow::anyhow!("import perf report `{key}.avgImportStartDelayMs` missing")
+        })?;
+
+    Ok(ImportPerfMetrics {
+        tuning_enabled,
+        avg_duration_ms,
+        avg_import_start_delay_ms,
+    })
+}
+
+fn resolve_report_path(path: PathBuf) -> Result<PathBuf> {
+    if path.is_absolute() {
+        return Ok(path);
+    }
+    Ok(env::current_dir().context("read current dir")?.join(path))
 }

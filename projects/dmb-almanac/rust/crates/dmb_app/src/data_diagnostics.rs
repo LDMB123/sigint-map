@@ -1,3 +1,4 @@
+#[cfg(feature = "hydrate")]
 use super::*;
 
 #[path = "data_diagnostics_cache.rs"]

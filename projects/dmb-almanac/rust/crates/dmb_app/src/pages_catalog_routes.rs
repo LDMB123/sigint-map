@@ -13,7 +13,7 @@ pub use rankings::{guests_page, songs_page, venues_page};
 
 async fn load_with_limit_sources<T, IdbLoader, IdbFuture, ServerLoader, ServerFuture, Normalize>(
     limit: usize,
-    idb_loader: IdbLoader,
+    _idb_loader: IdbLoader,
     server_loader: ServerLoader,
     normalize: Normalize,
 ) -> Vec<T>
@@ -27,7 +27,7 @@ where
 {
     #[cfg(feature = "hydrate")]
     {
-        match spawn_local_to_send(async move { idb_loader(limit).await }).await {
+        match spawn_local_to_send(async move { _idb_loader(limit).await }).await {
             Some(items) if !items.is_empty() => normalize(items, limit),
             _ => normalize(server_loader(limit).await, limit),
         }

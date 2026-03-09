@@ -1,5 +1,6 @@
 #[cfg(feature = "hydrate")]
 use wasm_bindgen::JsCast;
+#[cfg(feature = "hydrate")]
 use wasm_bindgen::JsValue;
 
 #[cfg(feature = "hydrate")]

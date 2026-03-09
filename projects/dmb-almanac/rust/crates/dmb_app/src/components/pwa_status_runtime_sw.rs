@@ -1,3 +1,4 @@
+#[cfg_attr(not(feature = "hydrate"), allow(unused_imports))]
 use super::*;
 
 #[cfg(feature = "hydrate")]
@@ -28,13 +29,6 @@ pub(in super::super) fn set_sw_action_status(
     schedule_window_timeout(5000, move || {
         sw_action_status.set(None);
     });
-}
-
-#[cfg(not(feature = "hydrate"))]
-pub(in super::super) fn set_sw_action_status(
-    _sw_action_status: RwSignal<Option<String>>,
-    _message: &str,
-) {
 }
 
 #[cfg(feature = "hydrate")]

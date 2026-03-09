@@ -1,3 +1,4 @@
+#[cfg(feature = "hydrate")]
 use super::*;
 
 #[cfg(feature = "hydrate")]

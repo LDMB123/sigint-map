@@ -167,10 +167,8 @@ pub(super) async fn fetch_sqlite_parity_summary_report() -> Option<SqliteParityS
     None
 }
 
+#[cfg(feature = "hydrate")]
 pub(super) fn clear_sqlite_parity_diagnostics_cache() {
-    #[cfg(feature = "hydrate")]
-    {
-        clear_sqlite_parity_cache();
-        clear_sqlite_parity_summary_cache();
-    }
+    clear_sqlite_parity_cache();
+    clear_sqlite_parity_summary_cache();
 }

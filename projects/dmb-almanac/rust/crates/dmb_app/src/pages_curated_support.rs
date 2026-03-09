@@ -29,13 +29,13 @@ pub(super) async fn load_curated_list_meta(list_id: i32) -> Option<CuratedList> 
 }
 
 pub(super) async fn load_curated_list_items_source(
-    list_id: i32,
-    limit: usize,
+    _list_id: i32,
+    _limit: usize,
 ) -> Vec<CuratedListItem> {
     #[cfg(feature = "hydrate")]
     {
         let local = spawn_local_to_send(async move {
-            dmb_idb::list_curated_list_items(list_id, limit).await.ok()
+            dmb_idb::list_curated_list_items(_list_id, _limit).await.ok()
         })
         .await
         .unwrap_or_default();
@@ -46,7 +46,7 @@ pub(super) async fn load_curated_list_items_source(
 
     #[cfg(any(feature = "hydrate", feature = "ssr"))]
     {
-        get_curated_list_items(list_id, i32::try_from(limit).unwrap_or(i32::MAX))
+        get_curated_list_items(_list_id, i32::try_from(_limit).unwrap_or(i32::MAX))
             .await
             .unwrap_or_default()
     }

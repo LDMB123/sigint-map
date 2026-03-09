@@ -21,6 +21,7 @@ pub(super) struct PwaStatusState {
     pub(super) sw_controller_impl: RwSignal<Option<String>>,
     pub(super) sw_controller_cache_prefix: RwSignal<Option<String>>,
     pub(super) sw_scope: RwSignal<Option<String>>,
+    #[cfg_attr(not(feature = "hydrate"), allow(dead_code))]
     pub(super) previous_cache_cleaned_at: RwSignal<Option<f64>>,
     pub(super) previous_cache_cleanup: RwSignal<Option<String>>,
     pub(super) cache_entries: RwSignal<Option<usize>>,

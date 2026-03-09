@@ -1,5 +1,8 @@
 use super::*;
-use crate::server::{get_all_releases, get_liberation_list, get_recent_releases};
+#[cfg(any(feature = "hydrate", feature = "ssr"))]
+use crate::server::{get_all_releases, get_liberation_list};
+#[cfg(feature = "hydrate")]
+use crate::server::get_recent_releases;
 
 fn render_liberation_items(list: Vec<LiberationEntry>) -> impl IntoView {
     if list.is_empty() {

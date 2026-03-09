@@ -1,6 +1,8 @@
 {
   "hydrate": {
     "wasmGzipBytesMax": 920840,
+    "coldImportAvgMsMax": 43000,
+    "startupImportDelayMsMax": 10,
     "requiredDataAssets": [
       "/data/manifest.json",
       "/data/ai-config.json",

@@ -1,4 +1,3 @@
-use super::state::*;
 use super::*;
 
 pub(crate) fn action_load_ann_caps(state: AiDiagnosticsState) {

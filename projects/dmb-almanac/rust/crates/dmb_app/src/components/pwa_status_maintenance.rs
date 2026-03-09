@@ -1,4 +1,22 @@
-use super::*;
+#[cfg(feature = "hydrate")]
+use super::pwa_status_helpers::spawn_cache_entries_refresh;
+#[cfg(feature = "hydrate")]
+use super::pwa_status_runtime::{
+    attach_sw_runtime_observers, deferred_status_tasks_delay_ms, schedule_window_timeout,
+    spawn_sw_maintenance_task,
+};
+#[cfg(feature = "hydrate")]
+use super::pwa_status_snapshot::{
+    hydrate_local_snapshot, refresh_install_prompt_state, refresh_update_notice_state,
+    register_online_offline_listeners,
+};
+use super::pwa_status_state::PwaStatusState;
+#[cfg(feature = "hydrate")]
+use super::{POST_IMPORT_MAINTENANCE_WATCHDOG_MS, STORAGE_PRESSURE_CLEARED_MESSAGE};
+#[cfg(feature = "hydrate")]
+use leptos::prelude::{Effect, Get, GetUntracked, RwSignal, Set, batch};
+#[cfg(feature = "hydrate")]
+use leptos::task::spawn_local;
 
 macro_rules! hydrate_maintenance_action {
     ($state:ident, $body:block) => {{
@@ -219,13 +237,24 @@ pub(super) fn initialize_pwa_status_state(state: PwaStatusState) {
                     .import_tuning_enabled
                     .set(crate::data::current_import_tuning_enabled());
                 spawn_seed_and_diagnostics_refresh(&state);
-                let maintenance_state = state.clone();
-                schedule_window_timeout(POST_IMPORT_MAINTENANCE_WATCHDOG_MS, move || {
-                    trigger_post_import_maintenance(maintenance_state.clone());
-                });
+                schedule_post_import_maintenance_watchdog(state);
             });
         });
     }
+}
+
+#[cfg(feature = "hydrate")]
+fn schedule_post_import_maintenance_watchdog(state: PwaStatusState) {
+    schedule_window_timeout(POST_IMPORT_MAINTENANCE_WATCHDOG_MS, move || {
+        let current = state.status.get_untracked();
+        if current.done && current.error.is_none() {
+            trigger_post_import_maintenance(state);
+            return;
+        }
+        if !current.done && current.error.is_none() {
+            schedule_post_import_maintenance_watchdog(state);
+        }
+    });
 }
 
 pub(super) fn setup_post_import_refresh(state: PwaStatusState) {

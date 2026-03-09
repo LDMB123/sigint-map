@@ -1,6 +1,13 @@
+#[cfg_attr(not(feature = "hydrate"), allow(unused_imports))]
 use super::*;
 #[cfg(feature = "hydrate")]
+use futures::channel::oneshot;
+#[cfg(feature = "hydrate")]
 use js_sys::Array;
+#[cfg(feature = "hydrate")]
+use leptos::prelude::RwSignal;
+#[cfg(feature = "hydrate")]
+use leptos::task::spawn_local;
 #[cfg(feature = "hydrate")]
 use wasm_bindgen::JsValue;
 
@@ -8,6 +15,9 @@ use wasm_bindgen::JsValue;
 mod adaptive;
 #[path = "data_import_execution_fixed.rs"]
 mod fixed;
+
+#[cfg(feature = "hydrate")]
+pub(super) type PrefetchedJsonArray = oneshot::Receiver<Result<Array, JsValue>>;
 
 #[cfg(feature = "hydrate")]
 fn refill_chunk_buffer(values: &Array, start: usize, end: usize, chunk: &mut Vec<JsValue>) {
@@ -18,6 +28,29 @@ fn refill_chunk_buffer(values: &Array, start: usize, end: usize, chunk: &mut Vec
     }
     for index in start..end {
         chunk.push(values.get(index as u32));
+    }
+}
+
+#[cfg(feature = "hydrate")]
+pub(super) fn prefetch_json_array(url: String) -> PrefetchedJsonArray {
+    let (tx, rx) = oneshot::channel();
+    spawn_local(async move {
+        let _ = tx.send(fetch_json_array(&url).await);
+    });
+    rx
+}
+
+#[cfg(feature = "hydrate")]
+pub(super) async fn take_prefetched_json_array(
+    prefetched_values: Option<PrefetchedJsonArray>,
+    url: &str,
+) -> Result<Array, JsValue> {
+    match prefetched_values {
+        Some(receiver) => match receiver.await {
+            Ok(result) => result,
+            Err(_) => fetch_json_array(url).await,
+        },
+        None => fetch_json_array(url).await,
     }
 }
 

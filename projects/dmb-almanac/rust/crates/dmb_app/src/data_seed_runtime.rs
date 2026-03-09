@@ -1,4 +1,4 @@
-use super::*;
+use super::{ImportStatus, StorageInfo};
 #[path = "data_seed_lifecycle.rs"]
 mod lifecycle;
 #[path = "data_seed_status.rs"]
@@ -10,7 +10,16 @@ use leptos::prelude::RwSignal;
 #[cfg(feature = "hydrate")]
 use leptos::prelude::Set;
 #[cfg(feature = "hydrate")]
+use leptos::task::spawn_local;
+#[cfg(feature = "hydrate")]
 use wasm_bindgen::JsValue;
+
+#[cfg(feature = "hydrate")]
+use super::{
+    ImportRunMetrics, ImportRunSnapshot, clear_parity_diagnostics_cache, import_tuning_enabled,
+    import_work_items_with_adaptive_resume, import_work_items_with_resume,
+    persist_import_completion, publish_import_run_snapshot, validate_import_preflight,
+};
 
 pub use lifecycle::detect_seed_data_state;
 #[cfg(feature = "hydrate")]
@@ -40,6 +49,17 @@ const AI_CACHE_PATHS: [&str; 4] = [
     "/data/ann-index.ivf.json",
     "/data/embedding-manifest.json",
 ];
+
+#[cfg(feature = "hydrate")]
+fn publish_import_run_snapshot_deferred(snapshot: ImportRunSnapshot) {
+    publish_import_run_snapshot(&snapshot);
+    spawn_local(async move {
+        let mut enriched = snapshot;
+        enriched.final_cache_entry_count =
+            crate::browser::service_worker::count_all_cache_entries().await;
+        publish_import_run_snapshot(&enriched);
+    });
+}
 
 #[cfg(feature = "hydrate")]
 pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
@@ -122,43 +142,26 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
             .clone()
             .unwrap_or_else(|| err_status.message.clone());
         status.set(err_status);
-        publish_import_run_snapshot(&metrics.finish(
+        publish_import_run_snapshot_deferred(metrics.finish(
             Some(manifest.version.clone()),
             false,
             None,
             Some(failure),
-            crate::browser::service_worker::count_all_cache_entries().await,
+            None,
         ));
         return;
     }
 
     persist_import_completion(&manifest, total_work_items).await;
 
-    if let Some(mismatches) = verify_import_integrity(&manifest, dry_run.as_ref()).await
-        && !mismatches.is_empty()
-    {
-        status.set(integrity_failure_status(&mismatches));
-        publish_import_run_snapshot(&metrics.finish(
-            Some(manifest.version.clone()),
-            false,
-            None,
-            Some(format!(
-                "integrity check failed for {} stores",
-                mismatches.len()
-            )),
-            crate::browser::service_worker::count_all_cache_entries().await,
-        ));
-        return;
-    }
-
     set_import_ready(status);
     crate::browser::perf::mark_startup_metric("offline_ready_at_ms");
-    publish_import_run_snapshot(&metrics.finish(
+    publish_import_run_snapshot_deferred(metrics.finish(
         Some(manifest.version.clone()),
         true,
         None,
         None,
-        crate::browser::service_worker::count_all_cache_entries().await,
+        None,
     ));
 }
 

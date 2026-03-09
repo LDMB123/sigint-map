@@ -1,3 +1,4 @@
+#[cfg(feature = "hydrate")]
 use super::*;
 #[cfg(feature = "hydrate")]
 use std::collections::HashSet;
@@ -64,15 +65,6 @@ pub(crate) fn validate_import_preflight(
             missing.join(", ")
         ))
     }
-}
-
-#[cfg(feature = "hydrate")]
-pub(crate) fn integrity_failure_status(mismatches: &[IntegrityMismatch]) -> ImportStatus {
-    import_error_status(
-        format!("Integrity check failed for {} stores", mismatches.len()),
-        1.0,
-        format!("{mismatches:?}"),
-    )
 }
 
 #[cfg(feature = "hydrate")]

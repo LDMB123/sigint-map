@@ -1,3 +1,4 @@
+#[cfg(feature = "hydrate")]
 use super::pwa_status_runtime::{
     remove_local_storage_item, set_local_storage_f64_item, set_sw_action_status,
 };

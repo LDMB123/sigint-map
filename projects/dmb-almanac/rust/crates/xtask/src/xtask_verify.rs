@@ -1,4 +1,13 @@
-use super::*;
+use anyhow::{Context, Result};
+use std::{fs, path::PathBuf};
+
+use crate::{
+    budget_support::{
+        resolve_hydrate_wasm_gzip_limit, verify_hydrate_artifacts, verify_hydrate_budget,
+        verify_server_runtime_artifacts, verify_service_worker_generated,
+    },
+    generate_sw, read_current_sw_version, repo_root_dir, run_command, rust_workspace_dir,
+};
 
 pub(super) fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
     let rust_dir = rust_workspace_dir()?;
@@ -193,7 +202,7 @@ pub(super) fn hydrate_feature_set(ai_diagnostics_full: bool) -> &'static str {
     }
 }
 
-pub(super) fn check_wasm_size(wasm: Option<PathBuf>, baseline_gzip: Option<u64>) -> Result<()> {
+pub(super) fn check_wasm_size(wasm: Option<PathBuf>, max_gzip: Option<u64>) -> Result<()> {
     let repo_root = repo_root_dir()?;
     let wasm_path = wasm.unwrap_or_else(|| repo_root.join("rust/static/pkg/dmb_app_bg.wasm"));
     if !wasm_path.exists() {
@@ -209,15 +218,12 @@ pub(super) fn check_wasm_size(wasm: Option<PathBuf>, baseline_gzip: Option<u64>)
     println!("raw bytes:  {raw_bytes}");
     println!("gzip bytes: {gzip_bytes}");
 
-    if let Some(baseline) = baseline_gzip {
-        let target = baseline.saturating_mul(90) / 100;
-        println!("baseline gzip bytes: {baseline}");
-        println!("target (<=90%):      {target}");
-        if gzip_bytes > target {
-            anyhow::bail!("FAIL: gzip size gate not met");
-        }
-        println!("PASS: gzip size gate met");
+    let max_bytes = resolve_hydrate_wasm_gzip_limit(&repo_root, max_gzip)?;
+    println!("max gzip bytes: {max_bytes}");
+    if gzip_bytes > max_bytes {
+        anyhow::bail!("FAIL: gzip size gate not met");
     }
+    println!("PASS: gzip size gate met");
 
     Ok(())
 }

@@ -2,9 +2,8 @@
 use super::data_import_support::{
     ADAPTIVE_CHUNK_RECORDS_MAX, ADAPTIVE_CHUNK_RECORDS_MIN, ADAPTIVE_CHUNK_RECORDS_START,
     ADAPTIVE_FAST_CHUNK_MS, ADAPTIVE_FAST_STREAK_REQUIRED, ADAPTIVE_SLOW_CHUNK_MS,
-    ADAPTIVE_TARGET_CHUNK_MS, ADAPTIVE_TX_BATCH_MAX, ADAPTIVE_TX_BATCH_MIN,
-    ADAPTIVE_TX_BATCH_START, IMPORT_TUNING_FLAG_KEY, ImportWorkItem,
-    import_chunk_size_for_work_item, parse_boolean_flag,
+    ADAPTIVE_TX_BATCH_MAX, ADAPTIVE_TX_BATCH_MIN, ADAPTIVE_TX_BATCH_START, IMPORT_TUNING_FLAG_KEY,
+    ImportWorkItem, import_chunk_size_for_work_item, parse_boolean_flag,
 };
 use serde::Serialize;
 #[cfg(feature = "hydrate")]
@@ -212,12 +211,12 @@ impl AdaptiveImportGovernor {
     ) {
         let baseline_chunk_records = import_chunk_size_for_work_item(work_item, total_records)
             .clamp(ADAPTIVE_CHUNK_RECORDS_MIN, ADAPTIVE_CHUNK_RECORDS_MAX);
-        let baseline_tx_batch_size = dmb_idb::DEFAULT_BULK_PUT_TX_BATCH_SIZE
-            .min(baseline_chunk_records)
+        let baseline_tx_batch_size = baseline_chunk_records
+            .min(ADAPTIVE_TX_BATCH_START)
             .clamp(ADAPTIVE_TX_BATCH_MIN, ADAPTIVE_TX_BATCH_MAX);
 
-        self.chunk_records = self.chunk_records.max(baseline_chunk_records);
-        self.tx_batch_size = self.tx_batch_size.max(baseline_tx_batch_size);
+        self.chunk_records = baseline_chunk_records;
+        self.tx_batch_size = baseline_tx_batch_size;
         self.fast_streak = 0;
     }
 
@@ -242,23 +241,21 @@ impl AdaptiveImportGovernor {
         let slow_chunk = chunk_ms > ADAPTIVE_SLOW_CHUNK_MS;
         let fast_chunk = chunk_ms < ADAPTIVE_FAST_CHUNK_MS;
 
-        if slow_chunk {
+        if !no_pending_interaction {
             self.fast_streak = 0;
             self.chunk_records = scale_usize_ratio_rounded(self.chunk_records, 3, 4);
             self.tx_batch_size = scale_usize_ratio_rounded(self.tx_batch_size, 3, 4);
-        } else if fast_chunk && no_pending_interaction {
+        } else if slow_chunk {
+            self.fast_streak = 0;
+            self.tx_batch_size = scale_usize_ratio_rounded(self.tx_batch_size, 9, 10);
+        } else if fast_chunk {
             self.fast_streak = self.fast_streak.saturating_add(1);
             if self.fast_streak >= ADAPTIVE_FAST_STREAK_REQUIRED {
-                self.chunk_records = scale_usize_ratio_rounded(self.chunk_records, 115, 100);
                 self.tx_batch_size = scale_usize_ratio_rounded(self.tx_batch_size, 115, 100);
                 self.fast_streak = 0;
             }
         } else {
             self.fast_streak = 0;
-            if chunk_ms > ADAPTIVE_TARGET_CHUNK_MS && no_pending_interaction {
-                self.chunk_records = scale_usize_ratio_rounded(self.chunk_records, 9, 10);
-                self.tx_batch_size = scale_usize_ratio_rounded(self.tx_batch_size, 9, 10);
-            }
         }
 
         self.chunk_records = self

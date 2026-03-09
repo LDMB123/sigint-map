@@ -14,13 +14,17 @@ pub(super) use normalize::{
     optional_text_matches_query, release_track_disc_counts, release_track_matches_query,
     text_matches_query, titleize_words_with_fallback,
 };
+#[cfg(feature = "hydrate")]
+pub(super) use routing::merge_search_results;
 pub(super) use routing::{
-    merge_search_results, parse_positive_i32_param, parse_route_slug_param,
-    render_route_param_subhead, reset_filter_and_query_on_route_change, route_param_or_default,
-    search_result_href,
+    parse_positive_i32_param, parse_route_slug_param, render_route_param_subhead,
+    reset_filter_and_query_on_route_change, route_param_or_default, search_result_href,
+};
+#[cfg(feature = "hydrate")]
+pub(super) use ui::{
+    add_user_attended_show, load_user_attended_shows, remove_user_attended_show,
 };
 pub(super) use ui::{
-    add_user_attended_show, empty_state, empty_state_with_link, import_in_progress_state,
-    load_user_attended_shows, loading_state, remove_user_attended_show, unit_resource,
+    empty_state, empty_state_with_link, import_in_progress_state, loading_state, unit_resource,
     use_seed_data_state,
 };

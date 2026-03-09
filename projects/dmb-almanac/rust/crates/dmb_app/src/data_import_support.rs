@@ -1,6 +1,9 @@
-use super::*;
+#[cfg(feature = "hydrate")]
+use super::ImportRunMetrics;
 #[cfg(feature = "hydrate")]
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "hydrate")]
+use std::collections::HashMap;
 
 #[cfg(feature = "hydrate")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,7 +72,7 @@ pub(crate) const CHECKPOINT_INTERVAL_MS: f64 = 5_000.0;
 #[cfg(feature = "hydrate")]
 pub(crate) const ADAPTIVE_CHUNK_RECORDS_START: usize = 2_000;
 #[cfg(feature = "hydrate")]
-pub(crate) const ADAPTIVE_TX_BATCH_START: usize = dmb_idb::DEFAULT_BULK_PUT_TX_BATCH_SIZE;
+pub(crate) const ADAPTIVE_TX_BATCH_START: usize = LARGE_IMPORT_CHUNK_SIZE;
 #[cfg(feature = "hydrate")]
 pub(crate) const ADAPTIVE_CHUNK_RECORDS_MIN: usize = 250;
 #[cfg(feature = "hydrate")]
@@ -77,15 +80,15 @@ pub(crate) const ADAPTIVE_CHUNK_RECORDS_MAX: usize = LARGE_IMPORT_CHUNK_SIZE;
 #[cfg(feature = "hydrate")]
 pub(crate) const ADAPTIVE_TX_BATCH_MIN: usize = 128;
 #[cfg(feature = "hydrate")]
-pub(crate) const ADAPTIVE_TX_BATCH_MAX: usize = dmb_idb::DEFAULT_BULK_PUT_TX_BATCH_SIZE;
+pub(crate) const ADAPTIVE_TX_BATCH_MAX: usize = LARGE_IMPORT_CHUNK_SIZE;
 #[cfg(feature = "hydrate")]
-pub(crate) const ADAPTIVE_TARGET_CHUNK_MS: f64 = 45.0;
+pub(crate) const ADAPTIVE_TARGET_CHUNK_MS: f64 = 90.0;
 #[cfg(feature = "hydrate")]
-pub(crate) const ADAPTIVE_SLOW_CHUNK_MS: f64 = 75.0;
+pub(crate) const ADAPTIVE_SLOW_CHUNK_MS: f64 = 140.0;
 #[cfg(feature = "hydrate")]
-pub(crate) const ADAPTIVE_FAST_CHUNK_MS: f64 = 25.0;
+pub(crate) const ADAPTIVE_FAST_CHUNK_MS: f64 = 50.0;
 #[cfg(feature = "hydrate")]
-pub(crate) const ADAPTIVE_FAST_STREAK_REQUIRED: usize = 3;
+pub(crate) const ADAPTIVE_FAST_STREAK_REQUIRED: usize = 2;
 #[cfg(feature = "hydrate")]
 pub(crate) const ADAPTIVE_INTERACTION_WINDOW_MS: f64 = 150.0;
 

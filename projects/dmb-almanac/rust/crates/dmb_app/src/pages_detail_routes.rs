@@ -1,4 +1,5 @@
 use super::*;
+#[cfg_attr(not(any(feature = "hydrate", feature = "ssr")), allow(unused_imports))]
 use crate::server::{
     get_guest, get_release, get_release_tracks, get_setlist_entries, get_song, get_tour,
     get_tour_by_id, get_venue,

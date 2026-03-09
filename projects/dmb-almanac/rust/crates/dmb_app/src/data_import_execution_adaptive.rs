@@ -1,34 +1,41 @@
-use super::*;
+#[cfg(feature = "hydrate")]
+use super::{
+    ADAPTIVE_INTERACTION_WINDOW_MS, AdaptiveImportGovernor, CHECKPOINT_INTERVAL_MS,
+    ImportRunMetrics, ImportStatus, ImportWorkContext, ImportWorkItem, import_error_status,
+    performance_now_ms, persist_import_checkpoint, refill_chunk_buffer,
+    resolve_resume_record_offset, set_import_progress_with_tuning,
+    should_yield_after_adaptive_chunk, yield_to_browser_scheduler,
+};
+#[cfg(feature = "hydrate")]
+use js_sys::Array;
+#[cfg(feature = "hydrate")]
+use leptos::prelude::RwSignal;
 
 #[cfg(feature = "hydrate")]
+#[allow(clippy::too_many_arguments)]
 async fn import_single_work_item_adaptive(
     status: RwSignal<ImportStatus>,
     ctx: &ImportWorkContext<'_>,
     work_item: &ImportWorkItem,
     start_chunk_hint: usize,
     start_record_offset_hint: Option<usize>,
+    prefetched_values: Option<super::PrefetchedJsonArray>,
     governor: &mut AdaptiveImportGovernor,
     metrics: &mut ImportRunMetrics,
 ) -> Result<(), ImportStatus> {
     let file_number = ctx.file_index + 1;
     let progress_base = ctx.file_index as f32 / ctx.total_files;
     let file_started_at = performance_now_ms();
-    set_import_progress(
-        status,
-        format!(
-            "Importing {} ({}/{})",
-            work_item.label, file_number, ctx.total_work_items
-        ),
-        progress_base,
-    );
 
-    let values = fetch_json_array(&work_item.url).await.map_err(|err| {
-        import_error_status(
-            format!("Failed to load {}", work_item.label),
-            progress_base,
-            err.as_string().unwrap_or_default(),
-        )
-    })?;
+    let values: Array = super::take_prefetched_json_array(prefetched_values, &work_item.url)
+        .await
+        .map_err(|err| {
+            import_error_status(
+                format!("Failed to load {}", work_item.label),
+                progress_base,
+                err.as_string().unwrap_or_default(),
+            )
+        })?;
     let total_records = values.length() as usize;
     if total_records == 0 {
         persist_import_checkpoint(
@@ -54,6 +61,7 @@ async fn import_single_work_item_adaptive(
     let progress_scale = 1.0 / ctx.total_files;
     let mut chunk_buffer: Vec<wasm_bindgen::JsValue> = Vec::with_capacity(governor.chunk_records);
     let mut file_chunk_count = 0usize;
+    let is_final_work_item = file_number == ctx.total_work_items;
 
     while record_offset < total_records {
         let remaining = total_records.saturating_sub(record_offset);
@@ -91,15 +99,8 @@ async fn import_single_work_item_adaptive(
         set_import_progress_with_tuning(
             status,
             format!(
-                "Importing {} ({}/{}) • chunk {} • {} rows • {:.0}ms chunk / {:.0}ms tx ({} tx)",
-                work_item.label,
-                file_number,
-                ctx.total_work_items,
-                chunk_number,
-                write_stats.inserted,
-                chunk_elapsed_ms,
-                write_stats.max_tx_ms,
-                write_stats.transaction_count
+                "Importing {} ({}/{}) • {} rows",
+                work_item.label, file_number, ctx.total_work_items, write_stats.inserted
             ),
             progress,
             Some(tuning),
@@ -107,8 +108,8 @@ async fn import_single_work_item_adaptive(
 
         let is_last_chunk = end >= total_records;
         let now = performance_now_ms();
-        let should_persist_checkpoint =
-            is_last_chunk || (now - last_checkpoint_at) >= CHECKPOINT_INTERVAL_MS;
+        let should_persist_checkpoint = (now - last_checkpoint_at) >= CHECKPOINT_INTERVAL_MS
+            || (is_last_chunk && is_final_work_item);
 
         if should_persist_checkpoint {
             persist_import_checkpoint(
@@ -157,11 +158,18 @@ pub(super) async fn import_work_items_with_adaptive_resume(
     let total_work_items = import_work.len();
     let total_files = total_work_items.max(1) as f32;
     let mut governor = AdaptiveImportGovernor::new();
+    let mut prefetched_values = import_work
+        .get(resume_file_index)
+        .map(|work_item| super::prefetch_json_array(work_item.url.clone()));
 
     for (file_index, work_item) in import_work.iter().enumerate() {
         if file_index < resume_file_index {
             continue;
         }
+        let current_prefetch = prefetched_values.take();
+        prefetched_values = import_work
+            .get(file_index + 1)
+            .map(|next_work_item| super::prefetch_json_array(next_work_item.url.clone()));
         let start_chunk_hint = if file_index == resume_file_index {
             resume_chunk_index
         } else {
@@ -185,6 +193,7 @@ pub(super) async fn import_work_items_with_adaptive_resume(
             work_item,
             start_chunk_hint,
             start_record_offset,
+            current_prefetch,
             &mut governor,
             metrics,
         )
