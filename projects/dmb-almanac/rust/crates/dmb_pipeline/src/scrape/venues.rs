@@ -4,8 +4,8 @@ use scraper::Html;
 use std::collections::HashSet;
 
 use super::{
-    build_search_text, guess_venue_type, parse_i32_or_warn, parse_location, regex,
-    select_first_text, selector_or_warn, warn_if_empty, warn_missing_field, ScrapeClient, BASE_URL,
+    BASE_URL, ScrapeClient, build_search_text, guess_venue_type, parse_i32_or_warn, parse_location,
+    regex, select_first_text, selector_or_warn, warn_if_empty, warn_missing_field,
 };
 
 pub(super) fn scrape_venues(client: &ScrapeClient) -> Result<Vec<Venue>> {

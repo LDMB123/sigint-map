@@ -179,12 +179,11 @@ pub(crate) fn normalized_disc_key(disc_number: Option<i32>) -> String {
 }
 
 pub(crate) fn disc_key_label(key: &str) -> String {
-    if let Some(raw) = key.strip_prefix("disc-") {
-        if let Ok(number) = raw.parse::<i32>() {
-            if number > 0 {
-                return format!("Disc {number}");
-            }
-        }
+    if let Some(raw) = key.strip_prefix("disc-")
+        && let Ok(number) = raw.parse::<i32>()
+        && number > 0
+    {
+        return format!("Disc {number}");
     }
     "Disc 1".to_string()
 }

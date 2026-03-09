@@ -4,8 +4,9 @@ use scraper::Html;
 use std::collections::HashSet;
 
 use super::{
-    create_sort_title, parse_date, parse_i32_or_warn, regex, select_first_text, selector_or_warn,
-    slugify, warn_if_empty, warn_if_empty_text, warn_missing_field, ScrapeClient, BASE_URL,
+    BASE_URL, ScrapeClient, create_sort_title, parse_date, parse_i32_or_warn, regex,
+    select_first_text, selector_or_warn, slugify, warn_if_empty, warn_if_empty_text,
+    warn_missing_field,
 };
 
 pub(super) fn scrape_songs(client: &ScrapeClient) -> Result<Vec<Song>> {

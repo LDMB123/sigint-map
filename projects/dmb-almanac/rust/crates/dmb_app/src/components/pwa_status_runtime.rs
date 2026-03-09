@@ -10,6 +10,6 @@ pub(super) use pwa_status_runtime_helpers::{
     deferred_status_tasks_delay_ms, local_storage_f64_by_key, local_storage_item_by_key,
     remove_local_storage_item, schedule_window_timeout, set_local_storage_f64_item,
 };
+pub(super) use pwa_status_runtime_sw::set_sw_action_status;
 #[cfg(feature = "hydrate")]
 pub(super) use pwa_status_runtime_sw::{attach_sw_runtime_observers, spawn_sw_maintenance_task};
-pub(super) use pwa_status_runtime_sw::set_sw_action_status;

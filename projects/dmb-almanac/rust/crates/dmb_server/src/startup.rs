@@ -5,8 +5,7 @@ use std::path::{Path, PathBuf};
 use leptos_config::LeptosOptions;
 use sqlx::SqlitePool;
 
-pub(crate) const MISSING_STATIC_ASSETS_HELP: &str =
-    "required static assets missing; run `cargo run -p xtask -- build-hydrate-pkg` from rust/ and start dmb_server from rust/ so static/pkg resolves";
+pub(crate) const MISSING_STATIC_ASSETS_HELP: &str = "required static assets missing; run `cargo run -p xtask -- build-hydrate-pkg` from rust/ and start dmb_server from rust/ so static/pkg resolves";
 
 #[cfg(test)]
 pub(crate) fn default_sqlite_candidates() -> &'static [&'static str] {

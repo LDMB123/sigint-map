@@ -4,8 +4,8 @@ use scraper::Html;
 use std::collections::HashSet;
 
 use super::{
-    build_search_text, parse_i32_or_warn, regex, select_first_text, selector_or_warn, slugify,
-    warn_if_empty, warn_if_empty_text, warn_missing_field, ScrapeClient, BASE_URL,
+    BASE_URL, ScrapeClient, build_search_text, parse_i32_or_warn, regex, select_first_text,
+    selector_or_warn, slugify, warn_if_empty, warn_if_empty_text, warn_missing_field,
 };
 
 pub(super) fn scrape_guests(client: &ScrapeClient) -> Result<Vec<Guest>> {

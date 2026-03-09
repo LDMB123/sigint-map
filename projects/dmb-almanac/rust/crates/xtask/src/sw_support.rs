@@ -137,11 +137,7 @@ pub(crate) fn resolve_sw_version_for_data_release(
     skip_sw_bump: bool,
     current_version: Option<String>,
 ) -> Option<String> {
-    if skip_sw_bump {
-        current_version
-    } else {
-        None
-    }
+    if skip_sw_bump { current_version } else { None }
 }
 
 pub(crate) fn render_sw_template(

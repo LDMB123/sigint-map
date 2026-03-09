@@ -1,10 +1,10 @@
 #[cfg(feature = "hydrate")]
 use super::data_import_support::{
-    import_chunk_size_for_work_item, parse_boolean_flag, ImportWorkItem,
     ADAPTIVE_CHUNK_RECORDS_MAX, ADAPTIVE_CHUNK_RECORDS_MIN, ADAPTIVE_CHUNK_RECORDS_START,
     ADAPTIVE_FAST_CHUNK_MS, ADAPTIVE_FAST_STREAK_REQUIRED, ADAPTIVE_SLOW_CHUNK_MS,
     ADAPTIVE_TARGET_CHUNK_MS, ADAPTIVE_TX_BATCH_MAX, ADAPTIVE_TX_BATCH_MIN,
-    ADAPTIVE_TX_BATCH_START, IMPORT_TUNING_FLAG_KEY,
+    ADAPTIVE_TX_BATCH_START, IMPORT_TUNING_FLAG_KEY, ImportWorkItem,
+    import_chunk_size_for_work_item, parse_boolean_flag,
 };
 use serde::Serialize;
 #[cfg(feature = "hydrate")]
@@ -159,10 +159,10 @@ thread_local! {
 
 #[cfg(feature = "hydrate")]
 pub(crate) fn import_tuning_enabled() -> bool {
-    if let Some(raw) = crate::browser::storage::local_storage_item(IMPORT_TUNING_FLAG_KEY) {
-        if let Some(enabled) = parse_boolean_flag(&raw) {
-            return enabled;
-        }
+    if let Some(raw) = crate::browser::storage::local_storage_item(IMPORT_TUNING_FLAG_KEY)
+        && let Some(enabled) = parse_boolean_flag(&raw)
+    {
+        return enabled;
     }
 
     match crate::browser::runtime::location_hostname() {

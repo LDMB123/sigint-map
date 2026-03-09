@@ -90,15 +90,14 @@ async fn coop_headers_disabled() {
 
 #[test]
 fn coop_coep_env_toggle() {
-    with_env_var("DMB_COOP_COEP", "false", || {
-        assert!(!coop_coep_enabled());
-    });
-    with_env_var("DMB_COOP_COEP", "0", || {
-        assert!(!coop_coep_enabled());
-    });
-    with_env_var("DMB_COOP_COEP", "true", || {
-        assert!(coop_coep_enabled());
-    });
+    assert!(!crate::http_policy::coop_coep_enabled_from_value(Some(
+        "false"
+    )));
+    assert!(!crate::http_policy::coop_coep_enabled_from_value(Some("0")));
+    assert!(crate::http_policy::coop_coep_enabled_from_value(Some(
+        "true"
+    )));
+    assert!(crate::http_policy::coop_coep_enabled_from_value(None));
 }
 
 #[tokio::test]

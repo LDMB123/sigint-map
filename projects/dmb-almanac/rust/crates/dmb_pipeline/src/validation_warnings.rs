@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use std::path::Path;
 
-use crate::pipeline_support::{env_u64_or_warn, WarningReport};
+use crate::pipeline_support::{WarningReport, env_u64_or_warn};
 use crate::warning_checks::{
     compare_endpoint_timings, compare_warning_reports, enforce_empty_by_context,
     enforce_endpoint_retries, enforce_missing_by_context, enforce_missing_by_context_map,
@@ -36,12 +36,13 @@ pub(crate) fn validate_warning_state(
         validate_warning_regressions(report, endpoint_timing_max_pct)?;
         validate_warning_thresholds_and_budgets(report, endpoint_retry_max)?;
 
-        if let Some((empty, missing, _)) = summary.as_ref() {
-            if strict_warnings && (empty + missing) > 0 {
-                anyhow::bail!(
-                    "strict warnings enabled: {empty} empty selectors, {missing} missing fields"
-                );
-            }
+        if let Some((empty, missing, _)) = summary.as_ref()
+            && strict_warnings
+            && (empty + missing) > 0
+        {
+            anyhow::bail!(
+                "strict warnings enabled: {empty} empty selectors, {missing} missing fields"
+            );
         }
     }
 
@@ -69,14 +70,11 @@ fn validate_warning_regressions(
         if std::env::var("DMB_WARNING_SIGNATURE_STRICT")
             .ok()
             .is_some_and(|val| matches!(val.as_str(), "1" | "true" | "TRUE"))
-        {
-            if let (Some(current_sig), Some(baseline_sig)) =
+            && let (Some(current_sig), Some(baseline_sig)) =
                 (current.signature.as_ref(), baseline.signature.as_ref())
-            {
-                if current_sig != baseline_sig {
-                    anyhow::bail!("warning signature changed: {current_sig} != {baseline_sig}");
-                }
-            }
+            && current_sig != baseline_sig
+        {
+            anyhow::bail!("warning signature changed: {current_sig} != {baseline_sig}");
         }
     }
 

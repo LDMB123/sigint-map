@@ -1,8 +1,8 @@
 use std::path::Path;
 use std::time::Duration;
 
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::SqlitePool;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
 const SQLITE_POOL_MAX_CONNECTIONS: u32 = 8;
 const SQLITE_POOL_MIN_CONNECTIONS: u32 = 1;

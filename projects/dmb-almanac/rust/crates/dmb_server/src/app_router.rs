@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use axum::{
+    Router,
     http::{HeaderName, Request},
     routing::get,
-    Router,
 };
 use leptos::context::provide_context;
-use leptos_axum::{generate_route_list, LeptosRoutes};
+use leptos_axum::{LeptosRoutes, generate_route_list};
 use sqlx::SqlitePool;
 use tower_http::{
     compression::CompressionLayer,

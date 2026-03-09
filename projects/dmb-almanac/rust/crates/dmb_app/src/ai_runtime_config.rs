@@ -108,9 +108,9 @@ pub async fn probe_webgpu_device() -> Option<bool> {
 
 #[cfg(feature = "hydrate")]
 pub(crate) async fn warm_webgpu_worker() {
-    if let Some(status) = dmb_wasm::warm_webgpu_worker().await {
-        if !status.warmed {
-            record_ai_warning("webgpu_worker_warm_failed", status.reason);
-        }
+    if let Some(status) = dmb_wasm::warm_webgpu_worker().await
+        && !status.warmed
+    {
+        record_ai_warning("webgpu_worker_warm_failed", status.reason);
     }
 }

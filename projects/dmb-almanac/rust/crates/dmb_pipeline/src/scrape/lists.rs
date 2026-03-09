@@ -1,10 +1,10 @@
 use anyhow::Result;
 use scraper::Html;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::{
-    normalize_whitespace, regex, selector_or_warn, warn_if_empty, warn_if_missing_text,
-    warn_missing_field, ScrapeClient, BASE_URL,
+    BASE_URL, ScrapeClient, normalize_whitespace, regex, selector_or_warn, warn_if_empty,
+    warn_if_missing_text, warn_missing_field,
 };
 
 pub(super) fn scrape_lists(client: &ScrapeClient) -> Result<Vec<Value>> {

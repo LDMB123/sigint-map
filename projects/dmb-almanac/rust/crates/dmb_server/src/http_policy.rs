@@ -1,9 +1,9 @@
 use axum::{
+    Router,
     body::Body,
-    http::{header, HeaderName, HeaderValue, Request},
+    http::{HeaderName, HeaderValue, Request, header},
     middleware::Next,
     response::Response,
-    Router,
 };
 use tower_http::set_header::SetResponseHeaderLayer;
 
@@ -39,11 +39,16 @@ pub(crate) async fn cache_control_middleware(req: Request<Body>, next: Next) -> 
     res
 }
 
-pub(crate) fn coop_coep_enabled() -> bool {
-    match std::env::var("DMB_COOP_COEP") {
-        Ok(value) => value != "0" && value.to_lowercase() != "false",
-        Err(_) => true,
+pub(crate) fn coop_coep_enabled_from_value(value: Option<&str>) -> bool {
+    match value.map(str::trim) {
+        Some("0") => false,
+        Some(value) if value.eq_ignore_ascii_case("false") => false,
+        _ => true,
     }
+}
+
+pub(crate) fn coop_coep_enabled() -> bool {
+    coop_coep_enabled_from_value(std::env::var("DMB_COOP_COEP").ok().as_deref())
 }
 
 pub(crate) fn apply_baseline_security_headers(app: Router) -> Router {

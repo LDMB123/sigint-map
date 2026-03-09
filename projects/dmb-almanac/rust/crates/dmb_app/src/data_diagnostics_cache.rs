@@ -14,10 +14,10 @@ pub(super) fn read_thread_ttl_cache<T: Clone>(
     let now = js_sys::Date::now();
     cache.with(|cache| {
         let mut cached = cache.borrow_mut();
-        if let Some((timestamp_ms, value)) = cached.as_ref() {
-            if now - *timestamp_ms <= ttl_ms {
-                return Some(value.clone());
-            }
+        if let Some((timestamp_ms, value)) = cached.as_ref()
+            && now - *timestamp_ms <= ttl_ms
+        {
+            return Some(value.clone());
         }
         *cached = None;
         None

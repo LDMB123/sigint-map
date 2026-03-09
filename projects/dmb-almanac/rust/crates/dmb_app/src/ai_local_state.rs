@@ -84,15 +84,15 @@ fn apply_ai_config_seed(storage: &web_sys::Storage, seed: AiConfigSeed, overwrit
         seed.benchmark_history.as_ref(),
         overwrite,
     );
-    if read_worker_threshold().is_none() || overwrite {
-        if let Some(default_threshold) = seed.worker_threshold_default {
-            store_worker_threshold(default_threshold);
-        }
+    if (read_worker_threshold().is_none() || overwrite)
+        && let Some(default_threshold) = seed.worker_threshold_default
+    {
+        store_worker_threshold(default_threshold);
     }
-    if read_ann_cap_override_mb().is_none() || overwrite {
-        if let Some(override_mb) = seed.ann_cap_override_mb {
-            set_ann_cap_override_mb(Some(override_mb));
-        }
+    if (read_ann_cap_override_mb().is_none() || overwrite)
+        && let Some(override_mb) = seed.ann_cap_override_mb
+    {
+        set_ann_cap_override_mb(Some(override_mb));
     }
     set_storage_item(storage, AI_CONFIG_SEEDED_KEY, "1");
 }

@@ -88,10 +88,10 @@ pub(super) fn action_update_check(state: PwaStatusState) {
 
         spawn_local(async move {
             if let Some(container) = service_worker::service_worker_container() {
-                if let Some(reg) = service_worker::current_registration(&container).await {
-                    if let Ok(promise) = reg.update() {
-                        let _ = wasm_bindgen_futures::JsFuture::from(promise).await;
-                    }
+                if let Some(reg) = service_worker::current_registration(&container).await
+                    && let Ok(promise) = reg.update()
+                {
+                    let _ = wasm_bindgen_futures::JsFuture::from(promise).await;
                 }
                 let now = js_sys::Date::now();
                 set_local_storage_f64_item(UPDATE_CHECKED_AT_KEY, now);
@@ -215,13 +215,13 @@ pub(super) fn action_ping_sw(state: PwaStatusState) {
                 return;
             };
 
-            if let Some(reg) = service_worker::current_registration(&container).await {
-                if reg.waiting().is_some() {
-                    set_sw_action_status(
-                        state.sw_action_status,
-                        "Ping sent (note: update is waiting).",
-                    );
-                }
+            if let Some(reg) = service_worker::current_registration(&container).await
+                && reg.waiting().is_some()
+            {
+                set_sw_action_status(
+                    state.sw_action_status,
+                    "Ping sent (note: update is waiting).",
+                );
             }
 
             service_worker::post_message_type(&controller, "PING");

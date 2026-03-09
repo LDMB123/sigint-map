@@ -17,10 +17,12 @@ fn warns_on_missing_release_ids() {
         let (_, missing) = warning_counts();
         assert!(missing >= 1);
         let missing_by_field = warning_missing_by_field();
-        assert!(missing_by_field
-            .get("release.id")
-            .or_else(|| missing_by_field.get("release"))
-            .is_some());
+        assert!(
+            missing_by_field
+                .get("release.id")
+                .or_else(|| missing_by_field.get("release"))
+                .is_some()
+        );
     });
 }
 

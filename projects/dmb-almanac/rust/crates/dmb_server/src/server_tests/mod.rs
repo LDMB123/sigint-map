@@ -1,26 +1,24 @@
-use axum::body::to_bytes;
 use axum::body::Body;
+use axum::body::to_bytes;
 use axum::http::{HeaderName, Request, StatusCode};
 use axum::response::Response;
-use axum::{routing::get, Router};
-use leptos_axum::{generate_route_list, LeptosRoutes};
+use axum::{Router, routing::get};
+use leptos_axum::{LeptosRoutes, generate_route_list};
 use leptos_config::LeptosOptions;
 use serde_json::Value;
 use sqlx::sqlite::SqlitePoolOptions;
 use std::convert::Infallible;
 use std::fs;
-use std::sync::{Mutex, MutexGuard};
 use std::time::{SystemTime, UNIX_EPOCH};
-use tower::util::BoxCloneService;
 use tower::ServiceExt;
+use tower::util::BoxCloneService;
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 
 use crate::data_parity::{
-    api_data_parity, api_data_parity_summary, build_table_counts_query, new_data_parity_cache,
-    DataParityCacheEntry, DataParityResponse, DATA_PARITY_CACHE_TTL,
+    DATA_PARITY_CACHE_TTL, DataParityCacheEntry, DataParityResponse, api_data_parity,
+    api_data_parity_summary, build_table_counts_query, new_data_parity_cache,
 };
-use crate::http_policy::{apply_baseline_security_headers, apply_coop_headers, coop_coep_enabled};
-use crate::logging::resolve_log_filter;
+use crate::http_policy::{apply_baseline_security_headers, apply_coop_headers};
 use crate::startup::{self, MISSING_STATIC_ASSETS_HELP};
 use crate::state::AppState;
 use crate::status_endpoints::{api_ai_health, api_health};
@@ -30,28 +28,6 @@ mod http_policy_tests;
 mod logging_tests;
 mod ssr_tests;
 mod startup_tests;
-
-static ENV_LOCK: Mutex<()> = Mutex::new(());
-
-pub(super) fn env_lock_guard() -> MutexGuard<'static, ()> {
-    match ENV_LOCK.lock() {
-        Ok(guard) => guard,
-        Err(poisoned) => poisoned.into_inner(),
-    }
-}
-
-pub(super) fn with_env_var<T>(key: &str, value: &str, f: impl FnOnce() -> T) -> T {
-    let _guard = env_lock_guard();
-    let original = std::env::var(key).ok();
-    std::env::set_var(key, value);
-    let result = f();
-    if let Some(value) = original {
-        std::env::set_var(key, value);
-    } else {
-        std::env::remove_var(key);
-    }
-    result
-}
 
 pub(super) async fn parse_json_body(response: Response) -> Value {
     let body = match to_bytes(response.into_body(), 2 * 1024 * 1024).await {

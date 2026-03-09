@@ -134,21 +134,21 @@ pub async fn ensure_seed_data(status: RwSignal<ImportStatus>) {
 
     persist_import_completion(&manifest, total_work_items).await;
 
-    if let Some(mismatches) = verify_import_integrity(&manifest, dry_run.as_ref()).await {
-        if !mismatches.is_empty() {
-            status.set(integrity_failure_status(&mismatches));
-            publish_import_run_snapshot(&metrics.finish(
-                Some(manifest.version.clone()),
-                false,
-                None,
-                Some(format!(
-                    "integrity check failed for {} stores",
-                    mismatches.len()
-                )),
-                crate::browser::service_worker::count_all_cache_entries().await,
-            ));
-            return;
-        }
+    if let Some(mismatches) = verify_import_integrity(&manifest, dry_run.as_ref()).await
+        && !mismatches.is_empty()
+    {
+        status.set(integrity_failure_status(&mismatches));
+        publish_import_run_snapshot(&metrics.finish(
+            Some(manifest.version.clone()),
+            false,
+            None,
+            Some(format!(
+                "integrity check failed for {} stores",
+                mismatches.len()
+            )),
+            crate::browser::service_worker::count_all_cache_entries().await,
+        ));
+        return;
     }
 
     set_import_ready(status);

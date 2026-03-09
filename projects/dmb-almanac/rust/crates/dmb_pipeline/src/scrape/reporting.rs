@@ -1,12 +1,12 @@
 use anyhow::{Context, Result};
 use chrono::Utc;
 use once_cell::sync::Lazy;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 #[path = "reporting_http.rs"]

@@ -305,10 +305,10 @@ pub async fn load_embedding_index() -> Option<Arc<EmbeddingIndex>> {
     if !ai_config_seeded() {
         let _ = ai_local_state::fetch_and_apply_ai_config_seed(false).await;
     }
-    if embedding_sample_enabled() {
-        if let Some(sample_index) = load_sample_embedding_index().await {
-            return Some(sample_index);
-        }
+    if embedding_sample_enabled()
+        && let Some(sample_index) = load_sample_embedding_index().await
+    {
+        return Some(sample_index);
     }
 
     let manifest = load_or_fetch_embedding_manifest().await?;

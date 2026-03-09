@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use std::fs::File;
 use std::path::Path;
 
-use crate::artifact_contracts::{load_data_manifest, DataManifest};
+use crate::artifact_contracts::{DataManifest, load_data_manifest};
 
 pub(crate) fn idb_migration_dry_run(manifest_path: &Path, output: &Path) -> Result<()> {
     let manifest = load_data_manifest(manifest_path)?;

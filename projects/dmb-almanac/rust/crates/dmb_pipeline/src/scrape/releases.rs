@@ -4,9 +4,9 @@ use scraper::Html;
 use std::collections::HashSet;
 
 use super::{
-    detect_release_type, normalize_whitespace, parse_date, regex, select_first_text_with_fallback,
-    selector_or_warn, slugify, stable_id_from_string, warn_if_empty, warn_if_no_selector_match,
-    warn_missing_field, ScrapeClient, BASE_URL,
+    BASE_URL, ScrapeClient, detect_release_type, normalize_whitespace, parse_date, regex,
+    select_first_text_with_fallback, selector_or_warn, slugify, stable_id_from_string,
+    warn_if_empty, warn_if_no_selector_match, warn_missing_field,
 };
 
 pub(super) fn scrape_releases(client: &ScrapeClient) -> Result<Vec<Release>> {

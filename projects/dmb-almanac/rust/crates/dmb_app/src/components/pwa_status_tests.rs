@@ -1,6 +1,6 @@
 use super::{
-    e2e_version_from_sw_script_url, remaining_snooze_ms, should_suppress_update_notice,
-    UPDATE_SNOOZE_MS,
+    UPDATE_SNOOZE_MS, e2e_version_from_sw_script_url, remaining_snooze_ms,
+    should_suppress_update_notice,
 };
 
 #[test]

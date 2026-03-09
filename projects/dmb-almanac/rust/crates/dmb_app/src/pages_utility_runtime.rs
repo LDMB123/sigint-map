@@ -56,10 +56,10 @@ pub fn open_file_page() -> impl IntoView {
     let on_open_destination = {
         let file_request = file_request.clone();
         move |_| {
-            if let Some(request) = file_request.get_untracked() {
-                if let Some(destination) = crate::browser::pwa::open_file_destination(&request) {
-                    let _ = crate::browser::runtime::location_assign(&destination.route);
-                }
+            if let Some(request) = file_request.get_untracked()
+                && let Some(destination) = crate::browser::pwa::open_file_destination(&request)
+            {
+                let _ = crate::browser::runtime::location_assign(&destination.route);
             }
         }
     };

@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use rusqlite::{params, Transaction};
+use rusqlite::{Transaction, params};
 
 use dmb_core::{CuratedList, CuratedListItem, Release, ReleaseTrack};
 

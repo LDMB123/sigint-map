@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use crate::artifact_contracts::{
-    is_setlist_chunk_asset_name, normalized_data_asset_name, SETLIST_ENTRIES_FILE,
+    SETLIST_ENTRIES_FILE, is_setlist_chunk_asset_name, normalized_data_asset_name,
 };
 use crate::data_utils::{
     collect_ids, compare_counts, ensure_required_fields, ensure_unique, load_json_array,
@@ -222,15 +222,15 @@ pub(crate) fn validate_song_stats_consistency(data_dir: &Path) -> Result<()> {
             .get("performances")
             .and_then(|v| v.as_array())
             .map(|v| i64::try_from(v.len()).unwrap_or(i64::MAX));
-        if let (Some(total), Some(len)) = (total, performances_len) {
-            if total != len {
-                anyhow::bail!(
-                    "song stats mismatch: id={:?} totalPlays={} performances={}",
-                    stat.get("songId").or_else(|| stat.get("id")),
-                    total,
-                    len
-                );
-            }
+        if let (Some(total), Some(len)) = (total, performances_len)
+            && total != len
+        {
+            anyhow::bail!(
+                "song stats mismatch: id={:?} totalPlays={} performances={}",
+                stat.get("songId").or_else(|| stat.get("id")),
+                total,
+                len
+            );
         }
     }
 

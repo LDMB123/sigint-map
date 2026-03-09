@@ -5,7 +5,7 @@ use std::path::Path;
 
 use crate::data_utils::load_json_array;
 use crate::pipeline_support::{
-    json_i32_optional, json_i32_or_warn, json_i64_or_warn, EmbeddingInput,
+    EmbeddingInput, json_i32_optional, json_i32_or_warn, json_i64_or_warn,
 };
 
 pub(crate) fn build_embedding_input(source_dir: &Path, output: &Path) -> Result<()> {

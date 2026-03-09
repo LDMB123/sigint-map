@@ -1,11 +1,12 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use super::{
-    log_scrape_http_summary, log_scrape_warning_summary, scrape_guest_shows, scrape_guests,
-    scrape_history, scrape_liberation, scrape_lists, scrape_rarity, scrape_releases, scrape_shows,
-    scrape_songs, scrape_tours, scrape_venues, write_warning_artifacts, ScrapeClient, ScrapeConfig,
+    ScrapeClient, ScrapeConfig, log_scrape_http_summary, log_scrape_warning_summary,
+    scrape_guest_shows, scrape_guests, scrape_history, scrape_liberation, scrape_lists,
+    scrape_rarity, scrape_releases, scrape_shows, scrape_songs, scrape_tours, scrape_venues,
+    write_warning_artifacts,
 };
 
 #[path = "workflow_checks.rs"]

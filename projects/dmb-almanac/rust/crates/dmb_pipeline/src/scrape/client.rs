@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -15,8 +15,8 @@ use self::client_response::{
 };
 use self::client_retry::RetryPolicy;
 use super::{
-    duration_as_u64_millis, endpoint_name, record_endpoint_retry, record_endpoint_timing,
-    record_scrape_error, ScrapeErrorKind,
+    ScrapeErrorKind, duration_as_u64_millis, endpoint_name, record_endpoint_retry,
+    record_endpoint_timing, record_scrape_error,
 };
 
 pub(super) struct ScrapeClient {

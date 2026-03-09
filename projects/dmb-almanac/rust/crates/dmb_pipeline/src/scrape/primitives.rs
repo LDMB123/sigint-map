@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use super::{
-    record_empty_selector, record_scrape_error, record_warning_event_with_snippet, ScrapeErrorKind,
+    ScrapeErrorKind, record_empty_selector, record_scrape_error, record_warning_event_with_snippet,
 };
 
 static REGEX_CACHE: Lazy<Mutex<HashMap<String, &'static Regex>>> =

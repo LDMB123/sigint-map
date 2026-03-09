@@ -8,7 +8,14 @@ pub(super) fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
     for args in [
         vec!["check", "-p", "dmb_app", "--locked"],
         vec!["check", "-p", "dmb_app", "--features", "ssr", "--locked"],
-        vec!["check", "-p", "dmb_app", "--features", "hydrate", "--locked"],
+        vec![
+            "check",
+            "-p",
+            "dmb_app",
+            "--features",
+            "hydrate",
+            "--locked",
+        ],
         vec!["check", "-p", "dmb_app", "--all-features", "--locked"],
     ] {
         run_command("cargo", &args, &rust_dir, &[])?;
@@ -18,29 +25,9 @@ pub(super) fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
         "cargo",
         &[
             "clippy",
-            "-p",
-            "dmb_app",
-            "--features",
-            "hydrate",
+            "--workspace",
             "--all-targets",
-            "--locked",
-            "--",
-            "-D",
-            "warnings",
-        ],
-        &rust_dir,
-        &[],
-    )?;
-
-    run_command(
-        "cargo",
-        &[
-            "clippy",
-            "-p",
-            "dmb_app",
-            "--features",
-            "ssr",
-            "--all-targets",
+            "--all-features",
             "--locked",
             "--",
             "-D",
@@ -51,6 +38,7 @@ pub(super) fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
     )?;
 
     if !skip_wasm {
+        prepare_verify_static_assets()?;
         build_hydrate_pkg(true, false)?;
         verify_hydrate_artifacts()?;
         verify_service_worker_generated()?;
@@ -61,13 +49,110 @@ pub(super) fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
     if !skip_tests {
         run_command(
             "cargo",
-            &["test", "-p", "dmb_app", "--features", "hydrate", "--lib", "--locked"],
+            &[
+                "test",
+                "-p",
+                "dmb_app",
+                "--features",
+                "hydrate",
+                "--lib",
+                "--locked",
+            ],
             &rust_dir,
             &[],
         )?;
 
-        run_command("cargo", &["test", "--workspace", "--locked"], &rust_dir, &[])?;
+        run_command(
+            "cargo",
+            &["test", "--workspace", "--locked"],
+            &rust_dir,
+            &[],
+        )?;
     }
+
+    Ok(())
+}
+
+fn prepare_verify_static_assets() -> Result<()> {
+    let repo_root = repo_root_dir()?;
+    let rust_dir = repo_root.join("rust");
+    let seed_dir = repo_root.join("data/static-data");
+    if !seed_dir.exists() {
+        anyhow::bail!("xtask verify requires seed data at {}", seed_dir.display());
+    }
+
+    run_command(
+        "cargo",
+        &[
+            "run",
+            "--locked",
+            "-p",
+            "dmb_pipeline",
+            "--",
+            "build-idb",
+            "--source-dir",
+            "../data/static-data",
+            "--output-dir",
+            "static/data",
+        ],
+        &rust_dir,
+        &[],
+    )?;
+
+    run_command(
+        "cargo",
+        &[
+            "run",
+            "--locked",
+            "-p",
+            "dmb_pipeline",
+            "--",
+            "build-ai-config",
+            "--output-dir",
+            "static/data",
+        ],
+        &rust_dir,
+        &[],
+    )?;
+
+    run_command(
+        "cargo",
+        &[
+            "run",
+            "--locked",
+            "-p",
+            "dmb_pipeline",
+            "--",
+            "build-data-manifest",
+            "--source-dir",
+            "static/data",
+            "--output",
+            "static/data/manifest.json",
+        ],
+        &rust_dir,
+        &[],
+    )?;
+
+    run_command(
+        "cargo",
+        &[
+            "run",
+            "--locked",
+            "-p",
+            "dmb_pipeline",
+            "--",
+            "idb-migration-dry-run",
+            "--manifest",
+            "static/data/manifest.json",
+            "--output",
+            "static/data/idb-migration-dry-run.json",
+        ],
+        &rust_dir,
+        &[],
+    )?;
+
+    let current_sw_version = read_current_sw_version()?;
+    generate_sw(current_sw_version)?;
 
     Ok(())
 }

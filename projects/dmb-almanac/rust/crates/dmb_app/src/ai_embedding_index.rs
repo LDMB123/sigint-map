@@ -12,21 +12,22 @@ mod policy;
 pub(crate) use fetch::webgpu_probe_ok;
 #[cfg(feature = "hydrate")]
 use meta::fetch_json;
-#[cfg(feature = "hydrate")]
-pub(crate) use meta::store_ai_telemetry_snapshot;
 pub use meta::load_ai_telemetry_snapshot;
 #[cfg(feature = "hydrate")]
+pub(crate) use meta::store_ai_telemetry_snapshot;
+#[cfg(feature = "hydrate")]
 pub use meta::{
-    ai_config_mismatch_status_message, ai_config_remote_meta_label, fetch_ai_config_meta,
-    fetch_and_reconcile_ai_config_meta, load_ai_tuning, load_ann_meta, load_embedding_manifest_meta,
-    reconcile_ai_config_meta, sync_ai_config_meta, AiConfigMeta, AiConfigMetaReconcile,
+    AiConfigMeta, AiConfigMetaReconcile, ai_config_mismatch_status_message,
+    ai_config_remote_meta_label, fetch_ai_config_meta, fetch_and_reconcile_ai_config_meta,
+    load_ai_tuning, load_ann_meta, load_embedding_manifest_meta, reconcile_ai_config_meta,
+    sync_ai_config_meta,
 };
+#[cfg(test)]
+pub(crate) use policy::CapPolicy;
 #[cfg(any(feature = "hydrate", test))]
 pub(crate) use policy::cap_embedding_index_with_policy;
 pub(crate) use policy::cap_policy_from_navigator;
 pub(crate) use policy::webgpu_matrix_allowed;
-#[cfg(test)]
-pub(crate) use policy::CapPolicy;
 #[cfg(any(feature = "hydrate", test))]
 use policy::{ivf_cap_bytes_for_matrix, max_vectors_for_cap_bytes};
 

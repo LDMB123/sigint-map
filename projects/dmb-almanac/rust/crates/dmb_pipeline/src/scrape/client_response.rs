@@ -3,8 +3,8 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 use super::super::{
-    duration_as_u64_millis, increment_http_status, record_endpoint_timing, record_scrape_error,
-    record_warning_event, ScrapeErrorKind, LARGE_RESPONSE_WARN_BYTES,
+    LARGE_RESPONSE_WARN_BYTES, ScrapeErrorKind, duration_as_u64_millis, increment_http_status,
+    record_endpoint_timing, record_scrape_error, record_warning_event,
 };
 use super::client_cache::write_cached_html;
 use super::client_retry::RetryPolicy;

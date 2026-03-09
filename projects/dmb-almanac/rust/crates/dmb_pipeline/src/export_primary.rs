@@ -1,6 +1,6 @@
 use anyhow::Result;
 use rusqlite::Connection;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
 use crate::export::export_support::{

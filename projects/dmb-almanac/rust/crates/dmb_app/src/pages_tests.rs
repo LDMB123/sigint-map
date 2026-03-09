@@ -1,8 +1,8 @@
 use super::{
-    curated_item_href, normalize_guests, normalize_releases, normalize_search_filter,
+    ShowSummary, curated_item_href, normalize_guests, normalize_releases, normalize_search_filter,
     normalize_show_summaries, normalize_songs, normalize_tours, normalize_venues,
     pages_detail_support::setlist_set_counts, release_track_disc_counts,
-    release_track_matches_query, ShowSummary,
+    release_track_matches_query,
 };
 use dmb_core::{CuratedListItem, Guest, Release, ReleaseTrack, SetlistEntry, Song, Tour, Venue};
 

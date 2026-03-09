@@ -44,14 +44,13 @@ fn read_ttl_cache<T: Clone>(cache: &OnceLock<RwLock<Option<TimedCacheValue<T>>>>
             return Some(cached);
         }
     }
-    if let Ok(mut guard) = lock.write() {
-        if guard
+    if let Ok(mut guard) = lock.write()
+        && guard
             .as_ref()
             .map(cache_entry_is_fresh)
             .is_some_and(|is_fresh| !is_fresh)
-        {
-            *guard = None;
-        }
+    {
+        *guard = None;
     }
     None
 }

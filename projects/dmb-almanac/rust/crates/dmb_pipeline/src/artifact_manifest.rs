@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::path::Path;
 
-use crate::artifact_contracts::{is_supported_data_asset, DataFile, DataManifest};
+use crate::artifact_contracts::{DataFile, DataManifest, is_supported_data_asset};
 use crate::data_utils::{checksum_file, count_json_entries};
 
 pub(crate) fn build_data_manifest(source_dir: &Path, output: &Path) -> Result<()> {
@@ -195,43 +195,38 @@ pub(crate) fn validate_ai_config(path: &Path) -> Result<()> {
     if let Some(worker_threshold) = value
         .get("workerThresholdDefault")
         .and_then(serde_json::Value::as_u64)
+        && !(5_000..=1_000_000).contains(&worker_threshold)
     {
-        if !(5_000..=1_000_000).contains(&worker_threshold) {
-            anyhow::bail!("ai-config workerThresholdDefault out of range");
-        }
+        anyhow::bail!("ai-config workerThresholdDefault out of range");
     }
     if let Some(override_mb) = value
         .get("annCapOverrideMb")
         .and_then(serde_json::Value::as_u64)
+        && !(128..=2048).contains(&override_mb)
     {
-        if !(128..=2048).contains(&override_mb) {
-            anyhow::bail!("ai-config annCapOverrideMb out of range");
-        }
+        anyhow::bail!("ai-config annCapOverrideMb out of range");
     }
     if let Some(tuning) = value.get("tuning") {
         if let Some(last) = tuning
             .get("last_latency_ms")
             .and_then(serde_json::Value::as_f64)
+            && last < 0.0
         {
-            if last < 0.0 {
-                anyhow::bail!("ai-config last_latency_ms is negative");
-            }
+            anyhow::bail!("ai-config last_latency_ms is negative");
         }
         if let Some(target) = tuning
             .get("target_latency_ms")
             .and_then(serde_json::Value::as_f64)
+            && !(1.0..=100.0).contains(&target)
         {
-            if !(1.0..=100.0).contains(&target) {
-                anyhow::bail!("ai-config target_latency_ms out of range");
-            }
+            anyhow::bail!("ai-config target_latency_ms out of range");
         }
         if let Some(probe) = tuning
             .get("probe_override")
             .and_then(serde_json::Value::as_u64)
+            && probe == 0
         {
-            if probe == 0 {
-                anyhow::bail!("ai-config probe_override must be >= 1");
-            }
+            anyhow::bail!("ai-config probe_override must be >= 1");
         }
     }
     Ok(())

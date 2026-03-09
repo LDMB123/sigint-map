@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use dmb_core::{AnnIndexMeta, AnnIvfIndex, EmbeddingChunk, EmbeddingManifest, CORE_SCHEMA_VERSION};
+use dmb_core::{AnnIndexMeta, AnnIvfIndex, CORE_SCHEMA_VERSION, EmbeddingChunk, EmbeddingManifest};
 use std::collections::HashSet;
 use std::fs::File;
 use std::path::Path;
@@ -80,15 +80,15 @@ pub(crate) fn validate_embedding_chunks(
                 chunk.count
             );
         }
-        if let Some(sample) = parsed.records.first() {
-            if sample.vector.len() != manifest.dim as usize {
-                anyhow::bail!(
-                    "embedding chunk vector length mismatch {}: {} vs {}",
-                    chunk.file,
-                    sample.vector.len(),
-                    manifest.dim
-                );
-            }
+        if let Some(sample) = parsed.records.first()
+            && sample.vector.len() != manifest.dim as usize
+        {
+            anyhow::bail!(
+                "embedding chunk vector length mismatch {}: {} vs {}",
+                chunk.file,
+                sample.vector.len(),
+                manifest.dim
+            );
         }
     }
     Ok(())

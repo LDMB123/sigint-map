@@ -1,13 +1,13 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use scraper::Html;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use super::super::{
-    log_scrape_http_summary, log_scrape_warning_summary, parse_guest_shows_page, parse_lists_page,
-    parse_song_liberations, parse_song_performances, parse_song_stats_page,
-    parse_venue_show_history, parse_venue_stats_page, selector_or_warn, warn_if_empty,
-    write_warning_artifacts, ScrapeClient, ScrapeConfig, BASE_URL,
+    BASE_URL, ScrapeClient, ScrapeConfig, log_scrape_http_summary, log_scrape_warning_summary,
+    parse_guest_shows_page, parse_lists_page, parse_song_liberations, parse_song_performances,
+    parse_song_stats_page, parse_venue_show_history, parse_venue_stats_page, selector_or_warn,
+    warn_if_empty, write_warning_artifacts,
 };
 
 pub(super) fn scrape_fixtures(

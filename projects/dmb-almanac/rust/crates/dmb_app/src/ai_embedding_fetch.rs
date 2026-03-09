@@ -31,22 +31,20 @@ pub(super) async fn fetch_f32_array_with_cap(url: &str, cap_bytes: u64) -> Optio
         );
         return None;
     }
-    if cap_bytes > 0 {
-        if let Ok(Some(value)) = resp.headers().get("Content-Length") {
-            if let Ok(len) = value.parse::<u64>() {
-                if len > cap_bytes {
-                    web_sys::console::warn_1(&wasm_bindgen::JsValue::from_str(&format!(
-                        "ANN index fetch skipped ({} MB > cap).",
-                        len as f64 / 1_000_000.0
-                    )));
-                    record_ai_warning(
-                        "ann_index_fetch_skipped_over_cap",
-                        Some(format!("{len} bytes > {cap_bytes} bytes")),
-                    );
-                    return None;
-                }
-            }
-        }
+    if cap_bytes > 0
+        && let Ok(Some(value)) = resp.headers().get("Content-Length")
+        && let Ok(len) = value.parse::<u64>()
+        && len > cap_bytes
+    {
+        web_sys::console::warn_1(&wasm_bindgen::JsValue::from_str(&format!(
+            "ANN index fetch skipped ({} MB > cap).",
+            len as f64 / 1_000_000.0
+        )));
+        record_ai_warning(
+            "ann_index_fetch_skipped_over_cap",
+            Some(format!("{len} bytes > {cap_bytes} bytes")),
+        );
+        return None;
     }
     let buffer = JsFuture::from(resp.array_buffer().ok()?).await.ok()?;
     let array = js_sys::Float32Array::new(&buffer);

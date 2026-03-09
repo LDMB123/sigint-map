@@ -1,10 +1,10 @@
 use anyhow::Result;
 use scraper::Html;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::{
-    normalize_whitespace, parse_dot_date, parse_i64_or_warn, regex, selector_or_warn,
-    warn_if_empty, warn_missing_field, ScrapeClient, BASE_URL,
+    BASE_URL, ScrapeClient, normalize_whitespace, parse_dot_date, parse_i64_or_warn, regex,
+    selector_or_warn, warn_if_empty, warn_missing_field,
 };
 
 pub(super) fn scrape_liberation(client: &ScrapeClient) -> Result<Vec<Value>> {
@@ -115,18 +115,17 @@ fn parse_liberation_page(html: &str) -> Vec<Value> {
             .unwrap_or_default();
         let mut liberated_date = None;
         let mut liberated_show_id = None;
-        if let Some(cell) = notes_cell {
-            if is_liberated {
-                if let Some(link) = cell.select(&last_played_selector).last() {
-                    if let Some(href) = link.value().attr("href") {
-                        liberated_show_id = regex(r"id=(\\d+)")
-                            .captures(href)
-                            .and_then(|cap| cap.get(1).map(|m| m.as_str().to_string()));
-                    }
-                    let link_text = normalize_whitespace(&link.text().collect::<String>());
-                    liberated_date = parse_dot_date(&link_text);
-                }
+        if let Some(cell) = notes_cell
+            && is_liberated
+            && let Some(link) = cell.select(&last_played_selector).last()
+        {
+            if let Some(href) = link.value().attr("href") {
+                liberated_show_id = regex(r"id=(\\d+)")
+                    .captures(href)
+                    .and_then(|cap| cap.get(1).map(|m| m.as_str().to_string()));
             }
+            let link_text = normalize_whitespace(&link.text().collect::<String>());
+            liberated_date = parse_dot_date(&link_text);
         }
         if is_liberated && liberated_show_id.as_deref().unwrap_or("").is_empty() {
             warn_missing_field("liberation", "liberatedShowId");

@@ -1,6 +1,6 @@
 use super::routes::{
-    json_object_field, json_text_field, normalized_entity_type, normalized_item_route_with_hints,
-    trimmed_non_empty, RouteHints,
+    RouteHints, json_object_field, json_text_field, normalized_entity_type,
+    normalized_item_route_with_hints, trimmed_non_empty,
 };
 use super::*;
 

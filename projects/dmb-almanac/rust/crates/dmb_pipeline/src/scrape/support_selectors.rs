@@ -7,13 +7,13 @@ use super::support_parsing::normalize_whitespace;
 
 pub(crate) fn select_first_text_quiet(document: &Html, selectors: &[&str]) -> Option<String> {
     for selector in selectors {
-        if let Some(sel) = selector_or_warn("select_first_text", selector) {
-            if let Some(el) = document.select(&sel).next() {
-                let text = el.text().collect::<String>();
-                let normalized = normalize_whitespace(&text);
-                if !normalized.is_empty() {
-                    return Some(normalized);
-                }
+        if let Some(sel) = selector_or_warn("select_first_text", selector)
+            && let Some(el) = document.select(&sel).next()
+        {
+            let text = el.text().collect::<String>();
+            let normalized = normalize_whitespace(&text);
+            if !normalized.is_empty() {
+                return Some(normalized);
             }
         }
     }

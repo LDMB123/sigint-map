@@ -6,7 +6,7 @@ use serde::Serialize;
 use wasm_bindgen::JsValue;
 
 #[cfg(target_arch = "wasm32")]
-use crate::{open_db, JsResultExt};
+use crate::{JsResultExt, open_db};
 
 #[cfg(target_arch = "wasm32")]
 type Result<T> = std::result::Result<T, JsValue>;

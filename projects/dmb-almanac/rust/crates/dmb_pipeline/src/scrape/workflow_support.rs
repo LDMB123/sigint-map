@@ -4,13 +4,13 @@ use serde_json::Value;
 use std::fs;
 use std::path::Path;
 
-use super::super::{parse_song_stats_page, parse_venue_stats_page, ScrapeClient, BASE_URL};
+use super::super::{BASE_URL, ScrapeClient, parse_song_stats_page, parse_venue_stats_page};
 
 pub(super) fn apply_max_items<T>(items: &mut Vec<T>, limit: Option<usize>) {
-    if let Some(limit) = limit {
-        if items.len() > limit {
-            items.truncate(limit);
-        }
+    if let Some(limit) = limit
+        && items.len() > limit
+    {
+        items.truncate(limit);
     }
 }
 

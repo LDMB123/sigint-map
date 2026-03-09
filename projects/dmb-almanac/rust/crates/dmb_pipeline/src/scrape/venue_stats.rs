@@ -1,5 +1,5 @@
 use scraper::Html;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 #[path = "venue_show_history.rs"]
 mod venue_show_history;
@@ -47,12 +47,12 @@ pub(super) fn parse_venue_stats_page(html: &str, venue_id: i32) -> Option<Value>
         }
     }
     let body_text = document.root_element().text().collect::<Vec<_>>().join(" ");
-    if city.is_empty() {
-        if let Some((c, s, co)) = parse_location(&body_text) {
-            city = c;
-            state = s;
-            country = co;
-        }
+    if city.is_empty()
+        && let Some((c, s, co)) = parse_location(&body_text)
+    {
+        city = c;
+        state = s;
+        country = co;
     }
     if city.is_empty() {
         warn_missing_field("venue_stats", "city");
@@ -267,10 +267,8 @@ pub(super) fn parse_venue_stats_page(html: &str, venue_id: i32) -> Option<Value>
         &result,
         &["originalId", "venueName", "city", "totalShows"],
     );
-    if partial {
-        if let Some(obj) = result.as_object_mut() {
-            obj.insert("_partial".to_string(), Value::Bool(true));
-        }
+    if partial && let Some(obj) = result.as_object_mut() {
+        obj.insert("_partial".to_string(), Value::Bool(true));
     }
     Some(result)
 }

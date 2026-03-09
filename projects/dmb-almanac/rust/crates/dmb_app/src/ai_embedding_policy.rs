@@ -121,16 +121,16 @@ pub(crate) fn cap_embedding_index_with_policy(
     });
     let ivf_cap_bytes = ivf_bytes.map(|_| ivf_cap_bytes_for_matrix(cap_bytes));
     let mut ivf_dropped = false;
-    if let (Some(bytes), Some(cap)) = (ivf_bytes, ivf_cap_bytes) {
-        if bytes > cap {
-            ivf = None;
-            ivf_dropped = true;
-            #[cfg(all(feature = "hydrate", target_arch = "wasm32"))]
-            record_ai_warning(
-                "ivf_cap_exceeded",
-                Some(format!("{bytes} bytes > {cap} bytes")),
-            );
-        }
+    if let (Some(bytes), Some(cap)) = (ivf_bytes, ivf_cap_bytes)
+        && bytes > cap
+    {
+        ivf = None;
+        ivf_dropped = true;
+        #[cfg(all(feature = "hydrate", target_arch = "wasm32"))]
+        record_ai_warning(
+            "ivf_cap_exceeded",
+            Some(format!("{bytes} bytes > {cap} bytes")),
+        );
     }
     let vectors_before = if dim == 0 { 0 } else { matrix.len() / dim };
     let mut diagnostics = AnnCapDiagnostics {

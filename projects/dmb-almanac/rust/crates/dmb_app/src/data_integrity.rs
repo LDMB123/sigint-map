@@ -98,11 +98,11 @@ fn dry_run_store_counts(report: &DryRunReport) -> std::collections::HashMap<Stri
     }
 
     for spec in IMPORT_SPECS {
-        if let Some(chunk_total) = chunk_totals.get(spec.store).copied() {
-            if chunk_total > 0 {
-                store_counts.insert(spec.store.to_string(), chunk_total);
-                continue;
-            }
+        if let Some(chunk_total) = chunk_totals.get(spec.store).copied()
+            && chunk_total > 0
+        {
+            store_counts.insert(spec.store.to_string(), chunk_total);
+            continue;
         }
         if let Some(count) = report.file_counts.get(spec.file) {
             store_counts.insert(spec.store.to_string(), *count);

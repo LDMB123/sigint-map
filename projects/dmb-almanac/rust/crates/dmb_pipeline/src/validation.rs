@@ -3,7 +3,7 @@ use dmb_core::CORE_SCHEMA_VERSION;
 use std::path::{Path, PathBuf};
 
 use crate::artifact_contracts::{
-    validate_ai_config, validate_data_manifest_file, validate_idb_migration_dry_run, DataManifest,
+    DataManifest, validate_ai_config, validate_data_manifest_file, validate_idb_migration_dry_run,
 };
 use crate::validation_dataset::{
     compare_baseline_counts_if_needed, load_setlist_entries, load_validation_data,

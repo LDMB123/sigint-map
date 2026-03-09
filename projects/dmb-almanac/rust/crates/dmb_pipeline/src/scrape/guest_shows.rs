@@ -1,12 +1,12 @@
 use anyhow::Result;
 use dmb_core::Guest;
 use scraper::Html;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::{
-    normalize_whitespace, parse_i64_or_warn, parse_location, parse_mdy_any, regex,
-    selector_or_warn, validate_required_fields, warn_if_empty, warn_if_no_selector_match,
-    warn_if_out_of_range, warn_missing_field, ScrapeClient, BASE_URL,
+    BASE_URL, ScrapeClient, normalize_whitespace, parse_i64_or_warn, parse_location, parse_mdy_any,
+    regex, selector_or_warn, validate_required_fields, warn_if_empty, warn_if_no_selector_match,
+    warn_if_out_of_range, warn_missing_field,
 };
 
 pub(super) fn scrape_guest_shows(client: &ScrapeClient, guests: &[Guest]) -> Result<Vec<Value>> {
@@ -230,10 +230,8 @@ pub(super) fn parse_guest_shows_page(html: &str, guest_id: i32, guest_name: &str
             .get("appearances")
             .and_then(|v| v.as_array())
             .is_none_or(std::vec::Vec::is_empty);
-        if empty {
-            if let Some(obj) = result.as_object_mut() {
-                obj.insert("_partial".to_string(), Value::Bool(true));
-            }
+        if empty && let Some(obj) = result.as_object_mut() {
+            obj.insert("_partial".to_string(), Value::Bool(true));
         }
     }
     result

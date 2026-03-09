@@ -2,16 +2,16 @@ use js_sys::Float32Array;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen::{JsCast, prelude::*};
 use wasm_bindgen_futures::JsFuture;
 
 use super::{
+    WEBGPU_RUNTIME_CONFIG, WEBGPU_WORKER_RUNTIME, WEBGPU_WORKER_TIMEOUT_MS, WEBGPU_WORKER_URL,
     bindings::{
         build_worker_init_request_js, build_worker_scores_request_js, js_error_message,
         module_worker_supported, promise_with_timeout, worker_message_id, worker_message_value,
     },
-    dim_u32, WEBGPU_RUNTIME_CONFIG, WEBGPU_WORKER_RUNTIME, WEBGPU_WORKER_TIMEOUT_MS,
-    WEBGPU_WORKER_URL,
+    dim_u32,
 };
 
 struct WorkerPending {

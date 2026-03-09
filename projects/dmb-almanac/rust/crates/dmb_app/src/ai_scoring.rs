@@ -82,10 +82,10 @@ fn push_top_k_heap(
         heap.push(Reverse(entry));
         return;
     }
-    if let Some(mut min_entry) = heap.peek_mut() {
-        if entry > min_entry.0 {
-            *min_entry = Reverse(entry);
-        }
+    if let Some(mut min_entry) = heap.peek_mut()
+        && entry > min_entry.0
+    {
+        *min_entry = Reverse(entry);
     }
 }
 
@@ -294,7 +294,7 @@ pub(crate) fn top_k_from_subset_array(
 #[cfg(feature = "hydrate")]
 #[cfg(test)]
 mod top_k_tests {
-    use super::{remap_subset_scored_indices, top_k_from_scored_iter, HeapScoreEntry, ScoredIndex};
+    use super::{HeapScoreEntry, ScoredIndex, remap_subset_scored_indices, top_k_from_scored_iter};
 
     #[test]
     fn top_k_heap_keeps_highest_scores_sorted() {

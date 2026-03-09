@@ -133,11 +133,10 @@ fn render_setlist_entries_list(filtered_items: Vec<SetlistEntry>) -> impl IntoVi
                     if entry.is_tease.unwrap_or(false) {
                         context_parts.push("Tease".to_string());
                     }
-                    if let Some(duration) = entry.duration_seconds {
-                        if duration > 0 {
+                    if let Some(duration) = entry.duration_seconds
+                        && duration > 0 {
                             context_parts.push(format!("{}:{:02}", duration / 60, duration % 60));
                         }
-                    }
                     let context_line = context_parts.join(" • ");
                     let notes = entry
                         .notes

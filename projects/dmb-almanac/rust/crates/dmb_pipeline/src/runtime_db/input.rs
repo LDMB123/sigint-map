@@ -3,7 +3,7 @@ use serde::de::DeserializeOwned;
 use std::fs::File;
 use std::path::Path;
 
-use dmb_core::{SetlistEntry, SETLIST_CHUNK_PREFIX};
+use dmb_core::{SETLIST_CHUNK_PREFIX, SetlistEntry};
 
 const SETLIST_ENTRIES_FILE: &str = "setlist-entries.json";
 

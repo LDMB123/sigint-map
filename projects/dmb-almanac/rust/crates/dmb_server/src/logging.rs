@@ -1,19 +1,30 @@
 use std::env;
 
-pub(crate) fn resolve_log_filter() -> String {
-    let rust_log = env::var("RUST_LOG")
-        .ok()
-        .map(|value| value.trim().to_string());
-    if let Some(value) = rust_log.filter(|value| !value.is_empty()) {
+fn normalized_log_value(value: Option<&str>) -> Option<String> {
+    value
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+}
+
+pub(crate) fn resolve_log_filter_from_values(
+    rust_log: Option<&str>,
+    dmb_log_level: Option<&str>,
+) -> String {
+    if let Some(value) = normalized_log_value(rust_log) {
         return value;
     }
-    let dmb_level = env::var("DMB_LOG_LEVEL")
-        .ok()
-        .map(|value| value.trim().to_string());
-    if let Some(value) = dmb_level.filter(|value| !value.is_empty()) {
+    if let Some(value) = normalized_log_value(dmb_log_level) {
         return value;
     }
     "info".to_string()
+}
+
+pub(crate) fn resolve_log_filter() -> String {
+    resolve_log_filter_from_values(
+        env::var("RUST_LOG").ok().as_deref(),
+        env::var("DMB_LOG_LEVEL").ok().as_deref(),
+    )
 }
 
 pub(crate) fn init_tracing() {

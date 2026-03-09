@@ -166,8 +166,8 @@ pub async fn benchmark_gpu(sample: &BenchmarkSample) -> (Option<f64>, String) {
             );
             return (None, backend);
         }
-        if let Some(gpu_start) = crate::browser::runtime::performance_now_ms() {
-            if let Some(((scores, path), elapsed_ms)) = measure_optional_future_from(
+        if let Some(gpu_start) = crate::browser::runtime::performance_now_ms()
+            && let Some(((scores, path), elapsed_ms)) = measure_optional_future_from(
                 gpu_start,
                 webgpu_scores_with_policy(
                     &sample.query_vec,
@@ -178,11 +178,10 @@ pub async fn benchmark_gpu(sample: &BenchmarkSample) -> (Option<f64>, String) {
                 ),
             )
             .await
-            {
-                let _ = top_k_from_scores_array(&scores, 5);
-                gpu_ms = Some(elapsed_ms);
-                backend = webgpu_backend_label(path, false).to_string();
-            }
+        {
+            let _ = top_k_from_scores_array(&scores, 5);
+            gpu_ms = Some(elapsed_ms);
+            backend = webgpu_backend_label(path, false).to_string();
         }
     }
     (gpu_ms, backend)

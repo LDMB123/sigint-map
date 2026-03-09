@@ -4,8 +4,8 @@ use std::fs::File;
 use std::io::Write;
 
 use crate::artifact_contracts::{
-    build_data_manifest, idb_migration_dry_run, validate_idb_migration_dry_run, DataFile,
-    DataManifest,
+    DataFile, DataManifest, build_data_manifest, idb_migration_dry_run,
+    validate_idb_migration_dry_run,
 };
 
 #[test]

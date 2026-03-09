@@ -4,9 +4,9 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 
 use crate::artifact_contracts::{
-    is_setlist_chunk_asset_name, is_supported_data_asset, normalized_data_asset_name,
-    validate_ai_config, validate_data_manifest, validate_data_manifest_file, DataFile,
-    DataManifest, SETLIST_ENTRIES_FILE,
+    DataFile, DataManifest, SETLIST_ENTRIES_FILE, is_setlist_chunk_asset_name,
+    is_supported_data_asset, normalized_data_asset_name, validate_ai_config,
+    validate_data_manifest, validate_data_manifest_file,
 };
 use crate::data_utils::{checksum_file, count_json_entries, load_json_array};
 
@@ -223,10 +223,12 @@ mod tests {
 
         let manifest_path = output_dir.join("manifest.json");
         let manifest = validate_data_manifest_file(&manifest_path)?;
-        assert!(manifest
-            .files
-            .iter()
-            .any(|file| file.name == "ai-config.json"));
+        assert!(
+            manifest
+                .files
+                .iter()
+                .any(|file| file.name == "ai-config.json")
+        );
         validate_ai_config(&output_dir.join("ai-config.json"))?;
 
         Ok(())

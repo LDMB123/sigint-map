@@ -7,8 +7,8 @@ mod config;
 
 #[cfg(feature = "hydrate")]
 pub(crate) use backend::{
-    execute_webgpu_backend, webgpu_backend_label, webgpu_scores_subset_with_policy,
-    webgpu_scores_with_policy, WebgpuPolicyBackend,
+    WebgpuPolicyBackend, execute_webgpu_backend, webgpu_backend_label,
+    webgpu_scores_subset_with_policy, webgpu_scores_with_policy,
 };
 #[cfg(feature = "hydrate")]
 pub(crate) use config::{browser_runtime_supported, warm_webgpu_worker};

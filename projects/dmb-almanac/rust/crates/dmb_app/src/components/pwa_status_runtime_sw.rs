@@ -39,10 +39,10 @@ pub(in super::super) fn set_sw_action_status(
 
 #[cfg(feature = "hydrate")]
 fn parse_sw_message_payload(event: &web_sys::MessageEvent) -> Option<serde_json::Value> {
-    if let Some(data) = event.data().as_string() {
-        if let Ok(payload) = serde_json::from_str::<serde_json::Value>(&data) {
-            return Some(payload);
-        }
+    if let Some(data) = event.data().as_string()
+        && let Ok(payload) = serde_json::from_str::<serde_json::Value>(&data)
+    {
+        return Some(payload);
     }
     serde_wasm_bindgen::from_value::<serde_json::Value>(event.data()).ok()
 }

@@ -77,11 +77,10 @@ fn render_release_track_rows(filtered_tracks: Vec<ReleaseTrack>) -> impl IntoVie
                     };
                     let mut context_parts =
                         vec![disc_key_label(&normalized_disc_key(track.disc_number))];
-                    if let Some(duration) = track.duration_seconds {
-                        if duration > 0 {
+                    if let Some(duration) = track.duration_seconds
+                        && duration > 0 {
                             context_parts.push(format!("{}:{:02}", duration / 60, duration % 60));
                         }
-                    }
                     if track.show_id.is_some() {
                         context_parts.push("Live source".to_string());
                     }

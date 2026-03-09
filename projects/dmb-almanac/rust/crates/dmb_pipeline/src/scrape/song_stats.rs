@@ -1,5 +1,5 @@
 use scraper::Html;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::{
     object_all_zero, parse_date_any, parse_i64_or_warn, regex, validate_required_fields,
@@ -175,15 +175,15 @@ pub(super) fn parse_song_stats_page(html: &str, song_id: i32, song_title: &str) 
     );
 
     if total_plays > 0 {
-        if let Some(version_types) = result.get("versionTypes") {
-            if object_all_zero(version_types) {
-                warn_missing_field("song_stats", "versionTypes");
-            }
+        if let Some(version_types) = result.get("versionTypes")
+            && object_all_zero(version_types)
+        {
+            warn_missing_field("song_stats", "versionTypes");
         }
-        if let Some(slot_breakdown) = result.get("slotBreakdown") {
-            if object_all_zero(slot_breakdown) {
-                warn_missing_field("song_stats", "slotBreakdown");
-            }
+        if let Some(slot_breakdown) = result.get("slotBreakdown")
+            && object_all_zero(slot_breakdown)
+        {
+            warn_missing_field("song_stats", "slotBreakdown");
         }
         if artist_stats.is_empty() {
             warn_missing_field("song_stats", "artistStats");
@@ -202,10 +202,8 @@ pub(super) fn parse_song_stats_page(html: &str, song_id: i32, song_title: &str) 
         ],
     );
 
-    if partial {
-        if let Some(obj) = result.as_object_mut() {
-            obj.insert("_partial".to_string(), Value::Bool(true));
-        }
+    if partial && let Some(obj) = result.as_object_mut() {
+        obj.insert("_partial".to_string(), Value::Bool(true));
     }
     result
 }

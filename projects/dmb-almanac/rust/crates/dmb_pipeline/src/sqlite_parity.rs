@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use rusqlite::Connection;
 use std::path::Path;
 
-use dmb_core::{sqlite_parity_tables, SQLITE_PARITY_STORE_TABLE_MAPPINGS};
+use dmb_core::{SQLITE_PARITY_STORE_TABLE_MAPPINGS, sqlite_parity_tables};
 
 use crate::artifact_contracts::{load_data_manifest, manifest_counts};
 

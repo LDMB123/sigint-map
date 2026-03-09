@@ -1,6 +1,6 @@
 use anyhow::Result;
 use rusqlite::{Connection, OptionalExtension};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::export::export_support::{
     collect_rows, extract_year, map_by_id, opt_i64_or_warn, parse_json_field,

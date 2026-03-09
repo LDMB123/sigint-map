@@ -4,8 +4,8 @@ use scraper::Html;
 use std::collections::HashMap;
 
 use super::{
-    parse_i32_or_warn, parse_show_date, regex, selector_or_warn, warn_if_empty,
-    warn_if_no_selector_match, warn_if_out_of_range, warn_missing_field, ScrapeClient,
+    ScrapeClient, parse_i32_or_warn, parse_show_date, regex, selector_or_warn, warn_if_empty,
+    warn_if_no_selector_match, warn_if_out_of_range, warn_missing_field,
 };
 
 pub(super) fn scrape_shows(
@@ -134,10 +134,10 @@ pub(super) fn extract_show_meta(document: &Html) -> (i32, Option<i32>) {
             warn_missing_field("show", "songCount");
         }
         for row in document.select(&selector) {
-            if let Some(link_selector) = link_selector.as_ref() {
-                if row.select(link_selector).next().is_some() {
-                    song_count += 1;
-                }
+            if let Some(link_selector) = link_selector.as_ref()
+                && row.select(link_selector).next().is_some()
+            {
+                song_count += 1;
             }
         }
         if song_count == 0 {

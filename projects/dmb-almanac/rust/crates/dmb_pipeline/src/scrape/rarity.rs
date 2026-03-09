@@ -1,10 +1,10 @@
 use anyhow::Result;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
 use super::{
-    normalize_whitespace, parse_f64_or_warn, parse_i32_or_warn, regex, warn_missing_field,
-    ScrapeClient, BASE_URL,
+    BASE_URL, ScrapeClient, normalize_whitespace, parse_f64_or_warn, parse_i32_or_warn, regex,
+    warn_missing_field,
 };
 
 pub(super) fn scrape_rarity(client: &ScrapeClient) -> Result<Vec<Value>> {

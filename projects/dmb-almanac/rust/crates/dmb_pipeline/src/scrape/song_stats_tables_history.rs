@@ -1,5 +1,5 @@
 use scraper::Html;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::super::super::{
     normalize_whitespace, parse_i64_or_warn, regex, selector_or_warn, warn_if_empty,

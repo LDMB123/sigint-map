@@ -1,7 +1,7 @@
 use super::*;
 use super::{
-    dot_product, matrix_row_unchecked, push_top_k_heap, scored_vec_from_heap, HeapScoreEntry,
-    ScoredIndex,
+    HeapScoreEntry, ScoredIndex, dot_product, matrix_row_unchecked, push_top_k_heap,
+    scored_vec_from_heap,
 };
 
 pub(crate) fn select_ivf_clusters_with_probe(

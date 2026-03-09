@@ -1,11 +1,11 @@
 use anyhow::Result;
 use chrono::Datelike;
 use scraper::Html;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::{
-    normalize_whitespace, parse_dot_date, parse_i32_or_warn, regex, selector_or_warn,
-    warn_if_empty, warn_missing_field, ScrapeClient, BASE_URL,
+    BASE_URL, ScrapeClient, normalize_whitespace, parse_dot_date, parse_i32_or_warn, regex,
+    selector_or_warn, warn_if_empty, warn_missing_field,
 };
 
 pub(super) fn scrape_history(client: &ScrapeClient) -> Result<Vec<Value>> {

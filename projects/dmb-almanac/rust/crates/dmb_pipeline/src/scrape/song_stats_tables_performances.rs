@@ -1,6 +1,6 @@
-use scraper::element_ref::ElementRef;
 use scraper::Html;
-use serde_json::{json, Value};
+use scraper::element_ref::ElementRef;
+use serde_json::{Value, json};
 
 use super::super::super::{
     normalize_whitespace, parse_i64_or_warn, parse_mdy_any, regex, selector_or_warn, warn_if_empty,

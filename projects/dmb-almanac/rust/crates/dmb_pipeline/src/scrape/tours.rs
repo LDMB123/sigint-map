@@ -4,7 +4,7 @@ use dmb_core::Tour;
 use scraper::Html;
 use std::collections::{HashMap, HashSet};
 
-use super::{selector_or_warn, warn_if_empty, warn_missing_field, ScrapeClient, BASE_URL};
+use super::{BASE_URL, ScrapeClient, selector_or_warn, warn_if_empty, warn_missing_field};
 
 pub(super) type ToursWithShows = (Vec<Tour>, HashMap<i32, Vec<String>>);
 

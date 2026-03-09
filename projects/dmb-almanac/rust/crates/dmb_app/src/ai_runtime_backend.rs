@@ -51,10 +51,10 @@ fn matrix_to_js_array(matrix: &[f32], use_cache: bool) -> js_sys::Float32Array {
     let signature = matrix_js_signature(matrix);
     WEBGPU_MATRIX_JS_CACHE.with(|cache| {
         let mut cache_ref = cache.borrow_mut();
-        if let Some(existing) = cache_ref.as_ref() {
-            if existing.signature == signature {
-                return existing.array.clone();
-            }
+        if let Some(existing) = cache_ref.as_ref()
+            && existing.signature == signature
+        {
+            return existing.array.clone();
         }
         let array = js_sys::Float32Array::from(matrix);
         *cache_ref = Some(WebgpuMatrixJsCache {

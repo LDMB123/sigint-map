@@ -4,7 +4,7 @@ use std::thread;
 use std::time::Duration;
 
 use super::super::reporting::endpoint_retry_count;
-use super::super::{duration_as_u64_millis, record_warning_event, USER_AGENT};
+use super::super::{USER_AGENT, duration_as_u64_millis, record_warning_event};
 
 pub(super) struct RetryPolicy {
     pub(super) min_delay_ms: u64,

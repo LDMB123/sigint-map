@@ -1,5 +1,8 @@
 #[cfg(target_arch = "wasm32")]
-use idb::{Database, Factory, IndexParams, KeyPath, ObjectStore, ObjectStoreParams};
+use idb::{
+    Database, DatabaseEvent as _, Event as _, Factory, IndexParams, KeyPath, ObjectStore,
+    ObjectStoreParams, Request as _,
+};
 #[cfg(target_arch = "wasm32")]
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 #[cfg(target_arch = "wasm32")]
