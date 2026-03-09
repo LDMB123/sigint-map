@@ -1,0 +1,26 @@
+{
+  "hydrate": {
+    "wasmGzipBytesMax": 920840,
+    "requiredDataAssets": [
+      "/data/manifest.json",
+      "/data/ai-config.json",
+      "/data/idb-migration-dry-run.json"
+    ],
+    "requiredPkgAssets": [
+      "/pkg/dmb_app.js",
+      "/pkg/dmb_app_bg.wasm"
+    ]
+  },
+  "server": {
+    "requiredStaticDataAssets": [
+      "/data/manifest.json",
+      "/data/ai-config.json",
+      "/data/idb-migration-dry-run.json"
+    ],
+    "defaultSqliteCandidates": [
+      "data/dmb-almanac.db",
+      "../data/dmb-almanac.db",
+      "../../data/dmb-almanac.db"
+    ]
+  }
+}
