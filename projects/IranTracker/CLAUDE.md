@@ -26,6 +26,8 @@ Always run `npm run check:static` after editing any file under `src/`, `app/`, o
 ## Key conventions
 
 - **CSS tokens** — `globals.css` defines all colors/spacing via CSS custom properties on `:root, [data-theme="dark"]`. Never use hardcoded hex colors in components; use `var(--color-*)` tokens.
+- **Typography** — Three font families loaded via Google Fonts `@import` at the top of `globals.css`: Rajdhani (display/headings via `--font-display`), Barlow (body via `--font-body`), Share Tech Mono (code/data via `--font-mono`). Use the CSS variables, not raw font names.
+- **Sidebar groups** — Sidebar sections are wrapped in native `<details>/<summary>` elements with `.sidebar-group` classes. Each group has a color-coded variant (e.g. `--threat`/red, `--isr`/cyan, `--force`/green, `--analytics`/amber, `--feeds`/indigo). Adding a new sidebar section means placing it inside the appropriate `<details>` group in `dashboard.html`.
 - **Error/404 pages** — Use the `sigint-route-error` CSS class pattern (see `error.jsx` and `not-found.jsx`).
 - **File collection in scripts** — Use `readdir` with `withFileTypes` recursion (see `collectFiles()` in `check-dead-code.mjs`). Do not use experimental `fs/promises` glob.
 - **Proxy allowlist** — All upstream hosts are defined in `src/lib/upstream-proxy.js`. Adding a new data source requires adding its host there.
