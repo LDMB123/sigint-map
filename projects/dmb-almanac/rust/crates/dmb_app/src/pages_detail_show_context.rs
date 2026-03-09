@@ -206,7 +206,7 @@ pub(crate) fn render_show_context(
     saved_show_ids: RwSignal<std::collections::HashSet<i32>>,
     save_pending: RwSignal<bool>,
     save_message: RwSignal<Option<(String, bool)>>,
-) -> impl IntoView {
+) -> impl IntoView + use<> {
     if let Some(ctx) = ctx {
         return render_show_detail_loaded(ctx, saved_show_ids, save_pending, save_message)
             .into_any();

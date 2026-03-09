@@ -100,6 +100,12 @@ pub async fn probe_webgpu_device() -> Option<bool> {
     dmb_wasm::webgpu_probe_available().await
 }
 
+#[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
+pub async fn probe_webgpu_device() -> Option<bool> {
+    None
+}
+
 #[cfg(feature = "hydrate")]
 pub(crate) async fn warm_webgpu_worker() {
     if let Some(status) = dmb_wasm::warm_webgpu_worker().await {

@@ -6,7 +6,6 @@ use super::data_import_support::{
     ADAPTIVE_TARGET_CHUNK_MS, ADAPTIVE_TX_BATCH_MAX, ADAPTIVE_TX_BATCH_MIN,
     ADAPTIVE_TX_BATCH_START, IMPORT_TUNING_FLAG_KEY,
 };
-#[cfg(feature = "hydrate")]
 use serde::Serialize;
 #[cfg(feature = "hydrate")]
 use std::cell::RefCell;

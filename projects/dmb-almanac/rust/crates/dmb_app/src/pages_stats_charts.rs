@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) fn render_song_table(songs: &[Song], show_total: bool) -> impl IntoView {
+pub(super) fn render_song_table(songs: &[Song], show_total: bool) -> impl IntoView + use<> {
     if songs.is_empty() {
         return empty_state(
             "No data available",
@@ -54,7 +54,10 @@ pub(super) fn render_song_table(songs: &[Song], show_total: bool) -> impl IntoVi
     .into_any()
 }
 
-pub(super) fn render_song_ranking(songs: &[Song], count_fn: fn(&Song) -> i32) -> impl IntoView {
+pub(super) fn render_song_ranking(
+    songs: &[Song],
+    count_fn: fn(&Song) -> i32,
+) -> impl IntoView + use<> {
     if songs.is_empty() {
         return empty_state(
             "No data available",
@@ -84,7 +87,7 @@ pub(super) fn render_song_ranking(songs: &[Song], count_fn: fn(&Song) -> i32) ->
     .into_any()
 }
 
-pub(super) fn render_bar_chart(data: &[(u32, u32)]) -> impl IntoView {
+pub(super) fn render_bar_chart(data: &[(u32, u32)]) -> impl IntoView + use<> {
     if data.is_empty() {
         return empty_state(
             "No chart data",
@@ -118,7 +121,10 @@ pub(super) fn render_bar_chart(data: &[(u32, u32)]) -> impl IntoView {
     .into_any()
 }
 
-pub(super) fn render_string_bar_chart(data: &[(String, u32)], limit: usize) -> impl IntoView {
+pub(super) fn render_string_bar_chart(
+    data: &[(String, u32)],
+    limit: usize,
+) -> impl IntoView + use<> {
     if data.is_empty() {
         return empty_state(
             "No chart data",

@@ -5,6 +5,15 @@ pub(super) fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
 
     run_command("cargo", &["fmt", "--all", "--", "--check"], &rust_dir, &[])?;
 
+    for args in [
+        vec!["check", "-p", "dmb_app", "--locked"],
+        vec!["check", "-p", "dmb_app", "--features", "ssr", "--locked"],
+        vec!["check", "-p", "dmb_app", "--features", "hydrate", "--locked"],
+        vec!["check", "-p", "dmb_app", "--all-features", "--locked"],
+    ] {
+        run_command("cargo", &args, &rust_dir, &[])?;
+    }
+
     run_command(
         "cargo",
         &[
@@ -14,6 +23,7 @@ pub(super) fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
             "--features",
             "hydrate",
             "--all-targets",
+            "--locked",
             "--",
             "-D",
             "warnings",
@@ -31,6 +41,7 @@ pub(super) fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
             "--features",
             "ssr",
             "--all-targets",
+            "--locked",
             "--",
             "-D",
             "warnings",
@@ -50,12 +61,12 @@ pub(super) fn verify(skip_wasm: bool, skip_tests: bool) -> Result<()> {
     if !skip_tests {
         run_command(
             "cargo",
-            &["test", "-p", "dmb_app", "--features", "hydrate", "--lib"],
+            &["test", "-p", "dmb_app", "--features", "hydrate", "--lib", "--locked"],
             &rust_dir,
             &[],
         )?;
 
-        run_command("cargo", &["test", "--workspace"], &rust_dir, &[])?;
+        run_command("cargo", &["test", "--workspace", "--locked"], &rust_dir, &[])?;
     }
 
     Ok(())

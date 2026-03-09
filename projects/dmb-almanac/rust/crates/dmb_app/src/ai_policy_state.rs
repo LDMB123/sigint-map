@@ -65,9 +65,19 @@ pub fn worker_threshold_value() -> Option<usize> {
     read_worker_threshold()
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub fn worker_threshold_value() -> Option<usize> {
+    None
+}
+
 #[cfg(feature = "hydrate")]
 pub fn worker_max_floats_value() -> Option<usize> {
     read_worker_max_floats()
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn worker_max_floats_value() -> Option<usize> {
+    None
 }
 
 #[cfg_attr(not(feature = "hydrate"), must_use)]
@@ -91,6 +101,9 @@ pub fn clear_worker_failure_status() {
     store_ai_telemetry_snapshot(ann_cap_diagnostics().as_ref());
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub fn clear_worker_failure_status() {}
+
 #[cfg(feature = "hydrate")]
 pub fn set_worker_threshold_override(value: Option<usize>) {
     match value {
@@ -107,6 +120,9 @@ pub fn set_worker_threshold_override(value: Option<usize>) {
     store_ai_telemetry_snapshot(ann_cap_diagnostics().as_ref());
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub fn set_worker_threshold_override(_value: Option<usize>) {}
+
 #[cfg(feature = "hydrate")]
 pub(crate) fn read_ann_cap_override_mb() -> Option<u64> {
     local_storage_parse::<u64>(ANN_CAP_OVERRIDE_KEY)
@@ -116,6 +132,11 @@ pub(crate) fn read_ann_cap_override_mb() -> Option<u64> {
 #[cfg(feature = "hydrate")]
 pub fn ann_cap_override_mb() -> Option<u64> {
     read_ann_cap_override_mb()
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn ann_cap_override_mb() -> Option<u64> {
+    None
 }
 
 #[cfg(feature = "hydrate")]
@@ -132,6 +153,9 @@ pub fn set_ann_cap_override_mb(value: Option<u64>) {
     store_ai_telemetry_snapshot(ann_cap_diagnostics().as_ref());
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub fn set_ann_cap_override_mb(_value: Option<u64>) {}
+
 #[cfg(feature = "hydrate")]
 pub fn set_webgpu_disabled(disabled: bool) {
     set_local_storage_flag(WEBGPU_DISABLE_KEY, disabled);
@@ -143,6 +167,9 @@ pub fn set_webgpu_disabled(disabled: bool) {
         *cache.borrow_mut() = Some(disabled);
     });
 }
+
+#[cfg(not(feature = "hydrate"))]
+pub fn set_webgpu_disabled(_disabled: bool) {}
 
 #[cfg(feature = "hydrate")]
 pub(crate) fn store_worker_threshold(value: usize) {
@@ -294,7 +321,15 @@ pub fn load_webgpu_policy_snapshot() -> Option<WebgpuPolicySnapshot> {
     with_local_storage(webgpu_policy_snapshot_from_storage)
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub fn load_webgpu_policy_snapshot() -> Option<WebgpuPolicySnapshot> {
+    None
+}
+
 #[cfg(feature = "hydrate")]
 pub fn reset_webgpu_policy_telemetry() {
     let _ = with_local_storage(reset_webgpu_policy_telemetry_storage);
 }
+
+#[cfg(not(feature = "hydrate"))]
+pub fn reset_webgpu_policy_telemetry() {}

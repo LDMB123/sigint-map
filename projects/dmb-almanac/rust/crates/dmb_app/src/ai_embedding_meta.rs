@@ -83,6 +83,11 @@ pub fn load_ai_telemetry_snapshot() -> Option<AiTelemetrySnapshot> {
     }
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub fn load_ai_telemetry_snapshot() -> Option<AiTelemetrySnapshot> {
+    None
+}
+
 #[cfg(feature = "hydrate")]
 pub(crate) async fn fetch_json<T: serde::de::DeserializeOwned>(url: &str) -> Option<T> {
     crate::browser::http::fetch_json(url).await

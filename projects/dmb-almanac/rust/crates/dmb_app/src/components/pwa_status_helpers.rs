@@ -1,6 +1,5 @@
 use super::*;
 
-#[cfg(any(feature = "hydrate", test))]
 pub(super) fn e2e_version_from_sw_script_url(script_url: &str) -> Option<String> {
     let marker = "e2e=";
     let start = script_url.find(marker)? + marker.len();
@@ -14,7 +13,6 @@ pub(super) fn e2e_version_from_sw_script_url(script_url: &str) -> Option<String>
     }
 }
 
-#[cfg(any(feature = "hydrate", test))]
 pub(super) fn should_suppress_update_notice(last_dismissed_ms: Option<f64>, now_ms: f64) -> bool {
     let Some(last) = last_dismissed_ms else {
         return false;
@@ -25,7 +23,6 @@ pub(super) fn should_suppress_update_notice(last_dismissed_ms: Option<f64>, now_
     (now_ms - last) < UPDATE_SNOOZE_MS
 }
 
-#[cfg(any(feature = "hydrate", test))]
 pub(super) fn remaining_snooze_ms(last_dismissed_ms: Option<f64>, now_ms: f64) -> Option<f64> {
     let last = last_dismissed_ms?;
     if now_ms < last {
@@ -39,7 +36,6 @@ pub(super) fn remaining_snooze_ms(last_dismissed_ms: Option<f64>, now_ms: f64) -
     }
 }
 
-#[cfg(feature = "hydrate")]
 fn format_relative_age(ts: f64, now_ms: f64) -> String {
     if now_ms <= ts {
         return "just now".to_string();
@@ -55,12 +51,10 @@ fn format_relative_age(ts: f64, now_ms: f64) -> String {
     }
 }
 
-#[cfg(feature = "hydrate")]
 pub(super) fn format_last_checked(ts: f64, now_ms: f64) -> String {
     format!("Last checked: {}", format_relative_age(ts, now_ms))
 }
 
-#[cfg(feature = "hydrate")]
 pub(super) fn format_age(prefix: &str, ts: f64, now_ms: f64) -> String {
     format!("{prefix}: {}", format_relative_age(ts, now_ms))
 }
@@ -75,12 +69,19 @@ pub(super) async fn refresh_cache_entries(cache_entries: RwSignal<Option<usize>>
     cache_entries.set(count_cache_entries().await);
 }
 
+#[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
+pub(super) async fn refresh_cache_entries(_cache_entries: RwSignal<Option<usize>>) {}
+
 #[cfg(feature = "hydrate")]
 pub(super) fn spawn_cache_entries_refresh(cache_entries: RwSignal<Option<usize>>) {
     spawn_local(async move {
         refresh_cache_entries(cache_entries).await;
     });
 }
+
+#[cfg(not(feature = "hydrate"))]
+pub(super) fn spawn_cache_entries_refresh(_cache_entries: RwSignal<Option<usize>>) {}
 
 #[cfg(feature = "hydrate")]
 fn is_previous_app_cache_name(name: &str) -> bool {
@@ -121,6 +122,12 @@ pub(super) async fn cleanup_previous_app_caches() -> Option<usize> {
     Some(deleted)
 }
 
+#[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
+pub(super) async fn cleanup_previous_app_caches() -> Option<usize> {
+    None
+}
+
 #[cfg(feature = "hydrate")]
 pub(super) fn set_update_reloading_state(state: &PwaStatusState) {
     state
@@ -128,6 +135,9 @@ pub(super) fn set_update_reloading_state(state: &PwaStatusState) {
         .set(Some(UPDATE_STATE_RELOADING.to_string()));
     state.update_applying.set(false);
 }
+
+#[cfg(not(feature = "hydrate"))]
+pub(super) fn set_update_reloading_state(_state: &PwaStatusState) {}
 
 #[cfg(feature = "hydrate")]
 pub(super) fn set_update_ready_state(state: &PwaStatusState) {
@@ -137,12 +147,18 @@ pub(super) fn set_update_ready_state(state: &PwaStatusState) {
         .set(Some(UPDATE_STATE_READY_TO_INSTALL.to_string()));
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub(super) fn set_update_ready_state(_state: &PwaStatusState) {}
+
 #[cfg(feature = "hydrate")]
 pub(super) fn clear_update_progress_state(state: &PwaStatusState) {
     state.update_error.set(None);
     state.update_applying.set(false);
     state.update_checking.set(false);
 }
+
+#[cfg(not(feature = "hydrate"))]
+pub(super) fn clear_update_progress_state(_state: &PwaStatusState) {}
 
 pub(super) fn action_reset_data() {
     #[cfg(feature = "hydrate")]

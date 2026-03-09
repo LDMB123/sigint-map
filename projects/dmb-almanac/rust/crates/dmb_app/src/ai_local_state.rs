@@ -120,7 +120,6 @@ pub fn ai_config_seeded() -> bool {
     local_storage_flag_enabled(AI_CONFIG_SEEDED_KEY)
 }
 
-#[cfg(feature = "hydrate")]
 #[derive(Debug, Clone, Default)]
 pub struct AiLocalStateSnapshot {
     pub worker_threshold: Option<usize>,
@@ -178,9 +177,19 @@ pub fn local_state_snapshot() -> AiLocalStateSnapshot {
     .unwrap_or_default()
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub fn local_state_snapshot() -> AiLocalStateSnapshot {
+    AiLocalStateSnapshot::default()
+}
+
 #[cfg(feature = "hydrate")]
 pub fn ai_config_version() -> Option<String> {
     local_storage_item(AI_CONFIG_VERSION_KEY)
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn ai_config_version() -> Option<String> {
+    None
 }
 
 #[cfg(feature = "hydrate")]
@@ -188,9 +197,19 @@ pub fn ai_config_generated_at() -> Option<String> {
     local_storage_item(AI_CONFIG_GENERATED_AT_KEY)
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub fn ai_config_generated_at() -> Option<String> {
+    None
+}
+
 #[cfg(feature = "hydrate")]
 pub fn webgpu_worker_bench_timestamp() -> Option<f64> {
     local_storage_parse(WEBGPU_WORKER_BENCH_KEY)
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn webgpu_worker_bench_timestamp() -> Option<f64> {
+    None
 }
 
 #[cfg(feature = "hydrate")]
@@ -198,19 +217,35 @@ pub fn embedding_sample_enabled() -> bool {
     local_storage_flag_enabled(EMBEDDING_SAMPLE_KEY)
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub fn embedding_sample_enabled() -> bool {
+    false
+}
+
 #[cfg(feature = "hydrate")]
 pub fn set_embedding_sample_enabled(enabled: bool) {
     set_local_storage_flag(EMBEDDING_SAMPLE_KEY, enabled);
 }
+
+#[cfg(not(feature = "hydrate"))]
+pub fn set_embedding_sample_enabled(_enabled: bool) {}
 
 #[cfg(feature = "hydrate")]
 pub fn store_ai_tuning(tuning: &AiTuning) {
     set_local_storage_json("dmb-ai-tuning", tuning);
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub fn store_ai_tuning(_tuning: &AiTuning) {}
+
 #[cfg(feature = "hydrate")]
 pub fn benchmark_history() -> Vec<AiBenchmarkSample> {
     load_benchmark_history()
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn benchmark_history() -> Vec<AiBenchmarkSample> {
+    Vec::new()
 }
 
 #[cfg(feature = "hydrate")]
@@ -237,6 +272,14 @@ pub fn store_benchmark_sample(
     store_ai_telemetry_snapshot(ann_cap_diagnostics().as_ref());
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub fn store_benchmark_sample(
+    _full: Option<AiBenchmark>,
+    _subset: Option<AiSubsetBenchmark>,
+    _worker: Option<AiWorkerBenchmark>,
+) {
+}
+
 #[cfg(feature = "hydrate")]
 pub fn suggest_target_latency_from_history() -> Option<f64> {
     let mut latencies: Vec<f64> = load_benchmark_history()
@@ -258,4 +301,20 @@ pub fn suggest_target_latency_from_history() -> Option<f64> {
     let raw_index = latencies.len().saturating_mul(3) / 4;
     let index = raw_index.min(latencies.len().saturating_sub(1));
     latencies.get(index).copied()
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn suggest_target_latency_from_history() -> Option<f64> {
+    None
+}
+
+#[cfg(not(feature = "hydrate"))]
+#[allow(clippy::unused_async)]
+pub async fn refresh_ai_config() -> bool {
+    false
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub fn ai_config_seeded() -> bool {
+    false
 }

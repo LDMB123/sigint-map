@@ -73,7 +73,10 @@ pub fn assistant_page() -> impl IntoView {
     }
 }
 
-fn render_assistant_results(query: &str, items: Vec<dmb_core::SearchResult>) -> impl IntoView {
+fn render_assistant_results(
+    query: &str,
+    items: Vec<dmb_core::SearchResult>,
+) -> impl IntoView + use<> {
     let trimmed = query.trim().to_string();
     if trimmed.len() < 2 {
         return empty_state(

@@ -66,7 +66,6 @@ pub(crate) fn search_result_href(item: &dmb_core::SearchResult) -> Option<String
     }
 }
 
-#[cfg(feature = "hydrate")]
 pub(crate) fn merge_search_results(
     mut prefix: Vec<dmb_core::SearchResult>,
     mut semantic: Vec<dmb_core::SearchResult>,

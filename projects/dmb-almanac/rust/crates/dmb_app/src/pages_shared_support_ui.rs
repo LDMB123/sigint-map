@@ -81,6 +81,11 @@ pub(crate) async fn load_user_attended_shows() -> Vec<UserAttendedShow> {
         .unwrap_or_default()
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub(crate) async fn load_user_attended_shows() -> Vec<UserAttendedShow> {
+    Vec::new()
+}
+
 #[cfg(feature = "hydrate")]
 pub(crate) async fn add_user_attended_show(show_id: i32, show_date: Option<String>) -> bool {
     dmb_idb::add_user_attended_show(show_id, show_date)
@@ -88,7 +93,17 @@ pub(crate) async fn add_user_attended_show(show_id: i32, show_date: Option<Strin
         .is_ok()
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub(crate) async fn add_user_attended_show(_show_id: i32, _show_date: Option<String>) -> bool {
+    false
+}
+
 #[cfg(feature = "hydrate")]
 pub(crate) async fn remove_user_attended_show(show_id: i32) -> bool {
     dmb_idb::remove_user_attended_show(show_id).await.is_ok()
+}
+
+#[cfg(not(feature = "hydrate"))]
+pub(crate) async fn remove_user_attended_show(_show_id: i32) -> bool {
+    false
 }

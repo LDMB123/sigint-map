@@ -63,7 +63,7 @@ pub(super) fn render_search_results_content(
     items: Vec<SearchResult>,
     query: &str,
     active_filter: RwSignal<String>,
-) -> impl IntoView {
+) -> impl IntoView + use<> {
     let query = query.to_string();
 
     if items.is_empty() && !query.is_empty() {

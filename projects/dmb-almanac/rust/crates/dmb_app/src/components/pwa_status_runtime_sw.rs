@@ -30,6 +30,13 @@ pub(in super::super) fn set_sw_action_status(
     });
 }
 
+#[cfg(not(feature = "hydrate"))]
+pub(in super::super) fn set_sw_action_status(
+    _sw_action_status: RwSignal<Option<String>>,
+    _message: &str,
+) {
+}
+
 #[cfg(feature = "hydrate")]
 fn parse_sw_message_payload(event: &web_sys::MessageEvent) -> Option<serde_json::Value> {
     if let Some(data) = event.data().as_string() {
