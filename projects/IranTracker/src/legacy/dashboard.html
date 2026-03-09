@@ -1,0 +1,736 @@
+<!-- ===== LOADING SCREEN ===== -->
+<div class="loading-screen" id="loading-screen" role="status" aria-live="polite" aria-busy="true">
+  <div class="loading-screen__inner">
+    <div class="radar-sweep">
+      <div class="radar-sweep__ring"></div>
+      <div class="radar-sweep__ring radar-sweep__ring--2"></div>
+      <div class="radar-sweep__ring radar-sweep__ring--3"></div>
+      <div class="radar-sweep__arm"></div>
+      <div class="radar-sweep__dot"></div>
+    </div>
+    <div class="loading-screen__brand">SIGINT-MAP</div>
+    <div class="loading-screen__status" id="loading-status">INITIALIZING SYSTEMS...</div>
+    <div class="loading-screen__bar">
+      <div class="loading-screen__progress" id="loading-progress"></div>
+    </div>
+    <div class="loading-screen__percent" id="loading-percent">0%</div>
+  </div>
+</div>
+
+<div class="dashboard">
+
+  <!-- ===== SIDEBAR (300px) ===== -->
+  <aside class="sidebar" id="sidebar">
+    <!-- HEADER with scanning line -->
+    <div class="sidebar__header">
+      <div class="sidebar__logo">
+        <svg class="logo-icon" width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <circle cx="14" cy="14" r="12" stroke="#00d4ff" stroke-width="1.5" opacity="0.4"/>
+          <circle cx="14" cy="14" r="8" stroke="#00d4ff" stroke-width="1" opacity="0.6"/>
+          <circle cx="14" cy="14" r="3" fill="#00d4ff"/>
+          <line x1="14" y1="2" x2="14" y2="26" stroke="#00d4ff" stroke-width="0.5" opacity="0.3"/>
+          <line x1="2" y1="14" x2="26" y2="14" stroke="#00d4ff" stroke-width="0.5" opacity="0.3"/>
+        </svg>
+        <div class="sidebar__logo-text">
+          <span class="sidebar__logo-name">SIGINT-MAP</span>
+          <span class="sidebar__logo-sub">OPERATION EPIC FURY</span>
+        </div>
+      </div>
+      <div class="sidebar__scan-line"></div>
+    </div>
+
+    <div class="sidebar__scroll">
+      <!-- ===== GROUP: THREAT ASSESSMENT ===== -->
+      <details class="sidebar-group sidebar-group--threat" open>
+        <summary>Threat Assessment</summary>
+
+        <!-- THREAT LEVEL -->
+        <div class="sidebar__section">
+          <div class="sidebar__title">Threat Level</div>
+          <div class="threat-meter">
+            <div class="threat-meter__bar">
+              <div class="threat-meter__fill" style="width: 95%;"></div>
+            </div>
+            <div class="threat-meter__label">
+              <span class="threat-meter__level threat-meter__level--critical">CRITICAL</span>
+              <span class="threat-meter__defcon">DEFCON 2</span>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- ===== GROUP: ISR & SENSORS ===== -->
+      <details class="sidebar-group sidebar-group--isr" open>
+        <summary>ISR &amp; Sensors</summary>
+
+      <!-- LIVE AIRCRAFT -->
+      <div class="sidebar__section" id="aircraft-section">
+        <div class="sidebar__title">
+          <span>Live Aircraft</span>
+          <span class="sidebar__title-badge" id="aircraft-status">
+            <span class="status-dot status-dot--loading"></span>
+            CONNECTING
+          </span>
+        </div>
+        <div class="aircraft-panel">
+          <div class="aircraft-panel__count" id="aircraft-count">--</div>
+          <div class="aircraft-panel__label">Tracked over AOR</div>
+          <div class="aircraft-panel__list" id="aircraft-list">
+            <div class="aircraft-panel__empty">Awaiting data...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEISMIC ACTIVITY -->
+      <div class="sidebar__section" id="seismic-section">
+        <div class="sidebar__title">
+          <span>Seismic Activity</span>
+          <span class="sidebar__title-badge">
+            <span class="status-dot status-dot--loading" id="seismic-panel-dot"></span>
+            USGS LIVE
+          </span>
+        </div>
+        <div class="aircraft-panel">
+          <div class="aircraft-panel__count" style="color:#f59e0b" id="seismic-count">--</div>
+          <div class="aircraft-panel__label">Recent quakes in AOR</div>
+          <div class="aircraft-panel__list" id="seismic-list">
+            <div class="aircraft-panel__empty">Awaiting data...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SATELLITE THERMAL -->
+      <div class="sidebar__section" id="thermal-section">
+        <div class="sidebar__title">
+          <span>Satellite Thermal</span>
+          <span class="sidebar__title-badge">
+            <span class="status-dot status-dot--loading" id="firms-panel-dot"></span>
+            NASA FIRMS
+          </span>
+        </div>
+        <div class="aircraft-panel">
+          <div class="aircraft-panel__count" style="color:#ff4400" id="thermal-count">--</div>
+          <div class="aircraft-panel__label">Hotspots detected (MODIS)</div>
+        </div>
+      </div>
+
+      <!-- AVIATION SIGMETs -->
+      <div class="sidebar__section" id="sigmet-section">
+        <div class="sidebar__title">
+          <span>Aviation SIGMETs</span>
+          <span class="sidebar__title-badge">
+            <span class="status-dot status-dot--loading" id="sigmet-panel-dot"></span>
+            AVWX
+          </span>
+        </div>
+        <div class="aircraft-panel">
+          <div class="aircraft-panel__count" style="color:#f59e0b" id="sigmet-count">--</div>
+          <div class="aircraft-panel__label">Active int'l flight warnings</div>
+        </div>
+      </div>
+
+      <!-- NUCLEAR MONITORING -->
+      <div class="sidebar__section">
+        <div class="sidebar__title">
+          <span>☢ Nuclear Sites</span>
+          <span class="sidebar__title-badge">
+            <span class="status-dot status-dot--live"></span>
+            IAEA / OSINT
+          </span>
+        </div>
+        <div class="aircraft-panel">
+          <div class="aircraft-panel__count" style="color:#fbbf24">8</div>
+          <div class="aircraft-panel__label">Monitored Iranian nuclear sites</div>
+        </div>
+      </div>
+
+      <!-- ADSB.LOL MILITARY (NEW) -->
+      <div class="sidebar__section" id="adsb-section">
+        <div class="sidebar__title">
+          <span>Military ADS-B</span>
+          <span class="sidebar__title-badge">
+            <span class="status-dot status-dot--loading" id="adsb-lol-dot"></span>
+            ADSB.LOL
+          </span>
+        </div>
+        <div class="aircraft-panel">
+          <div class="aircraft-panel__count" style="color:#FFB000" id="adsb-mil-count">--</div>
+          <div class="aircraft-panel__label">DB-flagged military aircraft</div>
+        </div>
+      </div>
+
+      <!-- MARITIME TRACKING (NEW) -->
+      <div class="sidebar__section" id="maritime-section">
+        <div class="sidebar__title">
+          <span>Maritime AIS</span>
+          <span class="sidebar__title-badge" id="maritime-status">
+            <span class="status-dot status-dot--loading"></span>
+            CONN
+          </span>
+        </div>
+        <div class="aircraft-panel">
+          <div class="aircraft-panel__count" style="color:#06d6a0" id="maritime-count">--</div>
+          <div class="aircraft-panel__label">Vessels tracked in AOR</div>
+        </div>
+      </div>
+
+      <!-- RADIATION MONITORING (NEW) -->
+      <div class="sidebar__section" id="radiation-section">
+        <div class="sidebar__title">
+          <span>☢ Radiation</span>
+          <span class="sidebar__title-badge" id="radiation-status">
+            <span class="status-dot status-dot--loading"></span>
+            SAFECAST
+          </span>
+        </div>
+        <div class="aircraft-panel">
+          <div class="aircraft-panel__count" style="color:#22c55e" id="radiation-count">--</div>
+          <div class="aircraft-panel__label">Monitoring stations detected</div>
+        </div>
+      </div>
+
+      <!-- CONFLICT EVENTS (NEW) -->
+      <div class="sidebar__section" id="conflict-section">
+        <div class="sidebar__title">
+          <span>Conflict Events</span>
+          <span class="sidebar__title-badge" id="conflict-status">
+            <span class="status-dot status-dot--loading"></span>
+            CONN
+          </span>
+        </div>
+        <div class="aircraft-panel">
+          <div class="aircraft-panel__count" style="color:#ef4444" id="conflict-count">--</div>
+          <div class="aircraft-panel__label">Georeferenced conflict events</div>
+        </div>
+      </div>
+
+      <!-- WEATHER / WIND (NEW) -->
+      <div class="sidebar__section" id="weather-section">
+        <div class="sidebar__title">
+          <span>Wind / Weather</span>
+          <span class="sidebar__title-badge">
+            <span class="status-dot status-dot--loading" id="weather-dot"></span>
+            OPEN-METEO
+          </span>
+        </div>
+        <div class="weather-panel" id="weather-panel" style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5">Awaiting data...</div>
+      </div>
+
+      <!-- MARINE CONDITIONS (NEW) -->
+      <div class="sidebar__section" id="marine-section">
+        <div class="sidebar__title">
+          <span>Hormuz Strait</span>
+          <span class="sidebar__title-badge" id="marine-status">
+            <span class="status-dot status-dot--loading"></span>
+            MARINE
+          </span>
+        </div>
+        <div class="aircraft-panel">
+          <div class="aircraft-panel__count" style="color:#38bdf8" id="wave-height">--</div>
+          <div class="aircraft-panel__label">Wave height (meters)</div>
+        </div>
+      </div>
+      </details>
+
+      <!-- ===== GROUP: FORCE & METRICS ===== -->
+      <details class="sidebar-group sidebar-group--force" open>
+        <summary>Force &amp; Metrics</summary>
+
+      <!-- FORCE DISPOSITION -->
+      <div class="sidebar__section">
+        <div class="sidebar__title">Force Disposition</div>
+        <div class="force-grid">
+          <div class="force-item">
+            <div class="force-item__icon force-item__icon--naval">⚓</div>
+            <div class="force-item__info">
+              <div class="force-item__count">2</div>
+              <div class="force-item__label">US Carriers</div>
+            </div>
+            <div class="force-item__status force-item__status--active">ACTIVE</div>
+          </div>
+          <div class="force-item">
+            <div class="force-item__icon force-item__icon--air">✈</div>
+            <div class="force-item__info">
+              <div class="force-item__count">4</div>
+              <div class="force-item__label">US Air Bases</div>
+            </div>
+            <div class="force-item__status force-item__status--active">OPS</div>
+          </div>
+          <div class="force-item">
+            <div class="force-item__icon force-item__icon--friendly">✦</div>
+            <div class="force-item__info">
+              <div class="force-item__count">2</div>
+              <div class="force-item__label">Israeli Bases</div>
+            </div>
+            <div class="force-item__status force-item__status--active">ACTIVE</div>
+          </div>
+          <div class="force-item">
+            <div class="force-item__icon force-item__icon--missile">◎</div>
+            <div class="force-item__info">
+              <div class="force-item__count">10</div>
+              <div class="force-item__label">Iranian Targets</div>
+            </div>
+            <div class="force-item__status force-item__status--struck">STRUCK</div>
+          </div>
+          <div class="force-item">
+            <div class="force-item__icon force-item__icon--missile">⊗</div>
+            <div class="force-item__info">
+              <div class="force-item__count">2</div>
+              <div class="force-item__label">Iranian Naval</div>
+            </div>
+            <div class="force-item__status force-item__status--tracked">TRACKED</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SITUATION METRICS -->
+      <div class="sidebar__section">
+        <div class="sidebar__title">Situation Metrics</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card__value" data-count="750" style="--stat-color: var(--color-missile);">0</div>
+            <div class="stat-card__delta stat-card__delta--up">+</div>
+            <div class="stat-card__label">Missiles/Drones</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value" data-count="708" style="--stat-color: var(--color-air);">0</div>
+            <div class="stat-card__delta stat-card__delta--up">94%</div>
+            <div class="stat-card__label">Intercepted</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value" data-count="200" data-suffix="+" style="--stat-color: var(--color-land);">0</div>
+            <div class="stat-card__delta stat-card__delta--up">▲</div>
+            <div class="stat-card__label">Targets Struck</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value" data-count="6" style="--stat-color: var(--color-missile);">0</div>
+            <div class="stat-card__delta stat-card__delta--down">▼</div>
+            <div class="stat-card__label">Coalition KIA</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value" data-count="41" data-suffix="+" style="--stat-color: var(--color-land);">0</div>
+            <div class="stat-card__delta stat-card__delta--up">▲</div>
+            <div class="stat-card__label">Iran Officials KIA</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value" data-count="24" data-suffix="+" style="--stat-color: var(--color-neutral);">0</div>
+            <div class="stat-card__delta stat-card__delta--neutral">—</div>
+            <div class="stat-card__label">Civilian Deaths</div>
+          </div>
+        </div>
+      </div>
+      </details>
+
+      <!-- ===== GROUP: ANALYTICS ===== -->
+      <details class="sidebar-group sidebar-group--analytics">
+        <summary>Analytics</summary>
+
+      <!-- ANALYTICS DASHBOARD -->
+      <div class="sidebar__section sidebar__section--analytics" id="analytics-section">
+        <div class="sidebar__title">Analytics Dashboard</div>
+        <div class="analytics-grid">
+          <div class="analytics-card analytics-card--oil">
+            <div class="analytics-card__icon">🛢</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">BRENT CRUDE</div>
+              <div class="analytics-card__value" id="oil-price">--</div>
+              <div class="analytics-card__delta" id="oil-delta">--</div>
+              <div class="analytics-card__delta" id="oil-status">Awaiting feed</div>
+            </div>
+          </div>
+          <div class="analytics-card analytics-card--sorties">
+            <div class="analytics-card__icon">✈</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">EST. SORTIES</div>
+              <div class="analytics-card__value" id="sortie-count">200+</div>
+              <div class="analytics-card__delta analytics-card__delta--up">Active</div>
+            </div>
+          </div>
+          <div class="analytics-card analytics-card--ships">
+            <div class="analytics-card__icon">⚓</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">IRAN SHIPS SUNK</div>
+              <div class="analytics-card__value">9</div>
+              <div class="analytics-card__delta analytics-card__delta--up">Trump/CENTCOM</div>
+            </div>
+          </div>
+          <div class="analytics-card analytics-card--hormuz">
+            <div class="analytics-card__icon">🚫</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">HORMUZ STATUS</div>
+              <div class="analytics-card__value analytics-card__value--red">CLOSED</div>
+              <div class="analytics-card__delta">Oil shipping disrupted</div>
+            </div>
+          </div>
+        </div>
+        <div class="analytics-grid analytics-grid--live">
+          <div class="analytics-card analytics-card--live">
+            <div class="analytics-card__icon">✈</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">Tracked Aircraft</div>
+              <div class="analytics-card__value" id="analytics-aircraft-total">--</div>
+              <div class="analytics-card__delta" id="analytics-last-updated">Awaiting sync</div>
+            </div>
+          </div>
+          <div class="analytics-card analytics-card--live">
+            <div class="analytics-card__icon">⚓</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">Tracked Vessels</div>
+              <div class="analytics-card__value" id="analytics-vessels-total">--</div>
+              <div class="analytics-card__delta">AIS in AOR</div>
+            </div>
+          </div>
+          <div class="analytics-card analytics-card--live">
+            <div class="analytics-card__icon">🛰</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">Conflict Markers</div>
+              <div class="analytics-card__value" id="analytics-conflict-total">--</div>
+              <div class="analytics-card__delta">GDELT + UCDP</div>
+            </div>
+          </div>
+          <div class="analytics-card analytics-card--live">
+            <div class="analytics-card__icon">🔥</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">Thermal Hotspots</div>
+              <div class="analytics-card__value" id="analytics-thermal-total">--</div>
+              <div class="analytics-card__delta">NASA FIRMS</div>
+            </div>
+          </div>
+          <div class="analytics-card analytics-card--live">
+            <div class="analytics-card__icon">🌐</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">Seismic Events</div>
+              <div class="analytics-card__value" id="analytics-seismic-total">--</div>
+              <div class="analytics-card__delta">USGS recent</div>
+            </div>
+          </div>
+          <div class="analytics-card analytics-card--live">
+            <div class="analytics-card__icon">☢</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">Radiation</div>
+              <div class="analytics-card__value" id="analytics-radiation">NO DATA</div>
+              <div class="analytics-card__delta">Safecast / OpenRadiation</div>
+            </div>
+          </div>
+          <div class="analytics-card analytics-card--live">
+            <div class="analytics-card__icon">🌊</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">Wave Height</div>
+              <div class="analytics-card__value" id="analytics-wave">NO DATA</div>
+              <div class="analytics-card__delta">Hormuz max</div>
+            </div>
+          </div>
+          <div class="analytics-card analytics-card--live">
+            <div class="analytics-card__icon">💨</div>
+            <div class="analytics-card__info">
+              <div class="analytics-card__label">Wind Speed</div>
+              <div class="analytics-card__value" id="analytics-wind">NO DATA</div>
+              <div class="analytics-card__delta">Regional max</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </details>
+
+      <!-- ===== GROUP: FEEDS & SOURCES ===== -->
+      <details class="sidebar-group sidebar-group--feeds">
+        <summary>Feeds &amp; Sources</summary>
+
+      <!-- TIMELINE -->
+      <div class="sidebar__section sidebar__section--timeline">
+        <div class="sidebar__title">Event Timeline</div>
+      </div>
+      <div class="event-feed" id="event-feed">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- SOURCES -->
+      <div class="sidebar__section sidebar__section--sources">
+        <div class="sidebar__title">Data Sources</div>
+        <div class="sources-list">
+          <div class="source-item">
+            <span class="status-dot status-dot--live" id="opensky-dot"></span>
+            <span>OpenSky ADS-B</span>
+            <span class="source-item__tag" id="opensky-tag">LIVE</span>
+          </div>
+          <div class="source-item" id="osint-src">
+            <span class="status-dot status-dot--live"></span>
+            <span>OSINT News</span>
+            <span class="source-item__tag">LIVE</span>
+          </div>
+          <div class="source-item" id="ais-maritime-src">
+            <span class="status-dot status-dot--live"></span>
+            <span>AIS Maritime</span>
+            <span class="source-item__tag">LIVE</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--live"></span>
+            <span>RSS News Feeds</span>
+            <span class="source-item__tag">LIVE</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--loading" id="seismic-dot"></span>
+            <span>SEISMIC (USGS)</span>
+            <span class="source-item__tag source-item__tag--sim" id="seismic-tag">CONN</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--loading" id="firms-dot"></span>
+            <span>NASA FIRMS SAT</span>
+            <span class="source-item__tag source-item__tag--sim" id="firms-tag">CONN</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--loading" id="gdelt-dot"></span>
+            <span>GDELT News</span>
+            <span class="source-item__tag source-item__tag--sim" id="gdelt-tag">CONN</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--loading" id="sigmet-dot"></span>
+            <span>Aviation SIGMETs</span>
+            <span class="source-item__tag source-item__tag--sim" id="sigmet-tag">CONN</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--loading" id="centcom-dot"></span>
+            <span>MIL NEWS</span>
+            <span class="source-item__tag source-item__tag--sim" id="centcom-tag">CONN</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--sim" id="gibs-dot"></span>
+            <span>NASA GIBS SAT</span>
+            <span class="source-item__tag source-item__tag--sim" id="gibs-tag">READY</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--loading" id="idf-dot"></span>
+            <span>ME / Israel News</span>
+            <span class="source-item__tag source-item__tag--sim" id="idf-tag">CONN</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--loading" id="adsb-lol-src-dot"></span>
+            <span>ADSB.lol Military</span>
+            <span class="source-item__tag source-item__tag--sim" id="adsb-lol-src-tag">CONN</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--live"></span>
+            <span>Maritime AIS</span>
+            <span class="source-item__tag">LIVE</span>
+          </div>
+          <div class="source-item" id="weather-source-item">
+            <span class="status-dot status-dot--loading"></span>
+            <span>Open-Meteo Wind</span>
+            <span class="source-item__tag source-item__tag--sim">CONN</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--loading"></span>
+            <span>Radiation Mon.</span>
+            <span class="source-item__tag source-item__tag--sim">CONN</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--loading"></span>
+            <span>Conflict Events</span>
+            <span class="source-item__tag source-item__tag--sim">CONN</span>
+          </div>
+          <div class="source-item" id="marine-source-item">
+            <span class="status-dot status-dot--loading"></span>
+            <span>Marine Weather</span>
+            <span class="source-item__tag source-item__tag--sim">CONN</span>
+          </div>
+          <div class="source-item">
+            <span class="status-dot status-dot--live"></span>
+            <span>Oil Price (Brent)</span>
+            <span class="source-item__tag">LIVE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE NEWS FEED -->
+      <div class="sidebar__section sidebar__section--news" id="news-section">
+        <div class="sidebar__title">
+          <span>Live News Feed</span>
+          <span class="sidebar__title-badge" id="rss-status">
+            <span class="status-dot status-dot--loading"></span>
+            CONNECTING
+          </span>
+        </div>
+        <div class="news-feed" id="news-feed">
+          <div class="news-feed__empty">Fetching headlines...</div>
+        </div>
+      </div>
+      </details>
+
+    </div>
+  </aside>
+
+  <!-- ===== MAIN AREA ===== -->
+  <main class="main-area" id="main-area">
+    <!-- Top Controls Bar -->
+    <div class="controls-bar">
+      <div class="controls-bar__left">
+        <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
+        <!-- Filter buttons -->
+        <div class="filter-bar" id="filter-bar">
+          <button class="filter-btn filter-btn--active" data-filter="all">Show All</button>
+          <button class="filter-btn filter-btn--impacts" data-filter="impacts">Impacts</button>
+          <button class="filter-btn filter-btn--intercepts" data-filter="intercepts">Intercepts</button>
+          <button class="filter-btn" data-filter="strikes">Strikes</button>
+          <button class="filter-btn" data-filter="naval">Naval</button>
+          <button class="filter-btn" data-filter="air">Air</button>
+          <button class="filter-btn filter-btn--seismic" data-filter="seismic">Seismic</button>
+          <button class="filter-btn filter-btn--thermal" data-filter="thermal">Thermal</button>
+          <button class="filter-btn filter-btn--nuclear" data-filter="nuclear">Nuclear</button>
+          <button class="filter-btn" data-filter="maritime" style="--filter-color:#06d6a0">Maritime</button>
+          <button class="filter-btn" data-filter="weather" style="--filter-color:#64748b">Weather</button>
+          <button class="filter-btn" data-filter="radiation" style="--filter-color:#22c55e">Radiation</button>
+          <button class="filter-btn" data-filter="conflict" style="--filter-color:#ef4444">Conflict</button>
+        </div>
+        <!-- Search Box (NEW) -->
+        <div class="search-box">
+          <svg class="search-box__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="search-input" class="search-box__input" placeholder="Search events...">
+          <span class="search-box__count" id="search-match-count"></span>
+          <button type="button" class="search-box__clear" id="search-clear" aria-label="Clear search">×</button>
+        </div>
+      </div>
+      <div class="controls-bar__right">
+        <div class="live-indicator">
+          <span class="live-dot"></span>
+          <span>LIVE OSINT</span>
+        </div>
+        <time class="utc-clock" id="utc-clock">--:--:-- UTC</time>
+        <button class="icon-btn sat-toggle" id="sat-toggle" aria-label="SAT thermal overlay" data-tooltip="SAT Overlay">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4M3.2 3.2a13 13 0 0 0 0 17.6M20.8 3.2a13 13 0 0 1 0 17.6"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="sound-toggle" aria-label="Toggle sound" data-tooltip="Sound">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme" data-tooltip="Theme">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3D Globe Canvas -->
+    <canvas id="globe-canvas"></canvas>
+
+    <!-- Time Scrubber (Enhanced) -->
+    <div class="time-scrubber" id="time-scrubber">
+      <button class="time-scrubber__play" id="time-play" aria-label="Play/Pause timeline">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+          <polygon points="5,3 19,12 5,21"/>
+        </svg>
+      </button>
+      <div class="time-scrubber__time">
+        <span class="time-scrubber__label" id="time-label">Mar 1, 08:00 UTC</span>
+      </div>
+      <div class="time-scrubber__track-wrap">
+        <div class="time-scrubber__track" id="scrubber-track">
+          <div class="time-scrubber__event-markers" id="scrubber-markers"></div>
+          <input type="range" class="time-scrubber__input" id="time-slider" min="0" max="1000" value="0">
+        </div>
+        <div class="time-scrubber__tooltip" id="scrubber-tooltip"></div>
+      </div>
+      <div class="time-scrubber__speeds">
+        <button class="speed-btn" data-speed="0.5">0.5x</button>
+        <button class="speed-btn speed-btn--active" data-speed="1">1x</button>
+        <button class="speed-btn" data-speed="2">2x</button>
+        <button class="speed-btn" data-speed="4">4x</button>
+      </div>
+    </div>
+
+    <!-- Keyboard hints -->
+    <div class="keyboard-hints">
+      <span class="kbd">Space Play</span>
+      <span class="kbd">R Reset</span>
+      <span class="kbd">F Fullscreen</span>
+      <span class="kbd">N Notify</span>
+      <span class="kbd">P Perf</span>
+      <span class="kbd">C Briefing</span>
+      <span class="kbd">? All Keys</span>
+    </div>
+
+    <!-- Minimap -->
+    <div class="minimap" id="minimap">
+      <canvas id="minimap-canvas" width="200" height="150"></canvas>
+      <div class="minimap__label">AOR OVERVIEW</div>
+    </div>
+
+    <!-- Conflict Intensity Indicator (NEW) -->
+    <div class="intensity-indicator" id="intensity-indicator">
+      <div class="intensity-indicator__label">CONFLICT INTENSITY</div>
+      <div class="intensity-indicator__bars">
+        <div class="intensity-bar" style="--h:30%"></div>
+        <div class="intensity-bar" style="--h:45%"></div>
+        <div class="intensity-bar" style="--h:60%"></div>
+        <div class="intensity-bar" style="--h:90%"></div>
+        <div class="intensity-bar intensity-bar--peak" style="--h:100%"></div>
+        <div class="intensity-bar intensity-bar--peak" style="--h:95%"></div>
+        <div class="intensity-bar" style="--h:80%"></div>
+        <div class="intensity-bar" style="--h:70%"></div>
+        <div class="intensity-bar" style="--h:85%"></div>
+        <div class="intensity-bar intensity-bar--peak" style="--h:98%"></div>
+        <div class="intensity-bar" style="--h:75%"></div>
+        <div class="intensity-bar" style="--h:65%"></div>
+      </div>
+      <div class="intensity-indicator__scale">
+        <span>Day 1 0800</span>
+        <span>Day 2 0800</span>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="disclaimer">
+      OSINT / PUBLIC SOURCE<br>
+      Data from public reporting. Positions approximate. Not operational.
+    </div>
+
+    <!-- Tooltip -->
+    <div class="marker-tooltip" id="marker-tooltip">
+      <div class="marker-tooltip__title" id="tooltip-title"></div>
+      <div class="marker-tooltip__detail" id="tooltip-detail"></div>
+    </div>
+  </main>
+
+  <!-- ===== DETAIL PANEL ===== -->
+  <div class="detail-panel" id="detail-panel">
+    <button class="detail-panel__close" id="detail-close" aria-label="Close panel">&times;</button>
+    <div class="detail-panel__header">
+      <div class="detail-panel__type" id="detail-type"></div>
+      <div class="detail-panel__name" id="detail-name"></div>
+    </div>
+    <div class="detail-panel__body">
+      <div class="detail-panel__row">
+        <span class="detail-panel__key">Coordinates</span>
+        <span class="detail-panel__val" id="detail-coords"></span>
+      </div>
+      <div class="detail-panel__row">
+        <span class="detail-panel__key">Status</span>
+        <span class="detail-panel__val" id="detail-status"></span>
+      </div>
+      <div class="detail-panel__row">
+        <span class="detail-panel__key">Details</span>
+        <span class="detail-panel__val" id="detail-details"></span>
+      </div>
+      <div class="detail-panel__row">
+        <span class="detail-panel__key">Source</span>
+        <span class="detail-panel__val" id="detail-source"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BOTTOM TICKER ===== -->
+  <footer class="bottom-bar">
+    <div class="ticker-wrap">
+      <div class="ticker" id="ticker"></div>
+    </div>
+  </footer>
+
+</div>

@@ -12,8 +12,9 @@ section44-web-apis.js
 .DS_Store
 Thumbs.db
 
-# This repo is dedicated to dmb-almanac.
 # Keep sibling local projects out of git status and agent context.
 projects/*
 !projects/dmb-almanac/
 !projects/dmb-almanac/**
+!projects/IranTracker/
+!projects/IranTracker/**
