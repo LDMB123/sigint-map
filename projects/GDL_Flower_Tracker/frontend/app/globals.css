@@ -188,6 +188,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border-radius: var(--radius-lg);
   background: linear-gradient(155deg, rgba(72, 190, 124, 0.12), rgba(45, 106, 145, 0.08));
   overflow: hidden;
+  pointer-events: none;
 }
 .hero-visual, .hero-fallback, .hero-canvas { position: relative; inset: 0; min-height: 280px; }
 .hero-scene-shell {

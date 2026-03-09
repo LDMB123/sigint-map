@@ -1,11 +1,11 @@
 "use client";
 
-import { Float, OrbitControls } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
-import { useEffect, useState } from "react";
+import { Float } from "@react-three/drei";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-function BloomForms({ active }: { active: boolean }) {
+function BloomForms() {
   return (
     <>
       <ambientLight intensity={1.1} />
@@ -29,8 +29,24 @@ function BloomForms({ active }: { active: boolean }) {
           <pointsMaterial color="#d2ffe2" size={0.035} sizeAttenuation />
         </points>
       </Float>
-      <OrbitControls enableZoom={false} enablePan={false} autoRotate={active} autoRotateSpeed={0.8} />
     </>
+  );
+}
+
+function SceneRig({ active }: { active: boolean }) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((state, delta) => {
+    if (!active || !groupRef.current) return;
+
+    groupRef.current.rotation.y += delta * 0.18;
+    groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.32) * 0.08;
+  });
+
+  return (
+    <group ref={groupRef}>
+      <BloomForms />
+    </group>
   );
 }
 
@@ -49,10 +65,15 @@ export function HeroScene({ active }: { active: boolean }) {
 
   return (
     <div className="hero-canvas" aria-hidden="true">
-      <Canvas camera={{ position: [0, 0, 4], fov: 42 }} gl={{ antialias: true, alpha: true }} dpr={[1, 1.5]} frameloop={active ? "always" : "never"}>
+      <Canvas
+        camera={{ position: [0, 0, 4], fov: 42 }}
+        gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
+        dpr={[1, 1.25]}
+        frameloop={active ? "always" : "never"}
+      >
         <color attach="background" args={["#0f1117"]} />
         <fog attach="fog" args={["#0f1117", 4, 8]} />
-        <BloomForms active={active} />
+        <SceneRig active={active} />
       </Canvas>
     </div>
   );

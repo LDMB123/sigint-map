@@ -8,6 +8,7 @@ const BASELINE = {
   saveData: false,
   effectiveType: null,
   deviceMemory: null,
+  webglSupported: true,
 } as const;
 
 describe("hero scene capability", () => {
@@ -22,5 +23,6 @@ describe("hero scene capability", () => {
     expect(canLoadHeroScene({ ...BASELINE, effectiveType: "3g" })).toBe(false);
     expect(canLoadHeroScene({ ...BASELINE, effectiveType: "slow-2g" })).toBe(false);
     expect(canLoadHeroScene({ ...BASELINE, deviceMemory: 2 })).toBe(false);
+    expect(canLoadHeroScene({ ...BASELINE, webglSupported: false })).toBe(false);
   });
 });

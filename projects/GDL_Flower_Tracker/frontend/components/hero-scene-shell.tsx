@@ -18,6 +18,8 @@ const LazyHeroScene = dynamic(() => import("@/components/hero-scene").then((modu
 export function HeroSceneShell({ active }: { active: boolean }) {
   const [eligible, setEligible] = useState(false);
   const [hasLoadedScene, setHasLoadedScene] = useState(false);
+  const [documentVisible, setDocumentVisible] = useState(true);
+  const [shellVisible, setShellVisible] = useState(true);
   const { activated, ref } = useDeferredActivation<HTMLDivElement>({
     enabled: eligible && active && !hasLoadedScene,
     minimumDelayMs: 900,
@@ -51,10 +53,43 @@ export function HeroSceneShell({ active }: { active: boolean }) {
     };
   }, []);
 
+  useEffect(() => {
+    const updateDocumentVisibility = () => {
+      setDocumentVisible(document.visibilityState === "visible");
+    };
+
+    updateDocumentVisibility();
+    document.addEventListener("visibilitychange", updateDocumentVisibility);
+    return () => document.removeEventListener("visibilitychange", updateDocumentVisibility);
+  }, []);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      setShellVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const nextEntry = entries[0];
+        setShellVisible(Boolean(nextEntry?.isIntersecting));
+      },
+      { threshold: 0.1 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  const sceneActive = active && documentVisible && shellVisible;
+
   return (
     <div ref={ref} className="hero-scene-shell" aria-hidden="true">
       <div className="hero-fallback" data-testid="hero-scene-fallback" />
-      {(activated || hasLoadedScene) && eligible ? <LazyHeroScene active={active} /> : null}
+      {(activated || hasLoadedScene) && eligible ? <LazyHeroScene active={sceneActive} /> : null}
     </div>
   );
 }
