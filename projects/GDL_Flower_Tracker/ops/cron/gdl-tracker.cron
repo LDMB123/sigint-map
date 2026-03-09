@@ -1,0 +1,8 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Sync live tracker data every 6 hours.
+0 */6 * * * cd /srv/gdl-tracker && ADMIN_API_TOKEN="$(cat /etc/gdl-tracker/admin_token)" BASE_URL=http://127.0.0.1:8000 ./scripts/run_sync.sh >> /var/log/gdl-tracker-sync.log 2>&1
+
+# Nightly SQLite backup with 7 daily / 4 weekly retention.
+15 2 * * * cd /srv/gdl-tracker && /usr/bin/python3 scripts/backup_db.py --db /srv/gdl-tracker/data/gdl_data.db --backup-dir /srv/gdl-tracker/backups >> /var/log/gdl-tracker-backup.log 2>&1

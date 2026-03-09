@@ -1,0 +1,35 @@
+{
+  "name": "GDL Flower Tracker",
+  "short_name": "GDL Tracker",
+  "description": "Decision-first Green Dot Labs flower tracking for Colorado Springs.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#10211b",
+  "theme_color": "#10211b",
+  "categories": ["shopping", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/mobile-home.png",
+      "sizes": "390x844",
+      "type": "image/png"
+    }
+  ]
+}

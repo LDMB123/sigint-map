@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GDL Flower Tracker — Green Dot Labs Availability & Pricing</title>
+  <meta name="description" content="Live Green Dot Labs flower availability, pricing, and trend tracking for dispensaries near Colorado Springs, Colorado.">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/styles/polish.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <a href="/" class="logo-link" aria-label="GDL Flower Tracker home">
+          <svg class="logo-mark" width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <circle cx="16" cy="16" r="14" fill="var(--color-primary)"/>
+            <path d="M16 4C16 4 22 10 22 16C22 22 16 26 16 26C16 26 10 22 10 16C10 10 16 4 16 4Z" fill="var(--color-bg)" opacity="0.34"/>
+            <circle cx="16" cy="16" r="5" fill="var(--color-bg)" opacity="0.18"/>
+          </svg>
+        </a>
+
+        <div class="header-title-group">
+          <div class="header-title-block">
+            <h1 class="header-title">GDL Flower Tracker</h1>
+            <p class="header-subtitle">Colorado Springs live availability, pricing, and trend tracking</p>
+          </div>
+          <span class="header-badge">30mi · 80920</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <span class="last-updated mono" id="lastUpdated" aria-live="polite">—</span>
+        <span class="header-badge mono" id="priceCoverage" title="Live price coverage">Coverage —</span>
+        <span class="header-badge mono" id="dataFreshness" title="Tracker freshness">Freshness —</span>
+        <a href="https://greendotlabs.com/find-our-products/" target="_blank" rel="noopener noreferrer" class="header-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          <span>GDL Site</span>
+        </a>
+        <button class="btn-icon" id="refreshBtn" aria-label="Refresh data" title="Refresh dispensary list from Green Dot Labs">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9A9 9 0 0 1 18.36 5.64L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </button>
+        <button class="btn-sm btn-secondary" id="syncBtn" title="Refresh GDL listings and then fetch live prices">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9A9 9 0 0 1 18.36 5.64L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>Sync All</span>
+        </button>
+        <button class="btn-sm btn-accent" id="scrapeBtn" title="Fetch live prices from known dispensary menus">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+          </svg>
+          <span>Refresh Prices</span>
+        </button>
+        <button class="btn-icon" id="themeToggleBtn" data-theme-toggle aria-label="Switch to light mode" title="Toggle theme">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tab-bar" role="tablist" aria-label="Main navigation">
+    <button class="tab active" id="tab-overview" role="tab" aria-selected="true" aria-controls="panel-overview" data-tab="overview" tabindex="0" type="button">Overview</button>
+    <button class="tab" id="tab-insights" role="tab" aria-selected="false" aria-controls="panel-insights" data-tab="insights" tabindex="-1" type="button">Insights</button>
+    <button class="tab" id="tab-table" role="tab" aria-selected="false" aria-controls="panel-table" data-tab="table" tabindex="-1" type="button">Table</button>
+    <button class="tab" id="tab-map" role="tab" aria-selected="false" aria-controls="panel-map" data-tab="map" tabindex="-1" type="button">Map</button>
+  </nav>
+
+  <div class="filter-bar" id="filterBar">
+    <div class="filter-bar-inner">
+      <div class="filter-group">
+        <label class="filter-label">Type</label>
+        <div class="toggle-group" id="typeFilter" role="group" aria-label="Filter by license type">
+          <button class="toggle-btn active" data-value="ALL">All</button>
+          <button class="toggle-btn" data-value="REC">REC</button>
+          <button class="toggle-btn" data-value="MED">MED</button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Size</label>
+        <div class="toggle-group" id="sizeFilter" role="group" aria-label="Filter by size">
+          <button class="toggle-btn active" data-value="ALL">All</button>
+          <button class="toggle-btn" data-value="3.5g">3.5g</button>
+          <button class="toggle-btn" data-value="7g">7g</button>
+          <button class="toggle-btn" data-value="14g">14g</button>
+          <button class="toggle-btn" data-value="28g">28g</button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Rows</label>
+        <button class="btn-sm btn-secondary filter-toggle" id="pricedOnlyBtn" type="button" aria-pressed="false">Priced only</button>
+      </div>
+
+      <div class="filter-group search-group">
+        <label class="filter-label" for="strainSearch">Strain</label>
+        <div class="search-input-wrap">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="strainSearch" class="search-input" placeholder="Search strains or shops…" autocomplete="off" list="strainSuggestions">
+          <button class="search-clear-btn" id="searchClearBtn" type="button" aria-label="Clear search" title="Clear search" hidden>×</button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label" for="sortSelect">Sort</label>
+        <select id="sortSelect" class="sort-select">
+          <option value="distance">Distance</option>
+          <option value="unit-price">$/g</option>
+          <option value="price-asc">Price ↑</option>
+          <option value="price-desc">Price ↓</option>
+          <option value="strain">Strain A–Z</option>
+          <option value="dispensary">Dispensary</option>
+          <option value="size">Size</option>
+          <option value="type">Type</option>
+          <option value="thc">THC%</option>
+          <option value="drop-date">Drop Date</option>
+        </select>
+      </div>
+
+      <div class="filter-actions">
+        <span class="result-count mono" id="resultCount">—</span>
+        <button class="btn-sm btn-secondary" id="shareViewBtn" type="button">Share view</button>
+        <button class="btn-sm btn-secondary" id="clearFiltersBtn" type="button">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-alert" id="appAlert" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+  <div class="filter-summary" id="filterSummary" aria-live="polite" hidden></div>
+
+  <section class="preset-bar" id="presetBar" role="region" aria-label="Quick presets">
+    <div class="preset-bar-label">Quick jumps</div>
+    <div class="preset-scroll" role="group" aria-label="Preset views">
+      <button class="preset-chip" type="button" data-preset="value35">
+        <span class="preset-chip-title">Best 3.5g value</span>
+        <span class="preset-chip-meta">Priced rows sorted lowest first</span>
+      </button>
+      <button class="preset-chip" type="button" data-preset="bulk">
+        <span class="preset-chip-title">Bulk deals</span>
+        <span class="preset-chip-meta">Show low $/g first</span>
+      </button>
+      <button class="preset-chip" type="button" data-preset="med">
+        <span class="preset-chip-title">MED only</span>
+        <span class="preset-chip-meta">Focus medical menus</span>
+      </button>
+      <button class="preset-chip" type="button" data-preset="rec">
+        <span class="preset-chip-title">REC only</span>
+        <span class="preset-chip-meta">Retail availability</span>
+      </button>
+      <button class="preset-chip" type="button" data-preset="fresh">
+        <span class="preset-chip-title">Fresh drops</span>
+        <span class="preset-chip-meta">Newest listings first</span>
+      </button>
+      <button class="preset-chip" type="button" data-preset="history">
+        <span class="preset-chip-title">Price history</span>
+        <span class="preset-chip-meta">Open trends and recent moves</span>
+      </button>
+      <button class="preset-chip" type="button" data-preset="map">
+        <span class="preset-chip-title">Store map</span>
+        <span class="preset-chip-meta">Jump to nearby shops</span>
+      </button>
+    </div>
+  </section>
+
+  <main class="main-content" id="mainContent">
+    <section class="tab-panel active" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
+      <section class="hero-grid" id="heroGrid">
+        <article class="hero-card hero-card--spotlight" id="spotlightCard"></article>
+        <div class="hero-stack">
+          <article class="hero-mini-card" id="marketPulseCard"></article>
+          <article class="hero-mini-card" id="opsPulseCard"></article>
+        </div>
+      </section>
+
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card">
+          <span class="kpi-label" id="kpiDispensariesLabel">Dispensaries</span>
+          <span class="kpi-value mono" id="kpiDispensaries"><span class="skeleton skeleton-value"></span></span>
+          <span class="kpi-sub" id="kpiDispensariesSub">carrying GDL flower</span>
+        </div>
+
+        <div class="kpi-card">
+          <span class="kpi-label" id="kpiStrainsLabel">Strains</span>
+          <span class="kpi-value mono" id="kpiStrains"><span class="skeleton skeleton-value"></span></span>
+          <span class="kpi-sub" id="kpiStrainsSub">available nearby</span>
+        </div>
+
+        <div class="kpi-card">
+          <span class="kpi-label" id="kpiLowestLabel">Lowest Visible Price</span>
+          <span class="kpi-value mono kpi-green" id="kpiLowest"><span class="skeleton skeleton-value"></span></span>
+          <span class="kpi-sub" id="kpiLowestSub">—</span>
+        </div>
+
+        <div class="kpi-card">
+          <span class="kpi-label" id="kpiAvgLabel">Avg Visible Price</span>
+          <span class="kpi-value mono" id="kpiAvg"><span class="skeleton skeleton-value"></span></span>
+          <span class="kpi-sub" id="kpiAvgSub">—</span>
+        </div>
+
+        <div class="kpi-card">
+          <span class="kpi-label" id="kpiBulkLabel">Best Bulk Value</span>
+          <span class="kpi-value mono" id="kpiBulk"><span class="skeleton skeleton-value"></span></span>
+          <span class="kpi-sub" id="kpiBulkSub">—</span>
+        </div>
+
+        <div class="kpi-card">
+          <span class="kpi-label" id="kpiDropLabel">Latest Drop</span>
+          <span class="kpi-value mono" id="kpiDrop"><span class="skeleton skeleton-value"></span></span>
+          <span class="kpi-sub" id="kpiDropSub">—</span>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3 class="chart-title">Strain Availability <span class="chart-subtitle" id="strainChartSubtitle">Top strains by visible dispensary count</span></h3>
+          <div class="chart-wrap">
+            <canvas id="strainChart"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <h3 class="chart-title">Price by Dispensary <span class="chart-subtitle" id="priceChartSubtitle">Comparable averages across visible listings</span></h3>
+          <div class="chart-wrap">
+            <canvas id="priceChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-grid">
+        <section class="surface-panel">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Best Deals</h3>
+              <p class="panel-subtitle">Cheapest visible listings by size and type</p>
+            </div>
+          </div>
+          <div class="deal-grid" id="dealGrid"></div>
+        </section>
+
+        <section class="surface-panel">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Fresh Drops</h3>
+              <p class="panel-subtitle">Newest dispensary drop dates in the current view</p>
+            </div>
+          </div>
+          <div class="drop-list" id="freshDropList"></div>
+        </section>
+      </div>
+
+      <section class="surface-panel compare-panel">
+        <div class="panel-header">
+          <div>
+            <h3 class="panel-title">Quick Compare</h3>
+            <p class="panel-subtitle">Side-by-side store highlights to speed up decision making</p>
+          </div>
+        </div>
+        <div class="compare-grid" id="compareGrid"></div>
+      </section>
+
+      <div class="section-heading-row">
+        <h3 class="section-heading">Dispensaries</h3>
+        <span class="section-heading-meta mono" id="dispensarySummary">—</span>
+      </div>
+
+      <div class="dispensary-grid" id="dispensaryGrid">
+        <div class="disp-card skeleton-card"><div class="skeleton skeleton-block"></div></div>
+        <div class="disp-card skeleton-card"><div class="skeleton skeleton-block"></div></div>
+        <div class="disp-card skeleton-card"><div class="skeleton skeleton-block"></div></div>
+        <div class="disp-card skeleton-card"><div class="skeleton skeleton-block"></div></div>
+        <div class="disp-card skeleton-card"><div class="skeleton skeleton-block"></div></div>
+        <div class="disp-card skeleton-card"><div class="skeleton skeleton-block"></div></div>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="panel-insights" role="tabpanel" aria-labelledby="tab-insights" hidden>
+      <div class="insights-grid">
+        <section class="surface-panel insights-panel-wide">
+          <div class="panel-header panel-header-stack-mobile">
+            <div>
+              <h3 class="panel-title">Price Trend</h3>
+              <p class="panel-subtitle" id="historySummary">Average visible capture price over time</p>
+            </div>
+            <div class="history-controls">
+              <select id="historyTypeSelect" class="sort-select select-sm" aria-label="History type">
+                <option value="ALL">All types</option>
+                <option value="REC">REC</option>
+                <option value="MED">MED</option>
+              </select>
+              <select id="historySizeSelect" class="sort-select select-sm" aria-label="History size">
+                <option value="ALL">All sizes</option>
+                <option value="3.5g">3.5g</option>
+                <option value="7g">7g</option>
+                <option value="14g">14g</option>
+                <option value="28g">28g</option>
+              </select>
+            </div>
+          </div>
+          <div class="chart-wrap chart-wrap--tall">
+            <canvas id="historyChart"></canvas>
+          </div>
+        </section>
+
+        <section class="surface-panel">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Operations</h3>
+              <p class="panel-subtitle" id="statusMeta">Refresh state, scheduler activity, and recent job history</p>
+            </div>
+          </div>
+          <div class="activity-list" id="jobRunList"></div>
+        </section>
+
+        <section class="surface-panel">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Recent Price Moves</h3>
+              <p class="panel-subtitle">Most recent recorded changes by product</p>
+            </div>
+            <span class="panel-meta mono" id="historyMoveCount">—</span>
+          </div>
+          <div class="activity-list" id="priceMoveList"></div>
+        </section>
+
+        <section class="surface-panel">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Coverage by Dispensary</h3>
+              <p class="panel-subtitle">Visible listings with pricing filled in</p>
+            </div>
+          </div>
+          <div class="coverage-list" id="coverageList"></div>
+        </section>
+
+        <section class="surface-panel">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Recent Captures</h3>
+              <p class="panel-subtitle">Latest history records matching your current view</p>
+            </div>
+          </div>
+          <div class="activity-list" id="captureList"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="panel-table" role="tabpanel" aria-labelledby="tab-table" hidden>
+      <div class="panel-toolbar">
+        <div class="toolbar-text" id="tableSummary">—</div>
+        <div class="toolbar-actions">
+          <button class="btn-sm btn-secondary" id="exportCsvBtn" type="button">Export CSV</button>
+          <button class="btn-sm btn-secondary" id="exportJsonBtn" type="button">Export JSON</button>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table" id="dataTable">
+          <thead>
+            <tr>
+              <th data-sort="dispensary" class="sortable">Dispensary</th>
+              <th data-sort="distance" class="sortable th-num">Dist</th>
+              <th data-sort="strain" class="sortable">Strain</th>
+              <th data-sort="size" class="sortable th-num">Size</th>
+              <th data-sort="price" class="sortable th-num">Price</th>
+              <th data-sort="unitPrice" class="sortable th-num">$/g</th>
+              <th data-sort="type" class="sortable">Type</th>
+              <th data-sort="thc" class="sortable th-num">THC%</th>
+              <th data-sort="drop" class="sortable">Drop</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr class="skeleton-row"><td colspan="9"><div class="skeleton skeleton-table-row"></div></td></tr>
+            <tr class="skeleton-row"><td colspan="9"><div class="skeleton skeleton-table-row"></div></td></tr>
+            <tr class="skeleton-row"><td colspan="9"><div class="skeleton skeleton-table-row"></div></td></tr>
+            <tr class="skeleton-row"><td colspan="9"><div class="skeleton skeleton-table-row"></div></td></tr>
+            <tr class="skeleton-row"><td colspan="9"><div class="skeleton skeleton-table-row"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="panel-map" role="tabpanel" aria-labelledby="tab-map" hidden>
+      <div class="panel-toolbar">
+        <div class="toolbar-text" id="mapSummary">Map view of visible dispensaries within the tracker radius</div>
+      </div>
+      <div class="map-layout">
+        <aside class="map-sidebar">
+          <div class="map-sidebar-header">
+            <div>
+              <h3 class="panel-title">Visible stores</h3>
+              <p class="panel-subtitle" id="mapListSummary">Focus a store to center the map and open details</p>
+            </div>
+          </div>
+          <div class="map-list" id="mapList"></div>
+        </aside>
+        <div class="map-stage">
+          <div class="map-container" id="mapContainer"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span>Data from <a href="https://greendotlabs.com/find-our-products/" target="_blank" rel="noopener noreferrer">Green Dot Labs</a> and live dispensary menus where available</span>
+    <span class="footer-sep">·</span>
+    <span>Built for quick comparison of nearby flower drops, pricing, and history</span>
+  </footer>
+
+  <datalist id="strainSuggestions"></datalist>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="/js/runtime-helpers.js" defer></script>
+  <script src="/js/status-helpers.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>

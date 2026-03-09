@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          npm ci
+
+      - name: Secret scan
+        run: |
+          python scripts/ci_secret_scan.py
+
+      - name: Dependency audit
+        run: |
+          python -m pip install pip-audit
+          pip-audit -r requirements.txt --progress-spinner off
+          npm audit --prefix frontend --omit=dev --audit-level=high
+          npm audit --prefix frontend --audit-level=high
+
+      - name: Syntax check
+        run: |
+          python -m py_compile api_server.py menu_scrapers.py update_prices.py server/config.py server/static_assets.py server/status_helpers.py scripts/backup_db.py scripts/restore_db.py
+
+      - name: Run tests
+        run: |
+          pytest -q
+
+      - name: Frontend build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          npm run frontend:build
+
+      - name: Frontend smoke
+        run: |
+          npm run smoke:frontend
+
+      - name: Frontend typecheck
+        run: |
+          npm run frontend:typecheck
+
+      - name: Install Playwright browser
+        run: |
+          npx playwright install --with-deps chromium
+
+      - name: Browser smoke
+        run: |
+          APP_ENV=production \
+          CORS_ORIGINS=https://tracker.example.com \
+          TRUSTED_HOSTS=127.0.0.1,localhost \
+          AUTO_BOOTSTRAP_IF_EMPTY=false \
+          python -m uvicorn api_server:app --host 127.0.0.1 --port 8000 > /tmp/gdl-tracker.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() {
+            kill "$SERVER_PID" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          python - <<'PY'
+          import time
+          import urllib.request
+
+          deadline = time.time() + 30
+          url = "http://127.0.0.1:8000/healthz"
+          while time.time() < deadline:
+              try:
+                  with urllib.request.urlopen(url, timeout=2) as response:
+                      if response.status == 200:
+                          raise SystemExit(0)
+              except Exception:
+                  time.sleep(0.5)
+          raise SystemExit("Server did not become ready in time")
+          PY
+          BASE_URL=http://127.0.0.1:8000 npm run smoke:browser
+
+      - name: Docker boot smoke
+        run: |
+          mkdir -p .tmp-data
+          docker build -t gdl-tracker-ci .
+          docker run -d --rm --name gdl-tracker-smoke \
+            -p 8001:8000 \
+            -e APP_ENV=production \
+            -e CORS_ORIGINS=https://tracker.example.com \
+            -e AUTO_BOOTSTRAP_IF_EMPTY=false \
+            -e DB_PATH=/data/gdl_data.db \
+            -v "${PWD}/.tmp-data:/data" \
+            gdl-tracker-ci
+          cleanup() {
+            docker logs gdl-tracker-smoke || true
+            docker stop gdl-tracker-smoke >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          python - <<'PY'
+          import time
+          import urllib.request
+
+          urls = [
+              "http://127.0.0.1:8001/healthz",
+              "http://127.0.0.1:8001/",
+              "http://127.0.0.1:8001/favicon.ico",
+          ]
+          deadline = time.time() + 45
+          while time.time() < deadline:
+              try:
+                  for url in urls:
+                      with urllib.request.urlopen(url, timeout=3) as response:
+                          if response.status >= 400:
+                              raise RuntimeError(f"{url} returned {response.status}")
+                  raise SystemExit(0)
+              except Exception:
+                  time.sleep(1)
+          raise SystemExit("Container did not pass boot smoke in time")
+          PY
